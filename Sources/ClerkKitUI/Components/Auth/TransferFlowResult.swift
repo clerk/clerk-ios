@@ -5,6 +5,13 @@ enum TransferFlowResult {
   case signIn(SignIn)
   case signUp(SignUp)
 
+  @MainActor init(_ result: MobileAuthenticationResult) {
+    switch result {
+    case .case1(let value): self = .signIn(value.signIn)
+    case .case2(let value): self = .signUp(value.signUp)
+    }
+  }
+
   @MainActor var flowId: String {
     switch self {
     case .signIn(let value): value.id ?? value.handle.id

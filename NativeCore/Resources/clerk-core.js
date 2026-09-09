@@ -4832,12 +4832,6 @@ var ClerkCore = (function(exports) {
 	};
 	const eventBus = createEventBus();
 	//#endregion
-	//#region ../shared/src/clerkEventBus.ts
-	const clerkEvents = { Status: "status" };
-	const createClerkEventBus = () => {
-		return createEventBus();
-	};
-	//#endregion
 	//#region ../shared/src/errors/createErrorTypeGuard.ts
 	/**
 	* Creates a type guard function for any error class.
@@ -5318,281 +5312,6 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 		return error;
 	}
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/componentGuards.ts
-	const isSignedInAndSingleSessionModeEnabled = (clerk, environment) => {
-		return !!(clerk.isSignedIn && environment?.authConfig.singleSessionMode);
-	};
-	const noUserExists = (clerk) => {
-		return !clerk.user;
-	};
-	const noOrganizationExists = (clerk) => {
-		return !clerk.organization;
-	};
-	const disabledOrganizationsFeature = (_, environment) => {
-		return !environment?.organizationSettings.enabled;
-	};
-	const disabledUserBillingFeature = (_, environment) => {
-		return !environment?.commerceSettings.billing.user.enabled;
-	};
-	const disabledOrganizationBillingFeature = (_, environment) => {
-		return !environment?.commerceSettings.billing.organization.enabled;
-	};
-	const disabledAllBillingFeatures = (_, environment) => {
-		return disabledUserBillingFeature(_, environment) && disabledOrganizationBillingFeature(_, environment);
-	};
-	const disabledUserAPIKeysFeature = (_, environment) => {
-		return !environment?.apiKeysSettings?.user_api_keys_enabled;
-	};
-	const disabledOrganizationAPIKeysFeature = (_, environment) => {
-		return !environment?.apiKeysSettings?.orgs_api_keys_enabled;
-	};
-	const disabledAllAPIKeysFeatures = (_, environment) => {
-		return disabledUserAPIKeysFeature(_, environment) && disabledOrganizationAPIKeysFeature(_, environment);
-	};
-	const disabledSelfServeSSOFeature = (clerk, environment) => {
-		return !environment?.userSettings.enterpriseSSO.self_serve_sso || !clerk.organization?.selfServeSSOEnabled;
-	};
-	const disabledEmailAddressAttribute = (_, environment) => {
-		return !environment?.userSettings.attributes.email_address?.enabled;
-	};
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/constants.ts
-	const CLERK_SYNCED = "__clerk_synced";
-	const CLERK_SYNCED_STATUS = {
-		/** Not synced - satellite needs handshake after returning from primary sign-in */
-		NeedsSync: "false",
-		/** Sync completed - prevents re-sync loop after handshake completes */
-		Completed: "true"
-	};
-	const CLERK_SUFFIXED_COOKIES = "suffixed_cookies";
-	const CLERK_SATELLITE_URL = "__clerk_satellite_url";
-	const ERROR_CODES = {
-		FORM_IDENTIFIER_NOT_FOUND: "form_identifier_not_found",
-		FORM_PASSWORD_INCORRECT: "form_password_incorrect",
-		FORM_PASSWORD_PWNED: "form_password_pwned",
-		INVALID_STRATEGY_FOR_USER: "strategy_for_user_invalid",
-		NOT_ALLOWED_TO_SIGN_UP: "not_allowed_to_sign_up",
-		OAUTH_ACCESS_DENIED: "oauth_access_denied",
-		OAUTH_EMAIL_DOMAIN_RESERVED_BY_SAML: "oauth_email_domain_reserved_by_saml",
-		NOT_ALLOWED_ACCESS: "not_allowed_access",
-		SAML_USER_ATTRIBUTE_MISSING: "saml_user_attribute_missing",
-		USER_LOCKED: "user_locked",
-		EXTERNAL_ACCOUNT_NOT_FOUND: "external_account_not_found",
-		EXTERNAL_ACCOUNT_EXISTS: "external_account_exists",
-		SESSION_EXISTS: "session_exists",
-		SIGN_UP_MODE_RESTRICTED: "sign_up_mode_restricted",
-		SIGN_UP_MODE_RESTRICTED_WAITLIST: "sign_up_restricted_waitlist",
-		ENTERPRISE_SSO_USER_ATTRIBUTE_MISSING: "enterprise_sso_user_attribute_missing",
-		ENTERPRISE_SSO_EMAIL_ADDRESS_DOMAIN_MISMATCH: "enterprise_sso_email_address_domain_mismatch",
-		ENTERPRISE_SSO_HOSTED_DOMAIN_MISMATCH: "enterprise_sso_hosted_domain_mismatch",
-		SAML_EMAIL_ADDRESS_DOMAIN_MISMATCH: "saml_email_address_domain_mismatch",
-		INVITATION_ACCOUNT_NOT_EXISTS: "invitation_account_not_exists",
-		ORGANIZATION_MEMBERSHIP_QUOTA_EXCEEDED_FOR_SSO: "organization_membership_quota_exceeded_for_sso",
-		CAPTCHA_INVALID: "captcha_invalid",
-		FRAUD_DEVICE_BLOCKED: "device_blocked",
-		FRAUD_ACTION_BLOCKED: "action_blocked",
-		PROTECT_CHECK_ALREADY_RESOLVED: "protect_check_already_resolved",
-		PROTECT_CHECK_TIMED_OUT: "protect_check_timed_out",
-		PROTECT_CHECK_UNSUPPORTED_ENVIRONMENT: "protect_check_unsupported_environment",
-		SIGNUP_RATE_LIMIT_EXCEEDED: "signup_rate_limit_exceeded",
-		USER_BANNED: "user_banned",
-		USER_DEACTIVATED: "user_deactivated"
-	};
-	const SUPPORTED_FAPI_VERSION = "2026-05-12";
-	const CAPTCHA_ELEMENT_ID = "clerk-captcha";
-	const CAPTCHA_INVISIBLE_CLASSNAME = "clerk-invisible-captcha";
-	//#endregion
-	//#region ../shared/src/object.ts
-	const removeUndefined = (obj) => {
-		return Object.entries(obj).reduce((acc, [key, value]) => {
-			if (value !== void 0 && value !== null) acc[key] = value;
-			return acc;
-		}, {});
-	};
-	const applyFunctionToObj = (obj, fn) => {
-		const result = {};
-		for (const key in obj) result[key] = fn(obj[key], key);
-		return result;
-	};
-	const filterProps = (obj, filter) => {
-		const result = {};
-		for (const key in obj) if (obj[key] && filter(obj[key])) result[key] = obj[key];
-		return result;
-	};
-	//#endregion
-	//#region ../shared/src/underscore.ts
-	/**
-	* Converts the first character of a string to uppercase.
-	*
-	* @param str - The string to be converted.
-	* @returns The modified string with the rest of the string unchanged.
-	*
-	* @example
-	* ```ts
-	* titleize('hello world') // 'Hello world'
-	* ```
-	*/
-	function titleize(str) {
-		const s = str || "";
-		return s.charAt(0).toUpperCase() + s.slice(1);
-	}
-	/**
-	* Converts a string from snake_case to camelCase.
-	*/
-	function snakeToCamel(str) {
-		return str ? str.replace(/([-_][a-z])/g, (match) => match.toUpperCase().replace(/-|_/, "")) : "";
-	}
-	/**
-	* Converts a string from camelCase to snake_case.
-	*/
-	function camelToSnake(str) {
-		return str ? str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`) : "";
-	}
-	const createDeepObjectTransformer = (transform) => {
-		const deepTransform = (obj) => {
-			if (!obj) return obj;
-			if (Array.isArray(obj)) return obj.map((el) => {
-				if (typeof el === "object" || Array.isArray(el)) return deepTransform(el);
-				return el;
-			});
-			const copy = { ...obj };
-			const keys = Object.keys(copy);
-			for (const oldName of keys) {
-				const newName = transform(oldName.toString());
-				if (newName !== oldName) {
-					copy[newName] = copy[oldName];
-					delete copy[oldName];
-				}
-				if (typeof copy[newName] === "object") copy[newName] = deepTransform(copy[newName]);
-			}
-			return copy;
-		};
-		return deepTransform;
-	};
-	/**
-	* Transforms camelCased objects/ arrays to snake_cased.
-	* This function recursively traverses all objects and arrays of the passed value
-	* camelCased keys are removed.
-	*
-	* @function
-	*/
-	const deepCamelToSnake = createDeepObjectTransformer(camelToSnake);
-	/**
-	* Transforms snake_cased objects/ arrays to camelCased.
-	* This function recursively traverses all objects and arrays of the passed value
-	* camelCased keys are removed.
-	*
-	* @function
-	*/
-	const deepSnakeToCamel = createDeepObjectTransformer(snakeToCamel);
-	/**
-	* A function to determine if a value is truthy.
-	*
-	* @returns True for `true`, true, positive numbers. False for `false`, false, 0, negative integers and anything else.
-	*/
-	function isTruthy(value) {
-		if (typeof value === `boolean`) return value;
-		if (value === void 0 || value === null) return false;
-		if (typeof value === `string`) {
-			if (value.toLowerCase() === `true`) return true;
-			if (value.toLowerCase() === `false`) return false;
-		}
-		const number = parseInt(value, 10);
-		if (isNaN(number)) return false;
-		if (number > 0) return true;
-		return false;
-	}
-	/**
-	* Get all non-undefined values from an object.
-	*/
-	function getNonUndefinedValues(obj) {
-		return Object.entries(obj).reduce((acc, [key, value]) => {
-			if (value !== void 0) acc[key] = value;
-			return acc;
-		}, {});
-	}
-	//#endregion
-	//#region ../shared/src/globs.ts
-	var import_glob_to_regexp = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports, module) => {
-		module.exports = function(glob, opts) {
-			if (typeof glob !== "string") throw new TypeError("Expected a string");
-			var str = String(glob);
-			var reStr = "";
-			var extended = opts ? !!opts.extended : false;
-			var globstar = opts ? !!opts.globstar : false;
-			var inGroup = false;
-			var flags = opts && typeof opts.flags === "string" ? opts.flags : "";
-			var c;
-			for (var i = 0, len = str.length; i < len; i++) {
-				c = str[i];
-				switch (c) {
-					case "/":
-					case "$":
-					case "^":
-					case "+":
-					case ".":
-					case "(":
-					case ")":
-					case "=":
-					case "!":
-					case "|":
-						reStr += "\\" + c;
-						break;
-					case "?": if (extended) {
-						reStr += ".";
-						break;
-					}
-					case "[":
-					case "]": if (extended) {
-						reStr += c;
-						break;
-					}
-					case "{": if (extended) {
-						inGroup = true;
-						reStr += "(";
-						break;
-					}
-					case "}": if (extended) {
-						inGroup = false;
-						reStr += ")";
-						break;
-					}
-					case ",":
-						if (inGroup) {
-							reStr += "|";
-							break;
-						}
-						reStr += "\\" + c;
-						break;
-					case "*":
-						var prevChar = str[i - 1];
-						var starCount = 1;
-						while (str[i + 1] === "*") {
-							starCount++;
-							i++;
-						}
-						var nextChar = str[i + 1];
-						if (!globstar) reStr += ".*";
-						else if (starCount > 1 && (prevChar === "/" || prevChar === void 0) && (nextChar === "/" || nextChar === void 0)) {
-							reStr += "((?:[^/]*(?:/|$))*)";
-							i++;
-						} else reStr += "([^/]*)";
-						break;
-					default: reStr += c;
-				}
-			}
-			if (!flags || !~flags.indexOf("g")) reStr = "^" + reStr + "$";
-			return new RegExp(reStr, flags);
-		};
-	})))());
-	const globs = { toRegexp: (pattern) => {
-		try {
-			return (0, import_glob_to_regexp.default)(pattern);
-		} catch (e) {
-			throw new Error(`Invalid pattern: ${pattern}.\nConsult the documentation of glob-to-regexp here: https://www.npmjs.com/package/glob-to-regexp.\n${e.message}`);
-		}
-	} };
-	//#endregion
 	//#region ../shared/src/constants.ts
 	const LEGACY_DEV_INSTANCE_SUFFIXES = [
 		".lcl.dev",
@@ -5788,591 +5507,32 @@ isDevOrStagingUrl: (url) => {
 		return `${cookieName}_${cookieSuffix}`;
 	};
 	//#endregion
-	//#region ../shared/src/logger.ts
-	const loggedMessages = /* @__PURE__ */ new Set();
-	const logger = {
-		/**
-		* A custom logger that ensures messages are logged only once.
-		* Reduces noise and duplicated messages when logs are in a hot codepath.
-		*/
-		warnOnce: (msg) => {
-			if (loggedMessages.has(msg)) return;
-			loggedMessages.add(msg);
-			console.warn(msg);
-		},
-		logOnce: (msg) => {
-			if (loggedMessages.has(msg)) return;
-			console.log(msg);
-			loggedMessages.add(msg);
-		}
-	};
+	//#region ../shared/src/utils/noop.ts
+	var noop$1;
+	var init_noop = __esmMin(() => {
+		noop$1 = (..._args) => {};
+	});
 	//#endregion
-	//#region ../shared/src/url.ts
-	/**
-	*
-	*/
-	function stripScheme(url = "") {
-		return (url || "").replace(/^.+:\/\//, "");
-	}
-	/**
-	*
-	*/
-	function addClerkPrefix(str) {
-		if (!str) return "";
-		let regex;
-		if (str.match(/^(clerk\.)+\w*$/)) regex = /(clerk\.)*(?=clerk\.)/;
-		else if (str.match(/\.clerk.accounts/)) return str;
-		else regex = /^(clerk\.)*/gi;
-		return `clerk.${str.replace(regex, "")}`;
-	}
-	/**
-	*
-	*/
-	function isLegacyDevAccountPortalOrigin(host) {
-		return LEGACY_DEV_INSTANCE_SUFFIXES.some((legacyDevSuffix) => {
-			return host.startsWith("accounts.") && host.endsWith(legacyDevSuffix);
-		});
-	}
-	/**
-	*
-	*/
-	function isCurrentDevAccountPortalOrigin(host) {
-		return CURRENT_DEV_INSTANCE_SUFFIXES.some((currentDevSuffix) => {
-			return host.endsWith(currentDevSuffix) && !host.endsWith(".clerk" + currentDevSuffix);
-		});
-	}
-	const ABSOLUTE_URL_REGEX = /^[a-zA-Z][a-zA-Z\d+\-.]*?:/;
-	const isAbsoluteUrl = (url) => ABSOLUTE_URL_REGEX.test(url);
+	//#region ../shared/src/utils/createDeferredPromise.ts
+	var init_createDeferredPromise = __esmMin(() => {});
 	//#endregion
-	//#region ../shared/src/internal/clerk-js/path.ts
-	const SEPARATOR = "/";
-	const MULTIPLE_SEPARATOR_REGEX = /* @__PURE__ */ new RegExp("/{1,}", "g");
-	function joinPaths(a, b) {
-		return [a, b].filter((p) => p).join(SEPARATOR).replace(MULTIPLE_SEPARATOR_REGEX, SEPARATOR);
-	}
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/querystring.ts
-	const getQueryParams = (queryString) => {
-		const queryParamsObject = {};
-		new URLSearchParams(queryString).forEach((value, key) => {
-			if (key in queryParamsObject) {
-				const existingValue = queryParamsObject[key];
-				if (Array.isArray(existingValue)) existingValue.push(value);
-				else queryParamsObject[key] = [existingValue, value];
-			} else queryParamsObject[key] = value;
-		});
-		return queryParamsObject;
-	};
-	const stringifyQueryParams = (params, opts = {}) => {
-		if (params === null || params === void 0) return "";
-		if (!params || typeof params !== "object") return "";
-		const queryParams = new URLSearchParams();
-		Object.keys(params).forEach((key) => {
-			const encodedKey = opts.keyEncoder ? opts.keyEncoder(key) : key;
-			const value = params[key];
-			if (Array.isArray(value)) value.forEach((v) => v !== void 0 && queryParams.append(encodedKey, v || ""));
-			else if (value === void 0) return;
-			else if (typeof value === "object" && value !== null) queryParams.append(encodedKey, JSON.stringify(value));
-			else queryParams.append(encodedKey, String(value ?? ""));
-		});
-		return queryParams.toString();
-	};
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/url.ts
-	const DUMMY_URL_BASE = "http://clerk-dummy";
-	const BANNED_URI_PROTOCOLS = ["javascript:"];
-	const { isDevOrStagingUrl } = createDevOrStagingUrlCache();
-	const accountPortalCache = /* @__PURE__ */ new Map();
-	function isDevAccountPortalOrigin(hostname = window.location.hostname) {
-		if (!hostname) return false;
-		let res = accountPortalCache.get(hostname);
-		if (res === void 0) {
-			res = isLegacyDevAccountPortalOrigin(hostname) || isCurrentDevAccountPortalOrigin(hostname);
-			accountPortalCache.set(hostname, res);
-		}
-		return res;
-	}
-	function getETLDPlusOneFromFrontendApi(frontendApi) {
-		return frontendApi.replace("clerk.", "");
-	}
-	function buildURL(params, options = {}) {
-		const { base, hashPath, hashSearch, searchParams, hashSearchParams, ...rest } = params;
-		let fallbackBase = "";
-		if (typeof window !== "undefined" && !!window.location) fallbackBase = window.location.href;
-		else fallbackBase = "http://react-native-fake-base-url";
-		const url = new URL(base || "", fallbackBase);
-		if (searchParams instanceof URLSearchParams) searchParams.forEach((value, key) => {
-			if (value !== null && value !== void 0) url.searchParams.set(camelToSnake(key), value);
-		});
-		Object.assign(url, rest);
-		if (hashPath || hashSearch || hashSearchParams) {
-			const dummyUrlForHash = new URL(DUMMY_URL_BASE + url.hash.substring(1));
-			dummyUrlForHash.pathname = joinPaths(dummyUrlForHash.pathname, hashPath || "");
-			const searchParamsFromHashSearchString = getQueryParams(hashSearch || "");
-			for (const [key, val] of Object.entries(searchParamsFromHashSearchString)) dummyUrlForHash.searchParams.append(key, val);
-			if (hashSearchParams) {
-				const paramsArr = Array.isArray(hashSearchParams) ? hashSearchParams : [hashSearchParams];
-				for (const _params of paramsArr) {
-					if (!(_params instanceof URLSearchParams) && typeof _params !== "object") continue;
-					new URLSearchParams(_params).forEach((value, key) => {
-						if (value !== null && value !== void 0) dummyUrlForHash.searchParams.set(camelToSnake(key), value);
-					});
-				}
-			}
-			const newHash = dummyUrlForHash.href.replace(DUMMY_URL_BASE, "");
-			if (newHash !== "/") url.hash = newHash;
-		}
-		const { stringify, skipOrigin } = options;
-		if (stringify) return skipOrigin ? url.href.replace(url.origin, "") : url.href;
-		return url;
-	}
-	function toURL(url) {
-		return new URL(url.toString(), typeof window !== "undefined" ? window.location?.origin : void 0);
-	}
+	//#region ../shared/src/utils/allSettled.ts
 	/**
-	*
-	* stripOrigin(url: URL | string): string
-	*
-	* Strips the origin part of a URL and preserves path, search and hash is applicable
-	*
-	* References:
-	* https://developer.mozilla.org/en-US/docs/Web/API/URL
-	*
-	* @param url
-	* @returns Returns the URL href without the origin
-	*/
-	function stripOrigin(url) {
-		if ((typeof window === "undefined" || typeof window.location === "undefined") && typeof url === "string") return url;
-		url = toURL(url);
-		return url.href.replace(url.origin, "");
-	}
-	/**
-	* trimTrailingSlash(path: string): string
-	*
-	* Strips the trailing slashes from a string
-	*
-	* @returns Returns the string without trailing slashes
-	*
-	* @param path
-	*/
-	const trimTrailingSlash = (path) => {
-		return (path || "").replace(/\/+$/, "");
-	};
-	const hasExternalAccountSignUpError = (signUp) => {
-		const { externalAccount } = signUp.verifications;
-		return !!externalAccount.error;
-	};
-	function isValidUrl(val) {
-		if (!val) return false;
-		try {
-			new URL(val);
-			return true;
-		} catch {
-			return false;
-		}
-	}
-	function relativeToAbsoluteUrl(url, origin) {
-		try {
-			return new URL(url);
-		} catch {
-			return new URL(url, origin);
-		}
-	}
-	const disallowedPatterns = [
-		/\0/,
-		/^\/\//,
-		/[\x00-\x1F]/
-	];
-	/**
-	* Check for potentially problematic URLs that could have been crafted to intentionally bypass the origin check. Note that the URLs passed to this
-	* function are assumed to be from an "allowed origin", so we are not executing origin-specific checks here.
-	*/
-	function isProblematicUrl(url) {
-		if (hasBannedProtocol(url)) return true;
-		for (const pattern of disallowedPatterns) if (pattern.test(url.pathname)) return true;
-		return false;
-	}
-	/**
-	* Checks if a URL uses javascript: protocol.
-	* This prevents some XSS attacks through javascript: URLs.
-	*
-	* IMPORTANT: This does not check for `data:` or other protocols which
-	* are dangerous if used for links or setting the window location.
-	*
-	* @param val - The URL to check
-	* @returns True if the URL contains a banned protocol, false otherwise
-	*/
-	function hasBannedProtocol(val) {
-		if (!isValidUrl(val)) return false;
-		const protocol = new URL(val).protocol;
-		return BANNED_URI_PROTOCOLS.some((bp) => bp === protocol);
-	}
-	const frontendApiRedirectPathsWithUserInput = ["/oauth/authorize"];
-	const frontendApiRedirectPathsNoUserInput = [
-		"/v1/verify",
-		"/v1/tickets/accept",
-		"/oauth/authorize-with-immediate-redirect",
-		"/oauth/end_session"
-	];
-	function isRedirectForFAPIInitiatedFlow(frontendApi, redirectUrl) {
-		const url = new URL(redirectUrl, DUMMY_URL_BASE);
-		const path = url.pathname;
-		const isValidFrontendRedirectPath = frontendApiRedirectPathsWithUserInput.includes(path) || frontendApiRedirectPathsNoUserInput.includes(path);
-		return frontendApi === url.host && isValidFrontendRedirectPath;
-	}
-	function requiresUserInput(redirectUrl) {
-		const url = new URL(redirectUrl, DUMMY_URL_BASE);
-		return frontendApiRedirectPathsWithUserInput.includes(url.pathname);
-	}
-	const isAllowedRedirect = (allowedRedirectOrigins, currentOrigin) => (_url) => {
-		let url = _url;
-		if (typeof url === "string") url = relativeToAbsoluteUrl(url, currentOrigin);
-		if (!allowedRedirectOrigins) return true;
-		const isSameOrigin = currentOrigin === url.origin;
-		const isAllowed = !isProblematicUrl(url) && (isSameOrigin || allowedRedirectOrigins.map((origin) => typeof origin === "string" ? globs.toRegexp(trimTrailingSlash(origin)) : origin).some((origin) => origin.test(trimTrailingSlash(url.origin))));
-		if (!isAllowed) logger.warnOnce(`Clerk: Redirect URL ${url} is not on one of the allowedRedirectOrigins, falling back to the default redirect URL.`);
-		return isAllowed;
-	};
-	function createAllowedRedirectOrigins(allowedRedirectOrigins, frontendApi, instanceType) {
-		if (Array.isArray(allowedRedirectOrigins) && !!allowedRedirectOrigins.length) return allowedRedirectOrigins;
-		const origins = [];
-		if (typeof window !== "undefined" && !!window.location) origins.push(window.location.origin);
-		origins.push(`https://${getETLDPlusOneFromFrontendApi(frontendApi)}`);
-		origins.push(`https://*.${getETLDPlusOneFromFrontendApi(frontendApi)}`);
-		if (instanceType === "development") origins.push(`https://${frontendApi}`);
-		return origins;
-	}
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/redirectUrls.ts
-	var RedirectUrls = class RedirectUrls {
-		static keys = [
-			"signInForceRedirectUrl",
-			"signInFallbackRedirectUrl",
-			"signUpForceRedirectUrl",
-			"signUpFallbackRedirectUrl",
-			"redirectUrl"
-		];
-		static preserved = ["redirectUrl"];
-		options;
-		fromOptions;
-		fromProps;
-		fromSearchParams;
-		mode;
-		constructor(options, props = {}, searchParams = {}, mode) {
-			this.options = options;
-			this.fromOptions = this.#parse(options || {});
-			this.fromProps = this.#parse(props || {});
-			this.fromSearchParams = this.#parseSearchParams(searchParams || {});
-			this.mode = mode;
-		}
-		getAfterSignInUrl() {
-			return this.#getRedirectUrl("signIn");
-		}
-		getAfterSignUpUrl() {
-			return this.#getRedirectUrl("signUp");
-		}
-		getPreservedSearchParams() {
-			return this.#toSearchParams(this.#flattenPreserved());
-		}
-		toSearchParams() {
-			return this.#toSearchParams(this.#flattenAll());
-		}
-		#toSearchParams(obj) {
-			const camelCased = Object.fromEntries(Object.entries(obj).map(([key, value]) => [camelToSnake(key), value]));
-			return new URLSearchParams(removeUndefined(camelCased));
-		}
-		#flattenPreserved() {
-			return Object.fromEntries(Object.entries({ ...this.fromSearchParams }).filter(([key]) => RedirectUrls.preserved.includes(key)));
-		}
-		#flattenAll() {
-			const signUpForceRedirectUrl = this.fromSearchParams.signUpForceRedirectUrl || this.fromProps.signUpForceRedirectUrl || this.fromOptions.signUpForceRedirectUrl;
-			const signUpFallbackRedirectUrl = this.fromSearchParams.signUpFallbackRedirectUrl || this.fromProps.signUpFallbackRedirectUrl || this.fromOptions.signUpFallbackRedirectUrl;
-			const signInForceRedirectUrl = this.fromSearchParams.signInForceRedirectUrl || this.fromProps.signInForceRedirectUrl || this.fromOptions.signInForceRedirectUrl;
-			const res = {
-				signUpForceRedirectUrl,
-				signUpFallbackRedirectUrl,
-				signInFallbackRedirectUrl: this.fromSearchParams.signInFallbackRedirectUrl || this.fromProps.signInFallbackRedirectUrl || this.fromOptions.signInFallbackRedirectUrl,
-				signInForceRedirectUrl,
-				redirectUrl: this.fromSearchParams.redirectUrl || this.fromProps.redirectUrl
-			};
-			if (signUpForceRedirectUrl) delete res.signUpFallbackRedirectUrl;
-			if (signInForceRedirectUrl) delete res.signInFallbackRedirectUrl;
-			return res;
-		}
-		#getRedirectUrl(prefix) {
-			const forceKey = `${prefix}ForceRedirectUrl`;
-			const fallbackKey = `${prefix}FallbackRedirectUrl`;
-			let result;
-			result = this.fromSearchParams[forceKey] || this.fromProps[forceKey] || this.fromOptions[forceKey];
-			result ||= this.fromSearchParams.redirectUrl;
-			result ||= this.fromSearchParams[fallbackKey] || this.fromProps[fallbackKey] || this.fromOptions[fallbackKey];
-			if (!result && this.mode === "modal") return window.location.href;
-			return result || "/";
-		}
-		#parse(obj) {
-			const res = {};
-			RedirectUrls.keys.forEach((key) => {
-				res[key] = obj[key];
-			});
-			return applyFunctionToObj(this.#filterRedirects(this.#toAbsoluteUrls(filterProps(res, Boolean))), (val) => val.toString());
-		}
-		#parseSearchParams(obj) {
-			const res = {};
-			RedirectUrls.keys.forEach((key) => {
-				if (obj instanceof URLSearchParams) res[key] = obj.get(camelToSnake(key));
-				else res[key] = obj[camelToSnake(key)];
-			});
-			return applyFunctionToObj(this.#filterRedirects(this.#toAbsoluteUrls(filterProps(res, Boolean))), (val) => val.toString());
-		}
-		#toAbsoluteUrls(obj) {
-			return applyFunctionToObj(obj, (url) => relativeToAbsoluteUrl(url, window.location.origin));
-		}
-		#filterRedirects = (obj) => {
-			return filterProps(obj, isAllowedRedirect(this.options?.allowedRedirectOrigins, window.location.origin));
-		};
-	};
-	//#endregion
-	//#region ../shared/src/netlifyCacheHandler.ts
-	/**
-	* Cache busting parameter for Netlify to prevent cached responses
-	* during handshake flows with Clerk development instances.
-	*
-	* Note: This query parameter will be removed in the "@clerk/clerk-js" package.
+	* A ES6 compatible utility that implements `Promise.allSettled`
 	*
 	* @internal
 	*/
-	const CLERK_NETLIFY_CACHE_BUST_PARAM = "__clerk_netlify_cache_bust";
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/queryParams.ts
-	const _ClerkQueryParams = [
-		"__clerk_status",
-		"__clerk_created_session",
-		"__clerk_invitation_token",
-		"__clerk_ticket",
-		"__clerk_modal_state",
-		"__clerk_handshake",
-		"__clerk_handshake_nonce",
-		"__clerk_help",
-		CLERK_NETLIFY_CACHE_BUST_PARAM,
-		CLERK_SYNCED,
-		CLERK_SATELLITE_URL,
-		CLERK_SUFFIXED_COOKIES
-	];
-	/**
-	*
-	*/
-	function getClerkQueryParam(param) {
-		const val = new URL(window.location.href).searchParams.get(param);
-		return val ? val : null;
+	function allSettled(iterable) {
+		const promises = Array.from(iterable).map((p) => p.then((value) => ({
+			status: "fulfilled",
+			value
+		}), (reason) => ({
+			status: "rejected",
+			reason
+		})));
+		return Promise.all(promises);
 	}
-	/**
-	*
-	*/
-	function removeClerkQueryParam(param) {
-		const url = new URL(window.location.href);
-		if (url.searchParams.has(param)) {
-			url.searchParams.delete(param);
-			window.history.replaceState(window.history.state, "", url);
-		}
-	}
-	/**
-	* Extracts and forwards Clerk query parameters from the current URL to a new URLSearchParams object.
-	* This is useful when navigating between pages while preserving Clerk-specific query parameters.
-	*
-	* @param params - Optional URLSearchParams object to add the parameters to. If not provided, a new one will be created.
-	* @returns A URLSearchParams object containing the forwarded Clerk parameters
-	*/
-	function forwardClerkQueryParams(params) {
-		const currentSearchParams = new URLSearchParams(window.location.search);
-		const newParams = params || new URLSearchParams();
-		for (const param of _ClerkQueryParams) {
-			const value = currentSearchParams.get(param);
-			if (value) newParams.set(param, value);
-		}
-		return newParams;
-	}
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/sessionTasks.ts
-	/**
-	* @internal
-	*/
-	const INTERNAL_SESSION_TASK_ROUTE_BY_KEY = {
-		"choose-organization": "choose-organization",
-		"reset-password": "reset-password",
-		"setup-mfa": "setup-mfa"
-	};
-	/**
-	* @internal
-	*/
-	const getTaskEndpoint = (task) => `/tasks/${INTERNAL_SESSION_TASK_ROUTE_BY_KEY[task.key]}`;
-	/**
-	* @internal
-	*/
-	function buildTaskUrl(task, opts) {
-		const params = forwardClerkQueryParams();
-		return buildURL({
-			base: opts.base,
-			hashPath: getTaskEndpoint(task),
-			searchParams: params
-		}, { stringify: true });
-	}
-	/**
-	* @internal
-	*/
-	function navigateIfTaskExists(session, { navigate, baseUrl }) {
-		const currentTask = session.currentTask;
-		if (!currentTask) return;
-		return navigate(buildTaskUrl(currentTask, { base: baseUrl }));
-	}
-	function warnMissingPendingTaskHandlers(options) {
-		const taskOptions = ["taskUrls", "navigate"];
-		if (Object.keys(options).some((option) => taskOptions.includes(option))) return;
-		logger.warnOnce(`Clerk: Session has pending tasks but no handling is configured. To handle pending tasks, provide either "taskUrls" for navigation to custom URLs or "navigate" for programmatic navigation. Without these options, users may get stuck on incomplete flows.`);
-	}
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/warnings.ts
-	const formatWarning = (msg) => {
-		return `🔒 Clerk:\n${msg.trim()}\n(This notice only appears in development)`;
-	};
-	const createMessageForDisabledOrganizations = (componentName) => {
-		return formatWarning(`The <${componentName}/> cannot be rendered when the feature is turned off. Visit 'dashboard.clerk.com' to enable the feature. Since the feature is turned off, this is no-op.`);
-	};
-	const createCannotRenderComponentWhenOrgDoesNotExist = (componentName) => {
-		return formatWarning(`<${componentName}/> cannot render unless an organization is active. Since no organization is currently active, this is no-op.`);
-	};
-	const createCannotRenderComponentWhenPermissionIsMissing = (componentName, permission) => {
-		return formatWarning(`<${componentName}/> cannot render unless the current user has the \`${permission}\` permission. Since the current user is missing this permission, this is no-op. Render it only for members who can manage memberships, for example by wrapping it in <Show when={{ permission: '${permission}' }}>.`);
-	};
-	const createMessageForDisabledBilling = (componentName) => {
-		return formatWarning(`The <${componentName}/> component cannot be rendered when billing is disabled. Visit 'https://dashboard.clerk.com/~/billing/settings' to follow the necessary steps to enable billing. Since billing is disabled, this is no-op.`);
-	};
-	const propertyAsFunctionNotSupported = (property) => {
-		return formatWarning(`${property} as a function is not supported in this environment. The value will be ignored. Provide an absolute URL instead.`);
-	};
-	const warnings = {
-		proxyUrlAsFunctionNotSupported: propertyAsFunctionNotSupported("proxyUrl"),
-		domainAsFunctionNotSupported: propertyAsFunctionNotSupported("domain"),
-		cannotRenderComponentWhenSessionExists: "The <SignUp/> and <SignIn/> components cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the Home URL instead.",
-		cannotRenderSignUpComponentWhenSessionExists: "The <SignUp/> component cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the value set in `afterSignUp` URL instead.",
-		cannotRenderSignUpComponentWhenTaskExists: "The <SignUp/> component cannot render when a user has a pending task, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the task instead.",
-		cannotRenderComponentWhenTaskDoesNotExist: "<TaskChooseOrganization/> cannot render unless a session task is pending. Clerk is redirecting to the value set in `redirectUrlComplete` instead.",
-		cannotRenderSignInComponentWhenSessionExists: "The <SignIn/> component cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the `afterSignIn` URL instead.",
-		cannotRenderSignInComponentWhenTaskExists: "The <SignIn/> component cannot render when a user has a pending task, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the task instead.",
-		cannotRenderComponentWhenUserDoesNotExist: "<UserProfile/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
-		createCannotRenderComponentWhenOrgDoesNotExist,
-		createCannotRenderComponentWhenPermissionIsMissing,
-		cannotRenderAnyOrganizationComponent: createMessageForDisabledOrganizations,
-		cannotRenderAnyBillingComponent: createMessageForDisabledBilling,
-		cannotOpenUserProfile: "The UserProfile modal cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
-		cannotOpenCheckout: "The Checkout drawer cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
-		cannotOpenSignInOrSignUp: "The <SignIn/> and <SignUp/> modals are hidden because a user is already signed in and this application is configured for single-session mode. This is expected behavior — no action is needed. To allow rendering while signed in, enable multi-session mode in your Clerk Dashboard.",
-		cannotRenderAPIKeysComponent: "The <APIKeys/> component cannot be rendered when API keys is disabled. Since API keys is disabled, this is no-op.",
-		cannotRenderAPIKeysComponentForOrgWhenUnauthorized: "The <APIKeys/> component cannot be rendered for an organization unless a user has the required permissions. Since the user does not have the necessary permissions, this is no-op.",
-		cannotRenderAPIKeysComponentForUserWhenDisabled: "The <APIKeys/> component cannot be rendered when user API keys are disabled. Since user API keys are disabled, this is no-op.",
-		cannotRenderAPIKeysComponentForOrgWhenDisabled: "The <APIKeys/> component cannot be rendered when organization API keys are disabled. Since organization API keys are disabled, this is no-op.",
-		cannotRenderOAuthConsentComponentWhenUserDoesNotExist: "<OAuthConsent/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
-		cannotRenderOAuthDeviceVerificationComponentWhenUserDoesNotExist: "<OAuthDeviceVerification/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
-		cannotRenderConfigureSSOComponentWhenUserDoesNotExist: "<ConfigureSSO/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
-		cannotRenderConfigureSSOComponentWhenDisabled: "The <ConfigureSSO/> component cannot be rendered when self-serve SSO is disabled. Visit `https://dashboard.clerk.com` to enable the feature. Since self-serve SSO is disabled, this is no-op.",
-		cannotRenderConfigureSSOComponentWhenEmailAddressDisabled: "The <ConfigureSSO/> component cannot be rendered when email addresses are disabled on the instance. Visit `https://dashboard.clerk.com` to enable email addresses. Since email addresses are disabled, this is no-op."
-	};
-	for (const key of Object.keys(warnings)) {
-		const item = warnings[key];
-		if (typeof item !== "function") warnings[key] = formatWarning(item);
-	}
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/windowNavigate.ts
-	const CLERK_BEFORE_UNLOAD_EVENT = "clerk:beforeunload";
-	/**
-	* Additional protocols can be provided using the `allowedRedirectProtocols` Clerk option.
-	*/
-	const ALLOWED_PROTOCOLS = [
-		"http:",
-		"https:",
-		"wails:",
-		"chrome-extension:"
-	];
-	const SCHEME_RELATIVE_PREFIX = /^[/\\][/\\]/;
-	/**
-	* Normalizes a string the same way the WHATWG URL parser does before it parses: strip leading C0
-	* control and space characters, then remove ASCII tab/LF/CR from anywhere. Without this, inputs
-	* like `/\t/evil.com` or `\x00//evil.com` slip past the scheme-relative check yet still resolve
-	* scheme-relative (inheriting the base's allowlisted scheme) and redirect cross-origin.
-	*/
-	function stripUrlParserIgnoredChars(to) {
-		let start = 0;
-		while (start < to.length && to.charCodeAt(start) <= 32) start++;
-		let result = "";
-		for (let i = start; i < to.length; i++) {
-			const code = to.charCodeAt(i);
-			if (code !== 9 && code !== 10 && code !== 13) result += to[i];
-		}
-		return result;
-	}
-	/**
-	* Helper utility to navigate via window.location.href. Also dispatches a clerk:beforeunload custom event.
-	*
-	* Navigations whose protocol is not in the allowlist (e.g. `javascript:`, `data:`) are aborted.
-	* Scheme-relative inputs (`//host`, `\\host`) are also rejected: they adopt the base URL's scheme,
-	* which is always in the allowlist, so they would otherwise pass the protocol check while
-	* redirecting cross-origin.
-	*
-	* Callers that have already validated against an extended allowlist should pass it via
-	* `options.allowedProtocols` so legitimate custom protocols (Wails, Tauri, etc.) are honored.
-	*
-	* @deprecated Use `clerk.__internal_windowNavigate` instead. It honors the customer-supplied
-	* `allowedRedirectProtocols` option by default, so internal call sites can't accidentally
-	* bypass it by forgetting to pass `options.allowedProtocols`. The bare export will be removed
-	* in the next major version.
-	*/
-	function windowNavigate(to, options) {
-		if (typeof to === "string" && SCHEME_RELATIVE_PREFIX.test(stripUrlParserIgnoredChars(to))) {
-			console.warn(`Clerk: scheme-relative navigation to "${to}" is not allowed. Provide a same-origin path or an absolute URL.`);
-			return;
-		}
-		const toURL = new URL(to, window.location.href);
-		if (!(options?.allowedProtocols ?? ALLOWED_PROTOCOLS).includes(toURL.protocol)) {
-			console.warn(`Clerk: "${toURL.protocol}" is not a valid navigation protocol. Aborting navigation. If you think this is a mistake, please open an issue.`);
-			return;
-		}
-		window.dispatchEvent(new CustomEvent(CLERK_BEFORE_UNLOAD_EVENT));
-		window.location.href = toURL.href;
-	}
-	//#endregion
-	//#region ../shared/src/proxy.ts
-	/**
-	*
-	*/
-	function isValidProxyUrl(key) {
-		if (!key) return true;
-		return isHttpOrHttps(key) || isProxyUrlRelative(key);
-	}
-	/**
-	*
-	*/
-	function isHttpOrHttps(key) {
-		return /^http(s)?:\/\//.test(key || "");
-	}
-	/**
-	*
-	*/
-	function isProxyUrlRelative(key) {
-		return key.startsWith("/");
-	}
-	/**
-	*
-	*/
-	function proxyUrlToAbsoluteURL(url) {
-		if (!url) return "";
-		if (!isProxyUrlRelative(url)) return url;
-		if (typeof window === "undefined" || !window.location?.origin) return url;
-		return new URL(url, window.location.origin).toString();
-	}
-	const AUTO_PROXY_HOST_SUFFIXES = [".vercel.app"];
-	const AUTO_PROXY_PATH = "/__clerk";
-	function shouldAutoProxy(hostname) {
-		return AUTO_PROXY_HOST_SUFFIXES.some((hostSuffix) => hostname?.endsWith(hostSuffix)) ?? false;
-	}
+	var init_allSettled = __esmMin(() => {});
 	//#endregion
 	//#region ../shared/src/utils/runtimeEnvironment.ts
 	var automatedEnvironmentVariables, isProductionEnvironment;
@@ -6402,561 +5562,6 @@ isDevOrStagingUrl: (url) => {
 			return false;
 		};
 	});
-	//#endregion
-	//#region ../shared/src/telemetry/notice.ts
-	/**
-	* One-time runtime disclosure that Clerk collects telemetry from development instances.
-	*
-	* Replaces the previous `postinstall` script. Disclosure is intentionally surfaced
-	* only on Node (server-side) so the noise profile matches the original postinstall
-	* (terminal-only, dev-eyes-only). Browser consoles are not used because they are
-	* frequently observed by non-developers (QA, screenshots, demos), and adding another
-	* console warning is a common source of customer complaints.
-	*
-	* Known gap: pure browser-only setups with no server-side Clerk runtime (e.g. a Vite
-	* SPA using `@clerk/clerk-react` or `@clerk/clerk-js` directly, without any Node/Edge
-	* backend that imports `@clerk/shared`) will never hit this code path and therefore
-	* see no in-band disclosure. This is an accepted trade-off: the original postinstall
-	* already fired only once at install time and was easily missed, so the practical
-	* delta is small. Authoritative disclosure for those setups lives in the Clerk
-	* telemetry docs (https://clerk.com/docs/telemetry). Opt-out continues to work the
-	* same way (`telemetry={false}` on `<ClerkProvider>` or the framework-specific
-	* `*_CLERK_TELEMETRY_DISABLED` env var).
-	*
-	* Persistence is in-process via a `globalThis` Symbol, which survives Next.js HMR
-	* module reloads. No filesystem access, no `node:` imports, no dynamic-code APIs, so
-	* the module remains safe to bundle for Edge Runtime, Workers, and any browser path.
-	*
-	* All work is wrapped in try/catch. Failure to display the notice must never affect
-	* the SDK.
-	*/
-	init_runtimeEnvironment();
-	const PROCESS_FLAG = Symbol.for("@clerk/shared.telemetryNoticeShown");
-	const NOTICE_LINES = [
-		"Attention: Clerk collects telemetry data from its SDKs when connected to development instances.",
-		"The data collected is used to inform Clerk's product roadmap.",
-		"To learn more, including how to opt-out from the telemetry program, visit: https://clerk.com/docs/telemetry."
-	];
-	function isServerRuntime() {
-		if (typeof window !== "undefined") return false;
-		if (typeof globalThis.EdgeRuntime !== "undefined") return false;
-		return true;
-	}
-	function isCI() {
-		if (typeof process === "undefined" || !process.env) return false;
-		return automatedEnvironmentVariables.some((name) => isTruthy(process.env[name]));
-	}
-	function hasSeen() {
-		return Boolean(globalThis[PROCESS_FLAG]);
-	}
-	function markSeen() {
-		globalThis[PROCESS_FLAG] = true;
-	}
-	function printNotice() {
-		if (typeof console === "undefined" || typeof console.log !== "function") return;
-		for (const line of NOTICE_LINES) console.log(line);
-		console.log("");
-	}
-	/**
-	* Display the one-time telemetry disclosure on server runtimes if it has not already been
-	* shown in this process. Browser and Edge Runtime callers are silently skipped. Never throws.
-	*/
-	function maybeShowTelemetryNotice(options = {}) {
-		if (options.skip) return;
-		try {
-			if (!isServerRuntime()) return;
-			if (isCI()) return;
-			if (hasSeen()) return;
-			printNotice();
-			markSeen();
-		} catch {}
-	}
-	//#endregion
-	//#region ../shared/src/telemetry/throttler.ts
-	const DEFAULT_CACHE_TTL_MS = 864e5;
-	/**
-	* Manages throttling for telemetry events using a configurable cache implementation
-	* to mitigate event flooding in frequently executed code paths.
-	*/
-	var TelemetryEventThrottler = class {
-		#cache;
-		#cacheTtl = DEFAULT_CACHE_TTL_MS;
-		constructor(cache) {
-			this.#cache = cache;
-		}
-		isEventThrottled(payload) {
-			const now = Date.now();
-			const key = this.#generateKey(payload);
-			const entry = this.#cache.getItem(key);
-			if (!entry) {
-				this.#cache.setItem(key, now);
-				return false;
-			}
-			if (now - entry > this.#cacheTtl) {
-				this.#cache.setItem(key, now);
-				return false;
-			}
-			return true;
-		}
-		/**
-		* Generates a consistent unique key for telemetry events by sorting payload properties.
-		* This ensures that payloads with identical content in different orders produce the same key.
-		*/
-		#generateKey(event) {
-			const { sk: _sk, pk: _pk, payload, ...rest } = event;
-			const sanitizedEvent = {
-				...payload,
-				...rest
-			};
-			return JSON.stringify(Object.keys({
-				...payload,
-				...rest
-			}).sort().map((key) => sanitizedEvent[key]));
-		}
-	};
-	/**
-	* LocalStorage-based cache implementation for browser environments.
-	*/
-	var LocalStorageThrottlerCache = class {
-		#storageKey = "clerk_telemetry_throttler";
-		getItem(key) {
-			return this.#getCache()[key];
-		}
-		setItem(key, value) {
-			try {
-				const cache = this.#getCache();
-				cache[key] = value;
-				localStorage.setItem(this.#storageKey, JSON.stringify(cache));
-			} catch (err) {
-				if (err instanceof DOMException && (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") && localStorage.length > 0) localStorage.removeItem(this.#storageKey);
-			}
-		}
-		removeItem(key) {
-			try {
-				const cache = this.#getCache();
-				delete cache[key];
-				localStorage.setItem(this.#storageKey, JSON.stringify(cache));
-			} catch {}
-		}
-		#getCache() {
-			try {
-				const cacheString = localStorage.getItem(this.#storageKey);
-				if (!cacheString) return {};
-				return JSON.parse(cacheString);
-			} catch {
-				return {};
-			}
-		}
-		static isSupported() {
-			return typeof window !== "undefined" && !!window.localStorage;
-		}
-	};
-	/**
-	* In-memory cache implementation for non-browser environments (e.g., React Native).
-	*/
-	var InMemoryThrottlerCache = class {
-		#cache = /* @__PURE__ */ new Map();
-		#maxSize = 1e4;
-		getItem(key) {
-			if (this.#cache.size > this.#maxSize) {
-				this.#cache.clear();
-				return;
-			}
-			return this.#cache.get(key);
-		}
-		setItem(key, value) {
-			this.#cache.set(key, value);
-		}
-		removeItem(key) {
-			this.#cache.delete(key);
-		}
-	};
-	//#endregion
-	//#region ../shared/src/telemetry/collector.ts
-	/**
-	* The `TelemetryCollector` class handles collection of telemetry events from Clerk SDKs. Telemetry is opt-out and can be disabled by setting a CLERK_TELEMETRY_DISABLED environment variable.
-	* The `ClerkProvider` also accepts a `telemetry` prop that will be passed to the collector during initialization:.
-	*
-	* ```jsx
-	* <ClerkProvider telemetry={false}>
-	*    ...
-	* </ClerkProvider>
-	* ```
-	*
-	* For more information, please see the telemetry documentation page: https://clerk.com/docs/telemetry.
-	*/
-	/**
-	* Type guard to check if window.Clerk exists and has the expected structure.
-	*/
-	function isWindowClerkWithMetadata(clerk) {
-		return typeof clerk === "object" && clerk !== null && "constructor" in clerk && typeof clerk.constructor === "function";
-	}
-	const VALID_LOG_LEVELS = new Set([
-		"error",
-		"warn",
-		"info",
-		"debug",
-		"trace"
-	]);
-	const DEFAULT_CONFIG = {
-		samplingRate: 1,
-		maxBufferSize: 5,
-		endpoint: "https://clerk-telemetry.com"
-	};
-	var TelemetryCollector = class {
-		#config;
-		#eventThrottler;
-		#metadata = {};
-		#buffer = [];
-		#pendingFlush = null;
-		constructor(options) {
-			this.#config = {
-				maxBufferSize: options.maxBufferSize ?? DEFAULT_CONFIG.maxBufferSize,
-				samplingRate: options.samplingRate ?? DEFAULT_CONFIG.samplingRate,
-				perEventSampling: options.perEventSampling ?? true,
-				disabled: options.disabled ?? false,
-				debug: options.debug ?? false,
-				endpoint: DEFAULT_CONFIG.endpoint
-			};
-			if (!options.clerkVersion && typeof window === "undefined") this.#metadata.clerkVersion = "";
-			else this.#metadata.clerkVersion = options.clerkVersion ?? "";
-			this.#metadata.sdk = options.sdk;
-			this.#metadata.sdkVersion = options.sdkVersion;
-			this.#metadata.publishableKey = options.publishableKey ?? "";
-			const parsedKey = parsePublishableKey(options.publishableKey);
-			if (parsedKey) this.#metadata.instanceType = parsedKey.instanceType;
-			if (options.secretKey) this.#metadata.secretKey = options.secretKey.substring(0, 16);
-			const cache = LocalStorageThrottlerCache.isSupported() ? new LocalStorageThrottlerCache() : new InMemoryThrottlerCache();
-			this.#eventThrottler = new TelemetryEventThrottler(cache);
-			maybeShowTelemetryNotice({ skip: !this.isEnabled });
-		}
-		get isEnabled() {
-			if (this.#metadata.instanceType !== "development") return false;
-			if (this.#config.disabled || typeof process !== "undefined" && process.env && isTruthy(process.env.CLERK_TELEMETRY_DISABLED)) return false;
-			if (typeof window !== "undefined" && !!window?.navigator?.webdriver) return false;
-			return true;
-		}
-		get isDebug() {
-			return this.#config.debug || typeof process !== "undefined" && process.env && isTruthy(process.env.CLERK_TELEMETRY_DEBUG);
-		}
-		record(event) {
-			try {
-				const preparedPayload = this.#preparePayload(event.event, event.payload);
-				this.#logEvent(preparedPayload.event, preparedPayload);
-				if (!this.#shouldRecord(preparedPayload, event.eventSamplingRate)) return;
-				this.#buffer.push({
-					kind: "event",
-					value: preparedPayload
-				});
-				this.#scheduleFlush();
-			} catch (error) {
-				console.error("[clerk/telemetry] Error recording telemetry event", error);
-			}
-		}
-		/**
-		* Records a telemetry log entry if logging is enabled and not in debug mode.
-		*
-		* @param entry - The telemetry log entry to record.
-		*/
-		recordLog(entry) {
-			try {
-				if (!this.#shouldRecordLog(entry)) return;
-				const levelIsValid = typeof entry?.level === "string" && VALID_LOG_LEVELS.has(entry.level);
-				const messageIsValid = typeof entry?.message === "string" && entry.message.trim().length > 0;
-				let normalizedTimestamp = null;
-				const timestampInput = entry?.timestamp;
-				if (typeof timestampInput === "number" || typeof timestampInput === "string") {
-					const candidate = new Date(timestampInput);
-					if (!Number.isNaN(candidate.getTime())) normalizedTimestamp = candidate;
-				}
-				if (!levelIsValid || !messageIsValid || normalizedTimestamp === null) {
-					if (this.isDebug && typeof console !== "undefined") console.warn("[clerk/telemetry] Dropping invalid telemetry log entry", {
-						levelIsValid,
-						messageIsValid,
-						timestampIsValid: normalizedTimestamp !== null
-					});
-					return;
-				}
-				const sdkMetadata = this.#getSDKMetadata();
-				const logData = {
-					sdk: sdkMetadata.name,
-					sdkv: sdkMetadata.version,
-					cv: this.#metadata.clerkVersion ?? "",
-					lvl: entry.level,
-					msg: entry.message,
-					ts: normalizedTimestamp.toISOString(),
-					pk: this.#metadata.publishableKey || null,
-					payload: this.#sanitizeContext(entry.context)
-				};
-				this.#buffer.push({
-					kind: "log",
-					value: logData
-				});
-				this.#scheduleFlush();
-			} catch (error) {
-				console.error("[clerk/telemetry] Error recording telemetry log entry", error);
-			}
-		}
-		#shouldRecord(preparedPayload, eventSamplingRate) {
-			return this.isEnabled && !this.isDebug && this.#shouldBeSampled(preparedPayload, eventSamplingRate);
-		}
-		#shouldRecordLog(_entry) {
-			return true;
-		}
-		#shouldBeSampled(preparedPayload, eventSamplingRate) {
-			const randomSeed = Math.random();
-			if (!(randomSeed <= this.#config.samplingRate && (this.#config.perEventSampling === false || typeof eventSamplingRate === "undefined" || randomSeed <= eventSamplingRate))) return false;
-			return !this.#eventThrottler.isEventThrottled(preparedPayload);
-		}
-		#scheduleFlush() {
-			if (typeof window === "undefined") {
-				this.#flush();
-				return;
-			}
-			if (this.#buffer.length >= this.#config.maxBufferSize) {
-				if (this.#pendingFlush) if (typeof cancelIdleCallback !== "undefined") cancelIdleCallback(Number(this.#pendingFlush));
-				else clearTimeout(Number(this.#pendingFlush));
-				this.#flush();
-				return;
-			}
-			if (this.#pendingFlush) return;
-			if ("requestIdleCallback" in window) this.#pendingFlush = requestIdleCallback(() => {
-				this.#flush();
-				this.#pendingFlush = null;
-			});
-			else this.#pendingFlush = setTimeout(() => {
-				this.#flush();
-				this.#pendingFlush = null;
-			}, 0);
-		}
-		#flush() {
-			const itemsToSend = [...this.#buffer];
-			this.#buffer = [];
-			this.#pendingFlush = null;
-			if (itemsToSend.length === 0) return;
-			const eventsToSend = itemsToSend.filter((item) => item.kind === "event").map((item) => item.value);
-			const logsToSend = itemsToSend.filter((item) => item.kind === "log").map((item) => item.value);
-			if (eventsToSend.length > 0) {
-				const eventsUrl = new URL("/v1/event", this.#config.endpoint);
-				fetch(eventsUrl, {
-					headers: { "Content-Type": "application/json" },
-					keepalive: true,
-					method: "POST",
-					body: JSON.stringify({ events: eventsToSend })
-				}).catch(() => void 0);
-			}
-			if (logsToSend.length > 0) {
-				const logsUrl = new URL("/v1/logs", this.#config.endpoint);
-				fetch(logsUrl, {
-					headers: { "Content-Type": "application/json" },
-					keepalive: true,
-					method: "POST",
-					body: JSON.stringify({ logs: logsToSend })
-				}).catch(() => void 0);
-			}
-		}
-		/**
-		* If running in debug mode, log the event and its payload to the console.
-		*/
-		#logEvent(event, payload) {
-			if (!this.isDebug) return;
-			if (typeof console.groupCollapsed !== "undefined") {
-				console.groupCollapsed("[clerk/telemetry]", event);
-				console.log(payload);
-				console.groupEnd();
-			} else console.log("[clerk/telemetry]", event, payload);
-		}
-		/**
-		* If in browser, attempt to lazily grab the SDK metadata from the Clerk singleton, otherwise fallback to the initially passed in values.
-		*
-		* This is necessary because the sdkMetadata can be set by the host SDK after the TelemetryCollector is instantiated.
-		*/
-		#getSDKMetadata() {
-			const sdkMetadata = {
-				name: this.#metadata.sdk,
-				version: this.#metadata.sdkVersion
-			};
-			if (typeof window !== "undefined") {
-				const windowWithClerk = window;
-				if (windowWithClerk.Clerk) {
-					const windowClerk = windowWithClerk.Clerk;
-					if (isWindowClerkWithMetadata(windowClerk) && windowClerk.constructor.sdkMetadata) {
-						const { name, version } = windowClerk.constructor.sdkMetadata;
-						if (name !== void 0) sdkMetadata.name = name;
-						if (version !== void 0) sdkMetadata.version = version;
-					}
-				}
-			}
-			return sdkMetadata;
-		}
-		/**
-		* Append relevant metadata from the Clerk singleton to the event payload.
-		*/
-		#preparePayload(event, payload) {
-			const sdkMetadata = this.#getSDKMetadata();
-			return {
-				event,
-				cv: this.#metadata.clerkVersion ?? "",
-				it: this.#metadata.instanceType ?? "",
-				sdk: sdkMetadata.name,
-				sdkv: sdkMetadata.version,
-				...this.#metadata.publishableKey ? { pk: this.#metadata.publishableKey } : {},
-				...this.#metadata.secretKey ? { sk: this.#metadata.secretKey } : {},
-				payload
-			};
-		}
-		/**
-		* Best-effort sanitization of the context payload. Returns a plain object with JSON-serializable
-		* values or null when the input is missing or not serializable. Arrays are not accepted.
-		*/
-		#sanitizeContext(context) {
-			if (context === null || typeof context === "undefined") return null;
-			if (typeof context !== "object") return null;
-			try {
-				const cleaned = JSON.parse(JSON.stringify(context));
-				if (cleaned && typeof cleaned === "object" && !Array.isArray(cleaned)) return cleaned;
-				return null;
-			} catch {
-				return null;
-			}
-		}
-	};
-	//#endregion
-	//#region ../shared/src/telemetry/events/component-mounted.ts
-	const EVENT_COMPONENT_MOUNTED = "COMPONENT_MOUNTED";
-	const EVENT_COMPONENT_OPENED = "COMPONENT_OPENED";
-	const EVENT_SAMPLING_RATE$1 = .1;
-	/** Increase sampling for high-signal auth components on mount. */
-	const AUTH_COMPONENTS = new Set(["SignIn", "SignUp"]);
-	/**
-	* Returns the per-event sampling rate for component-mounted telemetry events.
-	* Uses a higher rate for SignIn/SignUp to improve signal quality.
-	*
-	*  @internal
-	*/
-	function getComponentMountedSamplingRate(component) {
-		return AUTH_COMPONENTS.has(component) ? 1 : EVENT_SAMPLING_RATE$1;
-	}
-	/**
-	* Factory for prebuilt component telemetry events.
-	*
-	* @internal
-	*/
-	function createPrebuiltComponentEvent(event) {
-		return function(component, props, additionalPayload) {
-			return {
-				event,
-				eventSamplingRate: event === EVENT_COMPONENT_MOUNTED ? getComponentMountedSamplingRate(component) : EVENT_SAMPLING_RATE$1,
-				payload: {
-					component,
-					appearanceProp: Boolean(props?.appearance),
-					theme: Boolean(props?.appearance?.theme),
-					elements: Boolean(props?.appearance?.elements),
-					variables: Boolean(props?.appearance?.variables),
-					...additionalPayload
-				}
-			};
-		};
-	}
-	/**
-	* Helper function for `telemetry.record()`. Create a consistent event object for when a prebuilt (AIO) component is mounted.
-	*
-	* @param component - The name of the component.
-	* @param props - The props passed to the component. Will be filtered to a known list of props.
-	* @param additionalPayload - Additional data to send with the event.
-	* @example
-	* telemetry.record(eventPrebuiltComponentMounted('SignUp', props));
-	*/
-	function eventPrebuiltComponentMounted(component, props, additionalPayload) {
-		return createPrebuiltComponentEvent(EVENT_COMPONENT_MOUNTED)(component, props, additionalPayload);
-	}
-	/**
-	* Helper function for `telemetry.record()`. Create a consistent event object for when a prebuilt (AIO) component is opened as a modal.
-	*
-	* @param component - The name of the component.
-	* @param props - The props passed to the component. Will be filtered to a known list of props.
-	* @param additionalPayload - Additional data to send with the event.
-	* @example
-	* telemetry.record(eventPrebuiltComponentOpened('GoogleOneTap', props));
-	*/
-	function eventPrebuiltComponentOpened(component, props, additionalPayload) {
-		return createPrebuiltComponentEvent(EVENT_COMPONENT_OPENED)(component, props, additionalPayload);
-	}
-	//#endregion
-	//#region ../shared/src/telemetry/events/theme-usage.ts
-	const EVENT_THEME_USAGE = "THEME_USAGE";
-	/**
-	* Helper function for `telemetry.record()`. Create a consistent event object for tracking theme usage in ClerkProvider.
-	*
-	* @param appearance - The appearance prop from ClerkProvider.
-	* @example
-	* telemetry.record(eventThemeUsage(appearance));
-	*/
-	function eventThemeUsage(appearance) {
-		return {
-			event: EVENT_THEME_USAGE,
-			eventSamplingRate: 1,
-			payload: analyzeThemeUsage(appearance)
-		};
-	}
-	/**
-	* Analyzes the appearance prop to extract theme usage information for telemetry.
-	*
-	* @internal
-	*/
-	function analyzeThemeUsage(appearance) {
-		if (!appearance || typeof appearance !== "object") return {};
-		const themeProperty = appearance.theme;
-		if (!themeProperty) return {};
-		let themeName;
-		if (Array.isArray(themeProperty)) for (const theme of themeProperty) {
-			const name = extractThemeName(theme);
-			if (name) {
-				themeName = name;
-				break;
-			}
-		}
-		else themeName = extractThemeName(themeProperty);
-		return { themeName };
-	}
-	/**
-	* Extracts the theme name from a theme object.
-	*
-	* @internal
-	*/
-	function extractThemeName(theme) {
-		if (typeof theme === "string") return theme;
-		if (typeof theme === "object" && theme !== null) {
-			if ("name" in theme && typeof theme.name === "string") return theme.name;
-		}
-	}
-	//#endregion
-	//#region ../shared/src/utils/noop.ts
-	var noop$1;
-	var init_noop = __esmMin(() => {
-		noop$1 = (..._args) => {};
-	});
-	//#endregion
-	//#region ../shared/src/utils/createDeferredPromise.ts
-	var init_createDeferredPromise = __esmMin(() => {});
-	//#endregion
-	//#region ../shared/src/utils/allSettled.ts
-	/**
-	* A ES6 compatible utility that implements `Promise.allSettled`
-	*
-	* @internal
-	*/
-	function allSettled(iterable) {
-		const promises = Array.from(iterable).map((p) => p.then((value) => ({
-			status: "fulfilled",
-			value
-		}), (reason) => ({
-			status: "rejected",
-			reason
-		})));
-		return Promise.all(promises);
-	}
-	var init_allSettled = __esmMin(() => {});
 	//#endregion
 	//#region ../shared/src/utils/handleValueOrFn.ts
 	/**
@@ -7474,15 +6079,1350 @@ isDevOrStagingUrl: (url) => {
 		}
 	};
 	//#endregion
-	//#region src/moduleManager.ts
-	var ModuleManager = class {
-		async import(module) {
-			throw Object.assign(/* @__PURE__ */ new Error("This module requires an unavailable platform capability."), {
-				code: "capability_unavailable",
-				capability: module
+	//#region ../shared/src/internal/clerk-js/errors.ts
+	const errorPrefix = "ClerkJS:";
+	/**
+	*
+	*/
+	function clerkNetworkError(url, e) {
+		throw new Error(`${errorPrefix} Network error at "${url}" - ${e}. Please try again.`);
+	}
+	/**
+	*
+	*/
+	function clerkErrorInitFailed() {
+		throw new Error(`${errorPrefix} Something went wrong initializing Clerk.`);
+	}
+	/**
+	*
+	*/
+	function clerkErrorDevInitFailed(msg = "") {
+		throw new Error(`${errorPrefix} Something went wrong initializing Clerk in development mode.${msg && ` ${msg}`}`);
+	}
+	/**
+	*
+	*/
+	function clerkMissingFapiClientInResources() {
+		throw new Error(`${errorPrefix} Missing FAPI client in resources.`);
+	}
+	/**
+	*
+	*/
+	function clerkOAuthCallbackDidNotCompleteSignInSignUp(type) {
+		throw new Error(`${errorPrefix} Something went wrong initializing Clerk during the ${type} flow. Please contact support.`);
+	}
+	/**
+	*
+	*/
+	function clerkVerifyEmailAddressCalledBeforeCreate(type) {
+		throw new Error(`${errorPrefix} You need to start a ${type} flow by calling ${type}.create() first.`);
+	}
+	/**
+	*
+	*/
+	function clerkInvalidStrategy(functionaName, strategy) {
+		throw new Error(`${errorPrefix} Strategy "${strategy}" is not a valid strategy for ${functionaName}.`);
+	}
+	/**
+	*
+	*/
+	function clerkVerifyWeb3WalletCalledBeforeCreate(type) {
+		throw new Error(`${errorPrefix} You need to start a ${type} flow by calling ${type}.create({ identifier: 'your web3 wallet address' }) first`);
+	}
+	/**
+	*
+	*/
+	function clerkVerifyPasskeyCalledBeforeCreate() {
+		throw new Error(`${errorPrefix} You need to start a SignIn flow by calling SignIn.create({ strategy: 'passkey' }) first`);
+	}
+	/**
+	*
+	*/
+	function clerkMissingOptionError(name = "") {
+		throw new Error(`${errorPrefix} Missing '${name}' option`);
+	}
+	/**
+	*
+	*/
+	function clerkInvalidFAPIResponse(status, supportEmail) {
+		throw new Error(`${errorPrefix} Response: ${status || 0} not supported yet.\nFor more information contact us at ${supportEmail}`);
+	}
+	/**
+	*
+	*/
+	function clerkMissingDevBrowser() {
+		throw new Error(`${errorPrefix} Missing dev browser. Please contact support.`);
+	}
+	/**
+	*
+	*/
+	function clerkMissingProxyUrlAndDomain() {
+		throw new Error(`${errorPrefix} Missing domain and proxyUrl. A satellite application needs to specify a domain or a proxyUrl.`);
+	}
+	/**
+	*
+	*/
+	function clerkInvalidSignInUrlOrigin() {
+		throw new Error(`${errorPrefix} The signInUrl needs to be on a different origin than your satellite application.`);
+	}
+	/**
+	*
+	*/
+	function clerkInvalidSignInUrlFormat() {
+		throw new Error(`${errorPrefix} The signInUrl needs to have a absolute url format.`);
+	}
+	/**
+	*
+	*/
+	function clerkMissingSignInUrlAsSatellite() {
+		throw new Error(`${errorPrefix} Missing signInUrl. A satellite application needs to specify the signInUrl for development instances.`);
+	}
+	/**
+	*
+	*/
+	function clerkRedirectUrlIsMissingScheme() {
+		throw new Error(`${errorPrefix} Invalid redirect_url. A valid http or https url should be used for the redirection.`);
+	}
+	/**
+	*
+	*/
+	function clerkUnsupportedReloadMethod(className) {
+		throw new Error(`${errorPrefix} Calling ${className}.reload is not currently supported. Please contact support.`);
+	}
+	/**
+	*
+	*/
+	function clerkMissingWebAuthnPublicKeyOptions(name) {
+		throw new Error(`${errorPrefix} Missing publicKey. When calling 'navigator.credentials.${name}()' it is required to pass a publicKey object.`);
+	}
+	//#endregion
+	//#region ../shared/src/dom/waitForElement.ts
+	/**
+	* Uses a MutationObserver to wait for an element to be added to the DOM.
+	*/
+	function waitForElement(selector) {
+		return new Promise((resolve) => {
+			if (document.querySelector(selector)) return resolve(document.querySelector(selector));
+			const observer = new MutationObserver(() => {
+				if (document.querySelector(selector)) {
+					observer.disconnect();
+					resolve(document.querySelector(selector));
+				}
+			});
+			observer.observe(document.body, {
+				childList: true,
+				subtree: true
+			});
+		});
+	}
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/constants.ts
+	const CLERK_SYNCED = "__clerk_synced";
+	const CLERK_SYNCED_STATUS = {
+		/** Not synced - satellite needs handshake after returning from primary sign-in */
+		NeedsSync: "false",
+		/** Sync completed - prevents re-sync loop after handshake completes */
+		Completed: "true"
+	};
+	const CLERK_SUFFIXED_COOKIES = "suffixed_cookies";
+	const CLERK_SATELLITE_URL = "__clerk_satellite_url";
+	const ERROR_CODES = {
+		FORM_IDENTIFIER_NOT_FOUND: "form_identifier_not_found",
+		FORM_PASSWORD_INCORRECT: "form_password_incorrect",
+		FORM_PASSWORD_PWNED: "form_password_pwned",
+		INVALID_STRATEGY_FOR_USER: "strategy_for_user_invalid",
+		NOT_ALLOWED_TO_SIGN_UP: "not_allowed_to_sign_up",
+		OAUTH_ACCESS_DENIED: "oauth_access_denied",
+		OAUTH_EMAIL_DOMAIN_RESERVED_BY_SAML: "oauth_email_domain_reserved_by_saml",
+		NOT_ALLOWED_ACCESS: "not_allowed_access",
+		SAML_USER_ATTRIBUTE_MISSING: "saml_user_attribute_missing",
+		USER_LOCKED: "user_locked",
+		EXTERNAL_ACCOUNT_NOT_FOUND: "external_account_not_found",
+		EXTERNAL_ACCOUNT_EXISTS: "external_account_exists",
+		SESSION_EXISTS: "session_exists",
+		SIGN_UP_MODE_RESTRICTED: "sign_up_mode_restricted",
+		SIGN_UP_MODE_RESTRICTED_WAITLIST: "sign_up_restricted_waitlist",
+		ENTERPRISE_SSO_USER_ATTRIBUTE_MISSING: "enterprise_sso_user_attribute_missing",
+		ENTERPRISE_SSO_EMAIL_ADDRESS_DOMAIN_MISMATCH: "enterprise_sso_email_address_domain_mismatch",
+		ENTERPRISE_SSO_HOSTED_DOMAIN_MISMATCH: "enterprise_sso_hosted_domain_mismatch",
+		SAML_EMAIL_ADDRESS_DOMAIN_MISMATCH: "saml_email_address_domain_mismatch",
+		INVITATION_ACCOUNT_NOT_EXISTS: "invitation_account_not_exists",
+		ORGANIZATION_MEMBERSHIP_QUOTA_EXCEEDED_FOR_SSO: "organization_membership_quota_exceeded_for_sso",
+		CAPTCHA_INVALID: "captcha_invalid",
+		FRAUD_DEVICE_BLOCKED: "device_blocked",
+		FRAUD_ACTION_BLOCKED: "action_blocked",
+		PROTECT_CHECK_ALREADY_RESOLVED: "protect_check_already_resolved",
+		PROTECT_CHECK_TIMED_OUT: "protect_check_timed_out",
+		PROTECT_CHECK_UNSUPPORTED_ENVIRONMENT: "protect_check_unsupported_environment",
+		SIGNUP_RATE_LIMIT_EXCEEDED: "signup_rate_limit_exceeded",
+		USER_BANNED: "user_banned",
+		USER_DEACTIVATED: "user_deactivated"
+	};
+	const SUPPORTED_FAPI_VERSION = "2026-05-12";
+	const CAPTCHA_ELEMENT_ID = "clerk-captcha";
+	const CAPTCHA_INVISIBLE_CLASSNAME = "clerk-invisible-captcha";
+	//#endregion
+	//#region ../shared/src/retry.ts
+	const defaultOptions$1 = {
+		initialDelay: 125,
+		maxDelayBetweenRetries: 0,
+		factor: 2,
+		shouldRetry: (_, iteration) => iteration < 5,
+		retryImmediately: false,
+		jitter: true
+	};
+	const RETRY_IMMEDIATELY_DELAY = 100;
+	const sleep$2 = async (ms) => new Promise((s) => setTimeout(s, ms));
+	const applyJitter = (delay, jitter) => {
+		return jitter ? delay * (1 + Math.random()) : delay;
+	};
+	const createExponentialDelayAsyncFn = (opts) => {
+		let timesCalled = 0;
+		const calculateDelayInMs = () => {
+			const constant = opts.initialDelay;
+			const base = opts.factor;
+			let delay = constant * Math.pow(base, timesCalled);
+			delay = applyJitter(delay, opts.jitter);
+			return Math.min(opts.maxDelayBetweenRetries || delay, delay);
+		};
+		return async () => {
+			await sleep$2(calculateDelayInMs());
+			timesCalled++;
+		};
+	};
+	/**
+	* Retries a callback until it succeeds or the shouldRetry function returns false.
+	* See {@link RetryOptions} for the available options.
+	*/
+	const retry = async (callback, options = {}) => {
+		let iterations = 0;
+		const { shouldRetry, initialDelay, maxDelayBetweenRetries, factor, retryImmediately, jitter, onBeforeRetry } = {
+			...defaultOptions$1,
+			...options
+		};
+		const delay = createExponentialDelayAsyncFn({
+			initialDelay,
+			maxDelayBetweenRetries,
+			factor,
+			jitter
+		});
+		while (true) try {
+			return await callback();
+		} catch (e) {
+			iterations++;
+			if (!shouldRetry(e, iterations)) throw e;
+			if (onBeforeRetry) await onBeforeRetry(iterations);
+			if (retryImmediately && iterations === 1) await sleep$2(applyJitter(RETRY_IMMEDIATELY_DELAY, jitter));
+			else await delay();
+		}
+	};
+	//#endregion
+	//#region ../shared/src/loadScript.ts
+	const NO_DOCUMENT_ERROR = "loadScript cannot be called when document does not exist";
+	const NO_SRC_ERROR = "loadScript cannot be called without a src";
+	/**
+	*
+	*/
+	async function loadScript$1(src = "", opts) {
+		const { async, defer, beforeLoad, crossOrigin, nonce } = opts || {};
+		const load = () => {
+			return new Promise((resolve, reject) => {
+				if (!src) reject(/* @__PURE__ */ new Error(NO_SRC_ERROR));
+				if (!document || !document.body) reject(/* @__PURE__ */ new Error(NO_DOCUMENT_ERROR));
+				const script = document.createElement("script");
+				if (crossOrigin) script.setAttribute("crossorigin", crossOrigin);
+				script.async = async || false;
+				script.defer = defer || false;
+				script.addEventListener("load", () => {
+					script.remove();
+					resolve(script);
+				});
+				script.addEventListener("error", (event) => {
+					script.remove();
+					reject(event.error ?? /* @__PURE__ */ new Error(`failed to load script: ${src}`));
+				});
+				script.src = src;
+				if (nonce) script.nonce = nonce;
+				beforeLoad?.(script);
+				document.body.appendChild(script);
+			});
+		};
+		return retry(load, { shouldRetry: (_, iterations) => {
+			return iterations <= 5;
+		} });
+	}
+	//#endregion
+	//#region ../clerk-js/src/utils/captcha/turnstile.ts
+	const CLOUDFLARE_TURNSTILE_ORIGINAL_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+	const shouldRetryTurnstileErrorCode = (errorCode) => {
+		return !![
+			"crashed",
+			"undefined_error",
+			"102",
+			"103",
+			"104",
+			"106",
+			"110600",
+			"300",
+			"600"
+		].find((w) => errorCode.startsWith(w));
+	};
+	async function loadCaptcha(nonce) {
+		if (!window.turnstile) await loadCaptchaFromCloudflareURL(nonce).catch(() => {
+			throw { captchaError: "captcha_script_failed_to_load" };
+		});
+		return window.turnstile;
+	}
+	async function loadCaptchaFromCloudflareURL(nonce) {
+		try {
+			return await loadScript$1(CLOUDFLARE_TURNSTILE_ORIGINAL_URL, {
+				defer: true,
+				nonce
+			});
+		} catch (err) {
+			console.warn("Clerk: Failed to load the CAPTCHA script from Cloudflare. If you see a CSP error in your browser, please add the necessary CSP rules to your app. Visit https://clerk.com/docs/security/clerk-csp for more information.");
+			throw err;
+		}
+	}
+	function getCaptchaAttibutesFromElemenet(element) {
+		try {
+			return {
+				theme: element.getAttribute("data-cl-theme") || void 0,
+				language: element.getAttribute("data-cl-language") || void 0,
+				size: element.getAttribute("data-cl-size") || void 0
+			};
+		} catch {
+			return {
+				theme: void 0,
+				language: void 0,
+				size: void 0
+			};
+		}
+	}
+	const getTurnstileToken = async (opts) => {
+		const { siteKey, widgetType, invisibleSiteKey, nonce } = opts;
+		const { modalContainerQuerySelector, modalWrapperQuerySelector, closeModal, openModal } = opts;
+		const captcha = await loadCaptcha(nonce);
+		const errorCodes = [];
+		let captchaToken = "";
+		let id = "";
+		let turnstileSiteKey = siteKey;
+		let captchaTheme;
+		let captchaSize;
+		let captchaLanguage;
+		let retries = 0;
+		let widgetContainerQuerySelector;
+		let captchaWidgetType = null;
+		let captchaTypeUsed = "invisible";
+		if (modalContainerQuerySelector && modalWrapperQuerySelector) {
+			captchaWidgetType = widgetType;
+			widgetContainerQuerySelector = modalContainerQuerySelector;
+			captchaTypeUsed = "modal";
+			try {
+				await openModal?.();
+			} catch {
+				throw { captchaError: "modal_component_not_ready" };
+			}
+			const modalContainderEl = await waitForElement(modalContainerQuerySelector);
+			if (modalContainderEl) {
+				const { theme, language, size } = getCaptchaAttibutesFromElemenet(modalContainderEl);
+				captchaTheme = theme;
+				captchaLanguage = language;
+				captchaSize = size;
+			}
+		}
+		if (!widgetContainerQuerySelector && widgetType === "smart") {
+			const visibleDiv = document.getElementById(CAPTCHA_ELEMENT_ID);
+			if (visibleDiv) {
+				captchaTypeUsed = "smart";
+				captchaWidgetType = "smart";
+				widgetContainerQuerySelector = `#${CAPTCHA_ELEMENT_ID}`;
+				visibleDiv.style.maxHeight = "0";
+				const { theme, language, size } = getCaptchaAttibutesFromElemenet(visibleDiv);
+				captchaTheme = theme;
+				captchaLanguage = language;
+				captchaSize = size;
+			} else console.error("Cannot initialize Smart CAPTCHA widget because the `clerk-captcha` DOM element was not found; falling back to Invisible CAPTCHA widget. If you are using a custom flow, visit https://clerk.com/docs/guides/development/custom-flows/authentication/bot-sign-up-protection for instructions");
+		}
+		if (!widgetContainerQuerySelector) {
+			captchaTypeUsed = "invisible";
+			turnstileSiteKey = invisibleSiteKey;
+			captchaWidgetType = "invisible";
+			widgetContainerQuerySelector = `.${CAPTCHA_INVISIBLE_CLASSNAME}`;
+			const div = document.createElement("div");
+			div.classList.add(CAPTCHA_INVISIBLE_CLASSNAME);
+			div.style.display = "none";
+			document.body.appendChild(div);
+		}
+		const handleCaptchaTokenGeneration = async () => {
+			return new Promise((resolve, reject) => {
+				try {
+					const id = captcha.render(widgetContainerQuerySelector, {
+						sitekey: turnstileSiteKey,
+						appearance: "interaction-only",
+						theme: captchaTheme || "auto",
+						size: captchaSize || "normal",
+						language: captchaLanguage || "auto",
+						action: opts.action,
+						retry: "never",
+						"refresh-expired": "auto",
+						callback: function(token) {
+							closeModal?.();
+							resolve([token, id]);
+						},
+						"before-interactive-callback": () => {
+							if (modalWrapperQuerySelector) {
+								const el = document.querySelector(modalWrapperQuerySelector);
+								el?.style.setProperty("visibility", "visible");
+								el?.style.setProperty("pointer-events", "all");
+							} else {
+								const visibleWidget = document.getElementById(CAPTCHA_ELEMENT_ID);
+								if (visibleWidget) {
+									visibleWidget.style.maxHeight = "unset";
+									visibleWidget.style.minHeight = captchaSize === "compact" ? "140px" : "68px";
+									visibleWidget.style.marginBottom = "1.5rem";
+									visibleWidget.dataset.clInteractive = "true";
+								}
+							}
+						},
+						"error-callback": function(errorCode) {
+							errorCodes.push(errorCode);
+							/**
+							* By setting retry to 'never' the responsibility for implementing retrying is ours
+							* https://developers.cloudflare.com/turnstile/reference/client-side-errors/#retrying
+							*/
+							if (retries < 2 && shouldRetryTurnstileErrorCode(errorCode.toString())) {
+								setTimeout(() => {
+									if (widgetContainerQuerySelector && !document.querySelector(widgetContainerQuerySelector)) {
+										reject([errorCodes.join(","), id]);
+										return;
+									}
+									captcha.reset(id);
+									retries++;
+								}, 250);
+								return;
+							}
+							reject([errorCodes.join(","), id]);
+						},
+						"unsupported-callback": function() {
+							reject(["This browser is not supported by the CAPTCHA.", id]);
+							return true;
+						}
+					});
+				} catch (e) {
+					/**
+					* There is a case the turnstile may fail before the challenge has started.
+					* In such case the 'error-callback' does not fire.
+					* We should mark the promise as rejected.
+					*/
+					reject([e, void 0]);
+				}
+			});
+		};
+		try {
+			[captchaToken, id] = await handleCaptchaTokenGeneration();
+			captcha.remove(id);
+		} catch ([e, id]) {
+			if (id) captcha.remove(id);
+			throw { captchaError: e };
+		} finally {
+			if (captchaTypeUsed === "modal") closeModal?.();
+			if (captchaTypeUsed === "invisible") {
+				const invisibleWidget = document.querySelector(`.${CAPTCHA_INVISIBLE_CLASSNAME}`);
+				if (invisibleWidget) document.body.removeChild(invisibleWidget);
+			}
+			if (captchaTypeUsed === "smart") {
+				const visibleWidget = document.getElementById(CAPTCHA_ELEMENT_ID);
+				if (visibleWidget) {
+					delete visibleWidget.dataset.clInteractive;
+					visibleWidget.style.maxHeight = "0";
+					visibleWidget.style.minHeight = "unset";
+					visibleWidget.style.marginBottom = "unset";
+				}
+			}
+		}
+		return {
+			captchaToken,
+			captchaWidgetType
+		};
+	};
+	//#endregion
+	//#region ../clerk-js/src/utils/captcha/getCaptchaToken.ts
+	const getCaptchaToken = (opts) => {
+		return getTurnstileToken(opts);
+	};
+	//#endregion
+	//#region ../clerk-js/src/utils/captcha/retrieveCaptchaInfo.ts
+	const retrieveCaptchaInfo = (clerk) => {
+		const _environment = clerk.__internal_environment;
+		const captchaProvider = _environment ? _environment.displayConfig.captchaProvider : "turnstile";
+		const nonce = clerk.__internal_getOption?.("nonce");
+		return {
+			captchaSiteKey: _environment ? _environment.displayConfig.captchaPublicKey : null,
+			captchaWidgetType: _environment ? _environment.displayConfig.captchaWidgetType : null,
+			captchaProvider,
+			captchaPublicKeyInvisible: _environment ? _environment.displayConfig.captchaPublicKeyInvisible : null,
+			canUseCaptcha: _environment ? _environment.userSettings.signUp.captcha_enabled && clerk.isStandardBrowser : null,
+			nonce: nonce || void 0
+		};
+	};
+	//#endregion
+	//#region ../clerk-js/src/utils/captcha/CaptchaChallenge.ts
+	var CaptchaChallenge = class {
+		constructor(clerk) {
+			this.clerk = clerk;
+		}
+		/**
+		* Triggers an invisible challenge.
+		* This will always use the non-interactive variant of the CAPTCHA challenge and will
+		* always use the fallback key.
+		*/
+		async invisible(opts) {
+			const { captchaSiteKey, canUseCaptcha, captchaPublicKeyInvisible, nonce } = retrieveCaptchaInfo(this.clerk);
+			if (canUseCaptcha && captchaSiteKey && captchaPublicKeyInvisible) return {
+				...await getCaptchaToken({
+					action: opts?.action,
+					captchaProvider: "turnstile",
+					invisibleSiteKey: captchaPublicKeyInvisible,
+					nonce: opts?.nonce || nonce || void 0,
+					siteKey: captchaPublicKeyInvisible,
+					widgetType: "invisible"
+				}).catch((e) => {
+					if (e.captchaError) return { captchaError: e.captchaError };
+					return { captchaError: e?.message || e || "unexpected_captcha_error" };
+				}),
+				captchaAction: opts?.action
+			};
+			return {
+				captchaError: "captcha_unavailable",
+				captchaAction: opts?.action
+			};
+		}
+		/**
+		* Triggers a smart challenge if the user is required to solve a CAPTCHA.
+		* The type of the challenge depends on the dashboard configuration.
+		* By default, smart (managed) captcha is preferred. If the customer has selected invisible, this method
+		* will fall back to using the invisible captcha instead.
+		*
+		* Managed challenged start as non-interactive and escalate to interactive if necessary.
+		*/
+		async managedOrInvisible(opts) {
+			const { captchaSiteKey, canUseCaptcha, captchaWidgetType, captchaProvider, captchaPublicKeyInvisible, nonce } = retrieveCaptchaInfo(this.clerk);
+			if (canUseCaptcha && captchaSiteKey && captchaPublicKeyInvisible) {
+				const captchaResult = await getCaptchaToken({
+					captchaProvider,
+					invisibleSiteKey: captchaPublicKeyInvisible,
+					nonce: nonce || void 0,
+					siteKey: captchaSiteKey,
+					widgetType: captchaWidgetType,
+					...opts
+				}).catch((e) => {
+					if (e.captchaError) return { captchaError: e.captchaError };
+					return opts?.action === "verify" ? { captchaError: e?.message || e || "unexpected_captcha_error" } : void 0;
+				});
+				return opts?.action === "verify" ? {
+					...captchaResult,
+					captchaAction: "verify"
+				} : captchaResult;
+			}
+			return opts?.action === "verify" ? {
+				captchaError: "captcha_unavailable",
+				captchaAction: opts?.action
+			} : {};
+		}
+		/**
+		* Similar to managed() but will render the CAPTCHA challenge in a modal
+		* managed by clerk-js itself.
+		*/
+		async managedInModal(opts) {
+			if (typeof document === "undefined") throw new ClerkRuntimeError("Captcha is not supported in non-browser environments", { code: "captcha_unavailable" });
+			return this.managedOrInvisible({
+				modalWrapperQuerySelector: "#cl-modal-captcha-wrapper",
+				modalContainerQuerySelector: "#cl-modal-captcha-container",
+				openModal: () => this.clerk.__internal_openBlankCaptchaModal(),
+				closeModal: () => this.clerk.__internal_closeBlankCaptchaModal(),
+				action: opts?.action
 			});
 		}
 	};
+	//#endregion
+	//#region ../clerk-js/src/core/fraudProtection.ts
+	var FraudProtection = class FraudProtection {
+		static getInstance() {
+			if (!FraudProtection.instance) FraudProtection.instance = new FraudProtection(Client, CaptchaChallenge);
+			return FraudProtection.instance;
+		}
+		constructor(client, CaptchaChallengeImpl) {
+			this.client = client;
+			this.CaptchaChallengeImpl = CaptchaChallengeImpl;
+			this.inflightException = null;
+			this.captchaRetryCount = 0;
+			this.MAX_RETRY_ATTEMPTS = 3;
+			this.captchaAttemptsExceeded = () => {
+				return this.captchaRetryCount >= this.MAX_RETRY_ATTEMPTS;
+			};
+		}
+		async execute(clerk, cb) {
+			if (this.captchaAttemptsExceeded()) throw new ClerkRuntimeError("Security verification failed. Please try again by refreshing the page, clearing your browser cookies, or using a different web browser.", { code: "captcha_client_attempts_exceeded" });
+			try {
+				if (this.inflightException) await this.inflightException;
+				return await cb();
+			} catch (e) {
+				if (!isClerkAPIResponseError(e)) throw e;
+				if (isClerkRuntimeError(e) && e.code === "network_error") throw e;
+				if (e.errors[0]?.code !== "requires_captcha") throw e;
+				if (this.inflightException) {
+					await this.inflightException;
+					return await cb();
+				}
+				let resolve;
+				this.inflightException = new Promise((r) => resolve = r);
+				try {
+					const captchaParams = await this.managedChallenge(clerk);
+					if (captchaParams?.captchaError !== "modal_component_not_ready") {
+						await this.client.getOrCreateInstance().__internal_sendCaptchaToken(captchaParams);
+						this.captchaRetryCount = 0;
+					}
+				} catch (err) {
+					this.captchaRetryCount++;
+					throw err;
+				} finally {
+					resolve();
+					this.inflightException = null;
+				}
+				return await cb();
+			}
+		}
+		managedChallenge(clerk) {
+			return new this.CaptchaChallengeImpl(clerk).managedInModal({ action: "verify" });
+		}
+	};
+	//#endregion
+	//#region ../clerk-js/src/core/resources/Base.ts
+	const COALESCED_POST_TTL_MS = 3e4;
+	function assertProductionKeysOnDev(statusCode, payloadErrors) {
+		if (!payloadErrors) return;
+		if (!payloadErrors[0]) return;
+		const safeError = payloadErrors[0];
+		const safeErrorMessage = safeError.long_message;
+		if (safeError.code === "origin_invalid" && isProductionFromPublishableKey(BaseResource.clerk.publishableKey)) throw new ClerkAPIResponseError(`Clerk: Production Keys are only allowed for domain "${BaseResource.clerk.frontendApi.replace("clerk.", "")}". \nAPI Error: ${safeErrorMessage}`, {
+			data: payloadErrors,
+			status: statusCode
+		});
+	}
+	var BaseResource = class BaseResource {
+		constructor() {
+			this.pathRoot = "";
+		}
+		#pendingCoalescedPosts;
+		static get fapiClient() {
+			return BaseResource.clerk.getFapiClient();
+		}
+		async reload(params) {
+			const { rotatingTokenNonce } = params || {};
+			return this._baseGet({
+				forceUpdateClient: true,
+				rotatingTokenNonce
+			});
+		}
+		isNew() {
+			return !this.id;
+		}
+		static async _fetch(requestInit, opts = {}) {
+			return FraudProtection.getInstance().execute(this.clerk, () => this._baseFetch(requestInit, opts));
+		}
+		static async _baseFetch(requestInit, opts = {}) {
+			if (!BaseResource.fapiClient) clerkMissingFapiClientInResources();
+			let fapiResponse;
+			const { fetchMaxTries } = opts;
+			try {
+				fapiResponse = await BaseResource.fapiClient.request(requestInit, { fetchMaxTries });
+			} catch (e) {
+				if (this.shouldRethrowOfflineNetworkErrors()) throw new ClerkRuntimeError(e?.message || e, { code: "network_error" });
+				else if (!isValidNetworkEnvironment()) {
+					debugLogger.warn("Network request failed while offline, returning null", {
+						method: requestInit.method,
+						path: requestInit.path
+					}, "baseResource");
+					return null;
+				} else throw e;
+			}
+			const { payload, status, statusText, headers } = fapiResponse;
+			if (headers) {
+				const country = headers.get("x-country");
+				this.clerk.__internal_setCountry(country ? country.toLowerCase() : null);
+			}
+			if ((requestInit.method !== "GET" || opts.forceUpdateClient) && !opts.skipUpdateClient) this._updateClient(payload);
+			if (status >= 200 && status <= 299) return payload;
+			if (status >= 400) {
+				const errors = payload?.errors;
+				const message = errors?.[0]?.long_message;
+				const code = errors?.[0]?.code;
+				if (status === 401 && code === "dev_browser_unauthenticated") await BaseResource.clerk.__internal_handleUnauthenticatedDevBrowser();
+				else if (status === 401 && code !== "requires_captcha") await BaseResource.clerk.handleUnauthenticated();
+				assertProductionKeysOnDev(status, errors);
+				const apiResponseOptions = {
+					data: errors,
+					status
+				};
+				if (status === 429 && headers) {
+					const retryAfter = headers.get("retry-after");
+					if (retryAfter) {
+						const value = parseInt(retryAfter, 10);
+						if (!isNaN(value)) apiResponseOptions.retryAfter = value;
+					}
+				}
+				throw new ClerkAPIResponseError(message || statusText, apiResponseOptions);
+			}
+			return null;
+		}
+		static _updateClient(responseJSON) {
+			const client = getClientResourceFromPayload(responseJSON);
+			if (client && BaseResource.clerk) BaseResource.clerk.updateClient(client);
+		}
+		path(action) {
+			const base = this.pathRoot;
+			if (this.isNew()) return base;
+			const baseWithId = base.replace(/[^/]$/, "$&/") + encodeURIComponent(this.id);
+			if (!action) return baseWithId;
+			return baseWithId.replace(/[^/]$/, "$&/") + encodeURIComponent(action);
+		}
+		/**
+		* Returns the provided value if it is not `undefined` or `null`, otherwise returns the default value.
+		*
+		* @template T - The type of the value.
+		* @param value - The value to check.
+		* @param defaultValue - The default value to return if the provided value is `undefined` or `null`.
+		* @returns The provided value if it is not `undefined` or `null`, otherwise the default value.
+		*/
+		withDefault(value, defaultValue) {
+			return value ?? defaultValue;
+		}
+		async _baseGet(opts = {}) {
+			const json = await BaseResource._fetch({
+				method: "GET",
+				path: this.path(),
+				rotatingTokenNonce: opts.rotatingTokenNonce,
+				signal: opts.abortSignal
+			}, opts);
+			return this.fromJSON(json?.response || json);
+		}
+		async _baseMutate(params) {
+			const { action, body, method, path, signal } = params;
+			const json = await BaseResource._fetch({
+				method,
+				path: path || this.path(action),
+				body,
+				signal
+			});
+			return this.fromJSON(json?.response || json);
+		}
+		async _baseMutateBypass(params) {
+			const { action, body, method, path } = params;
+			const json = await BaseResource._baseFetch({
+				method,
+				path: path || this.path(action),
+				body
+			});
+			return this.fromJSON(json?.response || json);
+		}
+		async _basePost(params = {}) {
+			if (!params.coalesce) return this._baseMutate({
+				...params,
+				method: "POST"
+			});
+			const key = this.#coalescedPostKey(params);
+			const posts = this.#pendingCoalescedPosts ??= /* @__PURE__ */ new Map();
+			const pending = posts.get(key);
+			if (pending && Date.now() < pending.expiresAt) return pending.promise;
+			const controller = new AbortController();
+			const promise = this._baseMutate({
+				...params,
+				method: "POST",
+				signal: controller.signal
+			}).finally(() => {
+				if (posts.get(key)?.promise === promise) posts.delete(key);
+			});
+			posts.set(key, {
+				promise,
+				controller,
+				expiresAt: Date.now() + COALESCED_POST_TTL_MS
+			});
+			return promise;
+		}
+		#coalescedPostKey(params) {
+			const body = Object.entries(params.body ?? {}).filter(([, value]) => value !== void 0).sort(([left], [right]) => left < right ? -1 : 1);
+			return JSON.stringify([
+				this.id,
+				params.path,
+				params.action,
+				body
+			]);
+		}
+		async _basePostBypass(params = {}) {
+			return this._baseMutateBypass({
+				...params,
+				method: "POST"
+			});
+		}
+		async _basePut(params = {}) {
+			return this._baseMutate({
+				...params,
+				method: "PUT"
+			});
+		}
+		async _basePatch(params = {}) {
+			return this._baseMutate({
+				...params,
+				method: "PATCH"
+			});
+		}
+		async _baseDelete(params = {}) {
+			await this._baseMutate({
+				...params,
+				method: "DELETE"
+			});
+		}
+		static shouldRethrowOfflineNetworkErrors() {
+			return (BaseResource.clerk?.__internal_getOption?.("experimental"))?.rethrowOfflineNetworkErrors || false;
+		}
+	};
+	//#endregion
+	//#region ../clerk-js/src/utils/date.ts
+	function isValidDate(d) {
+		return d instanceof Date && !isNaN(d.getTime());
+	}
+	function unixEpochToDate(epochInSeconds) {
+		const date = new Date(epochInSeconds || /* @__PURE__ */ new Date());
+		return isValidDate(date) ? date : /* @__PURE__ */ new Date();
+	}
+	//#endregion
+	//#region ../clerk-js/src/core/resources/APIKey.ts
+	var APIKey = class extends BaseResource {
+		constructor(data) {
+			super();
+			this.pathRoot = "/api_keys";
+			this.fromJSON(data);
+		}
+		fromJSON(data) {
+			if (!data) return this;
+			this.id = data.id;
+			this.type = data.type;
+			this.name = data.name;
+			this.subject = data.subject;
+			this.scopes = data.scopes;
+			this.claims = data.claims;
+			this.revoked = data.revoked;
+			this.revocationReason = data.revocation_reason;
+			this.expired = data.expired;
+			this.expiration = data.expiration ? unixEpochToDate(data.expiration) : null;
+			this.createdBy = data.created_by;
+			this.description = data.description;
+			this.secret = data.secret;
+			this.lastUsedAt = data.last_used_at ? unixEpochToDate(data.last_used_at) : null;
+			this.updatedAt = unixEpochToDate(data.updated_at);
+			this.createdAt = unixEpochToDate(data.created_at);
+			return this;
+		}
+		__internal_toSnapshot() {
+			return {
+				object: "api_key",
+				id: this.id,
+				type: this.type,
+				name: this.name,
+				subject: this.subject,
+				scopes: this.scopes,
+				claims: this.claims,
+				revoked: this.revoked,
+				revocation_reason: this.revocationReason,
+				expired: this.expired,
+				expiration: this.expiration ? this.expiration.getTime() : null,
+				created_by: this.createdBy,
+				description: this.description,
+				last_used_at: this.lastUsedAt ? this.lastUsedAt.getTime() : null,
+				created_at: this.createdAt.getTime(),
+				updated_at: this.updatedAt.getTime()
+			};
+		}
+	};
+	//#endregion
+	//#region ../clerk-js/src/core/resources/AuthConfig.ts
+	var AuthConfig = class extends BaseResource {
+		constructor(data = null) {
+			super();
+			this.claimedAt = null;
+			this.reverification = false;
+			this.singleSessionMode = false;
+			this.preferredChannels = null;
+			this.sessionMinter = false;
+			this.nativeSettings = {
+				apiEnabled: false,
+				trustedDeviceSignInEnabled: false,
+				trustedDeviceEnrollmentPromptAfterSignInEnabled: false,
+				trustedDeviceEnrollmentPromptAfterSignUpEnabled: false
+			};
+			this.fromJSON(data);
+		}
+		fromJSON(data) {
+			if (!data) return this;
+			this.claimedAt = this.withDefault(data.claimed_at ? unixEpochToDate(data.claimed_at) : null, this.claimedAt);
+			this.reverification = this.withDefault(data.reverification, this.reverification);
+			this.singleSessionMode = this.withDefault(data.single_session_mode, this.singleSessionMode);
+			this.preferredChannels = this.withDefault(data.preferred_channels, this.preferredChannels);
+			this.sessionMinter = this.withDefault(data.session_minter, this.sessionMinter);
+			this.nativeSettings = {
+				apiEnabled: data.native_settings?.api_enabled ?? false,
+				trustedDeviceSignInEnabled: data.native_settings?.trusted_device_sign_in_enabled ?? false,
+				trustedDeviceEnrollmentPromptAfterSignInEnabled: data.native_settings?.trusted_device_enrollment_prompt_after_sign_in_enabled ?? false,
+				trustedDeviceEnrollmentPromptAfterSignUpEnabled: data.native_settings?.trusted_device_enrollment_prompt_after_sign_up_enabled ?? false
+			};
+			return this;
+		}
+		__internal_toSnapshot() {
+			return {
+				claimed_at: this.claimedAt ? this.claimedAt.getTime() : null,
+				id: this.id ?? "",
+				object: "auth_config",
+				reverification: this.reverification,
+				single_session_mode: this.singleSessionMode,
+				session_minter: this.sessionMinter,
+				native_settings: {
+					api_enabled: this.nativeSettings.apiEnabled,
+					trusted_device_sign_in_enabled: this.nativeSettings.trustedDeviceSignInEnabled,
+					trusted_device_enrollment_prompt_after_sign_in_enabled: this.nativeSettings.trustedDeviceEnrollmentPromptAfterSignInEnabled,
+					trusted_device_enrollment_prompt_after_sign_up_enabled: this.nativeSettings.trustedDeviceEnrollmentPromptAfterSignUpEnabled
+				}
+			};
+		}
+	};
+	//#endregion
+	//#region ../../node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/system.mjs
+	var ReactiveFlags;
+	(function(ReactiveFlags) {
+		ReactiveFlags[ReactiveFlags["None"] = 0] = "None";
+		ReactiveFlags[ReactiveFlags["Mutable"] = 1] = "Mutable";
+		ReactiveFlags[ReactiveFlags["Watching"] = 2] = "Watching";
+		ReactiveFlags[ReactiveFlags["RecursedCheck"] = 4] = "RecursedCheck";
+		ReactiveFlags[ReactiveFlags["Recursed"] = 8] = "Recursed";
+		ReactiveFlags[ReactiveFlags["Dirty"] = 16] = "Dirty";
+		ReactiveFlags[ReactiveFlags["Pending"] = 32] = "Pending";
+	})(ReactiveFlags || (ReactiveFlags = {}));
+	function createReactiveSystem({ update, notify, unwatched }) {
+		let version = 0;
+		return {
+			link,
+			unlink,
+			propagate,
+			checkDirty,
+			endTracking,
+			startTracking,
+			shallowPropagate
+		};
+		function link(dep, sub) {
+			const prevDep = sub.depsTail;
+			if (prevDep !== void 0 && prevDep.dep === dep) return;
+			let nextDep;
+			if (sub.flags & 4) {
+				nextDep = prevDep !== void 0 ? prevDep.nextDep : sub.deps;
+				if (nextDep !== void 0 && nextDep.dep === dep) {
+					nextDep.version = version;
+					sub.depsTail = nextDep;
+					return;
+				}
+			}
+			const prevSub = dep.subsTail;
+			if (prevSub !== void 0 && prevSub.version === version && prevSub.sub === sub) return;
+			const newLink = sub.depsTail = dep.subsTail = {
+				version,
+				dep,
+				sub,
+				prevDep,
+				nextDep,
+				prevSub,
+				nextSub: void 0
+			};
+			if (nextDep !== void 0) nextDep.prevDep = newLink;
+			if (prevDep !== void 0) prevDep.nextDep = newLink;
+			else sub.deps = newLink;
+			if (prevSub !== void 0) prevSub.nextSub = newLink;
+			else dep.subs = newLink;
+		}
+		function unlink(link, sub = link.sub) {
+			const dep = link.dep;
+			const prevDep = link.prevDep;
+			const nextDep = link.nextDep;
+			const nextSub = link.nextSub;
+			const prevSub = link.prevSub;
+			if (nextDep !== void 0) nextDep.prevDep = prevDep;
+			else sub.depsTail = prevDep;
+			if (prevDep !== void 0) prevDep.nextDep = nextDep;
+			else sub.deps = nextDep;
+			if (nextSub !== void 0) nextSub.prevSub = prevSub;
+			else dep.subsTail = prevSub;
+			if (prevSub !== void 0) prevSub.nextSub = nextSub;
+			else if ((dep.subs = nextSub) === void 0) unwatched(dep);
+			return nextDep;
+		}
+		function propagate(link) {
+			let next = link.nextSub;
+			let stack;
+			top: do {
+				const sub = link.sub;
+				let flags = sub.flags;
+				if (flags & 3) {
+					if (!(flags & 60)) sub.flags = flags | 32;
+					else if (!(flags & 12)) flags = 0;
+					else if (!(flags & 4)) sub.flags = flags & -9 | 32;
+					else if (!(flags & 48) && isValidLink(link, sub)) {
+						sub.flags = flags | 40;
+						flags &= 1;
+					} else flags = 0;
+					if (flags & 2) notify(sub);
+					if (flags & 1) {
+						const subSubs = sub.subs;
+						if (subSubs !== void 0) {
+							link = subSubs;
+							if (subSubs.nextSub !== void 0) {
+								stack = {
+									value: next,
+									prev: stack
+								};
+								next = link.nextSub;
+							}
+							continue;
+						}
+					}
+				}
+				if ((link = next) !== void 0) {
+					next = link.nextSub;
+					continue;
+				}
+				while (stack !== void 0) {
+					link = stack.value;
+					stack = stack.prev;
+					if (link !== void 0) {
+						next = link.nextSub;
+						continue top;
+					}
+				}
+				break;
+			} while (true);
+		}
+		function startTracking(sub) {
+			++version;
+			sub.depsTail = void 0;
+			sub.flags = sub.flags & -57 | 4;
+		}
+		function endTracking(sub) {
+			const depsTail = sub.depsTail;
+			let toRemove = depsTail !== void 0 ? depsTail.nextDep : sub.deps;
+			while (toRemove !== void 0) toRemove = unlink(toRemove, sub);
+			sub.flags &= -5;
+		}
+		function checkDirty(link, sub) {
+			let stack;
+			let checkDepth = 0;
+			top: do {
+				const dep = link.dep;
+				const depFlags = dep.flags;
+				let dirty = false;
+				if (sub.flags & 16) dirty = true;
+				else if ((depFlags & 17) === 17) {
+					if (update(dep)) {
+						const subs = dep.subs;
+						if (subs.nextSub !== void 0) shallowPropagate(subs);
+						dirty = true;
+					}
+				} else if ((depFlags & 33) === 33) {
+					if (link.nextSub !== void 0 || link.prevSub !== void 0) stack = {
+						value: link,
+						prev: stack
+					};
+					link = dep.deps;
+					sub = dep;
+					++checkDepth;
+					continue;
+				}
+				if (!dirty && link.nextDep !== void 0) {
+					link = link.nextDep;
+					continue;
+				}
+				while (checkDepth) {
+					--checkDepth;
+					const firstSub = sub.subs;
+					const hasMultipleSubs = firstSub.nextSub !== void 0;
+					if (hasMultipleSubs) {
+						link = stack.value;
+						stack = stack.prev;
+					} else link = firstSub;
+					if (dirty) {
+						if (update(sub)) {
+							if (hasMultipleSubs) shallowPropagate(firstSub);
+							sub = link.sub;
+							continue;
+						}
+					} else sub.flags &= -33;
+					sub = link.sub;
+					if (link.nextDep !== void 0) {
+						link = link.nextDep;
+						continue top;
+					}
+					dirty = false;
+				}
+				return dirty;
+			} while (true);
+		}
+		function shallowPropagate(link) {
+			do {
+				const sub = link.sub;
+				const nextSub = link.nextSub;
+				const subFlags = sub.flags;
+				if ((subFlags & 48) === 32) {
+					sub.flags = subFlags | 16;
+					if (subFlags & 2) notify(sub);
+				}
+				link = nextSub;
+			} while (link !== void 0);
+		}
+		function isValidLink(checkLink, sub) {
+			const depsTail = sub.depsTail;
+			if (depsTail !== void 0) {
+				let link = sub.deps;
+				do {
+					if (link === checkLink) return true;
+					if (link === depsTail) break;
+					link = link.nextDep;
+				} while (link !== void 0);
+			}
+			return false;
+		}
+	}
+	//#endregion
+	//#region ../../node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/index.mjs
+	const queuedEffects = [];
+	const { link, unlink, propagate, checkDirty, endTracking, startTracking, shallowPropagate } = createReactiveSystem({
+		update(signal) {
+			if ("getter" in signal) return updateComputed(signal);
+			else return updateSignal(signal, signal.value);
+		},
+		notify,
+		unwatched(node) {
+			if ("getter" in node) {
+				let toRemove = node.deps;
+				if (toRemove !== void 0) {
+					node.flags = 17;
+					do
+						toRemove = unlink(toRemove, node);
+					while (toRemove !== void 0);
+				}
+			} else if (!("previousValue" in node)) effectOper.call(node);
+		}
+	});
+	let batchDepth = 0;
+	let notifyIndex = 0;
+	let queuedEffectsLength = 0;
+	let activeSub;
+	function setCurrentSub(sub) {
+		const prevSub = activeSub;
+		activeSub = sub;
+		return prevSub;
+	}
+	function startBatch() {
+		++batchDepth;
+	}
+	function endBatch() {
+		if (!--batchDepth) flush();
+	}
+	function signal(initialValue) {
+		return signalOper.bind({
+			previousValue: initialValue,
+			value: initialValue,
+			subs: void 0,
+			subsTail: void 0,
+			flags: 1
+		});
+	}
+	function computed(getter) {
+		return computedOper.bind({
+			value: void 0,
+			subs: void 0,
+			subsTail: void 0,
+			deps: void 0,
+			depsTail: void 0,
+			flags: 17,
+			getter
+		});
+	}
+	function effect(fn) {
+		const e = {
+			fn,
+			subs: void 0,
+			subsTail: void 0,
+			deps: void 0,
+			depsTail: void 0,
+			flags: 2
+		};
+		if (activeSub !== void 0) link(e, activeSub);
+		const prev = setCurrentSub(e);
+		try {
+			e.fn();
+		} finally {
+			setCurrentSub(prev);
+		}
+		return effectOper.bind(e);
+	}
+	function updateComputed(c) {
+		const prevSub = setCurrentSub(c);
+		startTracking(c);
+		try {
+			const oldValue = c.value;
+			return oldValue !== (c.value = c.getter(oldValue));
+		} finally {
+			setCurrentSub(prevSub);
+			endTracking(c);
+		}
+	}
+	function updateSignal(s, value) {
+		s.flags = 1;
+		return s.previousValue !== (s.previousValue = value);
+	}
+	function notify(e) {
+		const flags = e.flags;
+		if (!(flags & 64)) {
+			e.flags = flags | 64;
+			const subs = e.subs;
+			if (subs !== void 0) notify(subs.sub);
+			else queuedEffects[queuedEffectsLength++] = e;
+		}
+	}
+	function run(e, flags) {
+		if (flags & 16 || flags & 32 && checkDirty(e.deps, e)) {
+			const prev = setCurrentSub(e);
+			startTracking(e);
+			try {
+				e.fn();
+			} finally {
+				setCurrentSub(prev);
+				endTracking(e);
+			}
+			return;
+		} else if (flags & 32) e.flags = flags & -33;
+		let link = e.deps;
+		while (link !== void 0) {
+			const dep = link.dep;
+			const depFlags = dep.flags;
+			if (depFlags & 64) run(dep, dep.flags = depFlags & -65);
+			link = link.nextDep;
+		}
+	}
+	function flush() {
+		while (notifyIndex < queuedEffectsLength) {
+			const effect = queuedEffects[notifyIndex];
+			queuedEffects[notifyIndex++] = void 0;
+			run(effect, effect.flags &= -65);
+		}
+		notifyIndex = 0;
+		queuedEffectsLength = 0;
+	}
+	function computedOper() {
+		const flags = this.flags;
+		if (flags & 16 || flags & 32 && checkDirty(this.deps, this)) {
+			if (updateComputed(this)) {
+				const subs = this.subs;
+				if (subs !== void 0) shallowPropagate(subs);
+			}
+		} else if (flags & 32) this.flags = flags & -33;
+		if (activeSub !== void 0) link(this, activeSub);
+		return this.value;
+	}
+	function signalOper(...value) {
+		if (value.length) {
+			const newValue = value[0];
+			if (this.value !== (this.value = newValue)) {
+				this.flags = 17;
+				const subs = this.subs;
+				if (subs !== void 0) {
+					propagate(subs);
+					if (!batchDepth) flush();
+				}
+			}
+		} else {
+			const value = this.value;
+			if (this.flags & 16) {
+				if (updateSignal(this, value)) {
+					const subs = this.subs;
+					if (subs !== void 0) shallowPropagate(subs);
+				}
+			}
+			if (activeSub !== void 0) link(this, activeSub);
+			return value;
+		}
+	}
+	function effectOper() {
+		let dep = this.deps;
+		while (dep !== void 0) dep = unlink(dep, this);
+		const sub = this.subs;
+		if (sub !== void 0) unlink(sub);
+		this.flags = 0;
+	}
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/windowNavigate.ts
+	const CLERK_BEFORE_UNLOAD_EVENT = "clerk:beforeunload";
+	/**
+	* Additional protocols can be provided using the `allowedRedirectProtocols` Clerk option.
+	*/
+	const ALLOWED_PROTOCOLS = [
+		"http:",
+		"https:",
+		"wails:",
+		"chrome-extension:"
+	];
+	const SCHEME_RELATIVE_PREFIX = /^[/\\][/\\]/;
+	/**
+	* Normalizes a string the same way the WHATWG URL parser does before it parses: strip leading C0
+	* control and space characters, then remove ASCII tab/LF/CR from anywhere. Without this, inputs
+	* like `/\t/evil.com` or `\x00//evil.com` slip past the scheme-relative check yet still resolve
+	* scheme-relative (inheriting the base's allowlisted scheme) and redirect cross-origin.
+	*/
+	function stripUrlParserIgnoredChars(to) {
+		let start = 0;
+		while (start < to.length && to.charCodeAt(start) <= 32) start++;
+		let result = "";
+		for (let i = start; i < to.length; i++) {
+			const code = to.charCodeAt(i);
+			if (code !== 9 && code !== 10 && code !== 13) result += to[i];
+		}
+		return result;
+	}
+	/**
+	* Helper utility to navigate via window.location.href. Also dispatches a clerk:beforeunload custom event.
+	*
+	* Navigations whose protocol is not in the allowlist (e.g. `javascript:`, `data:`) are aborted.
+	* Scheme-relative inputs (`//host`, `\\host`) are also rejected: they adopt the base URL's scheme,
+	* which is always in the allowlist, so they would otherwise pass the protocol check while
+	* redirecting cross-origin.
+	*
+	* Callers that have already validated against an extended allowlist should pass it via
+	* `options.allowedProtocols` so legitimate custom protocols (Wails, Tauri, etc.) are honored.
+	*
+	* @deprecated Use `clerk.__internal_windowNavigate` instead. It honors the customer-supplied
+	* `allowedRedirectProtocols` option by default, so internal call sites can't accidentally
+	* bypass it by forgetting to pass `options.allowedProtocols`. The bare export will be removed
+	* in the next major version.
+	*/
+	function windowNavigate(to, options) {
+		if (typeof to === "string" && SCHEME_RELATIVE_PREFIX.test(stripUrlParserIgnoredChars(to))) {
+			console.warn(`Clerk: scheme-relative navigation to "${to}" is not allowed. Provide a same-origin path or an absolute URL.`);
+			return;
+		}
+		const toURL = new URL(to, window.location.href);
+		if (!(options?.allowedProtocols ?? ALLOWED_PROTOCOLS).includes(toURL.protocol)) {
+			console.warn(`Clerk: "${toURL.protocol}" is not a valid navigation protocol. Aborting navigation. If you think this is a mistake, please open an issue.`);
+			return;
+		}
+		window.dispatchEvent(new CustomEvent(CLERK_BEFORE_UNLOAD_EVENT));
+		window.location.href = toURL.href;
+	}
 	//#endregion
 	//#region ../clerk-js/src/utils/beforeUnloadTracker.ts
 	/**
@@ -7540,15 +7480,6 @@ isDevOrStagingUrl: (url) => {
 			isUnloading: l.isUnloading
 		};
 	};
-	//#endregion
-	//#region ../clerk-js/src/utils/date.ts
-	function isValidDate(d) {
-		return d instanceof Date && !isNaN(d.getTime());
-	}
-	function unixEpochToDate(epochInSeconds) {
-		const date = new Date(epochInSeconds || /* @__PURE__ */ new Date());
-		return isValidDate(date) ? date : /* @__PURE__ */ new Date();
-	}
 	//#endregion
 	//#region ../clerk-js/src/utils/billing.ts
 	const billingMoneyAmountFromJSON = (data) => {
@@ -7703,6 +7634,66 @@ isDevOrStagingUrl: (url) => {
 		return totals;
 	};
 	//#endregion
+	//#region ../shared/src/netlifyCacheHandler.ts
+	/**
+	* Cache busting parameter for Netlify to prevent cached responses
+	* during handshake flows with Clerk development instances.
+	*
+	* Note: This query parameter will be removed in the "@clerk/clerk-js" package.
+	*
+	* @internal
+	*/
+	const CLERK_NETLIFY_CACHE_BUST_PARAM = "__clerk_netlify_cache_bust";
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/queryParams.ts
+	const _ClerkQueryParams = [
+		"__clerk_status",
+		"__clerk_created_session",
+		"__clerk_invitation_token",
+		"__clerk_ticket",
+		"__clerk_modal_state",
+		"__clerk_handshake",
+		"__clerk_handshake_nonce",
+		"__clerk_help",
+		CLERK_NETLIFY_CACHE_BUST_PARAM,
+		CLERK_SYNCED,
+		CLERK_SATELLITE_URL,
+		CLERK_SUFFIXED_COOKIES
+	];
+	/**
+	*
+	*/
+	function getClerkQueryParam(param) {
+		const val = new URL(window.location.href).searchParams.get(param);
+		return val ? val : null;
+	}
+	/**
+	*
+	*/
+	function removeClerkQueryParam(param) {
+		const url = new URL(window.location.href);
+		if (url.searchParams.has(param)) {
+			url.searchParams.delete(param);
+			window.history.replaceState(window.history.state, "", url);
+		}
+	}
+	/**
+	* Extracts and forwards Clerk query parameters from the current URL to a new URLSearchParams object.
+	* This is useful when navigating between pages while preserving Clerk-specific query parameters.
+	*
+	* @param params - Optional URLSearchParams object to add the parameters to. If not provided, a new one will be created.
+	* @returns A URLSearchParams object containing the forwarded Clerk parameters
+	*/
+	function forwardClerkQueryParams(params) {
+		const currentSearchParams = new URLSearchParams(window.location.search);
+		const newParams = params || new URLSearchParams();
+		for (const param of _ClerkQueryParams) {
+			const value = currentSearchParams.get(param);
+			if (value) newParams.set(param, value);
+		}
+		return newParams;
+	}
+	//#endregion
 	//#region ../shared/src/internal/clerk-js/completeSignUpFlow.ts
 	const completeSignUpFlow = ({ signUp, verifyEmailPath, verifyPhonePath, protectCheckPath, continuePath, navigate, handleComplete, redirectUrl, redirectUrlComplete, oidcPrompt }) => {
 		if (signUp.status === "complete") {
@@ -7791,6 +7782,434 @@ isDevOrStagingUrl: (url) => {
 		const filtered = {};
 		for (const [key, value] of Object.entries(obj)) if (value !== void 0) filtered[key] = value;
 		return filtered;
+	}
+	//#endregion
+	//#region ../shared/src/globs.ts
+	var import_glob_to_regexp = /* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((exports, module) => {
+		module.exports = function(glob, opts) {
+			if (typeof glob !== "string") throw new TypeError("Expected a string");
+			var str = String(glob);
+			var reStr = "";
+			var extended = opts ? !!opts.extended : false;
+			var globstar = opts ? !!opts.globstar : false;
+			var inGroup = false;
+			var flags = opts && typeof opts.flags === "string" ? opts.flags : "";
+			var c;
+			for (var i = 0, len = str.length; i < len; i++) {
+				c = str[i];
+				switch (c) {
+					case "/":
+					case "$":
+					case "^":
+					case "+":
+					case ".":
+					case "(":
+					case ")":
+					case "=":
+					case "!":
+					case "|":
+						reStr += "\\" + c;
+						break;
+					case "?": if (extended) {
+						reStr += ".";
+						break;
+					}
+					case "[":
+					case "]": if (extended) {
+						reStr += c;
+						break;
+					}
+					case "{": if (extended) {
+						inGroup = true;
+						reStr += "(";
+						break;
+					}
+					case "}": if (extended) {
+						inGroup = false;
+						reStr += ")";
+						break;
+					}
+					case ",":
+						if (inGroup) {
+							reStr += "|";
+							break;
+						}
+						reStr += "\\" + c;
+						break;
+					case "*":
+						var prevChar = str[i - 1];
+						var starCount = 1;
+						while (str[i + 1] === "*") {
+							starCount++;
+							i++;
+						}
+						var nextChar = str[i + 1];
+						if (!globstar) reStr += ".*";
+						else if (starCount > 1 && (prevChar === "/" || prevChar === void 0) && (nextChar === "/" || nextChar === void 0)) {
+							reStr += "((?:[^/]*(?:/|$))*)";
+							i++;
+						} else reStr += "([^/]*)";
+						break;
+					default: reStr += c;
+				}
+			}
+			if (!flags || !~flags.indexOf("g")) reStr = "^" + reStr + "$";
+			return new RegExp(reStr, flags);
+		};
+	})))());
+	const globs = { toRegexp: (pattern) => {
+		try {
+			return (0, import_glob_to_regexp.default)(pattern);
+		} catch (e) {
+			throw new Error(`Invalid pattern: ${pattern}.\nConsult the documentation of glob-to-regexp here: https://www.npmjs.com/package/glob-to-regexp.\n${e.message}`);
+		}
+	} };
+	//#endregion
+	//#region ../shared/src/logger.ts
+	const loggedMessages = /* @__PURE__ */ new Set();
+	const logger = {
+		/**
+		* A custom logger that ensures messages are logged only once.
+		* Reduces noise and duplicated messages when logs are in a hot codepath.
+		*/
+		warnOnce: (msg) => {
+			if (loggedMessages.has(msg)) return;
+			loggedMessages.add(msg);
+			console.warn(msg);
+		},
+		logOnce: (msg) => {
+			if (loggedMessages.has(msg)) return;
+			console.log(msg);
+			loggedMessages.add(msg);
+		}
+	};
+	//#endregion
+	//#region ../shared/src/underscore.ts
+	/**
+	* Converts the first character of a string to uppercase.
+	*
+	* @param str - The string to be converted.
+	* @returns The modified string with the rest of the string unchanged.
+	*
+	* @example
+	* ```ts
+	* titleize('hello world') // 'Hello world'
+	* ```
+	*/
+	function titleize(str) {
+		const s = str || "";
+		return s.charAt(0).toUpperCase() + s.slice(1);
+	}
+	/**
+	* Converts a string from snake_case to camelCase.
+	*/
+	function snakeToCamel(str) {
+		return str ? str.replace(/([-_][a-z])/g, (match) => match.toUpperCase().replace(/-|_/, "")) : "";
+	}
+	/**
+	* Converts a string from camelCase to snake_case.
+	*/
+	function camelToSnake(str) {
+		return str ? str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`) : "";
+	}
+	const createDeepObjectTransformer = (transform) => {
+		const deepTransform = (obj) => {
+			if (!obj) return obj;
+			if (Array.isArray(obj)) return obj.map((el) => {
+				if (typeof el === "object" || Array.isArray(el)) return deepTransform(el);
+				return el;
+			});
+			const copy = { ...obj };
+			const keys = Object.keys(copy);
+			for (const oldName of keys) {
+				const newName = transform(oldName.toString());
+				if (newName !== oldName) {
+					copy[newName] = copy[oldName];
+					delete copy[oldName];
+				}
+				if (typeof copy[newName] === "object") copy[newName] = deepTransform(copy[newName]);
+			}
+			return copy;
+		};
+		return deepTransform;
+	};
+	/**
+	* Transforms camelCased objects/ arrays to snake_cased.
+	* This function recursively traverses all objects and arrays of the passed value
+	* camelCased keys are removed.
+	*
+	* @function
+	*/
+	const deepCamelToSnake = createDeepObjectTransformer(camelToSnake);
+	/**
+	* Transforms snake_cased objects/ arrays to camelCased.
+	* This function recursively traverses all objects and arrays of the passed value
+	* camelCased keys are removed.
+	*
+	* @function
+	*/
+	const deepSnakeToCamel = createDeepObjectTransformer(snakeToCamel);
+	/**
+	* A function to determine if a value is truthy.
+	*
+	* @returns True for `true`, true, positive numbers. False for `false`, false, 0, negative integers and anything else.
+	*/
+	function isTruthy(value) {
+		if (typeof value === `boolean`) return value;
+		if (value === void 0 || value === null) return false;
+		if (typeof value === `string`) {
+			if (value.toLowerCase() === `true`) return true;
+			if (value.toLowerCase() === `false`) return false;
+		}
+		const number = parseInt(value, 10);
+		if (isNaN(number)) return false;
+		if (number > 0) return true;
+		return false;
+	}
+	/**
+	* Get all non-undefined values from an object.
+	*/
+	function getNonUndefinedValues(obj) {
+		return Object.entries(obj).reduce((acc, [key, value]) => {
+			if (value !== void 0) acc[key] = value;
+			return acc;
+		}, {});
+	}
+	//#endregion
+	//#region ../shared/src/url.ts
+	/**
+	*
+	*/
+	function stripScheme(url = "") {
+		return (url || "").replace(/^.+:\/\//, "");
+	}
+	/**
+	*
+	*/
+	function addClerkPrefix(str) {
+		if (!str) return "";
+		let regex;
+		if (str.match(/^(clerk\.)+\w*$/)) regex = /(clerk\.)*(?=clerk\.)/;
+		else if (str.match(/\.clerk.accounts/)) return str;
+		else regex = /^(clerk\.)*/gi;
+		return `clerk.${str.replace(regex, "")}`;
+	}
+	/**
+	*
+	*/
+	function isLegacyDevAccountPortalOrigin(host) {
+		return LEGACY_DEV_INSTANCE_SUFFIXES.some((legacyDevSuffix) => {
+			return host.startsWith("accounts.") && host.endsWith(legacyDevSuffix);
+		});
+	}
+	/**
+	*
+	*/
+	function isCurrentDevAccountPortalOrigin(host) {
+		return CURRENT_DEV_INSTANCE_SUFFIXES.some((currentDevSuffix) => {
+			return host.endsWith(currentDevSuffix) && !host.endsWith(".clerk" + currentDevSuffix);
+		});
+	}
+	const ABSOLUTE_URL_REGEX = /^[a-zA-Z][a-zA-Z\d+\-.]*?:/;
+	const isAbsoluteUrl = (url) => ABSOLUTE_URL_REGEX.test(url);
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/path.ts
+	const SEPARATOR = "/";
+	const MULTIPLE_SEPARATOR_REGEX = /* @__PURE__ */ new RegExp("/{1,}", "g");
+	function joinPaths(a, b) {
+		return [a, b].filter((p) => p).join(SEPARATOR).replace(MULTIPLE_SEPARATOR_REGEX, SEPARATOR);
+	}
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/querystring.ts
+	const getQueryParams = (queryString) => {
+		const queryParamsObject = {};
+		new URLSearchParams(queryString).forEach((value, key) => {
+			if (key in queryParamsObject) {
+				const existingValue = queryParamsObject[key];
+				if (Array.isArray(existingValue)) existingValue.push(value);
+				else queryParamsObject[key] = [existingValue, value];
+			} else queryParamsObject[key] = value;
+		});
+		return queryParamsObject;
+	};
+	const stringifyQueryParams = (params, opts = {}) => {
+		if (params === null || params === void 0) return "";
+		if (!params || typeof params !== "object") return "";
+		const queryParams = new URLSearchParams();
+		Object.keys(params).forEach((key) => {
+			const encodedKey = opts.keyEncoder ? opts.keyEncoder(key) : key;
+			const value = params[key];
+			if (Array.isArray(value)) value.forEach((v) => v !== void 0 && queryParams.append(encodedKey, v || ""));
+			else if (value === void 0) return;
+			else if (typeof value === "object" && value !== null) queryParams.append(encodedKey, JSON.stringify(value));
+			else queryParams.append(encodedKey, String(value ?? ""));
+		});
+		return queryParams.toString();
+	};
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/url.ts
+	const DUMMY_URL_BASE = "http://clerk-dummy";
+	const BANNED_URI_PROTOCOLS = ["javascript:"];
+	const { isDevOrStagingUrl } = createDevOrStagingUrlCache();
+	const accountPortalCache = /* @__PURE__ */ new Map();
+	function isDevAccountPortalOrigin(hostname = window.location.hostname) {
+		if (!hostname) return false;
+		let res = accountPortalCache.get(hostname);
+		if (res === void 0) {
+			res = isLegacyDevAccountPortalOrigin(hostname) || isCurrentDevAccountPortalOrigin(hostname);
+			accountPortalCache.set(hostname, res);
+		}
+		return res;
+	}
+	function getETLDPlusOneFromFrontendApi(frontendApi) {
+		return frontendApi.replace("clerk.", "");
+	}
+	function buildURL(params, options = {}) {
+		const { base, hashPath, hashSearch, searchParams, hashSearchParams, ...rest } = params;
+		let fallbackBase = "";
+		if (typeof window !== "undefined" && !!window.location) fallbackBase = window.location.href;
+		else fallbackBase = "http://react-native-fake-base-url";
+		const url = new URL(base || "", fallbackBase);
+		if (searchParams instanceof URLSearchParams) searchParams.forEach((value, key) => {
+			if (value !== null && value !== void 0) url.searchParams.set(camelToSnake(key), value);
+		});
+		Object.assign(url, rest);
+		if (hashPath || hashSearch || hashSearchParams) {
+			const dummyUrlForHash = new URL(DUMMY_URL_BASE + url.hash.substring(1));
+			dummyUrlForHash.pathname = joinPaths(dummyUrlForHash.pathname, hashPath || "");
+			const searchParamsFromHashSearchString = getQueryParams(hashSearch || "");
+			for (const [key, val] of Object.entries(searchParamsFromHashSearchString)) dummyUrlForHash.searchParams.append(key, val);
+			if (hashSearchParams) {
+				const paramsArr = Array.isArray(hashSearchParams) ? hashSearchParams : [hashSearchParams];
+				for (const _params of paramsArr) {
+					if (!(_params instanceof URLSearchParams) && typeof _params !== "object") continue;
+					new URLSearchParams(_params).forEach((value, key) => {
+						if (value !== null && value !== void 0) dummyUrlForHash.searchParams.set(camelToSnake(key), value);
+					});
+				}
+			}
+			const newHash = dummyUrlForHash.href.replace(DUMMY_URL_BASE, "");
+			if (newHash !== "/") url.hash = newHash;
+		}
+		const { stringify, skipOrigin } = options;
+		if (stringify) return skipOrigin ? url.href.replace(url.origin, "") : url.href;
+		return url;
+	}
+	function toURL(url) {
+		return new URL(url.toString(), typeof window !== "undefined" ? window.location?.origin : void 0);
+	}
+	/**
+	*
+	* stripOrigin(url: URL | string): string
+	*
+	* Strips the origin part of a URL and preserves path, search and hash is applicable
+	*
+	* References:
+	* https://developer.mozilla.org/en-US/docs/Web/API/URL
+	*
+	* @param url
+	* @returns Returns the URL href without the origin
+	*/
+	function stripOrigin(url) {
+		if ((typeof window === "undefined" || typeof window.location === "undefined") && typeof url === "string") return url;
+		url = toURL(url);
+		return url.href.replace(url.origin, "");
+	}
+	/**
+	* trimTrailingSlash(path: string): string
+	*
+	* Strips the trailing slashes from a string
+	*
+	* @returns Returns the string without trailing slashes
+	*
+	* @param path
+	*/
+	const trimTrailingSlash = (path) => {
+		return (path || "").replace(/\/+$/, "");
+	};
+	const hasExternalAccountSignUpError = (signUp) => {
+		const { externalAccount } = signUp.verifications;
+		return !!externalAccount.error;
+	};
+	function isValidUrl(val) {
+		if (!val) return false;
+		try {
+			new URL(val);
+			return true;
+		} catch {
+			return false;
+		}
+	}
+	function relativeToAbsoluteUrl(url, origin) {
+		try {
+			return new URL(url);
+		} catch {
+			return new URL(url, origin);
+		}
+	}
+	const disallowedPatterns = [
+		/\0/,
+		/^\/\//,
+		/[\x00-\x1F]/
+	];
+	/**
+	* Check for potentially problematic URLs that could have been crafted to intentionally bypass the origin check. Note that the URLs passed to this
+	* function are assumed to be from an "allowed origin", so we are not executing origin-specific checks here.
+	*/
+	function isProblematicUrl(url) {
+		if (hasBannedProtocol(url)) return true;
+		for (const pattern of disallowedPatterns) if (pattern.test(url.pathname)) return true;
+		return false;
+	}
+	/**
+	* Checks if a URL uses javascript: protocol.
+	* This prevents some XSS attacks through javascript: URLs.
+	*
+	* IMPORTANT: This does not check for `data:` or other protocols which
+	* are dangerous if used for links or setting the window location.
+	*
+	* @param val - The URL to check
+	* @returns True if the URL contains a banned protocol, false otherwise
+	*/
+	function hasBannedProtocol(val) {
+		if (!isValidUrl(val)) return false;
+		const protocol = new URL(val).protocol;
+		return BANNED_URI_PROTOCOLS.some((bp) => bp === protocol);
+	}
+	const frontendApiRedirectPathsWithUserInput = ["/oauth/authorize"];
+	const frontendApiRedirectPathsNoUserInput = [
+		"/v1/verify",
+		"/v1/tickets/accept",
+		"/oauth/authorize-with-immediate-redirect",
+		"/oauth/end_session"
+	];
+	function isRedirectForFAPIInitiatedFlow(frontendApi, redirectUrl) {
+		const url = new URL(redirectUrl, DUMMY_URL_BASE);
+		const path = url.pathname;
+		const isValidFrontendRedirectPath = frontendApiRedirectPathsWithUserInput.includes(path) || frontendApiRedirectPathsNoUserInput.includes(path);
+		return frontendApi === url.host && isValidFrontendRedirectPath;
+	}
+	function requiresUserInput(redirectUrl) {
+		const url = new URL(redirectUrl, DUMMY_URL_BASE);
+		return frontendApiRedirectPathsWithUserInput.includes(url.pathname);
+	}
+	const isAllowedRedirect = (allowedRedirectOrigins, currentOrigin) => (_url) => {
+		let url = _url;
+		if (typeof url === "string") url = relativeToAbsoluteUrl(url, currentOrigin);
+		if (!allowedRedirectOrigins) return true;
+		const isSameOrigin = currentOrigin === url.origin;
+		const isAllowed = !isProblematicUrl(url) && (isSameOrigin || allowedRedirectOrigins.map((origin) => typeof origin === "string" ? globs.toRegexp(trimTrailingSlash(origin)) : origin).some((origin) => origin.test(trimTrailingSlash(url.origin))));
+		if (!isAllowed) logger.warnOnce(`Clerk: Redirect URL ${url} is not on one of the allowedRedirectOrigins, falling back to the default redirect URL.`);
+		return isAllowed;
+	};
+	function createAllowedRedirectOrigins(allowedRedirectOrigins, frontendApi, instanceType) {
+		if (Array.isArray(allowedRedirectOrigins) && !!allowedRedirectOrigins.length) return allowedRedirectOrigins;
+		const origins = [];
+		if (typeof window !== "undefined" && !!window.location) origins.push(window.location.origin);
+		origins.push(`https://${getETLDPlusOneFromFrontendApi(frontendApi)}`);
+		origins.push(`https://*.${getETLDPlusOneFromFrontendApi(frontendApi)}`);
+		if (instanceType === "development") origins.push(`https://${frontendApi}`);
+		return origins;
 	}
 	//#endregion
 	//#region ../clerk-js/src/utils/jwt.ts
@@ -7957,123 +8376,6 @@ isDevOrStagingUrl: (url) => {
 			return remainder || void 0;
 		}
 	};
-	//#endregion
-	//#region ../shared/src/internal/clerk-js/errors.ts
-	const errorPrefix = "ClerkJS:";
-	/**
-	*
-	*/
-	function clerkNetworkError(url, e) {
-		throw new Error(`${errorPrefix} Network error at "${url}" - ${e}. Please try again.`);
-	}
-	/**
-	*
-	*/
-	function clerkErrorInitFailed() {
-		throw new Error(`${errorPrefix} Something went wrong initializing Clerk.`);
-	}
-	/**
-	*
-	*/
-	function clerkErrorDevInitFailed(msg = "") {
-		throw new Error(`${errorPrefix} Something went wrong initializing Clerk in development mode.${msg && ` ${msg}`}`);
-	}
-	/**
-	*
-	*/
-	function clerkMissingFapiClientInResources() {
-		throw new Error(`${errorPrefix} Missing FAPI client in resources.`);
-	}
-	/**
-	*
-	*/
-	function clerkOAuthCallbackDidNotCompleteSignInSignUp(type) {
-		throw new Error(`${errorPrefix} Something went wrong initializing Clerk during the ${type} flow. Please contact support.`);
-	}
-	/**
-	*
-	*/
-	function clerkVerifyEmailAddressCalledBeforeCreate(type) {
-		throw new Error(`${errorPrefix} You need to start a ${type} flow by calling ${type}.create() first.`);
-	}
-	/**
-	*
-	*/
-	function clerkInvalidStrategy(functionaName, strategy) {
-		throw new Error(`${errorPrefix} Strategy "${strategy}" is not a valid strategy for ${functionaName}.`);
-	}
-	/**
-	*
-	*/
-	function clerkVerifyWeb3WalletCalledBeforeCreate(type) {
-		throw new Error(`${errorPrefix} You need to start a ${type} flow by calling ${type}.create({ identifier: 'your web3 wallet address' }) first`);
-	}
-	/**
-	*
-	*/
-	function clerkVerifyPasskeyCalledBeforeCreate() {
-		throw new Error(`${errorPrefix} You need to start a SignIn flow by calling SignIn.create({ strategy: 'passkey' }) first`);
-	}
-	/**
-	*
-	*/
-	function clerkMissingOptionError(name = "") {
-		throw new Error(`${errorPrefix} Missing '${name}' option`);
-	}
-	/**
-	*
-	*/
-	function clerkInvalidFAPIResponse(status, supportEmail) {
-		throw new Error(`${errorPrefix} Response: ${status || 0} not supported yet.\nFor more information contact us at ${supportEmail}`);
-	}
-	/**
-	*
-	*/
-	function clerkMissingDevBrowser() {
-		throw new Error(`${errorPrefix} Missing dev browser. Please contact support.`);
-	}
-	/**
-	*
-	*/
-	function clerkMissingProxyUrlAndDomain() {
-		throw new Error(`${errorPrefix} Missing domain and proxyUrl. A satellite application needs to specify a domain or a proxyUrl.`);
-	}
-	/**
-	*
-	*/
-	function clerkInvalidSignInUrlOrigin() {
-		throw new Error(`${errorPrefix} The signInUrl needs to be on a different origin than your satellite application.`);
-	}
-	/**
-	*
-	*/
-	function clerkInvalidSignInUrlFormat() {
-		throw new Error(`${errorPrefix} The signInUrl needs to have a absolute url format.`);
-	}
-	/**
-	*
-	*/
-	function clerkMissingSignInUrlAsSatellite() {
-		throw new Error(`${errorPrefix} Missing signInUrl. A satellite application needs to specify the signInUrl for development instances.`);
-	}
-	/**
-	*
-	*/
-	function clerkRedirectUrlIsMissingScheme() {
-		throw new Error(`${errorPrefix} Invalid redirect_url. A valid http or https url should be used for the redirection.`);
-	}
-	/**
-	*
-	*/
-	function clerkUnsupportedReloadMethod(className) {
-		throw new Error(`${errorPrefix} Calling ${className}.reload is not currently supported. Please contact support.`);
-	}
-	/**
-	*
-	*/
-	function clerkMissingWebAuthnPublicKeyOptions(name) {
-		throw new Error(`${errorPrefix} Missing publicKey. When calling 'navigator.credentials.${name}()' it is required to pass a publicKey object.`);
-	}
 	//#endregion
 	//#region ../shared/src/internal/clerk-js/hex.ts
 	function toHex(stringToConvert) {
@@ -8847,1170 +9149,18 @@ isDevOrStagingUrl: (url) => {
 		};
 	}
 	//#endregion
+	//#region src/moduleManager.ts
+	var ModuleManager = class {
+		async import(module) {
+			throw Object.assign(/* @__PURE__ */ new Error("This module requires an unavailable platform capability."), {
+				code: "capability_unavailable",
+				capability: module
+			});
+		}
+	};
+	//#endregion
 	//#region ../clerk-js/src/utils/web3.ts
 	const web3 = () => createWeb3(new ModuleManager());
-	//#endregion
-	//#region ../clerk-js/src/utils/localStorage.ts
-	const CLERK_PREFIX = "__clerk_";
-	const CLERK_ENVIRONMENT_STORAGE_ENTRY = "environment";
-	const serialize = JSON.stringify;
-	const parse = JSON.parse;
-	/**
-	* Safe wrapper around localStorage that automatically prefixes keys with 'clerk_'
-	* and handles potential errors and entry expiration
-	*/
-	var SafeLocalStorage = class {
-		static _key(key) {
-			return `${CLERK_PREFIX}${key}`;
-		}
-		static isExpired(entry) {
-			return !!entry.exp && Date.now() > entry.exp;
-		}
-		static setItem(key, value, expiresInMs) {
-			try {
-				const entry = {
-					value,
-					...expiresInMs && { exp: Date.now() + expiresInMs }
-				};
-				window.localStorage.setItem(this._key(key), serialize(entry));
-			} catch {}
-		}
-		static getItem(key, defaultValue) {
-			try {
-				const item = window.localStorage.getItem(this._key(key));
-				if (!item) return defaultValue;
-				const entry = parse(item);
-				if (!entry) return defaultValue;
-				if (this.isExpired(entry)) {
-					this.removeItem(key);
-					return defaultValue;
-				}
-				return entry?.value ?? defaultValue;
-			} catch {
-				return defaultValue;
-			}
-		}
-		static removeItem(key) {
-			try {
-				window.localStorage.removeItem(this._key(key));
-			} catch {}
-		}
-	};
-	//#endregion
-	//#region ../shared/src/dom/waitForElement.ts
-	/**
-	* Uses a MutationObserver to wait for an element to be added to the DOM.
-	*/
-	function waitForElement(selector) {
-		return new Promise((resolve) => {
-			if (document.querySelector(selector)) return resolve(document.querySelector(selector));
-			const observer = new MutationObserver(() => {
-				if (document.querySelector(selector)) {
-					observer.disconnect();
-					resolve(document.querySelector(selector));
-				}
-			});
-			observer.observe(document.body, {
-				childList: true,
-				subtree: true
-			});
-		});
-	}
-	//#endregion
-	//#region ../shared/src/retry.ts
-	const defaultOptions$1 = {
-		initialDelay: 125,
-		maxDelayBetweenRetries: 0,
-		factor: 2,
-		shouldRetry: (_, iteration) => iteration < 5,
-		retryImmediately: false,
-		jitter: true
-	};
-	const RETRY_IMMEDIATELY_DELAY = 100;
-	const sleep$2 = async (ms) => new Promise((s) => setTimeout(s, ms));
-	const applyJitter = (delay, jitter) => {
-		return jitter ? delay * (1 + Math.random()) : delay;
-	};
-	const createExponentialDelayAsyncFn = (opts) => {
-		let timesCalled = 0;
-		const calculateDelayInMs = () => {
-			const constant = opts.initialDelay;
-			const base = opts.factor;
-			let delay = constant * Math.pow(base, timesCalled);
-			delay = applyJitter(delay, opts.jitter);
-			return Math.min(opts.maxDelayBetweenRetries || delay, delay);
-		};
-		return async () => {
-			await sleep$2(calculateDelayInMs());
-			timesCalled++;
-		};
-	};
-	/**
-	* Retries a callback until it succeeds or the shouldRetry function returns false.
-	* See {@link RetryOptions} for the available options.
-	*/
-	const retry = async (callback, options = {}) => {
-		let iterations = 0;
-		const { shouldRetry, initialDelay, maxDelayBetweenRetries, factor, retryImmediately, jitter, onBeforeRetry } = {
-			...defaultOptions$1,
-			...options
-		};
-		const delay = createExponentialDelayAsyncFn({
-			initialDelay,
-			maxDelayBetweenRetries,
-			factor,
-			jitter
-		});
-		while (true) try {
-			return await callback();
-		} catch (e) {
-			iterations++;
-			if (!shouldRetry(e, iterations)) throw e;
-			if (onBeforeRetry) await onBeforeRetry(iterations);
-			if (retryImmediately && iterations === 1) await sleep$2(applyJitter(RETRY_IMMEDIATELY_DELAY, jitter));
-			else await delay();
-		}
-	};
-	//#endregion
-	//#region ../shared/src/loadScript.ts
-	const NO_DOCUMENT_ERROR = "loadScript cannot be called when document does not exist";
-	const NO_SRC_ERROR = "loadScript cannot be called without a src";
-	/**
-	*
-	*/
-	async function loadScript$1(src = "", opts) {
-		const { async, defer, beforeLoad, crossOrigin, nonce } = opts || {};
-		const load = () => {
-			return new Promise((resolve, reject) => {
-				if (!src) reject(/* @__PURE__ */ new Error(NO_SRC_ERROR));
-				if (!document || !document.body) reject(/* @__PURE__ */ new Error(NO_DOCUMENT_ERROR));
-				const script = document.createElement("script");
-				if (crossOrigin) script.setAttribute("crossorigin", crossOrigin);
-				script.async = async || false;
-				script.defer = defer || false;
-				script.addEventListener("load", () => {
-					script.remove();
-					resolve(script);
-				});
-				script.addEventListener("error", (event) => {
-					script.remove();
-					reject(event.error ?? /* @__PURE__ */ new Error(`failed to load script: ${src}`));
-				});
-				script.src = src;
-				if (nonce) script.nonce = nonce;
-				beforeLoad?.(script);
-				document.body.appendChild(script);
-			});
-		};
-		return retry(load, { shouldRetry: (_, iterations) => {
-			return iterations <= 5;
-		} });
-	}
-	//#endregion
-	//#region ../clerk-js/src/utils/captcha/turnstile.ts
-	const CLOUDFLARE_TURNSTILE_ORIGINAL_URL = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-	const shouldRetryTurnstileErrorCode = (errorCode) => {
-		return !![
-			"crashed",
-			"undefined_error",
-			"102",
-			"103",
-			"104",
-			"106",
-			"110600",
-			"300",
-			"600"
-		].find((w) => errorCode.startsWith(w));
-	};
-	async function loadCaptcha(nonce) {
-		if (!window.turnstile) await loadCaptchaFromCloudflareURL(nonce).catch(() => {
-			throw { captchaError: "captcha_script_failed_to_load" };
-		});
-		return window.turnstile;
-	}
-	async function loadCaptchaFromCloudflareURL(nonce) {
-		try {
-			return await loadScript$1(CLOUDFLARE_TURNSTILE_ORIGINAL_URL, {
-				defer: true,
-				nonce
-			});
-		} catch (err) {
-			console.warn("Clerk: Failed to load the CAPTCHA script from Cloudflare. If you see a CSP error in your browser, please add the necessary CSP rules to your app. Visit https://clerk.com/docs/security/clerk-csp for more information.");
-			throw err;
-		}
-	}
-	function getCaptchaAttibutesFromElemenet(element) {
-		try {
-			return {
-				theme: element.getAttribute("data-cl-theme") || void 0,
-				language: element.getAttribute("data-cl-language") || void 0,
-				size: element.getAttribute("data-cl-size") || void 0
-			};
-		} catch {
-			return {
-				theme: void 0,
-				language: void 0,
-				size: void 0
-			};
-		}
-	}
-	const getTurnstileToken = async (opts) => {
-		const { siteKey, widgetType, invisibleSiteKey, nonce } = opts;
-		const { modalContainerQuerySelector, modalWrapperQuerySelector, closeModal, openModal } = opts;
-		const captcha = await loadCaptcha(nonce);
-		const errorCodes = [];
-		let captchaToken = "";
-		let id = "";
-		let turnstileSiteKey = siteKey;
-		let captchaTheme;
-		let captchaSize;
-		let captchaLanguage;
-		let retries = 0;
-		let widgetContainerQuerySelector;
-		let captchaWidgetType = null;
-		let captchaTypeUsed = "invisible";
-		if (modalContainerQuerySelector && modalWrapperQuerySelector) {
-			captchaWidgetType = widgetType;
-			widgetContainerQuerySelector = modalContainerQuerySelector;
-			captchaTypeUsed = "modal";
-			try {
-				await openModal?.();
-			} catch {
-				throw { captchaError: "modal_component_not_ready" };
-			}
-			const modalContainderEl = await waitForElement(modalContainerQuerySelector);
-			if (modalContainderEl) {
-				const { theme, language, size } = getCaptchaAttibutesFromElemenet(modalContainderEl);
-				captchaTheme = theme;
-				captchaLanguage = language;
-				captchaSize = size;
-			}
-		}
-		if (!widgetContainerQuerySelector && widgetType === "smart") {
-			const visibleDiv = document.getElementById(CAPTCHA_ELEMENT_ID);
-			if (visibleDiv) {
-				captchaTypeUsed = "smart";
-				captchaWidgetType = "smart";
-				widgetContainerQuerySelector = `#${CAPTCHA_ELEMENT_ID}`;
-				visibleDiv.style.maxHeight = "0";
-				const { theme, language, size } = getCaptchaAttibutesFromElemenet(visibleDiv);
-				captchaTheme = theme;
-				captchaLanguage = language;
-				captchaSize = size;
-			} else console.error("Cannot initialize Smart CAPTCHA widget because the `clerk-captcha` DOM element was not found; falling back to Invisible CAPTCHA widget. If you are using a custom flow, visit https://clerk.com/docs/guides/development/custom-flows/authentication/bot-sign-up-protection for instructions");
-		}
-		if (!widgetContainerQuerySelector) {
-			captchaTypeUsed = "invisible";
-			turnstileSiteKey = invisibleSiteKey;
-			captchaWidgetType = "invisible";
-			widgetContainerQuerySelector = `.${CAPTCHA_INVISIBLE_CLASSNAME}`;
-			const div = document.createElement("div");
-			div.classList.add(CAPTCHA_INVISIBLE_CLASSNAME);
-			div.style.display = "none";
-			document.body.appendChild(div);
-		}
-		const handleCaptchaTokenGeneration = async () => {
-			return new Promise((resolve, reject) => {
-				try {
-					const id = captcha.render(widgetContainerQuerySelector, {
-						sitekey: turnstileSiteKey,
-						appearance: "interaction-only",
-						theme: captchaTheme || "auto",
-						size: captchaSize || "normal",
-						language: captchaLanguage || "auto",
-						action: opts.action,
-						retry: "never",
-						"refresh-expired": "auto",
-						callback: function(token) {
-							closeModal?.();
-							resolve([token, id]);
-						},
-						"before-interactive-callback": () => {
-							if (modalWrapperQuerySelector) {
-								const el = document.querySelector(modalWrapperQuerySelector);
-								el?.style.setProperty("visibility", "visible");
-								el?.style.setProperty("pointer-events", "all");
-							} else {
-								const visibleWidget = document.getElementById(CAPTCHA_ELEMENT_ID);
-								if (visibleWidget) {
-									visibleWidget.style.maxHeight = "unset";
-									visibleWidget.style.minHeight = captchaSize === "compact" ? "140px" : "68px";
-									visibleWidget.style.marginBottom = "1.5rem";
-									visibleWidget.dataset.clInteractive = "true";
-								}
-							}
-						},
-						"error-callback": function(errorCode) {
-							errorCodes.push(errorCode);
-							/**
-							* By setting retry to 'never' the responsibility for implementing retrying is ours
-							* https://developers.cloudflare.com/turnstile/reference/client-side-errors/#retrying
-							*/
-							if (retries < 2 && shouldRetryTurnstileErrorCode(errorCode.toString())) {
-								setTimeout(() => {
-									if (widgetContainerQuerySelector && !document.querySelector(widgetContainerQuerySelector)) {
-										reject([errorCodes.join(","), id]);
-										return;
-									}
-									captcha.reset(id);
-									retries++;
-								}, 250);
-								return;
-							}
-							reject([errorCodes.join(","), id]);
-						},
-						"unsupported-callback": function() {
-							reject(["This browser is not supported by the CAPTCHA.", id]);
-							return true;
-						}
-					});
-				} catch (e) {
-					/**
-					* There is a case the turnstile may fail before the challenge has started.
-					* In such case the 'error-callback' does not fire.
-					* We should mark the promise as rejected.
-					*/
-					reject([e, void 0]);
-				}
-			});
-		};
-		try {
-			[captchaToken, id] = await handleCaptchaTokenGeneration();
-			captcha.remove(id);
-		} catch ([e, id]) {
-			if (id) captcha.remove(id);
-			throw { captchaError: e };
-		} finally {
-			if (captchaTypeUsed === "modal") closeModal?.();
-			if (captchaTypeUsed === "invisible") {
-				const invisibleWidget = document.querySelector(`.${CAPTCHA_INVISIBLE_CLASSNAME}`);
-				if (invisibleWidget) document.body.removeChild(invisibleWidget);
-			}
-			if (captchaTypeUsed === "smart") {
-				const visibleWidget = document.getElementById(CAPTCHA_ELEMENT_ID);
-				if (visibleWidget) {
-					delete visibleWidget.dataset.clInteractive;
-					visibleWidget.style.maxHeight = "0";
-					visibleWidget.style.minHeight = "unset";
-					visibleWidget.style.marginBottom = "unset";
-				}
-			}
-		}
-		return {
-			captchaToken,
-			captchaWidgetType
-		};
-	};
-	//#endregion
-	//#region ../clerk-js/src/utils/captcha/getCaptchaToken.ts
-	const getCaptchaToken = (opts) => {
-		return getTurnstileToken(opts);
-	};
-	//#endregion
-	//#region ../clerk-js/src/utils/captcha/retrieveCaptchaInfo.ts
-	const retrieveCaptchaInfo = (clerk) => {
-		const _environment = clerk.__internal_environment;
-		const captchaProvider = _environment ? _environment.displayConfig.captchaProvider : "turnstile";
-		const nonce = clerk.__internal_getOption?.("nonce");
-		return {
-			captchaSiteKey: _environment ? _environment.displayConfig.captchaPublicKey : null,
-			captchaWidgetType: _environment ? _environment.displayConfig.captchaWidgetType : null,
-			captchaProvider,
-			captchaPublicKeyInvisible: _environment ? _environment.displayConfig.captchaPublicKeyInvisible : null,
-			canUseCaptcha: _environment ? _environment.userSettings.signUp.captcha_enabled && clerk.isStandardBrowser : null,
-			nonce: nonce || void 0
-		};
-	};
-	//#endregion
-	//#region ../clerk-js/src/utils/captcha/CaptchaChallenge.ts
-	var CaptchaChallenge = class {
-		constructor(clerk) {
-			this.clerk = clerk;
-		}
-		/**
-		* Triggers an invisible challenge.
-		* This will always use the non-interactive variant of the CAPTCHA challenge and will
-		* always use the fallback key.
-		*/
-		async invisible(opts) {
-			const { captchaSiteKey, canUseCaptcha, captchaPublicKeyInvisible, nonce } = retrieveCaptchaInfo(this.clerk);
-			if (canUseCaptcha && captchaSiteKey && captchaPublicKeyInvisible) return {
-				...await getCaptchaToken({
-					action: opts?.action,
-					captchaProvider: "turnstile",
-					invisibleSiteKey: captchaPublicKeyInvisible,
-					nonce: opts?.nonce || nonce || void 0,
-					siteKey: captchaPublicKeyInvisible,
-					widgetType: "invisible"
-				}).catch((e) => {
-					if (e.captchaError) return { captchaError: e.captchaError };
-					return { captchaError: e?.message || e || "unexpected_captcha_error" };
-				}),
-				captchaAction: opts?.action
-			};
-			return {
-				captchaError: "captcha_unavailable",
-				captchaAction: opts?.action
-			};
-		}
-		/**
-		* Triggers a smart challenge if the user is required to solve a CAPTCHA.
-		* The type of the challenge depends on the dashboard configuration.
-		* By default, smart (managed) captcha is preferred. If the customer has selected invisible, this method
-		* will fall back to using the invisible captcha instead.
-		*
-		* Managed challenged start as non-interactive and escalate to interactive if necessary.
-		*/
-		async managedOrInvisible(opts) {
-			const { captchaSiteKey, canUseCaptcha, captchaWidgetType, captchaProvider, captchaPublicKeyInvisible, nonce } = retrieveCaptchaInfo(this.clerk);
-			if (canUseCaptcha && captchaSiteKey && captchaPublicKeyInvisible) {
-				const captchaResult = await getCaptchaToken({
-					captchaProvider,
-					invisibleSiteKey: captchaPublicKeyInvisible,
-					nonce: nonce || void 0,
-					siteKey: captchaSiteKey,
-					widgetType: captchaWidgetType,
-					...opts
-				}).catch((e) => {
-					if (e.captchaError) return { captchaError: e.captchaError };
-					return opts?.action === "verify" ? { captchaError: e?.message || e || "unexpected_captcha_error" } : void 0;
-				});
-				return opts?.action === "verify" ? {
-					...captchaResult,
-					captchaAction: "verify"
-				} : captchaResult;
-			}
-			return opts?.action === "verify" ? {
-				captchaError: "captcha_unavailable",
-				captchaAction: opts?.action
-			} : {};
-		}
-		/**
-		* Similar to managed() but will render the CAPTCHA challenge in a modal
-		* managed by clerk-js itself.
-		*/
-		async managedInModal(opts) {
-			if (typeof document === "undefined") throw new ClerkRuntimeError("Captcha is not supported in non-browser environments", { code: "captcha_unavailable" });
-			return this.managedOrInvisible({
-				modalWrapperQuerySelector: "#cl-modal-captcha-wrapper",
-				modalContainerQuerySelector: "#cl-modal-captcha-container",
-				openModal: () => this.clerk.__internal_openBlankCaptchaModal(),
-				closeModal: () => this.clerk.__internal_closeBlankCaptchaModal(),
-				action: opts?.action
-			});
-		}
-	};
-	//#endregion
-	//#region ../clerk-js/src/core/fraudProtection.ts
-	var FraudProtection = class FraudProtection {
-		static getInstance() {
-			if (!FraudProtection.instance) FraudProtection.instance = new FraudProtection(Client, CaptchaChallenge);
-			return FraudProtection.instance;
-		}
-		constructor(client, CaptchaChallengeImpl) {
-			this.client = client;
-			this.CaptchaChallengeImpl = CaptchaChallengeImpl;
-			this.inflightException = null;
-			this.captchaRetryCount = 0;
-			this.MAX_RETRY_ATTEMPTS = 3;
-			this.captchaAttemptsExceeded = () => {
-				return this.captchaRetryCount >= this.MAX_RETRY_ATTEMPTS;
-			};
-		}
-		async execute(clerk, cb) {
-			if (this.captchaAttemptsExceeded()) throw new ClerkRuntimeError("Security verification failed. Please try again by refreshing the page, clearing your browser cookies, or using a different web browser.", { code: "captcha_client_attempts_exceeded" });
-			try {
-				if (this.inflightException) await this.inflightException;
-				return await cb();
-			} catch (e) {
-				if (!isClerkAPIResponseError(e)) throw e;
-				if (isClerkRuntimeError(e) && e.code === "network_error") throw e;
-				if (e.errors[0]?.code !== "requires_captcha") throw e;
-				if (this.inflightException) {
-					await this.inflightException;
-					return await cb();
-				}
-				let resolve;
-				this.inflightException = new Promise((r) => resolve = r);
-				try {
-					const captchaParams = await this.managedChallenge(clerk);
-					if (captchaParams?.captchaError !== "modal_component_not_ready") {
-						await this.client.getOrCreateInstance().__internal_sendCaptchaToken(captchaParams);
-						this.captchaRetryCount = 0;
-					}
-				} catch (err) {
-					this.captchaRetryCount++;
-					throw err;
-				} finally {
-					resolve();
-					this.inflightException = null;
-				}
-				return await cb();
-			}
-		}
-		managedChallenge(clerk) {
-			return new this.CaptchaChallengeImpl(clerk).managedInModal({ action: "verify" });
-		}
-	};
-	//#endregion
-	//#region ../clerk-js/src/core/resources/Base.ts
-	const COALESCED_POST_TTL_MS = 3e4;
-	function assertProductionKeysOnDev(statusCode, payloadErrors) {
-		if (!payloadErrors) return;
-		if (!payloadErrors[0]) return;
-		const safeError = payloadErrors[0];
-		const safeErrorMessage = safeError.long_message;
-		if (safeError.code === "origin_invalid" && isProductionFromPublishableKey(BaseResource.clerk.publishableKey)) throw new ClerkAPIResponseError(`Clerk: Production Keys are only allowed for domain "${BaseResource.clerk.frontendApi.replace("clerk.", "")}". \nAPI Error: ${safeErrorMessage}`, {
-			data: payloadErrors,
-			status: statusCode
-		});
-	}
-	var BaseResource = class BaseResource {
-		constructor() {
-			this.pathRoot = "";
-		}
-		#pendingCoalescedPosts;
-		static get fapiClient() {
-			return BaseResource.clerk.getFapiClient();
-		}
-		async reload(params) {
-			const { rotatingTokenNonce } = params || {};
-			return this._baseGet({
-				forceUpdateClient: true,
-				rotatingTokenNonce
-			});
-		}
-		isNew() {
-			return !this.id;
-		}
-		static async _fetch(requestInit, opts = {}) {
-			return FraudProtection.getInstance().execute(this.clerk, () => this._baseFetch(requestInit, opts));
-		}
-		static async _baseFetch(requestInit, opts = {}) {
-			if (!BaseResource.fapiClient) clerkMissingFapiClientInResources();
-			let fapiResponse;
-			const { fetchMaxTries } = opts;
-			try {
-				fapiResponse = await BaseResource.fapiClient.request(requestInit, { fetchMaxTries });
-			} catch (e) {
-				if (this.shouldRethrowOfflineNetworkErrors()) throw new ClerkRuntimeError(e?.message || e, { code: "network_error" });
-				else if (!isValidNetworkEnvironment()) {
-					debugLogger.warn("Network request failed while offline, returning null", {
-						method: requestInit.method,
-						path: requestInit.path
-					}, "baseResource");
-					return null;
-				} else throw e;
-			}
-			const { payload, status, statusText, headers } = fapiResponse;
-			if (headers) {
-				const country = headers.get("x-country");
-				this.clerk.__internal_setCountry(country ? country.toLowerCase() : null);
-			}
-			if ((requestInit.method !== "GET" || opts.forceUpdateClient) && !opts.skipUpdateClient) this._updateClient(payload);
-			if (status >= 200 && status <= 299) return payload;
-			if (status >= 400) {
-				const errors = payload?.errors;
-				const message = errors?.[0]?.long_message;
-				const code = errors?.[0]?.code;
-				if (status === 401 && code === "dev_browser_unauthenticated") await BaseResource.clerk.__internal_handleUnauthenticatedDevBrowser();
-				else if (status === 401 && code !== "requires_captcha") await BaseResource.clerk.handleUnauthenticated();
-				assertProductionKeysOnDev(status, errors);
-				const apiResponseOptions = {
-					data: errors,
-					status
-				};
-				if (status === 429 && headers) {
-					const retryAfter = headers.get("retry-after");
-					if (retryAfter) {
-						const value = parseInt(retryAfter, 10);
-						if (!isNaN(value)) apiResponseOptions.retryAfter = value;
-					}
-				}
-				throw new ClerkAPIResponseError(message || statusText, apiResponseOptions);
-			}
-			return null;
-		}
-		static _updateClient(responseJSON) {
-			const client = getClientResourceFromPayload(responseJSON);
-			if (client && BaseResource.clerk) BaseResource.clerk.updateClient(client);
-		}
-		path(action) {
-			const base = this.pathRoot;
-			if (this.isNew()) return base;
-			const baseWithId = base.replace(/[^/]$/, "$&/") + encodeURIComponent(this.id);
-			if (!action) return baseWithId;
-			return baseWithId.replace(/[^/]$/, "$&/") + encodeURIComponent(action);
-		}
-		/**
-		* Returns the provided value if it is not `undefined` or `null`, otherwise returns the default value.
-		*
-		* @template T - The type of the value.
-		* @param value - The value to check.
-		* @param defaultValue - The default value to return if the provided value is `undefined` or `null`.
-		* @returns The provided value if it is not `undefined` or `null`, otherwise the default value.
-		*/
-		withDefault(value, defaultValue) {
-			return value ?? defaultValue;
-		}
-		async _baseGet(opts = {}) {
-			const json = await BaseResource._fetch({
-				method: "GET",
-				path: this.path(),
-				rotatingTokenNonce: opts.rotatingTokenNonce,
-				signal: opts.abortSignal
-			}, opts);
-			return this.fromJSON(json?.response || json);
-		}
-		async _baseMutate(params) {
-			const { action, body, method, path, signal } = params;
-			const json = await BaseResource._fetch({
-				method,
-				path: path || this.path(action),
-				body,
-				signal
-			});
-			return this.fromJSON(json?.response || json);
-		}
-		async _baseMutateBypass(params) {
-			const { action, body, method, path } = params;
-			const json = await BaseResource._baseFetch({
-				method,
-				path: path || this.path(action),
-				body
-			});
-			return this.fromJSON(json?.response || json);
-		}
-		async _basePost(params = {}) {
-			if (!params.coalesce) return this._baseMutate({
-				...params,
-				method: "POST"
-			});
-			const key = this.#coalescedPostKey(params);
-			const posts = this.#pendingCoalescedPosts ??= /* @__PURE__ */ new Map();
-			const pending = posts.get(key);
-			if (pending && Date.now() < pending.expiresAt) return pending.promise;
-			const controller = new AbortController();
-			const promise = this._baseMutate({
-				...params,
-				method: "POST",
-				signal: controller.signal
-			}).finally(() => {
-				if (posts.get(key)?.promise === promise) posts.delete(key);
-			});
-			posts.set(key, {
-				promise,
-				controller,
-				expiresAt: Date.now() + COALESCED_POST_TTL_MS
-			});
-			return promise;
-		}
-		#coalescedPostKey(params) {
-			const body = Object.entries(params.body ?? {}).filter(([, value]) => value !== void 0).sort(([left], [right]) => left < right ? -1 : 1);
-			return JSON.stringify([
-				this.id,
-				params.path,
-				params.action,
-				body
-			]);
-		}
-		async _basePostBypass(params = {}) {
-			return this._baseMutateBypass({
-				...params,
-				method: "POST"
-			});
-		}
-		async _basePut(params = {}) {
-			return this._baseMutate({
-				...params,
-				method: "PUT"
-			});
-		}
-		async _basePatch(params = {}) {
-			return this._baseMutate({
-				...params,
-				method: "PATCH"
-			});
-		}
-		async _baseDelete(params = {}) {
-			await this._baseMutate({
-				...params,
-				method: "DELETE"
-			});
-		}
-		static shouldRethrowOfflineNetworkErrors() {
-			return (BaseResource.clerk?.__internal_getOption?.("experimental"))?.rethrowOfflineNetworkErrors || false;
-		}
-	};
-	//#endregion
-	//#region ../clerk-js/src/core/resources/APIKey.ts
-	var APIKey = class extends BaseResource {
-		constructor(data) {
-			super();
-			this.pathRoot = "/api_keys";
-			this.fromJSON(data);
-		}
-		fromJSON(data) {
-			if (!data) return this;
-			this.id = data.id;
-			this.type = data.type;
-			this.name = data.name;
-			this.subject = data.subject;
-			this.scopes = data.scopes;
-			this.claims = data.claims;
-			this.revoked = data.revoked;
-			this.revocationReason = data.revocation_reason;
-			this.expired = data.expired;
-			this.expiration = data.expiration ? unixEpochToDate(data.expiration) : null;
-			this.createdBy = data.created_by;
-			this.description = data.description;
-			this.secret = data.secret;
-			this.lastUsedAt = data.last_used_at ? unixEpochToDate(data.last_used_at) : null;
-			this.updatedAt = unixEpochToDate(data.updated_at);
-			this.createdAt = unixEpochToDate(data.created_at);
-			return this;
-		}
-		__internal_toSnapshot() {
-			return {
-				object: "api_key",
-				id: this.id,
-				type: this.type,
-				name: this.name,
-				subject: this.subject,
-				scopes: this.scopes,
-				claims: this.claims,
-				revoked: this.revoked,
-				revocation_reason: this.revocationReason,
-				expired: this.expired,
-				expiration: this.expiration ? this.expiration.getTime() : null,
-				created_by: this.createdBy,
-				description: this.description,
-				last_used_at: this.lastUsedAt ? this.lastUsedAt.getTime() : null,
-				created_at: this.createdAt.getTime(),
-				updated_at: this.updatedAt.getTime()
-			};
-		}
-	};
-	//#endregion
-	//#region ../clerk-js/src/core/resources/AuthConfig.ts
-	var AuthConfig = class extends BaseResource {
-		constructor(data = null) {
-			super();
-			this.claimedAt = null;
-			this.reverification = false;
-			this.singleSessionMode = false;
-			this.preferredChannels = null;
-			this.sessionMinter = false;
-			this.nativeSettings = {
-				apiEnabled: false,
-				trustedDeviceSignInEnabled: false,
-				trustedDeviceEnrollmentPromptAfterSignInEnabled: false,
-				trustedDeviceEnrollmentPromptAfterSignUpEnabled: false
-			};
-			this.fromJSON(data);
-		}
-		fromJSON(data) {
-			if (!data) return this;
-			this.claimedAt = this.withDefault(data.claimed_at ? unixEpochToDate(data.claimed_at) : null, this.claimedAt);
-			this.reverification = this.withDefault(data.reverification, this.reverification);
-			this.singleSessionMode = this.withDefault(data.single_session_mode, this.singleSessionMode);
-			this.preferredChannels = this.withDefault(data.preferred_channels, this.preferredChannels);
-			this.sessionMinter = this.withDefault(data.session_minter, this.sessionMinter);
-			this.nativeSettings = {
-				apiEnabled: data.native_settings?.api_enabled ?? false,
-				trustedDeviceSignInEnabled: data.native_settings?.trusted_device_sign_in_enabled ?? false,
-				trustedDeviceEnrollmentPromptAfterSignInEnabled: data.native_settings?.trusted_device_enrollment_prompt_after_sign_in_enabled ?? false,
-				trustedDeviceEnrollmentPromptAfterSignUpEnabled: data.native_settings?.trusted_device_enrollment_prompt_after_sign_up_enabled ?? false
-			};
-			return this;
-		}
-		__internal_toSnapshot() {
-			return {
-				claimed_at: this.claimedAt ? this.claimedAt.getTime() : null,
-				id: this.id ?? "",
-				object: "auth_config",
-				reverification: this.reverification,
-				single_session_mode: this.singleSessionMode,
-				session_minter: this.sessionMinter,
-				native_settings: {
-					api_enabled: this.nativeSettings.apiEnabled,
-					trusted_device_sign_in_enabled: this.nativeSettings.trustedDeviceSignInEnabled,
-					trusted_device_enrollment_prompt_after_sign_in_enabled: this.nativeSettings.trustedDeviceEnrollmentPromptAfterSignInEnabled,
-					trusted_device_enrollment_prompt_after_sign_up_enabled: this.nativeSettings.trustedDeviceEnrollmentPromptAfterSignUpEnabled
-				}
-			};
-		}
-	};
-	//#endregion
-	//#region ../../node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/system.mjs
-	var ReactiveFlags;
-	(function(ReactiveFlags) {
-		ReactiveFlags[ReactiveFlags["None"] = 0] = "None";
-		ReactiveFlags[ReactiveFlags["Mutable"] = 1] = "Mutable";
-		ReactiveFlags[ReactiveFlags["Watching"] = 2] = "Watching";
-		ReactiveFlags[ReactiveFlags["RecursedCheck"] = 4] = "RecursedCheck";
-		ReactiveFlags[ReactiveFlags["Recursed"] = 8] = "Recursed";
-		ReactiveFlags[ReactiveFlags["Dirty"] = 16] = "Dirty";
-		ReactiveFlags[ReactiveFlags["Pending"] = 32] = "Pending";
-	})(ReactiveFlags || (ReactiveFlags = {}));
-	function createReactiveSystem({ update, notify, unwatched }) {
-		let version = 0;
-		return {
-			link,
-			unlink,
-			propagate,
-			checkDirty,
-			endTracking,
-			startTracking,
-			shallowPropagate
-		};
-		function link(dep, sub) {
-			const prevDep = sub.depsTail;
-			if (prevDep !== void 0 && prevDep.dep === dep) return;
-			let nextDep;
-			if (sub.flags & 4) {
-				nextDep = prevDep !== void 0 ? prevDep.nextDep : sub.deps;
-				if (nextDep !== void 0 && nextDep.dep === dep) {
-					nextDep.version = version;
-					sub.depsTail = nextDep;
-					return;
-				}
-			}
-			const prevSub = dep.subsTail;
-			if (prevSub !== void 0 && prevSub.version === version && prevSub.sub === sub) return;
-			const newLink = sub.depsTail = dep.subsTail = {
-				version,
-				dep,
-				sub,
-				prevDep,
-				nextDep,
-				prevSub,
-				nextSub: void 0
-			};
-			if (nextDep !== void 0) nextDep.prevDep = newLink;
-			if (prevDep !== void 0) prevDep.nextDep = newLink;
-			else sub.deps = newLink;
-			if (prevSub !== void 0) prevSub.nextSub = newLink;
-			else dep.subs = newLink;
-		}
-		function unlink(link, sub = link.sub) {
-			const dep = link.dep;
-			const prevDep = link.prevDep;
-			const nextDep = link.nextDep;
-			const nextSub = link.nextSub;
-			const prevSub = link.prevSub;
-			if (nextDep !== void 0) nextDep.prevDep = prevDep;
-			else sub.depsTail = prevDep;
-			if (prevDep !== void 0) prevDep.nextDep = nextDep;
-			else sub.deps = nextDep;
-			if (nextSub !== void 0) nextSub.prevSub = prevSub;
-			else dep.subsTail = prevSub;
-			if (prevSub !== void 0) prevSub.nextSub = nextSub;
-			else if ((dep.subs = nextSub) === void 0) unwatched(dep);
-			return nextDep;
-		}
-		function propagate(link) {
-			let next = link.nextSub;
-			let stack;
-			top: do {
-				const sub = link.sub;
-				let flags = sub.flags;
-				if (flags & 3) {
-					if (!(flags & 60)) sub.flags = flags | 32;
-					else if (!(flags & 12)) flags = 0;
-					else if (!(flags & 4)) sub.flags = flags & -9 | 32;
-					else if (!(flags & 48) && isValidLink(link, sub)) {
-						sub.flags = flags | 40;
-						flags &= 1;
-					} else flags = 0;
-					if (flags & 2) notify(sub);
-					if (flags & 1) {
-						const subSubs = sub.subs;
-						if (subSubs !== void 0) {
-							link = subSubs;
-							if (subSubs.nextSub !== void 0) {
-								stack = {
-									value: next,
-									prev: stack
-								};
-								next = link.nextSub;
-							}
-							continue;
-						}
-					}
-				}
-				if ((link = next) !== void 0) {
-					next = link.nextSub;
-					continue;
-				}
-				while (stack !== void 0) {
-					link = stack.value;
-					stack = stack.prev;
-					if (link !== void 0) {
-						next = link.nextSub;
-						continue top;
-					}
-				}
-				break;
-			} while (true);
-		}
-		function startTracking(sub) {
-			++version;
-			sub.depsTail = void 0;
-			sub.flags = sub.flags & -57 | 4;
-		}
-		function endTracking(sub) {
-			const depsTail = sub.depsTail;
-			let toRemove = depsTail !== void 0 ? depsTail.nextDep : sub.deps;
-			while (toRemove !== void 0) toRemove = unlink(toRemove, sub);
-			sub.flags &= -5;
-		}
-		function checkDirty(link, sub) {
-			let stack;
-			let checkDepth = 0;
-			top: do {
-				const dep = link.dep;
-				const depFlags = dep.flags;
-				let dirty = false;
-				if (sub.flags & 16) dirty = true;
-				else if ((depFlags & 17) === 17) {
-					if (update(dep)) {
-						const subs = dep.subs;
-						if (subs.nextSub !== void 0) shallowPropagate(subs);
-						dirty = true;
-					}
-				} else if ((depFlags & 33) === 33) {
-					if (link.nextSub !== void 0 || link.prevSub !== void 0) stack = {
-						value: link,
-						prev: stack
-					};
-					link = dep.deps;
-					sub = dep;
-					++checkDepth;
-					continue;
-				}
-				if (!dirty && link.nextDep !== void 0) {
-					link = link.nextDep;
-					continue;
-				}
-				while (checkDepth) {
-					--checkDepth;
-					const firstSub = sub.subs;
-					const hasMultipleSubs = firstSub.nextSub !== void 0;
-					if (hasMultipleSubs) {
-						link = stack.value;
-						stack = stack.prev;
-					} else link = firstSub;
-					if (dirty) {
-						if (update(sub)) {
-							if (hasMultipleSubs) shallowPropagate(firstSub);
-							sub = link.sub;
-							continue;
-						}
-					} else sub.flags &= -33;
-					sub = link.sub;
-					if (link.nextDep !== void 0) {
-						link = link.nextDep;
-						continue top;
-					}
-					dirty = false;
-				}
-				return dirty;
-			} while (true);
-		}
-		function shallowPropagate(link) {
-			do {
-				const sub = link.sub;
-				const nextSub = link.nextSub;
-				const subFlags = sub.flags;
-				if ((subFlags & 48) === 32) {
-					sub.flags = subFlags | 16;
-					if (subFlags & 2) notify(sub);
-				}
-				link = nextSub;
-			} while (link !== void 0);
-		}
-		function isValidLink(checkLink, sub) {
-			const depsTail = sub.depsTail;
-			if (depsTail !== void 0) {
-				let link = sub.deps;
-				do {
-					if (link === checkLink) return true;
-					if (link === depsTail) break;
-					link = link.nextDep;
-				} while (link !== void 0);
-			}
-			return false;
-		}
-	}
-	//#endregion
-	//#region ../../node_modules/.pnpm/alien-signals@2.0.6/node_modules/alien-signals/esm/index.mjs
-	const queuedEffects = [];
-	const { link, unlink, propagate, checkDirty, endTracking, startTracking, shallowPropagate } = createReactiveSystem({
-		update(signal) {
-			if ("getter" in signal) return updateComputed(signal);
-			else return updateSignal(signal, signal.value);
-		},
-		notify,
-		unwatched(node) {
-			if ("getter" in node) {
-				let toRemove = node.deps;
-				if (toRemove !== void 0) {
-					node.flags = 17;
-					do
-						toRemove = unlink(toRemove, node);
-					while (toRemove !== void 0);
-				}
-			} else if (!("previousValue" in node)) effectOper.call(node);
-		}
-	});
-	let batchDepth = 0;
-	let notifyIndex = 0;
-	let queuedEffectsLength = 0;
-	let activeSub;
-	function setCurrentSub(sub) {
-		const prevSub = activeSub;
-		activeSub = sub;
-		return prevSub;
-	}
-	function startBatch() {
-		++batchDepth;
-	}
-	function endBatch() {
-		if (!--batchDepth) flush();
-	}
-	function signal(initialValue) {
-		return signalOper.bind({
-			previousValue: initialValue,
-			value: initialValue,
-			subs: void 0,
-			subsTail: void 0,
-			flags: 1
-		});
-	}
-	function computed(getter) {
-		return computedOper.bind({
-			value: void 0,
-			subs: void 0,
-			subsTail: void 0,
-			deps: void 0,
-			depsTail: void 0,
-			flags: 17,
-			getter
-		});
-	}
-	function effect(fn) {
-		const e = {
-			fn,
-			subs: void 0,
-			subsTail: void 0,
-			deps: void 0,
-			depsTail: void 0,
-			flags: 2
-		};
-		if (activeSub !== void 0) link(e, activeSub);
-		const prev = setCurrentSub(e);
-		try {
-			e.fn();
-		} finally {
-			setCurrentSub(prev);
-		}
-		return effectOper.bind(e);
-	}
-	function updateComputed(c) {
-		const prevSub = setCurrentSub(c);
-		startTracking(c);
-		try {
-			const oldValue = c.value;
-			return oldValue !== (c.value = c.getter(oldValue));
-		} finally {
-			setCurrentSub(prevSub);
-			endTracking(c);
-		}
-	}
-	function updateSignal(s, value) {
-		s.flags = 1;
-		return s.previousValue !== (s.previousValue = value);
-	}
-	function notify(e) {
-		const flags = e.flags;
-		if (!(flags & 64)) {
-			e.flags = flags | 64;
-			const subs = e.subs;
-			if (subs !== void 0) notify(subs.sub);
-			else queuedEffects[queuedEffectsLength++] = e;
-		}
-	}
-	function run(e, flags) {
-		if (flags & 16 || flags & 32 && checkDirty(e.deps, e)) {
-			const prev = setCurrentSub(e);
-			startTracking(e);
-			try {
-				e.fn();
-			} finally {
-				setCurrentSub(prev);
-				endTracking(e);
-			}
-			return;
-		} else if (flags & 32) e.flags = flags & -33;
-		let link = e.deps;
-		while (link !== void 0) {
-			const dep = link.dep;
-			const depFlags = dep.flags;
-			if (depFlags & 64) run(dep, dep.flags = depFlags & -65);
-			link = link.nextDep;
-		}
-	}
-	function flush() {
-		while (notifyIndex < queuedEffectsLength) {
-			const effect = queuedEffects[notifyIndex];
-			queuedEffects[notifyIndex++] = void 0;
-			run(effect, effect.flags &= -65);
-		}
-		notifyIndex = 0;
-		queuedEffectsLength = 0;
-	}
-	function computedOper() {
-		const flags = this.flags;
-		if (flags & 16 || flags & 32 && checkDirty(this.deps, this)) {
-			if (updateComputed(this)) {
-				const subs = this.subs;
-				if (subs !== void 0) shallowPropagate(subs);
-			}
-		} else if (flags & 32) this.flags = flags & -33;
-		if (activeSub !== void 0) link(this, activeSub);
-		return this.value;
-	}
-	function signalOper(...value) {
-		if (value.length) {
-			const newValue = value[0];
-			if (this.value !== (this.value = newValue)) {
-				this.flags = 17;
-				const subs = this.subs;
-				if (subs !== void 0) {
-					propagate(subs);
-					if (!batchDepth) flush();
-				}
-			}
-		} else {
-			const value = this.value;
-			if (this.flags & 16) {
-				if (updateSignal(this, value)) {
-					const subs = this.subs;
-					if (subs !== void 0) shallowPropagate(subs);
-				}
-			}
-			if (activeSub !== void 0) link(this, activeSub);
-			return value;
-		}
-	}
-	function effectOper() {
-		let dep = this.deps;
-		while (dep !== void 0) dep = unlink(dep, this);
-		const sub = this.subs;
-		if (sub !== void 0) unlink(sub);
-		this.flags = 0;
-	}
 	//#endregion
 	//#region ../clerk-js/src/utils/convertPageToOffsetSearchParams.ts
 	function convertPageToOffsetSearchParams(pageParams) {
@@ -15813,12 +14963,12 @@ isDevOrStagingUrl: (url) => {
 				});
 			});
 		}
-		async sso(params) {
+		async sso(params, appleIdentity) {
 			const { strategy, redirectUrl, redirectCallbackUrl, popup, oidcPrompt, enterpriseConnectionId, identifier } = params;
 			return runAsyncResourceTask(this.#resource, async () => {
 				if (strategy === "oauth_token_apple") {
 					if (popup) throw new ClerkRuntimeError("A popup cannot be combined with native Apple authentication.", { code: "oauth_transport_popup_conflict" });
-					const identity = await getNativeAppleIdentity(SignIn.clerk);
+					const identity = appleIdentity ?? await getNativeAppleIdentity(SignIn.clerk);
 					if (this.#resource.id) await this.#resource.__internal_basePost({
 						action: "attempt_first_factor",
 						body: {
@@ -16838,12 +15988,12 @@ isDevOrStagingUrl: (url) => {
 				});
 			});
 		}
-		async sso(params) {
+		async sso(params, appleIdentity) {
 			const { strategy, redirectUrl, redirectCallbackUrl, unsafeMetadata, legalAccepted, oidcPrompt, enterpriseConnectionId, emailAddress, popup, locale } = params;
 			return runAsyncResourceTask(this.#resource, async () => {
 				if (strategy === "oauth_token_apple") {
 					if (popup) throw new ClerkRuntimeError("A popup cannot be combined with native Apple authentication.", { code: "oauth_transport_popup_conflict" });
-					const identity = await getNativeAppleIdentity(SignUp.clerk);
+					const identity = appleIdentity ?? await getNativeAppleIdentity(SignUp.clerk);
 					const appleParams = {
 						strategy: "oauth_token_apple",
 						token: identity.token,
@@ -17894,6 +17044,930 @@ isDevOrStagingUrl: (url) => {
 				method: "POST",
 				body: params
 			}));
+		}
+	};
+	//#endregion
+	//#region ../clerk-js/src/utils/authenticateWithMobileSSO.ts
+	async function authenticateWithMobileSSO(clerk, params) {
+		if (!(clerk.client?.signIn instanceof SignIn) || !(clerk.client.signUp instanceof SignUp)) throw new ClerkRuntimeError("Clerk is not loaded.", { code: "clerk_not_loaded" });
+		const signInResource = clerk.client.signIn;
+		const signUpResource = clerk.client.signUp;
+		const signIn = signInResource.__internal_future;
+		const signUp = signUpResource.__internal_future;
+		const { start, transferable, ...ssoParams } = params;
+		const apple = params.strategy === "oauth_token_apple";
+		const identity = apple ? await getNativeAppleIdentity(clerk) : void 0;
+		const routes = {
+			redirectUrl: "",
+			redirectCallbackUrl: ""
+		};
+		const signInResult = () => {
+			if (signIn.firstFactorVerification.error) throw signIn.firstFactorVerification.error;
+			return {
+				kind: "signIn",
+				signIn
+			};
+		};
+		const finishSignIn = async () => {
+			if (transferable && signIn.isTransferable) {
+				const { error } = await signUp.create({
+					transfer: true,
+					unsafeMetadata: params.unsafeMetadata,
+					legalAccepted: params.legalAccepted,
+					locale: params.locale,
+					firstName: params.firstName ?? identity?.firstName,
+					lastName: params.lastName ?? identity?.lastName
+				});
+				if (error) throw error;
+				return {
+					kind: "signUp",
+					signUp
+				};
+			}
+			return signInResult();
+		};
+		if (start === "signUp" || start === "auto" && apple && transferable) {
+			const { error } = await signUp.sso({
+				...ssoParams,
+				...routes,
+				emailAddress: params.identifier
+			}, identity);
+			if (error) {
+				const restricted = isClerkAPIResponseError(error) && error.errors.some(({ code }) => ["sign_up_mode_restricted", "sign_up_restricted_waitlist"].includes(code));
+				if (!(start === "auto" && apple && restricted)) throw error;
+				const fallback = await signIn.sso({
+					...ssoParams,
+					...routes
+				}, identity);
+				if (fallback.error) throw fallback.error;
+				if (signIn.isTransferable) throw error;
+				return signInResult();
+			}
+			if (signUp.isTransferable) {
+				const { error } = await signIn.create({ transfer: true });
+				if (error) throw error;
+				return signInResult();
+			}
+			return {
+				kind: "signUp",
+				signUp
+			};
+		}
+		const { error } = await signIn.sso({
+			...ssoParams,
+			...routes
+		}, identity);
+		if (error) throw error;
+		return finishSignIn();
+	}
+	//#endregion
+	//#region ../shared/src/clerkEventBus.ts
+	const clerkEvents = { Status: "status" };
+	const createClerkEventBus = () => {
+		return createEventBus();
+	};
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/componentGuards.ts
+	const isSignedInAndSingleSessionModeEnabled = (clerk, environment) => {
+		return !!(clerk.isSignedIn && environment?.authConfig.singleSessionMode);
+	};
+	const noUserExists = (clerk) => {
+		return !clerk.user;
+	};
+	const noOrganizationExists = (clerk) => {
+		return !clerk.organization;
+	};
+	const disabledOrganizationsFeature = (_, environment) => {
+		return !environment?.organizationSettings.enabled;
+	};
+	const disabledUserBillingFeature = (_, environment) => {
+		return !environment?.commerceSettings.billing.user.enabled;
+	};
+	const disabledOrganizationBillingFeature = (_, environment) => {
+		return !environment?.commerceSettings.billing.organization.enabled;
+	};
+	const disabledAllBillingFeatures = (_, environment) => {
+		return disabledUserBillingFeature(_, environment) && disabledOrganizationBillingFeature(_, environment);
+	};
+	const disabledUserAPIKeysFeature = (_, environment) => {
+		return !environment?.apiKeysSettings?.user_api_keys_enabled;
+	};
+	const disabledOrganizationAPIKeysFeature = (_, environment) => {
+		return !environment?.apiKeysSettings?.orgs_api_keys_enabled;
+	};
+	const disabledAllAPIKeysFeatures = (_, environment) => {
+		return disabledUserAPIKeysFeature(_, environment) && disabledOrganizationAPIKeysFeature(_, environment);
+	};
+	const disabledSelfServeSSOFeature = (clerk, environment) => {
+		return !environment?.userSettings.enterpriseSSO.self_serve_sso || !clerk.organization?.selfServeSSOEnabled;
+	};
+	const disabledEmailAddressAttribute = (_, environment) => {
+		return !environment?.userSettings.attributes.email_address?.enabled;
+	};
+	//#endregion
+	//#region ../shared/src/object.ts
+	const removeUndefined = (obj) => {
+		return Object.entries(obj).reduce((acc, [key, value]) => {
+			if (value !== void 0 && value !== null) acc[key] = value;
+			return acc;
+		}, {});
+	};
+	const applyFunctionToObj = (obj, fn) => {
+		const result = {};
+		for (const key in obj) result[key] = fn(obj[key], key);
+		return result;
+	};
+	const filterProps = (obj, filter) => {
+		const result = {};
+		for (const key in obj) if (obj[key] && filter(obj[key])) result[key] = obj[key];
+		return result;
+	};
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/redirectUrls.ts
+	var RedirectUrls = class RedirectUrls {
+		static keys = [
+			"signInForceRedirectUrl",
+			"signInFallbackRedirectUrl",
+			"signUpForceRedirectUrl",
+			"signUpFallbackRedirectUrl",
+			"redirectUrl"
+		];
+		static preserved = ["redirectUrl"];
+		options;
+		fromOptions;
+		fromProps;
+		fromSearchParams;
+		mode;
+		constructor(options, props = {}, searchParams = {}, mode) {
+			this.options = options;
+			this.fromOptions = this.#parse(options || {});
+			this.fromProps = this.#parse(props || {});
+			this.fromSearchParams = this.#parseSearchParams(searchParams || {});
+			this.mode = mode;
+		}
+		getAfterSignInUrl() {
+			return this.#getRedirectUrl("signIn");
+		}
+		getAfterSignUpUrl() {
+			return this.#getRedirectUrl("signUp");
+		}
+		getPreservedSearchParams() {
+			return this.#toSearchParams(this.#flattenPreserved());
+		}
+		toSearchParams() {
+			return this.#toSearchParams(this.#flattenAll());
+		}
+		#toSearchParams(obj) {
+			const camelCased = Object.fromEntries(Object.entries(obj).map(([key, value]) => [camelToSnake(key), value]));
+			return new URLSearchParams(removeUndefined(camelCased));
+		}
+		#flattenPreserved() {
+			return Object.fromEntries(Object.entries({ ...this.fromSearchParams }).filter(([key]) => RedirectUrls.preserved.includes(key)));
+		}
+		#flattenAll() {
+			const signUpForceRedirectUrl = this.fromSearchParams.signUpForceRedirectUrl || this.fromProps.signUpForceRedirectUrl || this.fromOptions.signUpForceRedirectUrl;
+			const signUpFallbackRedirectUrl = this.fromSearchParams.signUpFallbackRedirectUrl || this.fromProps.signUpFallbackRedirectUrl || this.fromOptions.signUpFallbackRedirectUrl;
+			const signInForceRedirectUrl = this.fromSearchParams.signInForceRedirectUrl || this.fromProps.signInForceRedirectUrl || this.fromOptions.signInForceRedirectUrl;
+			const res = {
+				signUpForceRedirectUrl,
+				signUpFallbackRedirectUrl,
+				signInFallbackRedirectUrl: this.fromSearchParams.signInFallbackRedirectUrl || this.fromProps.signInFallbackRedirectUrl || this.fromOptions.signInFallbackRedirectUrl,
+				signInForceRedirectUrl,
+				redirectUrl: this.fromSearchParams.redirectUrl || this.fromProps.redirectUrl
+			};
+			if (signUpForceRedirectUrl) delete res.signUpFallbackRedirectUrl;
+			if (signInForceRedirectUrl) delete res.signInFallbackRedirectUrl;
+			return res;
+		}
+		#getRedirectUrl(prefix) {
+			const forceKey = `${prefix}ForceRedirectUrl`;
+			const fallbackKey = `${prefix}FallbackRedirectUrl`;
+			let result;
+			result = this.fromSearchParams[forceKey] || this.fromProps[forceKey] || this.fromOptions[forceKey];
+			result ||= this.fromSearchParams.redirectUrl;
+			result ||= this.fromSearchParams[fallbackKey] || this.fromProps[fallbackKey] || this.fromOptions[fallbackKey];
+			if (!result && this.mode === "modal") return window.location.href;
+			return result || "/";
+		}
+		#parse(obj) {
+			const res = {};
+			RedirectUrls.keys.forEach((key) => {
+				res[key] = obj[key];
+			});
+			return applyFunctionToObj(this.#filterRedirects(this.#toAbsoluteUrls(filterProps(res, Boolean))), (val) => val.toString());
+		}
+		#parseSearchParams(obj) {
+			const res = {};
+			RedirectUrls.keys.forEach((key) => {
+				if (obj instanceof URLSearchParams) res[key] = obj.get(camelToSnake(key));
+				else res[key] = obj[camelToSnake(key)];
+			});
+			return applyFunctionToObj(this.#filterRedirects(this.#toAbsoluteUrls(filterProps(res, Boolean))), (val) => val.toString());
+		}
+		#toAbsoluteUrls(obj) {
+			return applyFunctionToObj(obj, (url) => relativeToAbsoluteUrl(url, window.location.origin));
+		}
+		#filterRedirects = (obj) => {
+			return filterProps(obj, isAllowedRedirect(this.options?.allowedRedirectOrigins, window.location.origin));
+		};
+	};
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/sessionTasks.ts
+	/**
+	* @internal
+	*/
+	const INTERNAL_SESSION_TASK_ROUTE_BY_KEY = {
+		"choose-organization": "choose-organization",
+		"reset-password": "reset-password",
+		"setup-mfa": "setup-mfa"
+	};
+	/**
+	* @internal
+	*/
+	const getTaskEndpoint = (task) => `/tasks/${INTERNAL_SESSION_TASK_ROUTE_BY_KEY[task.key]}`;
+	/**
+	* @internal
+	*/
+	function buildTaskUrl(task, opts) {
+		const params = forwardClerkQueryParams();
+		return buildURL({
+			base: opts.base,
+			hashPath: getTaskEndpoint(task),
+			searchParams: params
+		}, { stringify: true });
+	}
+	/**
+	* @internal
+	*/
+	function navigateIfTaskExists(session, { navigate, baseUrl }) {
+		const currentTask = session.currentTask;
+		if (!currentTask) return;
+		return navigate(buildTaskUrl(currentTask, { base: baseUrl }));
+	}
+	function warnMissingPendingTaskHandlers(options) {
+		const taskOptions = ["taskUrls", "navigate"];
+		if (Object.keys(options).some((option) => taskOptions.includes(option))) return;
+		logger.warnOnce(`Clerk: Session has pending tasks but no handling is configured. To handle pending tasks, provide either "taskUrls" for navigation to custom URLs or "navigate" for programmatic navigation. Without these options, users may get stuck on incomplete flows.`);
+	}
+	//#endregion
+	//#region ../shared/src/internal/clerk-js/warnings.ts
+	const formatWarning = (msg) => {
+		return `🔒 Clerk:\n${msg.trim()}\n(This notice only appears in development)`;
+	};
+	const createMessageForDisabledOrganizations = (componentName) => {
+		return formatWarning(`The <${componentName}/> cannot be rendered when the feature is turned off. Visit 'dashboard.clerk.com' to enable the feature. Since the feature is turned off, this is no-op.`);
+	};
+	const createCannotRenderComponentWhenOrgDoesNotExist = (componentName) => {
+		return formatWarning(`<${componentName}/> cannot render unless an organization is active. Since no organization is currently active, this is no-op.`);
+	};
+	const createCannotRenderComponentWhenPermissionIsMissing = (componentName, permission) => {
+		return formatWarning(`<${componentName}/> cannot render unless the current user has the \`${permission}\` permission. Since the current user is missing this permission, this is no-op. Render it only for members who can manage memberships, for example by wrapping it in <Show when={{ permission: '${permission}' }}>.`);
+	};
+	const createMessageForDisabledBilling = (componentName) => {
+		return formatWarning(`The <${componentName}/> component cannot be rendered when billing is disabled. Visit 'https://dashboard.clerk.com/~/billing/settings' to follow the necessary steps to enable billing. Since billing is disabled, this is no-op.`);
+	};
+	const propertyAsFunctionNotSupported = (property) => {
+		return formatWarning(`${property} as a function is not supported in this environment. The value will be ignored. Provide an absolute URL instead.`);
+	};
+	const warnings = {
+		proxyUrlAsFunctionNotSupported: propertyAsFunctionNotSupported("proxyUrl"),
+		domainAsFunctionNotSupported: propertyAsFunctionNotSupported("domain"),
+		cannotRenderComponentWhenSessionExists: "The <SignUp/> and <SignIn/> components cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the Home URL instead.",
+		cannotRenderSignUpComponentWhenSessionExists: "The <SignUp/> component cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the value set in `afterSignUp` URL instead.",
+		cannotRenderSignUpComponentWhenTaskExists: "The <SignUp/> component cannot render when a user has a pending task, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the task instead.",
+		cannotRenderComponentWhenTaskDoesNotExist: "<TaskChooseOrganization/> cannot render unless a session task is pending. Clerk is redirecting to the value set in `redirectUrlComplete` instead.",
+		cannotRenderSignInComponentWhenSessionExists: "The <SignIn/> component cannot render when a user is already signed in, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the `afterSignIn` URL instead.",
+		cannotRenderSignInComponentWhenTaskExists: "The <SignIn/> component cannot render when a user has a pending task, unless the application allows multiple sessions. Since a user is signed in and this application only allows a single session, Clerk is redirecting to the task instead.",
+		cannotRenderComponentWhenUserDoesNotExist: "<UserProfile/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
+		createCannotRenderComponentWhenOrgDoesNotExist,
+		createCannotRenderComponentWhenPermissionIsMissing,
+		cannotRenderAnyOrganizationComponent: createMessageForDisabledOrganizations,
+		cannotRenderAnyBillingComponent: createMessageForDisabledBilling,
+		cannotOpenUserProfile: "The UserProfile modal cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
+		cannotOpenCheckout: "The Checkout drawer cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
+		cannotOpenSignInOrSignUp: "The <SignIn/> and <SignUp/> modals are hidden because a user is already signed in and this application is configured for single-session mode. This is expected behavior — no action is needed. To allow rendering while signed in, enable multi-session mode in your Clerk Dashboard.",
+		cannotRenderAPIKeysComponent: "The <APIKeys/> component cannot be rendered when API keys is disabled. Since API keys is disabled, this is no-op.",
+		cannotRenderAPIKeysComponentForOrgWhenUnauthorized: "The <APIKeys/> component cannot be rendered for an organization unless a user has the required permissions. Since the user does not have the necessary permissions, this is no-op.",
+		cannotRenderAPIKeysComponentForUserWhenDisabled: "The <APIKeys/> component cannot be rendered when user API keys are disabled. Since user API keys are disabled, this is no-op.",
+		cannotRenderAPIKeysComponentForOrgWhenDisabled: "The <APIKeys/> component cannot be rendered when organization API keys are disabled. Since organization API keys are disabled, this is no-op.",
+		cannotRenderOAuthConsentComponentWhenUserDoesNotExist: "<OAuthConsent/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
+		cannotRenderOAuthDeviceVerificationComponentWhenUserDoesNotExist: "<OAuthDeviceVerification/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
+		cannotRenderConfigureSSOComponentWhenUserDoesNotExist: "<ConfigureSSO/> cannot render unless a user is signed in. Since no user is signed in, this is no-op.",
+		cannotRenderConfigureSSOComponentWhenDisabled: "The <ConfigureSSO/> component cannot be rendered when self-serve SSO is disabled. Visit `https://dashboard.clerk.com` to enable the feature. Since self-serve SSO is disabled, this is no-op.",
+		cannotRenderConfigureSSOComponentWhenEmailAddressDisabled: "The <ConfigureSSO/> component cannot be rendered when email addresses are disabled on the instance. Visit `https://dashboard.clerk.com` to enable email addresses. Since email addresses are disabled, this is no-op."
+	};
+	for (const key of Object.keys(warnings)) {
+		const item = warnings[key];
+		if (typeof item !== "function") warnings[key] = formatWarning(item);
+	}
+	//#endregion
+	//#region ../shared/src/proxy.ts
+	/**
+	*
+	*/
+	function isValidProxyUrl(key) {
+		if (!key) return true;
+		return isHttpOrHttps(key) || isProxyUrlRelative(key);
+	}
+	/**
+	*
+	*/
+	function isHttpOrHttps(key) {
+		return /^http(s)?:\/\//.test(key || "");
+	}
+	/**
+	*
+	*/
+	function isProxyUrlRelative(key) {
+		return key.startsWith("/");
+	}
+	/**
+	*
+	*/
+	function proxyUrlToAbsoluteURL(url) {
+		if (!url) return "";
+		if (!isProxyUrlRelative(url)) return url;
+		if (typeof window === "undefined" || !window.location?.origin) return url;
+		return new URL(url, window.location.origin).toString();
+	}
+	const AUTO_PROXY_HOST_SUFFIXES = [".vercel.app"];
+	const AUTO_PROXY_PATH = "/__clerk";
+	function shouldAutoProxy(hostname) {
+		return AUTO_PROXY_HOST_SUFFIXES.some((hostSuffix) => hostname?.endsWith(hostSuffix)) ?? false;
+	}
+	//#endregion
+	//#region ../shared/src/telemetry/notice.ts
+	/**
+	* One-time runtime disclosure that Clerk collects telemetry from development instances.
+	*
+	* Replaces the previous `postinstall` script. Disclosure is intentionally surfaced
+	* only on Node (server-side) so the noise profile matches the original postinstall
+	* (terminal-only, dev-eyes-only). Browser consoles are not used because they are
+	* frequently observed by non-developers (QA, screenshots, demos), and adding another
+	* console warning is a common source of customer complaints.
+	*
+	* Known gap: pure browser-only setups with no server-side Clerk runtime (e.g. a Vite
+	* SPA using `@clerk/clerk-react` or `@clerk/clerk-js` directly, without any Node/Edge
+	* backend that imports `@clerk/shared`) will never hit this code path and therefore
+	* see no in-band disclosure. This is an accepted trade-off: the original postinstall
+	* already fired only once at install time and was easily missed, so the practical
+	* delta is small. Authoritative disclosure for those setups lives in the Clerk
+	* telemetry docs (https://clerk.com/docs/telemetry). Opt-out continues to work the
+	* same way (`telemetry={false}` on `<ClerkProvider>` or the framework-specific
+	* `*_CLERK_TELEMETRY_DISABLED` env var).
+	*
+	* Persistence is in-process via a `globalThis` Symbol, which survives Next.js HMR
+	* module reloads. No filesystem access, no `node:` imports, no dynamic-code APIs, so
+	* the module remains safe to bundle for Edge Runtime, Workers, and any browser path.
+	*
+	* All work is wrapped in try/catch. Failure to display the notice must never affect
+	* the SDK.
+	*/
+	init_runtimeEnvironment();
+	const PROCESS_FLAG = Symbol.for("@clerk/shared.telemetryNoticeShown");
+	const NOTICE_LINES = [
+		"Attention: Clerk collects telemetry data from its SDKs when connected to development instances.",
+		"The data collected is used to inform Clerk's product roadmap.",
+		"To learn more, including how to opt-out from the telemetry program, visit: https://clerk.com/docs/telemetry."
+	];
+	function isServerRuntime() {
+		if (typeof window !== "undefined") return false;
+		if (typeof globalThis.EdgeRuntime !== "undefined") return false;
+		return true;
+	}
+	function isCI() {
+		if (typeof process === "undefined" || !process.env) return false;
+		return automatedEnvironmentVariables.some((name) => isTruthy(process.env[name]));
+	}
+	function hasSeen() {
+		return Boolean(globalThis[PROCESS_FLAG]);
+	}
+	function markSeen() {
+		globalThis[PROCESS_FLAG] = true;
+	}
+	function printNotice() {
+		if (typeof console === "undefined" || typeof console.log !== "function") return;
+		for (const line of NOTICE_LINES) console.log(line);
+		console.log("");
+	}
+	/**
+	* Display the one-time telemetry disclosure on server runtimes if it has not already been
+	* shown in this process. Browser and Edge Runtime callers are silently skipped. Never throws.
+	*/
+	function maybeShowTelemetryNotice(options = {}) {
+		if (options.skip) return;
+		try {
+			if (!isServerRuntime()) return;
+			if (isCI()) return;
+			if (hasSeen()) return;
+			printNotice();
+			markSeen();
+		} catch {}
+	}
+	//#endregion
+	//#region ../shared/src/telemetry/throttler.ts
+	const DEFAULT_CACHE_TTL_MS = 864e5;
+	/**
+	* Manages throttling for telemetry events using a configurable cache implementation
+	* to mitigate event flooding in frequently executed code paths.
+	*/
+	var TelemetryEventThrottler = class {
+		#cache;
+		#cacheTtl = DEFAULT_CACHE_TTL_MS;
+		constructor(cache) {
+			this.#cache = cache;
+		}
+		isEventThrottled(payload) {
+			const now = Date.now();
+			const key = this.#generateKey(payload);
+			const entry = this.#cache.getItem(key);
+			if (!entry) {
+				this.#cache.setItem(key, now);
+				return false;
+			}
+			if (now - entry > this.#cacheTtl) {
+				this.#cache.setItem(key, now);
+				return false;
+			}
+			return true;
+		}
+		/**
+		* Generates a consistent unique key for telemetry events by sorting payload properties.
+		* This ensures that payloads with identical content in different orders produce the same key.
+		*/
+		#generateKey(event) {
+			const { sk: _sk, pk: _pk, payload, ...rest } = event;
+			const sanitizedEvent = {
+				...payload,
+				...rest
+			};
+			return JSON.stringify(Object.keys({
+				...payload,
+				...rest
+			}).sort().map((key) => sanitizedEvent[key]));
+		}
+	};
+	/**
+	* LocalStorage-based cache implementation for browser environments.
+	*/
+	var LocalStorageThrottlerCache = class {
+		#storageKey = "clerk_telemetry_throttler";
+		getItem(key) {
+			return this.#getCache()[key];
+		}
+		setItem(key, value) {
+			try {
+				const cache = this.#getCache();
+				cache[key] = value;
+				localStorage.setItem(this.#storageKey, JSON.stringify(cache));
+			} catch (err) {
+				if (err instanceof DOMException && (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED") && localStorage.length > 0) localStorage.removeItem(this.#storageKey);
+			}
+		}
+		removeItem(key) {
+			try {
+				const cache = this.#getCache();
+				delete cache[key];
+				localStorage.setItem(this.#storageKey, JSON.stringify(cache));
+			} catch {}
+		}
+		#getCache() {
+			try {
+				const cacheString = localStorage.getItem(this.#storageKey);
+				if (!cacheString) return {};
+				return JSON.parse(cacheString);
+			} catch {
+				return {};
+			}
+		}
+		static isSupported() {
+			return typeof window !== "undefined" && !!window.localStorage;
+		}
+	};
+	/**
+	* In-memory cache implementation for non-browser environments (e.g., React Native).
+	*/
+	var InMemoryThrottlerCache = class {
+		#cache = /* @__PURE__ */ new Map();
+		#maxSize = 1e4;
+		getItem(key) {
+			if (this.#cache.size > this.#maxSize) {
+				this.#cache.clear();
+				return;
+			}
+			return this.#cache.get(key);
+		}
+		setItem(key, value) {
+			this.#cache.set(key, value);
+		}
+		removeItem(key) {
+			this.#cache.delete(key);
+		}
+	};
+	//#endregion
+	//#region ../shared/src/telemetry/collector.ts
+	/**
+	* The `TelemetryCollector` class handles collection of telemetry events from Clerk SDKs. Telemetry is opt-out and can be disabled by setting a CLERK_TELEMETRY_DISABLED environment variable.
+	* The `ClerkProvider` also accepts a `telemetry` prop that will be passed to the collector during initialization:.
+	*
+	* ```jsx
+	* <ClerkProvider telemetry={false}>
+	*    ...
+	* </ClerkProvider>
+	* ```
+	*
+	* For more information, please see the telemetry documentation page: https://clerk.com/docs/telemetry.
+	*/
+	/**
+	* Type guard to check if window.Clerk exists and has the expected structure.
+	*/
+	function isWindowClerkWithMetadata(clerk) {
+		return typeof clerk === "object" && clerk !== null && "constructor" in clerk && typeof clerk.constructor === "function";
+	}
+	const VALID_LOG_LEVELS = new Set([
+		"error",
+		"warn",
+		"info",
+		"debug",
+		"trace"
+	]);
+	const DEFAULT_CONFIG = {
+		samplingRate: 1,
+		maxBufferSize: 5,
+		endpoint: "https://clerk-telemetry.com"
+	};
+	var TelemetryCollector = class {
+		#config;
+		#eventThrottler;
+		#metadata = {};
+		#buffer = [];
+		#pendingFlush = null;
+		constructor(options) {
+			this.#config = {
+				maxBufferSize: options.maxBufferSize ?? DEFAULT_CONFIG.maxBufferSize,
+				samplingRate: options.samplingRate ?? DEFAULT_CONFIG.samplingRate,
+				perEventSampling: options.perEventSampling ?? true,
+				disabled: options.disabled ?? false,
+				debug: options.debug ?? false,
+				endpoint: DEFAULT_CONFIG.endpoint
+			};
+			if (!options.clerkVersion && typeof window === "undefined") this.#metadata.clerkVersion = "";
+			else this.#metadata.clerkVersion = options.clerkVersion ?? "";
+			this.#metadata.sdk = options.sdk;
+			this.#metadata.sdkVersion = options.sdkVersion;
+			this.#metadata.publishableKey = options.publishableKey ?? "";
+			const parsedKey = parsePublishableKey(options.publishableKey);
+			if (parsedKey) this.#metadata.instanceType = parsedKey.instanceType;
+			if (options.secretKey) this.#metadata.secretKey = options.secretKey.substring(0, 16);
+			const cache = LocalStorageThrottlerCache.isSupported() ? new LocalStorageThrottlerCache() : new InMemoryThrottlerCache();
+			this.#eventThrottler = new TelemetryEventThrottler(cache);
+			maybeShowTelemetryNotice({ skip: !this.isEnabled });
+		}
+		get isEnabled() {
+			if (this.#metadata.instanceType !== "development") return false;
+			if (this.#config.disabled || typeof process !== "undefined" && process.env && isTruthy(process.env.CLERK_TELEMETRY_DISABLED)) return false;
+			if (typeof window !== "undefined" && !!window?.navigator?.webdriver) return false;
+			return true;
+		}
+		get isDebug() {
+			return this.#config.debug || typeof process !== "undefined" && process.env && isTruthy(process.env.CLERK_TELEMETRY_DEBUG);
+		}
+		record(event) {
+			try {
+				const preparedPayload = this.#preparePayload(event.event, event.payload);
+				this.#logEvent(preparedPayload.event, preparedPayload);
+				if (!this.#shouldRecord(preparedPayload, event.eventSamplingRate)) return;
+				this.#buffer.push({
+					kind: "event",
+					value: preparedPayload
+				});
+				this.#scheduleFlush();
+			} catch (error) {
+				console.error("[clerk/telemetry] Error recording telemetry event", error);
+			}
+		}
+		/**
+		* Records a telemetry log entry if logging is enabled and not in debug mode.
+		*
+		* @param entry - The telemetry log entry to record.
+		*/
+		recordLog(entry) {
+			try {
+				if (!this.#shouldRecordLog(entry)) return;
+				const levelIsValid = typeof entry?.level === "string" && VALID_LOG_LEVELS.has(entry.level);
+				const messageIsValid = typeof entry?.message === "string" && entry.message.trim().length > 0;
+				let normalizedTimestamp = null;
+				const timestampInput = entry?.timestamp;
+				if (typeof timestampInput === "number" || typeof timestampInput === "string") {
+					const candidate = new Date(timestampInput);
+					if (!Number.isNaN(candidate.getTime())) normalizedTimestamp = candidate;
+				}
+				if (!levelIsValid || !messageIsValid || normalizedTimestamp === null) {
+					if (this.isDebug && typeof console !== "undefined") console.warn("[clerk/telemetry] Dropping invalid telemetry log entry", {
+						levelIsValid,
+						messageIsValid,
+						timestampIsValid: normalizedTimestamp !== null
+					});
+					return;
+				}
+				const sdkMetadata = this.#getSDKMetadata();
+				const logData = {
+					sdk: sdkMetadata.name,
+					sdkv: sdkMetadata.version,
+					cv: this.#metadata.clerkVersion ?? "",
+					lvl: entry.level,
+					msg: entry.message,
+					ts: normalizedTimestamp.toISOString(),
+					pk: this.#metadata.publishableKey || null,
+					payload: this.#sanitizeContext(entry.context)
+				};
+				this.#buffer.push({
+					kind: "log",
+					value: logData
+				});
+				this.#scheduleFlush();
+			} catch (error) {
+				console.error("[clerk/telemetry] Error recording telemetry log entry", error);
+			}
+		}
+		#shouldRecord(preparedPayload, eventSamplingRate) {
+			return this.isEnabled && !this.isDebug && this.#shouldBeSampled(preparedPayload, eventSamplingRate);
+		}
+		#shouldRecordLog(_entry) {
+			return true;
+		}
+		#shouldBeSampled(preparedPayload, eventSamplingRate) {
+			const randomSeed = Math.random();
+			if (!(randomSeed <= this.#config.samplingRate && (this.#config.perEventSampling === false || typeof eventSamplingRate === "undefined" || randomSeed <= eventSamplingRate))) return false;
+			return !this.#eventThrottler.isEventThrottled(preparedPayload);
+		}
+		#scheduleFlush() {
+			if (typeof window === "undefined") {
+				this.#flush();
+				return;
+			}
+			if (this.#buffer.length >= this.#config.maxBufferSize) {
+				if (this.#pendingFlush) if (typeof cancelIdleCallback !== "undefined") cancelIdleCallback(Number(this.#pendingFlush));
+				else clearTimeout(Number(this.#pendingFlush));
+				this.#flush();
+				return;
+			}
+			if (this.#pendingFlush) return;
+			if ("requestIdleCallback" in window) this.#pendingFlush = requestIdleCallback(() => {
+				this.#flush();
+				this.#pendingFlush = null;
+			});
+			else this.#pendingFlush = setTimeout(() => {
+				this.#flush();
+				this.#pendingFlush = null;
+			}, 0);
+		}
+		#flush() {
+			const itemsToSend = [...this.#buffer];
+			this.#buffer = [];
+			this.#pendingFlush = null;
+			if (itemsToSend.length === 0) return;
+			const eventsToSend = itemsToSend.filter((item) => item.kind === "event").map((item) => item.value);
+			const logsToSend = itemsToSend.filter((item) => item.kind === "log").map((item) => item.value);
+			if (eventsToSend.length > 0) {
+				const eventsUrl = new URL("/v1/event", this.#config.endpoint);
+				fetch(eventsUrl, {
+					headers: { "Content-Type": "application/json" },
+					keepalive: true,
+					method: "POST",
+					body: JSON.stringify({ events: eventsToSend })
+				}).catch(() => void 0);
+			}
+			if (logsToSend.length > 0) {
+				const logsUrl = new URL("/v1/logs", this.#config.endpoint);
+				fetch(logsUrl, {
+					headers: { "Content-Type": "application/json" },
+					keepalive: true,
+					method: "POST",
+					body: JSON.stringify({ logs: logsToSend })
+				}).catch(() => void 0);
+			}
+		}
+		/**
+		* If running in debug mode, log the event and its payload to the console.
+		*/
+		#logEvent(event, payload) {
+			if (!this.isDebug) return;
+			if (typeof console.groupCollapsed !== "undefined") {
+				console.groupCollapsed("[clerk/telemetry]", event);
+				console.log(payload);
+				console.groupEnd();
+			} else console.log("[clerk/telemetry]", event, payload);
+		}
+		/**
+		* If in browser, attempt to lazily grab the SDK metadata from the Clerk singleton, otherwise fallback to the initially passed in values.
+		*
+		* This is necessary because the sdkMetadata can be set by the host SDK after the TelemetryCollector is instantiated.
+		*/
+		#getSDKMetadata() {
+			const sdkMetadata = {
+				name: this.#metadata.sdk,
+				version: this.#metadata.sdkVersion
+			};
+			if (typeof window !== "undefined") {
+				const windowWithClerk = window;
+				if (windowWithClerk.Clerk) {
+					const windowClerk = windowWithClerk.Clerk;
+					if (isWindowClerkWithMetadata(windowClerk) && windowClerk.constructor.sdkMetadata) {
+						const { name, version } = windowClerk.constructor.sdkMetadata;
+						if (name !== void 0) sdkMetadata.name = name;
+						if (version !== void 0) sdkMetadata.version = version;
+					}
+				}
+			}
+			return sdkMetadata;
+		}
+		/**
+		* Append relevant metadata from the Clerk singleton to the event payload.
+		*/
+		#preparePayload(event, payload) {
+			const sdkMetadata = this.#getSDKMetadata();
+			return {
+				event,
+				cv: this.#metadata.clerkVersion ?? "",
+				it: this.#metadata.instanceType ?? "",
+				sdk: sdkMetadata.name,
+				sdkv: sdkMetadata.version,
+				...this.#metadata.publishableKey ? { pk: this.#metadata.publishableKey } : {},
+				...this.#metadata.secretKey ? { sk: this.#metadata.secretKey } : {},
+				payload
+			};
+		}
+		/**
+		* Best-effort sanitization of the context payload. Returns a plain object with JSON-serializable
+		* values or null when the input is missing or not serializable. Arrays are not accepted.
+		*/
+		#sanitizeContext(context) {
+			if (context === null || typeof context === "undefined") return null;
+			if (typeof context !== "object") return null;
+			try {
+				const cleaned = JSON.parse(JSON.stringify(context));
+				if (cleaned && typeof cleaned === "object" && !Array.isArray(cleaned)) return cleaned;
+				return null;
+			} catch {
+				return null;
+			}
+		}
+	};
+	//#endregion
+	//#region ../shared/src/telemetry/events/component-mounted.ts
+	const EVENT_COMPONENT_MOUNTED = "COMPONENT_MOUNTED";
+	const EVENT_COMPONENT_OPENED = "COMPONENT_OPENED";
+	const EVENT_SAMPLING_RATE$1 = .1;
+	/** Increase sampling for high-signal auth components on mount. */
+	const AUTH_COMPONENTS = new Set(["SignIn", "SignUp"]);
+	/**
+	* Returns the per-event sampling rate for component-mounted telemetry events.
+	* Uses a higher rate for SignIn/SignUp to improve signal quality.
+	*
+	*  @internal
+	*/
+	function getComponentMountedSamplingRate(component) {
+		return AUTH_COMPONENTS.has(component) ? 1 : EVENT_SAMPLING_RATE$1;
+	}
+	/**
+	* Factory for prebuilt component telemetry events.
+	*
+	* @internal
+	*/
+	function createPrebuiltComponentEvent(event) {
+		return function(component, props, additionalPayload) {
+			return {
+				event,
+				eventSamplingRate: event === EVENT_COMPONENT_MOUNTED ? getComponentMountedSamplingRate(component) : EVENT_SAMPLING_RATE$1,
+				payload: {
+					component,
+					appearanceProp: Boolean(props?.appearance),
+					theme: Boolean(props?.appearance?.theme),
+					elements: Boolean(props?.appearance?.elements),
+					variables: Boolean(props?.appearance?.variables),
+					...additionalPayload
+				}
+			};
+		};
+	}
+	/**
+	* Helper function for `telemetry.record()`. Create a consistent event object for when a prebuilt (AIO) component is mounted.
+	*
+	* @param component - The name of the component.
+	* @param props - The props passed to the component. Will be filtered to a known list of props.
+	* @param additionalPayload - Additional data to send with the event.
+	* @example
+	* telemetry.record(eventPrebuiltComponentMounted('SignUp', props));
+	*/
+	function eventPrebuiltComponentMounted(component, props, additionalPayload) {
+		return createPrebuiltComponentEvent(EVENT_COMPONENT_MOUNTED)(component, props, additionalPayload);
+	}
+	/**
+	* Helper function for `telemetry.record()`. Create a consistent event object for when a prebuilt (AIO) component is opened as a modal.
+	*
+	* @param component - The name of the component.
+	* @param props - The props passed to the component. Will be filtered to a known list of props.
+	* @param additionalPayload - Additional data to send with the event.
+	* @example
+	* telemetry.record(eventPrebuiltComponentOpened('GoogleOneTap', props));
+	*/
+	function eventPrebuiltComponentOpened(component, props, additionalPayload) {
+		return createPrebuiltComponentEvent(EVENT_COMPONENT_OPENED)(component, props, additionalPayload);
+	}
+	//#endregion
+	//#region ../shared/src/telemetry/events/theme-usage.ts
+	const EVENT_THEME_USAGE = "THEME_USAGE";
+	/**
+	* Helper function for `telemetry.record()`. Create a consistent event object for tracking theme usage in ClerkProvider.
+	*
+	* @param appearance - The appearance prop from ClerkProvider.
+	* @example
+	* telemetry.record(eventThemeUsage(appearance));
+	*/
+	function eventThemeUsage(appearance) {
+		return {
+			event: EVENT_THEME_USAGE,
+			eventSamplingRate: 1,
+			payload: analyzeThemeUsage(appearance)
+		};
+	}
+	/**
+	* Analyzes the appearance prop to extract theme usage information for telemetry.
+	*
+	* @internal
+	*/
+	function analyzeThemeUsage(appearance) {
+		if (!appearance || typeof appearance !== "object") return {};
+		const themeProperty = appearance.theme;
+		if (!themeProperty) return {};
+		let themeName;
+		if (Array.isArray(themeProperty)) for (const theme of themeProperty) {
+			const name = extractThemeName(theme);
+			if (name) {
+				themeName = name;
+				break;
+			}
+		}
+		else themeName = extractThemeName(themeProperty);
+		return { themeName };
+	}
+	/**
+	* Extracts the theme name from a theme object.
+	*
+	* @internal
+	*/
+	function extractThemeName(theme) {
+		if (typeof theme === "string") return theme;
+		if (typeof theme === "object" && theme !== null) {
+			if ("name" in theme && typeof theme.name === "string") return theme.name;
+		}
+	}
+	//#endregion
+	//#region ../clerk-js/src/utils/localStorage.ts
+	const CLERK_PREFIX = "__clerk_";
+	const CLERK_ENVIRONMENT_STORAGE_ENTRY = "environment";
+	const serialize = JSON.stringify;
+	const parse = JSON.parse;
+	/**
+	* Safe wrapper around localStorage that automatically prefixes keys with 'clerk_'
+	* and handles potential errors and entry expiration
+	*/
+	var SafeLocalStorage = class {
+		static _key(key) {
+			return `${CLERK_PREFIX}${key}`;
+		}
+		static isExpired(entry) {
+			return !!entry.exp && Date.now() > entry.exp;
+		}
+		static setItem(key, value, expiresInMs) {
+			try {
+				const entry = {
+					value,
+					...expiresInMs && { exp: Date.now() + expiresInMs }
+				};
+				window.localStorage.setItem(this._key(key), serialize(entry));
+			} catch {}
+		}
+		static getItem(key, defaultValue) {
+			try {
+				const item = window.localStorage.getItem(this._key(key));
+				if (!item) return defaultValue;
+				const entry = parse(item);
+				if (!entry) return defaultValue;
+				if (this.isExpired(entry)) {
+					this.removeItem(key);
+					return defaultValue;
+				}
+				return entry?.value ?? defaultValue;
+			} catch {
+				return defaultValue;
+			}
+		}
+		static removeItem(key) {
+			try {
+				window.localStorage.removeItem(this._key(key));
+			} catch {}
 		}
 	};
 	//#endregion
@@ -24187,6 +24261,7 @@ isDevOrStagingUrl: (url) => {
 			this.__internal_getMobileResources = () => {
 				if (!this.client || !this.environment) throw new Error("Clerk must be loaded before attaching native resources.");
 				return {
+					authenticateWithSSO: (params) => authenticateWithMobileSSO(this, params),
 					signIn: this.client.signIn.__internal_future,
 					signUp: this.client.signUp.__internal_future,
 					environment: this.environment,
@@ -24807,6 +24882,7 @@ isDevOrStagingUrl: (url) => {
 			get signUp() {
 				return authenticationRoots(clerk).signUp;
 			},
+			authenticateWithSSO: (params) => mobileResources(clerk).authenticateWithSSO(params),
 			setActive: (params) => clerk.setActive(params),
 			signOut: async (options) => {
 				await beforeSignOut();
@@ -24848,6 +24924,22 @@ isDevOrStagingUrl: (url) => {
 				"name": "Organization"
 			},
 			invoke: (target, args) => target["getOrganization"](...args)
+		},
+		"Clerk.authenticateWithSSO": {
+			type: "Clerk",
+			parameters: [{
+				"name": "params",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "MobileSSOParams"
+				}
+			}],
+			result: {
+				"kind": "ref",
+				"name": "MobileAuthenticationResult"
+			},
+			invoke: (target, args) => target["authenticateWithSSO"](...args)
 		},
 		"Clerk.setActive": {
 			type: "Clerk",
@@ -36415,6 +36507,196 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
+		"MobileSSOParams": {
+			"name": "MobileSSOParams",
+			"kind": "object",
+			"properties": [
+				{
+					"name": "strategy",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "MobileSSOParamsStrategy"
+					}
+				},
+				{
+					"name": "identifier",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "enterpriseConnectionId",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "oidcPrompt",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "legalAccepted",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "boolean" }
+					}
+				},
+				{
+					"name": "firstName",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "lastName",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "locale",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "string" }
+					}
+				},
+				{
+					"name": "unsafeMetadata",
+					"optional": true,
+					"type": {
+						"kind": "optional",
+						"nullable": false,
+						"omittable": true,
+						"value": { "kind": "jsonObject" }
+					}
+				},
+				{
+					"name": "start",
+					"optional": false,
+					"type": {
+						"kind": "ref",
+						"name": "MobileSSOParamsStart"
+					}
+				},
+				{
+					"name": "transferable",
+					"optional": false,
+					"type": { "kind": "boolean" }
+				}
+			]
+		},
+		"MobileSSOParamsStrategy": {
+			"name": "MobileSSOParamsStrategy",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"oauth_token_apple",
+				"enterprise_sso",
+				"oauth_facebook",
+				"oauth_google",
+				"oauth_hubspot",
+				"oauth_github",
+				"oauth_tiktok",
+				"oauth_gitlab",
+				"oauth_discord",
+				"oauth_twitter",
+				"oauth_twitch",
+				"oauth_linkedin",
+				"oauth_linkedin_oidc",
+				"oauth_dropbox",
+				"oauth_atlassian",
+				"oauth_bitbucket",
+				"oauth_microsoft",
+				"oauth_notion",
+				"oauth_apple",
+				"oauth_line",
+				"oauth_instagram",
+				"oauth_coinbase",
+				"oauth_spotify",
+				"oauth_xero",
+				"oauth_box",
+				"oauth_slack",
+				"oauth_linear",
+				"oauth_x",
+				"oauth_enstall",
+				"oauth_huggingface",
+				"oauth_vercel"
+			],
+			"open": false,
+			"patterns": ["^oauth_custom_.*$"]
+		},
+		"MobileSSOParamsStart": {
+			"name": "MobileSSOParamsStart",
+			"kind": "enum",
+			"properties": [],
+			"values": [
+				"signUp",
+				"signIn",
+				"auto"
+			],
+			"open": false,
+			"patterns": []
+		},
+		"MobileAuthenticationResult": {
+			"name": "MobileAuthenticationResult",
+			"kind": "union",
+			"properties": [],
+			"variants": [{
+				"kind": "ref",
+				"name": "ClerkAuthenticateWithSSOResultCase1"
+			}, {
+				"kind": "ref",
+				"name": "ClerkAuthenticateWithSSOResultCase2"
+			}]
+		},
+		"ClerkAuthenticateWithSSOResultCase1": {
+			"name": "ClerkAuthenticateWithSSOResultCase1",
+			"kind": "object",
+			"properties": [{
+				"name": "kind",
+				"optional": false,
+				"type": {
+					"kind": "literal",
+					"value": "signIn"
+				}
+			}, {
+				"name": "signIn",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "SignIn"
+				}
+			}]
+		},
 		"SignIn": {
 			"name": "SignIn",
 			"kind": "resource",
@@ -37532,7 +37814,7 @@ isDevOrStagingUrl: (url) => {
 					"optional": false,
 					"type": {
 						"kind": "ref",
-						"name": "SignInSSOParamsStrategy"
+						"name": "MobileSSOParamsStrategy"
 					}
 				},
 				{
@@ -37566,46 +37848,6 @@ isDevOrStagingUrl: (url) => {
 					}
 				}
 			]
-		},
-		"SignInSSOParamsStrategy": {
-			"name": "SignInSSOParamsStrategy",
-			"kind": "enum",
-			"properties": [],
-			"values": [
-				"oauth_token_apple",
-				"enterprise_sso",
-				"oauth_facebook",
-				"oauth_google",
-				"oauth_hubspot",
-				"oauth_github",
-				"oauth_tiktok",
-				"oauth_gitlab",
-				"oauth_discord",
-				"oauth_twitter",
-				"oauth_twitch",
-				"oauth_linkedin",
-				"oauth_linkedin_oidc",
-				"oauth_dropbox",
-				"oauth_atlassian",
-				"oauth_bitbucket",
-				"oauth_microsoft",
-				"oauth_notion",
-				"oauth_apple",
-				"oauth_line",
-				"oauth_instagram",
-				"oauth_coinbase",
-				"oauth_spotify",
-				"oauth_xero",
-				"oauth_box",
-				"oauth_slack",
-				"oauth_linear",
-				"oauth_x",
-				"oauth_enstall",
-				"oauth_huggingface",
-				"oauth_vercel"
-			],
-			"open": false,
-			"patterns": ["^oauth_custom_.*$"]
 		},
 		"SignInMfa": {
 			"name": "SignInMfa",
@@ -37689,6 +37931,25 @@ isDevOrStagingUrl: (url) => {
 				"name": "proofToken",
 				"optional": false,
 				"type": { "kind": "string" }
+			}]
+		},
+		"ClerkAuthenticateWithSSOResultCase2": {
+			"name": "ClerkAuthenticateWithSSOResultCase2",
+			"kind": "object",
+			"properties": [{
+				"name": "kind",
+				"optional": false,
+				"type": {
+					"kind": "literal",
+					"value": "signUp"
+				}
+			}, {
+				"name": "signUp",
+				"optional": false,
+				"type": {
+					"kind": "ref",
+					"name": "SignUp"
+				}
 			}]
 		},
 		"SignUp": {
@@ -39432,7 +39693,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "983e2af77110925cd292c13d1469cfd6918aae5521f929afc814db7bb385e63e",
+		"contractHash": "e904897c14e2c4091cb5c19a465198af034b541af3da69ab6442b1e4e381cdf3",
 		"roots": {
 			"clerk": {
 				"kind": "ref",

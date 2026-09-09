@@ -20,7 +20,7 @@ struct SignInFactorAlternativeMethodsView: View {
   @State private var error: Error?
 
   var signIn: SignIn? {
-    clerk.auth.currentSignIn
+    clerk.signIn.id == nil ? nil : clerk.signIn
   }
 
   var alternativeFactors: [Factor] {
@@ -35,7 +35,7 @@ struct SignInFactorAlternativeMethodsView: View {
     if mode.usesSecondFactorAPI {
       []
     } else {
-      clerk.environment?.authenticatableSocialProviders ?? []
+      clerk.environment.authenticatableSocialProviders ?? []
     }
   }
 
@@ -163,24 +163,17 @@ struct SignInFactorAlternativeMethodsView: View {
 extension SignInFactorAlternativeMethodsView {
   func signInWithProvider(_ provider: OAuthProvider) async {
     do {
-      guard let signIn else {
+      guard signIn != nil else {
         navigation.path = []
         return
       }
 
-      let result: TransferFlowResult =
-        if provider == .apple {
-          try await signIn.authenticateWithApple(
-            transferable: authState.transferable,
-            unsafeMetadata: authState.unsafeMetadata
-          )
-        } else {
-          try await signIn.authenticateWithOAuth(
-            provider: provider,
-            transferable: authState.transferable,
-            unsafeMetadata: authState.unsafeMetadata
-          )
-        }
+      let result = try await clerk.authenticateWithSSOForPresentation(.init(
+        strategy: .init(rawValue: provider == .apple ? "oauth_token_apple" : provider.strategy),
+        unsafeMetadata: authState.unsafeMetadata?.object(),
+        start: .signIn,
+        transferable: authState.transferable
+      ))
 
       switch result {
       case .signIn(let signIn):

@@ -34,17 +34,17 @@ struct AuthStartView: View {
   // MARK: - Configuration
 
   var emailIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    clerk.environment.enabledFirstFactorAttributes
       .contains("email_address") ?? false
   }
 
   var usernameIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    clerk.environment.enabledFirstFactorAttributes
       .contains("username") ?? false
   }
 
   var phoneNumberIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    clerk.environment.enabledFirstFactorAttributes
       .contains("phone_number") ?? false
   }
 
@@ -90,7 +90,7 @@ struct AuthStartView: View {
     passkeySignInIsAvailable(environment: clerk.environment)
   }
 
-  func passkeySignInIsAvailable(environment: Clerk.Environment?) -> Bool {
+  func passkeySignInIsAvailable(environment: EnvironmentResource?) -> Bool {
     switch authState.mode {
     case .signIn, .signInOrUp:
       environment?.passkeyFirstFactorIsEnabled == true &&
@@ -104,7 +104,7 @@ struct AuthStartView: View {
     authState.prefilledFieldsAreLocked && authState.hasInitialIdentifier
   }
 
-  func passkeyAutomaticModalIsEnabled(environment: Clerk.Environment) -> Bool {
+  func passkeyAutomaticModalIsEnabled(environment: EnvironmentResource) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     // Clerk's AutoFill setting controls the no-interaction modal, not iOS's text-field AutoFill request.
     return passkeySignInIsAvailable(environment: environment) &&
@@ -134,7 +134,7 @@ struct AuthStartView: View {
     passkeyAutoFillFallbackIsEnabled(environment: clerk.environment)
   }
 
-  func passkeyAutoFillFallbackIsEnabled(environment: Clerk.Environment?) -> Bool {
+  func passkeyAutoFillFallbackIsEnabled(environment: EnvironmentResource?) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     let enabledAttributes = environment?.enabledFirstFactorAttributes ?? []
     return passkeySignInIsAvailable(environment: environment) &&
@@ -162,19 +162,19 @@ struct AuthStartView: View {
   }
 
   private var socialProviders: [OAuthProvider] {
-    clerk.environment?.authenticatableSocialProviders ?? []
+    clerk.environment.authenticatableSocialProviders ?? []
   }
 
   private var lastUsedAuth: LastUsedAuth? {
     guard authState.persistsIdentifiers else { return nil }
     return LastUsedAuth(
-      environment: clerk.environment,
+      clerk: clerk,
       biometricSignInIsVisible: shouldShowBiometricSignIn
     )
   }
 
   private var hasSocialProviders: Bool {
-    !(clerk.environment?.authenticatableSocialProviders ?? []).isEmpty
+    !(clerk.environment.authenticatableSocialProviders ?? []).isEmpty
   }
 
   private var hasAlternativeAuthMethods: Bool {
@@ -186,7 +186,7 @@ struct AuthStartView: View {
   private var titleString: LocalizedStringKey {
     switch authState.mode {
     case .signIn, .signInOrUp:
-      if let appName = clerk.environment?.displayConfig.applicationName {
+      if case let appName = clerk.environment.displayConfig.applicationName, !appName.isEmpty {
         "Continue to \(appName)"
       } else {
         "Continue"
@@ -304,7 +304,7 @@ struct AuthStartView: View {
         automaticPasskeySignInTask = nil
       }
     }
-    .onChange(of: clerk.environmentRefreshCheckpoint) { _, _ in
+    .onChange(of: clerk.environment.state) { _, _ in
       restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded()
     }
     #endif
@@ -340,12 +340,12 @@ enum AuthStartBiometricCredentialRefreshState: Equatable {
 
 extension AuthStartView {
   private var biometricCredentialFeatureIsEnabled: Bool {
-    guard let nativeSettings = clerk.environment?.authConfig.nativeSettings else {
+    guard let nativeSettings = clerk.environment.authConfig.nativeSettings else {
       return false
     }
 
     return nativeSettings.apiEnabled &&
-      nativeSettings.biometricSignInEnabled
+      nativeSettings.trustedDeviceSignInEnabled
   }
 
   private var shouldShowBiometricSignIn: Bool {
@@ -558,13 +558,18 @@ extension AuthStartView {
       // Store the identifier type for "last used" badge disambiguation
       storeIdentifierType()
 
-      let signIn = try await clerk.auth.signIn(activeIdentifier)
+      try await clerk.signIn.create(.init(identifier: activeIdentifier))
+      let signIn = clerk.signIn
+      try await clerk.finalizeForPresentation(.signIn(signIn))
 
       if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
-        let result = try await signIn.authenticateWithEnterpriseSSO(
-          transferable: authState.transferable,
-          unsafeMetadata: authState.unsafeMetadata
-        )
+        let result = try await clerk.authenticateWithSSOForPresentation(.init(
+          strategy: .enterpriseSso,
+          identifier: signIn.identifier,
+          unsafeMetadata: authState.unsafeMetadata?.object(),
+          start: .signIn,
+          transferable: authState.transferable
+        ))
         handleTransferFlowResult(result)
         return false
       }
@@ -572,7 +577,7 @@ extension AuthStartView {
       navigation.setToStepForStatus(signIn: signIn)
       return signInStatusStaysOnStart(signIn.status)
     } catch {
-      if withSignUp, let clerkApiError = error as? ClerkAPIError, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
+      if withSignUp, let clerkApiError = (error as? CoreError)?.errors.first, ["form_identifier_not_found", "invitation_account_not_exists"].contains(clerkApiError.code) {
         return await signUp()
       } else {
         fieldError = error
@@ -648,8 +653,7 @@ extension AuthStartView {
   #if os(iOS) && !targetEnvironment(macCatalyst)
   private func startPasskeySignIn(includeAutomaticModal: Bool) async {
     guard navigation.path.isEmpty else { return }
-    let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
-    guard let environment = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint) else { return }
+    guard let environment = try? await authState.refreshedEnvironment(for: clerk) else { return }
     guard !Task.isCancelled, navigation.path.isEmpty else { return }
     if includeAutomaticModal {
       automaticPasskeySignInHasStarted = true
@@ -697,22 +701,17 @@ extension AuthStartView {
   }
 
   private func signUpParams() async throws -> SignUp {
-    if phoneNumberInputIsActive {
-      try await clerk.auth.signUp(
-        phoneNumber: authState.authStartPhoneNumber,
-        unsafeMetadata: authState.unsafeMetadata
-      )
+    let metadata = try authState.unsafeMetadata?.object()
+    let params: SignUpCreateParams = if phoneNumberInputIsActive {
+      .init(phoneNumber: authState.authStartPhoneNumber, unsafeMetadata: metadata)
     } else if authState.authStartIdentifier.isEmailAddress {
-      try await clerk.auth.signUp(
-        emailAddress: authState.authStartIdentifier,
-        unsafeMetadata: authState.unsafeMetadata
-      )
+      .init(emailAddress: authState.authStartIdentifier, unsafeMetadata: metadata)
     } else {
-      try await clerk.auth.signUp(
-        username: authState.authStartIdentifier,
-        unsafeMetadata: authState.unsafeMetadata
-      )
+      .init(username: authState.authStartIdentifier, unsafeMetadata: metadata)
     }
+    try await clerk.signUp.create(params)
+    try await clerk.finalizeForPresentation(.signUp(clerk.signUp))
+    return clerk.signUp
   }
 
   private func handleTransferFlowResult(_ result: TransferFlowResult) {
@@ -734,18 +733,18 @@ extension AuthStartView {
     }
   }
 
-  private func signInStatusStaysOnStart(_ status: SignIn.Status) -> Bool {
+  private func signInStatusStaysOnStart(_ status: SignInStatus?) -> Bool {
     switch status {
-    case .needsIdentifier, .unknown:
+    case .needsIdentifier, .unrecognized, nil:
       true
     default:
       false
     }
   }
 
-  private func signUpStatusStaysOnStart(_ status: SignUp.Status) -> Bool {
+  private func signUpStatusStaysOnStart(_ status: SignUpStatus?) -> Bool {
     switch status {
-    case .abandoned, .unknown:
+    case .abandoned, .unrecognized, nil:
       true
     default:
       false

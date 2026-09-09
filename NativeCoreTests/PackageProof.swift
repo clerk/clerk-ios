@@ -35,6 +35,11 @@ import Foundation
     precondition(clerk.signUp.status == .complete && clerk.session == nil)
     precondition(capabilities.appleIdentityCount == 2 && capabilities.browserCount == 0)
     try await clerk.signIn.reset()
+    let appleFlow = try await clerk.authenticateWithSSO(.init(strategy: .oauthTokenApple, start: .auto, transferable: false))
+    guard case .case1(let appleResult) = appleFlow else { preconditionFailure("Expected sign-in") }
+    precondition(appleResult.signIn === clerk.signIn && appleResult.signIn.status == .complete && clerk.session == nil)
+    precondition(capabilities.appleIdentityCount == 3 && capabilities.browserCount == 0)
+    try await clerk.signIn.reset()
     try await clerk.signUp.reset()
     try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
     precondition(clerk.signIn.status.rawValue == "complete" && clerk.session == nil)

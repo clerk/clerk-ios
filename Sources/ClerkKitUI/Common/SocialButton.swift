@@ -16,7 +16,7 @@ struct SocialButton: View {
 
   let provider: OAuthProvider
   let transferable: Bool
-  let unsafeMetadata: JSON?
+  let unsafeMetadata: JSONValue?
   let showsTitle: Bool
   var onStart: (() -> Void)?
   var action: (() async -> Void)?
@@ -28,10 +28,10 @@ struct SocialButton: View {
   private var fallbackProviderText: some View {
     ViewThatFits(in: .horizontal) {
       if showsTitle {
-        Text("Continue with \(provider.name)", bundle: .module)
+        Text("Continue with \(provider.name(in: clerk.environment))", bundle: .module)
       }
 
-      Text(provider.name)
+      Text(provider.name(in: clerk.environment))
     }
     .lineLimit(1)
     .font(theme.fonts.body)
@@ -39,7 +39,7 @@ struct SocialButton: View {
   }
 
   private var providerLabel: some View {
-    LazyImage(url: provider.iconImageUrl(colorScheme: colorScheme)) { state in
+    LazyImage(url: provider.iconImageUrl(colorScheme: colorScheme, environment: clerk.environment)) { state in
       if let image = state.image {
         ViewThatFits(in: .horizontal) {
           if showsTitle {
@@ -51,7 +51,7 @@ struct SocialButton: View {
               )
               .frame(width: 21, height: 21)
 
-              Text("Continue with \(provider.name)", bundle: .module)
+              Text("Continue with \(provider.name(in: clerk.environment))", bundle: .module)
                 .lineLimit(1)
                 .font(theme.fonts.body)
                 .foregroundStyle(theme.colors.secondaryButtonForeground)
@@ -77,7 +77,7 @@ struct SocialButton: View {
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil,
+    unsafeMetadata: JSONValue? = nil,
     showsTitle: Bool = true
   ) {
     self.provider = provider
@@ -89,7 +89,7 @@ struct SocialButton: View {
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil,
+    unsafeMetadata: JSONValue? = nil,
     showsTitle: Bool = true,
     action: (() async -> Void)? = nil
   ) {
@@ -103,7 +103,7 @@ struct SocialButton: View {
   init(
     provider: OAuthProvider,
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil,
+    unsafeMetadata: JSONValue? = nil,
     showsTitle: Bool = true,
     onStart: (() -> Void)? = nil,
     onSuccess: ((TransferFlowResult) -> Void)? = nil,
@@ -143,25 +143,19 @@ struct SocialButton: View {
         .overlayProgressView(isActive: isRunning)
     }
     .buttonStyle(.secondary())
-    .accessibilityLabel(Text("Continue with \(provider.name)", bundle: .module))
+    .accessibilityLabel(Text("Continue with \(provider.name(in: clerk.environment))", bundle: .module))
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.socialProviderButton(strategy: provider.strategy))
   }
 }
 
 extension SocialButton {
   func defaultAction() async throws {
-    let result: TransferFlowResult = if provider == .apple {
-      try await clerk.auth.signInWithApple(
-        transferable: transferable,
-        unsafeMetadata: unsafeMetadata
-      )
-    } else {
-      try await clerk.auth.signInWithOAuth(
-        provider: provider,
-        transferable: transferable,
-        unsafeMetadata: unsafeMetadata
-      )
-    }
+    let result = try await clerk.authenticateWithSSOForPresentation(.init(
+      strategy: .init(rawValue: provider == .apple ? "oauth_token_apple" : provider.strategy),
+      unsafeMetadata: unsafeMetadata?.object(),
+      start: .auto,
+      transferable: transferable
+    ))
     onSuccess?(result)
   }
 }

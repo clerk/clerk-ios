@@ -146,6 +146,12 @@ extension Clerk {
     authFlowStore.reconcile()
   }
 
+  func authenticateWithSSOForPresentation(_ params: MobileSSOParams) async throws -> TransferFlowResult {
+    let result = try await TransferFlowResult(authenticateWithSSO(params))
+    try await finalizeForPresentation(result)
+    return result
+  }
+
   func finalizeForPresentation(_ result: TransferFlowResult) async throws {
     try await authFlowStore.finalize(result)
   }
