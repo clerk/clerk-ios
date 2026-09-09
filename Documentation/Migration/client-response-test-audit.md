@@ -85,3 +85,8 @@ independently mutable native sequence counter in the generated SDK.
 These tests prove deterministic response handling with fixture server metadata.
 They do not establish real server clock/version behavior, signed-in app upgrade
 continuity, or live shared-session/watch synchronization.
+
+The two reviewed legacy files are retired after this audit and passing shared
+and native replacement checks. Their baseline names and assertions remain
+traceable through the test inventory. Unreviewed identity and general core tests
+remain in place.
