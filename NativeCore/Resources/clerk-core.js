@@ -11091,10 +11091,10 @@ isDevOrStagingUrl: (url) => {
 			});
 		}
 		removeSessions() {
-			return this._baseDelete({ path: this.path() + "/sessions" }).then((e) => {
+			return this._baseDelete({ path: this.path() + "/sessions" }).then(() => {
 				SessionTokenCache.clear();
 				resetAuthResourceSignals();
-				return e;
+				return this;
 			});
 		}
 		resetSignIn() {
@@ -13086,7 +13086,8 @@ isDevOrStagingUrl: (url) => {
 			this.publicMetadata = {};
 			this.permissions = [];
 			this.destroy = async () => {
-				return await this._baseDelete({ path: `/organizations/${this.organization.id}/memberships/${this.publicUserData?.userId}` });
+				await this._baseDelete({ path: `/organizations/${this.organization.id}/memberships/${this.publicUserData?.userId}` });
+				return this;
 			};
 			this.update = async ({ role }) => {
 				return await this._basePatch({
