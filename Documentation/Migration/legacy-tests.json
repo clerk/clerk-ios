@@ -1,0 +1,6311 @@
+{
+  "baseline": "02f98f89a19b6c079517c9aae07df7edd0e600e5",
+  "method": "Source test declarations; parameterized cases are not expanded and helper functions may be included. Counts do not measure behavioral coverage.",
+  "files": [
+    {
+      "path": "Tests/Configuration/ClerkOptionsTests.swift",
+      "sha256": "c4955f2ca6bd71a52f8a5686d2085d29c3f4ccc34504443f4b503e07fb25c42c",
+      "category": "configuration",
+      "cases": [
+        {
+          "name": "defaultInitialization",
+          "line": 20
+        },
+        {
+          "name": "initializationWithAllParameters",
+          "line": 36
+        },
+        {
+          "name": "proxyUrlConversionValidURL",
+          "line": 60
+        },
+        {
+          "name": "proxyUrlConversionInvalidURL",
+          "line": 70
+        },
+        {
+          "name": "proxyUrlConversionNil",
+          "line": 86
+        },
+        {
+          "name": "proxyUrlConversionWithPort",
+          "line": 93
+        },
+        {
+          "name": "proxyUrlConversionWithQueryParams",
+          "line": 101
+        },
+        {
+          "name": "partialInitialization",
+          "line": 109
+        },
+        {
+          "name": "propertyAccess",
+          "line": 119
+        },
+        {
+          "name": "requestMiddlewareInitialization",
+          "line": 139
+        },
+        {
+          "name": "responseMiddlewareInitialization",
+          "line": 148
+        }
+      ]
+    },
+    {
+      "path": "Tests/Configuration/ConfigurationManagerTests.swift",
+      "sha256": "c580ca8e8f9bde4c1ee6d0713db344927a9b92f38f1e636cf1e17b6b08142690",
+      "category": "configuration",
+      "cases": [
+        {
+          "name": "testUpdateProxyUrl",
+          "line": 191
+        },
+        {
+          "name": "testUpdateFrontendApiUrl",
+          "line": 223
+        },
+        {
+          "name": "configureWithValidTestKey",
+          "line": 36
+        },
+        {
+          "name": "configureWithValidLiveKey",
+          "line": 50
+        },
+        {
+          "name": "configureWithEmptyKey",
+          "line": 63
+        },
+        {
+          "name": "configureWithWhitespaceOnlyKey",
+          "line": 82
+        },
+        {
+          "name": "configureWithInvalidFormatKey",
+          "line": 101
+        },
+        {
+          "name": "configureWithKeyStartingWithWrongPrefix",
+          "line": 120
+        },
+        {
+          "name": "configureWithInvalidBase64InKey",
+          "line": 139
+        },
+        {
+          "name": "instanceTypeDevelopment",
+          "line": 158
+        },
+        {
+          "name": "instanceTypeProduction",
+          "line": 169
+        },
+        {
+          "name": "frontendApiUrlExtraction",
+          "line": 180
+        },
+        {
+          "name": "updateProxyUrlToNil",
+          "line": 207
+        },
+        {
+          "name": "configureWithCustomOptions",
+          "line": 237
+        },
+        {
+          "name": "propertyAccessors",
+          "line": 254
+        },
+        {
+          "name": "proxyConfigurationFromOptions",
+          "line": 269
+        },
+        {
+          "name": "configureNormalizesSurroundingPublishableKeyWhitespace",
+          "line": 283
+        }
+      ]
+    },
+    {
+      "path": "Tests/Configuration/InstanceEnvironmentTypeTests.swift",
+      "sha256": "417dde19d88de5007b6d35e9ad38614d8023aef02045791bf2ff96334bbbf964",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "testEncoding",
+          "line": 19
+        },
+        {
+          "name": "enumCases",
+          "line": 12
+        },
+        {
+          "name": "decoding",
+          "line": 36
+        },
+        {
+          "name": "decodingInvalidValue",
+          "line": 53
+        },
+        {
+          "name": "rawValueAccess",
+          "line": 64
+        },
+        {
+          "name": "equatable",
+          "line": 72
+        }
+      ]
+    },
+    {
+      "path": "Tests/Configuration/KeychainConfigTests.swift",
+      "sha256": "9b781dadef40918c82668da52eb1c09906e2a2902ccdb4c488b1b48421dadeee",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "defaultInitialization",
+          "line": 12
+        },
+        {
+          "name": "initializationWithService",
+          "line": 20
+        },
+        {
+          "name": "initializationWithAccessGroup",
+          "line": 28
+        },
+        {
+          "name": "initializationWithAllParameters",
+          "line": 36
+        },
+        {
+          "name": "propertyAccess",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "path": "Tests/Configuration/RedirectConfigTests.swift",
+      "sha256": "85cf1d1352c2e632f248043001b23a6516598e763eb0cfb5fe39a75697cc474d",
+      "category": "configuration",
+      "cases": [
+        {
+          "name": "defaultInitialization",
+          "line": 12
+        },
+        {
+          "name": "initializationWithRedirectUrl",
+          "line": 21
+        },
+        {
+          "name": "initializationWithCallbackUrlScheme",
+          "line": 29
+        },
+        {
+          "name": "initializationWithAllParameters",
+          "line": 37
+        },
+        {
+          "name": "propertyAccess",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/ClerkIdentityControllerTests.swift",
+      "sha256": "3c7b50078b1106ea42b88247c33dcdda58354e75d47f5ca4e35100e3010acd4f",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "externalTransitionUsesAtomicPersistenceBeforeApplyingMemory",
+          "line": 18
+        },
+        {
+          "name": "externalTransitionUsesLegacyPersistenceThroughSameBoundary",
+          "line": 56
+        },
+        {
+          "name": "failedExternalTransitionStageCannotExposeIdentity",
+          "line": 86
+        },
+        {
+          "name": "rejectedAtomicExternalTransitionRollsBackStagedState",
+          "line": 126
+        },
+        {
+          "name": "legacyMemoryResponsePathCannotBypassAtomicPersistence",
+          "line": 165
+        },
+        {
+          "name": "atomicResponseRetainsOwnedCompletionAcrossOrdinaryRefreshUntilActivation",
+          "line": 197
+        },
+        {
+          "name": "atomicTokenOnlyResponseResolvesIdentityWhenItsSerializedTurnBegins",
+          "line": 315
+        },
+        {
+          "name": "atomicResponseRetryAfterPersistenceFailureKeepsResponseSequenceUsable",
+          "line": 386
+        },
+        {
+          "name": "canonicalLegacyClientWithoutAClerkTokenIsRejected",
+          "line": 428
+        },
+        {
+          "name": "legacyResponseTokenRotationFencesOldTokenResponses",
+          "line": 456
+        },
+        {
+          "name": "undatedAcceptedIdentityPreservesServerDateWatermark",
+          "line": 502
+        },
+        {
+          "name": "manualReloadStillAppliesLegacyClientAndEnvironmentWithoutCoordinator",
+          "line": 547
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/ClerkReconfigureTests.swift",
+      "sha256": "c641442104d82adcab540f1f91df660e5306107397ff031cc3696c7802604489",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "reconfigureUpdatesConfiguration",
+          "line": 21
+        },
+        {
+          "name": "reconfigureWaitsForActiveKeychainClear",
+          "line": 44
+        },
+        {
+          "name": "reconfigureUpdatesInstanceTypeForLiveKey",
+          "line": 75
+        },
+        {
+          "name": "reconfigurePreservesRegisteredAuthFlow",
+          "line": 87
+        },
+        {
+          "name": "invalidReconfigureLeavesCurrentInstanceUntouched",
+          "line": 119
+        },
+        {
+          "name": "reconfigureClearsLocalStateAndStorage",
+          "line": 152
+        },
+        {
+          "name": "reconfigureWithSameKeychainClearsStorage",
+          "line": 193
+        },
+        {
+          "name": "samePublishableKeyReconfigureClearsAdoptedSharedIdentity",
+          "line": 229
+        },
+        {
+          "name": "missingSharedEntitlementPreflightRunsBeforeDestructiveWrites",
+          "line": 293
+        },
+        {
+          "name": "failedReconfigureLeavesPreviousRuntimeUntouched",
+          "line": 367
+        },
+        {
+          "name": "failedRecoveryPreflightLeavesPreviousRuntimeInstalled",
+          "line": 410
+        },
+        {
+          "name": "keychainClearStartedDuringReconfigurationWaitsForInstalledRuntime",
+          "line": 463
+        },
+        {
+          "name": "failedDestructiveReconfigureRetainsPreviousOwnerSlot",
+          "line": 499
+        },
+        {
+          "name": "reconfigureDrainsPendingCacheWritesBeforeClearingOldKeychain",
+          "line": 550
+        },
+        {
+          "name": "reconfigureClearsTokensBeforeSessionChangedEvent",
+          "line": 578
+        },
+        {
+          "name": "tokenReadsAreCancelledWhileReconfigureIsInProgress",
+          "line": 625
+        },
+        {
+          "name": "tokenReadBeforeConfigureThrowsConfigurationError",
+          "line": 660
+        },
+        {
+          "name": "reconfigureBeforeConfigureInstallsSharedInstance",
+          "line": 675
+        },
+        {
+          "name": "reconfigureBeforeConfigureClearsPersistedCredentials",
+          "line": 688
+        },
+        {
+          "name": "concurrentReconfigureThrowsWhileFirstReconfigureIsInProgress",
+          "line": 720
+        },
+        {
+          "name": "oldInFlightClientResponseIsIgnoredAfterReconfigure",
+          "line": 750
+        },
+        {
+          "name": "staleRefreshClientDoesNotApplyAfterReconfigure",
+          "line": 788
+        },
+        {
+          "name": "staleRefreshEnvironmentDoesNotApplyAfterReconfigure",
+          "line": 829
+        },
+        {
+          "name": "authEventsStreamRemainsUsableAfterReconfigure",
+          "line": 864
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/ClerkResponseClientStateTests.swift",
+      "sha256": "8db7b80887583d9b082169849ca40d744d0881588f825d6ad8f8af9d2704de17",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "applyResponseClientSetsFirstClient",
+          "line": 10
+        },
+        {
+          "name": "applyResponseClientWithoutSequenceReplacesExistingClient",
+          "line": 21
+        },
+        {
+          "name": "applyResponseClientAcceptsNewerResponseSequenceEvenWhenUpdatedAtIsOlder",
+          "line": 34
+        },
+        {
+          "name": "applyResponseClientIgnoresOlderResponseSequenceEvenWhenUpdatedAtIsNewer",
+          "line": 47
+        },
+        {
+          "name": "applyResponseClientDoesNotRegressServerDateWatermark",
+          "line": 60
+        },
+        {
+          "name": "applyResponseClientAcceptsOlderResponseSequenceWhenServerDateIsNewer",
+          "line": 78
+        },
+        {
+          "name": "applyResponseClientAcceptsOlderResponseSequenceWhenServerDateTiesAndClientUpdatedAtIsNewer",
+          "line": 116
+        },
+        {
+          "name": "applyResponseClientNilIgnoresOlderResponseSequence",
+          "line": 136
+        },
+        {
+          "name": "applyResponseClientStoresServerDate",
+          "line": 148
+        },
+        {
+          "name": "applyResponseClientDoesNotEmitContinuationForResumableSignIn",
+          "line": 160
+        },
+        {
+          "name": "applyResponseClientDoesNotEmitContinuationForResumableSignUp",
+          "line": 180
+        },
+        {
+          "name": "applyResponseClientDoesNotEmitContinuationWhenResumableSignInIsUnchanged",
+          "line": 200
+        },
+        {
+          "name": "organizationReturnsActiveSessionOrganization",
+          "line": 220
+        },
+        {
+          "name": "organizationReturnsNilWhenSessionHasNoActiveOrganization",
+          "line": 250
+        },
+        {
+          "name": "watchReducerCanApplyAuthoritativeIncomingState",
+          "line": 270
+        },
+        {
+          "name": "watchReducerAuthoritativeNilClearsClient",
+          "line": 288
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncRefreshesInsteadOfReplacingActivePhone",
+          "line": 306
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncSameVersionRefreshesWhenLocalVersionExists",
+          "line": 327
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncKeepsPhoneClientWhenServerFetchDateIsOlder",
+          "line": 359
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncSchedulesRefreshWhenNoServerFetchDates",
+          "line": 379
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncNilDoesNotClearPhoneClient",
+          "line": 398
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncClearDoesNotPublishStalePhoneClientAsCleared",
+          "line": 416
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncSeedsPhoneWhenNoLocalClient",
+          "line": 454
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncNilDoesNotSeedPhone",
+          "line": 473
+        },
+        {
+          "name": "nonAuthoritativeWatchSyncClearRecordsVersionWhenLocalAuthIsEmpty",
+          "line": 488
+        },
+        {
+          "name": "nonAuthoritativeWatchSignInWithLowerVersionRefreshesPhone",
+          "line": 522
+        },
+        {
+          "name": "cleanupManagersResetsLastAppliedClientResponseSequence",
+          "line": 556
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/ClerkTests.swift",
+      "sha256": "559945f1d42a8705616f931a0c8db0367b0ecfb538307b38f11c5af0053347b1",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "callbackContinuationReturnsPendingAuthResult",
+          "line": 56
+        },
+        {
+          "name": "isolatedConfigurationInstallsPersistenceBeforeStartup",
+          "line": 75
+        },
+        {
+          "name": "clearAllKeychainItemsDeletesStoredDataAndPreservesAdoptionMarker",
+          "line": 96
+        },
+        {
+          "name": "clearAllKeychainItemsClearsAtomicLiveIdentity",
+          "line": 144
+        },
+        {
+          "name": "synchronousClearDeletesAtomicIdentityBeforeReturning",
+          "line": 176
+        },
+        {
+          "name": "sharedConfigurationHydratesProvisionalLegacyClientAfterAdoption",
+          "line": 207
+        },
+        {
+          "name": "provisionalLegacyClientIsExcludedFromRequestAndWatchIdentity",
+          "line": 247
+        },
+        {
+          "name": "acceptedClientResponsePromotesProvisionalLegacyClient",
+          "line": 279
+        },
+        {
+          "name": "sharedConfigurationDoesNotHydrateLegacyClientAfterAdoptionWindow",
+          "line": 311
+        },
+        {
+          "name": "sharedActivationHydratesPeerIdentitySynchronously",
+          "line": 343
+        },
+        {
+          "name": "missingSharedEntitlementDiscardsPendingPublicationAndUsesDurableLocalIdentity",
+          "line": 392
+        },
+        {
+          "name": "synchronousClearCannotBeUndoneByPreviouslySuspendedIdentitySave",
+          "line": 479
+        },
+        {
+          "name": "synchronousClearRemainsCallableFromAsyncCodeAndOverlappingCallsCoalesce",
+          "line": 529
+        },
+        {
+          "name": "strictReconfigurationClearPreservesNewWatchTombstone",
+          "line": 554
+        },
+        {
+          "name": "awaitedClearReportsAtomicIdentityDeletionFailure",
+          "line": 610
+        },
+        {
+          "name": "awaitedClearAcceptsSuccessfulAtomicIdentityDeletionRetry",
+          "line": 644
+        },
+        {
+          "name": "awaitedClearWithdrawsOwnerSlotBeforeReturning",
+          "line": 672
+        },
+        {
+          "name": "awaitedClearKeepsPublicationBlockedUntilRecoveryIntentIsRemoved",
+          "line": 735
+        },
+        {
+          "name": "awaitedClearKeepsRecoveryIntentWhenAtomicIdentityDeletionFailsTwice",
+          "line": 819
+        },
+        {
+          "name": "awaitedClearCannotBeUndoneByPreviouslySuspendedIdentitySave",
+          "line": 904
+        },
+        {
+          "name": "awaitedClearDrainsSuspendedCacheWriterBeforeFinalDeletion",
+          "line": 960
+        },
+        {
+          "name": "adoptedWatchTransitionFencesOlderQueuedNetworkResponse",
+          "line": 991
+        },
+        {
+          "name": "clearAllKeychainItemsHandlesMissingKeysGracefully",
+          "line": 1051
+        },
+        {
+          "name": "clearAllKeychainItemsWorksWhenClerkNotConfigured",
+          "line": 1074
+        },
+        {
+          "name": "clearAllKeychainItemsDoesNotThrow",
+          "line": 1100
+        },
+        {
+          "name": "clearAllKeychainItemsPreservesBiometricCredentialMetadataWhenCredentialCleanupFails",
+          "line": 1120
+        },
+        {
+          "name": "clearAllKeychainItemsStrictlyPreservesBiometricCredentialMetadataWhenCredentialCleanupFails",
+          "line": 1132
+        },
+        {
+          "name": "configureClearsCurrentAppBiometricCredentialsWhenInstallMarkerIsMissing",
+          "line": 1145
+        },
+        {
+          "name": "configureKeepsBiometricCredentialsWhenLegacyInstallMarkerExists",
+          "line": 1189
+        },
+        {
+          "name": "configureUsesAppScopedBiometricCredentialInstallationMarkers",
+          "line": 1235
+        },
+        {
+          "name": "biometricCredentialInstallationMarkerPreservesConfigurationBoundaries",
+          "line": 1284
+        },
+        {
+          "name": "isLoadedReturnsFalseWhenBothNil",
+          "line": 1309
+        },
+        {
+          "name": "isLoadedReturnsFalseWhenOnlyEnvironmentSet",
+          "line": 1319
+        },
+        {
+          "name": "isLoadedReturnsFalseWhenOnlyClientSet",
+          "line": 1329
+        },
+        {
+          "name": "isLoadedReturnsTrueWhenBothSet",
+          "line": 1339
+        },
+        {
+          "name": "isLoadedBecomesTrue",
+          "line": 1349
+        },
+        {
+          "name": "isAuthFlowCompleteReturnsFalseWhenSignedOut",
+          "line": 1371
+        },
+        {
+          "name": "isAuthFlowCompleteReturnsFalseWhenSessionIsPending",
+          "line": 1378
+        },
+        {
+          "name": "isAuthFlowCompleteReturnsFalseWhenActiveSessionHasNoUser",
+          "line": 1390
+        },
+        {
+          "name": "isAuthFlowCompleteReturnsTrueWhenUserHasActiveSession",
+          "line": 1401
+        },
+        {
+          "name": "registerAuthFlowDoesNotRegisterAnExistingActiveSession",
+          "line": 1410
+        },
+        {
+          "name": "authFlowRegistrationIsExclusive",
+          "line": 1420
+        },
+        {
+          "name": "rejectedSecondRegistrationDoesNotStealInFlightWork",
+          "line": 1429
+        },
+        {
+          "name": "requestsAreOwnedOnlyByTheirExplicitAuthFlowOperation",
+          "line": 1449
+        },
+        {
+          "name": "dismissibleAuthFlowCompletionDoesNotGateSignedInContent",
+          "line": 1483
+        },
+        {
+          "name": "externalActiveSessionHoldsRootUntilAuthViewCompletes",
+          "line": 1500
+        },
+        {
+          "name": "ownedHostedActivationHoldsRootUntilAuthViewCompletes",
+          "line": 1516
+        },
+        {
+          "name": "supersededCompletionPreservesCurrentSessionWork",
+          "line": 1543
+        },
+        {
+          "name": "hostedActivationRetainsItsTargetWhileAnotherSessionIsCurrent",
+          "line": 1572
+        },
+        {
+          "name": "completedAuthenticationDoesNotGateWithoutRootRegistration",
+          "line": 1612
+        },
+        {
+          "name": "acceptedCompletionBlocksRootUntilItsExactWorkCompletes",
+          "line": 1621
+        },
+        {
+          "name": "presentationRetainsExactWorkAcrossRefreshAndLaterCompletion",
+          "line": 1641
+        },
+        {
+          "name": "replayedCompletionPreservesResolvedPostAuthWork",
+          "line": 1680
+        },
+        {
+          "name": "acceptedCompletionForAnotherSessionReplacesPresentedWork",
+          "line": 1706
+        },
+        {
+          "name": "newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks",
+          "line": 1746
+        },
+        {
+          "name": "completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation",
+          "line": 1772
+        },
+        {
+          "name": "authoritativeIdentityChangeSupersedesOwnedCompletionWhenOldSessionRemains",
+          "line": 1822
+        },
+        {
+          "name": "staleSameFlowRejectionPreservesAcceptedAwaitingWork",
+          "line": 1865
+        },
+        {
+          "name": "sameFlowRejectionYieldsToAuthoritativeIdentityChange",
+          "line": 1909
+        },
+        {
+          "name": "failedSessionActivationAdoptsTheAuthoritativeCurrentSession",
+          "line": 1957
+        },
+        {
+          "name": "finishedCompletedActivationAdoptsANewerAuthoritativeSession",
+          "line": 1994
+        },
+        {
+          "name": "acceptedCompletionWaitsWhileItsViableSessionHasNotBeenSelected",
+          "line": 2039
+        },
+        {
+          "name": "semanticRejectionIsAcceptedWhenTheCreatedSessionIsAuthoritative",
+          "line": 2074
+        },
+        {
+          "name": "supersededCompletionAdoptsAuthoritativeSessionForDismissal",
+          "line": 2095
+        },
+        {
+          "name": "sessionTaskPresentationRemainsUntilItsTokenFinishes",
+          "line": 2121
+        },
+        {
+          "name": "finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion",
+          "line": 2159
+        },
+        {
+          "name": "completingAuthFlowIsAcceptedOnceForAnOrdinaryFlow",
+          "line": 2187
+        },
+        {
+          "name": "completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment",
+          "line": 2201
+        },
+        {
+          "name": "finishingEnrollmentForPendingSignUpAdvancesToTasksWithoutReoffering",
+          "line": 2224
+        },
+        {
+          "name": "taskAppearingDuringEnrollmentWaitsForEnrollmentToFinish",
+          "line": 2267
+        },
+        {
+          "name": "acceptedCompletionDoesNotOfferEnrollmentAfterSessionTasksBegin",
+          "line": 2306
+        },
+        {
+          "name": "hostedActivationPromotesPresentedExternalWorkWithoutReplacingItsToken",
+          "line": 2343
+        },
+        {
+          "name": "hostedActivationForAnotherSessionInvalidatesPresentedWork",
+          "line": 2373
+        },
+        {
+          "name": "staleHostedActivationCannotMutateANewerRegistration",
+          "line": 2397
+        },
+        {
+          "name": "staleCompletedActivationCannotMutateANewerRegistration",
+          "line": 2431
+        },
+        {
+          "name": "completedRootWorkCanReleaseOwnershipAndRearmAfterSignOut",
+          "line": 2471
+        },
+        {
+          "name": "terminalCurrentSessionClearsPresentedPostAuthWork",
+          "line": 2491
+        },
+        {
+          "name": "unownedCompletionDoesNotAttachToALaterAuthView",
+          "line": 2512
+        },
+        {
+          "name": "authFlowGateIsObservableWhenOwnedWorkBegins",
+          "line": 2531
+        },
+        {
+          "name": "releasingAuthFlowRegistrationClearsPendingHold",
+          "line": 2557
+        },
+        {
+          "name": "staleRegistrationCannotMutateANewerAuthFlow",
+          "line": 2572
+        },
+        {
+          "name": "handleReturnsFalseForUnrecognizedURL",
+          "line": 2598
+        },
+        {
+          "name": "handleReturnsTrueForMagicLinkCallback",
+          "line": 2607
+        },
+        {
+          "name": "handleDeduplicatesConcurrentMagicLinkCallbacks",
+          "line": 2664
+        },
+        {
+          "name": "handleReturnsFalseForMismatchedMagicLinkCallbackOrigin",
+          "line": 2723
+        },
+        {
+          "name": "shouldShowDevelopmentModeWarningReturnsFalseWhenEnvironmentIsMissing",
+          "line": 2745
+        },
+        {
+          "name": "shouldShowDevelopmentModeWarningReturnsFalseWhenFlagIsDisabled",
+          "line": 2752
+        },
+        {
+          "name": "shouldShowDevelopmentModeWarningReturnsFalseForProductionEnvironment",
+          "line": 2759
+        },
+        {
+          "name": "shouldShowDevelopmentModeWarningReturnsTrueForDevelopmentEnvironment",
+          "line": 2766
+        },
+        {
+          "name": "shouldShowDevelopmentModeWarningReturnsTrueForUnknownNonProductionEnvironment",
+          "line": 2773
+        },
+        {
+          "name": "sessionReturnsPendingSession",
+          "line": 2782
+        },
+        {
+          "name": "userReturnsUserForPendingSession",
+          "line": 2795
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/ClientResponseOrderingGateTests.swift",
+      "sha256": "bb7ba26660439867fbb5ad649bfed28b269a79e07b6cd39081d17065ba5ddd9e",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "rejectsOlderSequenceWithoutNewerServerState",
+          "line": 7
+        },
+        {
+          "name": "acceptsOlderSequenceWithNewerServerDate",
+          "line": 21
+        },
+        {
+          "name": "equalServerDateUsesClientUpdatedAt",
+          "line": 35
+        },
+        {
+          "name": "recordDoesNotRegressServerDateWatermark",
+          "line": 49
+        },
+        {
+          "name": "resetClearsOrderingWatermarks",
+          "line": 67
+        },
+        {
+          "name": "resetSequencePreservesServerWatermark",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/OrganizationsTests.swift",
+      "sha256": "0d01cb871fa7e1adb227aeadd1829d1d8c404551ae27377565e539e84b301993",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "createUsesOrganizationServiceCreateOrganization",
+          "line": 13
+        },
+        {
+          "name": "getUsesOrganizationServiceGetOrganization",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/SharedSessionIdentityEventTests.swift",
+      "sha256": "f86d38273dc3ce1d736f4ef2d4c43d0fcb82c4f2d4c51da956abe19e106c9b9a",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "namespaceIncludesNormalizedPublishableKey",
+          "line": 7
+        },
+        {
+          "name": "reducerReturnsSameWinnerForEveryPermutation",
+          "line": 26
+        },
+        {
+          "name": "reducerDeduplicatesReplicatedCopies",
+          "line": 42
+        },
+        {
+          "name": "generationTakesPriorityOverDifferingServerDates",
+          "line": 53
+        },
+        {
+          "name": "serverDatePresenceBreaksEqualGenerationTie",
+          "line": 72
+        },
+        {
+          "name": "mixedDateGenerationsHaveOneWinnerForEveryPermutation",
+          "line": 84
+        },
+        {
+          "name": "mixedDatePresenceAtEqualGenerationHasOneWinnerForEveryPermutation",
+          "line": 97
+        },
+        {
+          "name": "ownerAndEventIDBreakTiesDeterministically",
+          "line": 110
+        },
+        {
+          "name": "reducerDoesNotUseClientUpdatedAt",
+          "line": 133
+        },
+        {
+          "name": "signOutDoesNotAutomaticallyBeatSignIn",
+          "line": 148
+        },
+        {
+          "name": "conflictingCopiesWithSameIDAreExcludedDeterministically",
+          "line": 156
+        },
+        {
+          "name": "eventValidationRequiresCoherentAtomicIdentity",
+          "line": 170
+        },
+        {
+          "name": "generationIncrementFailsClosedOnOverflow",
+          "line": 183
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/SharedSessionOwnerSlotClearRecoveryTests.swift",
+      "sha256": "743b8cf676b1fa2a324f4a7ccb730bb295c6bd047b6d71448333d245e627d564",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "synchronousClearPersistsExactRecoveryIntentBeforeReturning",
+          "line": 9
+        },
+        {
+          "name": "degradedClearRecoversOwnerSlotAfterEntitlementReturns",
+          "line": 54
+        },
+        {
+          "name": "journalFailureLeavesIdentityAndOwnerSlotUntouched",
+          "line": 106
+        },
+        {
+          "name": "recoveryClearsAcceptedAndPendingIdentityBeforeCoordinatorStartup",
+          "line": 165
+        },
+        {
+          "name": "recoveryUsesRecordedTopologyInsteadOfCurrentConfiguration",
+          "line": 215
+        },
+        {
+          "name": "disabledSyncRecoversBeforeCacheHydration",
+          "line": 253
+        },
+        {
+          "name": "failedLocalIdentityDeletionKeepsSlotAndIntent",
+          "line": 293
+        },
+        {
+          "name": "failedRecoveryPreventsCacheHydrationAndRuntimeInstallation",
+          "line": 316
+        },
+        {
+          "name": "failedSlotWithdrawalLeavesClearedIdentityAndIntentForRetry",
+          "line": 357
+        },
+        {
+          "name": "futureSchemaSlotKeepsRecoveryIntentPending",
+          "line": 381
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/SharedSessionSyncAdoptionTests.swift",
+      "sha256": "4961f4c9078420dd796a2207747118bc4c4647f262baf1d4df270613e2538212",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "destructiveConfigurationMarksAdoptedWithoutMigratingCredentials",
+          "line": 7
+        },
+        {
+          "name": "missingSharedEntitlementMarksAdoptedWithoutImportingLegacyCredentials",
+          "line": 28
+        },
+        {
+          "name": "partialAppLocalMigrationAllowsProvisionalHydrationWithoutSharedEntitlement",
+          "line": 44
+        },
+        {
+          "name": "configuredAppLocalIdentityTakesPrecedenceAndMigratesEnvironment",
+          "line": 72
+        },
+        {
+          "name": "privateAppStateMigratesOnlyFromAppAttributedStorage",
+          "line": 109
+        },
+        {
+          "name": "ambiguousSharedPrivateAppStateIsNotMigrated",
+          "line": 139
+        },
+        {
+          "name": "previousBundleTokenTakesPrecedenceOverLegacySharedToken",
+          "line": 157
+        },
+        {
+          "name": "incoherentSourceIsSkippedWithoutMixingIdentityFields",
+          "line": 189
+        },
+        {
+          "name": "malformedTokenFallsThroughToValidLaterSource",
+          "line": 217
+        },
+        {
+          "name": "malformedLegacyClientDoesNotBlockTokenOnlyAdoption",
+          "line": 245
+        },
+        {
+          "name": "malformedOrNonfiniteLegacyDateDoesNotBlockTokenOnlyAdoption",
+          "line": 274
+        },
+        {
+          "name": "dateOnlySourceFallsThroughToValidLaterSource",
+          "line": 305
+        },
+        {
+          "name": "keychainReadFailureFailsClosedInsteadOfFallingThrough",
+          "line": 333
+        },
+        {
+          "name": "existingStableIdentityIsNeverReplacedDuringAdoption",
+          "line": 352
+        },
+        {
+          "name": "environmentMovesAppLocallyWhileLegacySharedValuesRemainInert",
+          "line": 382
+        },
+        {
+          "name": "markerIsWrittenOnlyAfterMigrationCompletes",
+          "line": 407
+        },
+        {
+          "name": "tokenOnlyLegacyIdentityAdoptsAsCoherentClearedState",
+          "line": 431
+        },
+        {
+          "name": "adoptedStableIdentityDoesNotResurrectChangedLegacyStateWhenSyncIsDisabled",
+          "line": 452
+        },
+        {
+          "name": "staggeredSiblingAdoptionsCanReadTheSameUntouchedLegacyIdentity",
+          "line": 482
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/SharedSessionSyncTests.swift",
+      "sha256": "47f7368b0c77bf45d909e59525b4ee344851df6001581270c3c2b19c226f965e",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "threeIndependentOwnerSlotsConvergeOnOneExactEvent",
+          "line": 10
+        },
+        {
+          "name": "initialSharedHydrationAppliesPeerClearInsteadOfStaleLocalClient",
+          "line": 38
+        },
+        {
+          "name": "degradedLocalMutationPublishesAheadOfOlderSharedWinner",
+          "line": 86
+        },
+        {
+          "name": "initialSharedHydrationSeedsLocalTokenWithoutExposingLocalClient",
+          "line": 142
+        },
+        {
+          "name": "newlyAdoptedLegacyTokenPublishesAheadOfExistingSignedOutPeer",
+          "line": 169
+        },
+        {
+          "name": "legacyAdoptionPublicationPreservesProvisionalClientUntilCanonicalResponse",
+          "line": 236
+        },
+        {
+          "name": "ordinarySharedClearReplacesMatchingProvisionalClient",
+          "line": 314
+        },
+        {
+          "name": "competingWritesRemainDiscoverableUntilConvergence",
+          "line": 359
+        },
+        {
+          "name": "delayedResponseUsesGenerationCapturedBeforePeerPublication",
+          "line": 394
+        },
+        {
+          "name": "responsePreparedBeforeAcceptedPeerFrontierIsRejected",
+          "line": 423
+        },
+        {
+          "name": "responsePreparedBeforeSameOwnerWatchUpdateIsRejected",
+          "line": 483
+        },
+        {
+          "name": "olderResponseSequenceCannotReplaceNewerSameFrontierResponse",
+          "line": 538
+        },
+        {
+          "name": "failedSharedResponseStageDoesNotConsumeResponseSequence",
+          "line": 581
+        },
+        {
+          "name": "olderSequenceWithEqualServerDateAndNewerClientTimestampIsAccepted",
+          "line": 622
+        },
+        {
+          "name": "newerRequestFromIntermediateNetworkFrontierCanExtendResponseLineage",
+          "line": 671
+        },
+        {
+          "name": "newerResponseFromSameCapturedFrontierExtendsNetworkLineage",
+          "line": 718
+        },
+        {
+          "name": "tokenOnlyResponseResolvesIdentityWhenItsSerializedTurnBegins",
+          "line": 763
+        },
+        {
+          "name": "canonicalActiveClientWithoutTokenThrows",
+          "line": 820
+        },
+        {
+          "name": "peerIdentityPersistsBeforeMemoryChanges",
+          "line": 840
+        },
+        {
+          "name": "localPersistenceFailureRetainsPreviousInMemoryIdentity",
+          "line": 861
+        },
+        {
+          "name": "ownerSlotWriteFailureDoesNotNotifyOrApplyResponse",
+          "line": 889
+        },
+        {
+          "name": "restartRetriesExactDurablePendingPublication",
+          "line": 910
+        },
+        {
+          "name": "sameProcessRetryRecoversIdentityWithoutReplayingOptionalPostAuthFlow",
+          "line": 948
+        },
+        {
+          "name": "sameProcessRetryDoesNotTransferCompletionToNewAuthView",
+          "line": 1004
+        },
+        {
+          "name": "restartDoesNotReplayOptionalPostAuthFlow",
+          "line": 1061
+        },
+        {
+          "name": "differentSharedWinnerClearsPostAuthTargetWhenOldSessionRemainsStored",
+          "line": 1126
+        },
+        {
+          "name": "staleCompletionSignalsDismissibleAuthBeforeSharedPublication",
+          "line": 1218
+        },
+        {
+          "name": "supersededResponseDoesNotTransferCompletionToReplacementAuthView",
+          "line": 1274
+        },
+        {
+          "name": "differentSharedEventWinningSameSessionSemanticallyAcceptsCompletion",
+          "line": 1369
+        },
+        {
+          "name": "ownPublicationChangingCurrentSessionSupersedesExistingCompletion",
+          "line": 1453
+        },
+        {
+          "name": "destructiveShutdownDiscardsPendingPublication",
+          "line": 1520
+        },
+        {
+          "name": "acceptedCommitFailureRetainsPendingUntilExactRecovery",
+          "line": 1542
+        },
+        {
+          "name": "pendingRecoveryNeverOverwritesNewerOwnSlot",
+          "line": 1579
+        },
+        {
+          "name": "localCandidateThatLosesReductionIsNeverAccepted",
+          "line": 1618
+        },
+        {
+          "name": "futureSchemaOwnSlotDoesNotBlockPeerAdoptionOrRetainPendingIntent",
+          "line": 1645
+        },
+        {
+          "name": "futureSchemaRecoveryAppliesWinnerWithoutReplayingOptionalCompletion",
+          "line": 1673
+        },
+        {
+          "name": "publicationNotifiesOnlyAfterAcceptedCommitAndMemoryApply",
+          "line": 1762
+        },
+        {
+          "name": "olderFailedPublicationCannotBecomePendingAfterNewerSuccess",
+          "line": 1786
+        },
+        {
+          "name": "enumerationFailureRetainsLocalIdentity",
+          "line": 1821
+        },
+        {
+          "name": "emptySharedStoreDoesNotClearExistingLocalIdentity",
+          "line": 1840
+        },
+        {
+          "name": "offlineColdStartHydratesSlotPublishedByTerminatedSibling",
+          "line": 1858
+        },
+        {
+          "name": "initialReconciliationInstallsPeerFrontierBeforeRequestPreparation",
+          "line": 1877
+        },
+        {
+          "name": "failedInitialReconciliationFailsPreparationOnceAndThenRetries",
+          "line": 1897
+        },
+        {
+          "name": "successfulBackgroundReconciliationRepairsFailedInitialBarrier",
+          "line": 1916
+        },
+        {
+          "name": "requestRecoversFailedReconciliationBeforeCapturingFrontier",
+          "line": 1933
+        },
+        {
+          "name": "notificationDuringFailedReconciliationSchedulesFollowupPass",
+          "line": 1972
+        },
+        {
+          "name": "requestPreparationWaitsForAlreadyQueuedSharedIdentityWork",
+          "line": 2004
+        },
+        {
+          "name": "requestPreparationCapturesAuthFlowOwnerBeforeQueuedSharedWork",
+          "line": 2042
+        },
+        {
+          "name": "requestCapturesOneIdentityWhenReconciliationQueuesDuringEarlierWait",
+          "line": 2087
+        },
+        {
+          "name": "concurrentSharedTokenlessRequestsShareStartupTakeoverGeneration",
+          "line": 2135
+        },
+        {
+          "name": "foregroundReconciliationRecoversMissedNotification",
+          "line": 2197
+        },
+        {
+          "name": "signOutIsPublishedAsDurableClearEvent",
+          "line": 2215
+        },
+        {
+          "name": "siblingSignInAndSignOutConvergeInBothDirections",
+          "line": 2234
+        },
+        {
+          "name": "localClearDeletesOnlyCallingOwnersSlot",
+          "line": 2260
+        },
+        {
+          "name": "localClearPreservesObservedFrontierForNextPublication",
+          "line": 2280
+        },
+        {
+          "name": "shutdownCanPreserveOwnSlotForSameTopologyReplacement",
+          "line": 2310
+        },
+        {
+          "name": "shutdownDeletionRemovesOnlyCallingOwnersSlot",
+          "line": 2329
+        },
+        {
+          "name": "replicationDoesNotPostAnotherNotification",
+          "line": 2347
+        },
+        {
+          "name": "watchPayloadPublishesOneAtomicSharedIdentityEvent",
+          "line": 2365
+        },
+        {
+          "name": "failedSharedWatchPublicationDiscardsPendingWatchMetadata",
+          "line": 2402
+        },
+        {
+          "name": "watchIdentityPayloadsPublishSeriallyInArrivalOrder",
+          "line": 2438
+        },
+        {
+          "name": "canceledWatchPublicationCleanupCannotEraseReplacementTask",
+          "line": 2482
+        },
+        {
+          "name": "watchPublicationAllocatesGenerationWhenCoordinatorQueueProcessesIt",
+          "line": 2530
+        },
+        {
+          "name": "queuedWatchPayloadDoesNotSuppressEarlierSharedIdentityChange",
+          "line": 2569
+        },
+        {
+          "name": "watchArrivalReservesCoordinatorQueueBeforeNetworkResponse",
+          "line": 2617
+        },
+        {
+          "name": "headerPreparationCapturesTypedFrontierAndCanonicalMarker",
+          "line": 2661
+        },
+        {
+          "name": "canonicalEmptyOrMalformedResponseCannotRotateOnlyToken",
+          "line": 2689
+        },
+        {
+          "name": "canonicalCompleteResponsePublishesTokenAndClientTogether",
+          "line": 2729
+        },
+        {
+          "name": "conflictingPendingEventIsAbandonedWithoutWedgingFuturePublications",
+          "line": 2755
+        },
+        {
+          "name": "updateDeviceTokenPublishesClearedIdentityBeforeRefreshFailure",
+          "line": 2813
+        },
+        {
+          "name": "updateDeviceTokenSucceedsWhenPeerWinsWithRequestedToken",
+          "line": 2842
+        },
+        {
+          "name": "shutdownDeletesOwnSlotAfterSuspendedPublicationAndFencesOldWork",
+          "line": 2880
+        },
+        {
+          "name": "localClearSerializesDeletionAfterSuspendedPublicationAndFencesOldWork",
+          "line": 2912
+        },
+        {
+          "name": "localClearPreventsPendingRecoveryFromStartingANewSlotWrite",
+          "line": 2943
+        },
+        {
+          "name": "localClearDoesNotStrandCanceledQueuedReconciliation",
+          "line": 2973
+        },
+        {
+          "name": "localClearBarrierRemainsActiveAfterOwnerSlotDeletion",
+          "line": 3017
+        },
+        {
+          "name": "failedOwnerSlotDeletionKeepsLocalClearBarrierUntilRetrySucceeds",
+          "line": 3045
+        },
+        {
+          "name": "cleanupFailureAfterOwnerSlotDeletionReleasesLocalClearBarrier",
+          "line": 3084
+        },
+        {
+          "name": "watchMetadataIsNotPromotedWhenPeerEventWinsPublication",
+          "line": 3131
+        },
+        {
+          "name": "notificationNameDoesNotExposeKeychainConfiguration",
+          "line": 3176
+        }
+      ]
+    },
+    {
+      "path": "Tests/Core/WatchSyncPayloadTests.swift",
+      "sha256": "dfdf261c577142a5597eef88042b957e15f677f891da108900518a3366fbf6f5",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "watchVersionAdvancementFailsAtMaximumValue",
+          "line": 9
+        },
+        {
+          "name": "applicationContextRoundTripsPayloadValues",
+          "line": 20
+        },
+        {
+          "name": "applicationContextOmitsClientWhenNil",
+          "line": 40
+        },
+        {
+          "name": "legacySignedOutPhonePayloadClearsLocalClient",
+          "line": 52
+        },
+        {
+          "name": "phonePayloadAppliesAuthoritativeClientAndWinsFirstDeviceTokenSync",
+          "line": 76
+        },
+        {
+          "name": "remoteDeviceTokenSetFencesStaleClientResponses",
+          "line": 102
+        },
+        {
+          "name": "cachedClientHydrationDoesNotAdvanceWatchAuthVersion",
+          "line": 135
+        },
+        {
+          "name": "outgoingPayloadReadsDeviceTokenVersionFromMetadataRecord",
+          "line": 162
+        },
+        {
+          "name": "sharedIdentityChangeUsesOneMetadataSnapshot",
+          "line": 191
+        },
+        {
+          "name": "localClientChangeUsesOneMetadataSnapshot",
+          "line": 218
+        },
+        {
+          "name": "localDeviceTokenChangeUsesOneMetadataSnapshot",
+          "line": 238
+        },
+        {
+          "name": "whitespaceDeviceTokenPersistsAsClearedMetadata",
+          "line": 261
+        },
+        {
+          "name": "identityChangeNormalizesWhitespaceDeviceTokenBeforePublishingMetadataAndPayload",
+          "line": 278
+        },
+        {
+          "name": "watchTokenClearCannotSignOutAnActivePhone",
+          "line": 304
+        },
+        {
+          "name": "stoppedCoordinatorDropsPayloadWaitingForLocalIdentityQueue",
+          "line": 333
+        },
+        {
+          "name": "invalidatedQueuedWatchOperationStillReleasesPublicationTracking",
+          "line": 377
+        },
+        {
+          "name": "awaitedClearPersistsWatchTombstoneAndRejectsStalePeerIdentity",
+          "line": 422
+        },
+        {
+          "name": "watchPayloadDoesNotRollBackNewerLocalStateOrFirstSyncDeviceToken",
+          "line": 486
+        },
+        {
+          "name": "watchDeviceTokenSetDoesNotClearPhoneAuthBeforeClientReduction",
+          "line": 512
+        },
+        {
+          "name": "rejectedWatchDeviceTokenSetPreservesPhoneDeviceToken",
+          "line": 546
+        },
+        {
+          "name": "acceptedWatchClientSnapshotCarriesMatchingDeviceToken",
+          "line": 581
+        },
+        {
+          "name": "staleWatchClientSnapshotDoesNotCarryDeviceToken",
+          "line": 615
+        },
+        {
+          "name": "watchPayloadSeedsPhoneWhenNoLocalClient",
+          "line": 644
+        },
+        {
+          "name": "watchPayloadNilClientDoesNotClearPhoneClient",
+          "line": 667
+        },
+        {
+          "name": "clientSnapshotWithoutPairedTokenDoesNotReuseLocalToken",
+          "line": 690
+        },
+        {
+          "name": "changedTokenWithoutClientClearsOldClientBeforeRefresh",
+          "line": 720
+        },
+        {
+          "name": "tokenOnlyUpdateDoesNotPromoteProvisionalLegacyClient",
+          "line": 750
+        },
+        {
+          "name": "adoptedIdentityWatchUpdateRefreshesHydratedToken",
+          "line": 789
+        },
+        {
+          "name": "rejectedTokenUpdateSuppressesPairedClient",
+          "line": 831
+        },
+        {
+          "name": "payloadWithoutDeviceTokenUpdateDoesNotClearStoredToken",
+          "line": 866
+        },
+        {
+          "name": "explicitDeviceTokenClearWinsOverStaleSet",
+          "line": 888
+        },
+        {
+          "name": "explicitDeviceTokenClearWinsOverSameVersionNonAuthoritativeSet",
+          "line": 914
+        },
+        {
+          "name": "explicitDeviceTokenClearWinsOverLegacyNonAuthoritativeSet",
+          "line": 940
+        },
+        {
+          "name": "staleAuthSnapshotDoesNotUndoNewerExplicitClear",
+          "line": 967
+        },
+        {
+          "name": "legacyAuthSnapshotDoesNotUndoVersionedExplicitClear",
+          "line": 998
+        },
+        {
+          "name": "legacyVersionlessDeviceTokenStatePayloadIsAccepted",
+          "line": 1026
+        },
+        {
+          "name": "legacyVersionlessAuthStatePayloadIsAccepted",
+          "line": 1040
+        },
+        {
+          "name": "legacyVersionlessPayloadAppliesAfterStateWithoutVersionMigratesToInitial",
+          "line": 1062
+        },
+        {
+          "name": "partialUnknownOrInvalidMetadataIsRejected",
+          "line": 1089
+        },
+        {
+          "name": "tokenWriteFailureSuppressesPairedClient",
+          "line": 1109
+        },
+        {
+          "name": "metadataReadFailureRejectsPairedIdentityUpdate",
+          "line": 1138
+        },
+        {
+          "name": "failedAuthMetadataSaveDoesNotAdvanceAcceptedGeneration",
+          "line": 1164
+        },
+        {
+          "name": "failedSharedIdentityMetadataSaveDoesNotAdvanceAcceptedGeneration",
+          "line": 1206
+        },
+        {
+          "name": "clearTombstoneWriteFailurePreservesExistingWatermark",
+          "line": 1254
+        },
+        {
+          "name": "clearTombstoneReplacesCorruptMetadata",
+          "line": 1280
+        },
+        {
+          "name": "clearTombstoneReplacesMalformedLegacyStringMetadata",
+          "line": 1298
+        },
+        {
+          "name": "clearTombstoneClearsInheritedSources",
+          "line": 1316
+        },
+        {
+          "name": "legacyDeviceTokenStateWithoutVersionMigratesAsVersionZero",
+          "line": 1340
+        },
+        {
+          "name": "legacyAuthStateWithoutVersionMigratesAsVersionZero",
+          "line": 1355
+        },
+        {
+          "name": "legacyVersionWithoutStateIsCorrupt",
+          "line": 1370
+        },
+        {
+          "name": "clearTombstonePropagatesMetadataReadFailure",
+          "line": 1381
+        },
+        {
+          "name": "pendingMetadataWatermarkRejectsRollbackAfterFinalWriteFailure",
+          "line": 1390
+        },
+        {
+          "name": "nonAuthoritativeExactRetryCanCompletePendingIdentityAfterSaveFailure",
+          "line": 1467
+        },
+        {
+          "name": "versionlessAuthoritativeAuthPayloadCannotOverrideAcceptedVersionZero",
+          "line": 1525
+        },
+        {
+          "name": "acceptedAuthoritativeVersionIsIdempotentButRejectsDifferentPayload",
+          "line": 1562
+        },
+        {
+          "name": "authoritativePhonePayloadResetsStaleUnknownWatchWatermark",
+          "line": 1614
+        },
+        {
+          "name": "authoritativePhonePayloadCanResetOnlyStaleTokenWatermark",
+          "line": 1657
+        },
+        {
+          "name": "lowerAuthoritativePhonePayloadCannotRollbackAcceptedPhoneWatermark",
+          "line": 1705
+        },
+        {
+          "name": "lowerAuthoritativePhonePayloadCannotResetClearTombstone",
+          "line": 1747
+        },
+        {
+          "name": "acceptedMetadataCannotReplayAfterDurableIdentityWasCleared",
+          "line": 1795
+        },
+        {
+          "name": "localStorageClearPersistsWatchClearMetadata",
+          "line": 1837
+        },
+        {
+          "name": "canceledRefreshCompletionCannotClearReplacementRefreshState",
+          "line": 1881
+        },
+        {
+          "name": "corruptedMetadataRejectsPairedIdentityUpdate",
+          "line": 1899
+        },
+        {
+          "name": "acceptedPayloadWithoutServerDatePreservesPreviousDate",
+          "line": 1922
+        },
+        {
+          "name": "tokenClearPairedWithActiveClientIsRejectedAsOneTransition",
+          "line": 1945
+        }
+      ]
+    },
+    {
+      "path": "Tests/Dependencies/DependencyContainerKeychainTests.swift",
+      "sha256": "d56fa2c620d71e5bf7b2cd9d2f7297eaf9f8a24c106059e849bdda84b623b394",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "sharedSessionSyncFailsClosedWithoutAccessGroup",
+          "line": 13
+        },
+        {
+          "name": "sharedSessionSyncFailsClosedWithoutOwnerIdentifier",
+          "line": 25
+        },
+        {
+          "name": "keychainStorageWithoutAccessGroupUsesSystemKeychain",
+          "line": 41
+        },
+        {
+          "name": "disabledPersistentAdoptionDoesNotInstallLiveClearRecovery",
+          "line": 55
+        },
+        {
+          "name": "constructionCompletesClearRecoveryBeforeReturning",
+          "line": 69
+        },
+        {
+          "name": "keychainStorageWithAccessGroupUsesMigratingStorage",
+          "line": 101
+        },
+        {
+          "name": "disabledConfigurationWithoutAdoptionMarkerKeepsLegacyPersistenceBoundary",
+          "line": 119
+        },
+        {
+          "name": "sharedConfigurationBuildsExactRecoveryTopology",
+          "line": 225
+        },
+        {
+          "name": "constructingDisabledTransportDoesNotClearPendingPublication",
+          "line": 267
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/AuthAppleTests.swift",
+      "sha256": "d77586e675c5dfc5d5a4e7bf53635850419d1c87d917593e104cc2e58beff105",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "appleSignInSkipsSignUpWhenTransferIsDisabled",
+          "line": 45
+        },
+        {
+          "name": "appleSignInStartsWithSignUpAndPreservesAppleProfile",
+          "line": 77
+        },
+        {
+          "name": "appleSignInTransfersSuccessfulSignUpToExistingUser",
+          "line": 113
+        },
+        {
+          "name": "appleSignInThrowsVerificationErrorAfterSignUpTransfersToSignIn",
+          "line": 144
+        },
+        {
+          "name": "appleSignInFallsBackForRestrictedSignUp",
+          "line": 187
+        },
+        {
+          "name": "appleSignInKeepsNewUsersBlocked",
+          "line": 221
+        },
+        {
+          "name": "appleSignInDoesNotFallbackForUnrelatedSignUpError",
+          "line": 253
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/AuthTests.swift",
+      "sha256": "9e781d8929e168c4b3f8157f87ea29c948f167a4b4a65ae1e7494df7ecaeef56",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "signInWithIdentifierUsesSignInServiceCreate",
+          "line": 91
+        },
+        {
+          "name": "signInWithPasswordUsesSignInServiceCreate",
+          "line": 107
+        },
+        {
+          "name": "signInWithOAuthUsesSignInServiceCreate",
+          "line": 124
+        },
+        {
+          "name": "signInWithEnterpriseSSOUsesSignInServiceCreate",
+          "line": 150
+        },
+        {
+          "name": "startEnterpriseSSOUsesSignInServiceCreateAndPrepareFirstFactor",
+          "line": 176
+        },
+        {
+          "name": "signInWithIdTokenUsesSignInServiceCreate",
+          "line": 206
+        },
+        {
+          "name": "signInWithIdTokenTransfersUnsafeMetadataToSignUp",
+          "line": 229
+        },
+        {
+          "name": "signInWithIdTokenThrowsWhenTransferableButDisallowed",
+          "line": 257
+        },
+        {
+          "name": "createPasskeySignInUsesPasskeyStrategy",
+          "line": 293
+        },
+        {
+          "name": "signInWithPasskeyUsesOneShotPasskeySignIn",
+          "line": 310
+        },
+        {
+          "name": "signInWithBiometricsDelegatesToBiometricCredentials",
+          "line": 343
+        },
+        {
+          "name": "signInWithTicketUsesSignInServiceCreate",
+          "line": 429
+        },
+        {
+          "name": "signInWithEmailLinkCreatesAndPreparesFirstFactor",
+          "line": 445
+        },
+        {
+          "name": "completeMagicLinkWithCallbackURLCompletesPendingFlowAndActivatesSession",
+          "line": 490
+        },
+        {
+          "name": "magicLinkAuthFlowOwnershipIsInMemoryOnly",
+          "line": 556
+        },
+        {
+          "name": "completeMagicLinkWithCallbackURLRejectsMissingCallbackParams",
+          "line": 584
+        },
+        {
+          "name": "completeMagicLinkEmitsContinuationEventForIncompleteSignIn",
+          "line": 602
+        },
+        {
+          "name": "completeMagicLinkRejectsTicketResponseForSignUpFlow",
+          "line": 682
+        },
+        {
+          "name": "completeMagicLinkUsesCompletedSignUpResponse",
+          "line": 739
+        },
+        {
+          "name": "completeMagicLinkEmitsContinuationEventForIncompleteSignUp",
+          "line": 844
+        },
+        {
+          "name": "urlHandlingCoordinatorDeduplicatesConcurrentRoutes",
+          "line": 916
+        },
+        {
+          "name": "completeMagicLinkRejectsMismatchedPendingFlowAndPreservesVerifier",
+          "line": 958
+        },
+        {
+          "name": "completeMagicLinkCompletesPendingFlowAndActivatesSession",
+          "line": 992
+        },
+        {
+          "name": "completeMagicLinkClearsPendingFlowOnTerminalCompletionFailure",
+          "line": 1054
+        },
+        {
+          "name": "completeMagicLinkPreservesPendingFlowOnRetryableCompletionFailure",
+          "line": 1105
+        },
+        {
+          "name": "completeMagicLinkDoesNotClearNewerPendingFlow",
+          "line": 1158
+        },
+        {
+          "name": "signUpWithStandardFieldsUsesSignUpServiceCreate",
+          "line": 1231
+        },
+        {
+          "name": "signUpTransfersCurrentSignInWithCollectedFields",
+          "line": 1249
+        },
+        {
+          "name": "signUpWithOAuthUsesSignUpServiceCreate",
+          "line": 1273
+        },
+        {
+          "name": "signUpWithEnterpriseSSOUsesSignUpServiceCreate",
+          "line": 1304
+        },
+        {
+          "name": "signUpWithIdTokenUsesSignUpServiceCreate",
+          "line": 1335
+        },
+        {
+          "name": "signUpWithIdTokenPreservesEnabledNameFields",
+          "line": 1364
+        },
+        {
+          "name": "normalizedAppleScopesDropsFullNameWhenBothNameFieldsAreDisabled",
+          "line": 1387
+        },
+        {
+          "name": "normalizedAppleScopesKeepsFullNameWhenEitherNameFieldIsEnabled",
+          "line": 1401
+        },
+        {
+          "name": "normalizedAppleScopesKeepsFullNameWhenEnvironmentIsUnavailable",
+          "line": 1415
+        },
+        {
+          "name": "signUpWithTicketUsesSignUpServiceCreate",
+          "line": 1426
+        },
+        {
+          "name": "setActiveUsesNilOrganizationIdByDefault",
+          "line": 1494
+        },
+        {
+          "name": "recoveredSessionActivationWaitsForAuthViewCompletion",
+          "line": 1510
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/BiometricCredential/BiometricCredentialKeyManagerTests.swift",
+      "sha256": "9fe17dcc3e79e270eb751ebbe861d8060624887ce9ad3f5f3b71e7e6b107d4f3",
+      "category": "platform-capability",
+      "cases": [
+        {
+          "name": "localKeyDefaultsToBiometryCurrentSetPolicy",
+          "line": 11
+        },
+        {
+          "name": "privateKeyAttributesUseSecureEnclaveAccessControl",
+          "line": 18
+        },
+        {
+          "name": "accessControlFlagsMatchBiometricCredentialPolicies",
+          "line": 45
+        },
+        {
+          "name": "localAuthenticationPoliciesMatchBiometricCredentialPolicies",
+          "line": 62
+        },
+        {
+          "name": "localAuthenticationPoliciesForKeyCreationRequireBiometrics",
+          "line": 78
+        },
+        {
+          "name": "privateKeyQueryUsesStableApplicationTag",
+          "line": 95
+        },
+        {
+          "name": "publicKeyJWKEncodesP256X963Representation",
+          "line": 110
+        },
+        {
+          "name": "publicKeyJWKRejectsInvalidRepresentation",
+          "line": 126
+        },
+        {
+          "name": "failedPublicKeyExportDeletesCreatedKeyAndPreservesExportError",
+          "line": 139
+        },
+        {
+          "name": "base64URLEncodingOmitsPadding",
+          "line": 167
+        },
+        {
+          "name": "rawES256SignatureConvertsDEREncodedSignature",
+          "line": 173
+        },
+        {
+          "name": "rawES256SignaturePadsShortDERIntegers",
+          "line": 184
+        },
+        {
+          "name": "rawES256SignatureRejectsMalformedDER",
+          "line": 194
+        },
+        {
+          "name": "privateKeyLookupStatusMapsBiometricErrors",
+          "line": 206
+        },
+        {
+          "name": "mockKeyManagerSignsClientData",
+          "line": 232
+        },
+        {
+          "name": "mockKeyManagerSurfacesMissingKey",
+          "line": 253
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/BiometricCredential/BiometricCredentialLocalStoreTests.swift",
+      "sha256": "d8ee613a36650b81a68c7eeeba79eb14cfaecec96a08216d118441b0f160681c",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "saveAndLoadCredentialMetadata",
+          "line": 10
+        },
+        {
+          "name": "saveReplacesExistingCredentialMetadata",
+          "line": 20
+        },
+        {
+          "name": "saveDeletesReplacedLocalKeyAfterOverwritingMetadata",
+          "line": 38
+        },
+        {
+          "name": "saveKeepsUpdatedMetadataWhenReplacedKeyDeletionFails",
+          "line": 60
+        },
+        {
+          "name": "saveKeepsExistingMetadataAndKeyWhenReplacementPersistenceFails",
+          "line": 84
+        },
+        {
+          "name": "deleteCredentialMetadata",
+          "line": 110
+        },
+        {
+          "name": "localCredentialCanBeBuiltFromServerCredentialAndLocalKey",
+          "line": 121
+        },
+        {
+          "name": "emptyIdentifierHintIsNotPersisted",
+          "line": 143
+        },
+        {
+          "name": "credentialMetadataRequiresPolicy",
+          "line": 160
+        },
+        {
+          "name": "credentialMetadataRequiresUserID",
+          "line": 185
+        },
+        {
+          "name": "deleteAllLocalCredentialsDeletesKeysAndMetadata",
+          "line": 210
+        },
+        {
+          "name": "deleteAllLocalCredentialsPreservesMetadataForFailedKeyDeletions",
+          "line": 234
+        },
+        {
+          "name": "deleteAllLocalCredentialsStopsAfterMetadataPersistenceFails",
+          "line": 264
+        },
+        {
+          "name": "deleteLocalCredentialsDeletesOnlyMatchingAppIdentifier",
+          "line": 292
+        },
+        {
+          "name": "appScopedReadsAndSavesIgnoreMalformedCredentialsForOtherApps",
+          "line": 319
+        },
+        {
+          "name": "appScopedReadsSkipMalformedCredentialsForCurrentApp",
+          "line": 347
+        },
+        {
+          "name": "deleteAllLocalCredentialsDeletesMalformedMetadataAfterDeletingKeys",
+          "line": 396
+        },
+        {
+          "name": "deleteAllLocalCredentialsDeletesRecoverableKeysFromPartiallyMalformedMetadata",
+          "line": 425
+        },
+        {
+          "name": "deleteAllLocalCredentialsPreservesMalformedMetadataForFailedKeyDeletions",
+          "line": 469
+        },
+        {
+          "name": "deleteLocalCredentialsDeletesOnlyMatchingAppIdentifierFromMalformedMetadata",
+          "line": 499
+        },
+        {
+          "name": "corruptCredentialMetadataThrows",
+          "line": 548
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/BiometricCredential/BiometricCredentialServiceTests.swift",
+      "sha256": "f79e8a08198f98d255657c577010c3a58e544b87d51fddfaf513239a5573c454",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "list",
+          "line": 15
+        },
+        {
+          "name": "prepareEnrollment",
+          "line": 39
+        },
+        {
+          "name": "attemptEnrollment",
+          "line": 76
+        },
+        {
+          "name": "validateSignInCredential",
+          "line": 117
+        },
+        {
+          "name": "revoke",
+          "line": 149
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/BiometricCredential/BiometricCredentialTests.swift",
+      "sha256": "a7d89b5ef3967b422fdd2c304d92dcc4b75250268554be0c10344003e366b0e1",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "biometricCredentialDecodesBackendShape",
+          "line": 10
+        },
+        {
+          "name": "biometricCredentialChallengeDecodesBackendShape",
+          "line": 45
+        },
+        {
+          "name": "verificationDecodesBackendBiometricCredentialChallenge",
+          "line": 72
+        },
+        {
+          "name": "prepareEnrollmentParamsEncodeBackendKeys",
+          "line": 100
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/BiometricCredential/BiometricCredentialsTests.swift",
+      "sha256": "fa4db7d0384b10e6bfeef01f8cf932d98428186536bc05ce94250641e9a32a5f",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "listUsesBiometricCredentialService",
+          "line": 14
+        },
+        {
+          "name": "revokeUsesBiometricCredentialService",
+          "line": 33
+        },
+        {
+          "name": "availabilityReturnsAvailableLocalCredentialWithoutActiveSession",
+          "line": 56
+        },
+        {
+          "name": "availabilityReturnsAvailableWithMultipleLocalCredentials",
+          "line": 68
+        },
+        {
+          "name": "availabilityReconcilesServerCredentialWhenSessionIsActive",
+          "line": 89
+        },
+        {
+          "name": "localAvailabilityDoesNotReconcileServerCredentialWhenSessionIsActive",
+          "line": 102
+        },
+        {
+          "name": "validateLocalCredentialIfPossibleReturnsValidForServerCredential",
+          "line": 120
+        },
+        {
+          "name": "validateLocalCredentialIfPossibleDeletesMissingServerCredential",
+          "line": 139
+        },
+        {
+          "name": "validateLocalCredentialIfPossibleSkipsMissingNewestCredential",
+          "line": 160
+        },
+        {
+          "name": "validateLocalCredentialIfPossibleKeepsCredentialForTransientError",
+          "line": 198
+        },
+        {
+          "name": "validateLocalCredentialIfPossibleIsInconclusiveWithoutCachedClient",
+          "line": 219
+        },
+        {
+          "name": "availabilitySkipsStaleNewerCredentialWhenSignedIn",
+          "line": 236
+        },
+        {
+          "name": "availabilityDoesNotReconcileServerCredentialWhenSessionIsExpired",
+          "line": 267
+        },
+        {
+          "name": "availabilityReturnsFeatureDisabledWhenNativeSettingIsOff",
+          "line": 288
+        },
+        {
+          "name": "availabilityDeletesMetadataWhenLocalKeyIsMissing",
+          "line": 300
+        },
+        {
+          "name": "availabilityDeletesMetadataWhenServerCredentialIsMissing",
+          "line": 315
+        },
+        {
+          "name": "availabilityIgnoresCredentialFromDifferentAppIdentifierBeforeCheckingKeys",
+          "line": 335
+        },
+        {
+          "name": "signInUsesCurrentAppCredentialWhenSharedKeychainContainsNewerCredential",
+          "line": 359
+        },
+        {
+          "name": "availabilityIgnoresCredentialOwnedByDifferentUserWhenSignedIn",
+          "line": 389
+        },
+        {
+          "name": "availabilitySkipsNewestCredentialOwnedByDifferentUserWhenIdentifierHintIsNil",
+          "line": 421
+        },
+        {
+          "name": "availabilityUsesUserIDWhenIdentifierHintChanged",
+          "line": 458
+        },
+        {
+          "name": "localAvailabilityUsesUserIDWhenIdentifierHintChanged",
+          "line": 481
+        },
+        {
+          "name": "enrollCreatesKeyPreparesChallengeAttemptsAndPersistsMetadata",
+          "line": 499
+        },
+        {
+          "name": "enrollPinsInitiatingSessionAcrossCurrentSessionChange",
+          "line": 555
+        },
+        {
+          "name": "enrollUsesInitiatingSessionForRollbackAfterLocalSaveFailure",
+          "line": 586
+        },
+        {
+          "name": "enrollReplacesOtherCurrentAppCredentialsAcrossUsersAfterSuccessfulEnrollment",
+          "line": 620
+        },
+        {
+          "name": "enrollKeepsExistingCredentialsWhenEnrollmentFails",
+          "line": 664
+        },
+        {
+          "name": "enrollDoesNotCallBackendRevokeForReplacedLocalCredentials",
+          "line": 693
+        },
+        {
+          "name": "enrollAllowsPendingSession",
+          "line": 719
+        },
+        {
+          "name": "enrollDefaultsToBiometryCurrentSetPolicy",
+          "line": 747
+        },
+        {
+          "name": "enrollDeletesGeneratedKeyWhenAttemptFails",
+          "line": 772
+        },
+        {
+          "name": "enrollRequiresActiveOrPendingSession",
+          "line": 798
+        },
+        {
+          "name": "revokeDeletesLocalCredentialAfterServerRevoke",
+          "line": 814
+        },
+        {
+          "name": "revokeReturnsServerCredentialWhenLocalCleanupFails",
+          "line": 831
+        },
+        {
+          "name": "revokeCurrentDeviceCredentialUsesUserIDWhenIdentifierHintChanged",
+          "line": 849
+        },
+        {
+          "name": "revokeCurrentDeviceCredentialReturnsNilWhenNoLocalCredentialIsAvailable",
+          "line": 891
+        },
+        {
+          "name": "revokeCurrentDeviceCredentialAllowsPendingSession",
+          "line": 909
+        },
+        {
+          "name": "revokeCurrentDeviceCredentialRequiresActiveOrPendingSession",
+          "line": 935
+        },
+        {
+          "name": "forgetLocalCredentialsDeletesDeletedUserIDAfterCurrentUserIsCleared",
+          "line": 951
+        },
+        {
+          "name": "availabilityUsesStoredCredentialPolicy",
+          "line": 983
+        },
+        {
+          "name": "availabilityReturnsNoLocalCredentialWhenIdentifierHintDoesNotMatch",
+          "line": 1014
+        },
+        {
+          "name": "signInUsesCreateChallengeAndAttemptsFirstFactor",
+          "line": 1031
+        },
+        {
+          "name": "signInUsesNewestLocalCredentialWhenNoIdIsProvided",
+          "line": 1071
+        },
+        {
+          "name": "signInSkipsCredentialOwnedByDifferentUserWhenSessionIsActive",
+          "line": 1099
+        },
+        {
+          "name": "signInUsesIdentifierHintToSelectMatchingLocalCredential",
+          "line": 1137
+        },
+        {
+          "name": "signInDeletesLocalCredentialWhenCreateReportsBiometricCredentialMissing",
+          "line": 1167
+        },
+        {
+          "name": "signInDeletesLocalCredentialWhenAttemptReportsBiometricCredentialMissing",
+          "line": 1199
+        },
+        {
+          "name": "signInKeepsLocalCredentialWhenCreateFailsForUnrelatedAPIError",
+          "line": 1226
+        },
+        {
+          "name": "signInSkipsStaleNewerCredentialWhenSignedIn",
+          "line": 1252
+        },
+        {
+          "name": "signInRequiresCreateToReturnBiometricCredentialChallenge",
+          "line": 1291
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/FactorTests.swift",
+      "sha256": "15658b5ec571fdc2576e07de811ebc2704b324f70113b49d68d50a3c38ee0d86",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "defaultInitializerParameterRoundTripsThroughJSON",
+          "line": 7
+        },
+        {
+          "name": "biometricCredentialStrategyRoundTripsThroughJSON",
+          "line": 31
+        },
+        {
+          "name": "biometricCredentialFactorRoundTripsThroughJSON",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/HostedAuthPersistenceTests.swift",
+      "sha256": "a26ad638daa488c2d99dc0a99a0e6eada1f15470567ccbd0e7e83b4e642fe207",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "redeemPersistsIdentityBeforeActivation",
+          "line": 8
+        },
+        {
+          "name": "redeemPersistenceFailureDoesNotExposeOrActivateIdentity",
+          "line": 94
+        },
+        {
+          "name": "missingCallbackSessionDoesNotMutatePersistedIdentity",
+          "line": 174
+        },
+        {
+          "name": "generationChangeBeforeRedeemSkipsRedeemAndPreservesIdentity",
+          "line": 237
+        },
+        {
+          "name": "sharedFrontierAdvanceDuringRedeemRejectsResponseWithoutActivating",
+          "line": 299
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/HostedAuthServiceTests.swift",
+      "sha256": "a16517b911ee31b17d9e0571d8ed554cf0fd7193b981a06bef20b34a3935210d",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "createUsesHostedAuthPostRequestShape",
+          "line": 10
+        },
+        {
+          "name": "createOmitsModeWhenNotProvided",
+          "line": 56
+        },
+        {
+          "name": "redeemUsesPhysicalPostBodyAndDisablesAutomaticClientSync",
+          "line": 70
+        },
+        {
+          "name": "redeemPreservesAuthoritativeDeviceTokenClear",
+          "line": 130
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/HostedAuthTests.swift",
+      "sha256": "17d47810f1f1dbec715b59ed5b4b0b42d257f79345a44c3fe8af2fbfa66777a4",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "modeUsesHostedAuthProtocolValues",
+          "line": 8
+        },
+        {
+          "name": "hostedAuthResourceRequiresExpectedObjectAndWebOrigin",
+          "line": 14
+        },
+        {
+          "name": "generatedStateIsRandomAndNonEmpty",
+          "line": 32
+        },
+        {
+          "name": "redirectMatchesSchemeAuthorityPortAndPath",
+          "line": 41
+        },
+        {
+          "name": "redirectInitRejectsNonCustomSchemeAndMalformedValues",
+          "line": 59
+        },
+        {
+          "name": "tripleSlashRedirectRejectsInjectedOrMissingAuthority",
+          "line": 78
+        },
+        {
+          "name": "callbackRequiresExactStateNonceAndCreatedSession",
+          "line": 90
+        },
+        {
+          "name": "callbackStateValidationRejectsMissingDuplicatedAndMismatchedState",
+          "line": 124
+        },
+        {
+          "name": "successRedeemsUpdatesClientAndActivatesOnlyCallbackSession",
+          "line": 148
+        },
+        {
+          "name": "overlappingStartIsRejectedBeforeCreatingAnotherTransfer",
+          "line": 230
+        },
+        {
+          "name": "cancellationPropagatesWithoutRedeemingOrActivating",
+          "line": 286
+        },
+        {
+          "name": "signedOutCreateRefreshesClientAndRetriesOnceWithSameParams",
+          "line": 329
+        },
+        {
+          "name": "secondSignedOutCreateIsNotRetried",
+          "line": 381
+        },
+        {
+          "name": "nonSignedOutCreateErrorIsNotRetried",
+          "line": 423
+        },
+        {
+          "name": "signedOutRedeemErrorIsNotRetriedOrReconciled",
+          "line": 460
+        },
+        {
+          "name": "missingCallbackSessionDoesNotApplyClientOrActivateAnotherSession",
+          "line": 511
+        },
+        {
+          "name": "explicitClearRedeemResponseClearsIdentityWithoutActivating",
+          "line": 561
+        },
+        {
+          "name": "clientChangeDuringActivationDoesNotReturnStaleSession",
+          "line": 628
+        },
+        {
+          "name": "failedFlowReleasesInFlightGateForSubsequentAttempts",
+          "line": 674
+        },
+        {
+          "name": "reconfigurationWhileBrowserOpenFailsBeforeRedeem",
+          "line": 726
+        },
+        {
+          "name": "generationChangeWhileBrowserOpenDiscardsRedeemedClient",
+          "line": 768
+        },
+        {
+          "name": "generationChangeDuringRedeemDiscardsResponseWithoutActivating",
+          "line": 823
+        },
+        {
+          "name": "nilRedirectUrlFallsBackToConfiguredRedirectUrl",
+          "line": 880
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/MagicLinkServiceTests.swift",
+      "sha256": "a93d383d768e859c718f94256489f46c66b56af00151bb72baf200b9da352c3f",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "completeCanEstablishClientWhenTokenless",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/MagicLinkTests.swift",
+      "sha256": "31384bfc0850c5685e106da2bd0f23a5ab75c34a88f9f204d932b9b55f476b0b",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "parsesFlowIdAndApprovalTokenFromQuery",
+          "line": 11
+        },
+        {
+          "name": "parsesFlowIdAndApprovalTokenFromFragment",
+          "line": 23
+        },
+        {
+          "name": "routeMatcherAcceptsConfiguredCustomSchemeCallbacks",
+          "line": 40
+        },
+        {
+          "name": "routeMatcherRejectsDifferentCustomSchemeEndpoint",
+          "line": 60
+        },
+        {
+          "name": "routeMatcherRejectsDifferentCustomScheme",
+          "line": 70
+        },
+        {
+          "name": "missingFlowIdThrowsDeterministicError",
+          "line": 79
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/MockMagicLinkServiceTests.swift",
+      "sha256": "98c3f7430e647dd749789ee00d256f2d6f2edf789f32c6d10a22db239fcdb406",
+      "category": "test-support",
+      "cases": [
+        {
+          "name": "completeUsesInjectedHandler",
+          "line": 7
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/OAuthProviderTests.swift",
+      "sha256": "3bd434a2a24b3ce94e63f10f97ee60fd11e00fbdc630b588445f2bea045d8d1f",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "supportsTintedIconMaskMatchesBuiltInAllowlist",
+          "line": 13
+        },
+        {
+          "name": "xProviderUsesOAuthXStrategy",
+          "line": 24
+        },
+        {
+          "name": "iconImageUrlUsesConfiguredProviderLogoUrl",
+          "line": 30
+        },
+        {
+          "name": "customProviderUsesConfiguredLogoUrlWithoutDarkVariantLookup",
+          "line": 42
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/OIDCPromptTests.swift",
+      "sha256": "65b47062fc1736627d60c82d64fd4d8ea12011d6aa7c25391dd358825a6e0aec",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "emptyArrayReturnsNil",
+          "line": 6
+        },
+        {
+          "name": "singleNoneReturnsNone",
+          "line": 12
+        },
+        {
+          "name": "singlePromptReturnsValue",
+          "line": 18
+        },
+        {
+          "name": "multiplePromptsJoinedWithSpace",
+          "line": 25
+        },
+        {
+          "name": "duplicatePromptsAreDeduped",
+          "line": 32
+        },
+        {
+          "name": "noneWithOtherPromptsPassesThrough",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Passkey/PasskeyHelperTests.swift",
+      "sha256": "4baf04bdc80ddbd97b3b2abd2e83956b8d3501bb7156e93f11e81c71411e3c28",
+      "category": "platform-capability",
+      "cases": [
+        {
+          "name": "credentialAssertionRequestSetsAllowedCredentials",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Passkey/PasskeyServiceTests.swift",
+      "sha256": "8505f2ca7725d517f78b12e63cba7210a83d210a0619d2fa5e4f73d748bb2df8",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testCreate",
+          "line": 15
+        },
+        {
+          "name": "testUpdate",
+          "line": 37
+        },
+        {
+          "name": "testAttemptVerification",
+          "line": 61
+        },
+        {
+          "name": "testDelete",
+          "line": 89
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Passkey/PasskeyTests.swift",
+      "sha256": "bab800248098ea6aaf6da787d39a7bdc109d8b8db5514d5566d7c4f1ed81ba7d",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "updateUsesPasskeyServiceUpdate",
+          "line": 21
+        },
+        {
+          "name": "attemptVerificationUsesPasskeyServiceAttemptVerification",
+          "line": 39
+        },
+        {
+          "name": "deleteUsesPasskeyServiceDelete",
+          "line": 57
+        },
+        {
+          "name": "relyingPartyIdentifierReadsRegistrationNonce",
+          "line": 73
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Session/SessionAuthorizationTests.swift",
+      "sha256": "d0f23333070ee41de0abe97e3d148ee5224022b80cd5df10a6d15002b26f43a3",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "checkAuthorizationAndHasShareOneImplementation",
+          "line": 7
+        },
+        {
+          "name": "decodesFactorVerificationAge",
+          "line": 24
+        },
+        {
+          "name": "missingFactorVerificationAgeDecodesAsNil",
+          "line": 42
+        },
+        {
+          "name": "parsesFeaturesByScope",
+          "line": 59
+        },
+        {
+          "name": "failsWhenNoDimensionWasRequested",
+          "line": 78
+        },
+        {
+          "name": "failsPermissionAndRoleWhenOrgContextIsMissing",
+          "line": 90
+        },
+        {
+          "name": "failsReverificationWhenFactorVerificationAgeIsNil",
+          "line": 97
+        },
+        {
+          "name": "failsWhenFactorVerificationAgePayloadIsMalformed",
+          "line": 108
+        },
+        {
+          "name": "requiresAndAcrossBillingAndOrg",
+          "line": 114
+        },
+        {
+          "name": "requiresAndWithinOrgWhenRoleAndPermissionAreRequested",
+          "line": 126
+        },
+        {
+          "name": "requiresAndWithinBillingWhenFeatureAndPlanAreRequested",
+          "line": 138
+        },
+        {
+          "name": "failsFeatureCheckWhenFeaturesClaimIsMissingOrEmpty",
+          "line": 152
+        },
+        {
+          "name": "failsWhenTokenClaimsAreMissing",
+          "line": 158
+        },
+        {
+          "name": "requiresAndAcrossOrgAndBillingCombos",
+          "line": 168
+        },
+        {
+          "name": "failsMissingFeaturesWhenReverificationWouldPass",
+          "line": 182
+        },
+        {
+          "name": "authorizesPermissionPlusReverificationWhenBothMatch",
+          "line": 193
+        },
+        {
+          "name": "authorizesEveryRequestedDimensionWhenAllThreeMatch",
+          "line": 203
+        },
+        {
+          "name": "authorizesStrictMfaViaGracefulDowngradeWhenNoSecondFactorIsEnrolled",
+          "line": 222
+        },
+        {
+          "name": "failsPermissionPlusReverificationWhenNoFactorsAreEnrolled",
+          "line": 233
+        },
+        {
+          "name": "failsReverificationWhenConfigObjectIsIncompleteOrOutOfRange",
+          "line": 244
+        },
+        {
+          "name": "failsClosedWithoutUserId",
+          "line": 256
+        },
+        {
+          "name": "splitsFeaturesByScopeIncludingMergedOuAndUo",
+          "line": 265
+        },
+        {
+          "name": "splitByScopeThrowsWhenClaimElementIsMissingAColon",
+          "line": 272
+        },
+        {
+          "name": "unscopedFeatureMatchesMergedUserAndOrgIds",
+          "line": 279
+        },
+        {
+          "name": "orgScopedFeatureFailsWithoutActiveOrgClaim",
+          "line": 287
+        },
+        {
+          "name": "roleCheckPrefixesOrg",
+          "line": 294
+        },
+        {
+          "name": "readsFeaAndPlaFromLastActiveToken",
+          "line": 302
+        },
+        {
+          "name": "hasOnCachedTokenStaysUnderOneMillisecond",
+          "line": 316
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Session/SessionServiceTests.swift",
+      "sha256": "0d37b18efd62bca1644f77461fefbe9a5b18902c97d6e9436b501e3eed9831a8",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testRevoke",
+          "line": 788
+        },
+        {
+          "name": "signOut",
+          "line": 10
+        },
+        {
+          "name": "signOutWithSessionId",
+          "line": 51
+        },
+        {
+          "name": "signOutWithSessionIdPreservesCachedTokensWhenRequestFails",
+          "line": 101
+        },
+        {
+          "name": "signOutPreservesCachedTokensWhenRequestFails",
+          "line": 150
+        },
+        {
+          "name": "setActiveClearsOrganizationByDefault",
+          "line": 195
+        },
+        {
+          "name": "setActiveWithOrganizationId",
+          "line": 227
+        },
+        {
+          "name": "setActiveInvalidatesTemplateTokenBeforePublishingSessionChange",
+          "line": 288
+        },
+        {
+          "name": "setActiveWithNilOrganizationIdSelectsPersonalAccount",
+          "line": 372
+        },
+        {
+          "name": "setActiveWithNilOrganizationIdSendsRequestWhenForcedOrganizationSelectionIsEnabled",
+          "line": 407
+        },
+        {
+          "name": "fetchToken",
+          "line": 501
+        },
+        {
+          "name": "fetchTokenForFirstMintOmitsPreviousTokenAndForceOrigin",
+          "line": 541
+        },
+        {
+          "name": "fetchTokenWithTemplate",
+          "line": 575
+        },
+        {
+          "name": "startVerification",
+          "line": 611
+        },
+        {
+          "name": "prepareFirstFactorVerificationPasskey",
+          "line": 643
+        },
+        {
+          "name": "prepareFirstFactorVerificationEnterpriseSSO",
+          "line": 676
+        },
+        {
+          "name": "attemptFirstFactorVerificationPasskey",
+          "line": 718
+        },
+        {
+          "name": "attemptSecondFactorVerificationTOTP",
+          "line": 753
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Session/SessionTests.swift",
+      "sha256": "a064e8d32f69d4b405587e5daf3b1c1de6959c78b1088167e1cb9384f8eeff81",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "revokeUsesSessionServiceRevoke",
+          "line": 14
+        },
+        {
+          "name": "taskKeyParsesSetupMfa",
+          "line": 33
+        },
+        {
+          "name": "taskKeyParsesResetPassword",
+          "line": 39
+        },
+        {
+          "name": "taskKeyParsesUnknownTask",
+          "line": 45
+        },
+        {
+          "name": "sessionVerificationDecodesSupportedFactorMetadata",
+          "line": 51
+        },
+        {
+          "name": "startVerificationForwardsLevelToService",
+          "line": 91
+        },
+        {
+          "name": "sendEmailCodeCallsPrepareFirstFactor",
+          "line": 114
+        },
+        {
+          "name": "sendPhoneCodeCallsPrepareFirstFactor",
+          "line": 137
+        },
+        {
+          "name": "verifyWithEmailCodeCallsAttemptFirstFactor",
+          "line": 160
+        },
+        {
+          "name": "verifyWithPhoneCodeCallsAttemptFirstFactor",
+          "line": 183
+        },
+        {
+          "name": "verifyWithPasswordCallsAttemptFirstFactor",
+          "line": 206
+        },
+        {
+          "name": "startEnterpriseSSOCallsPrepareFirstFactor",
+          "line": 229
+        },
+        {
+          "name": "startEnterpriseSSOUsesDefaultRedirectUrl",
+          "line": 262
+        },
+        {
+          "name": "sendMfaPhoneCodeCallsPrepareSecondFactor",
+          "line": 308
+        },
+        {
+          "name": "verifyWithMfaPhoneCodeCallsAttemptSecondFactor",
+          "line": 331
+        },
+        {
+          "name": "passkeyCredentialCallsAttemptSecondFactor",
+          "line": 354
+        },
+        {
+          "name": "verifyWithTOTPCallsAttemptSecondFactor",
+          "line": 383
+        },
+        {
+          "name": "verifyWithBackupCodeCallsAttemptSecondFactor",
+          "line": 406
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/Session/SessionTokenFetcherTests.swift",
+      "sha256": "d29fbc70d59b0b73a2a345c872082de197a3da0c643d5f1e6e904489629da20e",
+      "category": "core-lifecycle",
+      "cases": [
+        {
+          "name": "fetchTokenCachesFetchedToken",
+          "line": 62
+        },
+        {
+          "name": "templateTokenCacheIsPartitionedByActiveOrganization",
+          "line": 88
+        },
+        {
+          "name": "invalidationPreventsInFlightResponseFromRestoringCachedToken",
+          "line": 147
+        },
+        {
+          "name": "invalidatedInFlightTaskIsCancelledAndReplaced",
+          "line": 198
+        },
+        {
+          "name": "retainedSessionDoesNotRehydrateInvalidatedSnapshot",
+          "line": 294
+        },
+        {
+          "name": "nonActiveSessionDoesNotReturnExistingCachedToken",
+          "line": 345
+        },
+        {
+          "name": "concurrentNonActiveSessionFetchesShareRequest",
+          "line": 396
+        },
+        {
+          "name": "transitionedActiveSessionCanHydrateCanonicalSnapshot",
+          "line": 476
+        },
+        {
+          "name": "removeTokensClearsAllTokensForOnlyThatSession",
+          "line": 512
+        },
+        {
+          "name": "removeTokensRejectsWritesFromAnEarlierGeneration",
+          "line": 542
+        },
+        {
+          "name": "clearRejectsWritesFromAnEarlierGeneration",
+          "line": 564
+        },
+        {
+          "name": "storingSameJWTDoesNotReportCanonicalTokenChange",
+          "line": 581
+        },
+        {
+          "name": "malformedIncomingTokenDoesNotReplaceCanonicalToken",
+          "line": 600
+        },
+        {
+          "name": "hydrationDoesNotReplaceCanonicalTokenOnTimestampTie",
+          "line": 627
+        },
+        {
+          "name": "hydrationAcceptsStrictlyFresherSessionSnapshot",
+          "line": 675
+        },
+        {
+          "name": "hydrationPreservesFresherExpiredTokenForNextMint",
+          "line": 703
+        },
+        {
+          "name": "sessionMinterUsesLatestSessionTokenAndForcesOrigin",
+          "line": 754
+        },
+        {
+          "name": "sessionMinterOmitsPreviousTokenOnFirstMint",
+          "line": 796
+        },
+        {
+          "name": "disabledSessionMinterDoesNotPassTokenOrForceOrigin",
+          "line": 819
+        },
+        {
+          "name": "concurrentForcedRefreshesCannotRollBackCanonicalToken",
+          "line": 853
+        },
+        {
+          "name": "resetCancelsConcurrentForcedRefreshes",
+          "line": 940
+        },
+        {
+          "name": "cancellingCallerCancelsForcedRefresh",
+          "line": 1007
+        },
+        {
+          "name": "completedRequestDoesNotClearReplacementTaskAfterReset",
+          "line": 1055
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/SignIn/SignInServiceTests.swift",
+      "sha256": "e5b34edb57f6c2340047383800da2fdcf43de9c6eb79be282f043dc533541b36",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testResetPassword",
+          "line": 256
+        },
+        {
+          "name": "testGet",
+          "line": 697
+        },
+        {
+          "name": "createWithIdentifier",
+          "line": 15
+        },
+        {
+          "name": "createWithOAuth",
+          "line": 40
+        },
+        {
+          "name": "createWithEnterpriseSSO",
+          "line": 69
+        },
+        {
+          "name": "createWithIdToken",
+          "line": 100
+        },
+        {
+          "name": "createWithPasskey",
+          "line": 128
+        },
+        {
+          "name": "createWithBiometricCredential",
+          "line": 152
+        },
+        {
+          "name": "createWithTicket",
+          "line": 179
+        },
+        {
+          "name": "createWithTransfer",
+          "line": 207
+        },
+        {
+          "name": "createWithNone",
+          "line": 232
+        },
+        {
+          "name": "prepareFirstFactorEmailCode",
+          "line": 284
+        },
+        {
+          "name": "prepareFirstFactorEmailLink",
+          "line": 311
+        },
+        {
+          "name": "prepareFirstFactorPhoneCode",
+          "line": 348
+        },
+        {
+          "name": "prepareFirstFactorPasskey",
+          "line": 375
+        },
+        {
+          "name": "attemptFirstFactorPassword",
+          "line": 403
+        },
+        {
+          "name": "attemptFirstFactorEmailCode",
+          "line": 431
+        },
+        {
+          "name": "attemptFirstFactorPhoneCode",
+          "line": 459
+        },
+        {
+          "name": "attemptFirstFactorPasskey",
+          "line": 489
+        },
+        {
+          "name": "attemptFirstFactorBiometricCredential",
+          "line": 518
+        },
+        {
+          "name": "attemptFirstFactorIdToken",
+          "line": 556
+        },
+        {
+          "name": "prepareSecondFactor",
+          "line": 586
+        },
+        {
+          "name": "attemptSecondFactorPhoneCode",
+          "line": 613
+        },
+        {
+          "name": "attemptSecondFactorTotp",
+          "line": 641
+        },
+        {
+          "name": "attemptSecondFactorBackupCode",
+          "line": 669
+        },
+        {
+          "name": "getWithRotatingTokenNonce",
+          "line": 723
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/SignIn/SignInTests.swift",
+      "sha256": "0f5aca97d0272dd5b6157a7baa370c15b992ef5e603df22c07a10adc94e939cb",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "passkeyFailureContextIdentifiesFailureStage",
+          "line": 60
+        },
+        {
+          "name": "publicPasskeyAuthenticationPreservesUnderlyingError",
+          "line": 96
+        },
+        {
+          "name": "passkeyAuthenticationUsesSecondFactorEndpointsWhenAdvertised",
+          "line": 127
+        },
+        {
+          "name": "passkeySecondFactorFailureContextIdentifiesFailureStage",
+          "line": 174
+        },
+        {
+          "name": "sendEmailCodeUsesSignInServicePrepareFirstFactor",
+          "line": 209
+        },
+        {
+          "name": "sendEmailLinkUsesSignInServicePrepareFirstFactor",
+          "line": 227
+        },
+        {
+          "name": "sendEmailLinkSavesPendingFlowBeforePrepare",
+          "line": 271
+        },
+        {
+          "name": "sendEmailLinkDoesNotPrepareWhenSavingPendingFlowFails",
+          "line": 306
+        },
+        {
+          "name": "sendPhoneCodeUsesSignInServicePrepareFirstFactor",
+          "line": 338
+        },
+        {
+          "name": "verifyCodeUsesSignInServiceAttemptFirstFactor",
+          "line": 356
+        },
+        {
+          "name": "verifyCodeUsesExistingFirstFactorVerificationCodeStrategy",
+          "line": 375
+        },
+        {
+          "name": "verifyCodeThrowsWhenFirstFactorVerificationStrategyIsNotCodeBased",
+          "line": 399
+        },
+        {
+          "name": "verifyCodeThrowsWhenFirstFactorVerificationStrategyIsMissing",
+          "line": 427
+        },
+        {
+          "name": "authenticateWithPasswordUsesSignInServiceAttemptFirstFactor",
+          "line": 452
+        },
+        {
+          "name": "authenticateWithIdTokenUsesSignInServiceAttemptFirstFactor",
+          "line": 472
+        },
+        {
+          "name": "sendMfaPhoneCodeUsesSignInServicePrepareSecondFactor",
+          "line": 492
+        },
+        {
+          "name": "sendMfaEmailCodeUsesSignInServicePrepareSecondFactor",
+          "line": 510
+        },
+        {
+          "name": "verifyMfaCodeUsesSignInServiceAttemptSecondFactor",
+          "line": 567
+        },
+        {
+          "name": "sendResetPasswordEmailCodeUsesSignInServicePrepareFirstFactor",
+          "line": 588
+        },
+        {
+          "name": "handleTransferFlowCreatesSignUpWhenTransferable",
+          "line": 606
+        },
+        {
+          "name": "handleTransferFlowSkipsSignUpWhenNotTransferable",
+          "line": 637
+        },
+        {
+          "name": "sendResetPasswordPhoneCodeUsesSignInServicePrepareFirstFactor",
+          "line": 662
+        },
+        {
+          "name": "resetPasswordUsesSignInServiceResetPassword",
+          "line": 680
+        },
+        {
+          "name": "completeEnterpriseSSOReloadsWithNonce",
+          "line": 699
+        },
+        {
+          "name": "completeEnterpriseSSOTransfersToSignUpWithoutNonce",
+          "line": 728
+        },
+        {
+          "name": "completeEnterpriseSSODoesNotTransferWhenNotTransferable",
+          "line": 771
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/SignUp/SignUpServiceTests.swift",
+      "sha256": "d4d70c35e8775e41565da64c69a1a7efa1863c1d3ec6ee1ad0b3aa3bf1e4c31e",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testUpdate",
+          "line": 234
+        },
+        {
+          "name": "testGet",
+          "line": 401
+        },
+        {
+          "name": "createWithStandard",
+          "line": 15
+        },
+        {
+          "name": "createWithOAuth",
+          "line": 44
+        },
+        {
+          "name": "createWithEnterpriseSSO",
+          "line": 73
+        },
+        {
+          "name": "createWithIdToken",
+          "line": 104
+        },
+        {
+          "name": "createWithTicket",
+          "line": 132
+        },
+        {
+          "name": "createWithTransfer",
+          "line": 160
+        },
+        {
+          "name": "createWithNone",
+          "line": 185
+        },
+        {
+          "name": "createWithUnsafeMetadataObjectEncodesMetadataAsJSONString",
+          "line": 208
+        },
+        {
+          "name": "updateWithUnsafeMetadataObjectEncodesMetadataAsJSONString",
+          "line": 263
+        },
+        {
+          "name": "prepareVerificationEmailCode",
+          "line": 291
+        },
+        {
+          "name": "prepareVerificationPhoneCode",
+          "line": 318
+        },
+        {
+          "name": "attemptVerificationEmailCode",
+          "line": 345
+        },
+        {
+          "name": "attemptVerificationPhoneCode",
+          "line": 373
+        },
+        {
+          "name": "getWithRotatingTokenNonce",
+          "line": 427
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/SignUp/SignUpTests.swift",
+      "sha256": "3f06b47827bd0eb0613813091503b6645faf0cb7e67d176704050f1fee49eadf",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "updateUsesSignUpServiceUpdate",
+          "line": 25
+        },
+        {
+          "name": "sendEmailLinkUsesSignUpServicePrepareVerification",
+          "line": 45
+        },
+        {
+          "name": "sendEmailLinkSavesPendingFlowBeforePrepare",
+          "line": 78
+        },
+        {
+          "name": "sendEmailLinkDoesNotPrepareWhenSavingPendingFlowFails",
+          "line": 102
+        },
+        {
+          "name": "sendEmailCodeUsesSignUpServicePrepareVerification",
+          "line": 123
+        },
+        {
+          "name": "sendPhoneCodeUsesSignUpServicePrepareVerification",
+          "line": 141
+        },
+        {
+          "name": "verifyEmailCodeUsesSignUpServiceAttemptVerification",
+          "line": 159
+        },
+        {
+          "name": "verifyPhoneCodeUsesSignUpServiceAttemptVerification",
+          "line": 178
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Auth/TokenFreshnessTests.swift",
+      "sha256": "a2dc84f6e9e1ac37a4bbade13dff503b839718dd5c250ad9ceb23cd5fd0b5c41",
+      "category": "core-lifecycle",
+      "cases": [
+        {
+          "name": "keepsTokenWithHigherOriginIssuedAt",
+          "line": 7
+        },
+        {
+          "name": "usesIssuedAtToBreakEqualOriginIssuedAt",
+          "line": 17
+        },
+        {
+          "name": "usesIssuedAtWhenBothTokensLackOriginIssuedAt",
+          "line": 27
+        },
+        {
+          "name": "acceptsIncomingTokenOnFullTimestampTie",
+          "line": 37
+        },
+        {
+          "name": "keepsExistingTokenOnFullTimestampTieWhenRequested",
+          "line": 47
+        },
+        {
+          "name": "acceptsIncomingTokenWhenOrganizationChanges",
+          "line": 61
+        },
+        {
+          "name": "treatsTokenWithoutOriginIssuedAtAsOlder",
+          "line": 79
+        },
+        {
+          "name": "replacesExpiredExistingToken",
+          "line": 89
+        },
+        {
+          "name": "keepsUnexpiredExistingToken",
+          "line": 112
+        },
+        {
+          "name": "comparesFreshnessWhenBothTokensAreExpired",
+          "line": 135
+        },
+        {
+          "name": "acceptsOrganizationChangeBeforeComparingExpiration",
+          "line": 158
+        },
+        {
+          "name": "keepsDecodableExistingTokenWhenIncomingCannotBeDecoded",
+          "line": 183
+        },
+        {
+          "name": "acceptsDecodableIncomingTokenWhenExistingCannotBeDecoded",
+          "line": 193
+        },
+        {
+          "name": "acceptsIncomingTokenWhenNeitherTokenCanBeDecoded",
+          "line": 203
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Billing/BillingTests.swift",
+      "sha256": "b68fa555517bbfd6a96a9e1e0ed5b6d7d747705d315e2f43599a62acd0e94756",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "billingGetMethodsAreCallable",
+          "line": 17
+        },
+        {
+          "name": "getPlansMapsOrganizationPayerTypeAndPagination",
+          "line": 41
+        },
+        {
+          "name": "getPlansDefaultsToUserPayerTypeAndFirstPage",
+          "line": 78
+        },
+        {
+          "name": "userAndOrganizationUseDistinctBillingPathPrefixes",
+          "line": 105
+        },
+        {
+          "name": "getCreditHistoryOmitsPagination",
+          "line": 178
+        },
+        {
+          "name": "decodesFeature",
+          "line": 203
+        },
+        {
+          "name": "decodesBillingMoneyAmount",
+          "line": 213
+        },
+        {
+          "name": "decodesBillingPlanWithFeaturesUnitPricesAndAvailablePrices",
+          "line": 222
+        },
+        {
+          "name": "decodesBillingPlanUnitPriceTierWhenIdIsMissing",
+          "line": 236
+        },
+        {
+          "name": "decodesBillingPlanDefaultsMissingFeaturesAndTrial",
+          "line": 244
+        },
+        {
+          "name": "decodesBillingSubscriptionWithSeatsCreditsAndDiscounts",
+          "line": 272
+        },
+        {
+          "name": "decodesBillingSubscriptionWhenActiveAtIsNull",
+          "line": 286
+        },
+        {
+          "name": "decodesBillingStatementWithTotals",
+          "line": 294
+        },
+        {
+          "name": "decodesBillingStatementGroupWhenIdIsMissing",
+          "line": 305
+        },
+        {
+          "name": "decodesBillingPaymentWhenNestedSubscriptionItemOmitsCreatedAt",
+          "line": 332
+        },
+        {
+          "name": "decodesBillingPaymentWhenNestedSubscriptionItemSendsEpochTimestamps",
+          "line": 347
+        },
+        {
+          "name": "decodesBillingPaymentWithTotals",
+          "line": 357
+        },
+        {
+          "name": "decodesUnknownBillingEnumValuesWithoutFailingTheResource",
+          "line": 368
+        },
+        {
+          "name": "decodesBillingPaymentMethod",
+          "line": 384
+        },
+        {
+          "name": "decodesBillingCreditBalance",
+          "line": 394
+        },
+        {
+          "name": "decodesBillingCreditLedger",
+          "line": 400
+        },
+        {
+          "name": "rawEnvelopesDecodePlansAndPaymentAttempts",
+          "line": 409
+        },
+        {
+          "name": "clientResponseEnvelopesDecodeSubscriptionStatementsCreditsAndPaymentMethods",
+          "line": 445
+        },
+        {
+          "name": "rawPlanBodyDoesNotDecodeClientResponseWrapper",
+          "line": 496
+        },
+        {
+          "name": "wrappedSubscriptionBodyDoesNotDecodeRawResource",
+          "line": 505
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Client/ClientServiceTests.swift",
+      "sha256": "394c84fa9cc62d6d0ca59192a87a9064bdfe120f9eccf96e815558882bb4e20e",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testGetResponse",
+          "line": 15
+        },
+        {
+          "name": "getResponseIncludesRequestSequence",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Client/ClientTests.swift",
+      "sha256": "9c2579b9b59822e7d91393cd1ede9079443ea33a2ce99257ae8556b9a4078ed6",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "refreshClientUsesClientServiceGet",
+          "line": 10
+        },
+        {
+          "name": "refreshClientPreservesClientWhenCanonicalResponseRequestsPreserve",
+          "line": 37
+        },
+        {
+          "name": "refreshClientPreservesAdoptedAtomicIdentityWhenCanonicalResponseRequestsPreserve",
+          "line": 54
+        },
+        {
+          "name": "refreshClientIgnoresStaleClientResponseSequence",
+          "line": 86
+        },
+        {
+          "name": "refreshClientIgnoresStaleNilResponseSequence",
+          "line": 119
+        },
+        {
+          "name": "updateDeviceTokenStoresTokenAndRefreshesWithoutClientId",
+          "line": 146
+        },
+        {
+          "name": "updateDeviceTokenContinuesWhenInternalStateObserverThrows",
+          "line": 185
+        },
+        {
+          "name": "updateDeviceTokenNeverPublishesNewTokenWithPreviousClient",
+          "line": 225
+        },
+        {
+          "name": "refreshClientIgnoresResponseWhenDeviceTokenGenerationChangesDuringRequest",
+          "line": 268
+        },
+        {
+          "name": "updateDeviceTokenRejectsBlankToken",
+          "line": 294
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Environment/AuthConfigDecodingTests.swift",
+      "sha256": "7a522db739836d68fe53da5b0cfee5784729f0e7f4bf7db6a77809a1e30ece28",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "nativeSettingsDecodeBiometricSignInEnabled",
+          "line": 10
+        },
+        {
+          "name": "nativeSettingsDefaultWhenMissing",
+          "line": 35
+        },
+        {
+          "name": "nativeSettingsEncodeBackendKeys",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Environment/AuthConfigTests.swift",
+      "sha256": "65a7e8e2b43ff33f4d00436c15277bfb8dea0ad26f5eba202d263bdee3755998",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "decodesSessionMinter",
+          "line": 7
+        },
+        {
+          "name": "defaultsSessionMinterToFalseWhenMissing",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Environment/DisplayConfigDecodingTests.swift",
+      "sha256": "b21c5d4750dae4de8d18a69432d7f981feeb3dbc063b65313122b9986808e94f",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "showDevmodeWarningDecodesTrue",
+          "line": 10
+        },
+        {
+          "name": "showDevmodeWarningDecodesFalse",
+          "line": 19
+        },
+        {
+          "name": "showDevmodeWarningDefaultsFalseWhenMissing",
+          "line": 28
+        },
+        {
+          "name": "showDevmodeWarningEncodesBackendKey",
+          "line": 37
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Environment/EnvironmentServiceTests.swift",
+      "sha256": "96c6b4670566f8f1a21b320631d0073cc1d2bbf4f2bf3c81a96636efdf6802a2",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testGet",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Environment/EnvironmentTests.swift",
+      "sha256": "1c2f90a24440e1dbca04788a450f80e456af6a0ac445e307c9f57b7bc7c01476",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "refreshEnvironmentUsesEnvironmentServiceGet",
+          "line": 14
+        },
+        {
+          "name": "refreshEnvironmentCoalescesConcurrentRequests",
+          "line": 30
+        },
+        {
+          "name": "ensureEnvironmentRefreshedAfterSatisfiedCheckpointDoesNotRequestAgain",
+          "line": 55
+        },
+        {
+          "name": "ensureEnvironmentRefreshedAfterUnsatisfiedCheckpointRequestsEnvironment",
+          "line": 71
+        },
+        {
+          "name": "environmentDecodesWhenCommerceSettingsKeyIsMissing",
+          "line": 149
+        },
+        {
+          "name": "environmentDecodesEnabledUserBilling",
+          "line": 156
+        },
+        {
+          "name": "environmentDecodesEnabledOrganizationBilling",
+          "line": 175
+        },
+        {
+          "name": "environmentDecodesNullStripePublishableKey",
+          "line": 194
+        },
+        {
+          "name": "environmentDecodesUnknownCommerceSettingsKeys",
+          "line": 211
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Environment/OrganizationSettingsDecodingTests.swift",
+      "sha256": "7711bec3dcc235fd39a1f98ede0cf88b5b2da144d544d2a3e3621e0db75d5110",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "environmentDecodesWhenOrganizationSettingsKeyIsMissing",
+          "line": 44
+        },
+        {
+          "name": "environmentDecodesWhenOrganizationSettingsIsEmptyObject",
+          "line": 51
+        },
+        {
+          "name": "environmentDecodesWhenOrganizationSettingsIsPartial",
+          "line": 58
+        },
+        {
+          "name": "environmentDecodesWithPartialNestedOrganizationSettingsObjects",
+          "line": 80
+        },
+        {
+          "name": "environmentDecodesFullOrganizationSettingsPayloadCorrectly",
+          "line": 101
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Organization/OrganizationAccountListDataSourceTests.swift",
+      "sha256": "447a0d018423e1de49c418bfa33c89df776a18731b83f64cd7a2ac5209ec9d81",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "testLoadInitialFetchesResourcesAndCreationDefaults",
+          "line": 9
+        },
+        {
+          "name": "testLoadInitialTracksEmptyState",
+          "line": 65
+        },
+        {
+          "name": "testLoadInitialClearsLoadingStateAfterFailure",
+          "line": 91
+        },
+        {
+          "name": "testLoadMoreMembershipsUsesCurrentOffset",
+          "line": 109
+        },
+        {
+          "name": "testPagerLoadedPageOffsetsRepresentCurrentLoadedWindow",
+          "line": 137
+        },
+        {
+          "name": "testPagerReplaceWithPagesPreservesLoadedWindowAndPagination",
+          "line": 164
+        },
+        {
+          "name": "testAcceptInvitationMarksInvitationSelectableAndAdjustsPagination",
+          "line": 185
+        },
+        {
+          "name": "testAcceptInvitationKeepsPublicOrganizationDataWithoutFetchingOrganization",
+          "line": 208
+        },
+        {
+          "name": "testAcceptInvitationKeepsAcceptedRowAndUsesPendingOffsetForNextPage",
+          "line": 236
+        },
+        {
+          "name": "testAcceptSuggestionReplacesSuggestionWithAcceptedVersion",
+          "line": 282
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Organization/OrganizationCreationDefaultsTests.swift",
+      "sha256": "5283f1ff9246c648f76bf9a0edcb85156246d0d6752b458f4a255e7458b667e1",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "decodesNilForm",
+          "line": 7
+        },
+        {
+          "name": "decodesAdvisoryWithoutSeverity",
+          "line": 24
+        },
+        {
+          "name": "decodesFormWithoutSlug",
+          "line": 54
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Organization/OrganizationServiceTests.swift",
+      "sha256": "2907f6dd3529d5db4fffeee8c442920a6b93af22352d76e3d06bee973049f1ba",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "createOrganization",
+          "line": 82
+        },
+        {
+          "name": "createOrganizationIncludesSlugWhenProvided",
+          "line": 106
+        },
+        {
+          "name": "getOrganization",
+          "line": 130
+        },
+        {
+          "name": "updateOrganization",
+          "line": 154
+        },
+        {
+          "name": "updateOrganizationOmitsSlugWhenNil",
+          "line": 183
+        },
+        {
+          "name": "updateOrganizationPropagatesAPIErrors",
+          "line": 212
+        },
+        {
+          "name": "destroyOrganization",
+          "line": 260
+        },
+        {
+          "name": "setOrganizationLogo",
+          "line": 283
+        },
+        {
+          "name": "deleteOrganizationLogo",
+          "line": 311
+        },
+        {
+          "name": "getOrganizationRoles",
+          "line": 341
+        },
+        {
+          "name": "getOrganizationMemberships",
+          "line": 376
+        },
+        {
+          "name": "getOrganizationMembershipsWithQuery",
+          "line": 413
+        },
+        {
+          "name": "getOrganizationMembershipsWithRole",
+          "line": 448
+        },
+        {
+          "name": "addOrganizationMember",
+          "line": 484
+        },
+        {
+          "name": "updateOrganizationMember",
+          "line": 513
+        },
+        {
+          "name": "removeOrganizationMember",
+          "line": 543
+        },
+        {
+          "name": "getOrganizationInvitations",
+          "line": 571
+        },
+        {
+          "name": "getOrganizationInvitationsWithStatuses",
+          "line": 612
+        },
+        {
+          "name": "inviteOrganizationMember",
+          "line": 650
+        },
+        {
+          "name": "inviteOrganizationMembers",
+          "line": 679
+        },
+        {
+          "name": "createOrganizationDomain",
+          "line": 709
+        },
+        {
+          "name": "getOrganizationDomains",
+          "line": 736
+        },
+        {
+          "name": "getOrganizationDomainsWithEnrollmentMode",
+          "line": 771
+        },
+        {
+          "name": "getOrganizationDomain",
+          "line": 805
+        },
+        {
+          "name": "getOrganizationMembershipRequests",
+          "line": 832
+        },
+        {
+          "name": "getOrganizationMembershipRequestsWithStatus",
+          "line": 867
+        },
+        {
+          "name": "deleteOrganizationDomain",
+          "line": 901
+        },
+        {
+          "name": "prepareOrganizationDomainAffiliationVerification",
+          "line": 928
+        },
+        {
+          "name": "attemptOrganizationDomainAffiliationVerification",
+          "line": 957
+        },
+        {
+          "name": "updateOrganizationDomainEnrollmentMode",
+          "line": 986
+        },
+        {
+          "name": "updateOrganizationDomainEnrollmentModeOmitsDeletePendingWhenNil",
+          "line": 1017
+        },
+        {
+          "name": "organizationDomainMutationsPropagateAPIErrors",
+          "line": 1048
+        },
+        {
+          "name": "revokeOrganizationInvitation",
+          "line": 1097
+        },
+        {
+          "name": "destroyOrganizationMembership",
+          "line": 1124
+        },
+        {
+          "name": "acceptUserOrganizationInvitation",
+          "line": 1152
+        },
+        {
+          "name": "acceptOrganizationSuggestion",
+          "line": 1178
+        },
+        {
+          "name": "acceptOrganizationMembershipRequest",
+          "line": 1204
+        },
+        {
+          "name": "rejectOrganizationMembershipRequest",
+          "line": 1231
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/Organization/OrganizationTests.swift",
+      "sha256": "ea3cf67e83a0d92aaf8c54173f598ac934631e88fb98d62d0c9a13cbc6b248f9",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "decodesOrganizationWithoutImageUrl",
+          "line": 38
+        },
+        {
+          "name": "updateOrganizationUsesOrganizationServiceUpdateOrganization",
+          "line": 63
+        },
+        {
+          "name": "destroyOrganizationUsesOrganizationServiceDestroyOrganization",
+          "line": 82
+        },
+        {
+          "name": "setOrganizationLogoUsesOrganizationServiceSetOrganizationLogo",
+          "line": 98
+        },
+        {
+          "name": "deleteOrganizationLogoUsesOrganizationServiceDeleteOrganizationLogo",
+          "line": 117
+        },
+        {
+          "name": "getOrganizationRolesUsesOrganizationServiceGetOrganizationRoles",
+          "line": 133
+        },
+        {
+          "name": "getOrganizationMembershipsWithOffsetUsesOrganizationServiceGetOrganizationMemberships",
+          "line": 186
+        },
+        {
+          "name": "addOrganizationMemberUsesOrganizationServiceAddOrganizationMember",
+          "line": 212
+        },
+        {
+          "name": "updateOrganizationMemberUsesOrganizationServiceUpdateOrganizationMember",
+          "line": 231
+        },
+        {
+          "name": "removeOrganizationMemberUsesOrganizationServiceRemoveOrganizationMember",
+          "line": 250
+        },
+        {
+          "name": "updateOrganizationMembershipUsesOrganizationServiceUpdateOrganizationMember",
+          "line": 268
+        },
+        {
+          "name": "destroyOrganizationMembershipUsesOrganizationServiceDestroyOrganizationMembership",
+          "line": 287
+        },
+        {
+          "name": "organizationMembershipPermissionHelpers",
+          "line": 305
+        },
+        {
+          "name": "getOrganizationInvitationsWithOffsetUsesOrganizationServiceGetOrganizationInvitations",
+          "line": 366
+        },
+        {
+          "name": "inviteOrganizationMemberUsesOrganizationServiceInviteOrganizationMember",
+          "line": 390
+        },
+        {
+          "name": "inviteOrganizationMembersUsesOrganizationServiceInviteOrganizationMembers",
+          "line": 409
+        },
+        {
+          "name": "createOrganizationDomainUsesOrganizationServiceCreateOrganizationDomain",
+          "line": 431
+        },
+        {
+          "name": "getOrganizationDomainsWithEnrollmentModeUsesRawEnrollmentMode",
+          "line": 480
+        },
+        {
+          "name": "getOrganizationDomainsWithOffsetUsesOrganizationServiceGetOrganizationDomains",
+          "line": 504
+        },
+        {
+          "name": "getOrganizationDomainUsesOrganizationServiceGetOrganizationDomain",
+          "line": 528
+        },
+        {
+          "name": "getOrganizationMembershipRequestsWithOffsetUsesOrganizationServiceGetOrganizationMembershipRequests",
+          "line": 577
+        },
+        {
+          "name": "deleteOrganizationDomainUsesOrganizationServiceDeleteOrganizationDomain",
+          "line": 601
+        },
+        {
+          "name": "prepareAffiliationVerificationUsesOrganizationServicePrepareOrganizationDomainAffiliationVerification",
+          "line": 619
+        },
+        {
+          "name": "sendEmailCodeUsesOrganizationServicePrepareOrganizationDomainAffiliationVerification",
+          "line": 638
+        },
+        {
+          "name": "attemptAffiliationVerificationUsesOrganizationServiceAttemptOrganizationDomainAffiliationVerification",
+          "line": 657
+        },
+        {
+          "name": "verifyCodeUsesOrganizationServiceAttemptOrganizationDomainAffiliationVerification",
+          "line": 676
+        },
+        {
+          "name": "organizationDomainEnrollmentModeTypeUsesTypedMode",
+          "line": 695
+        },
+        {
+          "name": "organizationDomainIsVerifiedUsesVerificationStatus",
+          "line": 707
+        },
+        {
+          "name": "organizationDomainDecodesNullVerification",
+          "line": 723
+        },
+        {
+          "name": "updateOrganizationDomainEnrollmentModeUsesOrganizationServiceUpdateOrganizationDomainEnrollmentMode",
+          "line": 747
+        },
+        {
+          "name": "revokeOrganizationInvitationUsesOrganizationServiceRevokeOrganizationInvitation",
+          "line": 767
+        },
+        {
+          "name": "acceptUserOrganizationInvitationUsesOrganizationServiceAcceptUserOrganizationInvitation",
+          "line": 785
+        },
+        {
+          "name": "acceptOrganizationSuggestionUsesOrganizationServiceAcceptOrganizationSuggestion",
+          "line": 801
+        },
+        {
+          "name": "acceptOrganizationMembershipRequestUsesOrganizationServiceAcceptOrganizationMembershipRequest",
+          "line": 817
+        },
+        {
+          "name": "rejectOrganizationMembershipRequestUsesOrganizationServiceRejectOrganizationMembershipRequest",
+          "line": 835
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/EmailAddress/EmailAddressServiceTests.swift",
+      "sha256": "31c68c04fe1873560ef96c60215283b088f8aeae1695d6db2472b7dd73e2cad5",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testCreate",
+          "line": 15
+        },
+        {
+          "name": "testPrepareVerification",
+          "line": 38
+        },
+        {
+          "name": "testAttemptVerification",
+          "line": 65
+        },
+        {
+          "name": "testDestroy",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/EmailAddress/EmailAddressTests.swift",
+      "sha256": "be281b759e6e884b334cacb29cca07204148fc24e93e115c30a7b374a2660934",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "sendCodeUsesEmailAddressServicePrepareVerification",
+          "line": 21
+        },
+        {
+          "name": "verifyCodeUsesEmailAddressServiceAttemptVerification",
+          "line": 39
+        },
+        {
+          "name": "destroyUsesEmailAddressServiceDestroy",
+          "line": 60
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/ExternalAccount/ExternalAccountServiceTests.swift",
+      "sha256": "fdf074ed27040ec724fb0efe7812569ed59ac4c89097359c7a3ca2d2c1dbc102",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testDestroy",
+          "line": 50
+        },
+        {
+          "name": "reauthorizeWithAdditionalScopes",
+          "line": 15
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/ExternalAccount/ExternalAccountTests.swift",
+      "sha256": "ca5f4681cf79587dfb973209c7cabcd7b27d0e24960b99749d32596459f046c7",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "destroyUsesExternalAccountServiceDestroy",
+          "line": 21
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/PhoneNumber/PhoneNumberServiceTests.swift",
+      "sha256": "d59274b9e17051863eaae05d5e0b8521ecf2a3db470272b23a3462039e94943f",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testCreate",
+          "line": 15
+        },
+        {
+          "name": "testDelete",
+          "line": 38
+        },
+        {
+          "name": "testPrepareVerification",
+          "line": 61
+        },
+        {
+          "name": "testAttemptVerification",
+          "line": 85
+        },
+        {
+          "name": "testMakeDefaultSecondFactor",
+          "line": 112
+        },
+        {
+          "name": "testSetReservedForSecondFactor",
+          "line": 136
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/PhoneNumber/PhoneNumberTests.swift",
+      "sha256": "25dfd01f4942b1e424c2f36e3f5b99029752fc69db2010b6ec6997ee6381ad46",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "deleteUsesPhoneNumberServiceDelete",
+          "line": 21
+        },
+        {
+          "name": "sendCodeUsesPhoneNumberServicePrepareVerification",
+          "line": 37
+        },
+        {
+          "name": "verifyCodeUsesPhoneNumberServiceAttemptVerification",
+          "line": 53
+        },
+        {
+          "name": "makeDefaultSecondFactorUsesPhoneNumberServiceMakeDefaultSecondFactor",
+          "line": 71
+        },
+        {
+          "name": "setReservedForSecondFactorUsesPhoneNumberServiceSetReservedForSecondFactor",
+          "line": 87
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/UserServiceTests.swift",
+      "sha256": "4ac0df00729c2f83f6239caa0907aa2835da497d7c8e35d52982918eb706411c",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "testReload",
+          "line": 15
+        },
+        {
+          "name": "testUpdate",
+          "line": 37
+        },
+        {
+          "name": "testCreateBackupCodes",
+          "line": 228
+        },
+        {
+          "name": "testCreateEmailAddress",
+          "line": 250
+        },
+        {
+          "name": "testCreatePhoneNumber",
+          "line": 273
+        },
+        {
+          "name": "testCreateExternalAccount",
+          "line": 296
+        },
+        {
+          "name": "testGetOrganizationInvitations",
+          "line": 581
+        },
+        {
+          "name": "testGetOrganizationMemberships",
+          "line": 653
+        },
+        {
+          "name": "testGetOrganizationSuggestions",
+          "line": 705
+        },
+        {
+          "name": "testGetSessions",
+          "line": 772
+        },
+        {
+          "name": "testUpdatePassword",
+          "line": 799
+        },
+        {
+          "name": "testSetProfileImage",
+          "line": 861
+        },
+        {
+          "name": "testDeleteProfileImage",
+          "line": 890
+        },
+        {
+          "name": "testDelete",
+          "line": 912
+        },
+        {
+          "name": "updateMetadataUsesMetadataEndpoint",
+          "line": 116
+        },
+        {
+          "name": "createExternalAccountWithExplicitRedirectUrl",
+          "line": 328
+        },
+        {
+          "name": "createExternalAccountWithAdditionalScopes",
+          "line": 360
+        },
+        {
+          "name": "createExternalAccountWithOIDCPromptArray",
+          "line": 391
+        },
+        {
+          "name": "createExternalAccountWithOIDCMultiPromptArray",
+          "line": 422
+        },
+        {
+          "name": "createExternalAccountWithScopesAndPrompts",
+          "line": 454
+        },
+        {
+          "name": "createExternalAccountToken",
+          "line": 487
+        },
+        {
+          "name": "createTotp",
+          "line": 514
+        },
+        {
+          "name": "verifyTotp",
+          "line": 536
+        },
+        {
+          "name": "disableTotp",
+          "line": 559
+        },
+        {
+          "name": "getOrganizationInvitationsWithStatuses",
+          "line": 615
+        },
+        {
+          "name": "leaveOrganization",
+          "line": 683
+        },
+        {
+          "name": "getOrganizationSuggestionsWithStatuses",
+          "line": 734
+        },
+        {
+          "name": "updatePasswordOmitsCurrentPasswordWhenNil",
+          "line": 830
+        }
+      ]
+    },
+    {
+      "path": "Tests/Domains/User/UserTests.swift",
+      "sha256": "5bd508ae6254dd8125186b9b9a07ddaab528cdc51588195bb8efdddf7ed28461",
+      "category": "source-domain",
+      "cases": [
+        {
+          "name": "reloadUsesUserServiceReload",
+          "line": 24
+        },
+        {
+          "name": "updateUsesUserServiceUpdate",
+          "line": 39
+        },
+        {
+          "name": "updateMetadataUsesUserServiceUpdateMetadata",
+          "line": 56
+        },
+        {
+          "name": "createBackupCodesUsesUserServiceCreateBackupCodes",
+          "line": 226
+        },
+        {
+          "name": "createEmailAddressUsesUserServiceCreateEmailAddress",
+          "line": 241
+        },
+        {
+          "name": "createPhoneNumberUsesUserServiceCreatePhoneNumber",
+          "line": 256
+        },
+        {
+          "name": "createExternalAccountTokenUsesUserServiceCreateExternalAccountToken",
+          "line": 310
+        },
+        {
+          "name": "createTotpUsesUserServiceCreateTotp",
+          "line": 327
+        },
+        {
+          "name": "verifyTotpUsesUserServiceVerifyTotp",
+          "line": 342
+        },
+        {
+          "name": "disableTotpUsesUserServiceDisableTotp",
+          "line": 357
+        },
+        {
+          "name": "getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations",
+          "line": 372
+        },
+        {
+          "name": "getOrganizationMembershipsUsesUserServiceGetOrganizationMemberships",
+          "line": 390
+        },
+        {
+          "name": "leaveOrganizationUsesUserServiceLeaveOrganization",
+          "line": 407
+        },
+        {
+          "name": "getSessionsUsesUserServiceGetSessions",
+          "line": 455
+        },
+        {
+          "name": "updatePasswordUsesUserServiceUpdatePassword",
+          "line": 471
+        },
+        {
+          "name": "setProfileImageUsesUserServiceSetProfileImage",
+          "line": 495
+        },
+        {
+          "name": "deleteProfileImageUsesUserServiceDeleteProfileImage",
+          "line": 511
+        },
+        {
+          "name": "deleteUsesUserServiceDelete",
+          "line": 526
+        }
+      ]
+    },
+    {
+      "path": "Tests/Errors/ErrorTests.swift",
+      "sha256": "c963a575d655f4efdffd16aec9e921dc03a3f92829759241a105df077e911732",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "clerkErrorProtocol",
+          "line": 14
+        },
+        {
+          "name": "clerkAPIErrorBasic",
+          "line": 26
+        },
+        {
+          "name": "clerkAPIErrorContext",
+          "line": 42
+        },
+        {
+          "name": "clerkAPIErrorErrorDescription",
+          "line": 58
+        },
+        {
+          "name": "clerkAPIErrorCodable",
+          "line": 81
+        },
+        {
+          "name": "clerkAPIErrorEquatable",
+          "line": 103
+        },
+        {
+          "name": "clerkErrorResponse",
+          "line": 134
+        },
+        {
+          "name": "clerkClientError",
+          "line": 160
+        },
+        {
+          "name": "clerkClientErrorErrorDescription",
+          "line": 169
+        },
+        {
+          "name": "clerkClientErrorNilMessage",
+          "line": 176
+        },
+        {
+          "name": "clerkClientErrorUsesLocalizedMessageResource",
+          "line": 184
+        },
+        {
+          "name": "clerkClientErrorReplacesLocalizedMessage",
+          "line": 197
+        },
+        {
+          "name": "clerkInitializationErrorMissingPublishableKey",
+          "line": 214
+        },
+        {
+          "name": "clerkInitializationErrorInvalidPublishableKeyFormat",
+          "line": 225
+        },
+        {
+          "name": "clerkInitializationErrorClientLoadFailed",
+          "line": 236
+        },
+        {
+          "name": "clerkInitializationErrorEnvironmentLoadFailed",
+          "line": 246
+        },
+        {
+          "name": "clerkInitializationErrorAPIClientInitializationFailed",
+          "line": 256
+        },
+        {
+          "name": "clerkInitializationErrorInitializationFailed",
+          "line": 266
+        },
+        {
+          "name": "clerkInitializationErrorLocalizedError",
+          "line": 276
+        }
+      ]
+    },
+    {
+      "path": "Tests/Integration/AuthAndClientIntegrationTests.swift",
+      "sha256": "0fc7869942a567f72aed7beb0a7cbdcb04440e58560be7e1de8d6099d55e45ed",
+      "category": "live-service-gate",
+      "cases": [
+        {
+          "name": "signUpAndSignIn",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "path": "Tests/Integration/EnvironmentIntegrationTests.swift",
+      "sha256": "1e3a1675d1a74e777d6fba51e7717cbb2f84643ed54c9f4ad8b0555b297bb599",
+      "category": "live-service-gate",
+      "cases": [
+        {
+          "name": "fetchAndDecodeEnvironment",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "path": "Tests/Integration/IntegrationTestHelpers.swift",
+      "sha256": "26c38ea259c81619679a62d84be558b28158f870ed393e7f828ab014ec279672",
+      "category": "live-service-gate",
+      "cases": []
+    },
+    {
+      "path": "Tests/Lifecycle/LifecycleManagerTests.swift",
+      "sha256": "7704b5e70c3b053f0deaeb586573e7aff59b3098ee28d441ea5d357fd055c44e",
+      "category": "core-lifecycle",
+      "cases": [
+        {
+          "name": "testStopObserving",
+          "line": 46
+        },
+        {
+          "name": "startsObserving",
+          "line": 35
+        },
+        {
+          "name": "multipleStartObserving",
+          "line": 58
+        },
+        {
+          "name": "stopObservingMultipleTimes",
+          "line": 70
+        },
+        {
+          "name": "deinitStopsObserving",
+          "line": 81
+        }
+      ]
+    },
+    {
+      "path": "Tests/Lifecycle/SessionPollingManagerTests.swift",
+      "sha256": "3840fd34b7d99f79d21978d354ee9628fdca22a2d260bd1905c139ce62d0bdeb",
+      "category": "core-lifecycle",
+      "cases": [
+        {
+          "name": "stopPollingMultipleTimes",
+          "line": 44
+        },
+        {
+          "name": "startPollingMultipleTimes",
+          "line": 67
+        },
+        {
+          "name": "shouldRefreshReturnsFalseForNilSession",
+          "line": 85
+        },
+        {
+          "name": "shouldRefreshReturnsFalseForPendingSession",
+          "line": 93
+        },
+        {
+          "name": "shouldRefreshReturnsTrueForActiveSession",
+          "line": 102
+        },
+        {
+          "name": "tokenRefreshedResetsBackoff",
+          "line": 111
+        },
+        {
+          "name": "sessionChangedActiveResetsBackoff",
+          "line": 124
+        },
+        {
+          "name": "sessionChangedSameActiveDoesNotResetBackoff",
+          "line": 142
+        },
+        {
+          "name": "sessionChangedPendingToActiveResetsBackoff",
+          "line": 163
+        },
+        {
+          "name": "activatedWhilePollingResetsBackoff",
+          "line": 184
+        },
+        {
+          "name": "sessionChangedWhenStoppedDoesNotResetBackoff",
+          "line": 202
+        },
+        {
+          "name": "restartPollingReceivesAuthEvents",
+          "line": 216
+        },
+        {
+          "name": "refreshNowIfNeededResetsBackoffWhenSessionDoesNotRequireRefresh",
+          "line": 242
+        },
+        {
+          "name": "consecutiveFailuresStartsAtZero",
+          "line": 262
+        },
+        {
+          "name": "updateBackoffStateIncrementsOnFailure",
+          "line": 270
+        },
+        {
+          "name": "updateBackoffStateResetsOnSuccess",
+          "line": 285
+        },
+        {
+          "name": "calculateBaseBackoffIntervalReturnsBaseIntervalWithNoFailures",
+          "line": 301
+        },
+        {
+          "name": "calculateBaseBackoffIntervalDoublesWithEachFailure",
+          "line": 312
+        },
+        {
+          "name": "calculateBaseBackoffIntervalCapsAtMaxInterval",
+          "line": 338
+        },
+        {
+          "name": "calculateBackoffIntervalIncludesJitter",
+          "line": 356
+        },
+        {
+          "name": "backoffResetsToBaseIntervalAfterSuccess",
+          "line": 382
+        },
+        {
+          "name": "defaultMaxPollIntervalIs60Seconds",
+          "line": 402
+        },
+        {
+          "name": "customMaxPollIntervalIsRespected",
+          "line": 407
+        },
+        {
+          "name": "backoffProgressionMatchesExpectedSequence",
+          "line": 425
+        }
+      ]
+    },
+    {
+      "path": "Tests/Lifecycle/TaskCoordinatorTests.swift",
+      "sha256": "541eaeeb3f317dde72c789301416beaa74cee2dd9784f873828564d22f5a6b04",
+      "category": "core-lifecycle",
+      "cases": [
+        {
+          "name": "tracksTask",
+          "line": 18
+        },
+        {
+          "name": "createsAndTracksTask",
+          "line": 35
+        },
+        {
+          "name": "cancelAllTasks",
+          "line": 49
+        },
+        {
+          "name": "tracksMultipleTasks",
+          "line": 88
+        },
+        {
+          "name": "taskWithCustomPriority",
+          "line": 112
+        },
+        {
+          "name": "deinitCancelsAllTasks",
+          "line": 126
+        }
+      ]
+    },
+    {
+      "path": "Tests/Logging/ClerkLoggerTests.swift",
+      "sha256": "11cbdde5780e54eed8aa39b46443e64137127c9e42dee3cb6e8997345dfb0bd2",
+      "category": "diagnostics-and-packaging",
+      "cases": [
+        {
+          "name": "info_WithDefaultForce_RespectsLogLevel",
+          "line": 21
+        },
+        {
+          "name": "info_WithForceTrue_AlwaysLogs",
+          "line": 33
+        },
+        {
+          "name": "info_WithForceFalse_RespectsLogLevel",
+          "line": 52
+        },
+        {
+          "name": "info_WithInfoLogLevel_LogsWithoutForce",
+          "line": 68
+        },
+        {
+          "name": "info_WithForceTrue_DoesNotTriggerErrorCallback",
+          "line": 87
+        },
+        {
+          "name": "error_AlwaysLogsRegardlessOfLogLevel",
+          "line": 111
+        },
+        {
+          "name": "preInstallationCleanupUsesItsExplicitLoggerOptions",
+          "line": 128
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/ClerkAuthEventEmitterResponseMiddlewareTests.swift",
+      "sha256": "b11810569933738ab15696838dd714d958ee3780e05f14b31c123f1053c28642",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "validateEmitsSignInCompletedOnceAfterClientAcceptance",
+          "line": 10
+        },
+        {
+          "name": "validateEmitsSignUpCompletedOnceAfterClientAcceptance",
+          "line": 44
+        },
+        {
+          "name": "validateDoesNotEmitCompletionForAStaleResponse",
+          "line": 79
+        },
+        {
+          "name": "validateDoesNotEmitAuthEventForIncompleteSignInAttempt",
+          "line": 118
+        },
+        {
+          "name": "validateDoesNotEmitAuthEventForIncompleteSignUpAttempt",
+          "line": 136
+        },
+        {
+          "name": "validateDoesNotEmitAuthEventForAbandonedSignUpAttempt",
+          "line": 154
+        },
+        {
+          "name": "validateEmitsSignedOutForRemovedSessionResponse",
+          "line": 172
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/ClerkClientSyncResponseMiddlewareTests.swift",
+      "sha256": "add9693665f65cf12ccd10c1fc7b43f767e4b4a1317bb97cd245993294755a83",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "decodeClientFromClientField",
+          "line": 9
+        },
+        {
+          "name": "decodeClientFromResponseFieldWhenFetchingClient",
+          "line": 18
+        },
+        {
+          "name": "decodeClientFromErrorMetaClientField",
+          "line": 27
+        },
+        {
+          "name": "decodeClientReturnsNilWhenClientCannotBeDecoded",
+          "line": 39
+        },
+        {
+          "name": "validatePreservesClientWhenCanonicalResponseAndClientAreNull",
+          "line": 46
+        },
+        {
+          "name": "validateDoesNotClearClientForNonCanonicalNullFields",
+          "line": 71
+        },
+        {
+          "name": "validateAppliesSignedOutClientFromRemovedSessionEnvelope",
+          "line": 97
+        },
+        {
+          "name": "validateAppliesCanonicalClientWhenSiblingClientIsNull",
+          "line": 125
+        },
+        {
+          "name": "validateAtomicallyClearsIdentityForNativeClientDeletionContract",
+          "line": 149
+        },
+        {
+          "name": "disabledAutomaticSyncDefersClientButStillAppliesExplicitClear",
+          "line": 192
+        },
+        {
+          "name": "validateAppliesClientFromClientResponseEnvelope",
+          "line": 244
+        },
+        {
+          "name": "validateHoldsRegisteredAuthFlowBeforeApplyingCompletedSignInClient",
+          "line": 271
+        },
+        {
+          "name": "validateHoldsRefreshedActiveClientUntilAuthViewCompletes",
+          "line": 317
+        },
+        {
+          "name": "validateIgnoresClientResponseFromStaleDeviceTokenGeneration",
+          "line": 349
+        },
+        {
+          "name": "validateAppliesClientFromErrorMetaClientEnvelope",
+          "line": 373
+        },
+        {
+          "name": "validateDoesNotClearClientWhenPayloadHasNoClientField",
+          "line": 399
+        },
+        {
+          "name": "validateAtomicallyPersistsCompleteResponseAfterSharedTransportIsDisabled",
+          "line": 424
+        },
+        {
+          "name": "validatePersistsAdoptedIdentityOffMainActor",
+          "line": 468
+        },
+        {
+          "name": "validateAtomicallyPreservesIdentityForCanonicalNullResponse",
+          "line": 509
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/ClerkDeviceTokenResponseMiddlewareTests.swift",
+      "sha256": "ee910ee64f09ac86edad24606015102dcf524acdf77cb499fc2347b2c782569e",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "clientSyncMiddlewareStoresTokenOnlyResponse",
+          "line": 9
+        },
+        {
+          "name": "lateResponseCannotRestoreTokenAfterNewerClear",
+          "line": 36
+        },
+        {
+          "name": "staleDeviceTokenGenerationCannotUpdateToken",
+          "line": 83
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/ClerkHeaderRequestMiddlewareTests.swift",
+      "sha256": "7c97cb9f9eb4682a236d9fe4cbdb3f816b5b581cf15b1b05cd01623a07f7f6cf",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "addsDeviceTokenHeaderWhenPresent",
+          "line": 36
+        },
+        {
+          "name": "adoptedIdentityUsesHydratedTokenWithoutReadingStoragePerRequest",
+          "line": 49
+        },
+        {
+          "name": "appLocalRequestSnapshotWaitsBehindQueuedIdentityTransition",
+          "line": 79
+        },
+        {
+          "name": "doesNotAddDeviceTokenHeaderWhenMissing",
+          "line": 134
+        },
+        {
+          "name": "addsClientIdHeaderWhenAvailable",
+          "line": 146
+        },
+        {
+          "name": "tagsRequestWithCurrentClientResponseGeneration",
+          "line": 159
+        },
+        {
+          "name": "storesClientResponseGenerationAsURLProtocolPropertyListValue",
+          "line": 169
+        },
+        {
+          "name": "concurrentAtomicTokenlessRequestsShareStartupTakeoverGeneration",
+          "line": 185
+        },
+        {
+          "name": "omitsClientIdHeaderWhenSkipClientIdHeaderIsPresent",
+          "line": 273
+        },
+        {
+          "name": "doesNotAddClientIdHeaderWhenClientMissing",
+          "line": 287
+        },
+        {
+          "name": "addsNativeDeviceIdHeaderWhenAvailable",
+          "line": 300
+        },
+        {
+          "name": "addsDeviceTypeHeader",
+          "line": 317
+        },
+        {
+          "name": "addsDeviceInfoHeaders",
+          "line": 329
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/ClerkInvalidAuthResponseMiddlewareTests.swift",
+      "sha256": "22c24f8b02c28b8dd401198c9e899e669be083b5808938db8c3bb2932770c7b6",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "coalescesConcurrentInvalidAuthRefreshes",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/ClerkRateLimitRetryMiddlewareTests.swift",
+      "sha256": "c59a912b6335535f54e85494f276cfb7c30de9dd8d2101109b825b4236a0762d",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "shouldRetryForRateLimit429",
+          "line": 22
+        },
+        {
+          "name": "shouldRetryForServerError500",
+          "line": 52
+        },
+        {
+          "name": "shouldRetryForRetryableStatusCodes",
+          "line": 74
+        },
+        {
+          "name": "shouldNotRetryForNonRetryableStatusCodes",
+          "line": 100
+        },
+        {
+          "name": "shouldNotRetryOnSecondAttempt",
+          "line": 126
+        },
+        {
+          "name": "retryDelayFromRetryAfterHeader",
+          "line": 147
+        },
+        {
+          "name": "retryDelayFromXRateLimitResetHeader",
+          "line": 179
+        },
+        {
+          "name": "retryDelayDefaultsToHalfSecond",
+          "line": 215
+        },
+        {
+          "name": "shouldRetryForRetryableURLErrors",
+          "line": 245
+        },
+        {
+          "name": "shouldNotRetryForNonRetryableURLErrors",
+          "line": 272
+        }
+      ]
+    },
+    {
+      "path": "Tests/Middleware/NetworkingPipelineResponseMiddlewareOrderTests.swift",
+      "sha256": "c39b0a7c1b635487d482426cb8c58263e01114399cf0057a5a4d01d44614a675",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "customResponseMiddlewareRunsFirst",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "path": "Tests/Networking/ClerkAPIClientTests.swift",
+      "sha256": "9a5370c2f7861278f8f4ac5e6f84ac0a5408094538f1e3f79ee7d58ae12a0858",
+      "category": "core-state-and-network",
+      "cases": [
+        {
+          "name": "requestHeaders",
+          "line": 15
+        },
+        {
+          "name": "mobileHeaderValueMatchesPlatform",
+          "line": 45
+        },
+        {
+          "name": "isNativeQueryParameter",
+          "line": 54
+        },
+        {
+          "name": "getRequest",
+          "line": 83
+        },
+        {
+          "name": "postRequest",
+          "line": 110
+        },
+        {
+          "name": "postRequestWithExplicitJSONContentType",
+          "line": 139
+        },
+        {
+          "name": "patchRequest",
+          "line": 174
+        },
+        {
+          "name": "deleteRequest",
+          "line": 203
+        },
+        {
+          "name": "queryParameters",
+          "line": 230
+        },
+        {
+          "name": "multipartUpload",
+          "line": 261
+        },
+        {
+          "name": "errorHandling",
+          "line": 297
+        },
+        {
+          "name": "failedTokenlessRequestRestartsStartupClientRefresh",
+          "line": 333
+        },
+        {
+          "name": "successfulTokenlessRequestDoesNotRestartStartupClientRefresh",
+          "line": 384
+        },
+        {
+          "name": "retryPreservesFirstPreparedSharedIdentityContext",
+          "line": 444
+        },
+        {
+          "name": "retryRestoresFrozenClerkContextBeforeCustomSigningMiddleware",
+          "line": 482
+        },
+        {
+          "name": "retryIsCancelledWhenPreparedClerkIdentityChanges",
+          "line": 520
+        },
+        {
+          "name": "retryIsCancelledWhenRequestDeviceTokenPropertyChanges",
+          "line": 554
+        },
+        {
+          "name": "deferredClientSyncMetadataPreservesPreparedRequestAndResponseContext",
+          "line": 592
+        },
+        {
+          "name": "deferredClientSyncMetadataRequiresDisabledAutomaticSync",
+          "line": 648
+        }
+      ]
+    },
+    {
+      "path": "Tests/Storage/CacheManagerTests.swift",
+      "sha256": "d5411601b252a8bc39057f1376d1d110fca1945f1f97cd77263764e1ccf642b9",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "testSaveClient",
+          "line": 95
+        },
+        {
+          "name": "testSaveEnvironment",
+          "line": 110
+        },
+        {
+          "name": "testDeleteClient",
+          "line": 302
+        },
+        {
+          "name": "loadCachedClient",
+          "line": 125
+        },
+        {
+          "name": "atomicIdentityStorePreventsLegacyClientFallbackWhenEmpty",
+          "line": 140
+        },
+        {
+          "name": "loadCachedDataCanSkipAtomicIdentityHydration",
+          "line": 162
+        },
+        {
+          "name": "provisionalLegacyClientHydrationUsesExplicitSources",
+          "line": 193
+        },
+        {
+          "name": "provisionalLegacyClientHydrationRequiresTokenInSameSource",
+          "line": 227
+        },
+        {
+          "name": "loadCachedEnvironment",
+          "line": 249
+        },
+        {
+          "name": "doesNotLoadClientWhenAlreadyExists",
+          "line": 264
+        },
+        {
+          "name": "doesNotLoadEnvironmentWhenAlreadyExists",
+          "line": 283
+        },
+        {
+          "name": "shutdownIgnoresFuturePersistenceRequests",
+          "line": 315
+        },
+        {
+          "name": "shutdownAndDrainCompletesPendingPersistenceRequests",
+          "line": 327
+        },
+        {
+          "name": "handlesMissingCachedData",
+          "line": 338
+        }
+      ]
+    },
+    {
+      "path": "Tests/Storage/ClerkKeychainKeyTests.swift",
+      "sha256": "17b37e38f2edf8ff55ef9169d93d532c12d7dee2b2057b5b3d2c0018db681a71",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "allCasesContainsExpectedKeys",
+          "line": 16
+        },
+        {
+          "name": "rawValuesMatchExpectedStrings",
+          "line": 43
+        }
+      ]
+    },
+    {
+      "path": "Tests/Storage/MigratingKeychainStorageTests.swift",
+      "sha256": "da50af6ac1c90d086b9d0343acbc65f67a5d8ae43a42a0deb50ee77d96db56ae",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "dataMigratesFallbackItemWhenPrimaryItemIsMissing",
+          "line": 13
+        },
+        {
+          "name": "dataDoesNotReadFallbackWhenPrimaryItemExists",
+          "line": 37
+        },
+        {
+          "name": "dataReturnsNilWhenPrimaryAndFallbackMiss",
+          "line": 57
+        },
+        {
+          "name": "dataReturnsFallbackItemWhenMigrationWriteFails",
+          "line": 77
+        },
+        {
+          "name": "dataDoesNotReadFallbackWhenPrimaryThrows",
+          "line": 99
+        },
+        {
+          "name": "setWritesOnlyToPrimary",
+          "line": 119
+        },
+        {
+          "name": "deleteAttemptsPrimaryAndFallback",
+          "line": 134
+        },
+        {
+          "name": "deleteAttemptsFallbackWhenPrimaryDeleteFails",
+          "line": 149
+        },
+        {
+          "name": "hasItemFallsBackWhenPrimaryItemIsMissing",
+          "line": 169
+        },
+        {
+          "name": "hasItemDoesNotReadFallbackWhenPrimaryItemExists",
+          "line": 185
+        }
+      ]
+    },
+    {
+      "path": "Tests/Storage/SharedSessionLocalIdentityStoreTests.swift",
+      "sha256": "3e745d3501c83b4931b55161e07b21314adac81f50f4128fd777a02ad820581d",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "legacyIdentityBlobLoadsAsAcceptedRecord",
+          "line": 7
+        },
+        {
+          "name": "recordWrittenBeforePublicationMarkerDefaultsToSettled",
+          "line": 25
+        },
+        {
+          "name": "requiredPublicationKeepsLegacyCodingKey",
+          "line": 48
+        },
+        {
+          "name": "requiredPublicationMarkerSurvivesStagingAndClearsOnCommit",
+          "line": 65
+        },
+        {
+          "name": "stagingAndCommitReplaceOneAtomicRecord",
+          "line": 84
+        },
+        {
+          "name": "mismatchedCommitCannotDiscardPendingPublication",
+          "line": 108
+        },
+        {
+          "name": "revisionedSaveSupersedesPendingPublicationWhileOrdinarySaveRemainsStrict",
+          "line": 125
+        },
+        {
+          "name": "synchronousInvalidatingDeleteRejectsOlderOperationSave",
+          "line": 150
+        },
+        {
+          "name": "unchangedUpdateDoesNotRewriteKeychainRecord",
+          "line": 170
+        },
+        {
+          "name": "emptyClearPendingPublicationDoesNotDeleteKeychainRecord",
+          "line": 184
+        }
+      ]
+    },
+    {
+      "path": "Tests/Storage/SharedSessionOwnerSlotStoreTests.swift",
+      "sha256": "4ff6e05a956aeb29e3668f0bf9b29df68aba98f0b8774d4a1b410041bec8c54e",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "matchAllQueryIsLimitedToV2ServiceAndAccessGroup",
+          "line": 18
+        },
+        {
+          "name": "queriesUseNormalizedAccessGroup",
+          "line": 42
+        },
+        {
+          "name": "enumerationReturnsEveryCompatibleOwnerAndIgnoresInvalidPeers",
+          "line": 63
+        },
+        {
+          "name": "enumerationIgnoresSameFrontendPeerFromDifferentPublishableKeyNamespace",
+          "line": 106
+        },
+        {
+          "name": "saveWritesOnlyTheDerivedOwnAccount",
+          "line": 140
+        },
+        {
+          "name": "saveUpdatesKnownExistingSlotWithoutTryingToAddIt",
+          "line": 158
+        },
+        {
+          "name": "saveAddsKnownSlotWhenItDisappearsBeforeUpdate",
+          "line": 173
+        },
+        {
+          "name": "addRaceDoesNotOverwriteFutureSchemaSlot",
+          "line": 189
+        },
+        {
+          "name": "saveRejectsSlotForAnotherOwner",
+          "line": 210
+        },
+        {
+          "name": "deleteTargetsOnlyOwnAccount",
+          "line": 219
+        },
+        {
+          "name": "recoveryIntentDeleteUsesRecordedServiceAccessGroupAndAccount",
+          "line": 237
+        },
+        {
+          "name": "futureOwnSlotDeletionReportsPreservation",
+          "line": 266
+        },
+        {
+          "name": "futureOwnSlotDeletionReportsPreservationWhenCurrentHeaderFieldsAreAbsent",
+          "line": 289
+        },
+        {
+          "name": "keychainReadFailureIsNotTreatedAsEmptyStorage",
+          "line": 311
+        }
+      ]
+    },
+    {
+      "path": "Tests/Storage/SystemKeychainTests.swift",
+      "sha256": "476a49b02c158a8d79c17fc816edcb7d3eb4ae8a469ce27ab7b30ff331acdf61",
+      "category": "secure-persistence",
+      "cases": [
+        {
+          "name": "testDeleteItem",
+          "line": 43
+        },
+        {
+          "name": "testHasItem",
+          "line": 56
+        },
+        {
+          "name": "setAndGetData",
+          "line": 18
+        },
+        {
+          "name": "updateExistingKey",
+          "line": 29
+        },
+        {
+          "name": "getNonExistentKeyReturnsNil",
+          "line": 68
+        },
+        {
+          "name": "deleteNonExistentKeyDoesNotThrow",
+          "line": 76
+        },
+        {
+          "name": "isolationBetweenInstances",
+          "line": 84
+        },
+        {
+          "name": "dataProtectionKeychainWritesUseDataProtectionFlag",
+          "line": 97
+        },
+        {
+          "name": "accessGroupWithoutDataProtectionFlagUsesLegacyKeychain",
+          "line": 114
+        },
+        {
+          "name": "noAccessGroupUsesLegacyKeychain",
+          "line": 130
+        },
+        {
+          "name": "dataReadsFromConfiguredBackendOnly",
+          "line": 145
+        },
+        {
+          "name": "missingEntitlementErrorIncludesAccessGroupGuidance",
+          "line": 165
+        },
+        {
+          "name": "unexpectedStatusErrorIncludesSystemMessageWhenAvailable",
+          "line": 174
+        }
+      ]
+    },
+    {
+      "path": "Tests/TestSupport/InMemoryKeychain.swift",
+      "sha256": "ba72860d70b13603a6a41a60b8b8476784b35cd16c5a1d8c46bf528e9c12d12b",
+      "category": "secure-persistence",
+      "cases": []
+    },
+    {
+      "path": "Tests/TestSupport/JWTTestHelpers.swift",
+      "sha256": "dd0f1aa9bde9c4eb3e30285935bc8702200ed63918bbcc306f936f2de9b38785",
+      "category": "test-support",
+      "cases": [
+        {
+          "name": "testJWT",
+          "line": 3
+        }
+      ]
+    },
+    {
+      "path": "Tests/TestSupport/TestHelpers.swift",
+      "sha256": "08aff8951faa6385a86bad6a5e0bd603ea47b7c2161c24161b29dd77f0b37e57",
+      "category": "test-support",
+      "cases": []
+    },
+    {
+      "path": "Tests/Utils/ExternalAuthUtilsTests.swift",
+      "sha256": "1015a6df801faa8fef7dc5627b859ee73f544889509009f96fc2e284760ca23b",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "nonceFromCallbackUrlWithNonce",
+          "line": 12
+        },
+        {
+          "name": "nonceFromCallbackUrlWithoutNonce",
+          "line": 22
+        },
+        {
+          "name": "nonceFromCallbackUrlWithMultipleQueryParams",
+          "line": 32
+        },
+        {
+          "name": "nonceFromCallbackUrlWithEmptyNonce",
+          "line": 42
+        },
+        {
+          "name": "nonceFromCallbackUrlWithoutQueryParams",
+          "line": 52
+        },
+        {
+          "name": "nonceFromCallbackUrlWithFragment",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/HTTPURLResponseExtensionsTests.swift",
+      "sha256": "cbd822447afa78611e812179edfc2caf5926607acc872eac1489aab2bee6e391",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "testIsError",
+          "line": 21
+        },
+        {
+          "name": "testIsClientError",
+          "line": 48
+        },
+        {
+          "name": "testIsServerError",
+          "line": 69
+        },
+        {
+          "name": "testIsSuccess",
+          "line": 90
+        },
+        {
+          "name": "testIsRedirection",
+          "line": 111
+        },
+        {
+          "name": "testStatusType",
+          "line": 132
+        },
+        {
+          "name": "testStatusDescription",
+          "line": 161
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/JSONUtilitiesTests.swift",
+      "sha256": "c9145d83bfd9186110e4ff50d446d8345f4e28868fe9b629626297f8fe987de1",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "testStringValue",
+          "line": 81
+        },
+        {
+          "name": "testDoubleValue",
+          "line": 89
+        },
+        {
+          "name": "testBoolValue",
+          "line": 96
+        },
+        {
+          "name": "testObjectValue",
+          "line": 104
+        },
+        {
+          "name": "testArrayValue",
+          "line": 111
+        },
+        {
+          "name": "testIsNull",
+          "line": 118
+        },
+        {
+          "name": "testQueryKeyPath",
+          "line": 160
+        },
+        {
+          "name": "testClerkDecoder",
+          "line": 356
+        },
+        {
+          "name": "testClerkEncoder",
+          "line": 415
+        },
+        {
+          "name": "jSONCases",
+          "line": 14
+        },
+        {
+          "name": "expressibleByStringLiteral",
+          "line": 33
+        },
+        {
+          "name": "expressibleByIntegerLiteral",
+          "line": 39
+        },
+        {
+          "name": "expressibleByFloatLiteral",
+          "line": 45
+        },
+        {
+          "name": "expressibleByBooleanLiteral",
+          "line": 51
+        },
+        {
+          "name": "expressibleByNilLiteral",
+          "line": 57
+        },
+        {
+          "name": "expressibleByArrayLiteral",
+          "line": 63
+        },
+        {
+          "name": "expressibleByDictionaryLiteral",
+          "line": 72
+        },
+        {
+          "name": "arraySubscript",
+          "line": 127
+        },
+        {
+          "name": "objectSubscript",
+          "line": 137
+        },
+        {
+          "name": "dynamicMemberLookup",
+          "line": 145
+        },
+        {
+          "name": "keyPathSubscript",
+          "line": 152
+        },
+        {
+          "name": "mergingObjects",
+          "line": 175
+        },
+        {
+          "name": "mergingNestedObjects",
+          "line": 187
+        },
+        {
+          "name": "mergingNonObjects",
+          "line": 198
+        },
+        {
+          "name": "mergePatchRemovesMissingKeys",
+          "line": 207
+        },
+        {
+          "name": "mergePatchReturnsEmptyObjectForIdenticalObjects",
+          "line": 237
+        },
+        {
+          "name": "mergePatchReturnsDesiredForTopLevelReplacement",
+          "line": 247
+        },
+        {
+          "name": "mergePatchTreatsArraysAsAtomicValues",
+          "line": 255
+        },
+        {
+          "name": "mergePatchRemovesNestedKeysWhenDesiredNestedObjectIsEmpty",
+          "line": 278
+        },
+        {
+          "name": "mergePatchRemovesAllKeysWhenDesiredObjectIsEmpty",
+          "line": 298
+        },
+        {
+          "name": "jSONEncoding",
+          "line": 313
+        },
+        {
+          "name": "jSONDecoding",
+          "line": 330
+        },
+        {
+          "name": "jSONEquatable",
+          "line": 345
+        },
+        {
+          "name": "clerkDecoderSnakeCase",
+          "line": 375
+        },
+        {
+          "name": "clerkDecoderDate",
+          "line": 393
+        },
+        {
+          "name": "clerkEncoderSnakeCase",
+          "line": 434
+        },
+        {
+          "name": "clerkEncoderDate",
+          "line": 450
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/JSONWebAuthnTests.swift",
+      "sha256": "112c8adf1cd7143efe399155448b78ca2de3401c0824d35d567cf500e7779c23",
+      "category": "platform-capability",
+      "cases": [
+        {
+          "name": "assertionRelyingPartyIdentifierReadsNonce",
+          "line": 7
+        },
+        {
+          "name": "assertionAllowedCredentialIDsDecodeBase64URLIDs",
+          "line": 16
+        },
+        {
+          "name": "assertionAllowedCredentialIDsIgnoreInvalidEntries",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/JWTDecoderTests.swift",
+      "sha256": "886c45101a2c2e80613b3494b67d5fe9161bf523a59fad8e6f9ec2e895dba5a5",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "decodeValidJWT",
+          "line": 32
+        },
+        {
+          "name": "jWTDecodeErrorInvalidPartCount",
+          "line": 48
+        },
+        {
+          "name": "jWTDecodeErrorInvalidBase64URL",
+          "line": 93
+        },
+        {
+          "name": "jWTDecodeErrorInvalidJSON",
+          "line": 111
+        },
+        {
+          "name": "jWTClaimExtraction",
+          "line": 142
+        },
+        {
+          "name": "jWTExpired",
+          "line": 165
+        },
+        {
+          "name": "claimString",
+          "line": 191
+        },
+        {
+          "name": "claimBoolean",
+          "line": 205
+        },
+        {
+          "name": "claimDouble",
+          "line": 222
+        },
+        {
+          "name": "claimInteger",
+          "line": 236
+        },
+        {
+          "name": "claimDate",
+          "line": 254
+        },
+        {
+          "name": "claimArray",
+          "line": 267
+        },
+        {
+          "name": "claimSubscript",
+          "line": 284
+        },
+        {
+          "name": "jWTStringValue",
+          "line": 294
+        },
+        {
+          "name": "jWTHeader",
+          "line": 303
+        },
+        {
+          "name": "jWTSignature",
+          "line": 314
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/LocaleUtilsTests.swift",
+      "sha256": "44a766ba6405583616a126bd349c1428a67b4702c571a79d761b7121c7c6041f",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "testUserLocale",
+          "line": 12
+        },
+        {
+          "name": "userLocaleFormat",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/OptionalStringExtensionsTests.swift",
+      "sha256": "aca3d388a6e9ae0ee686cc22ac4b8924a3238586e681164ed4ab832e921780a1",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "nilIfEmptyTrimsWhitespaceAndFiltersEmptyResults",
+          "line": 5
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/PKCETests.swift",
+      "sha256": "a77b59a0dd3230d4fc00f29efc7ff276763c1bb1d4ea213aeb89ffd9bd171ebd",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "pkceChallengeMatchesRFC7636Vector",
+          "line": 7
+        },
+        {
+          "name": "generatedPKCEPairUsesS256CompatibleValues",
+          "line": 14
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/PrivacyManifestTests.swift",
+      "sha256": "cf8149d48536f08a66736ff775c58c807551d040fea01766f0a5f5ce7a398096",
+      "category": "diagnostics-and-packaging",
+      "cases": [
+        {
+          "name": "bundledManifestDeclaresUserDefaults",
+          "line": 10
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/ProxyConfigurationTests.swift",
+      "sha256": "93375303e492d888a30218144099c23e504241484e16793d6a2c71e755dc4445",
+      "category": "unavailable-feature",
+      "cases": [
+        {
+          "name": "initWithValidURL",
+          "line": 12
+        },
+        {
+          "name": "initWithNilURL",
+          "line": 24
+        },
+        {
+          "name": "initWithURLWithoutScheme",
+          "line": 30
+        },
+        {
+          "name": "initWithURLWithoutHost",
+          "line": 37
+        },
+        {
+          "name": "initWithURLWithPort",
+          "line": 44
+        },
+        {
+          "name": "initWithURLWithoutPath",
+          "line": 56
+        },
+        {
+          "name": "initWithURLWithRootPath",
+          "line": 67
+        },
+        {
+          "name": "initWithURLWithMultiplePathSegments",
+          "line": 78
+        },
+        {
+          "name": "prefixedPathWithEmptyPathSegments",
+          "line": 89
+        },
+        {
+          "name": "prefixedPathWithSimplePath",
+          "line": 98
+        },
+        {
+          "name": "prefixedPathWithPathAlreadyPrefixed",
+          "line": 107
+        },
+        {
+          "name": "prefixedPathWithPathWithoutLeadingSlash",
+          "line": 117
+        },
+        {
+          "name": "prefixedPathWithMultipleProxySegments",
+          "line": 126
+        },
+        {
+          "name": "prefixedPathWithEmptyOriginalPath",
+          "line": 135
+        },
+        {
+          "name": "prefixedPathWithRootPath",
+          "line": 144
+        },
+        {
+          "name": "prefixedPathWithPartialMatch",
+          "line": 153
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/RetryingOperationTests.swift",
+      "sha256": "5517a61e61eb70b8acc0d4b785ff8c3c8403f252d05ea3f901c3de1743cef6e9",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "retriesUntilSuccess",
+          "line": 13
+        },
+        {
+          "name": "stopsAfterMaxAttempts",
+          "line": 31
+        },
+        {
+          "name": "policySanitizesInputs",
+          "line": 49
+        },
+        {
+          "name": "delaysClampToMaximum",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/SessionStatusLoggerTests.swift",
+      "sha256": "d7ae93f0d995a3032b45ecc2056fde7b27ab3ed89507132f6db38ac38fa9c56c",
+      "category": "diagnostics-and-packaging",
+      "cases": [
+        {
+          "name": "shouldLogPendingSessionStatus_NoSessionId",
+          "line": 44
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_NoMatchingSession",
+          "line": 54
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_NonPendingSession",
+          "line": 64
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_FirstClient",
+          "line": 74
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_NoPreviousSession",
+          "line": 84
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_SessionIdChanged",
+          "line": 95
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_SessionStatusChanged",
+          "line": 108
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_TasksChanged",
+          "line": 121
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_TasksChangedFromNilToEmpty",
+          "line": 134
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_TasksChangedFromEmptyToNil",
+          "line": 148
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_NoChange",
+          "line": 162
+        },
+        {
+          "name": "shouldLogPendingSessionStatus_SameTasksNil",
+          "line": 175
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/SessionUtilsTests.swift",
+      "sha256": "057b044b768b5a9f0fd6827828f68b76c9714aec7f482fb2fa0719652bd5511e",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "currentSession_NoLastActiveSessionId",
+          "line": 47
+        },
+        {
+          "name": "currentSession_NoMatchingSession",
+          "line": 55
+        },
+        {
+          "name": "currentSession_ReturnsPendingSession",
+          "line": 63
+        },
+        {
+          "name": "currentSession_ReturnsSession",
+          "line": 71
+        },
+        {
+          "name": "currentSession_ReturnsCorrectSessionFromMultipleSessions",
+          "line": 81
+        },
+        {
+          "name": "sessionChanged_NilToNil",
+          "line": 99
+        },
+        {
+          "name": "sessionChanged_NilToSession",
+          "line": 105
+        },
+        {
+          "name": "sessionChanged_SessionToNil",
+          "line": 114
+        },
+        {
+          "name": "sessionChanged_SameSessionUnchanged",
+          "line": 123
+        },
+        {
+          "name": "sessionChanged_DifferentSessionId",
+          "line": 133
+        },
+        {
+          "name": "sessionChanged_SameSessionIdDifferentStatus",
+          "line": 144
+        },
+        {
+          "name": "sessionChanged_SameSessionIdDifferentUpdatedAt",
+          "line": 155
+        },
+        {
+          "name": "sessionChanged_NoSessionToNoSession",
+          "line": 174
+        },
+        {
+          "name": "sessionChanged_NoSessionToSession",
+          "line": 183
+        },
+        {
+          "name": "sessionChanged_SessionToNoSession",
+          "line": 193
+        },
+        {
+          "name": "sessionChanged_SessionBecomesInactive",
+          "line": 203
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/StringExtensionsTests.swift",
+      "sha256": "1ec5c8aacfc9d5ceeba1a6334abeae9319b6336926797c47ce1fa647db5f3f06",
+      "category": "presentation-and-values",
+      "cases": [
+        {
+          "name": "testIsEmptyTrimmed",
+          "line": 14
+        },
+        {
+          "name": "testNonBreaking",
+          "line": 35
+        },
+        {
+          "name": "testCapitalizedSentence",
+          "line": 54
+        },
+        {
+          "name": "testIsEmailAddress",
+          "line": 74
+        },
+        {
+          "name": "testBase64URLFromBase64String",
+          "line": 98
+        },
+        {
+          "name": "testDataFromBase64URL",
+          "line": 121
+        },
+        {
+          "name": "testBase64String",
+          "line": 144
+        },
+        {
+          "name": "testToJSON",
+          "line": 167
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/URLEncodedFormEncoderTests.swift",
+      "sha256": "6ad83593a8fd3ef5c01bba1e5ccaff88021316b21d38ed09db9065f20d8d4ea5",
+      "category": "serialization-and-errors",
+      "cases": [
+        {
+          "name": "testAlphabetizeKeyValuePairs",
+          "line": 438
+        },
+        {
+          "name": "clerkFormMiddlewarePreservesNestedNullsInStringifiedMetadata",
+          "line": 12
+        },
+        {
+          "name": "arrayEncodingBrackets",
+          "line": 34
+        },
+        {
+          "name": "arrayEncodingNoBrackets",
+          "line": 41
+        },
+        {
+          "name": "arrayEncodingIndexInBrackets",
+          "line": 48
+        },
+        {
+          "name": "arrayEncodingCustom",
+          "line": 55
+        },
+        {
+          "name": "boolEncodingNumeric",
+          "line": 66
+        },
+        {
+          "name": "boolEncodingLiteral",
+          "line": 73
+        },
+        {
+          "name": "dataEncodingBase64",
+          "line": 82
+        },
+        {
+          "name": "dataEncodingDeferredToData",
+          "line": 91
+        },
+        {
+          "name": "dataEncodingCustom",
+          "line": 99
+        },
+        {
+          "name": "dateEncodingDeferredToDate",
+          "line": 111
+        },
+        {
+          "name": "dateEncodingSecondsSince1970",
+          "line": 119
+        },
+        {
+          "name": "dateEncodingMillisecondsSince1970",
+          "line": 127
+        },
+        {
+          "name": "dateEncodingISO8601",
+          "line": 135
+        },
+        {
+          "name": "dateEncodingFormatted",
+          "line": 144
+        },
+        {
+          "name": "dateEncodingCustom",
+          "line": 155
+        },
+        {
+          "name": "keyEncodingUseDefaultKeys",
+          "line": 167
+        },
+        {
+          "name": "keyEncodingConvertToSnakeCase",
+          "line": 173
+        },
+        {
+          "name": "keyEncodingConvertToKebabCase",
+          "line": 182
+        },
+        {
+          "name": "keyEncodingCapitalized",
+          "line": 189
+        },
+        {
+          "name": "keyEncodingUppercased",
+          "line": 196
+        },
+        {
+          "name": "keyEncodingLowercased",
+          "line": 203
+        },
+        {
+          "name": "keyEncodingCustom",
+          "line": 210
+        },
+        {
+          "name": "keyPathEncodingBrackets",
+          "line": 220
+        },
+        {
+          "name": "keyPathEncodingDots",
+          "line": 227
+        },
+        {
+          "name": "keyPathEncodingCustom",
+          "line": 234
+        },
+        {
+          "name": "nilEncodingDropKey",
+          "line": 244
+        },
+        {
+          "name": "nilEncodingDropValue",
+          "line": 250
+        },
+        {
+          "name": "nilEncodingNull",
+          "line": 256
+        },
+        {
+          "name": "nilEncodingCustom",
+          "line": 262
+        },
+        {
+          "name": "spaceEncodingPercentEscaped",
+          "line": 270
+        },
+        {
+          "name": "spaceEncodingPlusReplaced",
+          "line": 277
+        },
+        {
+          "name": "encodeSimpleStruct",
+          "line": 286
+        },
+        {
+          "name": "encodeWithArrays",
+          "line": 301
+        },
+        {
+          "name": "encodeWithNestedObjects",
+          "line": 317
+        },
+        {
+          "name": "encodeWithBoolNumeric",
+          "line": 334
+        },
+        {
+          "name": "encodeWithBoolLiteral",
+          "line": 351
+        },
+        {
+          "name": "encodeWithOptionalNilDropKey",
+          "line": 364
+        },
+        {
+          "name": "encodeWithOptionalNilDropValue",
+          "line": 377
+        },
+        {
+          "name": "encodeWithDateSeconds",
+          "line": 390
+        },
+        {
+          "name": "encodeWithKeyEncodingSnakeCase",
+          "line": 404
+        },
+        {
+          "name": "encodeErrorInvalidRootObject",
+          "line": 419
+        },
+        {
+          "name": "encodeAsData",
+          "line": 457
+        },
+        {
+          "name": "protectedRead",
+          "line": 475
+        },
+        {
+          "name": "protectedReadWithTransformation",
+          "line": 486
+        },
+        {
+          "name": "protectedWriteWithValue",
+          "line": 497
+        },
+        {
+          "name": "protectedWriteWithClosure",
+          "line": 507
+        },
+        {
+          "name": "protectedWriteWithClosureReturningDifferentType",
+          "line": 522
+        },
+        {
+          "name": "protectedDynamicMemberLookupWritableKeyPath",
+          "line": 537
+        },
+        {
+          "name": "protectedDynamicMemberLookupReadOnlyKeyPath",
+          "line": 558
+        },
+        {
+          "name": "protectedThreadSafety",
+          "line": 576
+        },
+        {
+          "name": "protectedConcurrentReadWrite",
+          "line": 596
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/VersionTests.swift",
+      "sha256": "59976fef3594d12e9c5def1b8040ef8a3de53edb4d9e63de790da75b2fb03877",
+      "category": "diagnostics-and-packaging",
+      "cases": [
+        {
+          "name": "testDeviceID",
+          "line": 28
+        },
+        {
+          "name": "clerkVersion",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "path": "Tests/Utils/WebAuthenticationTests.swift",
+      "sha256": "8bee52378b0ec9cb0bd90a0c5ad55ccb4c8306903dbdd783ad8d5e733a16a24c",
+      "category": "platform-capability",
+      "cases": [
+        {
+          "name": "startFailureResumesCallerAndAllowsNextSession",
+          "line": 16
+        },
+        {
+          "name": "taskCancellationCancelsSystemSessionAndAllowsNextSession",
+          "line": 70
+        },
+        {
+          "name": "cancelCurrentSessionCancelsSystemSessionAndResumesCaller",
+          "line": 124
+        },
+        {
+          "name": "staleCompletionAfterCancellationDoesNotCompleteNextSession",
+          "line": 163
+        },
+        {
+          "name": "secondStartFailsWithoutOverwritingActiveSession",
+          "line": 227
+        }
+      ]
+    }
+  ]
+}
