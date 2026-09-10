@@ -64,9 +64,10 @@ import Observation
         // A repeated completion must not replace a screen the user is finishing.
         if target.completion == nil {
           target.origin = .completed(result)
-          target.flowId = result.flowId
-          coordinator.phase = .presenting(target: target, token: token)
         }
+        // Track later same-session attempts so their replay cannot reopen a finished screen.
+        target.flowId = result.flowId
+        coordinator.phase = .presenting(target: target, token: token)
       case .awaiting(let target) where target.sessionId == sessionId && target.flowId == result.flowId:
         break
       default:

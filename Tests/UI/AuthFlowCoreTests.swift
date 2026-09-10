@@ -383,7 +383,13 @@ import Testing
     }
     let previous = try awaiting(clerk, owner)
     let previousFlowId = clerk.signIn.id
-    let previousToken = sameSession ? nil : try #require(clerk.startAuthFlowPresentation(for: owner, work: previous, presentation: .biometricCredentialEnrollment))
+    let previousToken: AuthFlowPresentationToken?
+    if sameSession {
+      previousToken = nil
+    } else {
+      let token = try #require(clerk.startAuthFlowPresentation(for: owner, work: previous, presentation: .biometricCredentialEnrollment))
+      previousToken = token
+    }
     let oldSession = try #require(fixture.fixtures["session"])
     var nextSession = try oldSession.object()
     let nextSessionId = sameSession ? "sess_native" : "sess_replacement"
@@ -524,8 +530,8 @@ import Testing
     #expect(!clerk.completeAuthFlow(work))
   }
 
-  @Test(arguments: [false, true])
-  func failedActivationAdoptsTheCurrentSessionAfterAnIntermediateRefresh(dismissible: Bool) async throws {
+  @Test(arguments: [false, true], [false, true])
+  func activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible: Bool, succeeds: Bool) async throws {
     let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
     let targetSession = try #require(fixture.fixtures["session"])
     var currentSession = try targetSession.object()
@@ -539,14 +545,24 @@ import Testing
     client["last_active_session_id"] = .string("sess_existing")
     fixture.clientResponse = .object(client)
     let capabilities = AuthFlowCapabilities(base: fixture)
+    capabilities.responseDate = "Mon, 31 Dec 2029 00:00:00 GMT"
     let clerk = try await connect(capabilities)
     defer { clerk.close() }
     #expect(clerk.session?.id == "sess_existing")
     let owner = try #require(clerk.registerAuthFlow(role: dismissible ? .dismissible : .root))
     defer { owner.cancel() }
     capabilities.pauseNextTouch = true
-    capabilities.touchStatus = 403
-    capabilities.touchResponse = .object(["errors": .array([.object(["code": .string("activation_rejected"), "message": .string("Activation rejected")])])])
+    capabilities.touchHeaders = ["date": .string("Tue, 01 Jan 2030 00:00:00 GMT")]
+    capabilities.touchStatus = succeeds ? 200 : 403
+    var successfulClient = client
+    var refreshedCurrentSession = currentSession
+    refreshedCurrentSession["status"] = .string("active")
+    refreshedCurrentSession["tasks"] = .array([])
+    successfulClient["sessions"] = .array([.object(refreshedCurrentSession), targetSession])
+    successfulClient["last_active_session_id"] = .string("sess_native")
+    capabilities.touchResponse = succeeds
+      ? .object(["response": targetSession, "client": .object(successfulClient)])
+      : .object(["errors": .array([.object(["code": .string("activation_rejected"), "message": .string("Activation rejected")])])])
     let finalization = Task {
       try await AuthFlowRequestScope.withOwner(owner.id) {
         try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
@@ -569,24 +585,28 @@ import Testing
     #expect(try awaiting(clerk, owner) == pending)
     #expect(clerk.isAuthFlowComplete == dismissible)
     capabilities.resumeTouch()
-    do {
+    if succeeds {
       try await finalization.value
-      Issue.record("Expected the activation error to reach the caller")
-    } catch let error as CoreError {
-      #expect(error.errors.first?.code == "activation_rejected")
+    } else {
+      do {
+        try await finalization.value
+        Issue.record("Expected the activation error to reach the caller")
+      } catch let error as CoreError {
+        #expect(error.errors.first?.code == "activation_rejected")
+      }
     }
-    let external = try awaiting(clerk, owner)
-    #expect(external.sessionId == "sess_existing")
-    #expect(external != pending)
+    let completed = try awaiting(clerk, owner)
+    #expect(completed.sessionId == (succeeds ? "sess_native" : "sess_existing"))
+    #expect((completed == pending) == succeeds)
     guard case .awaiting(_, let completion) = clerk.authFlowSnapshot(for: owner)?.phase else {
-      Issue.record("The current session must supply dismissible external work")
+      Issue.record("The final selected session must supply presentation work")
       return
     }
-    #expect(completion == nil)
-    #expect(!clerk.completeAuthFlow(pending))
+    #expect((completion != nil) == succeeds)
+    if !succeeds { #expect(!clerk.completeAuthFlow(pending)) }
     #expect(clerk.isAuthFlowComplete == dismissible)
-    #expect(clerk.completeAuthFlow(external))
-    #expect(!clerk.completeAuthFlow(external))
+    #expect(clerk.completeAuthFlow(completed))
+    #expect(!clerk.completeAuthFlow(completed))
     #expect(clerk.isAuthFlowComplete)
   }
 
@@ -741,6 +761,55 @@ import Testing
     #expect(clerk.startAuthFlowPresentation(for: owner, work: superseded, presentation: .biometricCredentialEnrollment) == nil)
     #expect(clerk.completeAuthFlow(current))
     #expect(!clerk.completeAuthFlow(current))
+  }
+
+  @Test func anOpenEnrollmentSurvivesRefreshAndALaterAttemptWithoutBeingReoffered() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    let work = try awaiting(clerk, owner)
+    let firstAttemptId = clerk.signIn.id
+    let enrollment = try #require(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .biometricCredentialEnrollment))
+    fixture.sessionReloadResponse = try .object(["response": #require(fixture.fixtures["session"]), "client": #require(fixture.fixtures["authenticatedClient"])])
+    _ = try await clerk.session?.reload()
+    clerk.reconcileAuthFlowPresentation()
+    #expect(clerk.authFlowPresentationIsCurrent(enrollment))
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    var signIn = try #require(client["sign_in"]).object()
+    signIn["id"] = .string("sia_later")
+    client["sign_in"] = .object(signIn)
+    capabilities.signInResponse = .object(["response": .object(signIn), "client": .object(client)])
+    capabilities.touchResponse = try .object(["response": #require(fixture.fixtures["session"]), "client": .object(client)])
+    try await clerk.signIn.password(.case1(.init(password: "fixture-password", identifier: "new@example.com")))
+    #expect(clerk.signIn.id != firstAttemptId)
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    #expect(clerk.authFlowPresentationIsCurrent(enrollment))
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.finishAuthFlowPresentation(enrollment))
+    #expect(try awaiting(clerk, owner) == work)
+    // Replaying the later accepted attempt must not reopen the completed enrollment.
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    guard case .awaiting(let resumed, let offeredEnrollment) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The completed screen must resume its existing work")
+      return
+    }
+    #expect(resumed == work)
+    #expect(offeredEnrollment == nil)
+    #expect(!clerk.finishAuthFlowPresentation(enrollment))
+    #expect(clerk.completeAuthFlow(work))
+    #expect(!clerk.completeAuthFlow(work))
+    #expect(clerk.isAuthFlowComplete)
   }
 
   @Test func signOutInvalidatesACompletionWaitingForPresentation() async throws {

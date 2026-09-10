@@ -21,16 +21,16 @@ enrollment sequencing and completion callback delivery.
 | `dismissibleAuthFlowCompletionDoesNotGateSignedInContent`, `externalActiveSessionHoldsRootUntilAuthViewCompletes`, `acceptedCompletionBlocksRootUntilItsExactWorkCompletes` | The external activation and dismissible tests verify root blocking before reconciliation, retained completion work, callback acceptance once, and available signed-in content for dismissible presentation. This reproduced the root gate bypass and missing external active-session work before the fix. |
 | `ownedHostedActivationHoldsRootUntilAuthViewCompletes`, `hostedActivationRetainsItsTargetWhileAnotherSessionIsCurrent`, `hostedActivationPromotesPresentedExternalWorkWithoutReplacingItsToken`, `hostedActivationForAnotherSessionInvalidatesPresentedWork`, `staleHostedActivationCannotMutateANewerRegistration` | Hosted portal activation is unavailable in this prerelease. Its begin/finish activation markers, target retention and stale-hosted callbacks have no passing replacement proof. Keep these assertions as evidence of the unsupported feature. |
 | `supersededCompletionPreservesCurrentSessionWork` | The old superseded-completion resolver and hosted activation marker are removed. Current rejected-replay tests preserve existing same-session work; they do not synthesize the old rejection event for an unrelated attempt. |
-| `completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation` | `failedActivationAdoptsTheCurrentSessionAfterAnIntermediateRefresh` holds the exact target work during a refresh while another session remains current. `activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply` preserves work through refresh and successful activation from no selection when both server dates prove freshness. These are separate cases; successful activation from another selected session after refresh is not yet directly tested. |
+| `completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation` | `activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh` holds the exact target work during a refresh while another session remains current. `activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply` preserves work through refresh and successful activation from no selection when both server dates prove freshness. The expanded four-case activation test additionally verifies successful selection of the target session after refresh from another selected session, for both root and dismissible roles, while retaining the exact work. |
 | `authoritativeIdentityChangeSupersedesOwnedCompletionWhenOldSessionRemains` | The native authoritative-identity event is removed. `anotherCurrentSessionInvalidatesThePresentedScreen` uses generated session selection with both sessions retained and rejects old presentation/completion before reconciliation. No peer-triggered authoritative event is claimed. |
 | `staleSameFlowRejectionPreservesAcceptedAwaitingWork` | `aRejectedReplayPreservesAcceptedAwaitingWork` verifies a repeated finalization that returns a structured 403 preserves the exact accepted work and permits its completion once. The old semantic-rejection event and private revision count are removed. |
 | `sameFlowRejectionYieldsToAuthoritativeIdentityChange` | The old resolving-superseded-completion object is removed. Current failed-activation cases reconcile to the actual selected session, without passing an authoritative-identity flag from native code. `aNewerExplicitSelectionSupersedesSuspendedFinalization` additionally performs an independent generated selection while the older finalization is suspended; the old call fails and presentation adopts the newer selected session with both sessions still stored. |
-| `failedSessionActivationAdoptsTheAuthoritativeCurrentSession` | `failedActivationAdoptsTheCurrentSessionAfterAnIntermediateRefresh` holds activation HTTP, refreshes the other selected session, then returns a structured 403. Both root and dismissible roles receive external current-session work with no enrollment provenance; old work cannot complete and the new work completes once. The API error remains visible to the caller. |
+| `failedSessionActivationAdoptsTheAuthoritativeCurrentSession` | `activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh` holds activation HTTP, refreshes the other selected session, then returns a structured 403. Both root and dismissible roles receive external current-session work with no enrollment provenance; old work cannot complete and the new work completes once. The API error remains visible to the caller. |
 | `finishedCompletedActivationAdoptsANewerAuthoritativeSession` | The old finish-activation marker is removed. The root failed-activation case refreshes the current session from pending to active while the other session's activation is held, then adopts that current session on rejection. `aNewerExplicitSelectionSupersedesSuspendedFinalization` supplies a successful HTTP reply to the older activation after a newer generated selection completes. The older operation is rejected, the newer session remains active, and both root/dismissible roles receive external work without stale completion provenance. |
 | `acceptedCompletionWaitsWhileItsViableSessionHasNotBeenSelected` | The comparable-date case of `activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply` holds the same work across a real resource reload with no selected session, rejects premature screen/completion callbacks, then selects its session through generated finalization and delivers completion once. |
 | `semanticRejectionIsAcceptedWhenTheCreatedSessionIsAuthoritative` | The semantic-rejection resolver is removed. `failedRepeatedFinalizationKeepsRecoveredSessionBehindPresentationCompletion` retains a recovered current session and offers presentation completion while still surfacing the real API error. An error is not relabeled as successful authentication. |
 | `supersededCompletionAdoptsAuthoritativeSessionForDismissal` | The dismissible failed-activation case adopts the existing current session as external work, preserves available signed-in content, drops failed-attempt provenance and delivers dismissal completion once. No native semantic-rejection object is retained. |
-| `presentationRetainsExactWorkAcrossRefreshAndLaterCompletion`, `finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion`, `completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment` | `repeatedCompletionPreservesAnAlreadyPresentedEnrollment` verifies the same presentation token and work survive repeated generated completion, remain root-blocking, finish once and deliver completion once. It reproduced replacement of the active presentation before the fix. A distinct later attempt ID and intervening refresh are not both reproduced by this test. |
+| `presentationRetainsExactWorkAcrossRefreshAndLaterCompletion`, `finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion`, `completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment` | `repeatedCompletionPreservesAnAlreadyPresentedEnrollment` verifies the same presentation token and work survive repeated generated completion, remain root-blocking, finish once and deliver completion once. It reproduced replacement of the active presentation before the fix. `anOpenEnrollmentSurvivesRefreshAndALaterAttemptWithoutBeingReoffered` additionally reloads the current session, completes a distinct later attempt for that same session and preserves the open token/work. After enrollment finishes, replay of the later attempt retains the work and does not offer enrollment again. Generated attempts are live references; their prior resource field values are not frozen snapshots. |
 | `replayedCompletionPreservesResolvedPostAuthWork` | `replayAfterEnrollmentFinishesDoesNotOfferEnrollmentAgain` verifies repeated generated finalization after enrollment finishes retains the same work, exposes no enrollment completion, and accepts callback delivery only once. |
 | `acceptedCompletionForAnotherSessionReplacesPresentedWork`, `newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks` | `anotherCurrentSessionInvalidatesThePresentedScreen` uses generated `setActive` to select a second server session, then rejects the old screen token and completion before reconciliation and delivers the replacement completion once afterward. `aNewAuthenticationCompletionReplacesOlderWork` now executes a second completed sign-in for either a different session while enrollment is open or the same session while work is awaiting. It verifies new attempt provenance, replaced work, rejected stale screen/completion callbacks and one completion delivery. The same-session case reproduced the mutable-attempt-ID regression documented below. |
 | `sessionTaskPresentationRemainsUntilItsTokenFinishes` | `sessionTaskScreenKeepsOwnershipAfterTheCoreSessionBecomesActive` connects with a pending session, presents tasks, reloads through core HTTP to active, retains the token, rejects premature completion and accepts completion after the screen finishes. |
@@ -177,3 +177,37 @@ fixture and assertion work; no production behavior changed in this step.
 All 23 presentation declarations pass on macOS (2.686 seconds) and iOS
 Simulator (2.462 seconds). No production code changed in these four declarations. The legacy `ClerkTests.swift` file remains
 retained for the still-explicit presentation/refresh and removed API boundaries.
+
+## Later attempt replay while enrollment is open
+
+The final enrollment scenario reproduced four failures. A later completed
+attempt for the same session correctly preserved the open screen, but its ID
+was not recorded on the existing target. After that screen finished, replaying
+the later attempt was treated as new work and offered enrollment again, stranding
+the original completion callback. The coordinator now records the later attempt
+ID while retaining the existing target, screen token and resolved-enrollment
+state. A replay after the screen finishes resumes that same work and completes
+once. This is presentation bookkeeping; generated authentication remains in
+TypeScript.
+
+The native snapshot contains live generated `SignIn`/`SignUp` references, so
+reading an old completion reference does not recover immutable historical
+resource field values. The old value-type assertion for the original attempt ID
+is not a retained public contract. Work and screen identity, root gating,
+enrollment sequencing and callback ownership remain explicitly checked.
+
+The intermediate-refresh activation test now runs the full root/dismissible by
+success/failure matrix. Success retains the requested target work and selects
+its session; rejection adopts external work for the still-current session.
+This closes the separately identified successful activation-from-another-session
+fixture gap.
+
+All 24 packaged presentation declarations pass. The complete macOS UI target
+passes 159 tests in 23 suites (3.452 seconds), and the complete iOS Simulator UI
+target passes 170 tests in 27 suites (3.525 seconds). The new enrollment case
+failed before the production change and passed afterward on both platforms.
+An initial compile failure came from the formatter converting a fixture unwrap
+into recursively nested `#require` macros; splitting fixture extraction into
+local values fixed that test-only error. A redundant-require warning in a
+conditional token expression was also removed. Existing macOS Contacts/CoreData
+and iOS appearance diagnostics remain nonfailing.
