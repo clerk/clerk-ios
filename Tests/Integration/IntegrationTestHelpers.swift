@@ -1,23 +1,16 @@
-//
-//  IntegrationTestHelpers.swift
-//  Clerk
-//
-//  Created on 2025-01-27.
-//
-
-@testable import ClerkKit
+import ClerkKit
 import Foundation
 
 private enum IntegrationTestConfigurationError: LocalizedError {
   case missingPublishableKey(String)
-  case unsupportedInstance(String)
+  case developmentInstanceRequired
 
   var errorDescription: String? {
     switch self {
     case .missingPublishableKey(let keyName):
       "Missing integration test publishable key for '\(keyName)'."
-    case .unsupportedInstance(let keyName):
-      "Integration test instance '\(keyName)' does not support the required Native API flows."
+    case .developmentInstanceRequired:
+      "Integration tests require a pk_test_ development instance."
     }
   }
 }
@@ -26,75 +19,57 @@ private var isRunningInCI: Bool {
   ProcessInfo.processInfo.environment["CI"] != nil
 }
 
-/// Gets the publishable key for integration tests.
-///
-/// Reads from `.keys.json` file using the specified `keyName`.
-/// Returns an empty string if the key is not found.
-///
-/// To get keys for local development:
-/// - Run `make fetch-test-keys` to populate `.keys.json` from 1Password
-/// - Or manually add keys to `.keys.json`: `{ "key-name": { "pk": "pk_test_..." } }`
-///
-/// In CI, `.keys.json` is created from `CLERK_TEST_KEYS_JSON` GitHub Actions secret.
+/// `make fetch-test-keys` or CI populates this file. Never log its contents.
+/// An explicit path also supports test runners whose working directory differs
+/// from the repository. The source checkout is the default for Xcode and SwiftPM.
 func getIntegrationTestPublishableKey(keyName: String) -> String {
-  // Try to read from .keys.json file
-  let keysFilePath = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-    .appendingPathComponent(".keys.json")
-
-  if let keysData = try? Data(contentsOf: keysFilePath),
-     let keysJSON = try? JSONSerialization.jsonObject(with: keysData) as? [String: Any],
-     let keyEntry = keysJSON[keyName] as? [String: Any],
-     let pk = keyEntry["pk"] as? String,
-     !pk.isEmpty
-  {
-    return pk
-  }
-
-  return ""
+  let repository = URL(fileURLWithPath: #filePath)
+    .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+  let path = ProcessInfo.processInfo.environment["CLERK_TEST_KEYS_PATH"]
+  let keysURL = path.map { URL(fileURLWithPath: $0) } ?? repository.appendingPathComponent(".keys.json")
+  guard let data = try? Data(contentsOf: keysURL),
+        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+        let entry = json[keyName] as? [String: Any],
+        let key = entry["pk"] as? String else { return "" }
+  return key.trimmingCharacters(in: .whitespacesAndNewlines)
 }
 
-/// Configures Clerk for integration testing with real API calls.
-///
-/// Unlike `configureClerkForTesting()` which uses mocked responses, this function configures
-/// Clerk to make real API calls to a Clerk instance. This is used for integration tests that
-/// verify the SDK works correctly with the actual Clerk API.
-///
-/// Uses an in-memory keychain to avoid affecting the simulator's real keychain state.
-/// This ensures integration tests are isolated and don't log out the user or affect
-/// cached data on the device.
-///
-/// This function must be called at the start of each integration test method.
-///
-/// - Parameter keyName: Key name from `.keys.json` to use (e.g., `"with-email-codes"`, `"with-email-links"`).
-/// - Note: Integration tests require network access and a valid Clerk test instance.
-/// - Note: Integration tests are slower than unit tests due to real network calls.
+/// Local runs without keys are explicitly disabled. CI must fail on missing keys.
+func integrationTestsEnabled(keyName: String) -> Bool {
+  isRunningInCI || !getIntegrationTestPublishableKey(keyName: keyName).isEmpty
+}
+
+private actor IntegrationCredentialStorage: CredentialStorage {
+  private var value: String?
+  func read() async throws -> String? {
+    value
+  }
+
+  func write(_ value: String) async throws {
+    self.value = value
+  }
+
+  func remove() async throws {
+    value = nil
+  }
+}
+
+/// Uses real ephemeral HTTP with memory-only credentials. No Keychain,
+/// installation marker, browser, passkey or biometric capability is configured.
 @MainActor
-func configureClerkForIntegrationTesting(keyName: String) throws -> Bool {
-  let publishableKey = getIntegrationTestPublishableKey(keyName: keyName)
-  guard !publishableKey.isEmpty else {
-    if isRunningInCI {
-      throw IntegrationTestConfigurationError.missingPublishableKey(keyName)
-    }
-    return false
-  }
-
-  try Clerk.configureForTesting(
-    publishableKey: publishableKey,
-    keychainStorage: InMemoryKeychain()
+func connectClerkForIntegrationTesting(keyName: String) async throws -> Clerk {
+  let key = getIntegrationTestPublishableKey(keyName: keyName)
+  guard !key.isEmpty else { throw IntegrationTestConfigurationError.missingPublishableKey(keyName) }
+  guard key.hasPrefix("pk_test_") else { throw IntegrationTestConfigurationError.developmentInstanceRequired }
+  let configuration = try ClerkConfiguration(
+    publishableKey: key,
+    callbackURL: URL(string: "clerk-integration-test://auth/callback")!
   )
-
-  return true
-}
-
-func shouldSkipIntegrationTest(_ error: Error, keyName: String) throws -> Bool {
-  if let clerkError = error as? ClerkAPIError,
-     clerkError.code == "native_api_disabled"
-  {
-    if isRunningInCI {
-      throw IntegrationTestConfigurationError.unsupportedInstance(keyName)
-    }
-    return true
-  }
-
-  return false
+  let capabilities = try AppleCapabilities(
+    publishableKey: configuration.publishableKey,
+    frontendAPI: configuration.frontendAPI,
+    storage: IntegrationCredentialStorage(),
+    authStorage: IntegrationCredentialStorage()
+  )
+  return try await Clerk.connect(configuration: configuration, capabilities: capabilities)
 }

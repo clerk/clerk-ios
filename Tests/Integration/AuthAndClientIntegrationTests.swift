@@ -1,110 +1,74 @@
-//
-//  AuthAndClientIntegrationTests.swift
-//  Clerk
-//
-//  Created on 2025-01-27.
-//
-
-@testable import ClerkKit
+import ClerkKit
 import Foundation
 import Testing
 
-/// Integration tests for SignIn and SignUp domains.
-///
-/// These tests make real API calls to a Clerk instance and verify that the SDK correctly
-/// integrates with the Clerk API. Unlike unit tests which use mocked responses, these
-/// tests verify end-to-end functionality including proper JSON decoding.
-///
-/// Requirements:
-/// - Network access
-/// - Valid Clerk test instance (configured via `configureClerkForIntegrationTesting(keyName:)`)
-/// - Test instance should be stable and not modified by other processes
+/// Runs the generated future-style API against the configured development
+/// instance. The instance must support password sign-up and email test codes.
 @MainActor
-@Suite(.serialized)
+@Suite(.serialized, .enabled(if: integrationTestsEnabled(keyName: "with-email-codes"), "Requires with-email-codes in .keys.json"))
 struct AuthAndClientIntegrationTests {
-  /// Shared test password used across SignUp and SignIn tests.
   private static let testPassword = "Clerk_iOS_Test_2025_XyZ9#mK2$pL7"
-
-  /// Test verification code used for email code verification in SignUp and SignIn tests.
   private static let testVerificationCode = "424242"
 
-  // MARK: - Auth Tests
-
-  /// Tests the complete SignUp and SignIn flows: create -> prepare -> attempt
-  /// Verifies that SignUp and SignIn objects are successfully decoded from the API.
   @Test
   func signUpAndSignIn() async throws {
-    let keyName = "with-email-codes"
-    guard try configureClerkForIntegrationTesting(keyName: keyName) else {
-      return
-    }
-    let testEmail = Self.makeUniqueTestEmail()
-    var capturedError: Error?
+    let clerk = try await connectClerkForIntegrationTesting(keyName: "with-email-codes")
+    defer { clerk.close() }
+    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+    let email = "test+clerk_test_\(suffix)@example.com"
     var didCreateSignUp = false
 
     do {
-      // MARK: - SignUp Flow
-
-      // Step 1: Create a SignUp with an email address and password
-      // Use a unique test email to avoid collisions across concurrent CI runs.
-      let signUp = try await Clerk.shared.auth.signUp(emailAddress: testEmail, password: Self.testPassword)
+      try await clerk.signUp.create(.init(emailAddress: email, password: Self.testPassword))
       didCreateSignUp = true
+      #expect(clerk.signUp.emailAddress == email)
+      try await clerk.signUp.verifications.sendEmailCode()
+      try await clerk.signUp.verifications.verifyEmailCode(.init(code: Self.testVerificationCode))
+      try #require(clerk.signUp.status == .complete)
+      let createdUserId = try #require(clerk.signUp.createdUserId)
+      let createdSessionId = try #require(clerk.signUp.createdSessionId)
+      #expect(clerk.session == nil)
+      #expect(clerk.user == nil)
+      try await clerk.signUp.finalize()
+      #expect(clerk.session?.id == createdSessionId)
+      #expect(clerk.user?.id == createdUserId)
 
-      // Step 2: Prepare verification (email_code)
-      // This will send a code to the email address
-      let preparedSignUp = try await signUp.sendEmailCode()
+      try await clerk.signOut()
+      #expect(clerk.session == nil)
+      #expect(clerk.user == nil)
 
-      // Step 3: Attempt verification with the test verification code
-      try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
-
-      // Sign out so that SignIn can sign in with the new account
-      try await Clerk.shared.auth.signOut()
-
-      // MARK: - SignIn Flow
-
-      // Step 1: Create a SignIn with the same email used in SignUp
-      let signIn = try await Clerk.shared.auth.signIn(testEmail)
-
-      // Step 2: Prepare first factor verification (email_code)
-      // This will send a code to the email address
-      let preparedSignIn = try await signIn.sendEmailCode()
-
-      // Step 3: Attempt first factor with the test verification code
-      try await preparedSignIn.verifyCode(Self.testVerificationCode)
+      try await clerk.signIn.emailCode.sendCode(.case1(.init(emailAddress: email)))
+      try await clerk.signIn.emailCode.verifyCode(.init(code: Self.testVerificationCode))
+      try #require(clerk.signIn.status == .complete)
+      let signInSessionId = try #require(clerk.signIn.createdSessionId)
+      #expect(clerk.session == nil)
+      #expect(clerk.user == nil)
+      try await clerk.signIn.finalize()
+      #expect(clerk.session?.id == signInSessionId)
+      let user = try #require(clerk.user)
+      #expect(user.id == createdUserId)
+      // Cleanup is required on the successful path, rather than silently ignored.
+      _ = try await user.delete()
     } catch {
-      capturedError = error
-    }
-
-    await deleteTestAccountIfExists(email: testEmail, allowPasswordCleanup: didCreateSignUp)
-
-    if let capturedError {
-      if try shouldSkipIntegrationTest(capturedError, keyName: keyName) {
-        return
-      }
-      throw capturedError
+      await deleteTestAccountIfExists(clerk: clerk, email: email, allowPasswordCleanup: didCreateSignUp)
+      throw error
     }
   }
 
-  private static func makeUniqueTestEmail() -> String {
-    let suffix = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
-    return "test+clerk_test_\(suffix)@example.com"
-  }
-
-  private func deleteTestAccountIfExists(email: String, allowPasswordCleanup: Bool) async {
+  private func deleteTestAccountIfExists(clerk: Clerk, email: String, allowPasswordCleanup: Bool) async {
     do {
-      if let currentUser = Clerk.shared.user {
-        try await currentUser.delete()
+      if let user = clerk.user {
+        _ = try await user.delete()
         return
       }
-
-      guard allowPasswordCleanup else {
-        return
-      }
-
-      _ = try await Clerk.shared.auth.signInWithPassword(identifier: email, password: Self.testPassword)
-      try await Clerk.shared.user?.delete()
+      guard allowPasswordCleanup else { return }
+      try await clerk.signIn.password(.case1(.init(password: Self.testPassword, identifier: email)))
+      guard clerk.signIn.status == .complete else { return }
+      try await clerk.signIn.finalize()
+      _ = try await clerk.user?.delete()
     } catch {
-      // Best-effort cleanup. Some failure paths may not produce a deletable account.
+      // Preserve the original failure. An incomplete sign-up may have no account
+      // to delete; a completed account may require instance-side cleanup.
     }
   }
 }

@@ -78,6 +78,7 @@ let package = Package(
       path: "Tests",
       exclude: [
         "UI",
+        "Integration",
       ],
       resources: [
         .process("Resources"),
@@ -85,6 +86,11 @@ let package = Package(
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]
+    ),
+    .testTarget(
+      name: "ClerkIntegrationTests",
+      dependencies: ["ClerkKit"],
+      path: "Tests/Integration"
     ),
     .testTarget(
       name: "ClerkKitUITests",

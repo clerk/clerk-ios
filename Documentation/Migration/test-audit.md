@@ -311,3 +311,5 @@ The [hosted portal audit](hosted-portal-test-audit.md) records all 32 declaratio
 The [shared identity storage/event audit](shared-identity-storage-test-audit.md) maps 47 declarations in four retired store/event/recovery suites and links the token-only credential migration fix. Live cross-app synchronization and old owner-slot cleanup remain unavailable.
 
 The [legacy metadata access-group investigation](legacy-metadata-access-groups.md) records configuration-history and real Keychain query limits behind the retained shared-adoption assertions. Mock nil-group lookup is not proof of app-private attribution.
+
+The [live integration migration audit](integration-test-audit.md) maps both real-service declarations and their helper/cleanup paths to the generated API. The three files are migrated in place into the default package graph's `ClerkIntegrationTests` target. macOS/iOS compilation and explicit local skipping are verified; CI missing-key failure is verified; a live configured-instance run remains open.

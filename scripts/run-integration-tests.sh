@@ -7,23 +7,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-KEYS_FILE="$REPO_ROOT/.keys.json"
+KEYS_FILE="${CLERK_TEST_KEYS_PATH:-$REPO_ROOT/.keys.json}"
 
 echo "Running integration tests..."
 echo "⚠️  Note: Integration tests require network access and a valid Clerk test instance"
 echo "⚠️  Note: Only Clerk employees can run integration tests locally (requires 1Password vault access)"
 echo ""
 
-# Check if .keys.json exists (tests will read from it directly)
+# Check the configured key file (tests resolve the same override).
 if [ ! -f "$KEYS_FILE" ]; then
-  echo "⚠️  Warning: .keys.json file not found."
+  echo "⚠️  Warning: Configured integration test key file not found."
   echo "   Clerk employees: Run 'make fetch-test-keys' to populate .keys.json from 1Password"
   echo "   OSS contributors: Integration tests will run automatically in CI."
   echo "   Run 'make setup' to create .keys.json file."
 fi
 
 # Run each integration suite in a separate `swift test` invocation.
-# Integration tests use shared singleton state and can interfere when suites run concurrently.
+# Each suite owns its connected core; keep separate invocations for network retry isolation.
 integration_suites=()
 while IFS= read -r suite; do
   if [ -n "$suite" ]; then
@@ -58,7 +58,7 @@ run_suite_with_retries() {
     echo "Running integration suite '$suite' attempt $attempt/$max_attempts..."
     log_file="$(mktemp)"
 
-    swift_test_args=(--filter "^ClerkKitTests\\.$suite/")
+    swift_test_args=(--filter "^ClerkIntegrationTests\\.$suite/")
     if [ "$skip_build" = "true" ]; then
       swift_test_args=(--skip-build "${swift_test_args[@]}")
     fi

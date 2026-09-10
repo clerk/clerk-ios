@@ -103,7 +103,7 @@ install-xcode-template-macros:
 		exit 1; \
 	fi
 	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata .swiftpm/xcode/xcshareddata/xcschemes
-	@cp scripts/ClerkKitUITests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/ClerkKitUITests.xcscheme
+	@cp scripts/ClerkKitUITests.xcscheme scripts/NativeCoreContractTests.xcscheme scripts/ClerkIntegrationTests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/
 	@cp Clerk.xcworkspace/xcshareddata/IDETemplateMacros.plist .swiftpm/xcode/package.xcworkspace/xcshareddata/IDETemplateMacros.plist
 	@echo "✅ Xcode file header macros configured"
 
@@ -187,7 +187,7 @@ smoke-macos:
 .PHONY: prepare-package-tests test-native-core
 prepare-package-tests:
 	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata .swiftpm/xcode/xcshareddata/xcschemes
-	@cp scripts/ClerkKitUITests.xcscheme scripts/NativeCoreContractTests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/
+	@cp scripts/ClerkKitUITests.xcscheme scripts/NativeCoreContractTests.xcscheme scripts/ClerkIntegrationTests.xcscheme .swiftpm/xcode/xcshareddata/xcschemes/
 	@printf '%s\n' \
 		'<?xml version="1.0" encoding="UTF-8"?>' \
 		'<Workspace' \
