@@ -5228,6 +5228,7 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 			if (issued === void 0) throw new Error("Missing mobile request generation.");
 			assertCurrent(issued.generation);
 			const credential = response.headers.get("authorization");
+			const clearCredential = options.native !== false && credential?.trim().toLowerCase() === "bearer";
 			const client = responseClientVersion(response.payload);
 			if (!credential && !client) return;
 			const parsedDate = Date.parse(response.headers.get("date") || "");
@@ -5240,9 +5241,10 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 				if (client && acceptedClient && issued.sequence <= acceptedClient.sequence) {
 					if (!(serverDate !== void 0 && acceptedClient.serverDate !== void 0 && (serverDate > acceptedClient.serverDate || serverDate === acceptedClient.serverDate && client.updatedAt !== void 0 && acceptedClient.updatedAt !== void 0 && client.updatedAt > acceptedClient.updatedAt))) throw Object.assign(/* @__PURE__ */ new Error("A newer client response has already been accepted."), { code: "stale_client_response" });
 				}
-				if (credential) await storage.write(credential);
+				if (clearCredential) await storage.remove();
+				else if (credential) await storage.write(credential);
 				assertCurrent(issued.generation);
-				if (credential && credential !== issued.credential) ++credentialRevision;
+				if (clearCredential || credential && credential !== issued.credential) ++credentialRevision;
 				if (client) acceptedClient = {
 					sequence: Math.max(acceptedClient?.sequence ?? issued.sequence, issued.sequence),
 					serverDate: serverDate === void 0 ? acceptedClient?.serverDate : Math.max(acceptedClient?.serverDate ?? serverDate, serverDate),

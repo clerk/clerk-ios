@@ -34,7 +34,7 @@ old auth-event emitter declarations and the custom middleware-ordering declarati
 the remaining networking contracts are tracked separately with explicit open questions.
 The [network failure audit](network-failure-test-audit.md) subsequently retires the
 native retry and invalid-auth coalescing suites after reproducing and fixing a
-recursive 401 client-recovery loop in TypeScript. Four mixed networking files remain.
+recursive 401 client-recovery loop in TypeScript. The [credential clear audit](client-credential-clear-test-audit.md) retires three device-token middleware declarations after fixing explicit server credential deletion and Expo custom-cache clearing. Three mixed networking files remain.
 The [lifecycle assertion audit](lifecycle-test-audit.md) maps the three old lifecycle
 files to packaged-core notification/recovery checks or retired private polling policy.
 The [callback assertion audit](callback-test-audit.md) records restored email-link

@@ -17,3 +17,5 @@ Validation at shared core `7bd2374a34918d5764c8bbe22c7b3ec890c466b0`, bundle SHA
 - Generated domain APIs and the binding contract are unchanged. The Mac Catalyst SDK build also passes. Catalyst uses the same desktop conditional; compilation does not claim a Catalyst runtime test.
 
 A case-insensitive search of Go source at the backend revision above found no references to `x-native-device-id`, `x-device-type`, `x-device-model`, `x-os-version`, `x-app-version`, `x-bundle-id`, or `x-is-sandbox`. That is bounded source evidence, not proof that every service or edge consumer ignores those headers. Their wider effects and Android device-ID continuity remain unresolved, and the associated legacy tests remain retained.
+
+Explicit native client deletion now removes a blank-Bearer credential in the shared transport, fences older responses and supports Expo read/write-only caches. See the [credential clear audit](client-credential-clear-test-audit.md) for the supported client-destruction path and remaining API differences.
