@@ -4,7 +4,7 @@ Reviewed the complete assertion bodies of the baseline
 `Tests/Core/ClerkResponseClientStateTests.swift` (27 declarations) and
 `Tests/Core/ClientResponseOrderingGateTests.swift` (six declarations), together
 with the baseline `ClientResponseOrderingGate` implementation. This is separate
-from the identity controller audit and the retained `ClerkTests` suite.
+from the identity controller audit and the [Clerk suite audit](clerk-test-retirement.md).
 
 ## Shared ordering behavior
 
@@ -96,4 +96,5 @@ continuity, or live shared-session/watch synchronization.
 The two reviewed legacy files are retired after this audit and passing shared
 and native replacement checks. Their baseline names and assertions remain
 traceable through the test inventory. The identity controller suite is retired
-under its own assertion audit; the general core suite remains in place.
+under its own assertion audit; the [general Clerk suite](clerk-test-retirement.md)
+is subsequently retired after its own completed review.

@@ -44,8 +44,9 @@ after close or fatal failure. `CoreRuntime.receive` now ignores unavailable
 owners, matching the Android runtime's existing behavior. The replacement test
 uses the packaged JavaScriptCore implementation with fixture HTTP/storage. It
 does not prove a released-app upgrade, live session restoration, or physical
-device behavior. These reviewed assertions do not cover the separate remaining
-`ClerkTests` or `ClerkResponseClientStateTests` files.
+device behavior. The [Clerk suite](clerk-test-retirement.md) and
+[client response suite](client-response-test-audit.md) have separate completed
+assertion audits; these reconfiguration checks do not replace them.
 
 The reviewed legacy reconfiguration file is retired after this audit and the
 passing replacement checks. The baseline inventory preserves all 24 names.

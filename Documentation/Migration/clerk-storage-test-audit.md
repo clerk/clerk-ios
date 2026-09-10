@@ -6,7 +6,7 @@ through `biometricCredentialInstallationMarkerPreservesConfigurationBoundaries`.
 All assertion bodies in this range were read. The remaining 61 declarations,
 starting with `isLoadedReturnsFalseWhenBothNil`, are mapped in the
 [auth presentation and readiness audit](clerk-auth-flow-test-audit.md).
-The file remains retained; this document does not authorize deleting it.
+The complete file is now retired under the [final Clerk suite audit](clerk-test-retirement.md).
 
 | Baseline test or group | Disposition and limits |
 | --- | --- |
@@ -25,7 +25,7 @@ The file remains retained; this document does not authorize deleting it.
 | `adoptedWatchTransitionFencesOlderQueuedNetworkResponse` | Watch adoption is unavailable. Core generation, credential-rotation and response-date fences have direct tests; none proves this unavailable watch transition. |
 | `clearAllKeychainItemsHandlesMissingKeysGracefully`, `clearAllKeychainItemsWorksWhenClerkNotConfigured`, `clearAllKeychainItemsDoesNotThrow` | Removed global clear. Scoped `remove` is idempotent and can throw on persistence failure. The old unconfigured-named test actually configured a mock and did not prove the unconfigured path; the nonthrowing-named test did not inject a failure. |
 | `clearAllKeychainItemsPreservesBiometricCredentialMetadataWhenCredentialCleanupFails`, `clearAllKeychainItemsStrictlyPreservesBiometricCredentialMetadataWhenCredentialCleanupFails` | Removed global clear. Core account-specific biometric cleanup retains a failed key deletion for retry. These old tests inject a metadata read failure into global cleanup; that exact operation is not available. |
-| `configureClearsCurrentAppBiometricCredentialsWhenInstallMarkerIsMissing`, `configureKeepsBiometricCredentialsWhenLegacyInstallMarkerExists`, `configureUsesAppScopedBiometricCredentialInstallationMarkers`, `biometricCredentialInstallationMarkerPreservesConfigurationBoundaries` | The [installation continuity tests](biometric-installation.md) now verify exact legacy marker recognition, app/key/configuration boundaries, and packaged TypeScript cleanup when a marker is absent. Key/storage failures leave the marker unset and block biometric use until retry succeeds. These are marker/fixture proofs; actual reinstall and released-app upgrade journeys remain unverified. The complete old test file is retained. |
+| `configureClearsCurrentAppBiometricCredentialsWhenInstallMarkerIsMissing`, `configureKeepsBiometricCredentialsWhenLegacyInstallMarkerExists`, `configureUsesAppScopedBiometricCredentialInstallationMarkers`, `biometricCredentialInstallationMarkerPreservesConfigurationBoundaries` | The [installation continuity tests](biometric-installation.md) now verify exact legacy marker recognition, app/key/configuration boundaries, and packaged TypeScript cleanup when a marker is absent. Key/storage failures leave the marker unset and block biometric use until retry succeeds. These are marker/fixture proofs; actual reinstall and released-app upgrade journeys remain unverified. The [retirement boundary](clerk-test-retirement.md) preserves those release gates. |
 
 ## Metadata format verification
 

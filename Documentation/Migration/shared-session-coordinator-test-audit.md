@@ -36,12 +36,11 @@ completion provenance or resumes a pending peer publication. The
 [legacy access-group investigation](legacy-metadata-access-groups.md) remains
 open in the retained adoption suite.
 
-The [Clerk presentation audit](clerk-auth-flow-test-audit.md) remains attached to
-the retained `ClerkTests.swift`. Current packaged tests cover cancellation during
-activation, replacement registrations, same-session replay, generated session
-switches, terminal sessions and observable completion. Exact competing
-completion/awaiting-work, pending sign-up and completion-after-tasks scenarios
-remain open. Retirement of peer-triggered assertions does not close those gaps.
+The [Clerk presentation audit](clerk-auth-flow-test-audit.md) separately verifies
+cancellation, registration replacement, competing completions, pending sign-up,
+task/enrollment sequencing, generated selection races and observable completion.
+The [Clerk suite retirement](clerk-test-retirement.md) records its completed
+assertion map. None of those tests establishes the removed peer protocol.
 The new credential record stores no native UI completion intent; no recovered
 peer completion is synthesized. Actual signed-in release upgrades, live platform
 prompts and physical performance gates remain separate requirements.

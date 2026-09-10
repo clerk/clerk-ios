@@ -294,9 +294,9 @@ Hosted portal authentication, live shared-session/watch replication, proxy confi
 | [Tests/Storage/SharedSessionOwnerSlotStoreTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Storage/SharedSessionOwnerSlotStoreTests.swift) | 14 |
 | [Tests/Utils/ProxyConfigurationTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Utils/ProxyConfigurationTests.swift) | 16 |
 
-The [Clerk startup and storage audit](clerk-storage-test-audit.md) reviews the first 31 declarations in `ClerkTests.swift`, records removed global-clear/shared-owner contracts, and links the Apple biometric installation-marker regression proofs and remaining physical-upgrade gates. The complete file remains retained.
+The [Clerk startup and storage audit](clerk-storage-test-audit.md) reviews the first 31 declarations in `ClerkTests.swift`, records removed global-clear/shared-owner contracts, and links the Apple biometric installation-marker regression proofs and remaining physical-upgrade gates. See the [final Clerk suite retirement](clerk-test-retirement.md) for its completed review and retained release limits.
 
-The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md) completes the disposition of the other 61 declarations in `ClerkTests.swift`, records reproduced presentation regressions and the expanded packaged-core checks, and preserves the remaining race and hosted-auth gaps. The old file remains retained.
+The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md) completes the disposition of the other 61 declarations in `ClerkTests.swift`, records reproduced presentation regressions and the expanded packaged-core checks, and records the subsequent race proofs and unavailable hosted-auth contracts. The [final retirement audit](clerk-test-retirement.md) verifies the combined 92-name map.
 
 The [Apple authentication assertion audit](apple-auth-test-audit.md) records generated Apple transfer and restriction behavior, the shared verification-error serializer correction, and packaged-engine evidence.
 
@@ -318,6 +318,6 @@ The [watch replication audit](watch-replication-test-audit.md) records every ass
 
 The [shared-session coordinator audit](shared-session-coordinator-test-audit.md) records all 80 declarations and retires that file with the unavailable peer protocol. Its HTTP ordering, credential import and UI boundaries link to separate current evidence; the retained Clerk and adoption suites keep their unresolved presentation and access-group checks.
 
-The [Clerk presentation audit](clerk-auth-flow-test-audit.md#captured-attempt-identity-and-pending-sign-up-checks) records the reproduced mutable-attempt-ID regression, its presentation-only fix, and packaged pending sign-up/task checks. The general Clerk suite remains retained for the broader activation matrix.
+The [Clerk presentation audit](clerk-auth-flow-test-audit.md#captured-attempt-identity-and-pending-sign-up-checks) records the reproduced mutable-attempt-ID regression, its presentation-only fix, and packaged pending sign-up/task checks. The subsequent activation matrix and [final retirement](clerk-test-retirement.md) complete that assertion review.
 
 The [suspended activation and rejection audit](clerk-auth-flow-test-audit.md#suspended-activation-and-rejection-recovery) adds packaged coverage for intermediate refresh, rejected replay, stale-response recovery and newer concurrent session selection. These are current-owner outcome checks, without reintroducing the old native activation markers.

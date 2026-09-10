@@ -5,7 +5,7 @@ Reviewed the remaining 61 declarations and all assertion bodies in baseline
 from `isLoadedReturnsFalseWhenBothNil` through `userReturnsUserForPendingSession`.
 Together with the [startup/storage audit](clerk-storage-test-audit.md), all 92
 declarations now have a disposition. This is not a claim of complete replacement
-coverage. The old file remains retained while the explicit gaps below remain.
+coverage. The reviewed file is now retired under the [final Clerk suite audit](clerk-test-retirement.md); removed contracts and release-proof limits remain explicit.
 
 Authentication and session activation belong to the packaged TypeScript core.
 The Swift coordinator owns only root/dismissible presentation, screen tokens,
@@ -104,8 +104,8 @@ not creation of a distinct backend session. macOS again logged CoreData
 `Failed to create NSXPCConnection` and service connection error 4097 without
 failing the tests.
 
-The old file remains retained for the explicitly unresolved competing-session
-and legacy hosted-auth assertions. These in-process checks do not replace live
+At that checkpoint the file remained retained for competing-session checks
+and legacy hosted-auth disposition. The later sections complete that audit. These in-process checks do not replace live
 browser/prompt or physical released-app upgrade testing.
 
 ## Captured attempt identity and pending sign-up checks
@@ -142,9 +142,9 @@ The Swift formatter reported an unwritable cache under Library/Caches but
 formatted the source successfully. Existing macOS Contacts/CoreData XPC
 diagnostics did not fail the target.
 
-The retained legacy file still tracks the broader rejected-activation and
-intermediate-refresh matrix, as well as removed hosted-portal activation
-contracts. These checks do not establish physical browser/biometric prompts,
+At that checkpoint the retained file tracked the rejected-activation and
+intermediate-refresh matrix. The later checks and final retirement audit
+record their outcomes and removed hosted-portal contracts. These checks do not establish physical browser/biometric prompts,
 real backend authentication or released-app upgrade continuity.
 
 ## Suspended activation and rejection recovery
@@ -175,8 +175,8 @@ both comparable-date acceptance and missing-date rejection/recovery. This is
 fixture and assertion work; no production behavior changed in this step.
 
 All 23 presentation declarations pass on macOS (2.686 seconds) and iOS
-Simulator (2.462 seconds). No production code changed in these four declarations. The legacy `ClerkTests.swift` file remains
-retained for the still-explicit presentation/refresh and removed API boundaries.
+Simulator (2.462 seconds). No production code changed in these four declarations. The subsequent enrollment checks and [retirement audit](clerk-test-retirement.md)
+finish the presentation/refresh and removed API disposition.
 
 ## Later attempt replay while enrollment is open
 
