@@ -1,0 +1,1900 @@
+{
+  "appIdentities": {
+    "baseline": {
+      "bundleIdentifier": "com.clerk.nativecore.footprint.baseline",
+      "executableSHA256": "751a7b9b0beb72b2244f5ffc04aa2d7c195f4248ee7ad73e80a982575581ed95"
+    },
+    "embedded": {
+      "bundleIdentifier": "com.clerk.nativecore.footprint.embedded",
+      "executableSHA256": "5f51f62d935bf84f6d3ca5ecff815048840d0365036a4ad3f81f343ede97ca42"
+    }
+  },
+  "harnessSourceSHA256": "960c6a032c08fa3c6385dc0cffb14e0bad93af59420a7ce9fdbf9c6fae1a07c7",
+  "limitations": [
+    "One physical device; fixture HTTP and in-memory credentials",
+    "Off-main-thread 5 ms requested sampling; gaps retained; sub-sample peaks may be missed",
+    "Process VM categories are not separate Swift and JavaScript heap attribution",
+    "Sampler and retained samples contribute to both app measurements",
+    "Single-owner close observations are not a repeated connect/close stress test",
+    "No forced garbage collection or allocator purge; no debugger",
+    "Memory phases do not measure UI responsiveness or real authentication"
+  ],
+  "model": "iPhone18,4",
+  "nativeRevision": "9601eccb5981fbe4cba164049556c91ec5ea7f0c",
+  "pairCount": 3,
+  "pairs": [
+    {
+      "baseline": {
+        "collectedAtUTC": "2026-09-10T13:34:50.027199+00:00",
+        "compressedRawFile": "ios-iphone-air-memory-raw/pair-01-baseline.memory.json.gz",
+        "compressedRawSHA256": "1eba6a3c10f2434389082707008b3706cdf0bf1b5f1459a926f1e77c6e1c6f9a",
+        "rawFile": "pair-01-baseline.memory.json",
+        "rawSHA256": "310492ec3a43b96041195a7d4144f07a9d2b65223b7b55ec9aaccf3c54a28760",
+        "report": {
+          "forcedCollection": false,
+          "lowPowerMode": false,
+          "operatingSystem": "Version 26.6.1 (Build 23G83)",
+          "ownerCount": 0,
+          "processID": 65937,
+          "requestedSampleIntervalMilliseconds": 5,
+          "schemaVersion": 1,
+          "thermalStateAfter": 0,
+          "thermalStateBefore": 0,
+          "variant": "baseline",
+          "warmupResets": 0
+        },
+        "summary": {
+          "maximumSamplingGapMilliseconds": 6.013875,
+          "medianSamplingGapMilliseconds": 4.999125,
+          "phases": {
+            "before": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752,
+                "minimum": 25985024
+              },
+              "internalBytes": {
+                "maximum": 8011776,
+                "median": 8011776,
+                "minimum": 7372800
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 7766768
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 7766768
+              },
+              "residentBytes": {
+                "maximum": 35110912,
+                "median": 35110912,
+                "minimum": 33374208
+              },
+              "spanMilliseconds": 1001.166958
+            },
+            "close": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752.0,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 7421952,
+                "median": 7421952.0,
+                "minimum": 7421952
+              },
+              "physicalFootprintBytes": {
+                "maximum": 7815920,
+                "median": 7815920.0,
+                "minimum": 7815920
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744.0,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 34816000,
+                "median": 34816000.0,
+                "minimum": 34816000
+              },
+              "spanMilliseconds": 0.011541
+            },
+            "closed": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 201,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 7421952,
+                "median": 7421952,
+                "minimum": 7290880
+              },
+              "physicalFootprintBytes": {
+                "maximum": 7815920,
+                "median": 7815920,
+                "minimum": 7684848
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 34816000,
+                "median": 34816000,
+                "minimum": 34816000
+              },
+              "spanMilliseconds": 999.90475
+            },
+            "closedWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 1002,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752.0,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 7421952,
+                "median": 7421952.0,
+                "minimum": 7421952
+              },
+              "physicalFootprintBytes": {
+                "maximum": 7815920,
+                "median": 7815920.0,
+                "minimum": 7815920
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744.0,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 34816000,
+                "median": 34816000.0,
+                "minimum": 34816000
+              },
+              "spanMilliseconds": 5000.359334
+            },
+            "startup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 53,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 8011776,
+                "median": 8011776,
+                "minimum": 8011776
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 8405744
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 35110912,
+                "median": 35110912,
+                "minimum": 35110912
+              },
+              "spanMilliseconds": 254.9725
+            },
+            "steady": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 202,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752.0,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 8011776,
+                "median": 7520256.0,
+                "minimum": 7421952
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8405744,
+                "median": 7914224.0,
+                "minimum": 7815920
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744.0,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 35110912,
+                "median": 34914304.0,
+                "minimum": 34816000
+              },
+              "spanMilliseconds": 1000.344375
+            },
+            "steadyWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 603,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 8011776,
+                "median": 8011776,
+                "minimum": 8011776
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 8405744
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 35110912,
+                "median": 35110912,
+                "minimum": 35110912
+              },
+              "spanMilliseconds": 3004.268833
+            },
+            "warmup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 27082752,
+                "median": 27082752.0,
+                "minimum": 27082752
+              },
+              "internalBytes": {
+                "maximum": 8011776,
+                "median": 8011776.0,
+                "minimum": 8011776
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8405744,
+                "median": 8405744.0,
+                "minimum": 8405744
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8405744,
+                "median": 8405744.0,
+                "minimum": 8405744
+              },
+              "residentBytes": {
+                "maximum": 35110912,
+                "median": 35110912.0,
+                "minimum": 35110912
+              },
+              "spanMilliseconds": 0.006042
+            }
+          },
+          "processLifetimeFootprintPeakBytes": 8405744
+        }
+      },
+      "embedded": {
+        "collectedAtUTC": "2026-09-10T13:35:02.886015+00:00",
+        "compressedRawFile": "ios-iphone-air-memory-raw/pair-01-embedded.memory.json.gz",
+        "compressedRawSHA256": "f823734bb3ca5c5caed3167bdc818019861b809776c442f865d0f774c9b12e00",
+        "rawFile": "pair-01-embedded.memory.json",
+        "rawSHA256": "8ae0c8b53f6dce740ada6e20af2784730da0f5236e1fe20d9589a2819f70fa4d",
+        "report": {
+          "authenticatedAtReady": true,
+          "bundleSHA256": "86d665dd87bc188352594cf80a5c0c5927348d84d9de6382e927d4da8abc9cd3",
+          "coreRevision": "0b97ed0a260429dda4f230e32bb7e94fde3097f4",
+          "forcedCollection": false,
+          "httpRequestsAfterWarmup": 2,
+          "lowPowerMode": false,
+          "operatingSystem": "Version 26.6.1 (Build 23G83)",
+          "ownerCount": 1,
+          "ownerReleasedAfterClose": true,
+          "processID": 65938,
+          "requestedSampleIntervalMilliseconds": 5,
+          "schemaVersion": 1,
+          "thermalStateAfter": 0,
+          "thermalStateBefore": 0,
+          "variant": "embedded",
+          "warmupResets": 50
+        },
+        "summary": {
+          "maximumSamplingGapMilliseconds": 6.06475,
+          "medianSamplingGapMilliseconds": 4.9993125,
+          "phases": {
+            "before": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 33193984,
+                "median": 33193984,
+                "minimum": 31834112
+              },
+              "internalBytes": {
+                "maximum": 8224768,
+                "median": 8208384,
+                "minimum": 7503872
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8618736,
+                "median": 8602352,
+                "minimum": 7897840
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8618736,
+                "median": 8602352,
+                "minimum": 7897840
+              },
+              "residentBytes": {
+                "maximum": 41435136,
+                "median": 41418752,
+                "minimum": 39354368
+              },
+              "spanMilliseconds": 1001.144416
+            },
+            "close": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 35553280,
+                "median": 35545088.0,
+                "minimum": 35536896
+              },
+              "internalBytes": {
+                "maximum": 20971520,
+                "median": 20971520.0,
+                "minimum": 20971520
+              },
+              "physicalFootprintBytes": {
+                "maximum": 21463936,
+                "median": 21463936.0,
+                "minimum": 21463936
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632.0,
+                "minimum": 25461632
+              },
+              "residentBytes": {
+                "maximum": 70369280,
+                "median": 70361088.0,
+                "minimum": 70352896
+              },
+              "spanMilliseconds": 2.885125
+            },
+            "closed": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 202,
+              "externalBytes": {
+                "maximum": 35586048,
+                "median": 35586048.0,
+                "minimum": 35586048
+              },
+              "internalBytes": {
+                "maximum": 10207232,
+                "median": 10207232.0,
+                "minimum": 10141696
+              },
+              "physicalFootprintBytes": {
+                "maximum": 10699648,
+                "median": 10699648.0,
+                "minimum": 10634112
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632.0,
+                "minimum": 25461632
+              },
+              "residentBytes": {
+                "maximum": 70352896,
+                "median": 70352896.0,
+                "minimum": 70287360
+              },
+              "spanMilliseconds": 1004.927
+            },
+            "closedWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 1003,
+              "externalBytes": {
+                "maximum": 35586048,
+                "median": 35586048,
+                "minimum": 35553280
+              },
+              "internalBytes": {
+                "maximum": 20987904,
+                "median": 10256384,
+                "minimum": 10207232
+              },
+              "physicalFootprintBytes": {
+                "maximum": 21480320,
+                "median": 10748800,
+                "minimum": 10699648
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632,
+                "minimum": 25461632
+              },
+              "residentBytes": {
+                "maximum": 70418432,
+                "median": 70352896,
+                "minimum": 70352896
+              },
+              "spanMilliseconds": 5002.977625
+            },
+            "startup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 53,
+              "externalBytes": {
+                "maximum": 35438592,
+                "median": 35438592,
+                "minimum": 33193984
+              },
+              "internalBytes": {
+                "maximum": 24969216,
+                "median": 24526848,
+                "minimum": 8224768
+              },
+              "physicalFootprintBytes": {
+                "maximum": 25461632,
+                "median": 25019264,
+                "minimum": 8618736
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632,
+                "minimum": 8618736
+              },
+              "residentBytes": {
+                "maximum": 69353472,
+                "median": 69353472,
+                "minimum": 41435136
+              },
+              "spanMilliseconds": 254.982125
+            },
+            "steady": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 35536896,
+                "median": 35536896,
+                "minimum": 35536896
+              },
+              "internalBytes": {
+                "maximum": 21135360,
+                "median": 20971520,
+                "minimum": 20971520
+              },
+              "physicalFootprintBytes": {
+                "maximum": 21627776,
+                "median": 21463936,
+                "minimum": 21463936
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632,
+                "minimum": 25461632
+              },
+              "residentBytes": {
+                "maximum": 70516736,
+                "median": 70352896,
+                "minimum": 70352896
+              },
+              "spanMilliseconds": 1004.11175
+            },
+            "steadyWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 603,
+              "externalBytes": {
+                "maximum": 35536896,
+                "median": 35536896,
+                "minimum": 35536896
+              },
+              "internalBytes": {
+                "maximum": 21135360,
+                "median": 21135360,
+                "minimum": 21135360
+              },
+              "physicalFootprintBytes": {
+                "maximum": 21627776,
+                "median": 21627776,
+                "minimum": 21627776
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632,
+                "minimum": 25461632
+              },
+              "residentBytes": {
+                "maximum": 70516736,
+                "median": 70516736,
+                "minimum": 70516736
+              },
+              "spanMilliseconds": 3002.456959
+            },
+            "warmup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 60,
+              "externalBytes": {
+                "maximum": 35536896,
+                "median": 35536896.0,
+                "minimum": 35438592
+              },
+              "internalBytes": {
+                "maximum": 24772608,
+                "median": 21053440.0,
+                "minimum": 21037056
+              },
+              "physicalFootprintBytes": {
+                "maximum": 25265024,
+                "median": 21545856.0,
+                "minimum": 21529472
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25461632,
+                "median": 25461632.0,
+                "minimum": 25461632
+              },
+              "residentBytes": {
+                "maximum": 70516736,
+                "median": 70418432.0,
+                "minimum": 69353472
+              },
+              "spanMilliseconds": 292.572875
+            }
+          },
+          "processLifetimeFootprintPeakBytes": 25461632
+        }
+      },
+      "incrementalBytes": {
+        "closed": {
+          "physicalFootprintBytes": 2883728.0,
+          "residentBytes": 35536896.0
+        },
+        "startup": {
+          "physicalFootprintBytes": 17055888,
+          "residentBytes": 34242560
+        },
+        "steady": {
+          "physicalFootprintBytes": 13549712.0,
+          "residentBytes": 35438592.0
+        }
+      },
+      "index": 1,
+      "order": [
+        "baseline",
+        "embedded"
+      ]
+    },
+    {
+      "baseline": {
+        "collectedAtUTC": "2026-09-10T13:35:28.287165+00:00",
+        "compressedRawFile": "ios-iphone-air-memory-raw/pair-02-baseline.memory.json.gz",
+        "compressedRawSHA256": "075e60bb7b82575be6025dfcf62077fa79dd4b34efa385c78b202cef07161d43",
+        "rawFile": "pair-02-baseline.memory.json",
+        "rawSHA256": "5821156c506389a13eea5838849be59dfccd21df272fd363c9a9d2c9e4ccae54",
+        "report": {
+          "forcedCollection": false,
+          "lowPowerMode": false,
+          "operatingSystem": "Version 26.6.1 (Build 23G83)",
+          "ownerCount": 0,
+          "processID": 65940,
+          "requestedSampleIntervalMilliseconds": 5,
+          "schemaVersion": 1,
+          "thermalStateAfter": 0,
+          "thermalStateBefore": 0,
+          "variant": "baseline",
+          "warmupResets": 0
+        },
+        "summary": {
+          "maximumSamplingGapMilliseconds": 5.996708,
+          "medianSamplingGapMilliseconds": 4.999667,
+          "phases": {
+            "before": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 20774912
+              },
+              "internalBytes": {
+                "maximum": 7913472,
+                "median": 7913472,
+                "minimum": 7258112
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 7586448
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 7586448
+              },
+              "residentBytes": {
+                "maximum": 29818880,
+                "median": 29818880,
+                "minimum": 28049408
+              },
+              "spanMilliseconds": 1001.152625
+            },
+            "close": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024.0,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7782400,
+                "median": 7782400.0,
+                "minimum": 7782400
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8110736,
+                "median": 8110736.0,
+                "minimum": 8110736
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808.0,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29687808,
+                "median": 29687808.0,
+                "minimum": 29687808
+              },
+              "spanMilliseconds": 0.007875
+            },
+            "closed": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 202,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024.0,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7733248,
+                "median": 7667712.0,
+                "minimum": 7667712
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8061584,
+                "median": 7996048.0,
+                "minimum": 7996048
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808.0,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29638656,
+                "median": 29573120.0,
+                "minimum": 29573120
+              },
+              "spanMilliseconds": 1004.479916
+            },
+            "closedWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 1003,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7782400,
+                "median": 7733248,
+                "minimum": 7733248
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8110736,
+                "median": 8061584,
+                "minimum": 8061584
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29687808,
+                "median": 29638656,
+                "minimum": 29638656
+              },
+              "spanMilliseconds": 5005.398583
+            },
+            "startup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 53,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7913472,
+                "median": 7913472,
+                "minimum": 7913472
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 8241808
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29818880,
+                "median": 29818880,
+                "minimum": 29818880
+              },
+              "spanMilliseconds": 254.971584
+            },
+            "steady": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7913472,
+                "median": 7864320,
+                "minimum": 7782400
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8241808,
+                "median": 8192656,
+                "minimum": 8110736
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29818880,
+                "median": 29769728,
+                "minimum": 29687808
+              },
+              "spanMilliseconds": 1004.988333
+            },
+            "steadyWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 603,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7913472,
+                "median": 7913472,
+                "minimum": 7913472
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 8241808
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29818880,
+                "median": 29818880,
+                "minimum": 29818880
+              },
+              "spanMilliseconds": 3005.007458
+            },
+            "warmup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024.0,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7913472,
+                "median": 7913472.0,
+                "minimum": 7913472
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8241808,
+                "median": 8241808.0,
+                "minimum": 8241808
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8241808,
+                "median": 8241808.0,
+                "minimum": 8241808
+              },
+              "residentBytes": {
+                "maximum": 29818880,
+                "median": 29818880.0,
+                "minimum": 29818880
+              },
+              "spanMilliseconds": 0.006792
+            }
+          },
+          "processLifetimeFootprintPeakBytes": 8241808
+        }
+      },
+      "embedded": {
+        "collectedAtUTC": "2026-09-10T13:35:15.753287+00:00",
+        "compressedRawFile": "ios-iphone-air-memory-raw/pair-02-embedded.memory.json.gz",
+        "compressedRawSHA256": "9fe31f29ea61acd5c88ba04524175e716c1436eabc00b15eaaf05d10b521807b",
+        "rawFile": "pair-02-embedded.memory.json",
+        "rawSHA256": "a163a2773e3d6abe2b1036cf13051b23b65cbd6283e9b7e2012ca7d7dfe2040f",
+        "report": {
+          "authenticatedAtReady": true,
+          "bundleSHA256": "86d665dd87bc188352594cf80a5c0c5927348d84d9de6382e927d4da8abc9cd3",
+          "coreRevision": "0b97ed0a260429dda4f230e32bb7e94fde3097f4",
+          "forcedCollection": false,
+          "httpRequestsAfterWarmup": 2,
+          "lowPowerMode": false,
+          "operatingSystem": "Version 26.6.1 (Build 23G83)",
+          "ownerCount": 1,
+          "ownerReleasedAfterClose": true,
+          "processID": 65939,
+          "requestedSampleIntervalMilliseconds": 5,
+          "schemaVersion": 1,
+          "thermalStateAfter": 0,
+          "thermalStateBefore": 0,
+          "variant": "embedded",
+          "warmupResets": 50
+        },
+        "summary": {
+          "maximumSamplingGapMilliseconds": 6.016167,
+          "medianSamplingGapMilliseconds": 4.9989795,
+          "phases": {
+            "before": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 23576576,
+                "median": 23576576,
+                "minimum": 22167552
+              },
+              "internalBytes": {
+                "maximum": 8159232,
+                "median": 8142848,
+                "minimum": 7405568
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8503976,
+                "median": 8487592,
+                "minimum": 7750312
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8503976,
+                "median": 8487592,
+                "minimum": 7750312
+              },
+              "residentBytes": {
+                "maximum": 31801344,
+                "median": 31784960,
+                "minimum": 29638656
+              },
+              "spanMilliseconds": 1001.159875
+            },
+            "close": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 26034176,
+                "median": 26025984.0,
+                "minimum": 26017792
+              },
+              "internalBytes": {
+                "maximum": 20709376,
+                "median": 20594688.0,
+                "minimum": 20480000
+              },
+              "physicalFootprintBytes": {
+                "maximum": 21136160,
+                "median": 21021472.0,
+                "minimum": 20906784
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472.0,
+                "minimum": 25117472
+              },
+              "residentBytes": {
+                "maximum": 60473344,
+                "median": 60465152.0,
+                "minimum": 60456960
+              },
+              "spanMilliseconds": 0.718125
+            },
+            "closed": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 202,
+              "externalBytes": {
+                "maximum": 26066944,
+                "median": 26066944.0,
+                "minimum": 26066944
+              },
+              "internalBytes": {
+                "maximum": 10027008,
+                "median": 10027008.0,
+                "minimum": 9977856
+              },
+              "physicalFootprintBytes": {
+                "maximum": 10453792,
+                "median": 10453792.0,
+                "minimum": 10404640
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472.0,
+                "minimum": 25117472
+              },
+              "residentBytes": {
+                "maximum": 60473344,
+                "median": 60473344.0,
+                "minimum": 60424192
+              },
+              "spanMilliseconds": 1004.91725
+            },
+            "closedWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 1003,
+              "externalBytes": {
+                "maximum": 26066944,
+                "median": 26066944,
+                "minimum": 26034176
+              },
+              "internalBytes": {
+                "maximum": 20496384,
+                "median": 10027008,
+                "minimum": 10027008
+              },
+              "physicalFootprintBytes": {
+                "maximum": 20923168,
+                "median": 10453792,
+                "minimum": 10453792
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472,
+                "minimum": 25117472
+              },
+              "residentBytes": {
+                "maximum": 60522496,
+                "median": 60473344,
+                "minimum": 60473344
+              },
+              "spanMilliseconds": 5004.295625
+            },
+            "startup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 52,
+              "externalBytes": {
+                "maximum": 25919488,
+                "median": 25919488.0,
+                "minimum": 23576576
+              },
+              "internalBytes": {
+                "maximum": 24510464,
+                "median": 24215552.0,
+                "minimum": 8159232
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24937248,
+                "median": 24642336.0,
+                "minimum": 8503976
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472.0,
+                "minimum": 8503976
+              },
+              "residentBytes": {
+                "maximum": 59113472,
+                "median": 59113472.0,
+                "minimum": 31801344
+              },
+              "spanMilliseconds": 253.253959
+            },
+            "steady": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 26017792,
+                "median": 26017792,
+                "minimum": 26017792
+              },
+              "internalBytes": {
+                "maximum": 20856832,
+                "median": 20709376,
+                "minimum": 20709376
+              },
+              "physicalFootprintBytes": {
+                "maximum": 21283616,
+                "median": 21136160,
+                "minimum": 21136160
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472,
+                "minimum": 25117472
+              },
+              "residentBytes": {
+                "maximum": 60588032,
+                "median": 60456960,
+                "minimum": 60456960
+              },
+              "spanMilliseconds": 1005.341083
+            },
+            "steadyWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 603,
+              "externalBytes": {
+                "maximum": 26017792,
+                "median": 26017792,
+                "minimum": 26017792
+              },
+              "internalBytes": {
+                "maximum": 24215552,
+                "median": 20856832,
+                "minimum": 20856832
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24642336,
+                "median": 21283616,
+                "minimum": 21283616
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472,
+                "minimum": 25117472
+              },
+              "residentBytes": {
+                "maximum": 60588032,
+                "median": 60588032,
+                "minimum": 60588032
+              },
+              "spanMilliseconds": 3001.672208
+            },
+            "warmup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 61,
+              "externalBytes": {
+                "maximum": 26017792,
+                "median": 26017792,
+                "minimum": 25919488
+              },
+              "internalBytes": {
+                "maximum": 24428544,
+                "median": 24150016,
+                "minimum": 24018944
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24855328,
+                "median": 24576800,
+                "minimum": 24445728
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25117472,
+                "median": 25117472,
+                "minimum": 25117472
+              },
+              "residentBytes": {
+                "maximum": 60588032,
+                "median": 60325888,
+                "minimum": 59113472
+              },
+              "spanMilliseconds": 294.703583
+            }
+          },
+          "processLifetimeFootprintPeakBytes": 25117472
+        }
+      },
+      "incrementalBytes": {
+        "closed": {
+          "physicalFootprintBytes": 2457744.0,
+          "residentBytes": 30900224.0
+        },
+        "startup": {
+          "physicalFootprintBytes": 16695440,
+          "residentBytes": 29294592
+        },
+        "steady": {
+          "physicalFootprintBytes": 12943504,
+          "residentBytes": 30687232
+        }
+      },
+      "index": 2,
+      "order": [
+        "embedded",
+        "baseline"
+      ]
+    },
+    {
+      "baseline": {
+        "collectedAtUTC": "2026-09-10T13:35:40.817957+00:00",
+        "compressedRawFile": "ios-iphone-air-memory-raw/pair-03-baseline.memory.json.gz",
+        "compressedRawSHA256": "620f948cf2db576490dfad081036e34d8fbf1d0d288568e57100c8cb25b4966c",
+        "rawFile": "pair-03-baseline.memory.json",
+        "rawSHA256": "40f3dbeae41a4f3729bd10e70bace8c720f83dac2ba93d59a81be306a5d81780",
+        "report": {
+          "forcedCollection": false,
+          "lowPowerMode": false,
+          "operatingSystem": "Version 26.6.1 (Build 23G83)",
+          "ownerCount": 0,
+          "processID": 65941,
+          "requestedSampleIntervalMilliseconds": 5,
+          "schemaVersion": 1,
+          "thermalStateAfter": 0,
+          "thermalStateBefore": 0,
+          "variant": "baseline",
+          "warmupResets": 0
+        },
+        "summary": {
+          "maximumSamplingGapMilliseconds": 6.009875,
+          "medianSamplingGapMilliseconds": 4.9995,
+          "phases": {
+            "before": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 20774912
+              },
+              "internalBytes": {
+                "maximum": 7929856,
+                "median": 7913472,
+                "minimum": 7290880
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8258192,
+                "median": 8241808,
+                "minimum": 7619216
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8241808,
+                "minimum": 7619216
+              },
+              "residentBytes": {
+                "maximum": 29851648,
+                "median": 29835264,
+                "minimum": 28098560
+              },
+              "spanMilliseconds": 1000.308541
+            },
+            "close": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024.0,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7831552,
+                "median": 7831552.0,
+                "minimum": 7831552
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8159888,
+                "median": 8159888.0,
+                "minimum": 8159888
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192.0,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29753344,
+                "median": 29753344.0,
+                "minimum": 29753344
+              },
+              "spanMilliseconds": 0.00875
+            },
+            "closed": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 201,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7733248,
+                "median": 7684096,
+                "minimum": 7684096
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8061584,
+                "median": 8012432,
+                "minimum": 8012432
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29655040,
+                "median": 29605888,
+                "minimum": 29605888
+              },
+              "spanMilliseconds": 1000.16525
+            },
+            "closedWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 1003,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7831552,
+                "median": 7733248,
+                "minimum": 7733248
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8159888,
+                "median": 8061584,
+                "minimum": 8061584
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29753344,
+                "median": 29655040,
+                "minimum": 29655040
+              },
+              "spanMilliseconds": 5004.66275
+            },
+            "startup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 53,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7929856,
+                "median": 7929856,
+                "minimum": 7929856
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29851648,
+                "median": 29851648,
+                "minimum": 29851648
+              },
+              "spanMilliseconds": 255.848833
+            },
+            "steady": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7929856,
+                "median": 7831552,
+                "minimum": 7831552
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8258192,
+                "median": 8159888,
+                "minimum": 8159888
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29851648,
+                "median": 29753344,
+                "minimum": 29753344
+              },
+              "spanMilliseconds": 1005.009042
+            },
+            "steadyWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 603,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7929856,
+                "median": 7929856,
+                "minimum": 7929856
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29851648,
+                "median": 29851648,
+                "minimum": 29851648
+              },
+              "spanMilliseconds": 3004.984917
+            },
+            "warmup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 21889024,
+                "median": 21889024.0,
+                "minimum": 21889024
+              },
+              "internalBytes": {
+                "maximum": 7929856,
+                "median": 7929856.0,
+                "minimum": 7929856
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8258192,
+                "median": 8258192.0,
+                "minimum": 8258192
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8258192,
+                "median": 8258192.0,
+                "minimum": 8258192
+              },
+              "residentBytes": {
+                "maximum": 29851648,
+                "median": 29851648.0,
+                "minimum": 29851648
+              },
+              "spanMilliseconds": 0.007125
+            }
+          },
+          "processLifetimeFootprintPeakBytes": 8258192
+        }
+      },
+      "embedded": {
+        "collectedAtUTC": "2026-09-10T13:35:53.646573+00:00",
+        "compressedRawFile": "ios-iphone-air-memory-raw/pair-03-embedded.memory.json.gz",
+        "compressedRawSHA256": "9069fbd8cf89f434b5569de95ad03d8bc46e9f4dd92e9bed984b1c1d303551d8",
+        "rawFile": "pair-03-embedded.memory.json",
+        "rawSHA256": "2d5fa04298f1117966fa8919b170a17a16de0ad88c40e66bd35038b4a7858823",
+        "report": {
+          "authenticatedAtReady": true,
+          "bundleSHA256": "86d665dd87bc188352594cf80a5c0c5927348d84d9de6382e927d4da8abc9cd3",
+          "coreRevision": "0b97ed0a260429dda4f230e32bb7e94fde3097f4",
+          "forcedCollection": false,
+          "httpRequestsAfterWarmup": 2,
+          "lowPowerMode": false,
+          "operatingSystem": "Version 26.6.1 (Build 23G83)",
+          "ownerCount": 1,
+          "ownerReleasedAfterClose": true,
+          "processID": 65943,
+          "requestedSampleIntervalMilliseconds": 5,
+          "schemaVersion": 1,
+          "thermalStateAfter": 0,
+          "thermalStateBefore": 0,
+          "variant": "embedded",
+          "warmupResets": 50
+        },
+        "summary": {
+          "maximumSamplingGapMilliseconds": 6.043209,
+          "medianSamplingGapMilliseconds": 4.99975,
+          "phases": {
+            "before": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 23576576,
+                "median": 23576576,
+                "minimum": 22167552
+              },
+              "internalBytes": {
+                "maximum": 8126464,
+                "median": 8110080,
+                "minimum": 7389184
+              },
+              "physicalFootprintBytes": {
+                "maximum": 8504024,
+                "median": 8487640,
+                "minimum": 7766744
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 8504024,
+                "median": 8487640,
+                "minimum": 7766744
+              },
+              "residentBytes": {
+                "maximum": 31801344,
+                "median": 31784960,
+                "minimum": 29655040
+              },
+              "spanMilliseconds": 1001.1455
+            },
+            "close": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 2,
+              "externalBytes": {
+                "maximum": 26034176,
+                "median": 26025984.0,
+                "minimum": 26017792
+              },
+              "internalBytes": {
+                "maximum": 23805952,
+                "median": 23805952.0,
+                "minimum": 23805952
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24281960,
+                "median": 24281960.0,
+                "minimum": 24281960
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232.0,
+                "minimum": 25232232
+              },
+              "residentBytes": {
+                "maximum": 60899328,
+                "median": 60891136.0,
+                "minimum": 60882944
+              },
+              "spanMilliseconds": 0.775833
+            },
+            "closed": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 202,
+              "externalBytes": {
+                "maximum": 26066944,
+                "median": 26066944.0,
+                "minimum": 26066944
+              },
+              "internalBytes": {
+                "maximum": 13107200,
+                "median": 13107200.0,
+                "minimum": 13041664
+              },
+              "physicalFootprintBytes": {
+                "maximum": 13583208,
+                "median": 13583208.0,
+                "minimum": 13517672
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232.0,
+                "minimum": 25232232
+              },
+              "residentBytes": {
+                "maximum": 60882944,
+                "median": 60882944.0,
+                "minimum": 60817408
+              },
+              "spanMilliseconds": 1004.914292
+            },
+            "closedWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 1003,
+              "externalBytes": {
+                "maximum": 26066944,
+                "median": 26066944,
+                "minimum": 26034176
+              },
+              "internalBytes": {
+                "maximum": 23822336,
+                "median": 13107200,
+                "minimum": 13107200
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24298344,
+                "median": 13583208,
+                "minimum": 13583208
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232,
+                "minimum": 25232232
+              },
+              "residentBytes": {
+                "maximum": 60948480,
+                "median": 60882944,
+                "minimum": 60882944
+              },
+              "spanMilliseconds": 5004.959458
+            },
+            "startup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 53,
+              "externalBytes": {
+                "maximum": 25919488,
+                "median": 25919488,
+                "minimum": 23576576
+              },
+              "internalBytes": {
+                "maximum": 24756224,
+                "median": 24330240,
+                "minimum": 8126464
+              },
+              "physicalFootprintBytes": {
+                "maximum": 25232232,
+                "median": 24806248,
+                "minimum": 8504024
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232,
+                "minimum": 8504024
+              },
+              "residentBytes": {
+                "maximum": 59736064,
+                "median": 59736064,
+                "minimum": 31801344
+              },
+              "spanMilliseconds": 254.996666
+            },
+            "steady": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 203,
+              "externalBytes": {
+                "maximum": 26017792,
+                "median": 26017792,
+                "minimum": 26017792
+              },
+              "internalBytes": {
+                "maximum": 24461312,
+                "median": 23805952,
+                "minimum": 23805952
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24937320,
+                "median": 24281960,
+                "minimum": 24281960
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232,
+                "minimum": 25232232
+              },
+              "residentBytes": {
+                "maximum": 60981248,
+                "median": 60882944,
+                "minimum": 60882944
+              },
+              "spanMilliseconds": 1004.263
+            },
+            "steadyWait": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0,
+                "minimum": 0
+              },
+              "count": 603,
+              "externalBytes": {
+                "maximum": 26017792,
+                "median": 26017792,
+                "minimum": 26017792
+              },
+              "internalBytes": {
+                "maximum": 24461312,
+                "median": 24461312,
+                "minimum": 24461312
+              },
+              "physicalFootprintBytes": {
+                "maximum": 24937320,
+                "median": 24937320,
+                "minimum": 24937320
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232,
+                "minimum": 25232232
+              },
+              "residentBytes": {
+                "maximum": 60981248,
+                "median": 60981248,
+                "minimum": 60981248
+              },
+              "spanMilliseconds": 3002.352792
+            },
+            "warmup": {
+              "compressedBytes": {
+                "maximum": 0,
+                "median": 0.0,
+                "minimum": 0
+              },
+              "count": 60,
+              "externalBytes": {
+                "maximum": 26017792,
+                "median": 26017792.0,
+                "minimum": 25919488
+              },
+              "internalBytes": {
+                "maximum": 24625152,
+                "median": 24363008.0,
+                "minimum": 24330240
+              },
+              "physicalFootprintBytes": {
+                "maximum": 25101160,
+                "median": 24839016.0,
+                "minimum": 24806248
+              },
+              "processLifetimeFootprintPeakBytes": {
+                "maximum": 25232232,
+                "median": 25232232.0,
+                "minimum": 25232232
+              },
+              "residentBytes": {
+                "maximum": 60981248,
+                "median": 60866560.0,
+                "minimum": 59736064
+              },
+              "spanMilliseconds": 292.648833
+            }
+          },
+          "processLifetimeFootprintPeakBytes": 25232232
+        }
+      },
+      "incrementalBytes": {
+        "closed": {
+          "physicalFootprintBytes": 5570776.0,
+          "residentBytes": 31277056.0
+        },
+        "startup": {
+          "physicalFootprintBytes": 16974040,
+          "residentBytes": 29884416
+        },
+        "steady": {
+          "physicalFootprintBytes": 16122072,
+          "residentBytes": 31129600
+        }
+      },
+      "index": 3,
+      "order": [
+        "baseline",
+        "embedded"
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

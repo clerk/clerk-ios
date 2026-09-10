@@ -33,7 +33,7 @@ The 2026-09-09 bundle at TypeScript revision `5e2b30ccdecf9bc031bcf5506f7faedc0a
 
 Android's repeated release-engine run accumulated managed garbage before collection: process PSS rose from 14,202 KiB to 210,843 KiB and returned to 33,010 KiB after close. This is a stress-run sample, not a passing single-owner startup-peak or isolated-engine-memory result. The macOS process peak RSS likewise includes the harness and system libraries.
 
-The later [iPhone Air authenticated-startup measurement](Measurements/ios-iphone-air-authenticated-latency.md) completes 30 fresh physical processes and 300 local operations on that device. It meets the provisional latency limits for that configuration. Slower-tier coverage, single-owner steady/peak memory, Expo overhead and UI responsiveness remain open; do not infer full release approval from one device or the bundle-size results.
+The later [iPhone Air authenticated-startup measurement](Measurements/ios-iphone-air-authenticated-latency.md) completes 30 fresh physical processes and 300 local operations on that device. It meets the provisional latency limits for that configuration. The [matched physical memory report](Measurements/ios-iphone-air-memory.md) adds three baseline/embedded pairs: 12.344–15.375 MiB incremental steady footprint and 16.094–16.266 MiB incremental kernel startup peaks, with normal owner release and residual memory retained in the evidence. Slower-tier/platform coverage, separate heap attribution, repeated connect/close stability, Expo overhead and UI responsiveness remain open; do not infer full release approval from one device or the bundle-size results.
 
 ## Matched iOS arm64 application exports
 
