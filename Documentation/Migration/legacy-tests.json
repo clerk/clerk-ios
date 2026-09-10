@@ -4284,6 +4284,18 @@
           "line": 37
         },
         {
+          "name": "updateWithUnsafeMetadataObjectUsesMetadataEndpoint",
+          "line": 63
+        },
+        {
+          "name": "updateMetadataUsesMetadataEndpoint",
+          "line": 116
+        },
+        {
+          "name": "updateWithProfileFieldsAndUnsafeMetadataSplitsRequestsAndPreservesReplacementSemantics",
+          "line": 150
+        },
+        {
           "name": "testCreateBackupCodes",
           "line": 228
         },
@@ -4298,42 +4310,6 @@
         {
           "name": "testCreateExternalAccount",
           "line": 296
-        },
-        {
-          "name": "testGetOrganizationInvitations",
-          "line": 581
-        },
-        {
-          "name": "testGetOrganizationMemberships",
-          "line": 653
-        },
-        {
-          "name": "testGetOrganizationSuggestions",
-          "line": 705
-        },
-        {
-          "name": "testGetSessions",
-          "line": 772
-        },
-        {
-          "name": "testUpdatePassword",
-          "line": 799
-        },
-        {
-          "name": "testSetProfileImage",
-          "line": 861
-        },
-        {
-          "name": "testDeleteProfileImage",
-          "line": 890
-        },
-        {
-          "name": "testDelete",
-          "line": 912
-        },
-        {
-          "name": "updateMetadataUsesMetadataEndpoint",
-          "line": 116
         },
         {
           "name": "createExternalAccountWithExplicitRedirectUrl",
@@ -4372,20 +4348,52 @@
           "line": 559
         },
         {
+          "name": "testGetOrganizationInvitations",
+          "line": 581
+        },
+        {
           "name": "getOrganizationInvitationsWithStatuses",
           "line": 615
+        },
+        {
+          "name": "testGetOrganizationMemberships",
+          "line": 653
         },
         {
           "name": "leaveOrganization",
           "line": 683
         },
         {
+          "name": "testGetOrganizationSuggestions",
+          "line": 705
+        },
+        {
           "name": "getOrganizationSuggestionsWithStatuses",
           "line": 734
         },
         {
+          "name": "testGetSessions",
+          "line": 772
+        },
+        {
+          "name": "testUpdatePassword",
+          "line": 799
+        },
+        {
           "name": "updatePasswordOmitsCurrentPasswordWhenNil",
           "line": 830
+        },
+        {
+          "name": "testSetProfileImage",
+          "line": 861
+        },
+        {
+          "name": "testDeleteProfileImage",
+          "line": 890
+        },
+        {
+          "name": "testDelete",
+          "line": 912
         }
       ]
     },
@@ -4407,6 +4415,22 @@
           "line": 56
         },
         {
+          "name": "updateWithIdenticalUnsafeMetadataReloadsAndDoesNotCallUpdateMetadata",
+          "line": 72
+        },
+        {
+          "name": "metadataOnlyDeprecatedUpdateUsesReloadedUnsafeMetadataForReplacementPatch",
+          "line": 107
+        },
+        {
+          "name": "metadataOnlyDeprecatedUpdateTreatsReloadedNilUnsafeMetadataAsEmpty",
+          "line": 162
+        },
+        {
+          "name": "profileAndDeprecatedMetadataUpdateTreatsProfileResponseNilUnsafeMetadataAsEmpty",
+          "line": 188
+        },
+        {
           "name": "createBackupCodesUsesUserServiceCreateBackupCodes",
           "line": 226
         },
@@ -4417,6 +4441,10 @@
         {
           "name": "createPhoneNumberUsesUserServiceCreatePhoneNumber",
           "line": 256
+        },
+        {
+          "name": "createExternalAccountUsesUserServiceCreateExternalAccount",
+          "line": 284
         },
         {
           "name": "createExternalAccountTokenUsesUserServiceCreateExternalAccountToken",
@@ -4445,6 +4473,10 @@
         {
           "name": "leaveOrganizationUsesUserServiceLeaveOrganization",
           "line": 407
+        },
+        {
+          "name": "getOrganizationSuggestionsUsesUserServiceGetOrganizationSuggestions",
+          "line": 431
         },
         {
           "name": "getSessionsUsesUserServiceGetSessions",

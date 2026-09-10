@@ -1,6 +1,6 @@
 # Contact and external-account assertion audit
 
-All assertion bodies in the six baseline contact-resource files were reviewed at `02f98f89a19b6c079517c9aae07df7edd0e600e5`: `EmailAddressTests` (3 declarations), `EmailAddressServiceTests` (4), `PhoneNumberTests` (5), `PhoneNumberServiceTests` (6), `ExternalAccountTests` (1), and `ExternalAccountServiceTests` (2). These 21 declarations cover service forwarding and request construction. The separate `UserTests` and `UserServiceTests`, account authorization/presentation, and live-service suites are not part of this retirement.
+All assertion bodies in the six baseline contact-resource files were reviewed at `02f98f89a19b6c079517c9aae07df7edd0e600e5`: `EmailAddressTests` (3 declarations), `EmailAddressServiceTests` (4), `PhoneNumberTests` (5), `PhoneNumberServiceTests` (6), `ExternalAccountTests` (1), and `ExternalAccountServiceTests` (2). These 21 declarations cover service forwarding and request construction. The separate `UserTests` and `UserServiceTests` are now accounted for in the [user resource audit](user-resource-test-audit.md). Account authorization/presentation and live-service suites are not part of this contact-file retirement.
 
 ## Assertion disposition
 

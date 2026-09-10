@@ -12528,8 +12528,8 @@ isDevOrStagingUrl: (url) => {
 		fromJSON(data) {
 			if (!data) return this;
 			this.id = data.id;
-			this.name = data.name;
-			this.publicUrl = data.public_url;
+			this.name = this.withDefault(data.name, null);
+			this.publicUrl = this.withDefault(data.public_url, null);
 			return this;
 		}
 	};
@@ -16849,10 +16849,10 @@ isDevOrStagingUrl: (url) => {
 			this.externalId = data.external_id || null;
 			this.firstName = data.first_name || null;
 			this.lastName = data.last_name || null;
-			if (this.firstName || this.lastName) this.fullName = getFullName({
+			this.fullName = getFullName({
 				firstName: this.firstName,
 				lastName: this.lastName
-			});
+			}) || null;
 			this.imageUrl = data.image_url || "";
 			this.hasImage = data.has_image || false;
 			this.username = data.username || null;

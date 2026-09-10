@@ -45,6 +45,8 @@ DTO checks to structured native failures and explicit new-major API changes.
 The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters,
 provider presentation and instance-mode values, including the corrected union projection.
 
+The [user resource assertion audit](user-resource-test-audit.md) accounts for all 54 user resource/service declarations, documents metadata, invitation-filter and external-account API changes, and retires those two files after shared and packaged native regression checks for cleared names and image deletion receipts.
+
 The [contact resource assertion audit](contact-resource-test-audit.md) maps all 21 email, phone and external-account service/resource declarations and the reproduced deletion-receipt projection defect.
 The [deletion result contract](deletion-result-contract.md) records the membership return-value regression and two reviewed organization assertions. The complete organization files are now retired under the [organization resource audit](organization-resource-test-audit.md).
 
@@ -249,8 +251,8 @@ Tests expecting a native service mock or request-builder call no longer exercise
 | [Tests/Domains/User/ExternalAccount/ExternalAccountTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/ExternalAccount/ExternalAccountTests.swift) | 1 |
 | [Tests/Domains/User/PhoneNumber/PhoneNumberServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/PhoneNumber/PhoneNumberServiceTests.swift) | 6 |
 | [Tests/Domains/User/PhoneNumber/PhoneNumberTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/PhoneNumber/PhoneNumberTests.swift) | 5 |
-| [Tests/Domains/User/UserServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/UserServiceTests.swift) | 28 |
-| [Tests/Domains/User/UserTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/UserTests.swift) | 18 |
+| [Tests/Domains/User/UserServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/UserServiceTests.swift) | 30 |
+| [Tests/Domains/User/UserTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/UserTests.swift) | 24 |
 
 ## Old test infrastructure
 
