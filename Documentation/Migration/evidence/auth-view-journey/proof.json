@@ -1,0 +1,67 @@
+{
+  "date": "2026-09-10",
+  "nativeBaseRevision": "bd9bccd0f7000d6c2a7027e0b9c8b59dc4d64bb8",
+  "typescriptCoreRevision": "1c0d6fd280885b10b96854ec842c1e8f72067e48",
+  "bundleSHA256": "406af90fdb32effc6fb3c1b35b52ceea639a68ceb3874b4d1390fd958a339f7d",
+  "build": "Debug iOS Simulator with packaged JavaScriptCore and generated resources",
+  "sourceSHA256": {
+    "Examples/AuthJourney/AuthJourneyApp.swift": "7020c35f77fc0ea7ff2ec6aa3fb4397b5d11d714700339125935edacc9d7fdf6",
+    "Examples/AuthJourney/EmailCodeJourneyHost.swift": "d2b64c07a5a4a89da63a67cac14075ff72260ee584952198c029bc794fd16ae0",
+    "Examples/AuthJourney/AuthJourneyTests.swift": "340f642314cfe6ef632e2d230164bd2a91d8d968ad148ee92cd89dfa152ceb32",
+    "Examples/AuthJourney/AuthJourney.xcodeproj/project.pbxproj": "2c5dab37eaf8332990f2fb63a65bbb5d561523e6ab0d29b66235d4deae9a35dc",
+    "Examples/AuthJourney/AuthJourney.xcodeproj/xcshareddata/xcschemes/AuthJourney.xcscheme": "771f8376265fbd586fca4a251036741e9cbfa364fa842b2f47a673167419da0f",
+    "Examples/AuthJourney/AuthJourney.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved": "3776bd2e60b0ae0dc09a8d977935250feef794c83bbd42b4509c6f215c437d65",
+    "NativeCoreTests/Fixtures/fapi.json": "171fec9df9f9aea3bbc0c3887a94802bad0caa0a96a03bd50efb0c92315a1e2d",
+    "scripts/run-auth-view-journey.sh": "f09c5ba3f5991fc4ff36eee7ca889d5307044d234e788bc196ea4d2ce0b369ff",
+    "scripts/verify-auth-view-journey.py": "b5152321d0899054d001706bdf92edd68cec4ba790c06030f9987b0b2c7d395f"
+  },
+  "results": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "9A1571DF-CC3D-465F-A2E1-C89EC2388B31",
+          "deviceName": "iPhone Air + Watch",
+          "modelName": "iPhone Air",
+          "osBuildNumber": "23F77",
+          "osVersion": "26.5",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 1,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "AuthJourney \u00b7 Built with macOS 26.6.2",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1789060350.837,
+    "passedTests": 1,
+    "result": "Passed",
+    "skippedTests": 0,
+    "startTime": 1789060328.332,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - AuthJourney",
+    "topInsights": [],
+    "totalTestCount": 1
+  },
+  "evidenceSHA256": {
+    "01-identifier.png": "afe674b5e4798e9e6a9ebead2c0384418a9d1717ced990e37bb4f634402e76e9",
+    "02-invalid-code.png": "4bad18f7a54f7407e9cc4b30a495faa920b679166ea8975380865093d94ca632",
+    "03-completed.png": "b4da3d02c558e7dd740100cc8b694e3aab83162c823f28724a13b274936bf6b8",
+    "summary.json": "7fa6aefc2965aa1edc07967b357ee0c92017059077db53f490ed7c2eeaa7484a",
+    "tests.json": "c5e3a9d6a5c9e7b0a08b2139cfcb2734f6b89d2743c65f9ef267e1794cb6bbfb"
+  },
+  "limits": [
+    "Deterministic HTTP and in-memory credential persistence",
+    "No live account, real OS authentication prompt or released-app upgrade",
+    "No physical-device performance or minimum-OS claim",
+    "CI wiring added but not executed remotely"
+  ]
+}

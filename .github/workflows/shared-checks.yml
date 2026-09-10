@@ -232,6 +232,19 @@ jobs:
       - name: Run ClerkKitUI tests
         run: make test-ui
 
+      - name: Run rendered packaged-core authentication journey
+        env:
+          CLERK_AUTH_JOURNEY_OUTPUT: ${{ github.workspace }}/.build/auth-journey-ci
+        run: make test-auth-journey
+
+      - name: Upload rendered authentication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-auth-journey
+          path: .build/auth-journey-ci
+          if-no-files-found: warn
+
   test-e2e:
     name: Run required E2EHost Maestro tests on iOS (${{ matrix.shard }})
     needs: format-and-lint

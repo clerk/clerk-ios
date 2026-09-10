@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-auth-journey test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -24,6 +24,7 @@ help:
 	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
 	@echo "  make test          - Run native core contract tests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
+	@echo "  make test-auth-journey - Run the rendered packaged-core sign-in journey"
 	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
 	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
@@ -220,6 +221,10 @@ test-ui: prepare-package-tests
 	echo "Using simulator destination: $$destination"; \
 	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme ClerkKitUITests -destination "$$destination"
 	@echo "✅ ClerkKitUI tests completed!"
+
+# Exercise actual prebuilt authentication with deterministic host responses.
+test-auth-journey:
+	@IOS_SIMULATOR_DESTINATION="$(IOS_SIMULATOR_DESTINATION)" bash scripts/run-auth-view-journey.sh
 
 # Run an E2EHost Maestro flow on iOS Simulator.
 test-e2e:

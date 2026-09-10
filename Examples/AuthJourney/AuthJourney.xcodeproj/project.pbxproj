@@ -1,0 +1,357 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"32A6EF5C0D16097DFDACB16E" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "../..";
+		};
+		"C59C0E2EC957B40DDAB0A548" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AuthJourneyApp.swift";
+			"sourceTree" = "<group>";
+		};
+		"03376012512AA03BF584A4DB" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "EmailCodeJourneyHost.swift";
+			"sourceTree" = "<group>";
+		};
+		"CC88F96B8B862B00F5EE4203" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "AuthJourneyTests.swift";
+			"sourceTree" = "<group>";
+		};
+		"BD209B1ED4CB7F8DE6120779" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.json";
+			"path" = "../../NativeCoreTests/Fixtures/fapi.json";
+			"sourceTree" = "<group>";
+		};
+		"23C18338B1A19FB06BEA5883" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "AuthJourney.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"B59F18912913094C2CA7DDCE" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.cfbundle";
+			"includeInIndex" = 0;
+			"path" = "AuthJourneyTests.xctest";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"D34DE36385BB623E037AF9A5" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "32A6EF5C0D16097DFDACB16E";
+			"productName" = "ClerkKit";
+		};
+		"4E054AFC396536D1080A8C6C" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "D34DE36385BB623E037AF9A5";
+		};
+		"B99EF8C773E6B4296EDF2C5A" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "32A6EF5C0D16097DFDACB16E";
+			"productName" = "ClerkKitUI";
+		};
+		"03F94CDEF095631557B6A3E5" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "B99EF8C773E6B4296EDF2C5A";
+		};
+		"52F84F1F77DE1B846A4748AE" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "C59C0E2EC957B40DDAB0A548";
+		};
+		"A473035C477D76B28E209393" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "03376012512AA03BF584A4DB";
+		};
+		"D1AE94E1506B416569993CB7" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"52F84F1F77DE1B846A4748AE",
+				"A473035C477D76B28E209393",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"369D97E34D36207C251632A5" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"4E054AFC396536D1080A8C6C",
+				"03F94CDEF095631557B6A3E5",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"BBA258093B03E1B2D3EFA63A" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "BD209B1ED4CB7F8DE6120779";
+		};
+		"2F05E19BA1A86189F30DE19C" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"BBA258093B03E1B2D3EFA63A",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"9561F2AFC528C851770E7ED9" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SDKROOT" = "iphoneos";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.authjourney";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Core Auth Journey";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"ONLY_ACTIVE_ARCH" = "YES";
+			};
+		};
+		"E9D6E9EC6E44B5BF0B90F28B" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SDKROOT" = "iphoneos";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.authjourney";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Core Auth Journey";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"ONLY_ACTIVE_ARCH" = "NO";
+			};
+		};
+		"347B75D064565587B70917CC" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"9561F2AFC528C851770E7ED9",
+				"E9D6E9EC6E44B5BF0B90F28B",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"02DFC8E01FF0F1069B5FEAE1" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "AuthJourney";
+			"productName" = "AuthJourney";
+			"productReference" = "23C18338B1A19FB06BEA5883";
+			"productType" = "com.apple.product-type.application";
+			"packageProductDependencies" = (
+				"D34DE36385BB623E037AF9A5",
+				"B99EF8C773E6B4296EDF2C5A",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"buildPhases" = (
+				"D1AE94E1506B416569993CB7",
+				"369D97E34D36207C251632A5",
+				"2F05E19BA1A86189F30DE19C",
+			);
+			"buildConfigurationList" = "347B75D064565587B70917CC";
+		};
+		"A33DA79A8F55DDCB84B4C1F4" = {
+			"isa" = "PBXContainerItemProxy";
+			"containerPortal" = "DBDEBD55289E574A27BE4A5B";
+			"proxyType" = 1;
+			"remoteGlobalIDString" = "02DFC8E01FF0F1069B5FEAE1";
+			"remoteInfo" = "AuthJourney";
+		};
+		"7EF394090DE248B6D0425DCA" = {
+			"isa" = "PBXTargetDependency";
+			"target" = "02DFC8E01FF0F1069B5FEAE1";
+			"targetProxy" = "A33DA79A8F55DDCB84B4C1F4";
+		};
+		"E4C56149782B0CDFB9BBB4AB" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "CC88F96B8B862B00F5EE4203";
+		};
+		"CD24F8255B53140E63B72356" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"E4C56149782B0CDFB9BBB4AB",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"8D11730BDD5CB5567EC45404" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"09EFDCE4C2B6BA91533B46A1" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SDKROOT" = "iphoneos";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.authjourney.tests";
+				"TEST_TARGET_NAME" = "AuthJourney";
+				"SWIFT_EMIT_LOC_STRINGS" = "NO";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"ONLY_ACTIVE_ARCH" = "YES";
+			};
+		};
+		"FEC4E46899B380A9867B5FFF" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SDKROOT" = "iphoneos";
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.authjourney.tests";
+				"TEST_TARGET_NAME" = "AuthJourney";
+				"SWIFT_EMIT_LOC_STRINGS" = "NO";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"ONLY_ACTIVE_ARCH" = "NO";
+			};
+		};
+		"3BFA34D9AB53E10C1F0696C1" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"09EFDCE4C2B6BA91533B46A1",
+				"FEC4E46899B380A9867B5FFF",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"5823ED10479A9B46893ED895" = {
+			"isa" = "PBXNativeTarget";
+			"name" = "AuthJourneyTests";
+			"productName" = "AuthJourneyTests";
+			"productReference" = "B59F18912913094C2CA7DDCE";
+			"productType" = "com.apple.product-type.bundle.ui-testing";
+			"packageProductDependencies" = (
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+				"7EF394090DE248B6D0425DCA",
+			);
+			"buildPhases" = (
+				"CD24F8255B53140E63B72356",
+				"8D11730BDD5CB5567EC45404",
+			);
+			"buildConfigurationList" = "3BFA34D9AB53E10C1F0696C1";
+		};
+		"9920EB75B3430AC57E11738D" = {
+			"isa" = "PBXGroup";
+			"name" = "Products";
+			"children" = (
+				"23C18338B1A19FB06BEA5883",
+				"B59F18912913094C2CA7DDCE",
+			);
+			"sourceTree" = "<group>";
+		};
+		"8BE472974ED3EBAF7DC98D72" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"C59C0E2EC957B40DDAB0A548",
+				"03376012512AA03BF584A4DB",
+				"CC88F96B8B862B00F5EE4203",
+				"BD209B1ED4CB7F8DE6120779",
+				"9920EB75B3430AC57E11738D",
+			);
+			"sourceTree" = "<group>";
+		};
+		"EE8F89DD452ACB3070D86EE1" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"ENABLE_TESTABILITY" = "YES";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+				"ONLY_ACTIVE_ARCH" = "YES";
+			};
+		};
+		"E6FC68C6236DB88D5A00A7E4" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"ENABLE_TESTABILITY" = "YES";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+				"ONLY_ACTIVE_ARCH" = "NO";
+			};
+		};
+		"5EC3B8C512F9100FE11C3B40" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"EE8F89DD452ACB3070D86EE1",
+				"E6FC68C6236DB88D5A00A7E4",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Release";
+		};
+		"DBDEBD55289E574A27BE4A5B" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastUpgradeCheck" = "2600";
+				"TargetAttributes" = {
+					"5823ED10479A9B46893ED895" = {
+						"TestTargetID" = "02DFC8E01FF0F1069B5FEAE1";
+					};
+				};
+			};
+			"buildConfigurationList" = "5EC3B8C512F9100FE11C3B40";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "8BE472974ED3EBAF7DC98D72";
+			"packageReferences" = (
+				"32A6EF5C0D16097DFDACB16E",
+			);
+			"productRefGroup" = "9920EB75B3430AC57E11738D";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = (
+				"02DFC8E01FF0F1069B5FEAE1",
+				"5823ED10479A9B46893ED895",
+			);
+		};
+	};
+	"rootObject" = "DBDEBD55289E574A27BE4A5B";
+}

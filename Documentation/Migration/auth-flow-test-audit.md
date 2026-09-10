@@ -1,5 +1,7 @@
 # Authentication flow assertion audit
 
+The [rendered iOS authentication journey](rendered-auth-journey.md) additionally verifies native identifier/code entry, error-sheet dismissal, retry and prebuilt finalization through the packaged core.
+
 Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. All assertions in the 1,541-line `Tests/Domains/Auth/AuthTests.swift` were reviewed. Its inventory omitted two multiline parameterized declarations: `signOutUsesSessionServiceSignOut` and `setActiveUsesSessionServiceSetActive`. The corrected total is 40 declarations. The file SHA-256 matched the baseline inventory before retirement.
 
 The new public owner is the generated future resource graph and shared TypeScript helpers. `Clerk.shared.auth` and its native service mocks are removed. Low-level authentication and callback handling leave `finalize()` explicit. Prebuilt presentation uses the generated operation internally and enforces its own delivery gate; it does not reimplement session activation or verification policy.
