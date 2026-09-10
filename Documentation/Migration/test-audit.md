@@ -62,9 +62,9 @@ Valid test/live keys, whitespace, malformed keys, invalid callback routes, and s
 
 ## Core lifecycle and token policy
 
-The [token cache and freshness assertion audit](token-cache-test-audit.md) reviews 38 declarations, records the reproduced cache-clear race, and preserves specific unresolved token and upgrade checks. It corrects the earlier fetcher inventory count and leaves both legacy files retained.
+The [token cache and freshness assertion audit](token-cache-test-audit.md) reviews 38 declarations, records the reproduced cache-clear race, and closes the deterministic snapshot checks through seven generated-call scenarios on the embedded runtime and both native engines. It corrects the earlier fetcher inventory count and retires both legacy files with explicit canonical-policy differences. Live upgrades remain a release gate.
 
-The [session service assertion audit](session-service-test-audit.md) accounts for all 19 declarations, including the previously missed parameterized API-error case. It maps sign-out, organization selection, minting, verification, and revocation to generated behavior and identifies explicit shared-policy changes. That file and the separately reviewed [authorization](session-authorization-test-audit.md) and [verification](session-verification-test-audit.md) suites are retired after their replacement checks pass. The token fetcher and freshness suites remain pending their separate unresolved assertions.
+The [session service assertion audit](session-service-test-audit.md) accounts for all 19 declarations, including the previously missed parameterized API-error case. It maps sign-out, organization selection, minting, verification, and revocation to generated behavior and identifies explicit shared-policy changes. That file and the separately reviewed [authorization](session-authorization-test-audit.md) and [verification](session-verification-test-audit.md) suites are retired after their replacement checks pass. The token fetcher and freshness suites are retired under their separate audit above.
 
 Replacement owner / evidence: JavaScript packages/mobile-runtime/test/protocol.test.mjs; clerk-js SessionTokenCache/Session tests; native lifecycle adapters.
 
