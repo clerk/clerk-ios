@@ -321,3 +321,5 @@ The [shared-session coordinator audit](shared-session-coordinator-test-audit.md)
 The [Clerk presentation audit](clerk-auth-flow-test-audit.md#captured-attempt-identity-and-pending-sign-up-checks) records the reproduced mutable-attempt-ID regression, its presentation-only fix, and packaged pending sign-up/task checks. The subsequent activation matrix and [final retirement](clerk-test-retirement.md) complete that assertion review.
 
 The [suspended activation and rejection audit](clerk-auth-flow-test-audit.md#suspended-activation-and-rejection-recovery) adds packaged coverage for intermediate refresh, rejected replay, stale-response recovery and newer concurrent session selection. These are current-owner outcome checks, without reintroducing the old native activation markers.
+
+The [unused test-support audit](unused-test-support-audit.md) retires the generic native-service helpers and JWT fixture helper after the Clerk suite retirement leaves them with no Swift callers. The shared-adoption suite and its in-memory Keychain helper remain.
