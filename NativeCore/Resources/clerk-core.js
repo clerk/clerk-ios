@@ -24744,7 +24744,7 @@ isDevOrStagingUrl: (url) => {
 							});
 							if (updatedClient) this.updateClient(updatedClient, { __internal_dangerouslySkipEmit: true });
 						} catch (e) {
-							if (isUnauthenticatedError(e)) this.handleUnauthenticated();
+							if (isUnauthenticatedError(e) && !shouldSwitchOrganization) this.handleUnauthenticated();
 							else throw e;
 						}
 						else await this.#touchCurrentSession(newSession, touchIntent, requestedOrganizationId);
@@ -25613,7 +25613,7 @@ isDevOrStagingUrl: (url) => {
 					intent,
 					...organizationId !== void 0 ? { __internal_organizationId: organizationId } : {}
 				}).catch((e) => {
-					if (isUnauthenticatedError(e)) this.handleUnauthenticated();
+					if (isUnauthenticatedError(e) && organizationId === void 0) this.handleUnauthenticated();
 					else throw e;
 				});
 			};

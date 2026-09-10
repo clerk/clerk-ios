@@ -62,6 +62,8 @@ Valid test/live keys, whitespace, malformed keys, invalid callback routes, and s
 
 The [token cache and freshness assertion audit](token-cache-test-audit.md) reviews 38 declarations, records the reproduced cache-clear race, and preserves specific unresolved token and upgrade checks. It corrects the earlier fetcher inventory count and leaves both legacy files retained.
 
+The [session service assertion audit](session-service-test-audit.md) accounts for all 19 declarations, including the previously missed parameterized API-error case. It maps sign-out, organization selection, minting, verification, and revocation to generated behavior and identifies explicit shared-policy changes. The legacy file remains retained.
+
 Replacement owner / evidence: JavaScript packages/mobile-runtime/test/protocol.test.mjs; clerk-js SessionTokenCache/Session tests; native lifecycle adapters.
 
 Background/foreground notifications delegate reload and token policy to TypeScript. Do not migrate native polling or token-cache algorithms. Process death, native cancellation and all foreground failure paths still require platform evidence.

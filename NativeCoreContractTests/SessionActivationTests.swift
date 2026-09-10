@@ -17,12 +17,12 @@ extension PackagedCoreTests {
     #expect(host.lastBody == ["active_organization_id": expected ?? "", "intent": selection == "omitted" ? "select_session" : "select_org"])
   }
 
-  @Test func rejectedOrganizationActivationPreservesSelection() async throws {
-    let host = try ActivationCapabilities()
+  @Test(arguments: [401, 403]) func rejectedOrganizationActivationPreservesSelection(status: Int) async throws {
+    let host = try ActivationCapabilities(rejectionStatus: status)
     let clerk = try await activationClerk(host)
     defer { clerk.close() }
     do { try await clerk.setActive(.init(organization: .value(.case1("org_rejected")))); Issue.record("Expected rejection") }
-    catch let error as CoreError { #expect(error.status == 403 && error.errors.first?.code == "not_a_member_in_organization") }
+    catch let error as CoreError { #expect(error.status == status && error.errors.first?.code == host.rejectionCode) }
     #expect(clerk.session?.lastActiveOrganizationId == "org_previous")
     #expect(clerk.organization?.id == "org_previous")
   }
@@ -62,11 +62,17 @@ extension PackagedCoreTests {
   var client: [String: JSONValue]
   let token: JSONValue
   let holdRejection: Bool
+  let rejectionStatus: Int
+  var rejectionCode: String {
+    rejectionStatus == 401 ? "unauthorized_organization" : "not_a_member_in_organization"
+  }
+
   private var continuation: CheckedContinuation<Void, Never>?
   private(set) var rejectionStarted = false
   private(set) var lastBody: [String: String]?
-  init(holdRejection: Bool = false) throws {
+  init(holdRejection: Bool = false, rejectionStatus: Int = 403) throws {
     self.holdRejection = holdRejection
+    self.rejectionStatus = rejectionStatus
     base = try FixtureCapabilities(data: PackageProof.fixtureData())
     client = try base.fixtures["authenticatedClient"]!.object()
     var session = try client["sessions"]!.array()[0].object()
@@ -105,7 +111,7 @@ extension PackagedCoreTests {
       if requested == "org_rejected" {
         rejectionStarted = true
         if holdRejection { await withCheckedContinuation { continuation = $0 } }
-        return .object(["status": .number(403), "headers": .object([:]), "body": .string("{\"errors\":[{\"code\":\"not_a_member_in_organization\",\"message\":\"Unable to switch\"}]}")])
+        return .object(["status": .number(Double(rejectionStatus)), "headers": .object([:]), "body": .string("{\"errors\":[{\"code\":\"\(rejectionCode)\",\"message\":\"Unable to switch\"}]}")])
       }
       var session = try client["sessions"]!.array()[0].object()
       session["last_active_organization_id"] = requested.isEmpty ? .null : .string(requested)

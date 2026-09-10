@@ -60,3 +60,7 @@ Five generated embedded checks now cover canceling the first caller, the second,
 `NativeCoreContractTests/TokenCancellationTests.swift` runs the same five scenarios through generated Swift methods in the serialized packaged-core suite. Canceled Swift tasks throw `CancellationError`; Kotlin checks the corresponding `CancellationException`. These outcomes already worked and required no runtime change. The core remains pinned to the proactive-refresh revision above. All 236 embedded tests, 72 macOS contract tests, 69 iOS Simulator contract tests, and five focused Android cancellation tests pass.
 
 This deliberately replaces the old private fetcher's task-abort expectation with the documented native-waiter policy. Cache invalidation, authentication reset, owner teardown, and cancellation of a waiter are separate operations; no authentication rollback is inferred from cancellation.
+
+## Session policy follow-up
+
+The [session service audit](session-service-test-audit.md) adds generated-call evidence for mint request bodies, a retained session's template token after an accepted organization switch, and concurrent requests/cache hits for a nonselected session still available in `Clerk.sessions`. These close the corresponding execution gaps above. Scoped sign-out clears the shared cache globally before HTTP, including on failure; all-session removal clears after success. The old private scoped deletion contract is not restored. The snapshot-hydration and live-upgrade limitations above still apply.
