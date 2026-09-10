@@ -296,7 +296,7 @@ Hosted portal authentication, live shared-session/watch replication, proxy confi
 
 The [Clerk startup and storage audit](clerk-storage-test-audit.md) reviews the first 31 declarations in `ClerkTests.swift`, records removed global-clear/shared-owner contracts, and links the Apple biometric installation-marker regression proofs and remaining physical-upgrade gates. The complete file remains retained.
 
-The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md) completes the disposition of the other 61 declarations in `ClerkTests.swift`, records reproduced presentation regressions and six packaged-core checks, and preserves the remaining race and hosted-auth gaps. The old file remains retained.
+The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md) completes the disposition of the other 61 declarations in `ClerkTests.swift`, records reproduced presentation regressions and the expanded packaged-core checks, and preserves the remaining race and hosted-auth gaps. The old file remains retained.
 
 The [Apple authentication assertion audit](apple-auth-test-audit.md) records generated Apple transfer and restriction behavior, the shared verification-error serializer correction, and packaged-engine evidence.
 
@@ -309,3 +309,5 @@ The [Billing audit](billing-test-audit.md) accounts for all 25 declarations and 
 The [hosted portal audit](hosted-portal-test-audit.md) records all 32 declarations in the three portal suites and retires those files under the explicit unsupported-feature policy. This does not claim hosted portal support or change the separate future-style SSO/finalization contract.
 
 The [shared identity storage/event audit](shared-identity-storage-test-audit.md) maps 47 declarations in four retired store/event/recovery suites and links the token-only credential migration fix. Live cross-app synchronization and old owner-slot cleanup remain unavailable.
+
+The [legacy metadata access-group investigation](legacy-metadata-access-groups.md) records configuration-history and real Keychain query limits behind the retained shared-adoption assertions. Mock nil-group lookup is not proof of app-private attribution.

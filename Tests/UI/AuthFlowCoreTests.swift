@@ -3,6 +3,7 @@
 @testable import ClerkKitUI
 import Foundation
 @testable import NativeCoreProof
+import Observation
 import Testing
 
 @MainActor @Suite(.serialized) struct AuthFlowCoreTests {
@@ -17,6 +18,145 @@ import Testing
       throw CoreError(code: "expected_awaiting_presentation")
     }
     return work
+  }
+
+  @Test func anAlreadyActiveSessionDoesNotAcquireARootPresentationGate() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(fixture)
+    defer { clerk.close() }
+    #expect(!clerk.isAuthFlowComplete)
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await clerk.signIn.finalize()
+    #expect(clerk.isAuthFlowComplete)
+    #expect(clerk.registerAuthFlow() == nil)
+    #expect(clerk.isAuthFlowComplete)
+    let sheet = try #require(clerk.registerAuthFlow(role: .dismissible))
+    defer { sheet.cancel() }
+    clerk.reconcileAuthFlowPresentation()
+    #expect(clerk.isAuthFlowComplete)
+    #expect(try clerk.completeAuthFlow(awaiting(clerk, sheet)))
+  }
+
+  @Test func aRejectedSecondRegistrationCannotTakeOverSuspendedFinalization() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    #expect(clerk.registerAuthFlow() == nil)
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    capabilities.pauseNextTouch = true
+    let finalization = Task {
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+    }
+    await capabilities.waitForPausedTouch()
+    #expect(clerk.registerAuthFlow(role: .dismissible) == nil)
+    #expect(!clerk.isAuthFlowComplete)
+    capabilities.resumeTouch()
+    try await finalization.value
+    let work = try awaiting(clerk, owner)
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.completeAuthFlow(work))
+    #expect(clerk.isAuthFlowComplete)
+    #expect(!clerk.completeAuthFlow(work))
+  }
+
+  @Test func completingTheRootNotifiesObserversAndAllowsAFreshFlowAfterSignOut() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(fixture)
+    defer { clerk.close() }
+    let previous = try #require(clerk.registerAuthFlow())
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await AuthFlowRequestScope.withOwner(previous.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    let work = try awaiting(clerk, previous)
+    await confirmation("Root content observes presentation completion") { changed in
+      withObservationTracking {
+        #expect(!clerk.isAuthFlowComplete)
+      } onChange: {
+        changed()
+      }
+      #expect(clerk.completeAuthFlow(work))
+    }
+    #expect(clerk.isAuthFlowComplete)
+    previous.cancel()
+    #expect(clerk.isAuthFlowComplete)
+    try await clerk.signOut()
+    #expect(!clerk.isAuthFlowComplete)
+    let current = try #require(clerk.registerAuthFlow())
+    defer { current.cancel() }
+    #expect(!clerk.completeAuthFlow(work))
+    // The fixture server must expose the session created by the next SSO callback.
+    fixture.signedOut = false
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await AuthFlowRequestScope.withOwner(current.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    let freshWork = try awaiting(clerk, current)
+    #expect(freshWork != work)
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.completeAuthFlow(freshWork))
+    #expect(clerk.isAuthFlowComplete)
+    #expect(!clerk.completeAuthFlow(freshWork))
+  }
+
+  @Test(arguments: ["ended", "revoked", "expired"])
+  func aTerminalSessionInvalidatesAnOpenEnrollmentScreen(status: String) async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(fixture)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    let work = try awaiting(clerk, owner)
+    let token = try #require(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .biometricCredentialEnrollment))
+    var session = try #require(fixture.fixtures["session"]).object()
+    session["status"] = .string(status)
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([.object(session)])
+    fixture.sessionReloadResponse = .object(["response": .object(session), "client": .object(client)])
+    _ = try await clerk.session?.reload()
+    #expect(clerk.session == nil)
+    #expect(clerk.user == nil)
+    #expect(!clerk.authFlowPresentationIsCurrent(token))
+    #expect(!clerk.finishAuthFlowPresentation(token))
+    #expect(!clerk.completeAuthFlow(work))
+    clerk.reconcileAuthFlowPresentation()
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(!clerk.finishAuthFlowPresentation(token))
+    #expect(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .sessionTasks) == nil)
+  }
+
+  @Test func releasingTheRegistrationReleasesTheRootHold() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let clerk = try await connect(fixture)
+    defer { clerk.close() }
+    var owner = clerk.registerAuthFlow()
+    #expect(owner != nil)
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await clerk.signIn.finalize()
+    clerk.reconcileAuthFlowPresentation()
+    #expect(!clerk.isAuthFlowComplete)
+    // No explicit cancellation: AuthView disappearing releases its registration.
+    owner = nil
+    let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+    while clerk.authFlowRegistrationId != nil, ContinuousClock.now < deadline {
+      try await Task.sleep(for: .milliseconds(1))
+    }
+    #expect(clerk.isAuthFlowComplete)
+    let sheet = try #require(clerk.registerAuthFlow(role: .dismissible))
+    defer { sheet.cancel() }
+    clerk.reconcileAuthFlowPresentation()
+    let work = try awaiting(clerk, sheet)
+    #expect(clerk.completeAuthFlow(work))
+    #expect(!clerk.completeAuthFlow(work))
   }
 
   @Test func externalActivationWaitsForTheRegisteredRootToDeliverCompletionOnce() async throws {
