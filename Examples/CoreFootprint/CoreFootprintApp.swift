@@ -32,10 +32,10 @@ import ClerkKit
 
   @MainActor private func run() async throws {
     #if EMBEDDED_CORE
-    let fixture = try StartupFixtures()
+    let benchmark = ProcessInfo.processInfo.arguments.contains("--benchmark")
+    let fixture = try StartupFixtures(authenticated: benchmark)
     let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
     let configuration = try ClerkConfiguration(publishableKey: key, callbackURL: URL(string: "clerk-footprint://callback")!)
-    let benchmark = ProcessInfo.processInfo.arguments.contains("--benchmark")
     let liveKey = ProcessInfo.processInfo.environment["CLERK_FOOTPRINT_LIVE_KEY"]
     guard !benchmark || liveKey == nil else { throw CoreError(code: "benchmark_requires_fixture") }
     let thermalBefore = ProcessInfo.processInfo.thermalState.rawValue
@@ -49,6 +49,11 @@ import ClerkKit
     }
     let startup = milliseconds(start.duration(to: clock.now))
     guard let clerk, clerk.loaded else { throw CoreError(code: "footprint_not_loaded") }
+    if benchmark, clerk.session?.id != "sess_native" || clerk.user?.id != "user_native" {
+      throw CoreError(code: "benchmark_requires_authenticated_projection")
+    }
+    let session = clerk.session
+    let user = clerk.user
     let previous = clerk.signIn.emailCode
     try await clerk.signIn.reset()
     guard previous.isInvalidated else { throw CoreError(code: "footprint_reset_did_not_invalidate") }
@@ -60,12 +65,15 @@ import ClerkKit
         let before = clock.now
         try await clerk.signIn.reset()
         resets.append(milliseconds(before.duration(to: clock.now)))
-        guard group.isInvalidated, fixture.requestCount == requestCount else {
+        guard group.isInvalidated, fixture.requestCount == requestCount,
+              clerk.session === session, clerk.user === user
+        else {
           throw CoreError(code: "benchmark_reset_contract_failed")
         }
       }
       let report: [String: Any] = [
-        "schemaVersion": 1,
+        "schemaVersion": 2,
+        "authenticatedAtReady": clerk.session?.id == "sess_native" && clerk.user?.id == "user_native",
         "processID": ProcessInfo.processInfo.processIdentifier,
         "operatingSystem": ProcessInfo.processInfo.operatingSystemVersionString,
         "thermalStateBefore": thermalBefore,
@@ -93,13 +101,36 @@ import ClerkKit
 #if EMBEDDED_CORE
 @MainActor private final class StartupFixtures: NativeCapabilities {
   let supported = ["http", "storage", "timer", "random"]
-  private let fixtures: [String: JSONValue]
+  private var fixtures: [String: JSONValue]
   private var credential = JSONValue.null
   private(set) var requestCount = 0
 
-  init() throws {
+  init(authenticated: Bool) throws {
     guard let url = Bundle.main.url(forResource: "fapi", withExtension: "json") else { throw CoreError(code: "missing_fixture") }
     fixtures = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: url)).object()
+    if authenticated {
+      func encoded(_ value: [String: JSONValue]) throws -> String {
+        try JSONEncoder().encode(JSONValue.object(value)).base64EncodedString()
+          .replacingOccurrences(of: "=", with: "")
+          .replacingOccurrences(of: "+", with: "-")
+          .replacingOccurrences(of: "/", with: "_")
+      }
+      let now = Date().timeIntervalSince1970.rounded(.down)
+      let header = try encoded(["alg": .string("RS256"), "typ": .string("JWT")])
+      let payload = try encoded(["sub": .string("user_native"), "sid": .string("sess_native"),
+                                 "iat": .number(now), "exp": .number(now + 3600),
+                                 "iss": .string("https://native-core.clerk.accounts.dev")])
+      let token = JSONValue.object(["object": .string("token"), "jwt": .string("\(header).\(payload).fixture_signature")])
+      var client = try fixtures["authenticatedClient"]!.object()
+      guard case .array(var sessions) = client["sessions"], !sessions.isEmpty else {
+        throw CoreError(code: "missing_authenticated_fixture")
+      }
+      var session = try sessions[0].object()
+      session["last_active_token"] = token
+      sessions[0] = .object(session)
+      client["sessions"] = .array(sessions)
+      fixtures["client"] = .object(client)
+    }
   }
 
   func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {

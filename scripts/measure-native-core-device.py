@@ -64,7 +64,9 @@ def main():
             raise RuntimeError(f'Run {index + 1} failed; see {stem}.log. No samples were retried or discarded.')
         sample = json.loads(reports[0])
         sample['collectedAtUTC'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        if len(sample['localResetMilliseconds']) != 10 or sample['httpRequestsAtReady'] != sample['httpRequestsAfterResets']:
+        if (sample.get('schemaVersion') != 2 or sample.get('authenticatedAtReady') is not True
+                or len(sample['localResetMilliseconds']) != 10
+                or sample['httpRequestsAtReady'] != sample['httpRequestsAfterResets']):
             raise RuntimeError(f'Run {index + 1} did not satisfy the operation contract')
         if any(previous['processID'] == sample['processID'] for previous in samples):
             raise RuntimeError('Expected a fresh process ID for each sample')
@@ -77,7 +79,8 @@ def main():
     calls = [v for s in samples for v in s['localResetMilliseconds']]
     startup_summary, reset_summary = summary(starts), summary(calls)
     report = {
-        'schemaVersion': 1, 'model': args.model, 'nativeRevision': args.native_revision,
+        'schemaVersion': 2, 'startupState': 'authenticated fixture session and user',
+        'model': args.model, 'nativeRevision': args.native_revision,
         'installedAppExecutableSHA256': app_sha,
         'harnessSourceSHA256': hashlib.sha256((Path(__file__).resolve().parent.parent / 'Examples/CoreFootprint/CoreFootprintApp.swift').read_bytes()).hexdigest(),
         'build': 'Release, Swift -O wholemodule, arm64, development signed, no debugger',
