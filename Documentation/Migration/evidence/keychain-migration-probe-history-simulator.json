@@ -1,0 +1,871 @@
+{
+  "defaultInsertion" : [
+    {
+      "account" : "probe-default",
+      "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+      "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.default",
+      "value" : "probe-default"
+    }
+  ],
+  "observations" : [
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.private-only.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+
+      ],
+      "name" : "private-only",
+      "omittedGroup" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.private-only.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "magicLink"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "shared-only",
+      "omittedGroup" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "magicLink",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.private-then-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.private-then-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "private-then-shared",
+      "omittedGroup" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.private-then-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.private-then-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "magicLink",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.shared-then-private.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.shared-then-private.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "shared-then-private",
+      "omittedGroup" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.shared-then-private.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.shared-then-private.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "magicLink",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.adopted-shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "adopted-shared-only",
+      "omittedGroup" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.adopted-shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "magicLink",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.adopted-private-and-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.adopted-private-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-private",
+      "name" : "adopted-private-and-shared",
+      "omittedGroup" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.adopted-private-and-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.adopted-private-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "magicLink",
+      "reconstructed" : "probe-private"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+
+      ],
+      "name" : "previous-bundle-only",
+      "omittedGroup" : [
+
+      ],
+      "previousBundle" : [
+        {
+          "account" : "pendingMagicLinkFlow",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.magicLink.previous-bundle-only",
+          "value" : "probe-previous-bundle"
+        }
+      ],
+      "purpose" : "magicLink"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.private-only.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+
+      ],
+      "name" : "private-only",
+      "omittedGroup" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.private-only.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "biometricCredentials"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "shared-only",
+      "omittedGroup" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "biometricCredentials",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.private-then-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.private-then-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "private-then-shared",
+      "omittedGroup" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.private-then-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.private-then-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "biometricCredentials",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.shared-then-private.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.shared-then-private.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "shared-then-private",
+      "omittedGroup" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.shared-then-private.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.shared-then-private.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "biometricCredentials",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.adopted-shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "adopted-shared-only",
+      "omittedGroup" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.adopted-shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "biometricCredentials",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.adopted-private-and-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.adopted-private-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-private",
+      "name" : "adopted-private-and-shared",
+      "omittedGroup" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.adopted-private-and-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.adopted-private-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "biometricCredentials",
+      "reconstructed" : "probe-private"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+
+      ],
+      "name" : "previous-bundle-only",
+      "omittedGroup" : [
+
+      ],
+      "previousBundle" : [
+        {
+          "account" : "trustedDeviceCredentials",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.biometricCredentials.previous-bundle-only",
+          "value" : "probe-previous-bundle"
+        }
+      ],
+      "purpose" : "biometricCredentials"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-only.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+
+      ],
+      "name" : "private-only",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-only.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "client"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "shared-only",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "client",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-then-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-then-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "private-then-shared",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-then-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-then-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "client",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.shared-then-private.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.shared-then-private.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "shared-then-private",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.shared-then-private.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.shared-then-private.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "client",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.adopted-shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "name" : "adopted-shared-only",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.adopted-shared-only.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "client"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.adopted-private-and-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.adopted-private-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "name" : "adopted-private-and-shared",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.adopted-private-and-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.adopted-private-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+
+      ],
+      "purpose" : "client"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+
+      ],
+      "name" : "previous-bundle-only",
+      "omittedGroup" : [
+
+      ],
+      "previousBundle" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.previous-bundle-only",
+          "value" : "probe-previous-bundle"
+        }
+      ],
+      "purpose" : "client"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.previous-bundle-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "previous-bundle-and-shared",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.previous-bundle-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.previous-bundle-and-shared",
+          "value" : "probe-previous-bundle"
+        }
+      ],
+      "purpose" : "client",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-and-previous-bundle-and-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-and-previous-bundle-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-shared",
+      "name" : "private-and-previous-bundle-and-shared",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-and-previous-bundle-and-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-and-previous-bundle-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.private-and-previous-bundle-and-shared",
+          "value" : "probe-previous-bundle"
+        }
+      ],
+      "purpose" : "client",
+      "reconstructed" : "probe-shared"
+    },
+    {
+      "acceptedLocalIdentity" : [
+        {
+          "account" : "clerkSharedSessionLocalIdentityV2",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.accepted-local-and-shared.clerk.identity.v2.78225a48bcd3da3d524a430aa79e6b6fab10ab948180651e6e22e28a6395274b",
+          "value" : "{\"schema_version\":1,\"accepted_identity\":{\"state\":\"cleared\",\"device_token\":\"probe-accepted\"}}"
+        }
+      ],
+      "explicitPrivate" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.accepted-local-and-shared.configured",
+          "value" : "probe-private"
+        }
+      ],
+      "explicitShared" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.accepted-local-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "migrated" : "probe-accepted",
+      "name" : "accepted-local-and-shared",
+      "omittedGroup" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.accepted-local-and-shared.configured",
+          "value" : "probe-private"
+        },
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.accepted-local-and-shared.configured",
+          "value" : "probe-shared"
+        }
+      ],
+      "previousBundle" : [
+        {
+          "account" : "clerkDeviceToken",
+          "group" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+          "service" : "com.clerk.nativecore.keychain-probe.C798AE1D-D103-4E77-B7F1-07A41CDA5D33.client.accepted-local-and-shared",
+          "value" : "probe-previous-bundle"
+        }
+      ],
+      "purpose" : "client",
+      "reconstructed" : "probe-accepted"
+    }
+  ],
+  "operatingSystem" : "Version 26.5 (Build 23F77)",
+  "privateGroup" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe",
+  "runIdentifier" : "C798AE1D-D103-4E77-B7F1-07A41CDA5D33",
+  "schemaVersion" : 2,
+  "sharedGroup" : "4TPLGDW4A7.com.clerk.nativecore.keychain-migration-probe.shared"
+}

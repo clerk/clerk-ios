@@ -96,3 +96,10 @@ the 10 client-token cases. Its
 is retained alongside the initial metadata report. Both builds and strict
 physical signature verification passed; the expanded diagnostic app is
 installed on the paired iPhone, still awaiting an unlocked runtime check.
+
+After the metadata history correction, a third
+[24-case Simulator report](../../Documentation/Migration/evidence/keychain-migration-probe-history-simulator.json)
+records the new selection. Never-adopted metadata now uses the configured
+group; adopted metadata preserves the previous omitted-group lookup. The two
+earlier reports remain as before-fix evidence. Reconstruction, durable removal
+and cleanup passed in the new run; physical execution is still pending.

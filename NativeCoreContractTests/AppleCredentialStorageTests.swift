@@ -89,6 +89,41 @@ struct AppleCredentialStorageTests {
     #expect(probe.value(service: legacyService, account: "clerkDeviceToken") == bytes)
   }
 
+  @Test(arguments: [KeychainCredentialStorage.Purpose.magicLink, .biometricCredentials], ["none", "same", "other-instance", "unknown-marker"])
+  func legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose: KeychainCredentialStorage.Purpose, history: String) async throws {
+    let probe = SecurityItemProbe()
+    let account = purpose == .magicLink ? "pendingMagicLinkFlow" : "trustedDeviceCredentials"
+    probe.seed(service: legacyService, account: account, value: Data("omitted-group-record".utf8))
+    probe.seed(service: legacyService, account: account, accessGroup: "group.example", value: Data("configured-group-record".utf8))
+    if history != "none" {
+      let identityService = "\(application).clerk.identity.v2.\(history == "other-instance" ? "other" : fingerprint)"
+      probe.seed(service: identityService, account: "clerkSharedSessionSyncAdoptedV2", value: Data((history == "unknown-marker" ? "3" : "2").utf8))
+    }
+    let legacy = LegacyKeychainConfiguration(service: legacyService, accessGroup: "group.example", publishableKey: key)
+    let expected = history == "same" ? "omitted-group-record" : "configured-group-record"
+    let current = storage(probe, legacy: legacy, purpose: purpose)
+    #expect(try await current.read() == expected)
+    #expect(try await storage(probe, legacy: legacy, purpose: purpose).read() == expected)
+    if history != "same" { #expect(probe.readCount(service: legacyService, account: account) == 0) }
+    try await current.remove()
+    #expect(try await storage(probe, legacy: legacy, purpose: purpose).read() == nil)
+    #expect(probe.value(service: legacyService, account: account) == Data("omitted-group-record".utf8))
+    #expect(probe.value(service: legacyService, account: account, accessGroup: "group.example") == Data("configured-group-record".utf8))
+  }
+
+  @Test(arguments: [KeychainCredentialStorage.Purpose.magicLink, .biometricCredentials])
+  func missingConfiguredMetadataDoesNotImportAnotherGroupOrPreviousService(purpose: KeychainCredentialStorage.Purpose) async throws {
+    let probe = SecurityItemProbe()
+    let account = purpose == .magicLink ? "pendingMagicLinkFlow" : "trustedDeviceCredentials"
+    probe.seed(service: legacyService, account: account, value: Data("old-private".utf8))
+    probe.seed(service: application, account: account, value: Data("previous-service".utf8))
+    let legacy = LegacyKeychainConfiguration(service: legacyService, accessGroup: "group.example", publishableKey: key)
+    #expect(try await storage(probe, legacy: legacy, purpose: purpose).read() == nil)
+    #expect(try await storage(probe, legacy: legacy, purpose: purpose).read() == nil)
+    #expect(probe.readCount(service: legacyService, account: account) == 0)
+    #expect(probe.readCount(service: application, account: account) == 0)
+  }
+
   @Test(arguments: ["absent", "orphan", "malformed", "nonfinite-date"])
   func legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value: String) async throws {
     let probe = SecurityItemProbe()

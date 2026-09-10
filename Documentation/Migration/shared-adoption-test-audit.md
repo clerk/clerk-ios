@@ -56,6 +56,14 @@ authoritative local identities, adoption markers, pending clears and durable
 new clears through any change. An actual old-major app upgrade with a signed-in
 user is still required by the release plan.
 
+The subsequent [metadata correction](legacy-metadata-access-groups.md#corrected-metadata-selection)
+follows that call-site history and passes the OS-level Simulator probe. Valid
+and expired prior email-link records are now exercised by the packaged core,
+including clearing the expired record without completion HTTP. This resolves
+the identified query-selection defect and that fixture-level expiry check;
+physical attribution, real credential usability and App Attest continuity are
+not established, so this legacy file remains retained.
+
 ## Normalization regression
 
 The source review found that the new raw-token fallback accepted surrounding

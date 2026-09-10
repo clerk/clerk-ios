@@ -83,24 +83,30 @@ public actor KeychainCredentialStorage: CredentialStorage {
   }
 
   private func migrateLegacy() throws -> String? {
-    if purpose != .client {
-      guard legacy.publishableKey == publishableKey else { return nil }
-      guard purpose != .biometricCleanup else { return nil }
-      let account = purpose == .magicLink ? "pendingMagicLinkFlow" : "trustedDeviceCredentials"
-      let service = legacy.service ?? applicationIdentifier
-      let data = try readItem(service: service, account: account)
-        ?? readLegacyItem(service: service, account: account, accessGroup: legacy.accessGroup)
-      return data.flatMap { String(data: $0, encoding: .utf8) }
-    }
     var origin = frontendAPI.absoluteString.trimmingCharacters(in: .whitespacesAndNewlines)
     while origin.hasSuffix("/") {
       origin.removeLast()
     }
     let fingerprint = Self.hash("clerk.shared-session-sync.v2\u{1F}\(origin)\u{1F}\(publishableKey.trimmingCharacters(in: .whitespacesAndNewlines))")
+    let identityService = "\(applicationIdentifier).clerk.identity.v2.\(fingerprint)"
+    if purpose != .client {
+      guard legacy.publishableKey == publishableKey else { return nil }
+      guard purpose != .biometricCleanup else { return nil }
+      let account = purpose == .magicLink ? "pendingMagicLinkFlow" : "trustedDeviceCredentials"
+      let service = legacy.service ?? applicationIdentifier
+      let marker = try readItem(service: identityService, account: "clerkSharedSessionSyncAdoptedV2")
+      // The previous major switched app-local consumers to an omitted-group
+      // store only after adoption. Preserve the configured group otherwise.
+      let data = if marker.flatMap({ String(data: $0, encoding: .utf8) }) == "2" {
+        try readItem(service: service, account: account)
+      } else {
+        try readLegacyItem(service: service, account: account, accessGroup: legacy.accessGroup)
+      }
+      return data.flatMap { String(data: $0, encoding: .utf8) }
+    }
     // The previous major journals a destructive clear before removing its local
     // identity. A crash can leave the old token present; do not adopt it again.
     if try hasPendingLegacyClear(fingerprint: fingerprint) { return nil }
-    let identityService = "\(applicationIdentifier).clerk.identity.v2.\(fingerprint)"
     if let data = try readItem(service: identityService, account: "clerkSharedSessionLocalIdentityV2") {
       let record = try JSONDecoder().decode(JSONValue.self, from: data).object()
       let identity: [String: JSONValue]

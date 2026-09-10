@@ -4,7 +4,7 @@ import Foundation
 import Testing
 
 extension PackagedCoreTests {
-  @Test(arguments: ["bad-state", "null-state", "missing-ios-kind", "null-ios-kind", "valid-android", "incomplete-signIn", "incomplete-signUp", "signup-ticket"])
+  @Test(arguments: ["bad-state", "null-state", "missing-ios-kind", "null-ios-kind", "valid-ios-kind", "expired-ios-kind", "valid-android", "incomplete-signIn", "incomplete-signUp", "signup-ticket"])
   func emailLinkCompletionPreservesFlowKindAndContinuation(scenario: String) async throws {
     let host = try EmailLinkCompletionCapabilities(scenario: scenario)
     let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
@@ -15,7 +15,8 @@ extension PackagedCoreTests {
       else { try await clerk.signIn.emailLink.sendLink(.case2(.init(emailAddressId: "idn_email"))) }
     }
     let flow = host.signup ? "sua_native" : "sia_native"
-    let expectedError = ["bad-state", "null-state"].contains(scenario) ? "no_pending_email_link" : scenario == "signup-ticket" ? "invalid_email_link_response" : nil
+    let rejectedFlow = ["bad-state", "null-state", "expired-ios-kind"].contains(scenario)
+    let expectedError = rejectedFlow ? "no_pending_email_link" : scenario == "signup-ticket" ? "invalid_email_link_response" : nil
     do {
       let callbackURL = try #require(URL(string: "clerk-test://sso-callback?flow_id=\(flow)&approval_token=fixture_approval"))
       let returned = try await clerk.handleAuthCallback(callbackURL)
@@ -40,7 +41,7 @@ extension PackagedCoreTests {
     }
     #expect(host.base.authRecord == nil)
     #expect(clerk.session == nil)
-    #expect(host.completions == (["bad-state", "null-state"].contains(scenario) ? 0 : 1))
+    #expect(host.completions == (rejectedFlow ? 0 : 1))
     #expect(host.tickets == (host.signup || expectedError != nil ? 0 : 1))
   }
 }
@@ -77,6 +78,8 @@ extension PackagedCoreTests {
       if scenario.contains("ios-kind") {
         record = ["flow_id": .string("sia_native"), "code_verifier": .string(String(repeating: "v", count: 43)), "created_at": .number(now), "expires_at": .number(now + 600_000)]
         if scenario == "null-ios-kind" { record["kind"] = .null }
+        if scenario == "valid-ios-kind" || scenario == "expired-ios-kind" { record["kind"] = .string("signIn") }
+        if scenario == "expired-ios-kind" { record["expires_at"] = .number(now - 1) }
       } else {
         record = ["state": scenario == "null-state" ? .null : .string(scenario == "valid-android" ? "SIGN_IN" : "UNSUPPORTED"), "flowId": .string("sia_native"), "codeVerifier": .string(String(repeating: "v", count: 43)), "createdAtEpochMs": .number(now), "expiresAtEpochMs": .number(now + 600_000)]
       }

@@ -32,9 +32,10 @@ were deliberately excluded from the old adoption routine.
 
 `NativeCore/AppleCredentialStorage.swift` requires the matching previous
 publishable key before importing magic-link or biometric credential metadata.
-It searches the configured legacy service without a group, then uses its
-explicit group fallback. It does not inspect the old adoption marker for this
-branch and does not independently search a different previous-bundle service.
+It now checks the matching old adoption marker and reads the configured legacy
+service using the previous SDK's selected store: an explicit configured group
+before adoption, or an omitted group after adoption. It does not independently
+search a different previous-bundle service.
 The current tests establish configured lookup, precedence, durable removal and
 instance checks within the injected storage model.
 
@@ -99,8 +100,8 @@ and exact-service fixture cleanup succeeded before the report was written.
 These observations confirm that the probe executes the actual adapter and
 that an omitted group is not an app-private lookup in this environment.
 Private selection with duplicate accounts is only this run's observation;
-it is not a supported ordering guarantee. The adoption marker currently does
-not affect metadata import. The previous-bundle fixture confirms a missing
+it is not a supported ordering guarantee. In this initial report, the adoption
+marker did not affect metadata import. The previous-bundle fixture confirms a missing
 lookup, not permission to introduce one after adoption or a durable clear.
 
 This is harness evidence, not physical entitlement or released-app upgrade
@@ -148,9 +149,49 @@ the old live shared-sync adoption workflow is outside the selected profile.
 Adding a previous-bundle fallback indiscriminately could restore credentials
 from a source that the old nonshared app was not using.
 
-The remaining policy review must use actual configuration histories and valid
-records. In particular, metadata currently starts with an omitted-group query
-even for never-adopted nonshared apps whose old store used an explicit group.
-The physical probe and that history-dependent metadata selection remain open;
-the synthetic Simulator report does not resolve them. The expanded signed app
+The configuration-history review exposed a metadata defect: the importer
+started with an omitted-group query even for never-adopted nonshared apps whose
+old store used an explicit group. The correction is described below; this
+pre-fix synthetic report does not establish physical behavior. The expanded signed app
 was built, signature-verified and installed, but the iPhone was still locked.
+
+## Corrected metadata selection
+
+The importer now follows the baseline nonshared storage selection. A matching
+adoption marker equal to `2` selects an omitted-group query at the configured
+service. Without that marker, metadata comes only from the configured legacy
+service/group, using the previous macOS backend preference where applicable.
+An absent item does not authorize searching a previous bundle or another group.
+The caller must still supply the matching previous publishable key.
+
+This preserves the previous read behavior; it does not promise that an
+omitted-group query is physically private. In particular, an adopted shared-only
+record can still be returned by Security.framework. Source attribution cannot
+be inferred from the absence of an explicit group.
+
+The regression first produced 24 failed assertions across both metadata
+purposes: incorrect selection/reconstruction and unintended omitted-group
+reads. After correction, the complete storage and packaged-core suites passed
+on macOS (63 declarations) and iOS Simulator (60). The storage cases cover no
+marker, a matching marker, an other-instance marker and an unknown marker,
+missing configured records, reconstruction and durable removal. These injected
+OS-query tests establish the chosen queries, not the operating system's group
+isolation.
+
+The packaged-core email-link test additionally checks valid and expired prior
+iOS records. The valid callback completes; the expired record is cleared and
+returns `no_pending_email_link` without completion or ticket HTTP. Neither
+result automatically activates a session. This is core validation using fixture
+HTTP and prior-format records, not a real released-app upgrade.
+
+The [post-fix OS probe report](evidence/keychain-migration-probe-history-simulator.json),
+run `C798AE1D-D103-4E77-B7F1-07A41CDA5D33` on Simulator 26.5 (23F77),
+completed all 24 cases. For both metadata purposes, never-adopted private-only
+records were no longer imported, and private/shared duplicates selected the
+configured shared record. Adopted duplicates still selected the private record
+in this run, and adopted shared-only records remained readable. Previous-bundle
+only records remained unimported. All client-token selections were unchanged;
+reconstruction, durable removal and fixture cleanup passed throughout.
+
+The signed diagnostic app has been rebuilt with this correction. Its physical
+runtime check remains required; none of these results closes that gate.
