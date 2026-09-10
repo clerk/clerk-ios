@@ -10,8 +10,9 @@ The selected profile explicitly excludes WatchConnectivity identity replication.
 `WatchSyncPayload`, its metadata/version/source types and the native coordinator
 are absent from the generated SDK. The table records the exact removed contracts;
 **none of these 65 declarations is claimed as passing replacement coverage**.
-The test file is retired with those removed APIs after this review. The larger
-shared-session/adoption suites remain for their own outstanding checks.
+The test file is retired with those removed APIs after this review. The [shared-session coordinator audit](shared-session-coordinator-test-audit.md)
+separately retires that peer suite; the adoption suite remains for its
+outstanding access-group checks.
 
 Reviewing durable watch clears exposed a separate migration defect. The old
 `Clerk+Keychain` retains the shared adoption marker through clearing, and

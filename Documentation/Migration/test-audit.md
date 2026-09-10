@@ -315,3 +315,5 @@ The [legacy metadata access-group investigation](legacy-metadata-access-groups.m
 The [live integration migration audit](integration-test-audit.md) maps both real-service declarations and their helper/cleanup paths to the generated API. The three files are migrated in place into the default package graph's `ClerkIntegrationTests` target. macOS/iOS compilation and explicit local skipping are verified; CI missing-key failure is verified; a live configured-instance run remains open.
 
 The [watch replication audit](watch-replication-test-audit.md) records every assertion in the 65-declaration watch suite and retires that file with its unavailable peer protocol. The review also reproduced and fixed adoption-marker credential fallback; that passing upgrade proof is separate from the unavailable watch contracts.
+
+The [shared-session coordinator audit](shared-session-coordinator-test-audit.md) records all 80 declarations and retires that file with the unavailable peer protocol. Its HTTP ordering, credential import and UI boundaries link to separate current evidence; the retained Clerk and adoption suites keep their unresolved presentation and access-group checks.
