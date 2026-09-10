@@ -53,13 +53,14 @@ and `JSONEncoder+Ext`, not from assuming the new fixture was already accurate.
 | `KeychainConfigTests`: defaults, custom service, access group, combined values, property access | The old options type is removed. `LegacyKeychainConfiguration` supplies import selection; tests exercise an explicit service, normalized access group and matching key. The process fixture exercises default app-local selection. Real access-group authorization cannot be proved by property equality. |
 | `DependencyContainerKeychainTests`: SystemKeychain/MigratingStorage implementation types | The dependency container is removed. These old type assertions are replaced by observed storage behavior and the macOS backend selector. |
 | `DependencyContainerKeychainTests.constructionCompletesClearRecoveryBeforeReturning` | The new adapter does not run the old shared-slot recovery algorithm. Malformed journals fail import; a valid matching pending clear produces durable signed-out storage. New tests verify both outcomes before credential adoption. |
-| Remaining `DependencyContainerKeychainTests`: missing shared group/owner, disabled adoption, cached bootstrap, topology, pending publication clearing | These assert old shared-session synchronization or offline-cache behavior that is explicitly unavailable. Pending identity publications with changed/cleared credentials are rejected during one-time import, but this is not equivalent coverage for old convergence, slot cleanup or provisional cache hydration. Those feature tests remain retained. |
+| Remaining `DependencyContainerKeychainTests`: missing shared group/owner, disabled adoption, cached bootstrap, topology, pending publication clearing | These assert old shared-session synchronization or offline-cache behavior that is explicitly unavailable. Pending identity publications with changed/cleared credentials are rejected during one-time import, but this is not equivalent coverage for old convergence, slot cleanup or provisional cache hydration. Their exact declaration dispositions are recorded in the [dependency and cache audit](dependency-cache-test-audit.md). |
 
-The new storage suite contains 13 declarations on macOS and 10 on iOS; parameter
-cases are not a coverage percentage. Real process fixtures verify the supported
+The new storage suite includes parameterized migration and platform-specific
+backend checks; declaration counts are not a coverage percentage. Real process fixtures verify the supported
 snake-case import and a pending-clear fallback. This remains a storage-format and
 platform-adapter proof, not an actual released-app upgrade with a signed-in user.
 `SystemKeychainTests`, `MigratingKeychainStorageTests`, `ClerkKeychainKeyTests`,
 and `KeychainConfigTests` are retired after the passing replacement checks.
-`DependencyContainerKeychainTests` and shared-session feature tests remain retained
-for their unresolved topology, convergence and cache assertions.
+`DependencyContainerKeychainTests` is retired under the separate [dependency and
+cache audit](dependency-cache-test-audit.md), which explicitly records removed
+topology/cache contracts. Shared-session feature suites await their own audit.

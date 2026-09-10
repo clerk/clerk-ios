@@ -141,3 +141,5 @@ The [biometric credential assertion audit](biometric-test-audit.md) maps the old
 The [Apple authentication assertion audit](apple-auth-test-audit.md) records generated Apple transfer and restriction behavior, the shared verification-error serializer correction, and packaged-engine evidence.
 
 The [authentication flow assertion audit](auth-flow-test-audit.md) records legacy flow-kind migration, incomplete callback results, cleanup/ownership checks, and generated authentication parameter coverage.
+
+The [dependency and cache audit](dependency-cache-test-audit.md) distinguishes credential import from removed offline bootstrap and shared-session topology. The [Billing audit](billing-test-audit.md) records the removed query facade and tested generated payment-method collections.

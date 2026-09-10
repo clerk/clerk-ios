@@ -104,7 +104,7 @@ controller file and two organization collection entry-point tests are retired
 with their removed native collaborators after generated HTTP/resource checks.
 The [client service audit](client-service-test-audit.md) maps all twelve client
 service/resource declarations, reproduces and fixes empty-client refreshes, and
-retires those two files. General core, middleware and shared-session tests remain.
+retires those two files. General core and shared-session tests remain.
 
 Replacement owner / evidence: JavaScript packages/mobile-runtime/test/{protocol,attached-core,magic-link,biometrics}.test.mjs and clerk-js resource/request tests; native CoreRuntime and host integration.
 
@@ -301,3 +301,7 @@ The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md)
 The [Apple authentication assertion audit](apple-auth-test-audit.md) records generated Apple transfer and restriction behavior, the shared verification-error serializer correction, and packaged-engine evidence.
 
 The [authentication flow assertion audit](auth-flow-test-audit.md) records legacy flow-kind migration, incomplete callback results, cleanup/ownership checks, and generated authentication parameter coverage.
+
+The [dependency and offline-cache audit](dependency-cache-test-audit.md) accounts for all 23 declarations in the remaining dependency-container and cache suites. Those two files are retired with their removed types; unavailable offline/bootstrap and shared-topology behavior is explicit.
+
+The [Billing audit](billing-test-audit.md) accounts for all 25 declarations and retires the old Billing suite after generated payment-method collection checks pass on both engines. The separate Billing root remains unavailable.
