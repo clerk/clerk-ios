@@ -6759,7 +6759,7 @@ isDevOrStagingUrl: (url) => {
 				rotatingTokenNonce: opts.rotatingTokenNonce,
 				signal: opts.abortSignal
 			}, opts);
-			return this.fromJSON(json?.response || json);
+			return this.fromJSON(json && "response" in json ? json.response : json);
 		}
 		async _baseMutate(params) {
 			const { action, body, method, path, signal } = params;

@@ -14,4 +14,4 @@ All sixteen tests in the old `Tests/Utils/JWTDecoderTests.swift` were read. Its 
 
 Validation: eight TypeScript decoder tests and four real embedded-core token-result tests pass. The latter accelerate the fixture timer capability to exercise the existing bounded retry policy without waiting several minutes for repeated malformed responses; they do not change production delays. Existing packaged iOS/Android API proofs also continue to return the fixture token through generated `getToken`.
 
-This is parsing and client-state preservation evidence, not JWT signature verification, backend acceptance, or signed-in app upgrade evidence. The old Swift parser test file is retired after these checks; session authorization/freshness/race suites remain for their own audits.
+This is parsing and client-state preservation evidence, not JWT signature verification, backend acceptance, or signed-in app upgrade evidence. The old Swift parser test file is retired after these checks; session authorization, freshness and race behavior are tracked in their separate audits.

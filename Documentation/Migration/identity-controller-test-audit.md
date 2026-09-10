@@ -1,12 +1,13 @@
 # Identity controller assertion audit
 
 Reviewed all twelve declarations and assertion bodies in the baseline
-`Tests/Core/ClerkIdentityControllerTests.swift`. The file remains retained:
+`Tests/Core/ClerkIdentityControllerTests.swift`. The file is now retired:
 credential persistence and tokenless client rejection now have direct
 embedded-core evidence. Credential-rotation fencing is also restored in the
 shared transport. The retained sequences now have core regression tests; removed native staging
 and shared-storage APIs below remain explicit migration differences.
-This audit does not retire the file or claim parity with its assertions.
+The assertion map records explicit removed contracts rather than claiming parity
+with native staging, disk snapshots or shared-storage replication.
 
 | Baseline declaration | Current disposition |
 | --- | --- |
@@ -47,6 +48,10 @@ and returned generated organization ID/name. Those old mock collaborators are
 removed. This is limited to the two collection entry points; the organization
 service and resource test files still require their own assertion audit.
 
+The two old collection-entry-point tests are retired with their native service
+mock. The generated create/lookup checks pass in the full embedded suite; they
+verify the actual request and result rather than that deleted collaborator.
+
 ## Shared attempt ownership
 
 Bundle pin `b9506775b3` routes identified mobile attempts through the existing
@@ -57,3 +62,14 @@ updates from discarded attempts; client replacement, client destruction and
 removal of all sessions retire retained authentication resources. Embedded tests
 verify reset, client replacement and sign-out boundaries. No native auth-flow
 registry or second state machine is added.
+
+## Retirement verification
+
+The [client service audit](client-service-test-audit.md) records the current
+packaged revision and passing full embedded/native contract suites, including
+credentialless-client rejection, credential rotation, stale response handling,
+retained completed attempts and the newly fixed empty-client response. Together
+with the complete map above, these justify retiring exactly
+`ClerkIdentityControllerTests.swift` and `OrganizationsTests.swift`. They do not
+restore the unavailable external staging or shared-storage synchronization
+APIs, and the dedicated shared-session and general core suites remain retained.

@@ -82,9 +82,12 @@ Background/foreground notifications delegate reload and token policy to TypeScri
 
 The [identity controller assertion audit](identity-controller-test-audit.md)
 records all twelve controller declarations, new embedded persistence checks,
-and the fixed tokenless-client and credential-rotation regressions. The old
-controller file remains retained. It also maps the two organization collection
-entry-point tests to current generated HTTP/resource outcomes.
+and the fixed tokenless-client and credential-rotation regressions. The reviewed
+controller file and two organization collection entry-point tests are retired
+with their removed native collaborators after generated HTTP/resource checks.
+The [client service audit](client-service-test-audit.md) maps all twelve client
+service/resource declarations, reproduces and fixes empty-client refreshes, and
+retires those two files. General core, middleware and shared-session tests remain.
 
 Replacement owner / evidence: JavaScript packages/mobile-runtime/test/{protocol,attached-core,magic-link,biometrics}.test.mjs and clerk-js resource/request tests; native CoreRuntime and host integration.
 
