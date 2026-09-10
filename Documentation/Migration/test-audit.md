@@ -319,3 +319,5 @@ The [watch replication audit](watch-replication-test-audit.md) records every ass
 The [shared-session coordinator audit](shared-session-coordinator-test-audit.md) records all 80 declarations and retires that file with the unavailable peer protocol. Its HTTP ordering, credential import and UI boundaries link to separate current evidence; the retained Clerk and adoption suites keep their unresolved presentation and access-group checks.
 
 The [Clerk presentation audit](clerk-auth-flow-test-audit.md#captured-attempt-identity-and-pending-sign-up-checks) records the reproduced mutable-attempt-ID regression, its presentation-only fix, and packaged pending sign-up/task checks. The general Clerk suite remains retained for the broader activation matrix.
+
+The [suspended activation and rejection audit](clerk-auth-flow-test-audit.md#suspended-activation-and-rejection-recovery) adds packaged coverage for intermediate refresh, rejected replay, stale-response recovery and newer concurrent session selection. These are current-owner outcome checks, without reintroducing the old native activation markers.

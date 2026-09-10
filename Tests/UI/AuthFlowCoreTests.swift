@@ -524,6 +524,225 @@ import Testing
     #expect(!clerk.completeAuthFlow(work))
   }
 
+  @Test(arguments: [false, true])
+  func failedActivationAdoptsTheCurrentSessionAfterAnIntermediateRefresh(dismissible: Bool) async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let targetSession = try #require(fixture.fixtures["session"])
+    var currentSession = try targetSession.object()
+    currentSession["id"] = .string("sess_existing")
+    if !dismissible {
+      currentSession["status"] = .string("pending")
+      currentSession["tasks"] = .array([.object(["key": .string("setup-mfa")])])
+    }
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([.object(currentSession), targetSession])
+    client["last_active_session_id"] = .string("sess_existing")
+    fixture.clientResponse = .object(client)
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    #expect(clerk.session?.id == "sess_existing")
+    let owner = try #require(clerk.registerAuthFlow(role: dismissible ? .dismissible : .root))
+    defer { owner.cancel() }
+    capabilities.pauseNextTouch = true
+    capabilities.touchStatus = 403
+    capabilities.touchResponse = .object(["errors": .array([.object(["code": .string("activation_rejected"), "message": .string("Activation rejected")])])])
+    let finalization = Task {
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+    }
+    await capabilities.waitForPausedTouch()
+    defer { capabilities.resumeTouch() }
+    let pending = try awaiting(clerk, owner)
+    #expect(pending.sessionId == "sess_native")
+    #expect(clerk.startAuthFlowPresentation(for: owner, work: pending, presentation: .biometricCredentialEnrollment) == nil)
+    #expect(!clerk.completeAuthFlow(pending))
+    currentSession["status"] = .string("active")
+    currentSession["tasks"] = .array([])
+    client["sessions"] = .array([.object(currentSession), targetSession])
+    fixture.sessionReloadResponse = .object(["response": targetSession, "client": .object(client)])
+    _ = try await #require(clerk.sessions.first { $0.id == "sess_native" }).reload()
+    #expect(clerk.session?.id == "sess_existing")
+    #expect(clerk.session?.status == .active)
+    clerk.reconcileAuthFlowPresentation()
+    #expect(try awaiting(clerk, owner) == pending)
+    #expect(clerk.isAuthFlowComplete == dismissible)
+    capabilities.resumeTouch()
+    do {
+      try await finalization.value
+      Issue.record("Expected the activation error to reach the caller")
+    } catch let error as CoreError {
+      #expect(error.errors.first?.code == "activation_rejected")
+    }
+    let external = try awaiting(clerk, owner)
+    #expect(external.sessionId == "sess_existing")
+    #expect(external != pending)
+    guard case .awaiting(_, let completion) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The current session must supply dismissible external work")
+      return
+    }
+    #expect(completion == nil)
+    #expect(!clerk.completeAuthFlow(pending))
+    #expect(clerk.isAuthFlowComplete == dismissible)
+    #expect(clerk.completeAuthFlow(external))
+    #expect(!clerk.completeAuthFlow(external))
+    #expect(clerk.isAuthFlowComplete)
+  }
+
+  @Test(arguments: [false, true])
+  func activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply(comparableDates: Bool) async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    if comparableDates { capabilities.responseDate = "Mon, 31 Dec 2029 00:00:00 GMT" }
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["last_active_session_id"] = .null
+    let session = try #require(fixture.fixtures["session"])
+    let signIn = try #require(client["sign_in"])
+    capabilities.signInResponse = .object(["response": signIn, "client": .object(client)])
+    try await clerk.signIn.password(.case1(.init(password: "fixture-password", identifier: "new@example.com")))
+    #expect(clerk.session == nil)
+    capabilities.pauseNextTouch = true
+    capabilities.touchResponse = .object(["response": session, "client": .object(client)])
+    // Its later date proves freshness only when the intervening refresh has a comparable date.
+    capabilities.touchHeaders = ["date": .string("Tue, 01 Jan 2030 00:00:00 GMT")]
+    let finalization = Task {
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+    }
+    await capabilities.waitForPausedTouch()
+    defer { capabilities.resumeTouch() }
+    let work = try awaiting(clerk, owner)
+    fixture.sessionReloadResponse = .object(["response": session, "client": .object(client)])
+    _ = try await #require(clerk.sessions.first { $0.id == "sess_native" }).reload()
+    clerk.reconcileAuthFlowPresentation()
+    #expect(clerk.session == nil)
+    #expect(try awaiting(clerk, owner) == work)
+    #expect(!clerk.completeAuthFlow(work))
+    #expect(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .biometricCredentialEnrollment) == nil)
+    capabilities.resumeTouch()
+    if comparableDates {
+      try await finalization.value
+      #expect(try awaiting(clerk, owner) == work)
+    } else {
+      do {
+        try await finalization.value
+        Issue.record("An older reply cannot prove freshness without comparable server dates")
+      } catch let error as CoreError {
+        #expect(error.code == "stale_client_response")
+      }
+      #expect(clerk.session == nil)
+      #expect(!clerk.completeAuthFlow(work))
+      // A fresh explicit attempt must recover after the rejected reply.
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+      #expect(try awaiting(clerk, owner) != work)
+      #expect(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .biometricCredentialEnrollment) == nil)
+    }
+    #expect(clerk.session?.id == "sess_native")
+    let completedWork = try awaiting(clerk, owner)
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.completeAuthFlow(completedWork))
+    #expect(!clerk.completeAuthFlow(completedWork))
+  }
+
+  @Test func aRejectedReplayPreservesAcceptedAwaitingWork() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    let work = try awaiting(clerk, owner)
+    capabilities.touchStatus = 403
+    capabilities.touchResponse = .object(["errors": .array([.object(["code": .string("activation_rejected"), "message": .string("Activation rejected")])])])
+    do {
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+      Issue.record("Expected a repeated activation error")
+    } catch let error as CoreError {
+      #expect(error.errors.first?.code == "activation_rejected")
+    }
+    #expect(try awaiting(clerk, owner) == work)
+    #expect(clerk.session?.id == work.sessionId)
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.completeAuthFlow(work))
+    #expect(!clerk.completeAuthFlow(work))
+  }
+
+  @Test(arguments: [false, true])
+  func aNewerExplicitSelectionSupersedesSuspendedFinalization(dismissible: Bool) async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let targetSession = try #require(fixture.fixtures["session"])
+    var currentSession = try targetSession.object()
+    currentSession["id"] = .string("sess_existing")
+    if !dismissible {
+      currentSession["status"] = .string("pending")
+      currentSession["tasks"] = .array([.object(["key": .string("setup-mfa")])])
+    }
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([.object(currentSession), targetSession])
+    client["last_active_session_id"] = .string("sess_existing")
+    fixture.clientResponse = .object(client)
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow(role: dismissible ? .dismissible : .root))
+    defer { owner.cancel() }
+    var delayedClient = client
+    delayedClient["last_active_session_id"] = .string("sess_native")
+    capabilities.touchResponses["/v1/client/sessions/sess_native/touch"] = .object(["response": targetSession, "client": .object(delayedClient)])
+    capabilities.pauseNextTouch = true
+    let finalization = Task {
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+    }
+    await capabilities.waitForPausedTouch()
+    defer { capabilities.resumeTouch() }
+    let superseded = try awaiting(clerk, owner)
+    #expect(superseded.sessionId == "sess_native")
+    currentSession["status"] = .string("active")
+    currentSession["tasks"] = .array([])
+    client["sessions"] = .array([.object(currentSession), targetSession])
+    capabilities.touchResponses["/v1/client/sessions/sess_existing/touch"] = .object(["response": .object(currentSession), "client": .object(client)])
+    try await clerk.setActive(.init(session: .value(.case1("sess_existing"))))
+    #expect(clerk.session?.id == "sess_existing")
+    #expect(clerk.session?.status == .active)
+    #expect(!clerk.completeAuthFlow(superseded))
+    clerk.reconcileAuthFlowPresentation()
+    #expect(clerk.isAuthFlowComplete == dismissible)
+    capabilities.resumeTouch()
+    do {
+      try await finalization.value
+      Issue.record("The superseded activation must not report success")
+    } catch {}
+    #expect(clerk.session?.id == "sess_existing")
+    #expect(clerk.sessions.contains { $0.id == "sess_native" })
+    let current = try awaiting(clerk, owner)
+    #expect(current.sessionId == "sess_existing")
+    #expect(current != superseded)
+    guard case .awaiting(_, let completion) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The newer selection must supply external presentation work")
+      return
+    }
+    #expect(completion == nil)
+    #expect(clerk.startAuthFlowPresentation(for: owner, work: superseded, presentation: .biometricCredentialEnrollment) == nil)
+    #expect(clerk.completeAuthFlow(current))
+    #expect(!clerk.completeAuthFlow(current))
+  }
+
   @Test func signOutInvalidatesACompletionWaitingForPresentation() async throws {
     let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
     let clerk = try await connect(fixture)
@@ -610,7 +829,10 @@ import Testing
   var signInResponse: JSONValue?
   var signUpResponse: JSONValue?
   var touchResponse: JSONValue?
+  var touchResponses: [String: JSONValue] = [:]
   var touchStatus = 200
+  var touchHeaders: [String: JSONValue] = [:]
+  var responseDate: String?
   var pauseNextTouch = false
   private var pausedTouch: CheckedContinuation<Void, Never>?
   private var touchObserver: CheckedContinuation<Void, Never>?
@@ -637,7 +859,8 @@ import Testing
         return try .object(["status": .number(200), "headers": .object([:]), "body": .string(String(decoding: JSONEncoder().encode(response), as: UTF8.self))])
       }
     }
-    if capability == "http", try arguments.object()["url"]?.url().path.hasSuffix("/touch") == true {
+    if capability == "http", let path = try arguments.object()["url"]?.url().path, path.hasSuffix("/touch") {
+      let response = touchResponses[path] ?? touchResponse
       if pauseNextTouch {
         pauseNextTouch = false
         await withCheckedContinuation { continuation in
@@ -647,11 +870,19 @@ import Testing
           observer?.resume()
         }
       }
-      if let touchResponse {
-        return try .object(["status": .number(Double(touchStatus)), "headers": .object([:]), "body": .string(String(decoding: JSONEncoder().encode(touchResponse), as: UTF8.self))])
+      if let response {
+        return try .object(["status": .number(Double(touchStatus)), "headers": .object(touchHeaders), "body": .string(String(decoding: JSONEncoder().encode(response), as: UTF8.self))])
       }
     }
-    return try await base.perform(capability, arguments: arguments)
+    let response = try await base.perform(capability, arguments: arguments)
+    if capability == "http", let responseDate {
+      var envelope = try response.object()
+      var headers = try (envelope["headers"] ?? .object([:])).object()
+      headers["date"] = .string(responseDate)
+      envelope["headers"] = .object(headers)
+      return .object(envelope)
+    }
+    return response
   }
 }
 #endif
