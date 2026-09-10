@@ -47,9 +47,10 @@ extension Session {
   /// Checks whether this session is authorized for the requested role, permission, feature, plan,
   /// and/or reverification.
   ///
-  /// Shares one implementation with ``has(_:)``. Returns `false` when the user is missing or any
-  /// requested dimension fails. Org role and permission come from the active organization
-  /// membership. Feature and plan come from the last active session token `fea` / `pla` claims.
+  /// Returns `false` when the user is missing or any requested dimension fails. Org role and
+  /// permission come from the active organization membership. Feature and plan come from a token
+  /// whose session and organization match this session. Reverification uses that token's `fva`
+  /// claim when present.
   public func checkAuthorization(_ params: CheckAuthorizationParams) -> Bool {
     SessionAuthorization.evaluate(session: self, params: params)
   }
@@ -75,14 +76,16 @@ enum SessionAuthorization {
     let membership = session.user?.organizationMemberships?.first {
       $0.organization.id == session.lastActiveOrganizationId
     }
+    let token = authorizationToken(for: session)
     return evaluate(
       userId: session.user?.id,
       orgId: membership?.organization.id,
       orgRole: membership?.role,
       orgPermissions: membership?.permissions,
-      factorVerificationAge: session.factorVerificationAge,
-      features: session.lastActiveToken?.featuresClaim ?? "",
-      plans: session.lastActiveToken?.plansClaim ?? "",
+      factorVerificationAge: token.flatMap { agedFactorVerificationAge(for: $0) }
+        ?? session.factorVerificationAge,
+      features: token?.featuresClaim ?? "",
+      plans: token?.plansClaim ?? "",
       params: params
     )
   }
@@ -341,6 +344,52 @@ enum SessionAuthorization {
 
   private static func isValidFactorAge(_ value: Int) -> Bool {
     value == -1 || value >= 0
+  }
+
+  private static func authorizationToken(for session: Session) -> TokenResource? {
+    guard let token = session.lastActiveToken else {
+      return nil
+    }
+    guard matchesAuthorizationContext(
+      token,
+      sessionId: session.id,
+      organizationId: session.lastActiveOrganizationId
+    ) else {
+      return nil
+    }
+    return token
+  }
+
+  private static func matchesAuthorizationContext(
+    _ token: TokenResource,
+    sessionId: String,
+    organizationId: String?
+  ) -> Bool {
+    guard let jwt = try? DecodedJWT(jwt: token.jwt), let tokenSessionId = jwt.sessionId else {
+      return false
+    }
+    return tokenSessionId == sessionId
+      && TokenFreshness.normalizedOrganizationId(jwt.organizationId)
+      == TokenFreshness.normalizedOrganizationId(organizationId)
+  }
+
+  private static func agedFactorVerificationAge(
+    for token: TokenResource,
+    now: Date = Date()
+  ) -> [Int]? {
+    guard let factorVerificationAge = token.factorVerificationAgeClaim else {
+      return nil
+    }
+    guard let issuedAt = token.decodedJWT?.issuedAt else {
+      return factorVerificationAge
+    }
+    let elapsedMinutes = Int(max(0, now.timeIntervalSince(issuedAt)) / 60)
+    guard elapsedMinutes > 0 else {
+      return factorVerificationAge
+    }
+    return factorVerificationAge.map { age in
+      age >= 0 ? age + elapsedMinutes : age
+    }
   }
 }
 

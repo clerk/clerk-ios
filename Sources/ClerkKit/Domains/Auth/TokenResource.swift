@@ -38,4 +38,17 @@ extension TokenResource {
   var plansClaim: String {
     decodedJWT?.claim(name: "pla").string ?? ""
   }
+
+  var factorVerificationAgeClaim: [Int]? {
+    guard let raw = decodedJWT?.body["fva"] else {
+      return nil
+    }
+    if let values = raw as? [Int], values.count == 2 {
+      return values
+    }
+    if let values = raw as? [NSNumber], values.count == 2 {
+      return values.map(\.intValue)
+    }
+    return nil
+  }
 }
