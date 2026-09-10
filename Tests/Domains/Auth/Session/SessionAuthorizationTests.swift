@@ -335,6 +335,61 @@ struct SessionAuthorizationTests {
     let p95 = samples[949]
     #expect(p95 < 1.0)
   }
+
+  @Test
+  func failsOrgScopedFeatureWhenSnapshotTokenBelongsToAnotherOrganization() {
+    var session = makeSession(
+      orgId: "org_b",
+      orgRole: "org:admin",
+      orgPermissions: ["org:read"],
+      features: "o:feature_b"
+    )
+    session.lastActiveToken = TokenResource(
+      jwt: jwtWithClaims(sid: session.id, orgId: "org_a", fea: "o:feature_a")
+    )
+
+    #expect(!session.has(.init(feature: "o:feature_a")))
+    #expect(!session.has(.init(feature: "o:feature_b")))
+  }
+
+  @Test
+  func failsStrictWhenMatchingTokenWithoutFvaAgesTheSessionSnapshot() {
+    var session = makeSession(
+      orgId: "org_123",
+      orgRole: "org:admin",
+      orgPermissions: ["org:sys_memberships:read"],
+      factorVerificationAge: [0, 0]
+    )
+    session.lastActiveToken = TokenResource(
+      jwt: jwtWithClaims(
+        sid: session.id,
+        orgId: "org_123",
+        issuedAt: Int(Date().timeIntervalSince1970) - 11 * 60
+      )
+    )
+
+    #expect(!session.has(.init(reverification: .strict)))
+  }
+
+  @Test
+  func failsStrictWhenMatchingTokenFvaAgesPastTenMinutesWithoutClientRefresh() {
+    var session = makeSession(
+      orgId: "org_123",
+      orgRole: "org:admin",
+      orgPermissions: ["org:sys_memberships:read"],
+      factorVerificationAge: [0, 0]
+    )
+    session.lastActiveToken = TokenResource(
+      jwt: jwtWithClaims(
+        sid: session.id,
+        orgId: "org_123",
+        fva: [0, 0],
+        issuedAt: Int(Date().timeIntervalSince1970) - 11 * 60
+      )
+    )
+
+    #expect(!session.has(.init(reverification: .strict)))
+  }
 }
 
 private func makeSession(
@@ -351,7 +406,9 @@ private func makeSession(
   session.lastActiveOrganizationId = orgId
   session.factorVerificationAge = factorVerificationAge
   if features != nil || plans != nil {
-    session.lastActiveToken = TokenResource(jwt: jwtWithClaims(fea: features, pla: plans))
+    session.lastActiveToken = TokenResource(
+      jwt: jwtWithClaims(sid: session.id, orgId: orgId, fea: features, pla: plans)
+    )
   }
   return session
 }
@@ -378,24 +435,29 @@ private func user(
   return user
 }
 
-private func jwtWithClaims(fea: String?, pla: String?) -> String {
-  var payload: [String: String] = [:]
+private func jwtWithClaims(
+  sid: String,
+  orgId: String? = nil,
+  fea: String? = nil,
+  pla: String? = nil,
+  fva: [Int]? = nil,
+  issuedAt: Int? = nil
+) -> String {
+  var claims: [String: Any] = ["sid": sid]
+  if let orgId {
+    claims["org_id"] = orgId
+  }
   if let fea {
-    payload["fea"] = fea
+    claims["fea"] = fea
   }
   if let pla {
-    payload["pla"] = pla
+    claims["pla"] = pla
   }
-  return encodeJWT(payload: payload)
-}
-
-private func encodeJWT(payload: [String: String]) -> String {
-  func encode(_ object: [String: String]) -> String {
-    let data = try! JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
-    return data.base64EncodedString()
-      .replacingOccurrences(of: "+", with: "-")
-      .replacingOccurrences(of: "/", with: "_")
-      .trimmingCharacters(in: CharacterSet(charactersIn: "="))
+  if let fva {
+    claims["fva"] = fva
   }
-  return "\(encode(["alg": "none", "typ": "JWT"])).\(encode(payload)).sig"
+  if let issuedAt {
+    claims["iat"] = issuedAt
+  }
+  return try! testJWT(claims: claims)
 }
