@@ -1,6 +1,6 @@
 # Session service assertion audit
 
-All 19 test declarations in retained `Tests/Domains/Auth/Session/SessionServiceTests.swift` were reviewed against baseline `02f98f89a19b6c079517c9aae07df7edd0e600e5`. The earlier file inventory counted 18 because it missed the multiline parameterized API-error test. This audit does not delete the legacy tests or repair the broader legacy test target.
+All 19 test declarations in `Tests/Domains/Auth/Session/SessionServiceTests.swift` were reviewed against baseline `02f98f89a19b6c079517c9aae07df7edd0e600e5`. The earlier file inventory counted 18 because it missed the multiline parameterized API-error test. The suite is retired after the replacements and explicit policy changes below were verified. The broader legacy test target still contains unresolved suites.
 
 | Legacy declarations | Current behavior and evidence |
 | --- | --- |
@@ -21,4 +21,4 @@ All 19 test declarations in retained `Tests/Domains/Auth/Session/SessionServiceT
 
 The session-cache follow-up also verifies concurrent template requests and a cache hit for a nonselected session still present in `Clerk.sessions`. This differs from using a stale handle after removal. Snapshot-hydration details still listed in `token-cache-test-audit.md`, real OS flows, live service acceptance, and signed-in old-major upgrades remain separate work.
 
-The 401 fix and current package validation are recorded in [organization activation](organization-activation.md#rejected-authentication-status-follow-up). This audit adds no second native session algorithm and retires no legacy test file.
+The 401 fix and current package validation are recorded in [organization activation](organization-activation.md#rejected-authentication-status-follow-up). This retirement removes the old service's assertions after checking them through the current owner; it adds no second native session algorithm.

@@ -1,6 +1,6 @@
 # Session authorization migration audit
 
-The native SDKs call canonical `Session.checkAuthorization` through generated bindings. No native authorization helper is added. This covers every test declaration in the retained iOS `Tests/Domains/Auth/Session/SessionAuthorizationTests.swift`; it does not authorize deleting that file.
+The native SDKs call canonical `Session.checkAuthorization` through generated bindings. No native authorization helper is added. This covers every test declaration in iOS `Tests/Domains/Auth/Session/SessionAuthorizationTests.swift`. That legacy suite is retired after the replacement checks and explicit contract changes below were verified.
 
 ## Public contract
 

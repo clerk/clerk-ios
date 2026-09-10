@@ -1,6 +1,6 @@
 # Session verification test migration audit
 
-The generated Session API executes canonical TypeScript verification methods. The test fixtures assert actual HTTP and returned observable state instead of forwarding to a native mock service. This inventory covers all 18 declarations in retained `Tests/Domains/Auth/Session/SessionTests.swift`; revocation and task coverage added below completes the assertion inventory, while the legacy file remains retained with the rest of the migration suite.
+The generated Session API executes canonical TypeScript verification methods. The test fixtures assert actual HTTP and returned observable state instead of forwarding to a native mock service. This inventory covers all 18 declarations in `Tests/Domains/Auth/Session/SessionTests.swift`; revocation and task coverage added below completes the assertion inventory. That legacy file is now retired after the replacement checks and explicit contract changes were verified.
 
 ## Evidence and boundaries
 
