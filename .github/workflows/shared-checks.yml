@@ -146,7 +146,7 @@ jobs:
           make check
 
   test:
-    name: Run ClerkKit tests on macOS
+    name: Run native core contract tests on macOS
     needs: format-and-lint
     runs-on: macos-26
     timeout-minutes: 30

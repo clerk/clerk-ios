@@ -1,7 +1,8 @@
 # Legacy metadata access-group evidence and open migration check
 
-This records why `SharedSessionSyncAdoptionTests.swift` remains retained. It is
-not a claim that the new importer preserves every legacy storage configuration.
+This records the source-selection investigation that preceded the
+[final adoption-suite retirement](shared-adoption-test-audit.md#final-retirement-decision).
+It is not a claim that the new importer preserves every legacy storage configuration.
 The source baseline is `02f98f89a19b6c079517c9aae07df7edd0e600e5`.
 
 ## What the previous major actually configured
@@ -53,16 +54,16 @@ evidence of a newly introduced isolation regression.
 Use a signed host with actual app-private and shared entitlements to seed the
 old service/account combinations, including duplicate accounts across groups,
 and inspect the returned item's attributes. Exercise both adopted and
-never-adopted histories and a changed service. Define the explicit source
-selection policy from those results before claiming app attribution or adding
-an automatic fallback. Verify expired flow handling and durable removal with
-the selected policy.
+never-adopted histories and a changed service. Validate the chosen baseline
+source-selection policy against those results before claiming physical app
+attribution. Expired-flow handling and durable removal have fixture proofs
+below; valid records in an actual signed-in upgrade still need verification.
 
 The token-only identity and pending-clear upgrade checks are separate passing
 proofs. They do not settle these metadata-source questions. Keep the old
 `privateAppStateMigratesOnlyFromAppAttributedStorage` and
-`ambiguousSharedPrivateAppStateIsNotMigrated` assertions as open evidence until
-this check is resolved; an in-memory nil-group assertion cannot close it.
+`ambiguousSharedPrivateAppStateIsNotMigrated` assertions as evidence in the
+retirement audit; an in-memory nil-group assertion cannot close the physical gate.
 
 ## Signed probe prepared
 

@@ -22,7 +22,7 @@ help:
 	@echo "  make check-e2e-hooks - Verify E2E-only product hooks remain reviewed"
 	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
 	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
-	@echo "  make test          - Run ClerkKitTests on macOS"
+	@echo "  make test          - Run native core contract tests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
 	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e"
@@ -170,12 +170,8 @@ clean:
 	@echo "Cleaning Swift package build artifacts..."
 	swift package clean
 
-# Run ClerkKitTests on macOS
-test:
-	@echo "Running unit tests..."
-	swift test --skip Integration --no-parallel --filter '^ClerkKitTests\.'
-	CLERK_RUN_RECONFIGURE_TESTS=1 swift test --skip Integration --no-parallel --filter '^ClerkKitTests\.ClerkReconfigureTests'
-	@echo "✅ Unit tests completed!"
+# Run the generated API and packaged-core tests used by this major.
+test: test-native-core
 
 # Build the Swift package and native macOS example app.
 smoke-macos:

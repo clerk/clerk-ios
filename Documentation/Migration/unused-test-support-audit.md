@@ -25,8 +25,10 @@ No current Swift source calls `testJWT`. The inventory's one function entry is
 a helper, not a passing test or a removed public JWT contract; current JWT
 behavior has its own [assertion audit](jwt-test-audit.md).
 
-Only these two unused files are retired here. `InMemoryKeychain.swift` remains
-because the retained shared-adoption suite still uses its Keychain test types.
+Only these two unused files are retired here. `InMemoryKeychain.swift` remained
+at this stage because the shared-adoption suite still used its Keychain test types;
+the [final adoption audit](shared-adoption-test-audit.md#final-retirement-decision)
+subsequently retires both of those remaining files.
 No test target, runtime implementation or shared fixture data is removed, and
-no replacement test count is claimed for these helpers. The default legacy
-target still requires completion of the shared-adoption migration.
+no replacement test count is claimed for these helpers. The default test command
+now runs the generated-core suite after completion of that final assertion audit.

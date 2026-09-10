@@ -7,8 +7,8 @@ current `NativeCore/AppleCredentialStorage.swift`, and the complete
 file's SHA-256 is
 `4961f4c9078420dd796a2207747118bc4c4647f262baf1d4df270613e2538212`.
 
-This is a retained-file audit. It does not retire the suite or claim that its
-removed native types compile. The current credential importer replaces
+This audit retires the reviewed suite and its now-unused Keychain helper. It
+does not claim that the removed native types compile. The current credential importer replaces
 one-time credential recovery; it does not implement the previous major's
 shared publication, cached-client hydration or environment migration APIs.
 Generated session state still requires canonical core startup.
@@ -42,7 +42,7 @@ The file-local factories construct removed native clients and adoption stores.
 old stores. The shared `Tests/TestSupport/InMemoryKeychain.swift` contains the
 dictionary store, set-failure store and missing-entitlement store; its SHA-256 is
 `ba72860d70b13603a6a41a60b8b8476784b35cd16c5a1d8c46bf528e9c12d12b`.
-It remains with this retained suite. None of these helpers can establish OS
+It was used only by this final legacy suite. None of these helpers can establish OS
 access-group query behavior.
 
 The [metadata evidence](legacy-metadata-access-groups.md) and
@@ -62,7 +62,7 @@ and expired prior email-link records are now exercised by the packaged core,
 including clearing the expired record without completion HTTP. This resolves
 the identified query-selection defect and that fixture-level expiry check;
 physical attribution, real credential usability and App Attest continuity are
-not established, so this legacy file remains retained.
+not established by these tests. Those checks remain release gates after retirement.
 
 ## Normalization regression
 
@@ -78,3 +78,54 @@ declarations) and iOS Simulator (17; the three macOS backend tests are excluded
 there). The added parameterized tests cover five token encodings and four
 independent cached-client/date states. These checks do not exercise HTTP or
 change the configured source-selection order.
+
+## Final retirement decision
+
+The baseline `AppAttestHelper` is an internal enum. Full source and test searches
+for its type and entry points (`performDeviceAttestation` and `performAssertion`)
+found no callers outside that helper. It contains challenge, verification and
+assertion HTTP plus DeviceCheck calls, but the baseline does not invoke that
+workflow. Its source hash is
+`c493ba7658cb5f0a32285a50ea358db16813920d15c57b984a72c7f594428dc0`, matching
+the preserved public API/source inventory. `AttestKeyId` copying in these old
+adoption tests is therefore a removed internal persistence operation, not proof
+of a functioning old authentication path or a public API to regenerate.
+
+The new importer leaves old App Attest bytes untouched and does not claim to
+reuse its key or provide Apple's device-attestation workflow. That capability
+would require its own supported platform contract and real-device proof; the
+biometric credential probe does not substitute for it. The shared magic-link
+host's optional attestation value is also a distinct contract, not evidence of
+App Attest key continuity.
+
+For the remaining adoption declarations, current storage tests and the OS
+probe now exercise the supported configuration-history selection, accepted
+identity precedence, instance isolation and durable clears. First-time live
+shared-sync adoption, publication and cached-environment copying are removed
+contracts; their old multi-source algorithm is not the read behavior of a
+never-adopted nonshared app. The table's source-selection questions are resolved
+by the call-site review and correction linked above, with physical validation
+still pending rather than silently inferred from the Simulator.
+
+Only `SharedSessionSyncAdoptionTests.swift` (592 lines, 19 declarations) and
+`InMemoryKeychain.swift` (76 lines) are retired in this change. Their exact
+baseline hashes remain above and in `legacy-tests.json`. This leaves no source
+files in the obsolete `ClerkKitTests` target, so that empty target and its unused
+Mocker/ConcurrencyExtras dependencies are removed. `make test` now invokes the
+complete `NativeCoreContractTests` suite already used by `make test-native-core`,
+instead of filtering for removed legacy types. The UI and live integration
+targets remain, and all shared JSON fixture resources are preserved.
+
+Actual released-app signed-in upgrades, physical entitlements and prompts, and
+agreed performance budgets remain release gates. Deleting the obsolete tests
+does not satisfy those gates; the signed diagnostic app and recorded migration
+evidence remain available for the pending physical run.
+
+After retirement, the actual default commands passed: `make test` executed
+115 declarations in 16 suites on macOS, and `make test-ui` executed 170 in
+27 suites on iOS Simulator. Package resolution contains Nuke, PhoneNumberKit
+and swift-snapshot-testing as direct dependencies; Mocker and
+swift-concurrency-extras are absent. Existing generated Swift escaped-keyword
+warnings and macOS system-service diagnostic messages remain in the build log;
+they did not fail either test command. No remote CI or physical-device result
+is claimed from these local runs.

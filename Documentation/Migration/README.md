@@ -128,7 +128,7 @@ Before a general release, validate an actual old-major app upgrade with a real s
 
 ## Removed implementation
 
-The replaced native domain source tree has been deleted from this major. The linked baseline and hashed source inventory preserve its public declarations for migration review. The generated `NativeCore` target is the implementation; no old native authentication fallback is packaged. The reviewed legacy adoption suite and its Keychain helper remain for unresolved source-selection and physical migration proofs and are not claimed to run against the new API. The [19-declaration adoption audit](shared-adoption-test-audit.md) records those gaps. Per-domain assertion audits record reviewed retirements and their replacement evidence.
+The replaced native domain source tree has been deleted from this major. The linked baseline and hashed source inventory preserve its public declarations for migration review. The generated `NativeCore` target is the implementation; no old native authentication fallback is packaged. All 108 files in the legacy test inventory have been reviewed: 105 are retired and the three integration files are migrated. The [19-declaration adoption audit](shared-adoption-test-audit.md) records the final retirement and its still-open physical release gates. `make test` now runs `NativeCoreContractTests`; native UI and live integration retain their own targets. Per-domain assertion audits record replacement evidence and removed contracts.
 
 ### Contact deletion and verification
 

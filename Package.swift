@@ -21,8 +21,6 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/kean/Nuke.git", .upToNextMajor(from: "13.0.6")),
     .package(url: "https://github.com/PhoneNumberKit/PhoneNumberKit", .upToNextMajor(from: "5.0.0")),
-    .package(url: "https://github.com/WeTransfer/Mocker", from: "3.0.0"),
-    .package(url: "https://github.com/pointfreeco/swift-concurrency-extras", from: "1.1.0"),
     .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.19.4"),
   ],
   targets: [
@@ -66,26 +64,6 @@ let package = Package(
       name: "NativeCoreContractTests",
       dependencies: ["NativeCoreProof"],
       path: "NativeCoreContractTests"
-    ),
-    .testTarget(
-      name: "ClerkKitTests",
-      dependencies: [
-        "ClerkKit",
-        "ClerkKitUI",
-        .product(name: "Mocker", package: "Mocker"),
-        .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
-      ],
-      path: "Tests",
-      exclude: [
-        "UI",
-        "Integration",
-      ],
-      resources: [
-        .process("Resources"),
-      ],
-      swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency"),
-      ]
     ),
     .testTarget(
       name: "ClerkIntegrationTests",
