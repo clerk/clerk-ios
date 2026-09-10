@@ -47,6 +47,8 @@ private enum KeychainMigrationProbe {
     let omittedGroup: [Item]
     let explicitPrivate: [Item]
     let explicitShared: [Item]
+    let previousBundle: [Item]
+    let acceptedLocalIdentity: [Item]
     let migrated: String?
     let reconstructed: String?
     let afterClear: String?
@@ -136,11 +138,21 @@ private enum KeychainMigrationProbe {
       throw ProbeError(description: "Default insertion did not use the declared first access group")
     }
     var observations: [Observation] = []
-    for purpose in [KeychainCredentialStorage.Purpose.magicLink, .biometricCredentials] {
-      for name in ["private-only", "shared-only", "private-then-shared", "shared-then-private", "adopted-shared-only", "adopted-private-and-shared", "previous-bundle-only"] {
+    for purpose in [KeychainCredentialStorage.Purpose.magicLink, .biometricCredentials, .client] {
+      var names = ["private-only", "shared-only", "private-then-shared", "shared-then-private", "adopted-shared-only", "adopted-private-and-shared", "previous-bundle-only"]
+      if purpose == .client {
+        names += ["previous-bundle-and-shared", "private-and-previous-bundle-and-shared", "accepted-local-and-shared"]
+      }
+      for name in names {
         let application = prefix + ".\(purpose.rawValue).\(name)"
         let legacyService = application + ".configured"
-        let account = purpose == .magicLink ? "pendingMagicLinkFlow" : "trustedDeviceCredentials"
+        let account = switch purpose {
+        case .magicLink: "pendingMagicLinkFlow"
+        case .client: "clerkDeviceToken"
+        default: "trustedDeviceCredentials"
+        }
+        let fingerprint = hash("clerk.shared-session-sync.v2\u{1F}\(origin.absoluteString)\u{1F}\(key)")
+        let identityService = application + ".clerk.identity.v2." + fingerprint
         services.formUnion([application, legacyService, application + ".clerk.core.v2." + hash(key)])
         func seedPrivate() throws {
           try insert("probe-private", service: legacyService, account: account, group: privateGroup)
@@ -148,23 +160,33 @@ private enum KeychainMigrationProbe {
         func seedShared() throws {
           try insert("probe-shared", service: legacyService, account: account, group: sharedGroup)
         }
+        func seedPreviousBundle() throws {
+          try insert("probe-previous-bundle", service: application, account: account, group: privateGroup)
+        }
         switch name {
         case "private-only": try seedPrivate()
         case "shared-only", "adopted-shared-only": try seedShared()
         case "private-then-shared", "adopted-private-and-shared": try seedPrivate(); try seedShared()
         case "shared-then-private": try seedShared(); try seedPrivate()
-        case "previous-bundle-only": try insert("probe-previous-bundle", service: application, account: account, group: privateGroup)
+        case "previous-bundle-only": try seedPreviousBundle()
+        case "previous-bundle-and-shared": try seedPreviousBundle(); try seedShared()
+        case "private-and-previous-bundle-and-shared": try seedPrivate(); try seedPreviousBundle(); try seedShared()
+        case "accepted-local-and-shared":
+          try seedPrivate(); try seedPreviousBundle(); try seedShared()
+          services.insert(identityService)
+          try insert(#"{"schema_version":1,"accepted_identity":{"state":"cleared","device_token":"probe-accepted"}}"#, service: identityService, account: "clerkSharedSessionLocalIdentityV2", group: privateGroup)
+          try insert("2", service: identityService, account: "clerkSharedSessionSyncAdoptedV2", group: privateGroup)
         default: throw ProbeError(description: "Unknown fixture")
         }
         if name.hasPrefix("adopted-") {
-          let fingerprint = hash("clerk.shared-session-sync.v2\u{1F}\(origin.absoluteString)\u{1F}\(key)")
-          let identityService = application + ".clerk.identity.v2." + fingerprint
           services.insert(identityService)
           try insert("2", service: identityService, account: "clerkSharedSessionSyncAdoptedV2", group: privateGroup)
         }
         let omitted = try lookup(service: legacyService, account: account)
         let explicitPrivate = try lookup(service: legacyService, account: account, group: privateGroup)
         let explicitShared = try lookup(service: legacyService, account: account, group: sharedGroup)
+        let previousBundle = try lookup(service: application, account: account)
+        let acceptedLocalIdentity = try lookup(service: identityService, account: "clerkSharedSessionLocalIdentityV2")
         let configuration = LegacyKeychainConfiguration(service: legacyService, accessGroup: sharedGroup, publishableKey: key)
         let storage = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: configuration, purpose: purpose)
         let migrated = try await storage.read()
@@ -175,7 +197,7 @@ private enum KeychainMigrationProbe {
         let cleared = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: configuration, purpose: purpose)
         let afterClear = try await cleared.read()
         guard afterClear == nil else { throw ProbeError(description: "A durable clear reimported a fixture") }
-        observations.append(Observation(name: name, purpose: purpose.rawValue, omittedGroup: omitted, explicitPrivate: explicitPrivate, explicitShared: explicitShared, migrated: migrated, reconstructed: reconstructed, afterClear: afterClear))
+        observations.append(Observation(name: name, purpose: purpose.rawValue, omittedGroup: omitted, explicitPrivate: explicitPrivate, explicitShared: explicitShared, previousBundle: previousBundle, acceptedLocalIdentity: acceptedLocalIdentity, migrated: migrated, reconstructed: reconstructed, afterClear: afterClear))
       }
     }
     for service in services {
@@ -185,6 +207,6 @@ private enum KeychainMigrationProbe {
       }
     }
     services.removeAll()
-    return Report(schemaVersion: 1, runIdentifier: runID, operatingSystem: ProcessInfo.processInfo.operatingSystemVersionString, privateGroup: privateGroup, sharedGroup: sharedGroup, defaultInsertion: defaultInsertion, observations: observations)
+    return Report(schemaVersion: 2, runIdentifier: runID, operatingSystem: ProcessInfo.processInfo.operatingSystemVersionString, privateGroup: privateGroup, sharedGroup: sharedGroup, defaultInsertion: defaultInsertion, observations: observations)
   }
 }

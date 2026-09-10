@@ -8,7 +8,10 @@ migration. It does not connect to a real Clerk instance or open an auth prompt.
 Each launch allocates UUID-scoped services containing synthetic UTF-8 markers.
 For both magic-link and biometric-metadata purposes it checks private-only,
 shared-only, duplicate accounts in both insertion orders, adopted histories,
-and a changed-service/previous-bundle case. It records returned item attributes,
+and a changed-service/previous-bundle case. Ten client-token cases additionally
+cover previous-bundle/shared combinations and an accepted local identity with
+an adoption marker. The report contains 24 observations and records the
+previous-bundle and accepted-local item attributes separately. It records returned item attributes,
 which marker the actual adapter imported, reconstruction and durable removal.
 All cleanup is restricted to exact services created by that run. A successful
 report is written only after cleanup succeeds.
@@ -86,3 +89,10 @@ cleanup completed before report creation. The
 contains synthetic markers only. The
 [migration evidence](../../Documentation/Migration/legacy-metadata-access-groups.md)
 explains the observed selection and its limits.
+
+The expanded schema-version-2 run also completed all 24 observations, including
+the 10 client-token cases. Its
+[report](../../Documentation/Migration/evidence/keychain-migration-probe-client-simulator.json)
+is retained alongside the initial metadata report. Both builds and strict
+physical signature verification passed; the expanded diagnostic app is
+installed on the paired iPhone, still awaiting an unlocked runtime check.

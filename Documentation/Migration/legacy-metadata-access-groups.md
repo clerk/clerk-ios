@@ -108,3 +108,49 @@ proof. The report uses invalid synthetic authentication metadata, so expiry,
 real callback continuation and biometric credential usability remain outside
 its scope. The retained legacy adoption tests and source-policy decision remain
 open until the signed-device and valid-record checks are complete.
+
+## Client-token probe and configuration history
+
+The [expanded report](evidence/keychain-migration-probe-client-simulator.json)
+contains 24 observations (14 metadata and 10 client-token cases), schema 2,
+from Simulator run `F6BD20D2-2BEA-49AD-91BF-5779FDF9AC10` on iOS 26.5 (23F77).
+All reconstruction and durable-clear checks passed, and exact-service cleanup
+completed. The added attributes directly show seeded previous-bundle and
+accepted-local records, including when those records were not imported.
+
+With an explicit configured shared group, client-token selection was:
+
+| Seeded client token | Adapter imported |
+| --- | --- |
+| Configured private only | Nothing |
+| Configured shared only | Shared marker |
+| Configured private and shared, either insertion order | Shared marker |
+| Previous bundle only | Nothing |
+| Previous bundle and configured shared | Shared marker |
+| Configured private, previous bundle and configured shared | Shared marker |
+| Adoption marker and configured shared only | Nothing |
+| Adoption marker and configured private/shared | Nothing |
+| Accepted local identity plus adoption marker and all three legacy sources | Accepted local marker |
+
+These results establish the current adapter's selection in Simulator. They do
+not alone establish a supported upgrade regression. The baseline
+`DependencyContainer.makeKeychainStorages` invokes the old multi-source adoption
+routine only while enabling shared sync. With sync disabled and no adoption
+marker, the old credential and app-local stores use the configured service/group.
+With an adoption marker, the old identity store is the scoped stable identity,
+and metadata uses the configured service with an omitted group.
+
+Consequently, the old first-adoption test's private/previous-bundle/shared
+ordering is not the storage-read order of a never-adopted nonshared app. The
+current client fallback matches that app's configured group; scoped identity
+and adoption-marker precedence cover the previously adopted layout. Resuming
+the old live shared-sync adoption workflow is outside the selected profile.
+Adding a previous-bundle fallback indiscriminately could restore credentials
+from a source that the old nonshared app was not using.
+
+The remaining policy review must use actual configuration histories and valid
+records. In particular, metadata currently starts with an omitted-group query
+even for never-adopted nonshared apps whose old store used an explicit group.
+The physical probe and that history-dependent metadata selection remain open;
+the synthetic Simulator report does not resolve them. The expanded signed app
+was built, signature-verified and installed, but the iPhone was still locked.

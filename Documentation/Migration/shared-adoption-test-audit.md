@@ -47,9 +47,11 @@ access-group query behavior.
 
 The [metadata evidence](legacy-metadata-access-groups.md) and
 [Simulator report](evidence/keychain-migration-probe-simulator.json) remain
-limited to synthetic markers. The signed probe currently exercises metadata,
-not the never-adopted **client-token** source-order differences identified
-above. Extend that matrix before deciding a migration policy; preserve
+limited to synthetic markers. The expanded signed probe exercises metadata and
+**client-token** source combinations; its
+[Simulator results](legacy-metadata-access-groups.md#client-token-probe-and-configuration-history)
+include the baseline call-site interpretation. Physical execution remains
+pending. Preserve
 authoritative local identities, adoption markers, pending clears and durable
 new clears through any change. An actual old-major app upgrade with a signed-in
 user is still required by the release plan.
