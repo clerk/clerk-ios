@@ -17856,9 +17856,10 @@ isDevOrStagingUrl: (url) => {
 			if (!raw) return;
 			try {
 				const value = JSON.parse(raw);
+				const legacyKind = value.state === void 0 || value.state === "SIGN_IN" ? "signIn" : value.state === "SIGN_UP" ? "signUp" : void 0;
 				const flow = {
 					schemaVersion: 1,
-					kind: value.kind ?? (value.state === "SIGN_UP" ? "signUp" : "signIn"),
+					kind: value.kind ?? legacyKind,
 					flowId: value.flowId ?? value.flow_id,
 					codeVerifier: value.codeVerifier ?? value.code_verifier,
 					createdAt: value.createdAt ?? value.created_at ?? value.createdAtEpochMs,

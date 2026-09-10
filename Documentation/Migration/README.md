@@ -139,3 +139,5 @@ The [user resource assertion audit](user-resource-test-audit.md) records exact m
 The [biometric credential assertion audit](biometric-test-audit.md) maps the old biometric services and local store to the generated API and shared TypeScript owner. Use `signIn.biometricCredential` with explicit finalization; use generated `currentUser: true` selection instead of the old current-user helpers.
 
 The [Apple authentication assertion audit](apple-auth-test-audit.md) records generated Apple transfer and restriction behavior, the shared verification-error serializer correction, and packaged-engine evidence.
+
+The [authentication flow assertion audit](auth-flow-test-audit.md) records legacy flow-kind migration, incomplete callback results, cleanup/ownership checks, and generated authentication parameter coverage.

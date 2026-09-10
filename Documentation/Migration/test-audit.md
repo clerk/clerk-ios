@@ -39,7 +39,7 @@ behavior, request continuity tests, or explicitly removed private startup marker
 The [authentication resource assertion audit](auth-resource-test-audit.md) maps all
 27 sign-in, 9 sign-up and 1 magic-link service declarations to generated behavior
 or explicit future-API changes. Those three files are retired after shared and
-native email-link failure checks; the separate Auth suite remains retained.
+native email-link failure checks. The [authentication flow audit](auth-flow-test-audit.md) now retires the separate Auth suite after accounting for all 40 declarations.
 The [error assertion audit](error-test-audit.md) maps the old constructors and
 DTO checks to structured native failures and explicit new-major API changes.
 The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters,
@@ -224,7 +224,7 @@ Tests expecting a native service mock or request-builder call no longer exercise
 | --- | --- |
 | [Tests/Core/OrganizationsTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Core/OrganizationsTests.swift) | 2 |
 | [Tests/Domains/Auth/AuthAppleTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Auth/AuthAppleTests.swift) | 7 |
-| [Tests/Domains/Auth/AuthTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Auth/AuthTests.swift) | 38 |
+| [Tests/Domains/Auth/AuthTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Auth/AuthTests.swift) | 40 |
 | [Tests/Domains/Auth/BiometricCredential/BiometricCredentialServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Auth/BiometricCredential/BiometricCredentialServiceTests.swift) | 5 |
 | [Tests/Domains/Auth/BiometricCredential/BiometricCredentialTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Auth/BiometricCredential/BiometricCredentialTests.swift) | 4 |
 | [Tests/Domains/Auth/BiometricCredential/BiometricCredentialsTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Auth/BiometricCredential/BiometricCredentialsTests.swift) | 50 |
@@ -293,3 +293,5 @@ The [Clerk startup and storage audit](clerk-storage-test-audit.md) reviews the f
 The [Clerk auth presentation and readiness audit](clerk-auth-flow-test-audit.md) completes the disposition of the other 61 declarations in `ClerkTests.swift`, records reproduced presentation regressions and six packaged-core checks, and preserves the remaining race and hosted-auth gaps. The old file remains retained.
 
 The [Apple authentication assertion audit](apple-auth-test-audit.md) records generated Apple transfer and restriction behavior, the shared verification-error serializer correction, and packaged-engine evidence.
+
+The [authentication flow assertion audit](auth-flow-test-audit.md) records legacy flow-kind migration, incomplete callback results, cleanup/ownership checks, and generated authentication parameter coverage.

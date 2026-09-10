@@ -1918,6 +1918,14 @@
           "line": 1426
         },
         {
+          "name": "signOutUsesSessionServiceSignOut",
+          "line": 1452
+        },
+        {
+          "name": "setActiveUsesSessionServiceSetActive",
+          "line": 1473
+        },
+        {
           "name": "setActiveUsesNilOrganizationIdByDefault",
           "line": 1494
         },

@@ -39,6 +39,34 @@ import Testing
     #expect(clerk.isAuthFlowComplete)
   }
 
+  @Test func failedRepeatedFinalizationKeepsRecoveredSessionBehindPresentationCompletion() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await clerk.signIn.finalize()
+    #expect(clerk.session?.id == "sess_native")
+    capabilities.touchStatus = 403
+    capabilities.touchResponse = .object(["errors": .array([.object(["code": .string("activation_rejected"), "message": .string("Activation rejected")])])])
+    do {
+      try await AuthFlowRequestScope.withOwner(owner.id) {
+        try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+      }
+      Issue.record("Expected the core finalization error to remain visible")
+    } catch let error as CoreError {
+      #expect(error.errors.first?.code == "activation_rejected")
+    }
+    #expect(clerk.session?.id == "sess_native" && clerk.session?.status == .active)
+    let work = try awaiting(clerk, owner)
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.completeAuthFlow(work))
+    #expect(clerk.isAuthFlowComplete)
+    #expect(!clerk.completeAuthFlow(work))
+  }
+
   @Test func dismissibleExternalActivationLeavesSignedInContentAvailable() async throws {
     let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
     let clerk = try await connect(fixture)
@@ -285,6 +313,7 @@ import Testing
   }
 
   var touchResponse: JSONValue?
+  var touchStatus = 200
   var pauseNextTouch = false
   private var pausedTouch: CheckedContinuation<Void, Never>?
   private var touchObserver: CheckedContinuation<Void, Never>?
@@ -316,7 +345,7 @@ import Testing
         }
       }
       if let touchResponse {
-        return try .object(["status": .number(200), "headers": .object([:]), "body": .string(String(decoding: JSONEncoder().encode(touchResponse), as: UTF8.self))])
+        return try .object(["status": .number(Double(touchStatus)), "headers": .object([:]), "body": .string(String(decoding: JSONEncoder().encode(touchResponse), as: UTF8.self))])
       }
     }
     return try await base.perform(capability, arguments: arguments)

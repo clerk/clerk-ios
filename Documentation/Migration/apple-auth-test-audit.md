@@ -1,6 +1,6 @@
 # Apple authentication assertion audit
 
-This audit covers all seven declarations in baseline `Tests/Domains/Auth/AuthAppleTests.swift` at `02f98f89a19b6c079517c9aae07df7edd0e600e5`. The baseline file was read completely and its inventory SHA-256 matched before retirement. These tests formerly exercised handwritten native auth orchestration through service mocks. The new owner is `packages/clerk-js/src/utils/authenticateWithMobileSSO.ts`, exposed by generated `Clerk.authenticateWithSSO` in both languages. This audit does not retire the broader `AuthTests.swift` file.
+This audit covers all seven declarations in baseline `Tests/Domains/Auth/AuthAppleTests.swift` at `02f98f89a19b6c079517c9aae07df7edd0e600e5`. The baseline file was read completely and its inventory SHA-256 matched before retirement. These tests formerly exercised handwritten native auth orchestration through service mocks. The new owner is `packages/clerk-js/src/utils/authenticateWithMobileSSO.ts`, exposed by generated `Clerk.authenticateWithSSO` in both languages. The broader `AuthTests.swift` file is separately accounted for in the [authentication flow audit](auth-flow-test-audit.md).
 
 ## Preserved behavior and corrected error bridge
 
