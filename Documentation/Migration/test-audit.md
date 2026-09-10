@@ -10,7 +10,10 @@ The [browser assertion audit](browser-test-audit.md) now maps every old browser
 presentation test to the current adapter, records the changed cancellation scope,
 and includes a verified regression test for stale callbacks. The
 [passkey assertion audit](passkey-test-audit.md) covers request restrictions and
-explicit malformed-input rejection. Other categories below still require their
+explicit malformed-input rejection. The [passkey resource audit](passkey-resource-test-audit.md)
+retires eight reviewed resource/service declarations after generated registration,
+rename, deletion and cancellation checks, and records the exported-alias naming fix.
+Other categories below still require their
 own assertion-level review. The [utility assertion audit](utility-test-audit.md)
 separates retained presentation/serialization/PKCE/packaging assertions from
 removed helper APIs and unresolved callback/state behavior.
@@ -45,7 +48,7 @@ provider presentation and instance-mode values, including the corrected union pr
 The [contact resource assertion audit](contact-resource-test-audit.md) maps all 21 email, phone and external-account service/resource declarations and the reproduced deletion-receipt projection defect.
 The [deletion result contract](deletion-result-contract.md) records the membership return-value regression and two reviewed organization assertions; the larger legacy organization files remain retained.
 
-The [organization account list audit](organization-list-test-audit.md) maps all ten old data-source tests to generated-resource checks in the UI target, fixes invitation pagination after acceptance, and retires that legacy file. The separate organization resource/service/defaults tests remain retained.
+The [organization account list audit](organization-list-test-audit.md) maps all ten old data-source tests to generated-resource checks in the UI target, fixes invitation pagination after acceptance, and retires that legacy file. The separate organization resource/service tests remain retained. The [organization defaults audit](organization-defaults-test-audit.md) retires its three decoder declarations after fixing missing advisory severity in the shared resource and verifying partial responses on both engines.
 
 The [JWT assertion audit](jwt-test-audit.md) maps the removed native parser to shared decoding and generated token-result checks.
 The [session selection audit](session-utility-test-audit.md) checks canonical selection and readable resource results after expiry.

@@ -1,7 +1,7 @@
 {
   "protocolVersion": 1,
   "hostCapabilityVersion": 1,
-  "contractHash": "d0e44f4d5307614738d237be8326540031290579f49e2b098be85596ced06d98",
+  "contractHash": "0f8387f260072ba6f894442b73d50afa6bda5f1205ed3c9209f5d6b1cfba16ce",
   "roots": {
     "clerk": {
       "kind": "ref",
@@ -30,9 +30,9 @@
   },
   "namingPolicy": "Remove Future and trailing Resource; fail collisions.",
   "errorPolicy": "Approved authentication error-only envelopes throw after state is applied.",
-  "coreRevision": "acfc5359dab0eca6a46ceed3282f2057bc0321f2",
-  "bundleSHA256": "3c4ea6180da6abd15f6112ce669a8f51a4f48fb389acc2f45331e411323a7bf4",
-  "bundleBytes": 1315423,
+  "coreRevision": "e7e04dc7237f2bd4badf6f6b756942530bf219f9",
+  "bundleSHA256": "fb59f237d749c72fffc1d8fde3b48458091b43bf4610e3d0b35f443d8cb87bbf",
+  "bundleBytes": 1315471,
   "thirdPartyNoticesSHA256": "e4223a282e22ea86b1215013d7e6c5f4e6f02be8d14ca2ce357ed14ba319e1e9",
   "bundledDependencies": [
     {

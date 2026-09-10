@@ -1,6 +1,6 @@
 # Organization account list migration audit
 
-All ten declarations in baseline `Tests/Domains/Organization/OrganizationAccountListDataSourceTests.swift` were reviewed. Their presentation behavior is now checked in `Tests/UI/OrganizationAccountListCoreTests.swift` through generated resources executing the packaged JavaScriptCore bundle. The old dependency-container and native service mocks are removed with that legacy test file. This audit does not retire the separate Organization, OrganizationService, or OrganizationCreationDefaults suites.
+All ten declarations in baseline `Tests/Domains/Organization/OrganizationAccountListDataSourceTests.swift` were reviewed. Their presentation behavior is now checked in `Tests/UI/OrganizationAccountListCoreTests.swift` through generated resources executing the packaged JavaScriptCore bundle. The old dependency-container and native service mocks are removed with that legacy test file. This audit does not retire the separate Organization or OrganizationService suites. OrganizationCreationDefaults is now retired under its [own assertion audit](organization-defaults-test-audit.md).
 
 ## Pagination regression
 

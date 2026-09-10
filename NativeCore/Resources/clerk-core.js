@@ -16585,7 +16585,10 @@ isDevOrStagingUrl: (url) => {
 		}
 		fromJSON(data) {
 			if (!data) return this;
-			if (data.advisory) this.advisory = this.withDefault(data.advisory, this.advisory ?? null);
+			if (data.advisory) this.advisory = {
+				...data.advisory,
+				severity: data.advisory.severity ?? "warning"
+			};
 			if (data.form) {
 				this.form.name = this.withDefault(data.form.name, this.form.name);
 				this.form.slug = this.withDefault(data.form.slug, this.form.slug);
@@ -28080,7 +28083,7 @@ isDevOrStagingUrl: (url) => {
 				"optional": false,
 				"type": {
 					"kind": "ref",
-					"name": "Partialtype"
+					"name": "UpdatePasskeyParams"
 				}
 			}],
 			result: {
@@ -34045,8 +34048,8 @@ isDevOrStagingUrl: (url) => {
 				}
 			]
 		},
-		"Partialtype": {
-			"name": "Partialtype",
+		"UpdatePasskeyParams": {
+			"name": "UpdatePasskeyParams",
 			"kind": "object",
 			"properties": [{
 				"name": "name",
@@ -41648,7 +41651,7 @@ isDevOrStagingUrl: (url) => {
 	const manifest = {
 		"protocolVersion": 1,
 		"hostCapabilityVersion": 1,
-		"contractHash": "d0e44f4d5307614738d237be8326540031290579f49e2b098be85596ced06d98",
+		"contractHash": "0f8387f260072ba6f894442b73d50afa6bda5f1205ed3c9209f5d6b1cfba16ce",
 		"roots": {
 			"clerk": {
 				"kind": "ref",
