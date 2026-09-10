@@ -66,3 +66,5 @@ cache audit](dependency-cache-test-audit.md), which explicitly records removed
 topology/cache contracts. Shared-session feature suites await their own audit.
 
 The [token-only credential upgrade](token-only-credential-upgrade.md) corrects the previous overbroad cleared-state rejection using the actual old identity contract. A cleared client projection with a retained credential is distinct from a credential clear.
+
+The [shared identity storage/event audit](shared-identity-storage-test-audit.md) supplies the assertion-level dispositions for the retired local-store, owner-slot, event and clear-recovery suites. The larger shared-session feature suites remain pending.
