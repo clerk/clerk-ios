@@ -1,6 +1,6 @@
 # Client credential clear audit
 
-Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. All assertions in `Tests/Middleware/ClerkDeviceTokenResponseMiddlewareTests.swift` were read and its SHA-256 matched [the baseline inventory](legacy-tests.json). This audit retires exactly that file's three declarations. The mixed client-sync, request-header and API-client suites remain retained.
+Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. All assertions in `Tests/Middleware/ClerkDeviceTokenResponseMiddlewareTests.swift` were read and its SHA-256 matched [the baseline inventory](legacy-tests.json). This audit retires exactly that file's three declarations. The subsequent [request construction](request-construction-test-audit.md) and [client-sync](client-sync-middleware-test-audit.md) audits complete retirement of those mixed networking suites.
 
 The backend's [client deletion handler](https://github.com/clerk/clerk_go/blob/33e0f8279c9b4e3d90d6e4788c67237bc6378a56/api/fapi/v1/clients/http.go#L306) calls [UnsetClientHandshakeCookie](https://github.com/clerk/clerk_go/blob/33e0f8279c9b4e3d90d6e4788c67237bc6378a56/api/fapi/v1/cookies/helpers.go#L192), which sends `Authorization: Bearer ` for a native client. The trailing space accommodates intermediaries that strip empty header values. Header implementations may normalize this to `Bearer`.
 

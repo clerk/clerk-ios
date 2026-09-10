@@ -1,6 +1,6 @@
 # Response middleware API retirement
 
-Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. This audit reads all assertions in `ClerkAuthEventEmitterResponseMiddlewareTests.swift` (seven declarations) and `NetworkingPipelineResponseMiddlewareOrderTests.swift` (one declaration). Their file hashes match [the baseline inventory](legacy-tests.json). Exactly these two files are retired by this audit. The separate [network failure audit](network-failure-test-audit.md) subsequently retires the retry and invalid-auth suites; the [credential clear audit](client-credential-clear-test-audit.md) retires the device-token suite, leaving three mixed networking files retained.
+Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. This audit reads all assertions in `ClerkAuthEventEmitterResponseMiddlewareTests.swift` (seven declarations) and `NetworkingPipelineResponseMiddlewareOrderTests.swift` (one declaration). Their file hashes match [the baseline inventory](legacy-tests.json). Exactly these two files are retired by this audit. The separate [network failure audit](network-failure-test-audit.md) subsequently retires the retry and invalid-auth suites; the [credential clear audit](client-credential-clear-test-audit.md) retires the device-token suite, and the [request construction audit](request-construction-test-audit.md) retires the API-client and header suites, and the [client-sync audit](client-sync-middleware-test-audit.md) completes retirement of that middleware file.
 
 The generated API exposes observable resources and structured operation completion. It has no `clerk.auth.events`, mutable native `Client`, `ClerkResponseMiddleware`, or caller-composed `NetworkingPipeline`. Completion of verification does not itself select a session: callers explicitly finalize the future resource, while prebuilt UI invokes finalization and enforces its presentation completion gate. The old event delivery/count contract is an intentional API removal.
 
@@ -19,16 +19,14 @@ See the [authentication flow audit](auth-flow-test-audit.md), [client response a
 
 At core `7bd2374a34918d5764c8bbe22c7b3ec890c466b0`, all 523 embedded runtime tests pass. The packaged-core suite passes 38 tests on macOS and 38 on iOS Simulator; Android's packaged-core suite passes 11 tests. These runs include actual generated-resource execution on JavaScriptCore and QuickJS. They do not preserve the removed event or middleware extension APIs, and they are not live authentication or UI journey tests.
 
-## Networking assertions still retained
+## Completed networking audits
 
-All assertion bodies in the three remaining files were also read, but their mixed contracts are not retired by this change:
+The separate client-sync audit maps all nineteen declarations, including decoder, null, credential, presentation-gate and removed snapshot/deferred-sync contracts:
 
-- `ClerkClientSyncResponseMiddlewareTests.swift` (19): client extraction, null preservation, organization selection, error-meta hydration, explicit deletion clears, deferred sync, registered UI gates, stale generations, persistence ordering and thread placement.
-- `ClerkHeaderRequestMiddlewareTests.swift` (13): authorization, hydrated storage reads, queued identity capture, client-ID markers, startup generations and device/app metadata. The [request metadata audit](request-metadata.md) records the desktop classification fix and remaining device metadata uncertainty.
-- `ClerkAPIClientTests.swift` (19): HTTP construction, metadata, tokenless startup, frozen retry context, custom signing and deferred client sync.
+- [Client-sync middleware audit](client-sync-middleware-test-audit.md): exact assertion map and passing current presentation gates; broader core/shared-session/storage suites remain separate.
 
 The canonical `fapiClient` retries failed GET fetches with its own limits and backoff; it does not retry HTTP 4xx/5xx responses at that layer. The old middleware retried selected statuses once and interpreted Retry-After and rate-limit reset headers. The [network failure audit](network-failure-test-audit.md) now supplies generated outcome checks and the explicit policy changes for all eleven retry/invalid-auth declarations. It also records the shared recursive 401 recovery fix.
 
-The [credential clear audit](client-credential-clear-test-audit.md) resolves blank-Bearer handling for the supported attached JavaScript owner: the shared transport removes the credential and fences older replies, while canonical client destruction updates resource state. It also documents the removed arbitrary native-client-nil assignment and leaves the remaining mixed client-sync assertions retained.
+The [credential clear audit](client-credential-clear-test-audit.md) resolves blank-Bearer handling for the supported attached JavaScript owner: the shared transport removes the credential and fences older replies, while canonical client destruction updates resource state. It also documents the removed arbitrary native-client-nil assignment and links the separately completed client-sync assertion audit.
 
-The partial [request retry audit](request-retry-test-audit.md) now verifies frozen retry credentials and prevents transmission after an identity change, including changes during backoff. It leaves the mixed API-client file retained for its other assertions.
+The partial [request retry audit](request-retry-test-audit.md) now verifies frozen retry credentials and prevents transmission after an identity change, including changes during backoff. The complete request construction audit subsequently records its other assertions and retires that file.
