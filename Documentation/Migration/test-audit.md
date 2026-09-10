@@ -313,3 +313,5 @@ The [shared identity storage/event audit](shared-identity-storage-test-audit.md)
 The [legacy metadata access-group investigation](legacy-metadata-access-groups.md) records configuration-history and real Keychain query limits behind the retained shared-adoption assertions. Mock nil-group lookup is not proof of app-private attribution.
 
 The [live integration migration audit](integration-test-audit.md) maps both real-service declarations and their helper/cleanup paths to the generated API. The three files are migrated in place into the default package graph's `ClerkIntegrationTests` target. macOS/iOS compilation and explicit local skipping are verified; CI missing-key failure is verified; a live configured-instance run remains open.
+
+The [watch replication audit](watch-replication-test-audit.md) records every assertion in the 65-declaration watch suite and retires that file with its unavailable peer protocol. The review also reproduced and fixed adoption-marker credential fallback; that passing upgrade proof is separate from the unavailable watch contracts.

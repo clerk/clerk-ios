@@ -70,3 +70,5 @@ The [token-only credential upgrade](token-only-credential-upgrade.md) corrects t
 The [shared identity storage/event audit](shared-identity-storage-test-audit.md) supplies the assertion-level dispositions for the retired local-store, owner-slot, event and clear-recovery suites. The larger shared-session feature suites remain pending.
 
 The [adoption-marker credential fix](adoption-marker-credential-upgrade.md) prevents an empty, already-adopted identity from importing older eligible tokens. It preserves accepted present/token-only identities and is verified with public storage calls and independent real Keychain processes.
+
+The [watch replication audit](watch-replication-test-audit.md) retires the fully reviewed watch-payload suite under the explicit availability policy. Shared-session convergence and adoption suites remain retained.
