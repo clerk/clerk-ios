@@ -25,6 +25,7 @@ import ClerkKit
           } catch {
             message = "Failed"
             print("CLERK_CORE_FOOTPRINT_FAILED \(type(of: error))")
+            if let error = error as? MemoryProbeError { print("CLERK_MEMORY_FAILURE \(error)") }
             if ProcessInfo.processInfo.arguments.contains("--exit-after-ready") { exit(1) }
           }
         }
@@ -32,8 +33,8 @@ import ClerkKit
   }
 
   @MainActor private func run() async throws {
-    if ProcessInfo.processInfo.arguments.contains("--memory") {
-      try await runMemoryMeasurement()
+    if ProcessInfo.processInfo.arguments.contains("--memory") || ProcessInfo.processInfo.arguments.contains("--memory-stress") {
+      try await runMemoryMeasurement(stress: ProcessInfo.processInfo.arguments.contains("--memory-stress"))
       return
     }
     #if EMBEDDED_CORE
@@ -102,64 +103,80 @@ import ClerkKit
     return Double(components.seconds) * 1000 + Double(components.attoseconds) / 1e15
   }
 
-  @MainActor private func runMemoryMeasurement() async throws {
+  @MainActor private func runMemoryMeasurement(stress: Bool) async throws {
     guard ProcessInfo.processInfo.environment["CLERK_FOOTPRINT_LIVE_KEY"] == nil else {
       throw MemoryProbeError.invalidConfiguration
     }
-    let sampler = ProcessMemorySampler()
+    let cycleCount = stress ? 12 : 1
+    let sampler = ProcessMemorySampler(capacity: stress ? 40000 : 10000)
+    var cycleAssertions: [[String: Any]] = []
     sampler.start()
     defer { sampler.stop() }
     let thermalBefore = ProcessInfo.processInfo.thermalState.rawValue
     try await Task.sleep(for: .seconds(1))
-    sampler.phase("startup")
-    let clock = ContinuousClock()
-    let startup = clock.now
-    #if EMBEDDED_CORE
-    var fixture: StartupFixtures? = try StartupFixtures(authenticated: true)
-    let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
-    clerk = try await Clerk.connect(
-      configuration: .init(publishableKey: key, callbackURL: URL(string: "clerk-footprint://callback")!),
-      capabilities: fixture!
-    )
-    guard clerk?.session?.id == "sess_native", clerk?.user?.id == "user_native" else {
-      throw MemoryProbeError.invalidOwner
-    }
-    #endif
-    let startupDuration = startup.duration(to: clock.now)
-    if startupDuration < .milliseconds(250) {
-      try await Task.sleep(for: .milliseconds(250) - startupDuration)
-    }
-    sampler.phase("warmup")
-    #if EMBEDDED_CORE
-    let requests = fixture!.requestCount
-    for _ in 0 ..< 50 {
-      let previous = clerk?.signIn.emailCode
-      try await clerk?.signIn.reset()
-      guard previous?.isInvalidated == true, fixture?.requestCount == requests,
-            clerk?.session?.id == "sess_native", clerk?.user?.id == "user_native"
-      else {
+    for cycle in 1 ... cycleCount {
+      func phase(_ name: String) {
+        sampler.phase(stress ? "cycle-\(cycle)-\(name)" : name)
+      }
+      phase("startup")
+      let clock = ContinuousClock()
+      let startup = clock.now
+      #if EMBEDDED_CORE
+      var fixture: StartupFixtures? = try StartupFixtures(authenticated: true)
+      let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
+      clerk = try await Clerk.connect(
+        configuration: .init(publishableKey: key, callbackURL: URL(string: "clerk-footprint://callback")!),
+        capabilities: fixture!
+      )
+      guard clerk?.session?.id == "sess_native", clerk?.user?.id == "user_native" else {
         throw MemoryProbeError.invalidOwner
       }
+      #endif
+      let startupDuration = startup.duration(to: clock.now)
+      if startupDuration < .milliseconds(250) {
+        try await Task.sleep(for: .milliseconds(250) - startupDuration)
+      }
+      phase("warmup")
+      let warmup = clock.now
+      #if EMBEDDED_CORE
+      let requests = fixture!.requestCount
+      for _ in 0 ..< 50 {
+        let previous = clerk?.signIn.emailCode
+        try await clerk?.signIn.reset()
+        guard previous?.isInvalidated == true, fixture?.requestCount == requests,
+              clerk?.session?.id == "sess_native", clerk?.user?.id == "user_native"
+        else {
+          throw MemoryProbeError.invalidOwner
+        }
+      }
+      #endif
+      if stress, warmup.duration(to: clock.now) < .milliseconds(500) {
+        try await Task.sleep(for: .milliseconds(500) - warmup.duration(to: clock.now))
+      }
+      phase("steadyWait")
+      try await Task.sleep(for: stress ? .seconds(1) : .seconds(3))
+      phase("steady")
+      try await Task.sleep(for: stress ? .milliseconds(500) : .seconds(1))
+      phase("close")
+      #if EMBEDDED_CORE
+      weak var releasedOwner = clerk
+      weak var releasedRuntime = try clerk?.context.requireRuntime()
+      clerk?.close()
+      clerk = nil
+      fixture = nil
+      #endif
+      phase("closedWait")
+      try await Task.sleep(for: stress ? .milliseconds(1500) : .seconds(5))
+      phase("closed")
+      try await Task.sleep(for: stress ? .milliseconds(500) : .seconds(1))
+      #if EMBEDDED_CORE
+      guard releasedOwner == nil else { throw MemoryProbeError.ownerStillRetained }
+      guard releasedRuntime == nil else { throw MemoryProbeError.runtimeStillRetained }
+      cycleAssertions.append(["cycle": cycle, "authenticatedAtReady": true,
+                              "ownerReleasedAfterClose": true, "runtimeReleasedAfterClose": true,
+                              "warmupResets": 50, "httpRequestsAfterWarmup": requests])
+      #endif
     }
-    #endif
-    sampler.phase("steadyWait")
-    try await Task.sleep(for: .seconds(3))
-    sampler.phase("steady")
-    try await Task.sleep(for: .seconds(1))
-    sampler.phase("close")
-    #if EMBEDDED_CORE
-    weak var releasedOwner = clerk
-    clerk?.close()
-    clerk = nil
-    fixture = nil
-    #endif
-    sampler.phase("closedWait")
-    try await Task.sleep(for: .seconds(5))
-    sampler.phase("closed")
-    try await Task.sleep(for: .seconds(1))
-    #if EMBEDDED_CORE
-    guard releasedOwner == nil else { throw MemoryProbeError.ownerStillRetained }
-    #endif
     let samples = try sampler.finish()
     var report: [String: Any] = [
       "schemaVersion": 1,
@@ -169,6 +186,9 @@ import ClerkKit
       "thermalStateAfter": ProcessInfo.processInfo.thermalState.rawValue,
       "lowPowerMode": ProcessInfo.processInfo.isLowPowerModeEnabled,
       "requestedSampleIntervalMilliseconds": 5,
+      "mode": stress ? "stress" : "single",
+      "cycleCount": cycleCount,
+      "cycleAssertions": cycleAssertions,
       "forcedCollection": false,
       "samples": samples.map(\.dictionary),
     ]
@@ -177,8 +197,8 @@ import ClerkKit
     report["ownerCount"] = 1
     report["authenticatedAtReady"] = true
     report["ownerReleasedAfterClose"] = true
-    report["warmupResets"] = 50
-    report["httpRequestsAfterWarmup"] = requests
+    report["warmupResets"] = 50 * cycleCount
+    report["httpRequestsAfterWarmup"] = cycleAssertions.last!["httpRequestsAfterWarmup"]
     report["coreRevision"] = BundledCore.coreRevision
     report["bundleSHA256"] = BundledCore.sha256
     #else
@@ -188,13 +208,13 @@ import ClerkKit
     #endif
     let data = try JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])
     let directory = try FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-    try data.write(to: directory.appendingPathComponent("core-memory.json"), options: .atomic)
-    print("CLERK_CORE_MEMORY_WRITTEN \(samples.count)")
+    try data.write(to: directory.appendingPathComponent(stress ? "core-memory-stress.json" : "core-memory.json"), options: .atomic)
+    print("\(stress ? "CLERK_CORE_MEMORY_STRESS_WRITTEN" : "CLERK_CORE_MEMORY_WRITTEN") \(samples.count)")
   }
 }
 
 private enum MemoryProbeError: Error {
-  case invalidConfiguration, invalidOwner, ownerStillRetained, samplingFailed
+  case invalidConfiguration, invalidOwner, ownerStillRetained, runtimeStillRetained, samplingFailed
 }
 
 /// The timer and all mutable sample storage are confined to this private queue.
@@ -223,10 +243,14 @@ private final class ProcessMemorySampler: @unchecked Sendable {
   private var currentPhase = "before"
   private var failed = false
   private var origin: UInt64 = 0
+  private let capacity: Int
+  init(capacity: Int) {
+    self.capacity = capacity
+  }
 
   func start() {
     queue.sync {
-      samples.reserveCapacity(10000)
+      samples.reserveCapacity(capacity)
       origin = DispatchTime.now().uptimeNanoseconds
       sample()
       let timer = DispatchSource.makeTimerSource(queue: queue)

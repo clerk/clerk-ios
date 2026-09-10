@@ -73,6 +73,37 @@ retained buffer contribute to both apps. These observations do not establish UI
 responsiveness, real-service memory, repeated connect/close stability or coverage
 of slower hardware. See [Apple's memory guidance](https://developer.apple.com/documentation/xcode/reducing-your-app-s-memory-use).
 
+### Repeated lifecycle retention
+
+Add `--stress` to the memory collector to run twelve sequential lifecycles in
+each embedded process, with one live owner at a time. Each owner starts with the
+authenticated fixture, performs 50 generated resets and then closes. Both the
+native `Clerk` and its `CoreRuntime` must be released before the next cycle. The
+baseline executes the matching timed phases without creating an owner. Startup
+has a 250 ms minimum window and warm-up a 500 ms minimum window; each cycle then
+waits one second before a 500 ms steady window and 1.5 seconds after close before
+a 500 ms closed window. Actual spans and timing gaps are retained.
+
+```sh
+python3 scripts/measure-native-core-memory.py \
+  --device "$FOOTPRINT_DEVICE" --model "$FOOTPRINT_MODEL" \
+  --native-revision "$(git rev-parse HEAD)" \
+  --products /tmp/clerk-footprint/Build/Products/Release-iphoneos \
+  --stress --pairs 1 \
+  --raw-directory /tmp/clerk-footprint/memory-stress-raw \
+  --output /tmp/clerk-footprint/memory-stress.json
+```
+
+Use a separate raw directory from single-owner observations. The collector
+retains every per-cycle phase and release assertion, and reports the closed
+footprint/RSS delta against the matching baseline phase. It does not invent a
+pass threshold or discard early cycles. The sampler reserves capacity for 40,000
+records to avoid array-capacity doubling during the bounded workload; retained
+records still contribute to both processes. The kernel high-water mark is
+process-lifetime, so later cycle values may include an earlier cycle's peak.
+This is a bounded retention observation, not proof of indefinite lifetime
+stability or separate Swift/JavaScript heap ownership.
+
 ## Signed app file sizes
 
 ```sh
