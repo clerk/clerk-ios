@@ -32,7 +32,11 @@ import Foundation
     for request in capabilities.requests {
       let headers = try request["headers"]?.object()
       precondition(headers?["x-ios-sdk-version"] == .string(Clerk.sdkVersion))
+      #if os(macOS) || targetEnvironment(macCatalyst)
+      precondition(headers?["x-mobile"] == .string("0"))
+      #else
       precondition(headers?["x-mobile"] == .string("1"))
+      #endif
       let requestURL = try request["url"]?.string()
       precondition(requestURL?.contains("_is_native=1") == true)
     }

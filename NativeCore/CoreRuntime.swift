@@ -178,6 +178,11 @@ extension CoreResource {
             "capabilities": .array(capabilities.map(JSONValue.string)),
           ]
           if let sdkVersion { configuration["sdkVersion"] = .string(sdkVersion) }
+          #if os(macOS) || targetEnvironment(macCatalyst)
+          configuration["isMobile"] = .bool(false)
+          #else
+          configuration["isMobile"] = .bool(true)
+          #endif
           try transport.send(.object(["kind": .string("init"), "id": .string(id), "configuration": .object(configuration)]))
         } catch { pending.removeValue(forKey: id)?(.failure(error)) }
       }
