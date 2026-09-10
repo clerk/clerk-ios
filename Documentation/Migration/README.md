@@ -143,3 +143,5 @@ The [Apple authentication assertion audit](apple-auth-test-audit.md) records gen
 The [authentication flow assertion audit](auth-flow-test-audit.md) records legacy flow-kind migration, incomplete callback results, cleanup/ownership checks, and generated authentication parameter coverage.
 
 The [dependency and cache audit](dependency-cache-test-audit.md) distinguishes credential import from removed offline bootstrap and shared-session topology. The [Billing audit](billing-test-audit.md) records the removed query facade and tested generated payment-method collections.
+
+The [hosted portal audit](hosted-portal-test-audit.md) records the removed create/redeem, automatic-activation and shared-slot contracts separately from supported future SSO.

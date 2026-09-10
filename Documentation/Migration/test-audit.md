@@ -305,3 +305,5 @@ The [authentication flow assertion audit](auth-flow-test-audit.md) records legac
 The [dependency and offline-cache audit](dependency-cache-test-audit.md) accounts for all 23 declarations in the remaining dependency-container and cache suites. Those two files are retired with their removed types; unavailable offline/bootstrap and shared-topology behavior is explicit.
 
 The [Billing audit](billing-test-audit.md) accounts for all 25 declarations and retires the old Billing suite after generated payment-method collection checks pass on both engines. The separate Billing root remains unavailable.
+
+The [hosted portal audit](hosted-portal-test-audit.md) records all 32 declarations in the three portal suites and retires those files under the explicit unsupported-feature policy. This does not claim hosted portal support or change the separate future-style SSO/finalization contract.
