@@ -76,6 +76,32 @@ struct AppleCredentialStorageTests {
     }
   }
 
+  @Test(arguments: ["token", " token\n", "", " \n\t", "invalid-utf8"])
+  func legacyTokenValidationPreservesThePreviousMajorsNormalization(value: String) async throws {
+    let probe = SecurityItemProbe()
+    let bytes = value == "invalid-utf8" ? Data([0xFF]) : Data(value.utf8)
+    probe.seed(service: legacyService, account: "clerkDeviceToken", value: bytes)
+    let legacy = LegacyKeychainConfiguration(service: legacyService, publishableKey: key)
+    let expected: String? = value == "token" || value == " token\n" ? "token" : nil
+    let current = storage(probe, legacy: legacy)
+    #expect(try await current.read() == expected)
+    #expect(try await storage(probe, legacy: legacy).read() == expected)
+    #expect(probe.value(service: legacyService, account: "clerkDeviceToken") == bytes)
+  }
+
+  @Test(arguments: ["absent", "orphan", "malformed", "nonfinite-date"])
+  func legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value: String) async throws {
+    let probe = SecurityItemProbe()
+    probe.seed(service: legacyService, account: "clerkDeviceToken", value: Data("token".utf8))
+    if value != "absent" {
+      try probe.seed(service: legacyService, account: "cachedClient", value: value == "orphan" ? JSONEncoder().encode(legacyClient) : Data("not-a-client".utf8))
+      probe.seed(service: legacyService, account: "cachedClientServerDate", value: Data((value == "nonfinite-date" ? "nan" : "not-a-date").utf8))
+    }
+    #expect(try await storage(probe, legacy: .init(service: legacyService, publishableKey: key)).read() == "token")
+    #expect(probe.readCount(service: legacyService, account: "cachedClient") == 0)
+    #expect(probe.readCount(service: legacyService, account: "cachedClientServerDate") == 0)
+  }
+
   @Test func newRecordReadErrorsDoNotImportAnOlderCredential() async throws {
     let probe = SecurityItemProbe()
     probe.seed(service: legacyService, account: "clerkDeviceToken", value: Data("old".utf8))

@@ -123,7 +123,7 @@ public actor KeychainCredentialStorage: CredentialStorage {
        String(data: marker, encoding: .utf8) == "2" { return nil }
     guard legacy.publishableKey == publishableKey else { return nil }
     guard let data = try readLegacyItem(service: legacy.service ?? applicationIdentifier, account: "clerkDeviceToken", accessGroup: legacy.accessGroup),
-          let token = String(data: data, encoding: .utf8), !token.isEmpty else { return nil }
+          let token = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines), !token.isEmpty else { return nil }
     return token
   }
 
