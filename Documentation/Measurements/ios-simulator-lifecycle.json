@@ -1,0 +1,461 @@
+{
+  "platform": "iOS Simulator",
+  "nativeRevision": "24c57438e136aa0f0ad0dc0184a540ee02c55a29",
+  "coreRevision": "0b97ed0a260429dda4f230e32bb7e94fde3097f4",
+  "bundleSHA256": "86d665dd87bc188352594cf80a5c0c5927348d84d9de6382e927d4da8abc9cd3",
+  "operatingSystem": "Version 26.5 (Build 23F77)",
+  "executableSHA256": "d5e79c0b643b550029749c0ccdddcc204115c980c2015b71fec4fc8d7ff30b02",
+  "rawSHA256": "f5b4c235ebf751e05e284b996bc2597d9fd8755a6780ce71537c58719409bc0b",
+  "cycleAssertions": [
+    {
+      "authenticatedAtReady": true,
+      "cycle": 1,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 2,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 3,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 4,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 5,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 6,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 7,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 8,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 9,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 10,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 11,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    },
+    {
+      "authenticatedAtReady": true,
+      "cycle": 12,
+      "httpRequestsAfterWarmup": 2,
+      "ownerReleasedAfterClose": true,
+      "runtimeReleasedAfterClose": true,
+      "warmupResets": 50
+    }
+  ],
+  "maximumSamplingGapMilliseconds": 10.007917,
+  "medianSamplingGapMilliseconds": 4.901104,
+  "physicalPerformanceAcceptance": false,
+  "schemaVersion": 1,
+  "rawFile": "ios-simulator-lifecycle-raw.json.gz",
+  "compressedSHA256": "6a4efe9cce7df22c3d00027fbb477494641a0aa3bc045662a6693bfdce060d83",
+  "sourceSHA256": "aa9a5ebb4a9b7a4bf87f01ac0fee935990022e270223a0b2b5b71d0f150b7754",
+  "processID": 83523,
+  "sampleCount": 10627,
+  "cycleCount": 12,
+  "warmupResets": 600,
+  "forcedCollection": false,
+  "phaseWindows": {
+    "before": {
+      "count": 203,
+      "spanMilliseconds": 1000.756042
+    },
+    "cycle-1-startup": {
+      "count": 52,
+      "spanMilliseconds": 250.201208
+    },
+    "cycle-1-warmup": {
+      "count": 103,
+      "spanMilliseconds": 504.88875
+    },
+    "cycle-1-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1005.538792
+    },
+    "cycle-1-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.598042
+    },
+    "cycle-1-close": {
+      "count": 2,
+      "spanMilliseconds": 1.545291
+    },
+    "cycle-1-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1503.85625
+    },
+    "cycle-1-closed": {
+      "count": 102,
+      "spanMilliseconds": 500.669041
+    },
+    "cycle-2-startup": {
+      "count": 53,
+      "spanMilliseconds": 253.667541
+    },
+    "cycle-2-warmup": {
+      "count": 102,
+      "spanMilliseconds": 503.674833
+    },
+    "cycle-2-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1001.637916
+    },
+    "cycle-2-steady": {
+      "count": 103,
+      "spanMilliseconds": 505.245375
+    },
+    "cycle-2-close": {
+      "count": 2,
+      "spanMilliseconds": 1.125375
+    },
+    "cycle-2-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1503.490375
+    },
+    "cycle-2-closed": {
+      "count": 103,
+      "spanMilliseconds": 505.243875
+    },
+    "cycle-3-startup": {
+      "count": 53,
+      "spanMilliseconds": 254.648666
+    },
+    "cycle-3-warmup": {
+      "count": 103,
+      "spanMilliseconds": 505.081542
+    },
+    "cycle-3-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1005.254292
+    },
+    "cycle-3-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.73175
+    },
+    "cycle-3-close": {
+      "count": 2,
+      "spanMilliseconds": 1.0015
+    },
+    "cycle-3-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1505.143834
+    },
+    "cycle-3-closed": {
+      "count": 103,
+      "spanMilliseconds": 503.979666
+    },
+    "cycle-4-startup": {
+      "count": 53,
+      "spanMilliseconds": 254.66075
+    },
+    "cycle-4-warmup": {
+      "count": 102,
+      "spanMilliseconds": 503.346959
+    },
+    "cycle-4-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1001.949541
+    },
+    "cycle-4-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.056875
+    },
+    "cycle-4-close": {
+      "count": 2,
+      "spanMilliseconds": 0.324
+    },
+    "cycle-4-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1505.240875
+    },
+    "cycle-4-closed": {
+      "count": 102,
+      "spanMilliseconds": 500.60275
+    },
+    "cycle-5-startup": {
+      "count": 53,
+      "spanMilliseconds": 254.559375
+    },
+    "cycle-5-warmup": {
+      "count": 103,
+      "spanMilliseconds": 504.585708
+    },
+    "cycle-5-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1005.651792
+    },
+    "cycle-5-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.729542
+    },
+    "cycle-5-close": {
+      "count": 2,
+      "spanMilliseconds": 0.88425
+    },
+    "cycle-5-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1504.504209
+    },
+    "cycle-5-closed": {
+      "count": 103,
+      "spanMilliseconds": 504.5975
+    },
+    "cycle-6-startup": {
+      "count": 53,
+      "spanMilliseconds": 255.373542
+    },
+    "cycle-6-warmup": {
+      "count": 103,
+      "spanMilliseconds": 504.811209
+    },
+    "cycle-6-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1004.250875
+    },
+    "cycle-6-steady": {
+      "count": 102,
+      "spanMilliseconds": 501.025083
+    },
+    "cycle-6-close": {
+      "count": 2,
+      "spanMilliseconds": 0.824084
+    },
+    "cycle-6-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1504.192792
+    },
+    "cycle-6-closed": {
+      "count": 103,
+      "spanMilliseconds": 504.657958
+    },
+    "cycle-7-startup": {
+      "count": 53,
+      "spanMilliseconds": 254.530334
+    },
+    "cycle-7-warmup": {
+      "count": 103,
+      "spanMilliseconds": 505.621917
+    },
+    "cycle-7-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1004.652125
+    },
+    "cycle-7-steady": {
+      "count": 102,
+      "spanMilliseconds": 500.43475
+    },
+    "cycle-7-close": {
+      "count": 2,
+      "spanMilliseconds": 0.771833
+    },
+    "cycle-7-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1504.246417
+    },
+    "cycle-7-closed": {
+      "count": 103,
+      "spanMilliseconds": 504.663291
+    },
+    "cycle-8-startup": {
+      "count": 53,
+      "spanMilliseconds": 254.337041
+    },
+    "cycle-8-warmup": {
+      "count": 102,
+      "spanMilliseconds": 500.411958
+    },
+    "cycle-8-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1005.446292
+    },
+    "cycle-8-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.143792
+    },
+    "cycle-8-close": {
+      "count": 2,
+      "spanMilliseconds": 0.9075
+    },
+    "cycle-8-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1505.123041
+    },
+    "cycle-8-closed": {
+      "count": 103,
+      "spanMilliseconds": 504.589875
+    },
+    "cycle-9-startup": {
+      "count": 53,
+      "spanMilliseconds": 255.03075
+    },
+    "cycle-9-warmup": {
+      "count": 103,
+      "spanMilliseconds": 505.184959
+    },
+    "cycle-9-steadyWait": {
+      "count": 202,
+      "spanMilliseconds": 1002.080625
+    },
+    "cycle-9-steady": {
+      "count": 103,
+      "spanMilliseconds": 502.62
+    },
+    "cycle-9-close": {
+      "count": 2,
+      "spanMilliseconds": 0.773667
+    },
+    "cycle-9-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1504.498458
+    },
+    "cycle-9-closed": {
+      "count": 102,
+      "spanMilliseconds": 501.087416
+    },
+    "cycle-10-startup": {
+      "count": 53,
+      "spanMilliseconds": 253.533375
+    },
+    "cycle-10-warmup": {
+      "count": 102,
+      "spanMilliseconds": 502.018542
+    },
+    "cycle-10-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1003.007959
+    },
+    "cycle-10-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.787375
+    },
+    "cycle-10-close": {
+      "count": 2,
+      "spanMilliseconds": 0.180584
+    },
+    "cycle-10-closedWait": {
+      "count": 302,
+      "spanMilliseconds": 1500.634625
+    },
+    "cycle-10-closed": {
+      "count": 103,
+      "spanMilliseconds": 503.843
+    },
+    "cycle-11-startup": {
+      "count": 53,
+      "spanMilliseconds": 256.147542
+    },
+    "cycle-11-warmup": {
+      "count": 103,
+      "spanMilliseconds": 504.745333
+    },
+    "cycle-11-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1004.344708
+    },
+    "cycle-11-steady": {
+      "count": 102,
+      "spanMilliseconds": 500.84525
+    },
+    "cycle-11-close": {
+      "count": 2,
+      "spanMilliseconds": 0.762875
+    },
+    "cycle-11-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1503.86725
+    },
+    "cycle-11-closed": {
+      "count": 103,
+      "spanMilliseconds": 504.844375
+    },
+    "cycle-12-startup": {
+      "count": 52,
+      "spanMilliseconds": 254.244625
+    },
+    "cycle-12-warmup": {
+      "count": 103,
+      "spanMilliseconds": 501.087917
+    },
+    "cycle-12-steadyWait": {
+      "count": 203,
+      "spanMilliseconds": 1004.744125
+    },
+    "cycle-12-steady": {
+      "count": 103,
+      "spanMilliseconds": 504.923167
+    },
+    "cycle-12-close": {
+      "count": 2,
+      "spanMilliseconds": 0.938917
+    },
+    "cycle-12-closedWait": {
+      "count": 303,
+      "spanMilliseconds": 1504.282084
+    },
+    "cycle-12-closed": {
+      "count": 101,
+      "spanMilliseconds": 499.868
+    }
+  }
+}

@@ -35,6 +35,8 @@ Android's repeated release-engine run accumulated managed garbage before collect
 
 The later [iPhone Air authenticated-startup measurement](Measurements/ios-iphone-air-authenticated-latency.md) completes 30 fresh physical processes and 300 local operations on that device. It meets the provisional latency limits for that configuration. The [matched physical memory report](Measurements/ios-iphone-air-memory.md) adds three baseline/embedded pairs: 12.344–15.375 MiB incremental steady footprint and 16.094–16.266 MiB incremental kernel startup peaks, with normal owner release and residual memory retained in the evidence. Slower-tier/platform coverage, separate heap attribution, repeated connect/close stability, Expo overhead and UI responsiveness remain open; do not infer full release approval from one device or the bundle-size results.
 
+The later [Simulator lifecycle check](Measurements/ios-simulator-lifecycle.md) verifies twelve authenticated connect/close cycles and 600 resets, with each native owner and runtime released without forced collection. It does not establish a physical retained-memory plateau or separate heap attribution.
+
 ## Matched iOS arm64 application exports
 
 The [2026-09-09 iPhone Air export comparison](Measurements/ios-arm64-release-footprint.md) measures a matched API-only SwiftUI harness with and without ClerkKit. Xcode's local app-thinning report estimates an incremental 1,651,319 compressed bytes (1.57 MiB) and 5,364,077 uncompressed bytes (5.12 MiB), within the respective budgets for this development export. This is not observed App Store traffic or a physical filesystem-allocation measurement. Native UI, other target variants, device latency and memory release gates remain separate.
