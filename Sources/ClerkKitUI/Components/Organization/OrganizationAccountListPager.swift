@@ -9,16 +9,21 @@ struct OrganizationAccountListPager<Item: CoreResource> {
   private(set) var items: [Item] = []
   private(set) var totalCount = 0
   private(set) var offset = 0
-  private(set) var nextPage = 1
   var isLoadingMore = false
 
   var hasNextPage: Bool {
     offset < totalCount
   }
 
+  func nextPage(pageSize: Int) -> Int {
+    // A removal can leave part of the current page loaded. Fetch that page again
+    // so switching from offsets to the generated page API cannot skip an item.
+    offset / max(pageSize, 1) + 1
+  }
+
   func loadedPageOffsets(pageSize: Int) -> [Int] {
     let pageSize = max(pageSize, 1)
-    let loadedPageCount = max(1, nextPage - 1)
+    let loadedPageCount = max(1, (offset + pageSize - 1) / pageSize)
     return (0 ..< loadedPageCount).map { $0 * pageSize }
   }
 
@@ -26,7 +31,6 @@ struct OrganizationAccountListPager<Item: CoreResource> {
     items = data
     self.totalCount = Int(exactly: totalCount) ?? data.count
     offset = data.count
-    nextPage = 2
   }
 
   mutating func replace(pages: [(data: [Item], totalCount: Double)]) {
@@ -38,14 +42,14 @@ struct OrganizationAccountListPager<Item: CoreResource> {
     items = pages.flatMap(\.data)
     totalCount = Int(exactly: lastPage.totalCount) ?? items.count
     offset = items.count
-    nextPage = pages.count + 1
   }
 
   mutating func append(data: [Item], totalCount: Double) {
-    items.append(contentsOf: data)
+    var handles = Set(items.map(\.handle))
+    let newItems = data.filter { handles.insert($0.handle).inserted }
+    items.append(contentsOf: newItems)
     self.totalCount = Int(exactly: totalCount) ?? items.count
-    offset += data.count
-    nextPage += 1
+    offset += newItems.count
   }
 
   mutating func removeOneFromPagination() {

@@ -71,7 +71,7 @@ final class OrganizationAccountListDataSource {
     defer { membershipsPager.isLoadingMore = false }
 
     do {
-      let result = try await user.getOrganizationMemberships(.init(initialPage: Double(membershipsPager.nextPage), pageSize: Double(pageSize)))
+      let result = try await user.getOrganizationMemberships(.init(initialPage: Double(membershipsPager.nextPage(pageSize: pageSize)), pageSize: Double(pageSize)))
       membershipsPager.append(data: result.data, totalCount: result.totalCount)
     } catch {
       self.error = error
@@ -85,7 +85,7 @@ final class OrganizationAccountListDataSource {
     defer { invitationsPager.isLoadingMore = false }
 
     do {
-      let result = try await user.getOrganizationInvitations(.init(initialPage: Double(invitationsPager.nextPage), pageSize: Double(pageSize), status: .pending))
+      let result = try await user.getOrganizationInvitations(.init(initialPage: Double(invitationsPager.nextPage(pageSize: pageSize)), pageSize: Double(pageSize), status: .pending))
       invitationsPager.append(data: result.data, totalCount: result.totalCount)
     } catch {
       self.error = error
@@ -99,7 +99,7 @@ final class OrganizationAccountListDataSource {
     defer { suggestionsPager.isLoadingMore = false }
 
     do {
-      let result = try await user.getOrganizationSuggestions(.init(initialPage: Double(suggestionsPager.nextPage), pageSize: Double(pageSize), status: .case3([.pending, .accepted])))
+      let result = try await user.getOrganizationSuggestions(.init(initialPage: Double(suggestionsPager.nextPage(pageSize: pageSize)), pageSize: Double(pageSize), status: .case3([.pending, .accepted])))
       suggestionsPager.append(data: result.data, totalCount: result.totalCount)
     } catch {
       self.error = error

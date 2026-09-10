@@ -124,7 +124,7 @@ final class OrganizationMembersDataSource {
 
     do {
       let page = try await organization.getMemberships(.init(
-        initialPage: Double(membershipsPager.nextPage),
+        initialPage: Double(membershipsPager.nextPage(pageSize: pageSize)),
         pageSize: Double(pageSize),
         query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery
       ))
@@ -160,7 +160,7 @@ final class OrganizationMembersDataSource {
 
     do {
       let page = try await organization.getInvitations(.init(
-        initialPage: Double(invitationsPager.nextPage),
+        initialPage: Double(invitationsPager.nextPage(pageSize: pageSize)),
         pageSize: Double(pageSize),
         status: [.pending]
       ))
@@ -196,7 +196,7 @@ final class OrganizationMembersDataSource {
 
     do {
       let page = try await organization.getMembershipRequests(.init(
-        initialPage: Double(membershipRequestsPager.nextPage),
+        initialPage: Double(membershipRequestsPager.nextPage(pageSize: pageSize)),
         pageSize: Double(pageSize),
         status: .pending
       ))

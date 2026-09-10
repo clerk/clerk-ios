@@ -41,6 +41,8 @@ provider presentation and instance-mode values, including the corrected union pr
 The [contact resource assertion audit](contact-resource-test-audit.md) maps all 21 email, phone and external-account service/resource declarations and the reproduced deletion-receipt projection defect.
 The [deletion result contract](deletion-result-contract.md) records the membership return-value regression and two reviewed organization assertions; the larger legacy organization files remain retained.
 
+The [organization account list audit](organization-list-test-audit.md) maps all ten old data-source tests to generated-resource checks in the UI target, fixes invitation pagination after acceptance, and retires that legacy file. The separate organization resource/service/defaults tests remain retained.
+
 The [JWT assertion audit](jwt-test-audit.md) maps the removed native parser to shared decoding and generated token-result checks.
 The [session selection audit](session-utility-test-audit.md) checks canonical selection and readable resource results after expiry.
 The [environment assertion audit](environment-test-audit.md) maps all 24 old environment tests, partial-setting defaults, and generated reload behavior.

@@ -333,7 +333,7 @@ extension OrganizationVerifiedDomainsView {
     defer { domainsPager.isLoadingMore = false }
 
     do {
-      let page = try await organization.getDomains(.init(initialPage: Double(domainsPager.nextPage), pageSize: Double(pageSize)))
+      let page = try await organization.getDomains(.init(initialPage: Double(domainsPager.nextPage(pageSize: pageSize)), pageSize: Double(pageSize)))
       domainsPager.append(data: page.data, totalCount: page.totalCount)
     } catch {
       guard !error.isCancellationError else { return }
