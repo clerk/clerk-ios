@@ -38,6 +38,41 @@ There are at least 30 unique processes. Each times one `Clerk.connect` including
 
 The first sample is separate from later fresh processes. Neither is a guaranteed cold filesystem or reboot measurement. These results do not establish secure-storage/network time, memory peaks, UI responsiveness, or performance on the slowest supported hardware. Consult [the release budgets](../../Documentation/Performance.md).
 
+## Physical single-owner memory
+
+Build and install both release variants from the same committed source. The
+memory mode runs only against fixture data and rejects a live key. It creates
+one authenticated owner in Embedded and none in Baseline. A private dispatch
+queue samples `TASK_VM_INFO` every 5 ms with 1 ms timer leeway; actual gaps are
+reported. Sampling begins before fixture preparation and the core connection.
+The fixed observation phases include startup, 50 generated resets for warm-up,
+three quiet seconds before a one-second steady window, and five quiet seconds
+after close before a one-second closed window. The native owner must be released.
+No garbage collection or allocator purge is requested.
+
+```sh
+python3 scripts/measure-native-core-memory.py \
+  --device "$FOOTPRINT_DEVICE" --model "$FOOTPRINT_MODEL" \
+  --native-revision "$(git rev-parse HEAD)" \
+  --products /tmp/clerk-footprint/Build/Products/Release-iphoneos \
+  --raw-directory /tmp/clerk-footprint/memory-raw \
+  --output /tmp/clerk-footprint/memory.json
+```
+
+The default is three fresh-process pairs, alternating app order. Failed launches
+stop collection without retrying or dropping evidence. The collector retrieves
+each report from that measurement app's own data container, retains the raw JSON
+and a deterministic gzip copy, and reports paired startup maxima, steady medians
+and closed medians. Raw sample hashes accompany the summary.
+
+Footprint, resident memory and VM internal/external/compressed fields are separate
+measurements, not quantities to sum. VM categories do not identify the Swift and
+JavaScript heaps individually. The kernel's process-lifetime footprint peak is
+also retained; it can precede the sampled core-startup phase. Sampling and its
+retained buffer contribute to both apps. These observations do not establish UI
+responsiveness, real-service memory, repeated connect/close stability or coverage
+of slower hardware. See [Apple's memory guidance](https://developer.apple.com/documentation/xcode/reducing-your-app-s-memory-use).
+
 ## Signed app file sizes
 
 ```sh
