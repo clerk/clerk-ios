@@ -29,11 +29,14 @@ import Security
     let magic = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: .init(publishableKey: key), purpose: .magicLink)
     let biometrics = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: .init(publishableKey: key), purpose: .biometricCredentials)
     switch mode {
-    case "seed", "seed-clearing":
+    case "seed", "seed-clearing", "seed-token-only":
       // These persisted keys follow the previous major's clerkEncoder
       // (.convertToSnakeCase), not the new runtime's projection format.
       let client: [String: Any] = ["id": "client_upgrade_fixture", "sessions": [], "updated_at": 1_700_000_000_000]
-      let record: [String: Any] = ["schema_version": 1, "accepted_identity": ["state": "present", "device_token": "upgrade-fixture-credential", "client": client], "requires_legacy_adoption_publication": false]
+      let identity: [String: Any] = mode == "seed-token-only"
+        ? ["state": "cleared", "device_token": "upgrade-fixture-credential"]
+        : ["state": "present", "device_token": "upgrade-fixture-credential", "client": client]
+      let record: [String: Any] = ["schema_version": 1, "accepted_identity": identity, "requires_legacy_adoption_publication": false]
       try seed(identityService, "clerkSharedSessionLocalIdentityV2", JSONSerialization.data(withJSONObject: record))
       if mode == "seed-clearing" {
         let intent: [String: Any] = ["schema_version": 1, "local_identity_service": identityService, "slot_service": "fixture.shared.slot", "slot_access_group": "fixture.group", "slot_account": "fixture.owner", "instance_fingerprint": fingerprint, "owner_identifier": application]

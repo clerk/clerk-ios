@@ -111,16 +111,28 @@ public actor KeychainCredentialStorage: CredentialStorage {
         // Earlier revisions stored the identity directly, before the envelope.
         identity = record
       }
-      guard identity["state"] == .string("present"),
-            case .object = identity["client"],
-            let token = try identity["device_token"]?.optional({ try $0.string() }), !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+      guard let token = try legacyCredential(in: identity) else { return nil }
       if let pending = try record["pending_publication"]?.optional({ try $0.object() }),
-         pending["state"] != .string("present") || pending["device_token"] != .string(token) { return nil }
+         try legacyCredential(in: pending) != token { return nil }
       return token
     }
     guard legacy.publishableKey == publishableKey else { return nil }
     guard let data = try readLegacyItem(service: legacy.service ?? applicationIdentifier, account: "clerkDeviceToken", accessGroup: legacy.accessGroup),
           let token = String(data: data, encoding: .utf8), !token.isEmpty else { return nil }
+    return token
+  }
+
+  private func legacyCredential(in identity: [String: JSONValue]) throws -> String? {
+    switch identity["state"] {
+    case .string("present"):
+      guard case .object = identity["client"] else { return nil }
+    case .string("cleared"):
+      // The previous major also used this state for a token awaiting canonical refresh.
+      guard identity["client"] == nil || identity["client"] == .null else { return nil }
+    default: return nil
+    }
+    guard let token = try identity["device_token"]?.optional({ try $0.string() }),
+          !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
     return token
   }
 

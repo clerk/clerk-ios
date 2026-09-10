@@ -13,3 +13,8 @@ fixture=$(uuidgen)
 for mode in seed-clearing assert-pending-clear assert-pending-clear; do
   "$executable" --credential-upgrade "$mode" "$fixture"
 done
+"$executable" --credential-upgrade cleanup "$fixture"
+fixture=$(uuidgen)
+for mode in seed-token-only restore restore clear assert-cleared; do
+  "$executable" --credential-upgrade "$mode" "$fixture"
+done

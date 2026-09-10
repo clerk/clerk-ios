@@ -151,10 +151,37 @@ struct AppleCredentialStorageTests {
     #expect(try await storage(probe).read() == "accepted")
   }
 
-  @Test(arguments: [false, true])
-  func interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance: Bool) async throws {
+  @Test(arguments: ["unversioned", "settled", "required", "pending"])
+  func tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind: String) async throws {
     let probe = SecurityItemProbe()
-    let record: JSONValue = .object(["schema_version": .number(1), "accepted_identity": acceptedIdentity])
+    let identity: JSONValue = .object(["state": .string("cleared"), "device_token": .string("accepted")])
+    var record: [String: JSONValue] = ["schema_version": .number(1), "accepted_identity": identity]
+    if recordKind == "required" || recordKind == "pending" {
+      record["requires_legacy_adoption_publication"] = .bool(true)
+    }
+    if recordKind == "pending" {
+      record["pending_publication"] = .object([
+        "id": .string("63BDAF4D-0458-4FA6-A42D-4540CC511C91"),
+        "origin_owner_identifier": .string(application), "generation": .number(1),
+        "state": .string("cleared"), "device_token": .string("accepted"),
+      ])
+    }
+    let bytes = try JSONEncoder().encode(recordKind == "unversioned" ? identity : .object(record))
+    let service = "\(application).clerk.identity.v2.\(fingerprint)"
+    probe.seed(service: service, account: "clerkSharedSessionLocalIdentityV2", value: bytes)
+    let current = storage(probe)
+    #expect(try await current.read() == "accepted")
+    #expect(try await storage(probe).read() == "accepted")
+    #expect(probe.value(service: service, account: "clerkSharedSessionLocalIdentityV2") == bytes)
+    try await current.remove()
+    #expect(try await storage(probe).read() == nil)
+  }
+
+  @Test(arguments: [false, true], [false, true])
+  func interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance: Bool, tokenOnly: Bool) async throws {
+    let probe = SecurityItemProbe()
+    let identity: JSONValue = tokenOnly ? .object(["state": .string("cleared"), "device_token": .string("accepted")]) : acceptedIdentity
+    let record: JSONValue = .object(["schema_version": .number(1), "accepted_identity": identity])
     try probe.seed(service: "\(application).clerk.identity.v2.\(fingerprint)", account: "clerkSharedSessionLocalIdentityV2", value: JSONEncoder().encode(record))
     let pendingFingerprint = sameInstance ? fingerprint : "other-instance-fingerprint"
     let intent: JSONValue = .object([
@@ -168,6 +195,33 @@ struct AppleCredentialStorageTests {
     #expect(try await storage(probe).read() == (sameInstance ? nil : "accepted"))
     #expect(try await storage(probe).read() == (sameInstance ? nil : "accepted"))
     #expect(probe.value(service: "\(application).clerk.shared-session-clear-recovery.v1", account: "clerkSharedSessionOwnerSlotClearIntentV1") == bytes)
+  }
+
+  @Test(arguments: ["no-token", "empty-token", "mismatched-client", "pending-empty", "pending-token", "pending-shape"])
+  func invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario: String) async throws {
+    let probe = SecurityItemProbe()
+    var identity: [String: JSONValue] = ["state": .string("cleared"), "device_token": .string("accepted")]
+    if scenario == "no-token" { identity.removeValue(forKey: "device_token") }
+    if scenario == "empty-token" { identity["device_token"] = .string(" \n") }
+    if scenario == "mismatched-client" { identity["client"] = legacyClient }
+    var record: [String: JSONValue] = ["schema_version": .number(1), "accepted_identity": .object(identity)]
+    if scenario.hasPrefix("pending-") {
+      var pending = identity
+      pending["id"] = .string("63BDAF4D-0458-4FA6-A42D-4540CC511C91")
+      pending["origin_owner_identifier"] = .string(application)
+      pending["generation"] = .number(1)
+      if scenario == "pending-empty" { pending.removeValue(forKey: "device_token") }
+      if scenario == "pending-token" { pending["device_token"] = .string("other") }
+      if scenario == "pending-shape" { pending["client"] = legacyClient }
+      record["pending_publication"] = .object(pending)
+    }
+    let service = "\(application).clerk.identity.v2.\(fingerprint)"
+    try probe.seed(service: service, account: "clerkSharedSessionLocalIdentityV2", value: JSONEncoder().encode(JSONValue.object(record)))
+    probe.seed(service: legacyService, account: "clerkDeviceToken", value: Data("unscoped-old".utf8))
+    let legacy = LegacyKeychainConfiguration(service: legacyService, publishableKey: key)
+    #expect(try await storage(probe, legacy: legacy).read() == nil)
+    #expect(try await storage(probe, legacy: legacy).read() == nil)
+    #expect(probe.readCount(service: legacyService, account: "clerkDeviceToken") == 0)
   }
 
   @Test(arguments: ["{invalid}", "{}"])
