@@ -46,9 +46,9 @@ The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters
 provider presentation and instance-mode values, including the corrected union projection.
 
 The [contact resource assertion audit](contact-resource-test-audit.md) maps all 21 email, phone and external-account service/resource declarations and the reproduced deletion-receipt projection defect.
-The [deletion result contract](deletion-result-contract.md) records the membership return-value regression and two reviewed organization assertions; the larger legacy organization files remain retained.
+The [deletion result contract](deletion-result-contract.md) records the membership return-value regression and two reviewed organization assertions. The complete organization files are now retired under the [organization resource audit](organization-resource-test-audit.md).
 
-The [organization account list audit](organization-list-test-audit.md) maps all ten old data-source tests to generated-resource checks in the UI target, fixes invitation pagination after acceptance, and retires that legacy file. The separate organization resource/service tests remain retained. The [organization defaults audit](organization-defaults-test-audit.md) retires its three decoder declarations after fixing missing advisory severity in the shared resource and verifying partial responses on both engines.
+The [organization account list audit](organization-list-test-audit.md) maps all ten old data-source tests to generated-resource checks in the UI target, fixes invitation pagination after acceptance, and retires that legacy file. The [organization resource audit](organization-resource-test-audit.md) separately retires all 77 resource/service declarations after fixing logo receipts, empty filters and returned resource identity. The [organization defaults audit](organization-defaults-test-audit.md) retires its three decoder declarations after fixing missing advisory severity in the shared resource and verifying partial responses on both engines.
 
 The [JWT assertion audit](jwt-test-audit.md) maps the removed native parser to shared decoding and generated token-result checks.
 The [session selection audit](session-utility-test-audit.md) checks canonical selection and readable resource results after expiry.
@@ -242,7 +242,7 @@ Tests expecting a native service mock or request-builder call no longer exercise
 | [Tests/Domains/Environment/EnvironmentTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Environment/EnvironmentTests.swift) | 9 |
 | [Tests/Domains/Organization/OrganizationCreationDefaultsTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Organization/OrganizationCreationDefaultsTests.swift) | 3 |
 | [Tests/Domains/Organization/OrganizationServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Organization/OrganizationServiceTests.swift) | 38 |
-| [Tests/Domains/Organization/OrganizationTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Organization/OrganizationTests.swift) | 35 |
+| [Tests/Domains/Organization/OrganizationTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/Organization/OrganizationTests.swift) | 39 |
 | [Tests/Domains/User/EmailAddress/EmailAddressServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/EmailAddress/EmailAddressServiceTests.swift) | 4 |
 | [Tests/Domains/User/EmailAddress/EmailAddressTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/EmailAddress/EmailAddressTests.swift) | 3 |
 | [Tests/Domains/User/ExternalAccount/ExternalAccountServiceTests.swift](https://github.com/clerk/clerk-ios/blob/02f98f89a19b6c079517c9aae07df7edd0e600e5/Tests/Domains/User/ExternalAccount/ExternalAccountServiceTests.swift) | 2 |

@@ -9129,7 +9129,7 @@ isDevOrStagingUrl: (url) => {
 		const _pageSize = pageSize ?? 10;
 		const _initialPage = initialPage ?? 1;
 		const obj = {
-			...getNonUndefinedValues(restParams),
+			...Object.fromEntries(Object.entries(getNonUndefinedValues(restParams)).filter(([, value]) => !Array.isArray(value) || value.length > 0)),
 			limit: _pageSize + "",
 			offset: (_initialPage - 1) * _pageSize + ""
 		};
@@ -12933,10 +12933,14 @@ isDevOrStagingUrl: (url) => {
 				return this._baseDelete();
 			};
 			this.setLogo = async ({ file }) => {
-				if (file === null) return await BaseResource._fetch({
-					path: `/organizations/${this.id}/logo`,
-					method: "DELETE"
-				}).then((res) => new Organization(res?.response));
+				if (file === null) {
+					const json = (await BaseResource._fetch({
+						path: `/organizations/${this.id}/logo`,
+						method: "DELETE"
+					}))?.response;
+					if (json && "deleted" in json && json.deleted === true && json.object === "image") return this.reload();
+					return new Organization(json);
+				}
 				let body;
 				let headers;
 				if (typeof file === "string") {
@@ -41911,7 +41915,7 @@ isDevOrStagingUrl: (url) => {
 			let entry = this.#identity.get(value)?.get(type);
 			if (entry?.active) return entry.handle;
 			const serverID = value.id;
-			entry = Array.from(this.#entries.values()).find((candidate) => candidate.active && candidate.handle.type === type && (serverID && candidate.value.id === serverID || !serverID && !candidate.value.id && this.#projectionParent && this.#projectionEdge && candidate.parent === this.#projectionParent && candidate.edge === this.#projectionEdge));
+			entry = Array.from(this.#entries.values()).find((candidate) => candidate.active && !Array.from(this.#rootEntries.values()).includes(candidate) && candidate.handle.type === type && (serverID && candidate.value.id === serverID || !serverID && !candidate.value.id && this.#projectionParent && this.#projectionEdge && candidate.parent === this.#projectionParent && candidate.edge === this.#projectionEdge));
 			if (entry) this.#bind(entry, value);
 			else {
 				entry = {

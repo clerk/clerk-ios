@@ -4011,6 +4011,10 @@
           "line": 133
         },
         {
+          "name": "getOrganizationMembershipsUsesOrganizationServiceGetOrganizationMemberships",
+          "line": 158
+        },
+        {
           "name": "getOrganizationMembershipsWithOffsetUsesOrganizationServiceGetOrganizationMemberships",
           "line": 186
         },
@@ -4039,6 +4043,10 @@
           "line": 305
         },
         {
+          "name": "getOrganizationInvitationsUsesOrganizationServiceGetOrganizationInvitations",
+          "line": 340
+        },
+        {
           "name": "getOrganizationInvitationsWithOffsetUsesOrganizationServiceGetOrganizationInvitations",
           "line": 366
         },
@@ -4055,6 +4063,10 @@
           "line": 431
         },
         {
+          "name": "getOrganizationDomainsUsesOrganizationServiceGetOrganizationDomains",
+          "line": 454
+        },
+        {
           "name": "getOrganizationDomainsWithEnrollmentModeUsesRawEnrollmentMode",
           "line": 480
         },
@@ -4065,6 +4077,10 @@
         {
           "name": "getOrganizationDomainUsesOrganizationServiceGetOrganizationDomain",
           "line": 528
+        },
+        {
+          "name": "getOrganizationMembershipRequestsUsesOrganizationServiceGetOrganizationMembershipRequests",
+          "line": 551
         },
         {
           "name": "getOrganizationMembershipRequestsWithOffsetUsesOrganizationServiceGetOrganizationMembershipRequests",
