@@ -42177,6 +42177,7 @@ isDevOrStagingUrl: (url) => {
 	let online = true;
 	let recovery;
 	let recoveryRequested = false;
+	let activeInvocations = 0;
 	let removeNativeHost;
 	let removeNetworkEnvironment;
 	async function initialize(id, configuration) {
@@ -42292,7 +42293,7 @@ isDevOrStagingUrl: (url) => {
 	}
 	function recoverResources() {
 		if (!active || !online || disposed || !core) return;
-		if (recovery) {
+		if (recovery || activeInvocations > 0) {
 			recoveryRequested = true;
 			return;
 		}
@@ -42340,11 +42341,16 @@ isDevOrStagingUrl: (url) => {
 				return;
 			}
 			if (!runtime) throw bridgeError$1("runtime_not_ready");
-			if (message.kind === "invoke") runtime.invoke(message).catch((error) => emit({
-				kind: "runtimeError",
-				failure: failure(error, "bridge")
-			}));
-			else if (message.kind === "cancel") runtime.cancel(message.id);
+			if (message.kind === "invoke") {
+				activeInvocations++;
+				runtime.invoke(message).catch((error) => emit({
+					kind: "runtimeError",
+					failure: failure(error, "bridge")
+				})).finally(() => {
+					activeInvocations--;
+					if (recoveryRequested) recoverResources();
+				});
+			} else if (message.kind === "cancel") runtime.cancel(message.id);
 			else if (message.kind === "release") runtime.release(message.target);
 			else if (message.kind === "lifecycle") {
 				if (!["foreground", "background"].includes(message.state)) throw bridgeError$1("invalid_lifecycle_state");

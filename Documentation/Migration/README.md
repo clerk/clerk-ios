@@ -149,3 +149,5 @@ The [dependency and cache audit](dependency-cache-test-audit.md) distinguishes c
 The [hosted portal audit](hosted-portal-test-audit.md) records the removed create/redeem, automatic-activation and shared-slot contracts separately from supported future SSO.
 
 The [token-only credential upgrade](token-only-credential-upgrade.md) preserves prior credentials awaiting canonical refresh while retaining explicit-clear and instance-scoping protections.
+
+[Foreground recovery during browser authentication](foreground-auth-recovery.md) records the shared credential-rotation race, correction, and native lifecycle regression proof.

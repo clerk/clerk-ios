@@ -88,6 +88,25 @@ import Testing
     #expect(runtime.isAvailable)
   }
 
+  @Test func foregroundDuringOAuthRedemptionWaitsForAuthentication() async throws {
+    let capabilities = try ForegroundAuthenticationCapabilities()
+    let clerk = try await connect(capabilities)
+    defer { capabilities.release = true; clerk.close() }
+    try await postActive(false)
+    let attempt = Task { try await clerk.signIn.sso(.init(strategy: .oauthGoogle)) }
+    try await eventually { capabilities.redeeming }
+    try await postActive(true)
+    #expect(capabilities.clientReads == 1)
+    capabilities.release = true
+    try await attempt.value
+    #expect(clerk.signIn.status.rawValue == "complete")
+    #expect(clerk.session == nil)
+    try await eventually { capabilities.base.credential == "foreground_rotated_credential" }
+    #expect(capabilities.clientReads == 2)
+    #expect(clerk.signIn.status.rawValue == "complete")
+    #expect(try clerk.context.requireRuntime().lastLifecycleError == nil)
+  }
+
   @Test func previousNativeEmailLinkCallbackFormsCompleteWithoutImplicitActivation() async throws {
     let capabilities = try FixtureCapabilities(data: PackageProof.fixtureData())
     let clerk = try await connect(capabilities)
@@ -530,6 +549,49 @@ import Testing
     var response = try result.object()
     response["headers"] = .object([:])
     return .object(response)
+  }
+}
+
+@MainActor private final class ForegroundAuthenticationCapabilities: NativeCapabilities {
+  let base: FixtureCapabilities
+  var supported: [String] {
+    base.supported
+  }
+
+  var redeeming = false
+  var release = false
+  var clientReads = 0
+
+  init() throws {
+    base = try FixtureCapabilities(data: PackageProof.fixtureData())
+  }
+
+  func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
+    if capability == "http" {
+      let args = try arguments.object()
+      let path = try #require(args["url"]).url().path
+      if path.contains("/sign_ins"), args["method"] == .string("GET") {
+        redeeming = true
+        while !release {
+          try await Task.sleep(for: .milliseconds(5))
+        }
+        var complete = try #require(base.fixtures["signIn"]).object()
+        complete["status"] = .string("complete")
+        complete["created_session_id"] = .string("sess_native")
+        var client = try #require(base.fixtures["client"]).object()
+        client["sign_in"] = .object(complete)
+        base.clientResponse = .object(client)
+      }
+      if path.hasSuffix("/client") {
+        clientReads += 1
+        if clientReads > 1 {
+          var result = try await base.perform(capability, arguments: arguments).object()
+          result["headers"] = .object(["authorization": .string("foreground_rotated_credential")])
+          return .object(result)
+        }
+      }
+    }
+    return try await base.perform(capability, arguments: arguments)
   }
 }
 
