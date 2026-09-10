@@ -71,8 +71,8 @@ resolve `ClerkKit`.
 The physical iOS build and strict signature verification succeeded on September
 10, 2026 with an existing profile that includes the paired iPhone. Its signed
 entitlements contain the expected two distinct groups, and both Info.plist
-group strings match them. The device was passcode locked during preparation;
-no physical runtime report is claimed here.
+group strings match them. The device was passcode locked during preparation. The later physical run
+below now supplies runtime evidence for these isolated records.
 
 Sandboxed certificate queries misleadingly returned no signing identities and
 reported untrusted/invalid entitlements during inspection; verification outside
@@ -95,11 +95,35 @@ the 10 client-token cases. Its
 [report](../../Documentation/Migration/evidence/keychain-migration-probe-client-simulator.json)
 is retained alongside the initial metadata report. Both builds and strict
 physical signature verification passed; the expanded diagnostic app is
-installed on the paired iPhone, still awaiting an unlocked runtime check.
+installed on the paired iPhone. Its later physical run is recorded below.
 
 After the metadata history correction, a third
 [24-case Simulator report](../../Documentation/Migration/evidence/keychain-migration-probe-history-simulator.json)
 records the new selection. Never-adopted metadata now uses the configured
 group; adopted metadata preserves the previous omitted-group lookup. The two
 earlier reports remain as before-fix evidence. Reconstruction, durable removal
-and cleanup passed in the new run; physical execution is still pending.
+and cleanup passed in the new run. Physical execution is recorded below.
+
+## Physical run — September 10, 2026
+
+At 09:14 ET the prepared diagnostic ran on the unlocked iPhone Air
+(iPhone18,4), iOS 26.6.1 (23G83). The
+[physical report](../../Documentation/Migration/evidence/keychain-migration-probe-history-physical.json)
+has run identifier `2E7379F0-CA0F-473C-8A28-371F6E1FB9A0`. All 24
+observations completed, reconstructed values matched imported values, durable
+removal prevented reimport, and exact-service fixture cleanup succeeded before
+the report was written. All imported-marker selections match the post-fix
+Simulator report.
+
+The default insertion used the declared private group. Omitted-group queries
+returned both private and shared items for duplicate accounts. Never-adopted
+metadata selected the configured shared group; adopted shared-only metadata
+remained readable, and adopted duplicates selected the private marker in this
+run. Client adoption markers without accepted local identity suppressed legacy
+fallback, while accepted local credentials took precedence over shared records.
+These are observed query results on this signed app/device, not a guarantee of
+unspecified duplicate ordering.
+
+This closes the pending physical source-selection probe for this configuration.
+It does not prove real credential or biometric-key usability, actual platform
+prompts, missing-entitlement combinations, or a signed-in old-major app upgrade.

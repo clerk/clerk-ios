@@ -194,5 +194,16 @@ in this run, and adopted shared-only records remained readable. Previous-bundle
 only records remained unimported. All client-token selections were unchanged;
 reconstruction, durable removal and fixture cleanup passed throughout.
 
-The signed diagnostic app has been rebuilt with this correction. Its physical
-runtime check remains required; none of these results closes that gate.
+The signed diagnostic app was rebuilt with this correction and subsequently
+ran on the physical iPhone Air, iOS 26.6.1 (23G83), at 09:14 ET on September
+10. The [physical report](evidence/keychain-migration-probe-history-physical.json),
+run `2E7379F0-CA0F-473C-8A28-371F6E1FB9A0`, completed all 24 cases and
+matched every imported-marker selection from the post-fix Simulator report.
+Reconstruction, durable removal and exact-service cleanup passed. Default
+insertion used the declared private group; omitted-group duplicate lookups
+returned both entitled groups.
+
+This verifies the physical OS-query behavior of this signed synthetic probe.
+It does not guarantee duplicate-result ordering, validate missing-entitlement
+configurations, prove biometric-key usability, or replace the required real
+signed-in old-major app upgrade.

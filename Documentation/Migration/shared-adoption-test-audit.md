@@ -20,7 +20,7 @@ Generated session state still requires canonical core startup.
 | `partialAppLocalMigrationAllowsProvisionalHydrationWithoutSharedEntitlement` | A scoped accepted local credential imports before legacy-group fallback, including token-only records. The current suite tests those records, but not a signed local-credential/missing-shared-entitlement combination. Provisional cached-client hydration and publication-required state are unavailable. |
 | `configuredAppLocalIdentityTakesPrecedenceAndMigratesEnvironment` | **Open source-selection difference:** the old adoption routine tries configured app-local, previous-bundle and shared sources in order. The current unscoped token fallback reads the configured service/group only. Existing scoped identities take precedence, but that does not prove the never-adopted source matrix. Cached environment copying is removed. |
 | `privateAppStateMigratesOnlyFromAppAttributedStorage` | **Open:** valid magic-link metadata selection/expiry needs the signed source-policy check. The old test uses `attestKeyId`, not the `trustedDeviceCredentials` account exercised by the biometric probe. Neither the probe nor a dictionary's nil-group key proves preservation of this attestation assertion. |
-| `ambiguousSharedPrivateAppStateIsNotMigrated` | **Open:** the old mock excludes its explicitly shared source, while real omitted-group queries can reach shared records. Simulator observations prove that distinction and show current shared-only import even with an adoption marker. Physical and valid-record checks are pending. |
+| `ambiguousSharedPrivateAppStateIsNotMigrated` | **Open:** the old mock excludes its explicitly shared source, while real omitted-group queries can reach shared records. Simulator observations prove that distinction and show current shared-only import even with an adoption marker. The later physical probe confirms this source selection; real credential usability remains separate. |
 | `previousBundleTokenTakesPrecedenceOverLegacySharedToken` | **Open source-selection difference:** the current configured-service/group token fallback does not search a distinct previous-bundle service. Do not claim precedence from scoped-identity tests or add fallback after an authoritative adoption marker/clear. |
 | `incoherentSourceIsSkippedWithoutMixingIdentityFields` | Current import never combines independently persisted cached-client or date items with a token. The ancillary-record regression verifies they are not read. The old multi-source fallthrough order still needs the source-selection work above. |
 | `malformedTokenFallsThroughToValidLaterSource` | Invalid UTF-8 and empty/whitespace-only raw tokens are rejected by the normalization regression. This does not establish the old later-source fallback: the current importer has one configured unscoped token source. |
@@ -50,8 +50,7 @@ The [metadata evidence](legacy-metadata-access-groups.md) and
 limited to synthetic markers. The expanded signed probe exercises metadata and
 **client-token** source combinations; its
 [Simulator results](legacy-metadata-access-groups.md#client-token-probe-and-configuration-history)
-include the baseline call-site interpretation. Physical execution remains
-pending. Preserve
+include the baseline call-site interpretation. The later [physical report](evidence/keychain-migration-probe-history-physical.json) confirms all 24 source selections on an iPhone Air. Preserve
 authoritative local identities, adoption markers, pending clears and durable
 new clears through any change. An actual old-major app upgrade with a signed-in
 user is still required by the release plan.
@@ -61,8 +60,9 @@ follows that call-site history and passes the OS-level Simulator probe. Valid
 and expired prior email-link records are now exercised by the packaged core,
 including clearing the expired record without completion HTTP. This resolves
 the identified query-selection defect and that fixture-level expiry check;
-physical attribution, real credential usability and App Attest continuity are
-not established by these tests. Those checks remain release gates after retirement.
+physical attribution was subsequently checked by the signed probe. Real
+credential usability is not established by marker tests. The inactive App Attest
+helper is addressed separately below.
 
 ## Normalization regression
 
@@ -104,8 +104,9 @@ identity precedence, instance isolation and durable clears. First-time live
 shared-sync adoption, publication and cached-environment copying are removed
 contracts; their old multi-source algorithm is not the read behavior of a
 never-adopted nonshared app. The table's source-selection questions are resolved
-by the call-site review and correction linked above, with physical validation
-still pending rather than silently inferred from the Simulator.
+by the call-site review and correction linked above. The subsequent physical
+probe completed the 24 source-selection cases, reconstruction and durable clear
+checks; its report is linked above.
 
 Only `SharedSessionSyncAdoptionTests.swift` (592 lines, 19 declarations) and
 `InMemoryKeychain.swift` (76 lines) are retired in this change. Their exact
@@ -116,10 +117,10 @@ complete `NativeCoreContractTests` suite already used by `make test-native-core`
 instead of filtering for removed legacy types. The UI and live integration
 targets remain, and all shared JSON fixture resources are preserved.
 
-Actual released-app signed-in upgrades, physical entitlements and prompts, and
-agreed performance budgets remain release gates. Deleting the obsolete tests
-does not satisfy those gates; the signed diagnostic app and recorded migration
-evidence remain available for the pending physical run.
+Actual released-app signed-in upgrades, broader entitlement configurations and
+physical prompts, and agreed performance budgets remain release gates. Deleting
+the obsolete tests does not satisfy those gates. The successful signed probe
+only verifies the source combinations represented in its physical report.
 
 After retirement, the actual default commands passed: `make test` executed
 115 declarations in 16 suites on macOS, and `make test-ui` executed 170 in
