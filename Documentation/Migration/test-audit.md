@@ -31,7 +31,10 @@ The [HTTP assertion audit](http-test-audit.md) separates URLSession execution ch
 from removed native middleware and unresolved core identity assertions.
 The [response middleware audit](response-middleware-test-audit.md) retires the seven
 old auth-event emitter declarations and the custom middleware-ordering declaration;
-the six mixed networking/state files remain retained with explicit open questions.
+the remaining networking contracts are tracked separately with explicit open questions.
+The [network failure audit](network-failure-test-audit.md) subsequently retires the
+native retry and invalid-auth coalescing suites after reproducing and fixing a
+recursive 401 client-recovery loop in TypeScript. Four mixed networking files remain.
 The [lifecycle assertion audit](lifecycle-test-audit.md) maps the three old lifecycle
 files to packaged-core notification/recovery checks or retired private polling policy.
 The [callback assertion audit](callback-test-audit.md) records restored email-link

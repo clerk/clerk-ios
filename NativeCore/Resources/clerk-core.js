@@ -6717,7 +6717,9 @@ isDevOrStagingUrl: (url) => {
 				const message = errors?.[0]?.long_message;
 				const code = errors?.[0]?.code;
 				if (status === 401 && code === "dev_browser_unauthenticated") await BaseResource.clerk.__internal_handleUnauthenticatedDevBrowser();
-				else if (status === 401 && code !== "requires_captcha") await BaseResource.clerk.handleUnauthenticated();
+				else if (status === 401 && code !== "requires_captcha") {
+					if (requestInit.method !== "GET" || requestInit.path !== "/client") await BaseResource.clerk.handleUnauthenticated();
+				}
 				assertProductionKeysOnDev(status, errors);
 				const apiResponseOptions = {
 					data: errors,

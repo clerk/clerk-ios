@@ -1,6 +1,6 @@
 # Response middleware API retirement
 
-Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. This audit reads all assertions in `ClerkAuthEventEmitterResponseMiddlewareTests.swift` (seven declarations) and `NetworkingPipelineResponseMiddlewareOrderTests.swift` (one declaration). Their file hashes match [the baseline inventory](legacy-tests.json). Exactly these two files are retired; the other six networking and middleware files remain retained.
+Baseline: `02f98f89a19b6c079517c9aae07df7edd0e600e5`. This audit reads all assertions in `ClerkAuthEventEmitterResponseMiddlewareTests.swift` (seven declarations) and `NetworkingPipelineResponseMiddlewareOrderTests.swift` (one declaration). Their file hashes match [the baseline inventory](legacy-tests.json). Exactly these two files are retired by this audit. The separate [network failure audit](network-failure-test-audit.md) subsequently retires the retry and invalid-auth suites; four mixed networking files remain retained.
 
 The generated API exposes observable resources and structured operation completion. It has no `clerk.auth.events`, mutable native `Client`, `ClerkResponseMiddleware`, or caller-composed `NetworkingPipeline`. Completion of verification does not itself select a session: callers explicitly finalize the future resource, while prebuilt UI invokes finalization and enforces its presentation completion gate. The old event delivery/count contract is an intentional API removal.
 
@@ -21,15 +21,13 @@ At core `7bd2374a34918d5764c8bbe22c7b3ec890c466b0`, all 523 embedded runtime tes
 
 ## Networking assertions still retained
 
-All assertion bodies in the remaining six files were also read, but their mixed contracts are not retired by this change:
+All assertion bodies in the four remaining files were also read, but their mixed contracts are not retired by this change:
 
 - `ClerkClientSyncResponseMiddlewareTests.swift` (19): client extraction, null preservation, organization selection, error-meta hydration, explicit deletion clears, deferred sync, registered UI gates, stale generations, persistence ordering and thread placement.
 - `ClerkDeviceTokenResponseMiddlewareTests.swift` (3): token-only persistence, clear-versus-late-response fencing and generation rejection.
 - `ClerkHeaderRequestMiddlewareTests.swift` (13): authorization, hydrated storage reads, queued identity capture, client-ID markers, startup generations and device/app metadata. The [request metadata audit](request-metadata.md) records the desktop classification fix and remaining device metadata uncertainty.
-- `ClerkInvalidAuthResponseMiddlewareTests.swift` (1): concurrent invalid-auth refresh coalescing.
-- `ClerkRateLimitRetryMiddlewareTests.swift` (10): native HTTP-status/network-error retry policy, maximum attempts and server/default delays.
 - `ClerkAPIClientTests.swift` (19): HTTP construction, metadata, tokenless startup, frozen retry context, custom signing and deferred client sync.
 
-The canonical `fapiClient` retries failed GET fetches with its own limits and backoff; it does not retry HTTP 4xx/5xx responses at that layer. The old middleware retried selected statuses once and interpreted Retry-After and rate-limit reset headers. These are different policies, and restoring a parallel native retry algorithm would violate the shared-owner architecture. Dedicated outcome checks and an explicit migration disposition are still needed before retiring the retry suites.
+The canonical `fapiClient` retries failed GET fetches with its own limits and backoff; it does not retry HTTP 4xx/5xx responses at that layer. The old middleware retried selected statuses once and interpreted Retry-After and rate-limit reset headers. The [network failure audit](network-failure-test-audit.md) now supplies generated outcome checks and the explicit policy changes for all eleven retry/invalid-auth declarations. It also records the shared recursive 401 recovery fix.
 
 The backend's [native client deletion response](https://github.com/clerk/clerk_go/blob/33e0f8279c9b4e3d90d6e4788c67237bc6378a56/api/fapi/v1/clients/http.go#L306) calls [UnsetClientHandshakeCookie](https://github.com/clerk/clerk_go/blob/33e0f8279c9b4e3d90d6e4788c67237bc6378a56/api/fapi/v1/cookies/helpers.go#L192), which sends `Authorization: Bearer ` as an explicit clear marker. The selected standalone sign-out path uses `Client.removeSessions()` with client persistence enabled; it does not expose the legacy client-deletion operation. The shared transport currently persists nonempty Authorization values without interpreting that marker. Its supported-path implications and migration policy must be resolved before claiming the old explicit-clear assertions are replaced. This audit makes no blank-Bearer clearing claim.
