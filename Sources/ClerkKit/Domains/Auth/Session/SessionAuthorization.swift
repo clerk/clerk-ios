@@ -82,8 +82,10 @@ enum SessionAuthorization {
       orgId: membership?.organization.id,
       orgRole: membership?.role,
       orgPermissions: membership?.permissions,
-      factorVerificationAge: token.flatMap { agedFactorVerificationAge(for: $0) }
-        ?? session.factorVerificationAge,
+      factorVerificationAge: agedFactorVerificationAge(
+        for: token,
+        snapshot: session.factorVerificationAge
+      ),
       features: token?.featuresClaim ?? "",
       plans: token?.plansClaim ?? "",
       params: params
@@ -374,13 +376,14 @@ enum SessionAuthorization {
   }
 
   private static func agedFactorVerificationAge(
-    for token: TokenResource,
+    for token: TokenResource?,
+    snapshot: [Int]?,
     now: Date = Date()
   ) -> [Int]? {
-    guard let factorVerificationAge = token.factorVerificationAgeClaim else {
-      return nil
+    guard let factorVerificationAge = token?.factorVerificationAgeClaim ?? snapshot else {
+      return snapshot
     }
-    guard let issuedAt = token.decodedJWT?.issuedAt else {
+    guard let issuedAt = token?.decodedJWT?.issuedAt else {
       return factorVerificationAge
     }
     let elapsedMinutes = Int(max(0, now.timeIntervalSince(issuedAt)) / 60)

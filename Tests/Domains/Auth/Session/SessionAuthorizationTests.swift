@@ -353,6 +353,25 @@ struct SessionAuthorizationTests {
   }
 
   @Test
+  func failsStrictWhenMatchingTokenWithoutFvaAgesTheSessionSnapshot() {
+    var session = makeSession(
+      orgId: "org_123",
+      orgRole: "org:admin",
+      orgPermissions: ["org:sys_memberships:read"],
+      factorVerificationAge: [0, 0]
+    )
+    session.lastActiveToken = TokenResource(
+      jwt: jwtWithClaims(
+        sid: session.id,
+        orgId: "org_123",
+        issuedAt: Int(Date().timeIntervalSince1970) - 11 * 60
+      )
+    )
+
+    #expect(!session.has(.init(reverification: .strict)))
+  }
+
+  @Test
   func failsStrictWhenMatchingTokenFvaAgesPastTenMinutesWithoutClientRefresh() {
     var session = makeSession(
       orgId: "org_123",
