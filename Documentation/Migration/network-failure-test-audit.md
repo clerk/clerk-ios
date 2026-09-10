@@ -37,3 +37,5 @@ Shared core: `cd3b7a30cc50c9afd731f181a6b20d681755b713`. Both native packages ca
 All 539 embedded runtime tests pass. The relevant BaseResource, Client and fapiClient source suites pass 62 tests, with one existing skipped test and four existing TODO cases. TypeScript checking, generated-artifact checking and bundle reproducibility pass. The complete native contract suites pass 104 tests on macOS, 101 on iOS Simulator and 112 on Android, including the new regression. The Android run excludes only the separately opt-in benchmark and live-startup classes.
 
 These fixtures prove generated-call behavior, bounded recovery and native error delivery. They do not establish live network interruption timing, backend availability, every operation-specific retry policy, or the retained blank-Bearer clear and shared identity retry contracts.
+
+The subsequent [request retry audit](request-retry-test-audit.md) covers obsolete identity checks before fetch attempts and the Android fractional-timer defect found by real packaged retries.

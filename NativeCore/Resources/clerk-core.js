@@ -5214,6 +5214,10 @@ If you have a Clerk application, run \`npx clerk@latest env pull\` to write the 
 				credentialRevision: revision,
 				credential
 			});
+			request.__internal_requestGuard = () => {
+				assertCurrent(current);
+				assertCredentialCurrent(revision);
+			};
 			request.credentials = "omit";
 			request.url?.searchParams.set("_is_native", "1");
 			const requestHeaders = request.headers instanceof Headers ? request.headers : new Headers(request.headers);
@@ -20762,11 +20766,15 @@ isDevOrStagingUrl: (url) => {
 			try {
 				if (beforeRequestCallbacksResult) {
 					const maxTries = requestOptions?.fetchMaxTries ?? (isNetworkOnline() ? 4 : 11);
-					response = await retry(() => fetch(url, fetchOpts), {
+					response = await retry(() => {
+						requestInit.__internal_requestGuard?.();
+						return fetch(url, fetchOpts);
+					}, {
 						retryImmediately: true,
 						initialDelay: 700,
 						maxDelayBetweenRetries: 5e3,
 						shouldRetry: (_, iterations) => {
+							requestInit.__internal_requestGuard?.();
 							return overwrittenRequestMethod === "GET" && iterations < maxTries && !fetchOpts.signal?.aborted;
 						},
 						onBeforeRetry: (iteration) => {
