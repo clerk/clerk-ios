@@ -29,6 +29,9 @@ The [Keychain assertion audit](keychain-test-audit.md) records actual persisted
 formats, backend precedence, durable clears and unresolved shared-session gates.
 The [HTTP assertion audit](http-test-audit.md) separates URLSession execution checks
 from removed native middleware and unresolved core identity assertions.
+The [response middleware audit](response-middleware-test-audit.md) retires the seven
+old auth-event emitter declarations and the custom middleware-ordering declaration;
+the six mixed networking/state files remain retained with explicit open questions.
 The [lifecycle assertion audit](lifecycle-test-audit.md) maps the three old lifecycle
 files to packaged-core notification/recovery checks or retired private polling policy.
 The [callback assertion audit](callback-test-audit.md) records restored email-link
