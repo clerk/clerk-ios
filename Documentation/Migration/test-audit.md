@@ -29,10 +29,14 @@ from removed native middleware and unresolved core identity assertions.
 The [lifecycle assertion audit](lifecycle-test-audit.md) maps the three old lifecycle
 files to packaged-core notification/recovery checks or retired private polling policy.
 The [callback assertion audit](callback-test-audit.md) records restored email-link
-route forms, nonce semantics and the remaining tokenless startup assertion.
+route forms, nonce semantics and the retired private tokenless startup marker.
 The [authentication service assertion audit](auth-service-test-audit.md) maps all
 42 old sign-in/sign-up service tests to their TypeScript owner, restored locale
 behavior, request continuity tests, or explicitly removed private startup markers.
+The [authentication resource assertion audit](auth-resource-test-audit.md) maps all
+27 sign-in, 9 sign-up and 1 magic-link service declarations to generated behavior
+or explicit future-API changes. Those three files are retired after shared and
+native email-link failure checks; the separate Auth suite remains retained.
 The [error assertion audit](error-test-audit.md) maps the old constructors and
 DTO checks to structured native failures and explicit new-major API changes.
 The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters,
