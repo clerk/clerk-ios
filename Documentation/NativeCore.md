@@ -52,11 +52,14 @@ The adapters preserve the previous Secure Enclave / Android Keystore key names a
 
 From the clean JavaScript repository, run `node packages/mobile-runtime/pack.mjs IOS_REPOSITORY ANDROID_REPOSITORY`. Packaging verifies generated contracts, rebuilds the bundle, pins the source commit and SHA-256, and copies the canonical generated API. Commit these resources together. Do not manually modify generated Swift or remotely replace executable code. Review `NativeCore/public-api.txt` for native source compatibility on every update.
 
-The pre-existing `ClerkKitTests` target is still present during migration and is not yet compatible with the generated API. Its legacy request, resource, and lifecycle tests require an explicit coverage audit before retirement. The dedicated contract and UI schemes do not disable that target.
+The legacy `ClerkKitTests` target has been retired after the completed
+[assertion-level audit](Migration/test-audit.md). `make test` runs the complete
+`NativeCoreContractTests` target, and `make test-ui` runs the preserved native
+presentation tests. Live integration remains a separate opt-in target.
 
 ## Previous native API
 
-The [separate migration guide](Migration/README.md) records the audited main baseline, old public declarations, call changes, unavailable features, and the legacy-test coverage audit. The old native test trees remain pending their explicit assertion-level migration.
+The [separate migration guide](Migration/README.md) records the audited main baseline, old public declarations, call changes, unavailable features, and the completed legacy-test assertion audit. Of its 108 inventoried files, 105 are retired and three live integration files are migrated. Physical signed-in upgrades and platform release gates remain open.
 
 ## Performance measurements
 
