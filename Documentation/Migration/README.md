@@ -135,3 +135,5 @@ Use generated `EmailAddress.prepareVerification` / `attemptVerification`, `Phone
 The [recorded Expo shared-owner Simulator journey](../Measurements/expo-shared-owner-simulator.md) verifies both profile-update directions and native sign-out on Hermes for the pinned versions. It does not establish the remaining device, upgrade, or release-performance gates.
 
 The [user resource assertion audit](user-resource-test-audit.md) records exact metadata replacement behavior, single-status user invitation filters, configured external-account callbacks, and explicit TOTP/recovery results, with packaged regression evidence.
+
+The [biometric credential assertion audit](biometric-test-audit.md) maps the old biometric services and local store to the generated API and shared TypeScript owner. Use `signIn.biometricCredential` with explicit finalization; use generated `currentUser: true` selection instead of the old current-user helpers.

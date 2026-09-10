@@ -6,19 +6,19 @@ import LocalAuthentication
 import Security
 import Testing
 
-struct BiometricCredentialKeyManagerTests {
+struct AppleBiometricKeyTests {
   @Test
   func localKeyDefaultsToBiometryCurrentSetPolicy() {
-    let localKey = BiometricCredentialLocalKey(localKeyId: "tdlk_123", publicKeyJWK: "{}")
+    let localKey = AppleBiometricLocalKey(localKeyId: "tdlk_123", publicKeyJWK: "{}")
 
     #expect(localKey.policy == .biometryCurrentSet)
   }
 
   @Test
   func privateKeyAttributesUseSecureEnclaveAccessControl() throws {
-    let accessControl = try BiometricCredentialKeyManager.makeAccessControl()
+    let accessControl = try AppleBiometricKeyManager.makeAccessControl()
 
-    let attributes = BiometricCredentialKeyManager.makePrivateKeyAttributes(
+    let attributes = AppleBiometricKeyManager.makePrivateKeyAttributes(
       localKeyId: "tdlk_123",
       accessControl: accessControl
     )
@@ -43,15 +43,15 @@ struct BiometricCredentialKeyManagerTests {
 
   @Test
   func accessControlFlagsMatchBiometricCredentialPolicies() {
-    #expect(BiometricCredentialKeyManager.accessControlFlags(for: .biometryCurrentSet) == [
+    #expect(AppleBiometricKeyManager.accessControlFlags(for: .biometryCurrentSet) == [
       .privateKeyUsage,
       .biometryCurrentSet,
     ])
-    #expect(BiometricCredentialKeyManager.accessControlFlags(for: .biometryAny) == [
+    #expect(AppleBiometricKeyManager.accessControlFlags(for: .biometryAny) == [
       .privateKeyUsage,
       .biometryAny,
     ])
-    #expect(BiometricCredentialKeyManager.accessControlFlags(for: .biometryOrDevicePasscode) == [
+    #expect(AppleBiometricKeyManager.accessControlFlags(for: .biometryOrDevicePasscode) == [
       .privateKeyUsage,
       .userPresence,
     ])
@@ -61,15 +61,15 @@ struct BiometricCredentialKeyManagerTests {
   @Test
   func localAuthenticationPoliciesMatchBiometricCredentialPolicies() {
     #expect(
-      BiometricCredentialKeyManager.localAuthenticationPolicy(for: .biometryCurrentSet) ==
+      AppleBiometricKeyManager.localAuthenticationPolicy(for: .biometryCurrentSet) ==
         .deviceOwnerAuthenticationWithBiometrics
     )
     #expect(
-      BiometricCredentialKeyManager.localAuthenticationPolicy(for: .biometryAny) ==
+      AppleBiometricKeyManager.localAuthenticationPolicy(for: .biometryAny) ==
         .deviceOwnerAuthenticationWithBiometrics
     )
     #expect(
-      BiometricCredentialKeyManager.localAuthenticationPolicy(for: .biometryOrDevicePasscode) ==
+      AppleBiometricKeyManager.localAuthenticationPolicy(for: .biometryOrDevicePasscode) ==
         .deviceOwnerAuthentication
     )
   }
@@ -77,15 +77,15 @@ struct BiometricCredentialKeyManagerTests {
   @Test
   func localAuthenticationPoliciesForKeyCreationRequireBiometrics() {
     #expect(
-      BiometricCredentialKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryCurrentSet) ==
+      AppleBiometricKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryCurrentSet) ==
         .deviceOwnerAuthenticationWithBiometrics
     )
     #expect(
-      BiometricCredentialKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryAny) ==
+      AppleBiometricKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryAny) ==
         .deviceOwnerAuthenticationWithBiometrics
     )
     #expect(
-      BiometricCredentialKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryOrDevicePasscode) ==
+      AppleBiometricKeyManager.localAuthenticationPolicyForKeyCreation(for: .biometryOrDevicePasscode) ==
         .deviceOwnerAuthenticationWithBiometrics
     )
   }
@@ -93,7 +93,7 @@ struct BiometricCredentialKeyManagerTests {
 
   @Test
   func privateKeyQueryUsesStableApplicationTag() {
-    let query = BiometricCredentialKeyManager.privateKeyQuery(localKeyId: "tdlk_123")
+    let query = AppleBiometricKeyManager.privateKeyQuery(localKeyId: "tdlk_123")
 
     #expect(query[kSecClass as String] as? String == kSecClassKey as String)
     #expect(query[kSecAttrKeyClass as String] as? String == kSecAttrKeyClassPrivate as String)
@@ -112,22 +112,22 @@ struct BiometricCredentialKeyManagerTests {
     let y = Data(repeating: 0x02, count: 32)
     let representation = Data([0x04]) + x + y
 
-    let jwk = try BiometricCredentialKeyManager.publicKeyJWK(fromX963Representation: representation)
+    let jwk = try AppleBiometricKeyManager.publicKeyJWK(fromX963Representation: representation)
     let object = try #require(JSONSerialization.jsonObject(with: Data(jwk.utf8)) as? [String: String])
 
     #expect(object["kty"] == "EC")
     #expect(object["crv"] == "P-256")
-    #expect(object["x"] == BiometricCredentialKeyManager.base64URLEncodedString(x))
-    #expect(object["y"] == BiometricCredentialKeyManager.base64URLEncodedString(y))
+    #expect(object["x"] == AppleBiometricKeyManager.base64URLEncodedString(x))
+    #expect(object["y"] == AppleBiometricKeyManager.base64URLEncodedString(y))
     #expect(object["alg"] == "ES256")
   }
 
   @Test
   func publicKeyJWKRejectsInvalidRepresentation() throws {
     do {
-      _ = try BiometricCredentialKeyManager.publicKeyJWK(fromX963Representation: Data(repeating: 0x01, count: 64))
+      _ = try AppleBiometricKeyManager.publicKeyJWK(fromX963Representation: Data(repeating: 0x01, count: 64))
       Issue.record("Expected invalid public key error.")
-    } catch let error as BiometricCredentialKeyManagerError {
+    } catch let error as AppleBiometricKeyError {
       #expect(error == .invalidPublicKey)
     } catch {
       Issue.record("Wrong error type: \(error)")
@@ -143,7 +143,7 @@ struct BiometricCredentialKeyManagerTests {
 
     var deletedLocalKeyIds: [String] = []
     do {
-      _ = try BiometricCredentialKeyManager.completeKeyCreation(
+      _ = try AppleBiometricKeyManager.completeKeyCreation(
         localKeyId: "tdlk_created",
         policy: .biometryCurrentSet,
         exportPublicKeyJWK: {
@@ -165,8 +165,8 @@ struct BiometricCredentialKeyManagerTests {
 
   @Test
   func base64URLEncodingOmitsPadding() {
-    #expect(BiometricCredentialKeyManager.base64URLEncodedString(Data([0xFB, 0xFF, 0xEF])) == "-__v")
-    #expect(!BiometricCredentialKeyManager.base64URLEncodedString(Data([0x01])).contains("="))
+    #expect(AppleBiometricKeyManager.base64URLEncodedString(Data([0xFB, 0xFF, 0xEF])) == "-__v")
+    #expect(!AppleBiometricKeyManager.base64URLEncodedString(Data([0x01])).contains("="))
   }
 
   @Test
@@ -175,7 +175,7 @@ struct BiometricCredentialKeyManagerTests {
     let s = Data([0x00, 0x80]) + Data(repeating: 0x02, count: 31)
     let derSignature = Data([0x30, 0x45, 0x02, 0x20]) + r + Data([0x02, 0x21]) + s
 
-    let rawSignature = try BiometricCredentialKeyManager.rawES256Signature(fromDEREncoded: derSignature)
+    let rawSignature = try AppleBiometricKeyManager.rawES256Signature(fromDEREncoded: derSignature)
 
     #expect(rawSignature == r + Data([0x80]) + Data(repeating: 0x02, count: 31))
   }
@@ -184,7 +184,7 @@ struct BiometricCredentialKeyManagerTests {
   func rawES256SignaturePadsShortDERIntegers() throws {
     let derSignature = Data([0x30, 0x06, 0x02, 0x01, 0x01, 0x02, 0x01, 0x02])
 
-    let rawSignature = try BiometricCredentialKeyManager.rawES256Signature(fromDEREncoded: derSignature)
+    let rawSignature = try AppleBiometricKeyManager.rawES256Signature(fromDEREncoded: derSignature)
 
     #expect(rawSignature == Data(repeating: 0x00, count: 31) + Data([0x01]) +
       Data(repeating: 0x00, count: 31) + Data([0x02]))
@@ -193,9 +193,9 @@ struct BiometricCredentialKeyManagerTests {
   @Test
   func rawES256SignatureRejectsMalformedDER() throws {
     do {
-      _ = try BiometricCredentialKeyManager.rawES256Signature(fromDEREncoded: Data([0x30, 0x03, 0x02, 0x01, 0x01]))
+      _ = try AppleBiometricKeyManager.rawES256Signature(fromDEREncoded: Data([0x30, 0x03, 0x02, 0x01, 0x01]))
       Issue.record("Expected malformed DER signature error.")
-    } catch let error as BiometricCredentialKeyManagerError {
+    } catch let error as AppleBiometricKeyError {
       #expect(error == .signingFailed("Security returned an invalid ES256 signature."))
     } catch {
       Issue.record("Wrong error type: \(error)")
@@ -205,63 +205,19 @@ struct BiometricCredentialKeyManagerTests {
   @Test
   func privateKeyLookupStatusMapsBiometricErrors() {
     #expect(
-      BiometricCredentialKeyManager.privateKeyLookupError(for: errSecUserCanceled)
-        as? BiometricCredentialKeyManagerError == .biometricAuthenticationCanceled
+      AppleBiometricKeyManager.privateKeyLookupError(for: errSecUserCanceled)
+        as? AppleBiometricKeyError == .biometricAuthenticationCanceled
     )
     #expect(
-      BiometricCredentialKeyManager.privateKeyLookupError(for: errSecAuthFailed)
-        as? BiometricCredentialKeyManagerError == .biometricAuthenticationFailed
+      AppleBiometricKeyManager.privateKeyLookupError(for: errSecAuthFailed)
+        as? AppleBiometricKeyError == .biometricAuthenticationFailed
     )
     #expect(
-      BiometricCredentialKeyManager.privateKeyLookupError(for: errSecInteractionNotAllowed)
-        as? BiometricCredentialKeyManagerError == .biometricAuthenticationUnavailable
+      AppleBiometricKeyManager.privateKeyLookupError(for: errSecInteractionNotAllowed)
+        as? AppleBiometricKeyError == .biometricAuthenticationUnavailable
     )
 
-    guard case let .unexpectedStatus(status)? = BiometricCredentialKeyManager.privateKeyLookupError(for: errSecNotAvailable)
-      as? KeychainError
-    else {
-      Issue.record("Expected unknown keychain statuses to preserve their OSStatus.")
-      return
-    }
-
-    #expect(status == errSecNotAvailable)
-  }
-
-  @MainActor
-  @Test
-  func mockKeyManagerSignsClientData() throws {
-    let manager = MockBiometricCredentialKeyManager(sign: { clientData, localKeyId, localizedReason in
-      #expect(clientData == "{\"challenge_id\":\"tdch_123\"}")
-      #expect(localKeyId == "tdlk_123")
-      #expect(localizedReason == "Use biometrics")
-      return BiometricCredentialKeySignature(clientData: clientData, signature: "signature")
-    })
-
-    let signature = try manager.sign(
-      clientData: "{\"challenge_id\":\"tdch_123\"}",
-      localKeyId: "tdlk_123",
-      localizedReason: "Use biometrics"
-    )
-
-    #expect(signature.clientData == "{\"challenge_id\":\"tdch_123\"}")
-    #expect(signature.signature == "signature")
-    #expect(signature.algorithm == .es256)
-  }
-
-  @MainActor
-  @Test
-  func mockKeyManagerSurfacesMissingKey() throws {
-    let manager = MockBiometricCredentialKeyManager(sign: { _, _, _ in
-      throw BiometricCredentialKeyManagerError.keyNotFound
-    })
-
-    do {
-      _ = try manager.sign(clientData: "{}", localKeyId: "tdlk_missing")
-      Issue.record("Expected missing key error.")
-    } catch let error as BiometricCredentialKeyManagerError {
-      #expect(error == .keyNotFound)
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
+    let error = AppleBiometricKeyManager.privateKeyLookupError(for: errSecNotAvailable) as? CoreError
+    #expect(error?.code == "secure_storage_error_\(errSecNotAvailable)")
   }
 }

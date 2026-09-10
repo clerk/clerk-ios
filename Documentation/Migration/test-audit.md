@@ -45,6 +45,8 @@ DTO checks to structured native failures and explicit new-major API changes.
 The [value assertion audit](value-test-audit.md) covers factors, OIDC parameters,
 provider presentation and instance-mode values, including the corrected union projection.
 
+The [biometric credential assertion audit](biometric-test-audit.md) accounts for all 96 declarations in five files, preserves fourteen Apple key/encoding tests under the current owner, and retires those five files after generated storage, enrollment and rollback regression checks. Global all-app cleanup remains explicitly unavailable.
+
 The [user resource assertion audit](user-resource-test-audit.md) accounts for all 54 user resource/service declarations, documents metadata, invitation-filter and external-account API changes, and retires those two files after shared and packaged native regression checks for cleared names and image deletion receipts.
 
 The [contact resource assertion audit](contact-resource-test-audit.md) maps all 21 email, phone and external-account service/resource declarations and the reproduced deletion-receipt projection defect.

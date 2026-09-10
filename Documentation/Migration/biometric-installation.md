@@ -62,3 +62,5 @@ passes 220 tests, Apple passes 63 iOS Simulator and 66 macOS contract tests,
 and Android's separate packaged suite passes 11 tests with the optional
 installation capability absent. These counts describe the executed suites;
 they are not a complete native migration coverage figure.
+
+The subsequent [biometric credential assertion audit](biometric-test-audit.md) records raw metadata preservation during ordinary mutations, safe corrupt-storage handling, key replacement and initiating-session rollback. Its final pin and validation supersede the historical counts above for the current package.

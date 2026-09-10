@@ -17361,15 +17361,20 @@ isDevOrStagingUrl: (url) => {
 			const host = this.requireHost();
 			const generation = this.#generation;
 			const userId = session.user.id;
+			const sessionId = session.id;
 			const assertEnrollmentCurrent = () => {
 				this.assertCurrent(generation);
-				if (this.clerk.session?.id !== session.id || this.clerk.session?.user?.id !== userId) throw fail$1("stale_authentication_attempt");
+				if (this.clerk.session?.id !== sessionId || this.clerk.session?.user?.id !== userId) throw fail$1("stale_authentication_attempt");
 			};
 			const appIdentifier = await host.appIdentifier();
 			if (!appIdentifier) throw fail$1("missing_app_identifier");
 			const policy = params.policy ?? (host.platform === "android" ? "biometry_or_device_passcode" : "biometry_current_set");
+			await this.records();
 			assertEnrollmentCurrent();
 			const key = await host.createKey(policy);
+			let enrolled;
+			let persisted;
+			let replaced = [];
 			try {
 				assertEnrollmentCurrent();
 				const body = {
@@ -17379,7 +17384,7 @@ isDevOrStagingUrl: (url) => {
 					algorithm: "ES256",
 					publicKeyJwk: key.publicKeyJwk
 				};
-				const challenge = await this.request("/me/biometric_credentials/prepare", "POST", body, session.id);
+				const challenge = await this.request("/me/biometric_credentials/prepare", "POST", body, sessionId);
 				assertEnrollmentCurrent();
 				this.validateChallenge(challenge);
 				const signature = await host.sign({
@@ -17394,7 +17399,8 @@ isDevOrStagingUrl: (url) => {
 				const result = this.credential(await this.request("/me/biometric_credentials/attempt", "POST", {
 					...body,
 					...signature
-				}, session.id));
+				}, sessionId));
+				enrolled = result;
 				assertEnrollmentCurrent();
 				if (result.appIdentifier !== appIdentifier || result.platform !== host.platform) throw fail$1("invalid_biometric_response");
 				const record = {
@@ -17407,31 +17413,38 @@ isDevOrStagingUrl: (url) => {
 					createdAt: result.createdAt.getTime(),
 					updatedAt: result.updatedAt.getTime()
 				};
-				try {
-					await this.serialized(async () => {
-						assertEnrollmentCurrent();
-						const records = await this.records();
-						assertEnrollmentCurrent();
-						await host.storage.write(JSON.stringify([...records.filter((value) => value.id !== record.id), record]));
+				replaced = await this.serialized(async () => {
+					assertEnrollmentCurrent();
+					const records = await this.rawRecords();
+					assertEnrollmentCurrent();
+					const previous = [];
+					const retained = records.filter((value) => {
+						const existing = this.localRecord(value);
+						if (existing?.id !== record.id || existing.appIdentifier !== appIdentifier) return true;
+						previous.push(existing);
+						return false;
 					});
-				} catch (error) {
-					await this.request("/me/biometric_credentials/" + encodeURIComponent(result.id), "DELETE", void 0, session.id).catch(() => void 0);
-					throw error;
-				}
+					await host.storage.write(JSON.stringify([...retained, record]));
+					return previous;
+				});
+				persisted = record;
 				assertEnrollmentCurrent();
-				for (const old of await this.records()) if (old.appIdentifier === appIdentifier && old.id !== record.id) await this.deleteLocal(old).catch(() => void 0);
+				const remaining = await this.records().catch(() => []);
+				for (const old of [...replaced, ...remaining]) if (old.appIdentifier === appIdentifier && old.localKeyId !== record.localKeyId) await this.deleteLocal(old).catch(() => void 0);
 				return result;
 			} catch (error) {
-				await host.deleteKey(key.localKeyId).catch(() => void 0);
+				if (enrolled) await this.request("/me/biometric_credentials/" + encodeURIComponent(enrolled.id), "DELETE", void 0, sessionId).catch(() => void 0);
+				if (persisted) for (const record of [...replaced, persisted]) await this.deleteLocal(record).catch(() => void 0);
+				else await host.deleteKey(key.localKeyId).catch(() => void 0);
 				throw error;
 			}
 		}
 		async revoke({ id }) {
 			const result = this.credential(await this.request("/me/biometric_credentials/" + encodeURIComponent(id), "DELETE", void 0, this.clerk.session?.id));
-			if (this.host) {
+			if (this.host) try {
 				const record = (await this.records()).find((record) => record.id === id);
-				if (record) await this.deleteLocal(record).catch(() => void 0);
-			}
+				if (record) await this.deleteLocal(record);
+			} catch {}
 			return result;
 		}
 		async revokeCurrentDeviceCredential() {
@@ -17564,14 +17577,7 @@ isDevOrStagingUrl: (url) => {
 					if (!await installation.isCurrent()) {
 						const appIdentifier = await host.appIdentifier();
 						if (!appIdentifier) throw fail$1("missing_app_identifier");
-						const raw = await host.storage.read();
-						let records;
-						try {
-							records = raw ? JSON.parse(raw) : [];
-						} catch {
-							throw fail$1("invalid_biometric_metadata");
-						}
-						if (!Array.isArray(records)) throw fail$1("invalid_biometric_metadata");
+						const records = this.parseRecords(await host.storage.read());
 						const belongsToApp = (record) => !!record && typeof record === "object" && "appIdentifier" in record && record.appIdentifier === appIdentifier;
 						for (const record of records) if (belongsToApp(record) && typeof record.localKeyId === "string" && record.localKeyId) await host.deleteKey(record.localKeyId);
 						await host.storage.write(JSON.stringify(records.filter((record) => !belongsToApp(record))));
@@ -17585,44 +17591,57 @@ isDevOrStagingUrl: (url) => {
 			await this.#installationPromise;
 		}
 		async records() {
+			return (await this.rawRecords()).map((value) => this.localRecord(value)).filter((value) => value !== null);
+		}
+		async rawRecords() {
 			await this.ensureInstallation();
-			const raw = await this.requireHost().storage.read();
+			return this.parseRecords(await this.requireHost().storage.read());
+		}
+		parseRecords(raw) {
 			if (!raw) return [];
 			let values;
 			try {
 				values = JSON.parse(raw);
 			} catch {
-				return [];
+				throw fail$1("invalid_biometric_metadata");
 			}
-			if (!Array.isArray(values)) return [];
-			return values.map((record) => {
-				if (this.host?.platform !== "android" || !record || typeof record !== "object" || "localKeyId" in record || !("local_key_id" in record)) return record;
-				return {
-					id: record.id,
-					localKeyId: record.local_key_id,
-					userId: record.user_id,
-					appIdentifier: record.app_identifier,
-					identifierHint: record.identifier_hint,
-					policy: record.policy === void 0 ? "biometry_or_device_passcode" : record.policy,
-					createdAt: record.created_at,
-					updatedAt: record.updated_at
-				};
-			}).filter((record) => record !== null && typeof record === "object" && [
+			if (!Array.isArray(values)) throw fail$1("invalid_biometric_metadata");
+			return values;
+		}
+		localRecord(value) {
+			if (!value || typeof value !== "object") return null;
+			let record = value;
+			if (this.host?.platform === "android" && !("localKeyId" in record) && "local_key_id" in record) record = {
+				id: record.id,
+				localKeyId: record.local_key_id,
+				userId: record.user_id,
+				appIdentifier: record.app_identifier,
+				identifierHint: record.identifier_hint,
+				policy: record.policy === void 0 ? "biometry_or_device_passcode" : record.policy,
+				createdAt: record.created_at,
+				updatedAt: record.updated_at
+			};
+			if (![
 				"id",
 				"localKeyId",
 				"userId",
 				"appIdentifier"
-			].every((key) => typeof record[key] === "string" && record[key]) && (record.identifierHint == null || typeof record.identifierHint === "string") && policies.includes(record.policy) && Number.isFinite(record.createdAt) && Number.isFinite(record.updatedAt)).map((record) => ({
-				...record,
-				identifierHint: normalizeHint(record.identifierHint)
-			}));
+			].every((key) => typeof record[key] === "string" && record[key]) || !(record.identifierHint == null || typeof record.identifierHint === "string") || !policies.includes(record.policy) || !Number.isFinite(record.createdAt) || !Number.isFinite(record.updatedAt)) return null;
+			const decoded = record;
+			return {
+				...decoded,
+				identifierHint: normalizeHint(decoded.identifierHint)
+			};
 		}
 		async deleteLocal(record) {
 			const host = this.requireHost();
 			await host.deleteKey(record.localKeyId);
 			await this.serialized(async () => {
-				const records = await this.records();
-				await host.storage.write(JSON.stringify(records.filter((value) => value.id !== record.id || value.localKeyId !== record.localKeyId)));
+				const records = await this.rawRecords();
+				await host.storage.write(JSON.stringify(records.filter((value) => {
+					const existing = this.localRecord(value);
+					return existing?.id !== record.id || existing.localKeyId !== record.localKeyId || existing.appIdentifier !== record.appIdentifier;
+				})));
 			});
 		}
 		async cleanupUsers() {
@@ -20716,7 +20735,7 @@ isDevOrStagingUrl: (url) => {
 			if (body && typeof body === "object" && !(body instanceof FormData)) requestInit.body = filterUndefinedValues(body);
 			requestInit.url = buildUrl({
 				...requestInit,
-				sessionId: options.getSessionId()
+				sessionId: requestInit.sessionId ?? options.getSessionId()
 			});
 			requestInit.headers = new Headers(requestInit.headers);
 			if (method !== "GET" && !(body instanceof FormData) && !requestInit.headers.has("content-type")) requestInit.headers.set("content-type", "application/x-www-form-urlencoded");
