@@ -49,6 +49,20 @@ A Simulator run can check the probe's mechanics but does not establish physical
 signing/entitlement behavior. Inspect physical report attributes before choosing
 an automatic metadata-source policy.
 
+To check the harness on an already booted Simulator, set `CLERK_PROBE_SIMULATOR`
+to its identifier and use a separate build directory:
+
+```sh
+xcodebuild build -project Examples/KeychainMigrationProbe/KeychainMigrationProbe.xcodeproj -scheme KeychainMigrationProbe -configuration Debug -destination "platform=iOS Simulator,id=$CLERK_PROBE_SIMULATOR" -derivedDataPath /tmp/clerk-keychain-probe-simulator DEVELOPMENT_TEAM="$CLERK_PROBE_TEAM"
+xcrun simctl install "$CLERK_PROBE_SIMULATOR" /tmp/clerk-keychain-probe-simulator/Build/Products/Debug-iphonesimulator/KeychainMigrationProbe.app
+xcrun simctl launch --console-pty "$CLERK_PROBE_SIMULATOR" com.clerk.nativecore.keychain-migration-probe
+```
+
+Debug builds use the active architecture, matching the local Swift package's
+destination build. Without this setting the initial Simulator build also tried
+to compile an x86_64 app against the arm64-only package module and failed to
+resolve `ClerkKit`.
+
 ## Build evidence and limits
 
 The physical iOS build and strict signature verification succeeded on September
@@ -64,3 +78,11 @@ conflicted with the automatically signed package resource bundle and the
 Xcode-managed profile. The project now uses automatic signing. Custom report
 keys are supplied through an explicit Info.plist because generated build-setting
 keys alone did not appear in the built plist.
+
+The September 10 Simulator run completed all 14 observations on iOS 26.5
+(23F77), with reconstruction and durable-clear checks passing and fixture
+cleanup completed before report creation. The
+[saved report](../../Documentation/Migration/evidence/keychain-migration-probe-simulator.json)
+contains synthetic markers only. The
+[migration evidence](../../Documentation/Migration/legacy-metadata-access-groups.md)
+explains the observed selection and its limits.

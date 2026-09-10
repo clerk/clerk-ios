@@ -73,3 +73,38 @@ its synthetic UUID-scoped records. The iOS build, strict signature verification,
 resolved access-group metadata and installation on the paired physical iPhone
 succeeded. The phone remains passcode locked, so physical execution and report
 review are still pending; this does not resolve the source-selection policy.
+
+## Simulator observations
+
+The [complete report](evidence/keychain-migration-probe-simulator.json) was
+produced on September 10, 2026 by iOS Simulator 26.5 (23F77), run
+`B1059417-5F87-4FD1-A8FA-77A0C6131E01`. Both `magicLink` and
+`biometricCredentials` purposes produced the same selection:
+
+| Seeded metadata | Omitted-group query | Adapter imported |
+| --- | --- | --- |
+| Private only | Private record | Private marker |
+| Shared only | Shared record | Shared marker |
+| Private then shared | Both records | Private marker |
+| Shared then private | Both records | Private marker |
+| Adopted, shared only | Shared record | Shared marker |
+| Adopted, private and shared | Both records | Private marker |
+| Previous bundle service only | No configured-service record | Nothing |
+
+Explicit group queries returned only the matching group's records. Default
+insertion used the declared private group. Reconstruction preserved each
+selection, removal followed by reconstruction returned nil in all 14 cases,
+and exact-service fixture cleanup succeeded before the report was written.
+
+These observations confirm that the probe executes the actual adapter and
+that an omitted group is not an app-private lookup in this environment.
+Private selection with duplicate accounts is only this run's observation;
+it is not a supported ordering guarantee. The adoption marker currently does
+not affect metadata import. The previous-bundle fixture confirms a missing
+lookup, not permission to introduce one after adoption or a durable clear.
+
+This is harness evidence, not physical entitlement or released-app upgrade
+proof. The report uses invalid synthetic authentication metadata, so expiry,
+real callback continuation and biometric credential usability remain outside
+its scope. The retained legacy adoption tests and source-policy decision remain
+open until the signed-device and valid-record checks are complete.
