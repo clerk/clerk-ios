@@ -151,6 +151,32 @@ struct AppleCredentialStorageTests {
     #expect(try await storage(probe).read() == "accepted")
   }
 
+  @Test(arguments: [false, true])
+  func adoptedEmptyIdentityCannotRestoreAnOlderCredential(sameInstance: Bool) async throws {
+    let probe = SecurityItemProbe()
+    let service = "\(application).clerk.identity.v2.\(sameInstance ? fingerprint : "other-instance")"
+    probe.seed(service: service, account: "clerkSharedSessionSyncAdoptedV2", value: Data("2".utf8))
+    probe.seed(service: legacyService, account: "clerkDeviceToken", value: Data("unscoped-old".utf8))
+    let legacy = LegacyKeychainConfiguration(service: legacyService, publishableKey: key)
+    #expect(try await storage(probe, legacy: legacy).read() == (sameInstance ? nil : "unscoped-old"))
+    #expect(try await storage(probe, legacy: legacy).read() == (sameInstance ? nil : "unscoped-old"))
+    #expect(probe.value(service: service, account: "clerkSharedSessionSyncAdoptedV2") == Data("2".utf8))
+    #expect(probe.value(service: legacyService, account: "clerkDeviceToken") == Data("unscoped-old".utf8))
+  }
+
+  @Test(arguments: [false, true])
+  func adoptionMarkerPreservesItsAcceptedLocalCredential(tokenOnly: Bool) async throws {
+    let probe = SecurityItemProbe()
+    let service = "\(application).clerk.identity.v2.\(fingerprint)"
+    let identity: JSONValue = tokenOnly ? .object(["state": .string("cleared"), "device_token": .string("accepted")]) : acceptedIdentity
+    let record: JSONValue = .object(["schema_version": .number(1), "accepted_identity": identity])
+    try probe.seed(service: service, account: "clerkSharedSessionLocalIdentityV2", value: JSONEncoder().encode(record))
+    probe.seed(service: service, account: "clerkSharedSessionSyncAdoptedV2", value: Data("2".utf8))
+    probe.seed(service: legacyService, account: "clerkDeviceToken", value: Data("unscoped-old".utf8))
+    #expect(try await storage(probe, legacy: .init(service: legacyService, publishableKey: key)).read() == "accepted")
+    #expect(probe.value(service: service, account: "clerkSharedSessionSyncAdoptedV2") == Data("2".utf8))
+  }
+
   @Test(arguments: ["unversioned", "settled", "required", "pending"])
   func tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind: String) async throws {
     let probe = SecurityItemProbe()

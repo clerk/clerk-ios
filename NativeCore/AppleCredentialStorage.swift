@@ -116,6 +116,11 @@ public actor KeychainCredentialStorage: CredentialStorage {
          try legacyCredential(in: pending) != token { return nil }
       return token
     }
+    // Adoption makes this app's local identity authoritative even when empty.
+    // The previous major retains this marker through a clear so older shared
+    // credentials (including a sibling's later writes) cannot restore it.
+    if let marker = try readItem(service: identityService, account: "clerkSharedSessionSyncAdoptedV2"),
+       String(data: marker, encoding: .utf8) == "2" { return nil }
     guard legacy.publishableKey == publishableKey else { return nil }
     guard let data = try readLegacyItem(service: legacy.service ?? applicationIdentifier, account: "clerkDeviceToken", accessGroup: legacy.accessGroup),
           let token = String(data: data, encoding: .utf8), !token.isEmpty else { return nil }

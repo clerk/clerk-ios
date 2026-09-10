@@ -104,7 +104,9 @@ before its legacy backend and does not fall back after a read/entitlement error.
 A pending old-version clear for this instance prevents credential import; the new
 owner starts signed out and requires fresh authentication. The old recovery
 journal is retained for the previous major's shared-slot cleanup. A malformed
-journal reports an error. See the [Keychain assertion audit](keychain-test-audit.md)
+journal reports an error. A matching previous adoption marker with no local identity
+also prevents legacy token fallback, preserving the previous major's cleared identity.
+See [adoption-marker recovery](adoption-marker-credential-upgrade.md) and the [Keychain assertion audit](keychain-test-audit.md)
 for the persisted formats, verified behavior and remaining device gates.
 
 The selected prerelease profile does **not** provide these old surfaces:

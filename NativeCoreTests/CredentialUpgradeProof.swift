@@ -25,10 +25,13 @@ import Security
       let status = SecItemAdd(insertion as CFDictionary, nil)
       guard status == errSecSuccess else { throw CoreError(code: "fixture_seed_failed_\(status)") }
     }
-    let storage = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application)
+    let storage = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: .init(publishableKey: key))
     let magic = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: .init(publishableKey: key), purpose: .magicLink)
     let biometrics = KeychainCredentialStorage(publishableKey: key, frontendAPI: origin, applicationIdentifier: application, legacy: .init(publishableKey: key), purpose: .biometricCredentials)
     switch mode {
+    case "seed-adopted-clear":
+      try seed(identityService, "clerkSharedSessionSyncAdoptedV2", Data("2".utf8))
+      try seed(application, "clerkDeviceToken", Data("unscoped-fixture-must-not-restore".utf8))
     case "seed", "seed-clearing", "seed-token-only":
       // These persisted keys follow the previous major's clerkEncoder
       // (.convertToSnakeCase), not the new runtime's projection format.
@@ -56,7 +59,7 @@ import Security
       let otherToken = try await other.read()
       precondition(otherToken == nil)
     case "clear": try await storage.remove(); try await magic.remove(); try await biometrics.remove()
-    case "assert-pending-clear":
+    case "assert-pending-clear", "assert-adopted-clear":
       let token = try await storage.read()
       precondition(token == nil)
     case "assert-cleared":
@@ -67,7 +70,7 @@ import Security
       let local = try await biometrics.read()
       precondition(local == nil)
     case "cleanup":
-      for (service, account) in [(identityService, "clerkSharedSessionLocalIdentityV2"), (recoveryService, "clerkSharedSessionOwnerSlotClearIntentV1"), (application, "clerkDeviceToken"), (application, "pendingMagicLinkFlow"), (application, "trustedDeviceCredentials"), (application + ".clerk.core.v2." + hash(key), "biometricCredentials"), (application + ".clerk.core.v2." + hash(key), "magicLink"), (application + ".clerk.core.v2." + hash(key), "client"), (application + ".clerk.core.v2." + hash(key + "-other"), "client")] {
+      for (service, account) in [(identityService, "clerkSharedSessionLocalIdentityV2"), (identityService, "clerkSharedSessionSyncAdoptedV2"), (recoveryService, "clerkSharedSessionOwnerSlotClearIntentV1"), (application, "clerkDeviceToken"), (application, "pendingMagicLinkFlow"), (application, "trustedDeviceCredentials"), (application + ".clerk.core.v2." + hash(key), "biometricCredentials"), (application + ".clerk.core.v2." + hash(key), "magicLink"), (application + ".clerk.core.v2." + hash(key), "client"), (application + ".clerk.core.v2." + hash(key + "-other"), "client")] {
         SecItemDelete(item(service, account) as CFDictionary)
       }
     default: throw CoreError(code: "unknown_test_mode")
