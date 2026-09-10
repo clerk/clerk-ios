@@ -1,0 +1,217 @@
+// !$*UTF8*$!
+{
+	"archiveVersion" = 1;
+	"classes" = {
+	};
+	"objectVersion" = 56;
+	"objects" = {
+		"FEF914A1C0FAF9F313916531" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "KeychainMigrationProbe.swift";
+			"sourceTree" = "<group>";
+		};
+		"59067EDB53947CC7E5E6E534" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "text.plist.entitlements";
+			"path" = "KeychainMigrationProbe.entitlements";
+			"sourceTree" = "<group>";
+		};
+		"8CC40234137A8C841A9F675F" = {
+			"isa" = "PBXFileReference";
+			"explicitFileType" = "wrapper.application";
+			"includeInIndex" = 0;
+			"path" = "KeychainMigrationProbe.app";
+			"sourceTree" = "BUILT_PRODUCTS_DIR";
+		};
+		"2FF45BBD1A06C928466CE2E5" = {
+			"isa" = "XCLocalSwiftPackageReference";
+			"relativePath" = "../..";
+		};
+		"5F5754978EB68587CB13F671" = {
+			"isa" = "XCSwiftPackageProductDependency";
+			"package" = "2FF45BBD1A06C928466CE2E5";
+			"productName" = "ClerkKit";
+		};
+		"53220C08B56174BA25176A2F" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "FEF914A1C0FAF9F313916531";
+		};
+		"D26A7855F50B05853A40C53C" = {
+			"isa" = "PBXBuildFile";
+			"productRef" = "5F5754978EB68587CB13F671";
+		};
+		"94F67402FE90750797C48FD2" = {
+			"isa" = "PBXSourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"53220C08B56174BA25176A2F",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"C0DF176218D904B8C1E2D9DF" = {
+			"isa" = "PBXFrameworksBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+				"D26A7855F50B05853A40C53C",
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"C666A6F2984AD4FC3BF81FD2" = {
+			"isa" = "PBXResourcesBuildPhase";
+			"buildActionMask" = 2147483647;
+			"files" = (
+			);
+			"runOnlyForDeploymentPostprocessing" = 0;
+		};
+		"F25BDE382B6CEAC7898603FC" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.keychain-migration-probe";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE" = "Info.plist";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Keychain Migration Probe";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_ProbePrivateGroup" = "$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)";
+				"INFOPLIST_KEY_ProbeSharedGroup" = "$(AppIdentifierPrefix)com.clerk.nativecore.keychain-migration-probe.shared";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"CODE_SIGN_ENTITLEMENTS" = "KeychainMigrationProbe.entitlements";
+				"SDKROOT" = "iphoneos";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-Onone";
+			};
+		};
+		"A56543661E8F1B656749E206" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"PRODUCT_BUNDLE_IDENTIFIER" = "com.clerk.nativecore.keychain-migration-probe";
+				"PRODUCT_NAME" = "$(TARGET_NAME)";
+				"GENERATE_INFOPLIST_FILE" = "YES";
+				"INFOPLIST_FILE" = "Info.plist";
+				"INFOPLIST_KEY_UISupportedInterfaceOrientations" = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				"INFOPLIST_KEY_CFBundleDisplayName" = "Keychain Migration Probe";
+				"INFOPLIST_KEY_UILaunchScreen_Generation" = "YES";
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation" = "YES";
+				"INFOPLIST_KEY_ProbePrivateGroup" = "$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)";
+				"INFOPLIST_KEY_ProbeSharedGroup" = "$(AppIdentifierPrefix)com.clerk.nativecore.keychain-migration-probe.shared";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+				"TARGETED_DEVICE_FAMILY" = "1,2";
+				"CODE_SIGN_STYLE" = "Automatic";
+				"CODE_SIGN_ENTITLEMENTS" = "KeychainMigrationProbe.entitlements";
+				"SDKROOT" = "iphoneos";
+				"SUPPORTED_PLATFORMS" = "iphoneos iphonesimulator";
+				"SWIFT_OPTIMIZATION_LEVEL" = "-O";
+			};
+		};
+		"058C93E4A3682AB9BD391B5E" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"F25BDE382B6CEAC7898603FC",
+				"A56543661E8F1B656749E206",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Debug";
+		};
+		"4668F2AB0CB20A7C3549FF81" = {
+			"isa" = "PBXNativeTarget";
+			"buildConfigurationList" = "058C93E4A3682AB9BD391B5E";
+			"buildPhases" = (
+				"94F67402FE90750797C48FD2",
+				"C0DF176218D904B8C1E2D9DF",
+				"C666A6F2984AD4FC3BF81FD2",
+			);
+			"buildRules" = (
+			);
+			"dependencies" = (
+			);
+			"name" = "KeychainMigrationProbe";
+			"productName" = "KeychainMigrationProbe";
+			"productReference" = "8CC40234137A8C841A9F675F";
+			"productType" = "com.apple.product-type.application";
+			"packageProductDependencies" = (
+				"5F5754978EB68587CB13F671",
+			);
+		};
+		"FB08775293403AB86BE29592" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"8CC40234137A8C841A9F675F",
+			);
+			"name" = "Products";
+			"sourceTree" = "<group>";
+		};
+		"41DFA80632BAD157582C234F" = {
+			"isa" = "PBXGroup";
+			"children" = (
+				"FEF914A1C0FAF9F313916531",
+				"59067EDB53947CC7E5E6E534",
+				"FB08775293403AB86BE29592",
+			);
+			"sourceTree" = "<group>";
+		};
+		"D4BEA201F7B4BF2773CEC298" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Debug";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+			};
+		};
+		"5FAF55626562EC0E045780B4" = {
+			"isa" = "XCBuildConfiguration";
+			"name" = "Release";
+			"buildSettings" = {
+				"CLANG_ENABLE_MODULES" = "YES";
+				"SDKROOT" = "iphoneos";
+				"SWIFT_VERSION" = "6.0";
+				"IPHONEOS_DEPLOYMENT_TARGET" = "17.0";
+			};
+		};
+		"C8E6342C74ADB512CAA10BA7" = {
+			"isa" = "XCConfigurationList";
+			"buildConfigurations" = (
+				"D4BEA201F7B4BF2773CEC298",
+				"5FAF55626562EC0E045780B4",
+			);
+			"defaultConfigurationIsVisible" = 0;
+			"defaultConfigurationName" = "Debug";
+		};
+		"79ED609B00BAAD9812DDB243" = {
+			"isa" = "PBXProject";
+			"attributes" = {
+				"BuildIndependentTargetsInParallel" = "YES";
+				"LastUpgradeCheck" = "2600";
+			};
+			"buildConfigurationList" = "C8E6342C74ADB512CAA10BA7";
+			"compatibilityVersion" = "Xcode 14.0";
+			"developmentRegion" = "en";
+			"hasScannedForEncodings" = 0;
+			"knownRegions" = (
+				"en",
+				"Base",
+			);
+			"mainGroup" = "41DFA80632BAD157582C234F";
+			"productRefGroup" = "FB08775293403AB86BE29592";
+			"projectDirPath" = "";
+			"projectRoot" = "";
+			"targets" = (
+				"4668F2AB0CB20A7C3549FF81",
+			);
+			"packageReferences" = (
+				"2FF45BBD1A06C928466CE2E5",
+			);
+		};
+	};
+	"rootObject" = "79ED609B00BAAD9812DDB243";
+}

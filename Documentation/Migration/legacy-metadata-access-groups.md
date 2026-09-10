@@ -62,3 +62,14 @@ proofs. They do not settle these metadata-source questions. Keep the old
 `privateAppStateMigratesOnlyFromAppAttributedStorage` and
 `ambiguousSharedPrivateAppStateIsNotMigrated` assertions as open evidence until
 this check is resolved; an in-memory nil-group assertion cannot close it.
+
+## Signed probe prepared
+
+[KeychainMigrationProbe](../../Examples/KeychainMigrationProbe/README.md) now
+links the real local SDK and records Security item attributes and adapter
+selection for private/shared duplicates, insertion order, adoption history and
+changed services. It also checks reconstruction, durable clears and cleanup of
+its synthetic UUID-scoped records. The iOS build, strict signature verification,
+resolved access-group metadata and installation on the paired physical iPhone
+succeeded. The phone remains passcode locked, so physical execution and report
+review are still pending; this does not resolve the source-selection policy.
