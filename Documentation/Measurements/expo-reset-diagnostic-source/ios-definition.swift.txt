@@ -1,0 +1,17 @@
+    AsyncFunction("measureFixtureNativeResets") { (promise: Promise) in
+      let operation = Task { @MainActor in
+        do { promise.resolve(try await FixtureNativeResetMeasurement.run()) }
+        catch { promise.reject("E_FIXTURE_MEASUREMENT", String(describing: error)) }
+      }
+      let timeout = Task { @MainActor in
+        do {
+          try await Task.sleep(for: .seconds(60))
+          operation.cancel()
+        } catch {}
+      }
+      Task { @MainActor in
+        await operation.value
+        timeout.cancel()
+      }
+    }
+

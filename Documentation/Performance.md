@@ -40,3 +40,5 @@ The later [Simulator lifecycle check](Measurements/ios-simulator-lifecycle.md) v
 ## Matched iOS arm64 application exports
 
 The [2026-09-09 iPhone Air export comparison](Measurements/ios-arm64-release-footprint.md) measures a matched API-only SwiftUI harness with and without ClerkKit. Xcode's local app-thinning report estimates an incremental 1,651,319 compressed bytes (1.57 MiB) and 5,364,077 uncompressed bytes (5.12 MiB), within the respective budgets for this development export. This is not observed App Store traffic or a physical filesystem-allocation measurement. Native UI, other target variants, device latency and memory release gates remain separate.
+
+The [prepared Expo native-call diagnostic](Measurements/expo-reset-diagnostic-build.md) now builds against the current contract and is installed on a simulator/emulator. Its 300-call workload has not run; the build receipt does not close the Expo performance gate.

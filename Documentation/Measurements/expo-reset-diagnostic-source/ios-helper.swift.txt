@@ -1,0 +1,91 @@
+
+// Removable fixture instrumentation; not part of the SDK.
+@MainActor private final class FixtureNativeResetMeasurement: NSObject {
+  private static var running = false
+  private var displayLink: CADisplayLink?
+  private var lastFrame: CFTimeInterval?
+  private var measuring = false
+  private var frameGaps: [Double] = []
+
+  @objc private func frame(_ link: CADisplayLink) {
+    if measuring, let lastFrame {
+      frameGaps.append((link.timestamp - lastFrame) * 1000)
+    }
+    lastFrame = link.timestamp
+  }
+
+  static func run() async throws -> [String: any Sendable] {
+    guard !running else { throw CoreError(code: "fixture_measurement_already_running") }
+    running = true
+    defer { running = false }
+    let bridge = ClerkNativeBridge.shared
+    guard let owner = bridge.clerk, let connection = bridge.connection,
+      owner.loaded, !owner.isInvalidated,
+      owner.session?.id == "sess_native", owner.user?.id == "user_native"
+    else { throw CoreError(code: "fixture_authenticated_owner_unavailable") }
+    let session = owner.session
+    let user = owner.user
+    let monitor = FixtureNativeResetMeasurement()
+    let beforeMemory = try memory()
+    let link = CADisplayLink(target: monitor, selector: #selector(frame(_:)))
+    monitor.displayLink = link
+    link.add(to: .main, forMode: .common)
+    defer {
+      link.invalidate()
+      monitor.displayLink = nil
+    }
+    for _ in 0..<10 { try await owner.signIn.reset() }
+    try await Task.sleep(for: .milliseconds(100))
+    monitor.lastFrame = nil
+    monitor.measuring = true
+    var samples: [Double] = []
+    samples.reserveCapacity(300)
+    for _ in 0..<300 {
+      try Task.checkCancellation()
+      guard bridge.clerk === owner, bridge.connection === connection else {
+        throw CoreError(code: "fixture_owner_changed")
+      }
+      let child = owner.signIn.emailCode
+      let revision = connection.runtime.revision
+      let started = DispatchTime.now().uptimeNanoseconds
+      try await owner.signIn.reset()
+      let elapsed = Double(DispatchTime.now().uptimeNanoseconds - started) / 1e6
+      guard child.isInvalidated, connection.runtime.revision > revision,
+        owner.session === session, owner.user === user else {
+        throw CoreError(code: "fixture_reset_contract_failed")
+      }
+      samples.append(elapsed)
+    }
+    // Capture the first frame after the final operation, outside operation timings.
+    try await Task.sleep(for: .milliseconds(50))
+    monitor.measuring = false
+    return [
+      "schemaVersion": 1, "sampleCount": samples.count, "warmupCount": 10,
+      "operation": "generated native signIn.reset through existing Expo/Hermes owner",
+      "nativeResetMilliseconds": samples,
+      "mainThreadFrameGapsMilliseconds": monitor.frameGaps,
+      "memoryBefore": beforeMemory, "memoryAfter": try memory(),
+      "device": UIDevice.current.model,
+      "operatingSystem": ProcessInfo.processInfo.operatingSystemVersionString,
+      "nativeCoreRevision": BundledCore.coreRevision,
+      "nativeBundleSHA256": BundledCore.sha256,
+      "nativeRevisionAfter": connection.runtime.revision,
+      "sameNativeOwner": bridge.clerk === owner && bridge.connection === connection,
+      "authenticatedAtReady": true, "forcedCollection": false,
+    ]
+  }
+
+  private static func memory() throws -> [String: any Sendable] {
+    var info = task_vm_info_data_t()
+    var count = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+    let result = withUnsafeMutablePointer(to: &info) { pointer in
+      pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+        task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &count)
+      }
+    }
+    guard result == KERN_SUCCESS else { throw CoreError(code: "fixture_memory_snapshot_failed") }
+    return ["physicalFootprintBytes": info.phys_footprint,
+      "residentBytes": info.resident_size,
+      "processLifetimeFootprintPeakBytes": info.ledger_phys_footprint_peak]
+  }
+}
