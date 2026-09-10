@@ -71,9 +71,8 @@ struct AuthFlowSnapshot {
       hasResolvedEnrollmentStep ? nil : completion
     }
 
-    @MainActor var flowId: String? {
-      completion?.flowId
-    }
+    /// Generated resources mutate in place when a new attempt replaces the old one.
+    var flowId: String?
   }
 
   enum Phase {

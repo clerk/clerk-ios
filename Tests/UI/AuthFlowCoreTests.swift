@@ -369,6 +369,161 @@ import Testing
     #expect(clerk.completeAuthFlow(work))
   }
 
+  @Test(arguments: [false, true])
+  func aNewAuthenticationCompletionReplacesOlderWork(sameSession: Bool) async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    try await clerk.signIn.sso(.init(strategy: .oauthGoogle))
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    let previous = try awaiting(clerk, owner)
+    let previousFlowId = clerk.signIn.id
+    let previousToken = sameSession ? nil : try #require(clerk.startAuthFlowPresentation(for: owner, work: previous, presentation: .biometricCredentialEnrollment))
+    let oldSession = try #require(fixture.fixtures["session"])
+    var nextSession = try oldSession.object()
+    let nextSessionId = sameSession ? "sess_native" : "sess_replacement"
+    nextSession["id"] = .string(nextSessionId)
+    var nextSignIn = try #require(fixture.fixtures["signIn"]).object()
+    nextSignIn["id"] = .string("sia_replacement")
+    nextSignIn["status"] = .string("complete")
+    nextSignIn["created_session_id"] = .string(nextSessionId)
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array(sameSession ? [oldSession] : [oldSession, .object(nextSession)])
+    client["sign_in"] = .object(nextSignIn)
+    client["last_active_session_id"] = .string(nextSessionId)
+    fixture.clientResponse = .object(client)
+    capabilities.signInResponse = .object(["response": .object(nextSignIn), "client": .object(client)])
+    capabilities.touchResponse = .object(["response": .object(nextSession), "client": .object(client)])
+    try await clerk.signIn.password(.case1(.init(password: "fixture-password", identifier: "new@example.com")))
+    #expect(clerk.signIn.id == "sia_replacement")
+    #expect(clerk.signIn.id != previousFlowId)
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    #expect(clerk.session?.id == nextSessionId)
+    let current = try awaiting(clerk, owner)
+    #expect(current != previous)
+    #expect(current.sessionId == nextSessionId)
+    guard case .awaiting(_, let completion) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The new authentication must own the pending completion")
+      return
+    }
+    #expect(completion?.flowId == "sia_replacement")
+    if let previousToken {
+      #expect(!clerk.authFlowPresentationIsCurrent(previousToken))
+      #expect(!clerk.finishAuthFlowPresentation(previousToken))
+    }
+    #expect(clerk.startAuthFlowPresentation(for: owner, work: previous, presentation: .biometricCredentialEnrollment) == nil)
+    #expect(!clerk.completeAuthFlow(previous))
+    #expect(!clerk.isAuthFlowComplete)
+    #expect(clerk.completeAuthFlow(current))
+    #expect(!clerk.completeAuthFlow(current))
+    #expect(clerk.isAuthFlowComplete)
+  }
+
+  @Test func pendingSignUpFinishesEnrollmentBeforeTasksWithoutReofferingIt() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    var session = try #require(fixture.fixtures["session"]).object()
+    session["status"] = .string("pending")
+    session["tasks"] = .array([.object(["key": .string("setup-mfa")])])
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([.object(session)])
+    fixture.clientResponse = .object(client)
+    // Completed sign-up responses carry their newly created session in the client envelope.
+    let signUp = try #require(client["sign_up"])
+    capabilities.signUpResponse = .object(["response": signUp, "client": .object(client)])
+    capabilities.touchResponse = .object(["response": .object(session), "client": .object(client)])
+    try await clerk.signUp.sso(.init(strategy: "oauth_token_apple"))
+    #expect(clerk.signUp.status == .complete)
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signUp(clerk.signUp))
+    }
+    #expect(clerk.session?.status == .pending)
+    let work = try awaiting(clerk, owner)
+    guard case .awaiting(_, .signUp(let completion)) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The sign-up must retain its enrollment provenance")
+      return
+    }
+    #expect(completion.id == clerk.signUp.id)
+    let enrollment = try #require(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .biometricCredentialEnrollment))
+    #expect(!clerk.completeAuthFlow(work))
+    #expect(clerk.finishAuthFlowPresentation(enrollment))
+    guard case .awaiting(let resumed, let offeredEnrollment) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("Completed enrollment must yield to session tasks")
+      return
+    }
+    #expect(resumed == work)
+    #expect(offeredEnrollment == nil)
+    let tasks = try #require(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .sessionTasks))
+    #expect(!clerk.isAuthFlowComplete)
+    fixture.sessionReloadResponse = try .object(["response": #require(fixture.fixtures["session"]), "client": #require(fixture.fixtures["authenticatedClient"])])
+    _ = try await clerk.session?.reload()
+    clerk.reconcileAuthFlowPresentation()
+    #expect(clerk.session?.status == .active)
+    #expect(clerk.authFlowPresentationIsCurrent(tasks))
+    #expect(clerk.finishAuthFlowPresentation(tasks))
+    #expect(clerk.completeAuthFlow(work))
+    #expect(!clerk.completeAuthFlow(work))
+  }
+
+  @Test func completionArrivingDuringExternalSessionTasksKeepsTheScreenAndSkipsEnrollment() async throws {
+    let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
+    var session = try #require(fixture.fixtures["session"]).object()
+    session["status"] = .string("pending")
+    session["tasks"] = .array([.object(["key": .string("setup-mfa")])])
+    var client = try #require(fixture.fixtures["authenticatedClient"]).object()
+    client["sessions"] = .array([.object(session)])
+    fixture.clientResponse = .object(client)
+    let capabilities = AuthFlowCapabilities(base: fixture)
+    let clerk = try await connect(capabilities)
+    defer { clerk.close() }
+    let owner = try #require(clerk.registerAuthFlow())
+    defer { owner.cancel() }
+    clerk.reconcileAuthFlowPresentation()
+    let work = try awaiting(clerk, owner)
+    let tasks = try #require(clerk.startAuthFlowPresentation(for: owner, work: work, presentation: .sessionTasks))
+    var signIn = try #require(fixture.fixtures["signIn"]).object()
+    signIn["status"] = .string("complete")
+    signIn["created_session_id"] = .string("sess_native")
+    client["sign_in"] = .object(signIn)
+    fixture.clientResponse = .object(client)
+    capabilities.signInResponse = .object(["response": .object(signIn), "client": .object(client)])
+    capabilities.touchResponse = .object(["response": .object(session), "client": .object(client)])
+    try await clerk.signIn.password(.case1(.init(password: "fixture-password", identifier: "new@example.com")))
+    try await AuthFlowRequestScope.withOwner(owner.id) {
+      try await clerk.finalizeForPresentation(.signIn(clerk.signIn))
+    }
+    #expect(clerk.authFlowPresentationIsCurrent(tasks))
+    guard case .presenting(let currentToken, .signIn(let completion)) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The existing task screen must receive the completion without replacement")
+      return
+    }
+    #expect(currentToken == tasks)
+    #expect(completion.id == clerk.signIn.id)
+    #expect(clerk.finishAuthFlowPresentation(tasks))
+    guard case .awaiting(let resumed, let enrollment) = clerk.authFlowSnapshot(for: owner)?.phase else {
+      Issue.record("The completed task screen must not reopen enrollment")
+      return
+    }
+    #expect(resumed == work)
+    #expect(enrollment == nil)
+    #expect(!clerk.isAuthFlowComplete)
+    fixture.sessionReloadResponse = try .object(["response": #require(fixture.fixtures["session"]), "client": #require(fixture.fixtures["authenticatedClient"])])
+    _ = try await clerk.session?.reload()
+    #expect(clerk.completeAuthFlow(work))
+    #expect(!clerk.completeAuthFlow(work))
+  }
+
   @Test func signOutInvalidatesACompletionWaitingForPresentation() async throws {
     let fixture = try FixtureCapabilities(data: PackageProof.fixtureData())
     let clerk = try await connect(fixture)
@@ -452,6 +607,8 @@ import Testing
     base.supported
   }
 
+  var signInResponse: JSONValue?
+  var signUpResponse: JSONValue?
   var touchResponse: JSONValue?
   var touchStatus = 200
   var pauseNextTouch = false
@@ -474,6 +631,12 @@ import Testing
   }
 
   func perform(_ capability: String, arguments: JSONValue) async throws -> JSONValue {
+    if capability == "http", let path = try arguments.object()["url"]?.url().path {
+      let response = path.contains("/sign_ins") ? signInResponse : path.contains("/sign_ups") ? signUpResponse : nil
+      if let response {
+        return try .object(["status": .number(200), "headers": .object([:]), "body": .string(String(decoding: JSONEncoder().encode(response), as: UTF8.self))])
+      }
+    }
     if capability == "http", try arguments.object()["url"]?.url().path.hasSuffix("/touch") == true {
       if pauseNextTouch {
         pauseNextTouch = false

@@ -64,6 +64,7 @@ import Observation
         // A repeated completion must not replace a screen the user is finishing.
         if target.completion == nil {
           target.origin = .completed(result)
+          target.flowId = result.flowId
           coordinator.phase = .presenting(target: target, token: token)
         }
       case .awaiting(let target) where target.sessionId == sessionId && target.flowId == result.flowId:
@@ -71,7 +72,7 @@ import Observation
       default:
         introducedWork = true
         coordinator.completedSessionId = nil
-        coordinator.phase = .awaiting(.init(id: completionId, sessionId: sessionId, origin: .completed(result)))
+        coordinator.phase = .awaiting(.init(id: completionId, sessionId: sessionId, origin: .completed(result), flowId: result.flowId))
       }
       coordinator.advanceRevision()
       guard coordinator.ownerId == ownerId else { throw CancellationError() }

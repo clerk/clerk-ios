@@ -23,10 +23,10 @@ enrollment sequencing and completion callback delivery.
 | `supersededCompletionPreservesCurrentSessionWork`, `completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation`, `authoritativeIdentityChangeSupersedesOwnedCompletionWhenOldSessionRemains`, `staleSameFlowRejectionPreservesAcceptedAwaitingWork`, `sameFlowRejectionYieldsToAuthoritativeIdentityChange`, `failedSessionActivationAdoptsTheAuthoritativeCurrentSession`, `finishedCompletedActivationAdoptsANewerAuthoritativeSession`, `acceptedCompletionWaitsWhileItsViableSessionHasNotBeenSelected`, `semanticRejectionIsAcceptedWhenTheCreatedSessionIsAuthoritative`, `supersededCompletionAdoptsAuthoritativeSessionForDismissal` | The old identity-update enum, semantic rejection resolver and native activation markers are removed. Generated finalization owns session activation; UI work is held during that operation and reconciled to the actual current viable session afterward. The full competing-session, rejected-activation and intermediate refresh matrix remains unverified. A source mapping is not a passing race test. |
 | `presentationRetainsExactWorkAcrossRefreshAndLaterCompletion`, `finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion`, `completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment` | `repeatedCompletionPreservesAnAlreadyPresentedEnrollment` verifies the same presentation token and work survive repeated generated completion, remain root-blocking, finish once and deliver completion once. It reproduced replacement of the active presentation before the fix. A distinct later attempt ID and intervening refresh are not both reproduced by this test. |
 | `replayedCompletionPreservesResolvedPostAuthWork` | `replayAfterEnrollmentFinishesDoesNotOfferEnrollmentAgain` verifies repeated generated finalization after enrollment finishes retains the same work, exposes no enrollment completion, and accepts callback delivery only once. |
-| `acceptedCompletionForAnotherSessionReplacesPresentedWork`, `newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks` | `anotherCurrentSessionInvalidatesThePresentedScreen` uses generated `setActive` to select a second server session, then rejects the old screen token and completion before reconciliation and delivers the replacement completion once afterward. The exact two-authentication-completion and newer-awaiting-flow scenarios remain unverified. |
+| `acceptedCompletionForAnotherSessionReplacesPresentedWork`, `newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks` | `anotherCurrentSessionInvalidatesThePresentedScreen` uses generated `setActive` to select a second server session, then rejects the old screen token and completion before reconciliation and delivers the replacement completion once afterward. `aNewAuthenticationCompletionReplacesOlderWork` now executes a second completed sign-in for either a different session while enrollment is open or the same session while work is awaiting. It verifies new attempt provenance, replaced work, rejected stale screen/completion callbacks and one completion delivery. The same-session case reproduced the mutable-attempt-ID regression documented below. |
 | `sessionTaskPresentationRemainsUntilItsTokenFinishes` | `sessionTaskScreenKeepsOwnershipAfterTheCoreSessionBecomesActive` connects with a pending session, presents tasks, reloads through core HTTP to active, retains the token, rejects premature completion and accepts completion after the screen finishes. |
 | `completingAuthFlowIsAcceptedOnceForAnOrdinaryFlow` | Both external-activation and retired-registration tests verify callback acceptance only once for ordinary completion. Reconciliation after accepted external completion does not offer the same session again. |
-| `finishingEnrollmentForPendingSignUpAdvancesToTasksWithoutReoffering`, `taskAppearingDuringEnrollmentWaitsForEnrollmentToFinish`, `acceptedCompletionDoesNotOfferEnrollmentAfterSessionTasksBegin` | `aNewSessionTaskWaitsForEnrollmentToFinish` reloads an active session to pending while enrollment is open, verifies the task cannot replace enrollment, then finishes enrollment, presents the task without reoffering enrollment and completes after an active-session reload. Existing `AuthNavigationTests` checks route ordering. Pending sign-up completion and completion arriving after tasks began still need packaged-core store assertions. |
+| `finishingEnrollmentForPendingSignUpAdvancesToTasksWithoutReoffering`, `taskAppearingDuringEnrollmentWaitsForEnrollmentToFinish`, `acceptedCompletionDoesNotOfferEnrollmentAfterSessionTasksBegin` | `aNewSessionTaskWaitsForEnrollmentToFinish` reloads an active session to pending while enrollment is open, verifies the task cannot replace enrollment, then finishes enrollment, presents the task without reoffering enrollment and completes after an active-session reload. Existing `AuthNavigationTests` checks route ordering. `pendingSignUpFinishesEnrollmentBeforeTasksWithoutReofferingIt` now finalizes a generated sign-up into a pending session, preserves sign-up provenance, finishes enrollment, presents tasks and completes once after server activation. `completionArrivingDuringExternalSessionTasksKeepsTheScreenAndSkipsEnrollment` promotes existing task presentation with a generated sign-in completion, preserves its token and never offers enrollment afterward. |
 | `staleCompletedActivationCannotMutateANewerRegistration`, `staleRegistrationCannotMutateANewerAuthFlow` | The retired-registration test verifies stale finalization is rejected before HTTP. `cancellingAnOwnerDuringFinalizationRejectsItsLateResponse` additionally suspends the real activation HTTP capability, cancels the owner, registers a replacement and releases the late response; finalization throws cancellation, the session/user stay absent and the replacement has no adopted work. Exact old activation-handle and cross-registration start/reset combinations are not all reproduced. |
 | `completedRootWorkCanReleaseOwnershipAndRearmAfterSignOut`, `terminalCurrentSessionClearsPresentedPostAuthWork` | `signOutInvalidatesACompletionWaitingForPresentation` uses generated sign-out, proves session/user are absent and rejects old completion and presentation work before and after reconciliation. `completingTheRootNotifiesObserversAndAllowsAFreshFlowAfterSignOut` additionally completes and releases the old root, signs out, registers and completes a fresh flow, rejecting the old work. `aTerminalSessionInvalidatesAnOpenEnrollmentScreen` reloads an open enrollment screen to ended, revoked and expired sessions and rejects its presentation and completion before and after reconciliation. |
 | `unownedCompletionDoesNotAttachToALaterAuthView` | Unowned generated activation is adopted as external work without enrollment provenance, as exercised by the external-activation test. The old forged ownership update object is removed. |
@@ -76,7 +76,7 @@ late-response boundary rather than only cancelling before a request starts.
 
 ## Packaged ownership, observation and terminal-session checks
 
-The suite now has 16 test declarations, all passing on macOS and the iOS
+At this checkpoint the suite had 16 test declarations, all passing on macOS and the iOS
 Simulator (1.883 and 1.631 seconds respectively on September 10, 2026).
 The terminal-session declaration executes three cases: ended, revoked and
 expired. Five new declarations cover active-root rejection, exclusive
@@ -98,3 +98,42 @@ failing the tests.
 The old file remains retained for the explicitly unresolved competing-session
 and legacy hosted-auth assertions. These in-process checks do not replace live
 browser/prompt or physical released-app upgrade testing.
+
+## Captured attempt identity and pending sign-up checks
+
+A second completed sign-in for the same session reproduced stale presentation
+work through real packaged JavaScriptCore. The generated `SignIn` object is
+stable while its underlying attempt ID changes. The coordinator previously
+computed its target's ID from that mutable resource, so both the old target and
+new completion appeared to have the new attempt ID. It retained the old work
+and accepted an obsolete enrollment callback. The initial run reported four
+failed expectations in the same-session case; the different-session case passed.
+
+`AuthFlowCoordinator.Target` now captures the attempt ID when completion work is
+created or an external screen gains completion provenance. A genuine replay of
+the same attempt keeps its work; a new attempt awaiting presentation replaces it.
+Authentication, session selection and generated resource state still execute in
+TypeScript. No bundle or binding contract changed.
+
+Three new declarations cover that two-case completion matrix, pending sign-up
+through enrollment/tasks, and completion arriving after an external task screen
+has begun. The initial pending sign-up fixture supplied only an attempt result
+and omitted its created session from the client envelope. Unlike sign-in's
+finalize implementation, sign-up finalize does not reload an absent session.
+That fixture returned `CancellationError()` with no selected session and no touch
+request. The corrected fixture includes the complete sign-up/client envelope;
+no shared runtime change was made for that fixture error.
+
+The full macOS UI target passes 154 tests in 23 suites, including all 19
+`AuthFlowCoreTests` declarations (the completion matrix has two parameter cases
+and terminal-session invalidation has three). The run took 3.450 seconds.
+The full iOS Simulator target passes 165 tests in 27 suites in 2.574 seconds,
+including the same 19 presentation declarations (2.573 seconds).
+The Swift formatter reported an unwritable cache under Library/Caches but
+formatted the source successfully. Existing macOS Contacts/CoreData XPC
+diagnostics did not fail the target.
+
+The retained legacy file still tracks the broader rejected-activation and
+intermediate-refresh matrix, as well as removed hosted-portal activation
+contracts. These checks do not establish physical browser/biometric prompts,
+real backend authentication or released-app upgrade continuity.
