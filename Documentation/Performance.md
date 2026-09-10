@@ -27,13 +27,13 @@ Run the equivalent Expo local-operation and shared-owner lifecycle workload thro
 
 ## Prototype evidence and outstanding gates
 
-On the development machine, the macOS release JavaScriptCore fixture measured startup p95 73.8 ms and local reset p95 4.5 ms (12 fresh engines, 300 calls). This is not an iOS device measurement. Android API 36 on an arm64 emulator with the release library measured 53.9 ms and 3.4 ms respectively (12 engines, 300 calls). Both used deterministic fixture HTTP.
+On the development machine, the macOS release JavaScriptCore fixture measured startup p95 73.8 ms and local reset p95 4.5 ms (12 fresh engines, 300 calls). This is not an iOS device measurement. Android API 36 on an arm64 emulator with the release library measured 53.9 ms and 3.4 ms respectively (12 engines, 300 calls). Both used deterministic fixture HTTP and signed-out client fixtures; these prototype numbers do not establish the authenticated-startup budget.
 
 The 2026-09-09 bundle at TypeScript revision `5e2b30ccdecf9bc031bcf5506f7faedc0a358c92` is 1,303,468 bytes, or 232,042 bytes with deterministic gzip level 9. Its SHA-256 is `cf934e89ced74e9ff581475f03591b9eb063a2292ec0594733141c43f0ef71cf`.
 
 Android's repeated release-engine run accumulated managed garbage before collection: process PSS rose from 14,202 KiB to 210,843 KiB and returned to 33,010 KiB after close. This is a stress-run sample, not a passing single-owner startup-peak or isolated-engine-memory result. The macOS process peak RSS likewise includes the harness and system libraries.
 
-Physical-device startup/latency, single-owner steady/peak memory, Expo overhead, and matched application download/installed-size gates remain unverified. Do not infer release approval from the fixture timing or bundle-size results.
+The later [iPhone Air authenticated-startup measurement](Measurements/ios-iphone-air-authenticated-latency.md) completes 30 fresh physical processes and 300 local operations on that device. It meets the provisional latency limits for that configuration. Slower-tier coverage, single-owner steady/peak memory, Expo overhead and UI responsiveness remain open; do not infer full release approval from one device or the bundle-size results.
 
 ## Matched iOS arm64 application exports
 
