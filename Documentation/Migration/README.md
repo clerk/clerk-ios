@@ -151,3 +151,5 @@ The [hosted portal audit](hosted-portal-test-audit.md) records the removed creat
 The [token-only credential upgrade](token-only-credential-upgrade.md) preserves prior credentials awaiting canonical refresh while retaining explicit-clear and instance-scoping protections.
 
 [Foreground recovery during browser authentication](foreground-auth-recovery.md) records the shared credential-rotation race, correction, and native lifecycle regression proof.
+
+[Passkey assertion options](passkey-options.md) documents server option preservation, shared relying-party validation, and the packaged macOS/iOS Simulator checks.

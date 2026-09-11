@@ -1,0 +1,873 @@
+warning: 'clerk-ios': found 3 file(s) which are unhandled; explicitly declare them as resources or exclude from the target
+    /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/clerk-ios/Tests/UI/__Snapshots__/DevelopmentFooterSnapshotTests/developmentFooterRemainsVisibleWhenTheHostConsumesTheSafeArea.1.png
+    /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/clerk-ios/Tests/UI/__Snapshots__/FooterTabViewTests/developmentLabelStaysAboveTheTabBar-isAuth.auth.png
+    /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/clerk-ios/Tests/UI/__Snapshots__/FooterTabViewTests/developmentLabelStaysAboveTheTabBar-isAuth.profile.png
+[0/1] Planning build
+Building for debugging...
+[0/4] Write swift-version--58304C5D6DBC2206.txt
+Build complete! (0.46s)
+Test Suite 'All tests' started at 2026-09-10 20:28:12.931.
+Test Suite 'All tests' passed at 2026-09-10 20:28:12.932.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􀙟  Suite EnvironmentIntegrationTests skipped: "Requires with-email-codes in .keys.json"
+􀙟  Suite AuthAndClientIntegrationTests skipped: "Requires with-email-codes in .keys.json"
+􀟈  Suite PaymentMethodTests started.
+􀟈  Suite ClerkConfigurationTests started.
+􀟈  Suite SocialButtonLayoutTests started.
+􀟈  Suite ContactResourceTests started.
+􀟈  Suite SignInSecondFactorSelectionTests started.
+􀟈  Suite PackagedCoreTests started.
+􀟈  Suite CoreTerminalStateTests started.
+􀟈  Suite BiometricCredentialEnrollmentPromptTests started.
+􀟈  Suite AuthViewCompletionTests started.
+􀟈  Suite OrganizationMembershipTests started.
+􀟈  Suite AppleBiometricKeyTests started.
+􀟈  Suite AppleCredentialAuthenticationTests started.
+􀟈  Suite OTPSubmissionDispositionTests started.
+􀟈  Suite AppleCryptoCapabilityTests started.
+􀟈  Suite SignInFactorSelectionTests started.
+􀟈  Suite AppleCredentialStorageTests started.
+􀟈  Suite StringPresentationTests started.
+􀟈  Suite AuthStateConfigurationTests started.
+􀟈  Suite AuthStartViewBiometricCredentialTests started.
+􀟈  Suite AppleBiometricInstallationTests started.
+􀟈  Suite OrganizationAccountListCoreTests started.
+􀟈  Suite SerializationContractTests started.
+􀟈  Suite AppleHTTPCapabilityTests started.
+􀟈  Suite AppleBrowserAuthenticationTests started.
+􀟈  Suite PasskeyFirstFactorAvailabilityTests started.
+􀟈  Suite SignInFactorModeTests started.
+􀟈  Suite AuthNavigationTests started.
+􀟈  Suite SignUpEmailVerificationStrategyTests started.
+􀟈  Suite OTPSubmissionTrackerTests started.
+􀟈  Suite AutomaticPasskeyErrorPresentationTests started.
+􀟈  Suite UserCancellationErrorTests started.
+􀟈  Suite CorePrivacyManifestTests started.
+􀟈  Suite SignInPasskeyViewTests started.
+􀟈  Suite OAuthProviderIconImageUrlTests started.
+􀙟  Test fetchAndDecodeEnvironment() skipped: "Requires with-email-codes in .keys.json"
+􀙟  Test signUpAndSignIn() skipped: "Requires with-email-codes in .keys.json"
+􀟈  Test socialButtonGroupShowsTitleForSingleRemainingProvider() started.
+􀟈  Test httpsCallbacksAreAcceptedForPlatformsSupportingVerifiedLinks() started.
+􀟈  Suite AuthFlowCoreTests started.
+􀟈  Suite LastUsedAuthTests started.
+􀟈  Suite UIPrivacyManifestTests started.
+􀟈  Test payerCollectionsPreservePaymentMethodFields(organization:) started.
+􀟈  Test socialButtonGroupArrangesLastUsedProviderFirstWhenPresent() started.
+􀟈  Test socialButtonGroupShowsTitleForLastUsedProvider() started.
+􀟈  Suite BiometricSignInButtonTests started.
+􀟈  Test socialButtonGroupKeepsTwoProviderWideRowsShort() started.
+􀟈  Test socialButtonGroupKeepsCompactRemainingPairShortWhenLastUsedExists() started.
+􀟈  Test socialButtonGroupIgnoresLastUsedProviderWhenItIsUnavailable() started.
+􀟈  Test rowRangesBalanceFourItemsAcrossTwoRowsWhenThreeFit() started.
+􀟈  Test socialButtonGroupKeepsWideRemainingPairShortWhenLastUsedExists() started.
+􀟈  Test deletionUpdatesTheUserAndPreservesReadableHeldContacts() started.
+􀟈  Test startingSecondFactorPrefersPasskey() started.
+􀟈  Suite AppLogoViewTests started.
+􀟈  Test invalidPublishableKeysProduceStructuredErrors() started.
+􀟈  Test seenStateIsScopedByUser() started.
+􀟈  Test signInPromptIsSuppressedAfterItHasBeenSeen() started.
+􀟈  Test rowRangesPreservePartialFinalRowsForUnevenCounts() started.
+􀟈  Test rowRangesCanForceSingleColumnForTwoItems() started.
+􀟈  Test unknownPresentationStrategiesSortAfterSupportedFactors() started.
+􀟈  Test signUpPromptIgnoresSeenState() started.
+􀟈  Test rowRangesBalanceSixItemsAcrossTwoRowsWhenFiveFit() started.
+􀟈  Test configurationModifiersPreserveTheCompletionCallback() started.
+􀟈  Test signUpPromptIsSuppressedWhenEnvironmentSettingIsDisabled() started.
+􀟈  Test rowRangesMatchWebChunkingForSevenItemsAcrossThreeRows() started.
+􀟈  Test acceptsAParameterlessCompletionCallback() started.
+􀟈  Test maxRowItemCountCapsRowsAtFiveWhenContainerIsWide() started.
+􀟈  Test preservesTheExistingTwoArgumentInitializerFunction() started.
+􀟈  Test publicKeyJWKRejectsInvalidRepresentation() started.
+􀟈  Test publicKeyJWKEncodesP256X963Representation() started.
+􀟈  Test failedPublicKeyExportDeletesCreatedKeyAndPreservesExportError() started.
+􀟈  Test rawES256SignatureRejectsMalformedDER() started.
+􀟈  Test registrationPreservesUserAndExcludedCredentials() started.
+􀟈  Test alternativeSecondFactorsUseCompletePreferenceOrder() started.
+􀟈  Test rawES256SignatureConvertsDEREncodedSignature() started.
+􀟈  Test base64URLEncodingOmitsPadding() started.
+􀟈  Test deletionReturnsReadableMembershipAfterItsOrganizationIsDeselected(fullResource:) started.
+􀟈  Test localKeyDefaultsToBiometryCurrentSetPolicy() started.
+􀟈  Test privateKeyLookupStatusMapsBiometricErrors() started.
+􀟈  Test appleIdentityAndPasskeysShareOneCredentialPresenter() started.
+􀟈  Test localAuthenticationPoliciesForKeyCreationRequireBiometrics() started.
+􀟈  Test malformedCredentialRestrictionsFailBeforePresentation(invalidID:) started.
+􀟈  Test rawES256SignaturePadsShortDERIntegers() started.
+􀟈  Test assertionPreservesRelyingPartyChallengeAndCredentialRestrictions() started.
+􀟈  Test signInPromptIsSuppressedWhenEnvironmentSettingIsDisabled() started.
+􀟈  Test alternativeFirstFactorsKeepEmailCodeAndFilterResetPasswordFactors() started.
+􀟈  Test networkErrorStopsPendingSubmission() started.
+􀟈  Test invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test socialButtonGroupShowsTitlesForCompactTwoProviderGroups() started.
+􀟈  Test delayedCallbacksCannotPublishAfterFatalFailure() started.
+􀟈  Test privateKeyAttributesUseSecureEnclaveAccessControl() started.
+􀟈  Test privateKeyQueryUsesStableApplicationTag() started.
+􀟈  Test localAuthenticationPoliciesMatchBiometricCredentialPolicies() started.
+􀟈  Test accessControlFlagsMatchBiometricCredentialPolicies() started.
+􀟈  Test legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value:) started.
+􀟈  Test startingFirstFactorDoesNotMatchMissingIdentifierToMissingSafeIdentifier() started.
+􀟈  Test invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test startingFirstFactorPrefersPasswordWhenPasswordIsPreferred() started.
+􀟈  Test startingFirstFactorDoesNotForceEmailLinkForNonEmailIdentifier() started.
+􀟈  Test startingFirstFactorDoesNotUseUnrelatedEmailLinkForUsernameSignIn() started.
+􀟈  Test newRecordReadErrorsDoNotImportAnOlderCredential() started.
+􀟈  Test alternativeFirstFactorsKeepCodeAlternativesAndFilterNonInlineMethods() started.
+􀟈  Test macOSPrefersTheLegacySDKsDataProtectionBackend() started.
+􀟈  Test testIsEmptyTrimmed() started.
+􀟈  Test cancelledControllerCannotCompleteTheNextRequest() started.
+􀟈  Test delayedCallbacksCannotPublishAfterClose() started.
+􀟈  Test pendingIdentityPublicationCannotRestoreAnObsoleteCredential(pending:) started.
+􀟈  Test "Other errors stop pending submission" started.
+􀟈  Test rowRangesLeaveItemsInOneRowWhenTheyFit() started.
+􀟈  Test macOSDataProtectionFailureDoesNotRestoreTheFallbackCredential() started.
+􀟈  Test applicationKeyAndPurposeKeepCredentialsSeparate() started.
+􀟈  Test tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind:) started.
+􀟈  Test legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) started.
+􀟈  Test resetPasswordFactorPrefersMatchingEmailCodeFactor() started.
+􀟈  Test lockingPrefilledPhoneNumberLocksPhoneFieldOnly() started.
+􀟈  Test failedMigrationWriteIsReportedAndLeavesLegacyDataAvailableForRetry() started.
+􀟈  Test disablingPersistenceClearsStoredValues() started.
+􀟈  Test storeLastUsedIdentifierTypeIsSuppressedWhenPersistenceIsDisabled() started.
+􀟈  Test biometricCredentialAvailabilityRefreshStateReflectsFeatureAndSession() started.
+􀟈  Test defaultConfigurationLoadsPersistedValues() started.
+􀟈  Test legacyBiometricMetadataRequiresMatchingInstanceAndSurvivesReconstruction() started.
+􀟈  Test signedOutClientChangesBiometricCredentialAvailabilityRefreshTaskIdentity() started.
+􀟈  Test disablingPersistenceSuppressesFutureWrites() started.
+􀟈  Test packagedCoreCleansAReinstallButPreservesAnExistingInstallation() started.
+􀟈  Test macOSFallsBackOnlyWhenTheDataProtectionItemIsMissing() started.
+􀟈  Test initialUsernameUsesIdentifierField() started.
+􀟈  Test configurationStoresUnsafeMetadata() started.
+􀟈  Test interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance:tokenOnly:) started.
+􀟈  Test legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test failedClearDoesNotReportSuccessAndCanBeRetried() started.
+􀟈  Test adoptedEmptyIdentityCannotRestoreAnOlderCredential(sameInstance:) started.
+􀟈  Test lockingPrefilledFieldsWithoutInitialValuesLeavesFieldsEditable() started.
+􀟈  Test aMismatchedScopeCannotReadOrWriteAnInstallationMarker() started.
+􀟈  Test legacyIdentityUsesThePreviousMajorsSnakeCaseStorageFormat(versioned:) started.
+􀟈  Test adoptionMarkerPreservesItsAcceptedLocalCredential(tokenOnly:) started.
+􀟈  Test writesUpdatesAndClearsSurviveReconstructionWithoutReimportingLegacy() started.
+􀟈  Test legacyMarkersRequireTheMatchingInstanceAndExactConfiguration() started.
+􀟈  Test lockingPrefilledEmailAndNameFieldsLocksOnlyConfiguredNonEmptyValues() started.
+􀟈  Test initialEmailOverridesPersistedValues() started.
+􀟈  Test malformedClearIntentsCannotBeIgnoredToImportCredentials(json:) started.
+􀟈  Test disablingPersistenceWithInitialPhoneNumberShowsButDoesNotStore() started.
+􀟈  Test initialLoadUsesGeneratedCollectionsAndCreationDefaults() started.
+􀟈  Test disablingPersistenceWithInitialEmailShowsButDoesNotStore() started.
+􀟈  Test validKeysNormalizeWhitespaceAndPreserveTheConfiguredCallback(mode:) started.
+􀟈  Test passkeyFirstFactorIsDisabledWhenPasskeyAttributeIsAbsent() started.
+􀟈  Test currentMarkersSurviveReconstructionAndRespectApplicationAndInstance() started.
+􀟈  Test storeLastUsedIdentifierTypePersistsWhenEnabled() started.
+􀟈  Test passkeyFirstFactorIsDisabledWhenPasskeyIsRegistrationOnly() started.
+􀟈  Test startingFirstFactorUsesPreferenceOverPreparedVerificationStrategy() started.
+􀟈  Test initialNameValuesConfigureSignUpFields() started.
+􀟈  Test failedStartResumesTheCallerAndAllowsTheNextSession() started.
+􀟈  Test duplicateCompletionCannotCompleteTheFollowingSession() started.
+􀟈  Test nestedMetadataKeepsNullsNumbersAndBooleansAcrossCodable() started.
+􀟈  Test competingCallDoesNotReplaceTheActiveSession() started.
+􀟈  Test taskCancellationReleasesThePresenterAndIgnoresItsLateCallback() started.
+􀟈  Test generatedUserUpdateDistinguishesOmissionClearingAndValues() started.
+􀟈  Test missingConfiguredMetadataDoesNotImportAnotherGroupOrPreviousService(purpose:) started.
+􀟈  Test projectedDatesUseISO8601(date:) started.
+􀟈  Test initialPhoneNumberOverridesPersistedValues() started.
+􀟈  Test passkeyFirstFactorIsDisabledWhenPasskeyIsDisabledAndNotAFirstFactor() started.
+􀟈  Test defaultConfigurationPersistsEdits() started.
+􀟈  Test preservesMethodsQueriesBodiesHeadersAndErrorResponses() started.
+􀟈  Test configurationCanBeAppliedDuringInitialization() started.
+􀟈  Test clientTrustModeUsesSecondFactorAPIAndShowsWarning() started.
+􀟈  Test deviceFactorsUseTheDedicatedBiometricEntry() started.
+􀟈  Test signInNeedsNewPasswordRoutesWithoutAnAuthFlowToken() started.
+􀟈  Test signUpUsernameRoutesBeforeCompleteProfile() started.
+􀟈  Test passkeyFirstFactorIsDisabledWhenPasskeyIsDisabled() started.
+􀟈  Test backendTaskChangesDoNotDismissThePresentedScreen() started.
+􀟈  Test defaultsToEmailCodeWhenNoVerificationInfo() started.
+􀟈  Test awaitingWorkClearsOnlyThePostAuthSuffix() started.
+􀟈  Test signUpEmailCodeVerificationRunsBeforeCollectingMissingFields() started.
+􀟈  Test biometricCredentialEnrollmentUsesItsExactPresentationToken() started.
+􀟈  Test resetForNewAuthFlowClearsTheEntirePath() started.
+􀟈  Test signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() started.
+􀟈  Test passkeyFirstFactorIsEnabledWhenPasskeyIsAFirstFactor() started.
+􀟈  Test sequentialPresentationsForTheSameWorkRemainPushed() started.
+􀟈  Test startingFirstFactorChoosesMatchingEmailLinkWhenPasswordIsPreferredAndPasswordIsUnavailable() started.
+􀟈  Test returnsEmailLinkWhenVerificationHasEmailLinkStrategy() started.
+􀟈  Test routesTheFirstPendingSessionTaskWithItsExactToken() started.
+􀟈  Test staleScreenCannotAppendIntoAReplacementPresentation() started.
+􀟈  Test case passing 1 argument organization → false to payerCollectionsPreservePaymentMethodFields(organization:) started.
+􀟈  Test returnsEmailCodeWhenVerificationHasEmailCodeStrategy() started.
+􀟈  Test unscopedLegacyCredentialsRequireAnExplicitMatchingKey() started.
+􀟈  Test returnsEmailLinkWhenEnvironmentHasEmailLinkVerification() started.
+􀟈  Test systemCancellationPreservesItsStructuredError() started.
+􀟈  Test incompleteEditBeforeSubmissionClearsQueuedCode() started.
+􀟈  Test biometricCredentialEnrollmentPrecedesPendingSessionTasks() started.
+􀟈  Test "Incorrect code errors allow pending submission" started.
+􀟈  Test signUpLegalAcceptedMissingRequirementRoutesToCompleteProfile() started.
+􀟈  Test incompleteEditDuringSubmissionAllowsRetryAfterTerminalError() started.
+􀟈  Test incompleteCodeDoesNotStartSubmission() started.
+􀟈  Test incorrectCodeSubmitsEditedCompleteCodeNext() started.
+􀟈  Test aNewPresentationTokenReplacesOnlyThePostAuthSuffix() started.
+􀟈  Test reenteredSameCodeIsNotResubmittedAfterIncorrectResult() started.
+􀟈  Test editingWhileSubmittingDoesNotStartOverlappingRequest() started.
+􀟈  Test editingAfterCompletionAllowsIntentionalRetry() started.
+􀟈  Test changedCompleteCodeStartsSubmission() started.
+􀟈  Test reappearingTaskCannotAcquireInFlightSubmission() started.
+􀟈  Test terminalErrorDoesNotReplayEditedCodeAfterReappearance() started.
+􀟈  Test reappearingTaskDoesNotSubmitUnchangedCodeAgain() started.
+􀟈  Test case passing 1 argument fullResource → false to deletionReturnsReadableMembershipAfterItsOrganizationIsDeselected(fullResource:) started.
+􀟈  Test unchangedIncorrectCodeIsNotResubmittedAutomatically() started.
+􀟈  Test clientTrustModeUsesClientTrustForCurrentFactorAndSecondFactorForAlternatives() started.
+􀟈  Test nativeSHA256MatchesThePKCERFC7636Vector() started.
+􀟈  Test canceledSubmissionRequiresAnIntentionalRetry() started.
+􀟈  Test initiallyCompleteCodeStartsSubmission() started.
+􀟈  Test case passing 1 argument callback → "relative" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument callback → "http://example.com/callback" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument callback → "HTTP://example.com/callback" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument callback → "file://example.com/callback" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument callback → "javascript://example.com/callback" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument callback → "app.clerk://oauth/callback#fragment" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument invalidID → .object(["base64url": ClerkKit.JSONValue.string("")]) to malformedCredentialRestrictionsFailBeforePresentation(invalidID:) started.
+􀟈  Test case passing 1 argument invalidID → .object(["base64url": ClerkKit.JSONValue.string("!!!")]) to malformedCredentialRestrictionsFailBeforePresentation(invalidID:) started.
+􀟈  Test case passing 1 argument invalidID → .object(["$undefined": ClerkKit.JSONValue.bool(true)]) to malformedCredentialRestrictionsFailBeforePresentation(invalidID:) started.
+􀟈  Test case passing 1 argument value → "absent" to legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value:) started.
+􀟈  Test case passing 1 argument value → "orphan" to legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value:) started.
+􀟈  Test case passing 1 argument value → "malformed" to legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value:) started.
+􀟈  Test case passing 1 argument callback → "app.clerk://user@example.com/callback" to invalidCallbackRoutesProduceStructuredErrors(callback:) started.
+􀟈  Test case passing 1 argument scenario → "no-token" to invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "empty-token" to invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test case passing 1 argument value → "nonfinite-date" to legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value:) started.
+􀟈  Test errorsBeforeFirstFactorAttemptAreNotPresented(_:) started.
+􀟈  Test case passing 1 argument scenario → "pending-empty" to invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test completeEditBeforeSubmissionReplacesQueuedCode() started.
+􀟈  Test case passing 1 argument scenario → "mismatched-client" to invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "pending-shape" to invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test firstFactorAttemptErrorIsPresented() started.
+􀟈  Test case passing 1 argument scenario → "pending-token" to invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) started.
+􀟈  Test coreBundlesItsCurrentRequiredReasonAPIDeclarations() started.
+􀟈  Test canceledAuthorizationErrorIsUserCancellation(input:) started.
+􀟈  Test nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􀟈  Test taskCancellationIsNotUserCancellation() started.
+􀟈  Test cancelingAutomaticAuthenticationDelayPreventsPasskeyAttempt() started.
+􀟈  Test canceledWebAuthenticationSessionIsUserCancellation() started.
+􀟈  Test case passing 1 argument pending → "same" to pendingIdentityPublicationCannotRestoreAnObsoleteCredential(pending:) started.
+􀟈  Test case passing 1 argument pending → "different" to pendingIdentityPublicationCannotRestoreAnObsoleteCredential(pending:) started.
+􀟈  Test case passing 1 argument pending → "cleared" to pendingIdentityPublicationCannotRestoreAnObsoleteCredential(pending:) started.
+􀟈  Test case passing 1 argument code → "too_many_requests" to "Other errors stop pending submission" started.
+􀟈  Test case passing 1 argument code → "signed_out" to "Other errors stop pending submission" started.
+􀟈  Test case passing 1 argument code → "verification_already_verified" to "Other errors stop pending submission" started.
+􀟈  Test case passing 1 argument recordKind → "unversioned" to tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind:) started.
+􀟈  Test case passing 1 argument recordKind → "settled" to tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind:) started.
+􀟈  Test case passing 1 argument recordKind → "required" to tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind:) started.
+􀟈  Test case passing 1 argument recordKind → "pending" to tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind:) started.
+􀟈  Test case passing 1 argument value → "token" to legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) started.
+􀟈  Test case passing 1 argument value → " token
+" to legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) started.
+􀟈  Test case passing 1 argument value → "" to legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) started.
+􀟈  Test case passing 1 argument value → " 
+	" to legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) started.
+􀟈  Test case passing 1 argument value → "invalid-utf8" to legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) started.
+􀟈  Test case passing 2 arguments sameInstance → false, tokenOnly → true to interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance:tokenOnly:) started.
+􀟈  Test case passing 2 arguments sameInstance → true, tokenOnly → false to interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance:tokenOnly:) started.
+􀟈  Test case passing 2 arguments sameInstance → false, tokenOnly → false to interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance:tokenOnly:) started.
+􀟈  Test case passing 2 arguments sameInstance → true, tokenOnly → true to interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance:tokenOnly:) started.
+􀟈  Test case passing 1 argument sameInstance → false to adoptedEmptyIdentityCannotRestoreAnOlderCredential(sameInstance:) started.
+􀟈  Test case passing 1 argument sameInstance → true to adoptedEmptyIdentityCannotRestoreAnOlderCredential(sameInstance:) started.
+􀟈  Test case passing 2 arguments purpose → .biometricCredentials, history → "none" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 2 arguments purpose → .magicLink, history → "same" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 2 arguments purpose → .magicLink, history → "none" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 2 arguments purpose → .biometricCredentials, history → "same" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 1 argument tokenOnly → false to adoptionMarkerPreservesItsAcceptedLocalCredential(tokenOnly:) started.
+􀟈  Test case passing 2 arguments purpose → .biometricCredentials, history → "other-instance" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 1 argument tokenOnly → true to adoptionMarkerPreservesItsAcceptedLocalCredential(tokenOnly:) started.
+􀟈  Test case passing 1 argument versioned → false to legacyIdentityUsesThePreviousMajorsSnakeCaseStorageFormat(versioned:) started.
+􀟈  Test case passing 2 arguments purpose → .magicLink, history → "unknown-marker" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 2 arguments purpose → .magicLink, history → "other-instance" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 1 argument versioned → true to legacyIdentityUsesThePreviousMajorsSnakeCaseStorageFormat(versioned:) started.
+􀟈  Test case passing 1 argument json → "{invalid}" to malformedClearIntentsCannotBeIgnoredToImportCredentials(json:) started.
+􀟈  Test case passing 1 argument json → "{}" to malformedClearIntentsCannotBeIgnoredToImportCredentials(json:) started.
+􀟈  Test case passing 1 argument mode → "test" to validKeysNormalizeWhitespaceAndPreserveTheConfiguredCallback(mode:) started.
+􀟈  Test case passing 1 argument mode → "live" to validKeysNormalizeWhitespaceAndPreserveTheConfiguredCallback(mode:) started.
+􀟈  Test case passing 2 arguments purpose → .biometricCredentials, history → "unknown-marker" to legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) started.
+􀟈  Test case passing 1 argument date → "2021-01-01T00:00:00Z" to projectedDatesUseISO8601(date:) started.
+􀟈  Test case passing 1 argument purpose → .magicLink to missingConfiguredMetadataDoesNotImportAnotherGroupOrPreviousService(purpose:) started.
+􀟈  Test case passing 1 argument date → "2021-01-01T00:00:00.000Z" to projectedDatesUseISO8601(date:) started.
+􀟈  Test biometricCredentialStrategyShowsBadgeWhenAnotherMethodIsVisible() started.
+􀟈  Test bundledManifestDeclaresUserDefaults() started.
+􀟈  Test tintedIconMaskUsesTheMaintainedProviderAllowlist() started.
+􀟈  Test case passing 1 argument purpose → .biometricCredentials to missingConfiguredMetadataDoesNotImportAnotherGroupOrPreviousService(purpose:) started.
+􀟈  Test enrollmentReasonUsesRequestedPromptCopy() started.
+􀟈  Test biometricCredentialStrategyDoesNotShowBadgeWhenItIsTheOnlyVisibleMethod() started.
+􀟈  Test biometryDisplayNamesTrackSupport() started.
+􀟈  Test biometryDisplayNamesUsePlatformTerms() started.
+􀟈  Test biometryDisplayNamesUseMatchingSystemImages() started.
+􀟈  Test case passing 1 argument code → "form_code_incorrect" to "Incorrect code errors allow pending submission" started.
+􀟈  Test anAlreadyActiveSessionDoesNotAcquireARootPresentationGate() started.
+􀟈  Test case passing 1 argument code → "totp_incorrect_code" to "Incorrect code errors allow pending submission" started.
+􀟈  Test biometricCredentialCancellationIsTreatedAsUserCancellation() started.
+􁁛  Test httpsCallbacksAreAcceptedForPlatformsSupportingVerifiedLinks() passed after 0.005 seconds.
+􁁛  Test publicKeyJWKRejectsInvalidRepresentation() passed after 0.005 seconds.
+􁁛  Test base64URLEncodingOmitsPadding() passed after 0.005 seconds.
+􁁛  Test rawES256SignatureRejectsMalformedDER() passed after 0.005 seconds.
+􁁛  Test rawES256SignaturePadsShortDERIntegers() passed after 0.005 seconds.
+􀟈  Test customAppIconViewOwnsItsLayout() started.
+􁁛  Test networkErrorStopsPendingSubmission() passed after 0.005 seconds.
+􁁛  Test invalidCallbackRoutesProduceStructuredErrors(callback:) with 7 test cases passed after 0.005 seconds.
+􁁛  Test publicKeyJWKEncodesP256X963Representation() passed after 0.005 seconds.
+􁁛  Test localAuthenticationPoliciesForKeyCreationRequireBiometrics() passed after 0.005 seconds.
+􁁛  Test rawES256SignatureConvertsDEREncodedSignature() passed after 0.005 seconds.
+􁁛  Test privateKeyAttributesUseSecureEnclaveAccessControl() passed after 0.005 seconds.
+􁁛  Test privateKeyLookupStatusMapsBiometricErrors() passed after 0.005 seconds.
+􁁛  Test accessControlFlagsMatchBiometricCredentialPolicies() passed after 0.005 seconds.
+􀟈  Test case passing 1 argument input → typed, includesFailureReason: false to canceledAuthorizationErrorIsUserCancellation(input:) started.
+􁁛  Test localAuthenticationPoliciesMatchBiometricCredentialPolicies() passed after 0.005 seconds.
+􀟈  Test case passing 2 arguments scenario → unknown (1000), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 1 argument input → nsError, includesFailureReason: true to canceledAuthorizationErrorIsUserCancellation(input:) started.
+􀟈  Test case passing 1 argument input → typed, includesFailureReason: true to canceledAuthorizationErrorIsUserCancellation(input:) started.
+􁁛  Test invalidPublishableKeysProduceStructuredErrors() passed after 0.005 seconds.
+􀟈  Test case passing 1 argument stage → .preparingFirstFactor to errorsBeforeFirstFactorAttemptAreNotPresented(_:) started.
+􁁛  Test privateKeyQueryUsesStableApplicationTag() passed after 0.005 seconds.
+􀟈  Test case passing 2 arguments scenario → unknown (1000), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 1 argument stage → .requestingAuthorization to errorsBeforeFirstFactorAttemptAreNotPresented(_:) started.
+􀟈  Test case passing 1 argument input → nsError, includesFailureReason: false to canceledAuthorizationErrorIsUserCancellation(input:) started.
+􀟈  Test case passing 2 arguments scenario → invalidResponse (1002), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → invalidResponse (1002), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􁁛  Test localKeyDefaultsToBiometryCurrentSetPolicy() passed after 0.005 seconds.
+􀟈  Test case passing 2 arguments scenario → invalidResponse (1002), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notHandled (1003), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notHandled (1003), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → invalidResponse (1002), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → unknown (1000), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notHandled (1003), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 1 argument scenario → "waitlist-existing" to appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􀟈  Test case passing 2 arguments scenario → failed (1004), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → failed (1004), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → failed (1004), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notInteractive (1005), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notHandled (1003), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notInteractive (1005), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → matchedExcludedCredential (1006), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → matchedExcludedCredential (1006), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → matchedExcludedCredential (1006), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → matchedExcludedCredential (1006), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialImport (1007), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialImport (1007), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notInteractive (1005), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialExport (1008), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialExport (1008), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialImport (1007), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → failed (1004), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → preferSignInWithApple (1009), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → preferSignInWithApple (1009), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → preferSignInWithApple (1009), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialImport (1007), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → deviceNotConfiguredForPasskeyCreation (1010), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialExport (1008), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → preferSignInWithApple (1009), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → deviceNotConfiguredForPasskeyCreation (1010), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → notInteractive (1005), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → credentialExport (1008), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → unknown (1000), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → futureError (1099), input → typed, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → futureError (1099), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􁁛  Test legacyTokenImportDoesNotDependOnSeparatelyPersistedClientOrDate(value:) with 4 test cases passed after 0.005 seconds.
+􀟈  Test case passing 2 arguments scenario → futureError (1099), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􁁛  Test testIsEmptyTrimmed() passed after 0.005 seconds.
+􁁛  Test "Other errors stop pending submission" with 3 test cases passed after 0.006 seconds.
+􀟈  Test case passing 2 arguments scenario → futureError (1099), input → nsError, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􁁛  Test tokenOnlyLegacyIdentityRemainsAvailableForCanonicalRefresh(recordKind:) with 4 test cases passed after 0.005 seconds.
+􁁛  Test macOSPrefersTheLegacySDKsDataProtectionBackend() passed after 0.005 seconds.
+􁁛  Test invalidOrConflictingTokenOnlyIdentityCannotImportAnOlderToken(scenario:) with 6 test cases passed after 0.005 seconds.
+􁁛  Test pendingIdentityPublicationCannotRestoreAnObsoleteCredential(pending:) with 3 test cases passed after 0.005 seconds.
+􁁛  Test legacyTokenValidationPreservesThePreviousMajorsNormalization(value:) with 5 test cases passed after 0.005 seconds.
+􁁛  Test newRecordReadErrorsDoNotImportAnOlderCredential() passed after 0.005 seconds.
+􁁛  Test signedOutClientChangesBiometricCredentialAvailabilityRefreshTaskIdentity() passed after 0.005 seconds.
+􁁛  Test biometricCredentialAvailabilityRefreshStateReflectsFeatureAndSession() passed after 0.005 seconds.
+􁁛  Test failedClearDoesNotReportSuccessAndCanBeRetried() passed after 0.005 seconds.
+􁁛  Test failedMigrationWriteIsReportedAndLeavesLegacyDataAvailableForRetry() passed after 0.005 seconds.
+􁁛  Test adoptedEmptyIdentityCannotRestoreAnOlderCredential(sameInstance:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test interruptedLegacyClearPreventsOnlyItsInstancesCredentialImport(sameInstance:tokenOnly:) with 4 test cases passed after 0.005 seconds.
+􁁛  Test applicationKeyAndPurposeKeepCredentialsSeparate() passed after 0.005 seconds.
+􁁛  Test legacyBiometricMetadataRequiresMatchingInstanceAndSurvivesReconstruction() passed after 0.005 seconds.
+􁁛  Test validKeysNormalizeWhitespaceAndPreserveTheConfiguredCallback(mode:) with 2 test cases passed after 0.006 seconds.
+􁁛  Test adoptionMarkerPreservesItsAcceptedLocalCredential(tokenOnly:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test legacyMetadataReadsTheStoreSelectedByItsAdoptionHistory(purpose:history:) with 8 test cases passed after 0.005 seconds.
+􁁛  Test macOSFallsBackOnlyWhenTheDataProtectionItemIsMissing() passed after 0.006 seconds.
+􀟈  Test case passing 2 arguments scenario → deviceNotConfiguredForPasskeyCreation (1010), input → nsError, includesFailureReason: true to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􀟈  Test case passing 2 arguments scenario → deviceNotConfiguredForPasskeyCreation (1010), input → typed, includesFailureReason: false to nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) started.
+􁁛  Test macOSDataProtectionFailureDoesNotRestoreTheFallbackCredential() passed after 0.005 seconds.
+􁁛  Test incompleteEditBeforeSubmissionClearsQueuedCode() passed after 0.005 seconds.
+􁁛  Test clientTrustModeUsesSecondFactorAPIAndShowsWarning() passed after 0.005 seconds.
+􁁛  Test "Incorrect code errors allow pending submission" with 2 test cases passed after 0.005 seconds.
+􁁛  Test incompleteEditDuringSubmissionAllowsRetryAfterTerminalError() passed after 0.005 seconds.
+􁁛  Test editingWhileSubmittingDoesNotStartOverlappingRequest() passed after 0.005 seconds.
+􁁛  Test reenteredSameCodeIsNotResubmittedAfterIncorrectResult() passed after 0.005 seconds.
+􁁛  Test writesUpdatesAndClearsSurviveReconstructionWithoutReimportingLegacy() passed after 0.005 seconds.
+􁁛  Test terminalErrorDoesNotReplayEditedCodeAfterReappearance() passed after 0.005 seconds.
+􁁛  Test unchangedIncorrectCodeIsNotResubmittedAutomatically() passed after 0.004 seconds.
+􁁛  Test incorrectCodeSubmitsEditedCompleteCodeNext() passed after 0.005 seconds.
+􁁛  Test reappearingTaskDoesNotSubmitUnchangedCodeAgain() passed after 0.005 seconds.
+􁁛  Test legacyIdentityUsesThePreviousMajorsSnakeCaseStorageFormat(versioned:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test malformedClearIntentsCannotBeIgnoredToImportCredentials(json:) with 2 test cases passed after 0.005 seconds.
+􁁛  Test reappearingTaskCannotAcquireInFlightSubmission() passed after 0.005 seconds.
+􁁛  Test incompleteCodeDoesNotStartSubmission() passed after 0.005 seconds.
+􁁛  Test initiallyCompleteCodeStartsSubmission() passed after 0.005 seconds.
+􁁛  Test editingAfterCompletionAllowsIntentionalRetry() passed after 0.005 seconds.
+􁁛  Test canceledSubmissionRequiresAnIntentionalRetry() passed after 0.005 seconds.
+􁁛  Test unscopedLegacyCredentialsRequireAnExplicitMatchingKey() passed after 0.005 seconds.
+􁁛  Test changedCompleteCodeStartsSubmission() passed after 0.005 seconds.
+􁁛  Test completeEditBeforeSubmissionReplacesQueuedCode() passed after 0.005 seconds.
+􁁛  Test canceledAuthorizationErrorIsUserCancellation(input:) with 4 test cases passed after 0.004 seconds.
+􁁛  Test clientTrustModeUsesClientTrustForCurrentFactorAndSecondFactorForAlternatives() passed after 0.005 seconds.
+􁁛  Test taskCancellationIsNotUserCancellation() passed after 0.004 seconds.
+􁁛  Test canceledWebAuthenticationSessionIsUserCancellation() passed after 0.003 seconds.
+􁁛  Test coreBundlesItsCurrentRequiredReasonAPIDeclarations() passed after 0.004 seconds.
+􁁛  Test missingConfiguredMetadataDoesNotImportAnotherGroupOrPreviousService(purpose:) with 2 test cases passed after 0.005 seconds.
+􁁛  Suite ClerkConfigurationTests passed after 0.007 seconds.
+􁁛  Test nonCanceledAuthorizationErrorIsNotUserCancellation(scenario:input:) with 44 test cases passed after 0.004 seconds.
+􁁛  Suite OTPSubmissionDispositionTests passed after 0.007 seconds.
+􁁛  Suite AuthStartViewBiometricCredentialTests passed after 0.007 seconds.
+􁁛  Suite CorePrivacyManifestTests passed after 0.007 seconds.
+􁁛  Suite SignInFactorModeTests passed after 0.007 seconds.
+􀟈  Test testNonBreaking() started.
+􁁛  Suite OTPSubmissionTrackerTests passed after 0.007 seconds.
+􁁛  Suite UserCancellationErrorTests passed after 0.007 seconds.
+􁁛  Suite AppleCredentialStorageTests passed after 0.007 seconds.
+􁁛  Test testNonBreaking() passed after 0.001 seconds.
+􀟈  Test testCapitalizedSentence() started.
+􁁛  Test testCapitalizedSentence() passed after 0.001 seconds.
+􀟈  Test testIsEmailAddress() started.
+􁁛  Test bundledManifestDeclaresUserDefaults() passed after 0.002 seconds.
+􁁛  Suite UIPrivacyManifestTests passed after 0.007 seconds.
+􁁛  Test testIsEmailAddress() passed after 0.001 seconds.
+􁁛  Suite StringPresentationTests passed after 0.008 seconds.
+􁁛  Test failedPublicKeyExportDeletesCreatedKeyAndPreservesExportError() passed after 0.011 seconds.
+􁁛  Suite AppleBiometricKeyTests passed after 0.012 seconds.
+􁁛  Test aMismatchedScopeCannotReadOrWriteAnInstallationMarker() passed after 0.021 seconds.
+􁁛  Test legacyMarkersRequireTheMatchingInstanceAndExactConfiguration() passed after 0.025 seconds.
+􁁛  Test currentMarkersSurviveReconstructionAndRespectApplicationAndInstance() passed after 0.030 seconds.
+􁁛  Test nativeSHA256MatchesThePKCERFC7636Vector() passed after 0.030 seconds.
+􁁛  Suite AppleCryptoCapabilityTests passed after 0.032 seconds.
+􁁛  Test malformedCredentialRestrictionsFailBeforePresentation(invalidID:) with 3 test cases passed after 0.073 seconds.
+􁁛  Test socialButtonGroupShowsTitleForSingleRemainingProvider() passed after 0.158 seconds.
+􁁛  Test socialButtonGroupArrangesLastUsedProviderFirstWhenPresent() passed after 0.158 seconds.
+􁁛  Test rowRangesBalanceFourItemsAcrossTwoRowsWhenThreeFit() passed after 0.223 seconds.
+􁁛  Test socialButtonGroupKeepsCompactRemainingPairShortWhenLastUsedExists() passed after 0.223 seconds.
+􁁛  Test socialButtonGroupShowsTitleForLastUsedProvider() passed after 0.223 seconds.
+􁁛  Test socialButtonGroupKeepsWideRemainingPairShortWhenLastUsedExists() passed after 0.223 seconds.
+􁁛  Test rowRangesPreservePartialFinalRowsForUnevenCounts() passed after 0.223 seconds.
+􁁛  Test socialButtonGroupKeepsTwoProviderWideRowsShort() passed after 0.223 seconds.
+􁁛  Test rowRangesBalanceSixItemsAcrossTwoRowsWhenFiveFit() passed after 0.223 seconds.
+􁁛  Test rowRangesMatchWebChunkingForSevenItemsAcrossThreeRows() passed after 0.223 seconds.
+􁁛  Test socialButtonGroupIgnoresLastUsedProviderWhenItIsUnavailable() passed after 0.225 seconds.
+􁁛  Test maxRowItemCountCapsRowsAtFiveWhenContainerIsWide() passed after 0.225 seconds.
+􁁛  Test preservesTheExistingTwoArgumentInitializerFunction() passed after 0.225 seconds.
+􁁛  Test rowRangesCanForceSingleColumnForTwoItems() passed after 0.225 seconds.
+􁁛  Test acceptsAParameterlessCompletionCallback() passed after 0.225 seconds.
+􁁛  Test configurationModifiersPreserveTheCompletionCallback() passed after 0.225 seconds.
+􁁛  Suite AuthViewCompletionTests passed after 0.226 seconds.
+􁁛  Test delayedCallbacksCannotPublishAfterFatalFailure() passed after 0.229 seconds.
+􁁛  Test socialButtonGroupShowsTitlesForCompactTwoProviderGroups() passed after 0.230 seconds.
+􁁛  Test rowRangesLeaveItemsInOneRowWhenTheyFit() passed after 0.232 seconds.
+􁁛  Test delayedCallbacksCannotPublishAfterClose() passed after 0.231 seconds.
+􁁛  Suite CoreTerminalStateTests passed after 0.232 seconds.
+􁁛  Suite SocialButtonLayoutTests passed after 0.232 seconds.
+􁁛  Test disablingPersistenceSuppressesFutureWrites() passed after 0.231 seconds.
+􁁛  Test lockingPrefilledPhoneNumberLocksPhoneFieldOnly() passed after 0.231 seconds.
+􁁛  Test storeLastUsedIdentifierTypeIsSuppressedWhenPersistenceIsDisabled() passed after 0.231 seconds.
+􁁛  Test configurationStoresUnsafeMetadata() passed after 0.231 seconds.
+􁁛  Test lockingPrefilledEmailAndNameFieldsLocksOnlyConfiguredNonEmptyValues() passed after 0.231 seconds.
+􁁛  Test disablingPersistenceClearsStoredValues() passed after 0.231 seconds.
+􁁛  Test disablingPersistenceWithInitialEmailShowsButDoesNotStore() passed after 0.231 seconds.
+􁁛  Test defaultConfigurationLoadsPersistedValues() passed after 0.231 seconds.
+􁁛  Test initialEmailOverridesPersistedValues() passed after 0.231 seconds.
+􁁛  Test lockingPrefilledFieldsWithoutInitialValuesLeavesFieldsEditable() passed after 0.231 seconds.
+􁁛  Test initialUsernameUsesIdentifierField() passed after 0.231 seconds.
+􁁛  Test disablingPersistenceWithInitialPhoneNumberShowsButDoesNotStore() passed after 0.231 seconds.
+􁁛  Test initialNameValuesConfigureSignUpFields() passed after 0.234 seconds.
+􁁛  Test storeLastUsedIdentifierTypePersistsWhenEnabled() passed after 0.234 seconds.
+􁁛  Test nestedMetadataKeepsNullsNumbersAndBooleansAcrossCodable() passed after 0.234 seconds.
+􁁛  Test initialPhoneNumberOverridesPersistedValues() passed after 0.234 seconds.
+􁁛  Test generatedUserUpdateDistinguishesOmissionClearingAndValues() passed after 0.234 seconds.
+􁁛  Test defaultConfigurationPersistsEdits() passed after 0.234 seconds.
+􁁛  Test configurationCanBeAppliedDuringInitialization() passed after 0.235 seconds.
+􁁛  Suite AuthStateConfigurationTests passed after 0.236 seconds.
+􁁛  Test projectedDatesUseISO8601(date:) with 2 test cases passed after 0.235 seconds.
+􁁛  Suite SerializationContractTests passed after 0.237 seconds.
+􁁛  Test signUpUsernameRoutesBeforeCompleteProfile() passed after 0.235 seconds.
+􁁛  Test backendTaskChangesDoNotDismissThePresentedScreen() passed after 0.235 seconds.
+􁁛  Test awaitingWorkClearsOnlyThePostAuthSuffix() passed after 0.235 seconds.
+􁁛  Test resetForNewAuthFlowClearsTheEntirePath() passed after 0.235 seconds.
+􁁛  Test biometricCredentialEnrollmentUsesItsExactPresentationToken() passed after 0.235 seconds.
+􁁛  Test signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() passed after 0.236 seconds.
+􁁛  Test signInNeedsNewPasswordRoutesWithoutAnAuthFlowToken() passed after 0.237 seconds.
+􁁛  Test routesTheFirstPendingSessionTaskWithItsExactToken() passed after 0.237 seconds.
+􁁛  Test staleScreenCannotAppendIntoAReplacementPresentation() passed after 0.237 seconds.
+􁁛  Test signUpEmailCodeVerificationRunsBeforeCollectingMissingFields() passed after 0.237 seconds.
+􁁛  Test signUpLegalAcceptedMissingRequirementRoutesToCompleteProfile() passed after 0.237 seconds.
+􁁛  Test biometricCredentialEnrollmentPrecedesPendingSessionTasks() passed after 0.237 seconds.
+􁁛  Test sequentialPresentationsForTheSameWorkRemainPushed() passed after 0.237 seconds.
+􁁛  Test aNewPresentationTokenReplacesOnlyThePostAuthSuffix() passed after 0.237 seconds.
+􁁛  Suite AuthNavigationTests passed after 0.239 seconds.
+􁁛  Test firstFactorAttemptErrorIsPresented() passed after 0.236 seconds.
+􁁛  Test errorsBeforeFirstFactorAttemptAreNotPresented(_:) with 2 test cases passed after 0.236 seconds.
+􁁛  Test tintedIconMaskUsesTheMaintainedProviderAllowlist() passed after 0.234 seconds.
+􁁛  Test biometryDisplayNamesTrackSupport() passed after 0.234 seconds.
+􁁛  Test biometryDisplayNamesUsePlatformTerms() passed after 0.234 seconds.
+􁁛  Test biometryDisplayNamesUseMatchingSystemImages() passed after 0.234 seconds.
+􁁛  Test biometricCredentialCancellationIsTreatedAsUserCancellation() passed after 0.234 seconds.
+􀟈  Test xProviderUsesTheOAuthXStrategy() started.
+􁁛  Suite AutomaticPasskeyErrorPresentationTests passed after 0.239 seconds.
+􁁛  Test customAppIconViewOwnsItsLayout() passed after 0.236 seconds.
+􁁛  Suite AppLogoViewTests passed after 0.241 seconds.
+􁁛  Test enrollmentReasonUsesRequestedPromptCopy() passed after 0.238 seconds.
+􁁛  Suite BiometricSignInButtonTests passed after 0.244 seconds.
+􁁛  Test startingSecondFactorPrefersPasskey() passed after 0.243 seconds.
+􁁛  Test unknownPresentationStrategiesSortAfterSupportedFactors() passed after 0.244 seconds.
+􁁛  Test signUpPromptIsSuppressedWhenEnvironmentSettingIsDisabled() passed after 0.243 seconds.
+􁁛  Test signUpPromptIgnoresSeenState() passed after 0.244 seconds.
+􁁛  Test alternativeSecondFactorsUseCompletePreferenceOrder() passed after 0.244 seconds.
+􁁛  Suite SignInSecondFactorSelectionTests passed after 0.244 seconds.
+􁁛  Test signInPromptIsSuppressedAfterItHasBeenSeen() passed after 0.244 seconds.
+􁁛  Test signInPromptIsSuppressedWhenEnvironmentSettingIsDisabled() passed after 0.244 seconds.
+􁁛  Test seenStateIsScopedByUser() passed after 0.244 seconds.
+􁁛  Suite BiometricCredentialEnrollmentPromptTests passed after 0.244 seconds.
+􁁛  Test alternativeFirstFactorsKeepEmailCodeAndFilterResetPasswordFactors() passed after 0.244 seconds.
+􁁛  Test startingFirstFactorDoesNotMatchMissingIdentifierToMissingSafeIdentifier() passed after 0.244 seconds.
+􁁛  Test startingFirstFactorPrefersPasswordWhenPasswordIsPreferred() passed after 0.244 seconds.
+􁁛  Test startingFirstFactorDoesNotForceEmailLinkForNonEmailIdentifier() passed after 0.244 seconds.
+􁁛  Test startingFirstFactorDoesNotUseUnrelatedEmailLinkForUsernameSignIn() passed after 0.244 seconds.
+􁁛  Test alternativeFirstFactorsKeepCodeAlternativesAndFilterNonInlineMethods() passed after 0.244 seconds.
+􁁛  Test resetPasswordFactorPrefersMatchingEmailCodeFactor() passed after 0.244 seconds.
+􁁛  Test passkeyFirstFactorIsDisabledWhenPasskeyAttributeIsAbsent() passed after 0.243 seconds.
+􁁛  Test passkeyFirstFactorIsDisabledWhenPasskeyIsRegistrationOnly() passed after 0.243 seconds.
+􁁛  Test startingFirstFactorUsesPreferenceOverPreparedVerificationStrategy() passed after 0.244 seconds.
+􁁛  Test passkeyFirstFactorIsDisabledWhenPasskeyIsDisabledAndNotAFirstFactor() passed after 0.243 seconds.
+􁁛  Test deviceFactorsUseTheDedicatedBiometricEntry() passed after 0.243 seconds.
+􁁛  Test passkeyFirstFactorIsDisabledWhenPasskeyIsDisabled() passed after 0.243 seconds.
+􁁛  Test defaultsToEmailCodeWhenNoVerificationInfo() passed after 0.243 seconds.
+􁁛  Test startingFirstFactorChoosesMatchingEmailLinkWhenPasswordIsPreferredAndPasswordIsUnavailable() passed after 0.243 seconds.
+􁁛  Suite SignInFactorSelectionTests passed after 0.245 seconds.
+􁁛  Test returnsEmailLinkWhenVerificationHasEmailLinkStrategy() passed after 0.243 seconds.
+􁁛  Test passkeyFirstFactorIsEnabledWhenPasskeyIsAFirstFactor() passed after 0.243 seconds.
+􁁛  Suite PasskeyFirstFactorAvailabilityTests passed after 0.245 seconds.
+􁁛  Test returnsEmailCodeWhenVerificationHasEmailCodeStrategy() passed after 0.243 seconds.
+􁁛  Test returnsEmailLinkWhenEnvironmentHasEmailLinkVerification() passed after 0.243 seconds.
+􁁛  Suite SignUpEmailVerificationStrategyTests passed after 0.245 seconds.
+􁁛  Test biometricCredentialStrategyDoesNotShowBadgeWhenItIsTheOnlyVisibleMethod() passed after 0.240 seconds.
+􁁛  Test biometricCredentialStrategyShowsBadgeWhenAnotherMethodIsVisible() passed after 0.240 seconds.
+􁁛  Suite LastUsedAuthTests passed after 0.245 seconds.
+􁁛  Test registrationPreservesUserAndExcludedCredentials() passed after 0.246 seconds.
+􁁛  Test appleIdentityAndPasskeysShareOneCredentialPresenter() passed after 0.246 seconds.
+􁁛  Test assertionPreservesRelyingPartyChallengeAndCredentialRestrictions() passed after 0.246 seconds.
+􁁛  Test cancelingAutomaticAuthenticationDelayPreventsPasskeyAttempt() passed after 0.244 seconds.
+􁁛  Suite SignInPasskeyViewTests passed after 0.247 seconds.
+􁁛  Test preservesMethodsQueriesBodiesHeadersAndErrorResponses() passed after 0.245 seconds.
+􀟈  Test rejectsUntrustedOriginsAndInjectedHeadersBeforeHTTP() started.
+􁁛  Test failedStartResumesTheCallerAndAllowsTheNextSession() passed after 0.246 seconds.
+􁁛  Test competingCallDoesNotReplaceTheActiveSession() passed after 0.246 seconds.
+􁁛  Test xProviderUsesTheOAuthXStrategy() passed after 0.008 seconds.
+􁁛  Test systemCancellationPreservesItsStructuredError() passed after 0.246 seconds.
+􀟈  Test darkSchemeUsesDarkPngVariantForNonTintableClerkStaticProvider() started.
+􁁛  Test darkSchemeUsesDarkPngVariantForNonTintableClerkStaticProvider() passed after 0.004 seconds.
+􀟈  Test lightSchemeUsesConfiguredProviderLogoUrl() started.
+􁁛  Test cancelledControllerCannotCompleteTheNextRequest() passed after 0.252 seconds.
+􁁛  Test duplicateCompletionCannotCompleteTheFollowingSession() passed after 0.251 seconds.
+􁁛  Suite AppleCredentialAuthenticationTests passed after 0.253 seconds.
+􁁛  Test taskCancellationReleasesThePresenterAndIgnoresItsLateCallback() passed after 0.255 seconds.
+􁁛  Suite AppleBrowserAuthenticationTests passed after 0.257 seconds.
+􁁛  Test lightSchemeUsesConfiguredProviderLogoUrl() passed after 0.004 seconds.
+􀟈  Test darkSchemeDoesNotRewriteTintableProviderLogoUrl() started.
+􁁛  Test rejectsUntrustedOriginsAndInjectedHeadersBeforeHTTP() passed after 0.017 seconds.
+􀟈  Test encodesMultipartTextAndBinaryWithoutHeaderInjection() started.
+􁁛  Test darkSchemeDoesNotRewriteTintableProviderLogoUrl() passed after 0.007 seconds.
+􀟈  Test darkSchemeDoesNotRewriteNonClerkProviderLogoUrl() started.
+􁁛  Test encodesMultipartTextAndBinaryWithoutHeaderInjection() passed after 0.007 seconds.
+􁁛  Test darkSchemeDoesNotRewriteNonClerkProviderLogoUrl() passed after 0.007 seconds.
+􀟈  Test rejectsInvalidUTF8AndSurfacesNetworkFailure() started.
+􀟈  Test darkSchemeDoesNotRewriteCustomClerkStaticProviderLogoUrl() started.
+􁁛  Test darkSchemeDoesNotRewriteCustomClerkStaticProviderLogoUrl() passed after 0.007 seconds.
+􀟈  Test darkSchemeDoesNotRewriteSvgProviderLogoUrl() started.
+􁁛  Test rejectsInvalidUTF8AndSurfacesNetworkFailure() passed after 0.051 seconds.
+􀟈  Test cancellationStopsTheURLSessionRequest() started.
+􁁛  Test darkSchemeDoesNotRewriteSvgProviderLogoUrl() passed after 0.044 seconds.
+􀟈  Test darkSchemeUsesLinkedInDarkPngVariantForLinkedInOidc() started.
+􁁛  Test darkSchemeUsesLinkedInDarkPngVariantForLinkedInOidc() passed after 0.005 seconds.
+􀟈  Test prefetchUrlsIncludeConfiguredAndDarkVariantForNonTintableClerkStaticPng() started.
+􁁛  Test prefetchUrlsIncludeConfiguredAndDarkVariantForNonTintableClerkStaticPng() passed after 0.007 seconds.
+􀟈  Test prefetchUrlsIncludeLinkedInOidcAndLinkedInDarkVariant() started.
+􁁛  Test cancellationStopsTheURLSessionRequest() passed after 0.013 seconds.
+􀟈  Test redirectsPreserveTheSameOriginCredentialRestriction() started.
+􁁛  Test redirectsPreserveTheSameOriginCredentialRestriction() passed after 0.001 seconds.
+􁁛  Suite AppleHTTPCapabilityTests passed after 0.338 seconds.
+􀟈  Test case passing 1 argument organization → true to payerCollectionsPreservePaymentMethodFields(organization:) started.
+􁁛  Test prefetchUrlsIncludeLinkedInOidcAndLinkedInDarkVariant() passed after 0.013 seconds.
+􀟈  Test prefetchUrlsDoNotAddDarkVariantForTintableProvider() started.
+􁁛  Test prefetchUrlsDoNotAddDarkVariantForTintableProvider() passed after 0.006 seconds.
+􀟈  Test prefetchUrlsDoNotAddDarkVariantForNonClerkProvider() started.
+􁁛  Test initialLoadUsesGeneratedCollectionsAndCreationDefaults() passed after 0.357 seconds.
+􀟈  Test emptyCollectionsFinishLoadingWithoutRequestingDefaults() started.
+􁁛  Test prefetchUrlsDoNotAddDarkVariantForNonClerkProvider() passed after 0.011 seconds.
+􀟈  Test prefetchUrlsDoNotAddDarkVariantForCustomClerkStaticProvider() started.
+􀟈  Test case passing 1 argument fullResource → true to deletionReturnsReadableMembershipAfterItsOrganizationIsDeselected(fullResource:) started.
+􀟈  Test case passing 1 argument scenario → "waitlist-new" to appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􁁛  Test prefetchUrlsDoNotAddDarkVariantForCustomClerkStaticProvider() passed after 0.018 seconds.
+􁁛  Suite OAuthProviderIconImageUrlTests passed after 0.387 seconds.
+􁁛  Test payerCollectionsPreservePaymentMethodFields(organization:) with 2 test cases passed after 0.413 seconds.
+􁁛  Suite PaymentMethodTests passed after 0.414 seconds.
+􁁛  Test deletionUpdatesTheUserAndPreservesReadableHeldContacts() passed after 0.417 seconds.
+􁁛  Suite ContactResourceTests passed after 0.417 seconds.
+􁁛  Test packagedCoreCleansAReinstallButPreservesAnExistingInstallation() passed after 0.430 seconds.
+􁁛  Suite AppleBiometricInstallationTests passed after 0.431 seconds.
+􁁛  Test emptyCollectionsFinishLoadingWithoutRequestingDefaults() passed after 0.076 seconds.
+􀟈  Test failedInitialLoadCanBeRetriedAndClearsLoadingState() started.
+􁁛  Test anAlreadyActiveSessionDoesNotAcquireARootPresentationGate() passed after 0.433 seconds.
+􀟈  Test aRejectedSecondRegistrationCannotTakeOverSuspendedFinalization() started.
+􁁛  Test deletionReturnsReadableMembershipAfterItsOrganizationIsDeselected(fullResource:) with 2 test cases passed after 0.453 seconds.
+􁁛  Suite OrganizationMembershipTests passed after 0.454 seconds.
+􀟈  Test case passing 1 argument scenario → "transfer-verification-error" to appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􁁛  Test failedInitialLoadCanBeRetriedAndClearsLoadingState() passed after 0.081 seconds.
+􀟈  Test aPartialMembershipPageDoesNotSkipTheNextMember() started.
+􀟈  Test case passing 1 argument scenario → "transfer-request-error" to appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􁁛  Test aRejectedSecondRegistrationCannotTakeOverSuspendedFinalization() passed after 0.101 seconds.
+􀟈  Test completingTheRootNotifiesObserversAndAllowsAFreshFlowAfterSignOut() started.
+􁁛  Test aPartialMembershipPageDoesNotSkipTheNextMember() passed after 0.066 seconds.
+􀟈  Test loadedMembershipPagesPreserveTheRevalidationWindow() started.
+􀟈  Test case passing 1 argument scenario → "unrelated-signup-error" to appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "signup-only-restricted" to appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) started.
+􁁛  Test loadedMembershipPagesPreserveTheRevalidationWindow() passed after 0.080 seconds.
+􀟈  Test acceptingAnInvitationKeepsItsRowAndDoesNotSkipTheNextPendingInvitation(count:) started.
+􀟈  Test case passing 1 argument count → 1 to acceptingAnInvitationKeepsItsRowAndDoesNotSkipTheNextPendingInvitation(count:) started.
+􁁛  Test appleSSOPreservesErrorDetailsAndRestrictionBoundaries(scenario:) with 6 test cases passed after 0.714 seconds.
+􀟈  Test biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "enroll" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􁁛  Test completingTheRootNotifiesObserversAndAllowsAFreshFlowAfterSignOut() passed after 0.180 seconds.
+􀟈  Test aTerminalSessionInvalidatesAnOpenEnrollmentScreen(status:) started.
+􀟈  Test case passing 1 argument status → "ended" to aTerminalSessionInvalidatesAnOpenEnrollmentScreen(status:) started.
+􀟈  Test case passing 1 argument count → 3 to acceptingAnInvitationKeepsItsRowAndDoesNotSkipTheNextPendingInvitation(count:) started.
+􀟈  Test case passing 1 argument scenario → "forget" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􀟈  Test case passing 1 argument count → 11 to acceptingAnInvitationKeepsItsRowAndDoesNotSkipTheNextPendingInvitation(count:) started.
+􀟈  Test case passing 1 argument scenario → "corrupt" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􀟈  Test case passing 1 argument status → "revoked" to aTerminalSessionInvalidatesAnOpenEnrollmentScreen(status:) started.
+􀟈  Test case passing 1 argument scenario → "same-id" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􁁛  Test acceptingAnInvitationKeepsItsRowAndDoesNotSkipTheNextPendingInvitation(count:) with 3 test cases passed after 0.223 seconds.
+􀟈  Test acceptedSuggestionRemainsVisibleWithItsUpdatedStatus() started.
+􀟈  Test case passing 1 argument scenario → "revoke-read" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􀟈  Test case passing 1 argument status → "expired" to aTerminalSessionInvalidatesAnOpenEnrollmentScreen(status:) started.
+􁁛  Test acceptedSuggestionRemainsVisibleWithItsUpdatedStatus() passed after 0.068 seconds.
+􁁛  Suite OrganizationAccountListCoreTests passed after 0.954 seconds.
+􀟈  Test case passing 1 argument scenario → "saved-read" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "list" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􁁛  Test aTerminalSessionInvalidatesAnOpenEnrollmentScreen(status:) with 3 test cases passed after 0.330 seconds.
+􀟈  Test releasingTheRegistrationReleasesTheRootHold() started.
+􀟈  Test case passing 1 argument scenario → "lost-session" to biometricMetadataPreservesUnrelatedCredentials(scenario:) started.
+􁁛  Test biometricMetadataPreservesUnrelatedCredentials(scenario:) with 8 test cases passed after 0.400 seconds.
+􀟈  Test emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "bad-state" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􁁛  Test releasingTheRegistrationReleasesTheRootHold() passed after 0.098 seconds.
+􀟈  Test externalActivationWaitsForTheRegisteredRootToDeliverCompletionOnce() started.
+􀟈  Test case passing 1 argument scenario → "null-state" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "missing-ios-kind" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􁁛  Test externalActivationWaitsForTheRegisteredRootToDeliverCompletionOnce() passed after 0.095 seconds.
+􀟈  Test failedRepeatedFinalizationKeepsRecoveredSessionBehindPresentationCompletion() started.
+􀟈  Test case passing 1 argument scenario → "null-ios-kind" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "valid-ios-kind" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􁁛  Test failedRepeatedFinalizationKeepsRecoveredSessionBehindPresentationCompletion() passed after 0.107 seconds.
+􀟈  Test dismissibleExternalActivationLeavesSignedInContentAvailable() started.
+􀟈  Test case passing 1 argument scenario → "expired-ios-kind" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "valid-android" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􁁛  Test dismissibleExternalActivationLeavesSignedInContentAvailable() passed after 0.097 seconds.
+􀟈  Test repeatedCompletionPreservesAnAlreadyPresentedEnrollment() started.
+􀟈  Test case passing 1 argument scenario → "incomplete-signIn" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "incomplete-signUp" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􁁛  Test repeatedCompletionPreservesAnAlreadyPresentedEnrollment() passed after 0.126 seconds.
+􀟈  Test sessionTaskScreenKeepsOwnershipAfterTheCoreSessionBecomesActive() started.
+􁁛  Test sessionTaskScreenKeepsOwnershipAfterTheCoreSessionBecomesActive() passed after 0.051 seconds.
+􀟈  Test replayAfterEnrollmentFinishesDoesNotOfferEnrollmentAgain() started.
+􀟈  Test case passing 1 argument scenario → "signup-ticket" to emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) started.
+􁁛  Test emailLinkCompletionPreservesFlowKindAndContinuation(scenario:) with 10 test cases passed after 0.588 seconds.
+􀟈  Test emailLinkFailurePreservesVerifierBoundary(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "signIn-storage" to emailLinkFailurePreservesVerifierBoundary(scenario:) started.
+􁁛  Test replayAfterEnrollmentFinishesDoesNotOfferEnrollmentAgain() passed after 0.125 seconds.
+􀟈  Test anotherCurrentSessionInvalidatesThePresentedScreen() started.
+􀟈  Test case passing 1 argument scenario → "signIn-prepare" to emailLinkFailurePreservesVerifierBoundary(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "signUp-storage" to emailLinkFailurePreservesVerifierBoundary(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "signUp-prepare" to emailLinkFailurePreservesVerifierBoundary(scenario:) started.
+􁁛  Test anotherCurrentSessionInvalidatesThePresentedScreen() passed after 0.128 seconds.
+􀟈  Test aNewSessionTaskWaitsForEnrollmentToFinish() started.
+􁁛  Test emailLinkFailurePreservesVerifierBoundary(scenario:) with 4 test cases passed after 0.216 seconds.
+􀟈  Test emptyClientRefreshPreservesAcceptedIdentity(newerSessionResponse:) started.
+􀟈  Test case passing 1 argument newerSessionResponse → false to emptyClientRefreshPreservesAcceptedIdentity(newerSessionResponse:) started.
+􀟈  Test case passing 1 argument newerSessionResponse → true to emptyClientRefreshPreservesAcceptedIdentity(newerSessionResponse:) started.
+􁁛  Test aNewSessionTaskWaitsForEnrollmentToFinish() passed after 0.115 seconds.
+􀟈  Test aNewAuthenticationCompletionReplacesOlderWork(sameSession:) started.
+􀟈  Test case passing 1 argument sameSession → false to aNewAuthenticationCompletionReplacesOlderWork(sameSession:) started.
+􁁛  Test emptyClientRefreshPreservesAcceptedIdentity(newerSessionResponse:) with 2 test cases passed after 0.163 seconds.
+􀟈  Test unauthorizedClientRecoveryTerminatesAndAllowsAnotherRequest() started.
+􁁛  Test unauthorizedClientRecoveryTerminatesAndAllowsAnotherRequest() passed after 0.052 seconds.
+􀟈  Test transientNetworkFailureRetriesAndCompletes() started.
+􀟈  Test case passing 1 argument sameSession → true to aNewAuthenticationCompletionReplacesOlderWork(sameSession:) started.
+􁁛  Test aNewAuthenticationCompletionReplacesOlderWork(sameSession:) with 2 test cases passed after 0.287 seconds.
+􀟈  Test pendingSignUpFinishesEnrollmentBeforeTasksWithoutReofferingIt() started.
+􁁛  Test transientNetworkFailureRetriesAndCompletes() passed after 0.242 seconds.
+􀟈  Test obsoleteCredentialDoesNotReachRetry(signOut:) started.
+􀟈  Test case passing 1 argument signOut → false to obsoleteCredentialDoesNotReachRetry(signOut:) started.
+􁁛  Test pendingSignUpFinishesEnrollmentBeforeTasksWithoutReofferingIt() passed after 0.102 seconds.
+􀟈  Test completionArrivingDuringExternalSessionTasksKeepsTheScreenAndSkipsEnrollment() started.
+􀟈  Test case passing 1 argument signOut → true to obsoleteCredentialDoesNotReachRetry(signOut:) started.
+􁁛  Test completionArrivingDuringExternalSessionTasksKeepsTheScreenAndSkipsEnrollment() passed after 0.107 seconds.
+􀟈  Test activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible:succeeds:) started.
+􀟈  Test case passing 2 arguments dismissible → false, succeeds → false to activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible:succeeds:) started.
+􁁛  Test obsoleteCredentialDoesNotReachRetry(signOut:) with 2 test cases passed after 0.123 seconds.
+􀟈  Test organizationDefaultsNormalizePartialResponses(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "no-form" to organizationDefaultsNormalizePartialResponses(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "no-severity" to organizationDefaultsNormalizePartialResponses(scenario:) started.
+􀟈  Test case passing 2 arguments dismissible → false, succeeds → true to activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible:succeeds:) started.
+􀟈  Test case passing 1 argument scenario → "no-slug" to organizationDefaultsNormalizePartialResponses(scenario:) started.
+􁁛  Test organizationDefaultsNormalizePartialResponses(scenario:) with 3 test cases passed after 0.143 seconds.
+􀟈  Test organizationResourcesPreserveReturnedState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "receipt" to organizationResourcesPreserveReturnedState(scenario:) started.
+􀟈  Test case passing 2 arguments dismissible → true, succeeds → false to activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible:succeeds:) started.
+􀟈  Test case passing 1 argument scenario → "resource" to organizationResourcesPreserveReturnedState(scenario:) started.
+􀟈  Test case passing 2 arguments dismissible → true, succeeds → true to activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible:succeeds:) started.
+􀟈  Test case passing 1 argument scenario → "rejected" to organizationResourcesPreserveReturnedState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "refresh-failed" to organizationResourcesPreserveReturnedState(scenario:) started.
+􁁛  Test activationAdoptsItsTargetOrRecoversCurrentSessionAfterAnIntermediateRefresh(dismissible:succeeds:) with 4 test cases passed after 0.311 seconds.
+􀟈  Test activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply(comparableDates:) started.
+􀟈  Test case passing 1 argument comparableDates → false to activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply(comparableDates:) started.
+􀟈  Test case passing 1 argument scenario → "fetched" to organizationResourcesPreserveReturnedState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "filters" to organizationResourcesPreserveReturnedState(scenario:) started.
+􀟈  Test case passing 1 argument comparableDates → true to activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply(comparableDates:) started.
+􁁛  Test organizationResourcesPreserveReturnedState(scenario:) with 6 test cases passed after 0.306 seconds.
+􀟈  Test applicationNotificationsRefreshObservableResourcesAndStopAfterClose() started.
+􁁛  Test activationWorkSurvivesRefreshOrRecoversFromAnObsoleteReply(comparableDates:) with 2 test cases passed after 0.227 seconds.
+􀟈  Test aRejectedReplayPreservesAcceptedAwaitingWork() started.
+􁁛  Test applicationNotificationsRefreshObservableResourcesAndStopAfterClose() passed after 0.178 seconds.
+􀟈  Test releasingTheLastOwnerTearsDownLifecycleObservation() started.
+􁁛  Test aRejectedReplayPreservesAcceptedAwaitingWork() passed after 0.104 seconds.
+􀟈  Test aNewerExplicitSelectionSupersedesSuspendedFinalization(dismissible:) started.
+􀟈  Test case passing 1 argument dismissible → false to aNewerExplicitSelectionSupersedesSuspendedFinalization(dismissible:) started.
+􀟈  Test case passing 1 argument dismissible → true to aNewerExplicitSelectionSupersedesSuspendedFinalization(dismissible:) started.
+􁁛  Test releasingTheLastOwnerTearsDownLifecycleObservation() passed after 0.088 seconds.
+􀟈  Test foregroundFailureIsNonfatalAndTheNextActivationRecovers() started.
+􁁛  Test aNewerExplicitSelectionSupersedesSuspendedFinalization(dismissible:) with 2 test cases passed after 0.149 seconds.
+􀟈  Test anOpenEnrollmentSurvivesRefreshAndALaterAttemptWithoutBeingReoffered() started.
+􁁛  Test foregroundFailureIsNonfatalAndTheNextActivationRecovers() passed after 0.142 seconds.
+􀟈  Test foregroundDuringOAuthRedemptionWaitsForAuthentication() started.
+􁁛  Test foregroundDuringOAuthRedemptionWaitsForAuthentication() passed after 0.124 seconds.
+􀟈  Test previousNativeEmailLinkCallbackFormsCompleteWithoutImplicitActivation() started.
+􁁛  Test anOpenEnrollmentSurvivesRefreshAndALaterAttemptWithoutBeingReoffered() passed after 0.209 seconds.
+􀟈  Test signOutInvalidatesACompletionWaitingForPresentation() started.
+􁁛  Test previousNativeEmailLinkCallbackFormsCompleteWithoutImplicitActivation() passed after 0.084 seconds.
+􀟈  Test authRequestsUseTheDeviceLocaleAndAllowExplicitSignUpLocale() started.
+􁁛  Test signOutInvalidatesACompletionWaitingForPresentation() passed after 0.116 seconds.
+􀟈  Test cancellingAnOwnerDuringFinalizationRejectsItsLateResponse() started.
+􁁛  Test authRequestsUseTheDeviceLocaleAndAllowExplicitSignUpLocale() passed after 0.085 seconds.
+􀟈  Test structuredErrorsPreserveServerStatusRetryAndTrace() started.
+􁁛  Test cancellingAnOwnerDuringFinalizationRejectsItsLateResponse() passed after 0.071 seconds.
+􀟈  Test aRetiredRegistrationCannotFinalizeForItsReplacement() started.
+􁁛  Test structuredErrorsPreserveServerStatusRetryAndTrace() passed after 0.052 seconds.
+􀟈  Test factorDiscriminantsPreserveDeviceAndRecoveryFields() started.
+􁁛  Test factorDiscriminantsPreserveDeviceAndRecoveryFields() passed after 0.064 seconds.
+􀟈  Test networkRestorationRefreshesTheOwnerAndStopsAfterClose() started.
+􁁛  Test aRetiredRegistrationCannotFinalizeForItsReplacement() passed after 0.100 seconds.
+􁁛  Suite AuthFlowCoreTests passed after 3.788 seconds.
+􁁛  Test networkRestorationRefreshesTheOwnerAndStopsAfterClose() passed after 0.154 seconds.
+􀟈  Test sessionReloadReturnsReadableStateAfterTheOwnerStopsSelectingIt() started.
+􁁛  Test sessionReloadReturnsReadableStateAfterTheOwnerStopsSelectingIt() passed after 0.147 seconds.
+􀟈  Test missingAndPartialOrganizationSettingsDoNotPreventStartup() started.
+􁁛  Test missingAndPartialOrganizationSettingsDoNotPreventStartup() passed after 0.187 seconds.
+􀟈  Test generatedResourcesExecuteThePackagedCore() started.
+PASS: packaged ClerkKit bundle, future SSO, local reset, explicit finalization, getToken, typed errors, returned resources, explicit recovery-code reads, and sign-out
+􁁛  Test generatedResourcesExecuteThePackagedCore() passed after 0.333 seconds.
+􀟈  Test replacingAnOwnerInvalidatesOldResourcesAndPreservesItsCredential() started.
+􁁛  Test replacingAnOwnerInvalidatesOldResourcesAndPreservesItsCredential() passed after 0.084 seconds.
+􀟈  Test sessionReloadPublishesOrganizationSelectionBeforeCompletion() started.
+􁁛  Test sessionReloadPublishesOrganizationSelectionBeforeCompletion() passed after 0.059 seconds.
+􀟈  Test olderClientResponseCannotRemoveANewerPendingTaskOrCredential() started.
+􁁛  Test olderClientResponseCannotRemoveANewerPendingTaskOrCredential() passed after 0.066 seconds.
+􀟈  Test canonicalClientRequiresANewOrRestoredCredential() started.
+􁁛  Test canonicalClientRequiresANewOrRestoredCredential() passed after 0.071 seconds.
+􀟈  Test credentialRotationRejectsResponsesIssuedWithThePreviousCredential() started.
+􁁛  Test credentialRotationRejectsResponsesIssuedWithThePreviousCredential() passed after 0.073 seconds.
+􀟈  Test completedSignInSurvivesClientRefreshUntilExplicitFinalization() started.
+􁁛  Test completedSignInSurvivesClientRefreshUntilExplicitFinalization() passed after 0.080 seconds.
+􀟈  Test passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "valid" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "missing" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "nested" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "empty" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "whitespace" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "number" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "missing-id" to passkeyAssertionOptions(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "invalid-id" to passkeyAssertionOptions(scenario:) started.
+􁁛  Test passkeyAssertionOptions(scenario:) with 8 test cases passed after 0.427 seconds.
+􀟈  Test passkeyRegistrationAndManagement(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → false to passkeyRegistrationAndManagement(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → true to passkeyRegistrationAndManagement(cancelled:) started.
+􁁛  Test passkeyRegistrationAndManagement(cancelled:) with 2 test cases passed after 0.100 seconds.
+􀟈  Test organizationActivationUsesAcceptedServerState(selection:) started.
+􀟈  Test case passing 1 argument selection → "org_next" to organizationActivationUsesAcceptedServerState(selection:) started.
+􀟈  Test case passing 1 argument selection → "personal" to organizationActivationUsesAcceptedServerState(selection:) started.
+􀟈  Test case passing 1 argument selection → "omitted" to organizationActivationUsesAcceptedServerState(selection:) started.
+􁁛  Test organizationActivationUsesAcceptedServerState(selection:) with 3 test cases passed after 0.184 seconds.
+􀟈  Test rejectedOrganizationActivationPreservesSelection(status:) started.
+􀟈  Test case passing 1 argument status → 401 to rejectedOrganizationActivationPreservesSelection(status:) started.
+􀟈  Test case passing 1 argument status → 403 to rejectedOrganizationActivationPreservesSelection(status:) started.
+􁁛  Test rejectedOrganizationActivationPreservesSelection(status:) with 2 test cases passed after 0.104 seconds.
+􀟈  Test rejectedPendingOrganizationCannotOverwriteNewerSelection() started.
+􁁛  Test rejectedPendingOrganizationCannotOverwriteNewerSelection() passed after 0.076 seconds.
+􀟈  Test generatedAuthorizationUsesCanonicalSessionState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "fresh" to generatedAuthorizationUsesCanonicalSessionState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "stale" to generatedAuthorizationUsesCanonicalSessionState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "noSecondFactor" to generatedAuthorizationUsesCanonicalSessionState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "noFactors" to generatedAuthorizationUsesCanonicalSessionState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "missingAges" to generatedAuthorizationUsesCanonicalSessionState(scenario:) started.
+􁁛  Test generatedAuthorizationUsesCanonicalSessionState(scenario:) with 5 test cases passed after 0.755 seconds.
+􀟈  Test generatedRevocationReconcilesSessionSelection(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "current" to generatedRevocationReconcilesSessionSelection(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "other" to generatedRevocationReconcilesSessionSelection(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "rejected" to generatedRevocationReconcilesSessionSelection(scenario:) started.
+􁁛  Test generatedRevocationReconcilesSessionSelection(scenario:) with 3 test cases passed after 0.153 seconds.
+􀟈  Test generatedPendingTaskPreservesKnownAndFutureKeys(key:) started.
+􀟈  Test case passing 1 argument key → "setup-mfa" to generatedPendingTaskPreservesKnownAndFutureKeys(key:) started.
+􀟈  Test case passing 1 argument key → "reset-password" to generatedPendingTaskPreservesKnownAndFutureKeys(key:) started.
+􀟈  Test case passing 1 argument key → "another-task" to generatedPendingTaskPreservesKnownAndFutureKeys(key:) started.
+􁁛  Test generatedPendingTaskPreservesKnownAndFutureKeys(key:) with 3 test cases passed after 0.111 seconds.
+􀟈  Test generatedSessionVerificationReturnsUsableFactorState() started.
+􁁛  Test generatedSessionVerificationReturnsUsableFactorState() passed after 0.127 seconds.
+􀟈  Test coalescedTokenCallsCancelIndependently(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → [0] to coalescedTokenCallsCancelIndependently(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → [1] to coalescedTokenCallsCancelIndependently(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → [0, 1] to coalescedTokenCallsCancelIndependently(cancelled:) started.
+􁁛  Test coalescedTokenCallsCancelIndependently(cancelled:) with 3 test cases passed after 0.304 seconds.
+􀟈  Test coalescedTokenFailurePermitsRecovery(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → 0 to coalescedTokenFailurePermitsRecovery(cancelled:) started.
+􀟈  Test case passing 1 argument cancelled → 1 to coalescedTokenFailurePermitsRecovery(cancelled:) started.
+􁁛  Test coalescedTokenFailurePermitsRecovery(cancelled:) with 2 test cases passed after 0.210 seconds.
+􀟈  Test clearCacheRejectsAProactiveRefresh(replacement:) started.
+􀟈  Test case passing 1 argument replacement → false to clearCacheRejectsAProactiveRefresh(replacement:) started.
+􀟈  Test case passing 1 argument replacement → true to clearCacheRejectsAProactiveRefresh(replacement:) started.
+􁁛  Test clearCacheRejectsAProactiveRefresh(replacement:) with 2 test cases passed after 0.240 seconds.
+􀟈  Test clearCacheSeparatesPendingTokenRequests(oldReplyFirst:) started.
+􀟈  Test case passing 1 argument oldReplyFirst → false to clearCacheSeparatesPendingTokenRequests(oldReplyFirst:) started.
+􀟈  Test case passing 1 argument oldReplyFirst → true to clearCacheSeparatesPendingTokenRequests(oldReplyFirst:) started.
+􁁛  Test clearCacheSeparatesPendingTokenRequests(oldReplyFirst:) with 2 test cases passed after 0.135 seconds.
+􀟈  Test tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "initial" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "clear" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "mintTie" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "stale" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "fresh" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "tie" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "expired" to tokenSnapshotsFollowCanonicalCachePolicy(scenario:) started.
+􁁛  Test tokenSnapshotsFollowCanonicalCachePolicy(scenario:) with 7 test cases passed after 0.430 seconds.
+􀟈  Test userResourcesPreserveProfileAndEnrollmentState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "clear-null" to userResourcesPreserveProfileAndEnrollmentState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "clear-empty" to userResourcesPreserveProfileAndEnrollmentState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "image" to userResourcesPreserveProfileAndEnrollmentState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "metadata" to userResourcesPreserveProfileAndEnrollmentState(scenario:) started.
+􀟈  Test case passing 1 argument scenario → "totp" to userResourcesPreserveProfileAndEnrollmentState(scenario:) started.
+􁁛  Test userResourcesPreserveProfileAndEnrollmentState(scenario:) with 5 test cases passed after 0.260 seconds.
+􁁛  Suite PackagedCoreTests passed after 8.660 seconds.
+􁁛  Test run with 278 tests in 41 suites passed after 8.660 seconds.

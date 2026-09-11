@@ -17914,6 +17914,10 @@ isDevOrStagingUrl: (url) => {
 	}
 	async function nativeCredential(kind, options, request) {
 		try {
+			if (kind === "get") {
+				const rpId = options && typeof options === "object" && "rpId" in options ? options.rpId : void 0;
+				if (typeof rpId !== "string" || !rpId.trim()) throw bridgeError("invalid_credential_options");
+			}
 			const result = await request(`passkeys.${kind}`, options);
 			if (!result || result.type !== "public-key" || typeof result.id !== "string" || !result.response) throw bridgeError("invalid_credential_result");
 			const response = result.response;

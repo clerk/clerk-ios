@@ -1,0 +1,111 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "9A1571DF-CC3D-465F-A2E1-C89EC2388B31",
+      "deviceName" : "iPhone Air + Watch",
+      "modelName" : "iPhone Air",
+      "osBuildNumber" : "23F77",
+      "osVersion" : "26.5",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "duration" : "0.069s",
+                      "durationInSeconds" : 0.06921792030334473,
+                      "name" : "\"empty\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.067s",
+                      "durationInSeconds" : 0.06749391555786133,
+                      "name" : "\"invalid-id\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.07s",
+                      "durationInSeconds" : 0.06952095031738281,
+                      "name" : "\"missing-id\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.078s",
+                      "durationInSeconds" : 0.07799291610717773,
+                      "name" : "\"missing\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.075s",
+                      "durationInSeconds" : 0.07536816596984863,
+                      "name" : "\"nested\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.071s",
+                      "durationInSeconds" : 0.07067704200744629,
+                      "name" : "\"number\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.092s",
+                      "durationInSeconds" : 0.09178805351257324,
+                      "name" : "\"valid\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.069s",
+                      "durationInSeconds" : 0.06928896903991699,
+                      "name" : "\"whitespace\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    }
+                  ],
+                  "duration" : "0.074s",
+                  "durationInSeconds" : 0.07391849160194397,
+                  "name" : "passkeyAssertionOptions(scenario:)",
+                  "nodeIdentifier" : "PackagedCoreTests/passkeyAssertionOptions(scenario:)",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests/passkeyAssertionOptions(scenario:)",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PackagedCoreTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "NativeCoreContractTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "NativeCoreContractTests",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

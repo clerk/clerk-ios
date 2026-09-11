@@ -1,0 +1,122 @@
+(node:3418) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ server assertion options preserve relying party, credential order and transports (27.890875ms)
+✖ missing relying party fails before native presentation without a domain fallback (7.245917ms)
+✖ registration-style relying party fails before native presentation without a domain fallback (6.978166ms)
+✖ empty relying party fails before native presentation without a domain fallback (6.631708ms)
+✖ whitespace relying party fails before native presentation without a domain fallback (6.962583ms)
+✖ non-string relying party fails before native presentation without a domain fallback (7.645541ms)
+✔ missing credential ID rejects the server list instead of dropping entries (6.10075ms)
+✔ invalid credential ID rejects the server list instead of dropping entries (7.286666ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 3
+ℹ fail 5
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 175.648375
+
+✖ failing tests:
+
+test at work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:72:3
+✖ missing relying party fails before native presentation without a domain fallback (7.245917ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:74:14
+      at run (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:48:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:72:3
+✖ registration-style relying party fails before native presentation without a domain fallback (6.978166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:74:14
+      at run (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:48:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:72:3
+✖ empty relying party fails before native presentation without a domain fallback (6.631708ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:74:14
+      at run (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:48:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:72:3
+✖ whitespace relying party fails before native presentation without a domain fallback (6.962583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:74:14
+      at run (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:48:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:72:3
+✖ non-string relying party fails before native presentation without a domain fallback (7.645541ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:74:14
+      at run (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:48:3)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/passkey-options.test.mjs:73:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
