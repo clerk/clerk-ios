@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/clerk/openapi-specs",
+  "revision": "a91bd1815277a236107ef325be6e138db32762cb",
+  "path": "fapi/2026-05-12.yml",
+  "sha256": "76d4b8c47a370ac640aa8607066b199a5066cc627aaf48fdc1a7ffcaee25bb9c",
+  "schema": "Client.OrganizationInvitation",
+  "userContextSchema": "Client.OrganizationInvitationUserContext",
+  "properties": {
+    "created_at": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Unix timestamp of creation."
+    },
+    "updated_at": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Unix timestamp of last update."
+    }
+  },
+  "lineRange": [
+    16189,
+    16196
+  ],
+  "conclusion": "The published schema does not specify seconds or milliseconds for invitation timestamps. It does not resolve the old Android versus selected TypeScript parser difference."
+}

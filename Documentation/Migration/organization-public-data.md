@@ -14,8 +14,12 @@ Both SDKs package JavaScript revision `4c7c77f5b7e5d52b0c4e65ce8b59b8854e956972`
 
 The old `UserOrganizationInvitationTest.kt` also expects numeric epoch seconds to be multiplied by 1,000. A direct generated-runtime probe confirms that the selected TypeScript implementation treats numeric dates as milliseconds: `1713200000` becomes a date in January 1970, while `1713200000000` and the supplied ISO date produce their expected 2024 dates. This fix does not change timestamp interpretation. The old file remains retained while that compatibility difference is resolved; this is not claimed as completed assertion retirement.
 
+The [published Frontend API schema](https://github.com/clerk/openapi-specs/blob/a91bd1815277a236107ef325be6e138db32762cb/fapi/2026-05-12.yml#L16189-L16196) declares both invitation dates as `int64` Unix timestamps without specifying units. Its user-context invitation inherits those fields. [The schema review](evidence/organization-public-data/schema-review.json) pins the source revision and file hash. This is insufficient evidence to change the mature shared date parser or to claim that the old seconds assertion matches the backend contract.
+
 ## Verification notes
 
 The full shared suite passes 596 tests on recheck, with zero failures or skips. The first broad run reported failure of `selected-code-factors.test.mjs` without an assertion diagnostic; its 13 tests passed in isolation, and the complete rerun passed with TAP output. The first failure log is preserved without attributing an unproven cause. The 82 focused organization/user-resource checks also pass.
 
 The native test fixture initially tried to share a single nominal data type between invitations and suggestions. The generator intentionally gives these shapes distinct names; the test now compares their exposed fields. Both native suites compiled and passed after correcting that test setup. No generated type was changed.
+
+The same shared bundle also passed Android [test CI](https://github.com/clerk/clerk-android/actions/runs/34549087195) and [release-build CI](https://github.com/clerk/clerk-android/actions/runs/34549089302) at Android revision `e69c39e46f25cebb3680525e9ea23439cd1674a8`: 168 emulator cases including all eight organization cases, 566 unit tests, and two byte-identical AARs with the expected bundle. This supplements the Swift and iOS Simulator results above.
