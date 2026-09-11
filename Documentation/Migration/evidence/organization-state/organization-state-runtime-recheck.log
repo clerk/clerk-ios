@@ -1,0 +1,3850 @@
+TAP version 13
+# (node:67770) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: signIn.sso uses the native Apple identity provider and leaves finalization explicit
+ok 1 - signIn.sso uses the native Apple identity provider and leaves finalization explicit
+  ---
+  duration_ms: 40.190416
+  type: 'test'
+  ...
+# Subtest: signUp.sso uses the native Apple identity provider and leaves finalization explicit
+ok 2 - signUp.sso uses the native Apple identity provider and leaves finalization explicit
+  ---
+  duration_ms: 8.165417
+  type: 'test'
+  ...
+# Subtest: Apple identity cancellation and unavailable providers do not start an authentication request
+ok 3 - Apple identity cancellation and unavailable providers do not start an authentication request
+  ---
+  duration_ms: 15.559333
+  type: 'test'
+  ...
+# Subtest: reset fences a pending Apple identity result before an authentication request
+ok 4 - reset fences a pending Apple identity result before an authentication request
+  ---
+  duration_ms: 12.3275
+  type: 'test'
+  ...
+# Subtest: native Apple identity respects enabled profile attributes: [false,false]
+ok 5 - native Apple identity respects enabled profile attributes: [false,false]
+  ---
+  duration_ms: 30.2875
+  type: 'test'
+  ...
+# Subtest: native Apple identity respects enabled profile attributes: [true,false]
+ok 6 - native Apple identity respects enabled profile attributes: [true,false]
+  ---
+  duration_ms: 16.513042
+  type: 'test'
+  ...
+# Subtest: native Apple identity respects enabled profile attributes: [false,true]
+ok 7 - native Apple identity respects enabled profile attributes: [false,true]
+  ---
+  duration_ms: 14.423625
+  type: 'test'
+  ...
+# Subtest: native Apple identity respects enabled profile attributes: [true,true]
+ok 8 - native Apple identity respects enabled profile attributes: [true,true]
+  ---
+  duration_ms: 11.485834
+  type: 'test'
+  ...
+# (node:67771) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: the attached owner's client deletion clears its credential for "Bearer"
+ok 9 - the attached owner's client deletion clears its credential for "Bearer"
+  ---
+  duration_ms: 48.394667
+  type: 'test'
+  ...
+# Subtest: the attached owner's client deletion clears its credential for "Bearer "
+ok 10 - the attached owner's client deletion clears its credential for "Bearer "
+  ---
+  duration_ms: 33.965792
+  type: 'test'
+  ...
+# Subtest: attached handshake validates the existing owner and bindings without another initialization request
+ok 11 - attached handshake validates the existing owner and bindings without another initialization request
+  ---
+  duration_ms: 12.416959
+  type: 'test'
+  ...
+# Subtest: native snapshots tolerate the React Native window without a browser location
+ok 12 - native snapshots tolerate the React Native window without a browser location
+  ---
+  duration_ms: 5.35525
+  type: 'test'
+  ...
+# Subtest: native calls mutate the existing JavaScript facade and direct JavaScript reset invalidates its native group
+ok 13 - native calls mutate the existing JavaScript facade and direct JavaScript reset invalidates its native group
+  ---
+  duration_ms: 23.697
+  type: 'test'
+  ...
+# Subtest: direct JavaScript verification publishes through the same native projection
+ok 14 - direct JavaScript verification publishes through the same native projection
+  ---
+  duration_ms: 27.680458
+  type: 'test'
+  ...
+# Subtest: JavaScript reset fences an in-flight native verification and its credential write
+ok 15 - JavaScript reset fences an in-flight native verification and its credential write
+  ---
+  duration_ms: 7.635375
+  type: 'test'
+  ...
+# Subtest: JavaScript sign-out fences native authentication even before a session exists
+ok 16 - JavaScript sign-out fences native authentication even before a session exists
+  ---
+  duration_ms: 6.846
+  type: 'test'
+  ...
+# Subtest: detaching native views preserves pending JavaScript work and reattaches without a new client
+ok 17 - detaching native views preserves pending JavaScript work and reattaches without a new client
+  ---
+  duration_ms: 17.044333
+  type: 'test'
+  ...
+# Subtest: native reset preserves its own completion and rejects references from another projection
+ok 18 - native reset preserves its own completion and rejects references from another projection
+  ---
+  duration_ms: 13.886834
+  type: 'test'
+  ...
+# Subtest: an OS host attaches after load and preserves an application passkey adapter
+ok 19 - an OS host attaches after load and preserves an application passkey adapter
+  ---
+  duration_ms: 5.5345
+  type: 'test'
+  ...
+# Subtest: replacing and removing a native host changes subsequent auth request locales
+ok 20 - replacing and removing a native host changes subsequent auth request locales
+  ---
+  duration_ms: 9.93225
+  type: 'test'
+  ...
+# Subtest: an attached Apple host reconciles installation metadata on the existing core owner
+ok 21 - an attached Apple host reconciles installation metadata on the existing core owner
+  ---
+  duration_ms: 6.508958
+  type: 'test'
+  ...
+# (node:67772) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: sign-up create and update preserve metadata JSON, profile fields and explicit consent
+ok 22 - sign-up create and update preserve metadata JSON, profile fields and explicit consent
+  ---
+  duration_ms: 51.458125
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode preserves revoke-other-sessions choice true
+ok 23 - resetPasswordEmailCode preserves revoke-other-sessions choice true
+  ---
+  duration_ms: 10.332833
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode preserves revoke-other-sessions choice false
+ok 24 - resetPasswordEmailCode preserves revoke-other-sessions choice false
+  ---
+  duration_ms: 8.434375
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode preserves revoke-other-sessions choice (default)
+ok 25 - resetPasswordEmailCode preserves revoke-other-sessions choice (default)
+  ---
+  duration_ms: 11.402625
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode preserves revoke-other-sessions choice true
+ok 26 - resetPasswordPhoneCode preserves revoke-other-sessions choice true
+  ---
+  duration_ms: 17.313625
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode preserves revoke-other-sessions choice false
+ok 27 - resetPasswordPhoneCode preserves revoke-other-sessions choice false
+  ---
+  duration_ms: 61.430333
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode preserves revoke-other-sessions choice (default)
+ok 28 - resetPasswordPhoneCode preserves revoke-other-sessions choice (default)
+  ---
+  duration_ms: 12.294708
+  type: 'test'
+  ...
+# Subtest: generated SignIn.create preserves direct authentication fields ["identifier"]
+ok 29 - generated SignIn.create preserves direct authentication fields ["identifier"]
+  ---
+  duration_ms: 13.1885
+  type: 'test'
+  ...
+# Subtest: generated SignIn.create preserves direct authentication fields ["identifier","password"]
+ok 30 - generated SignIn.create preserves direct authentication fields ["identifier","password"]
+  ---
+  duration_ms: 16.954792
+  type: 'test'
+  ...
+# Subtest: generated SignIn.ticket preserves direct authentication fields ["ticket"]
+ok 31 - generated SignIn.ticket preserves direct authentication fields ["ticket"]
+  ---
+  duration_ms: 13.317083
+  type: 'test'
+  ...
+# Subtest: generated SignIn.create preserves direct authentication fields ["strategy","token"]
+ok 32 - generated SignIn.create preserves direct authentication fields ["strategy","token"]
+  ---
+  duration_ms: 18.045792
+  type: 'test'
+  ...
+# Subtest: generated SignUp.create preserves direct authentication fields ["emailAddress","password"]
+ok 33 - generated SignUp.create preserves direct authentication fields ["emailAddress","password"]
+  ---
+  duration_ms: 13.486625
+  type: 'test'
+  ...
+# Subtest: generated SignUp.create preserves direct authentication fields ["transfer","unsafeMetadata","legalAccepted"]
+ok 34 - generated SignUp.create preserves direct authentication fields ["transfer","unsafeMetadata","legalAccepted"]
+  ---
+  duration_ms: 9.472958
+  type: 'test'
+  ...
+# Subtest: generated SignUp.create preserves direct authentication fields ["strategy","token","firstName","lastName","unsafeMetadata"]
+ok 35 - generated SignUp.create preserves direct authentication fields ["strategy","token","firstName","lastName","unsafeMetadata"]
+  ---
+  duration_ms: 8.921208
+  type: 'test'
+  ...
+# Subtest: generated SignUp.ticket preserves direct authentication fields ["ticket","unsafeMetadata"]
+ok 36 - generated SignUp.ticket preserves direct authentication fields ["ticket","unsafeMetadata"]
+  ---
+  duration_ms: 19.527584
+  type: 'test'
+  ...
+# (node:67773) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated signIn.emailCode.sendCode keeps its explicit authentication strategy
+ok 37 - generated signIn.emailCode.sendCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 40.552292
+  type: 'test'
+  ...
+# Subtest: generated signIn.phoneCode.sendCode keeps its explicit authentication strategy
+ok 38 - generated signIn.phoneCode.sendCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 7.7255
+  type: 'test'
+  ...
+# Subtest: generated signIn.emailCode.verifyCode keeps its explicit authentication strategy
+ok 39 - generated signIn.emailCode.verifyCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 9.51625
+  type: 'test'
+  ...
+# Subtest: generated signIn.phoneCode.verifyCode keeps its explicit authentication strategy
+ok 40 - generated signIn.phoneCode.verifyCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 9.704208
+  type: 'test'
+  ...
+# Subtest: generated signIn.resetPasswordEmailCode.verifyCode keeps its explicit authentication strategy
+ok 41 - generated signIn.resetPasswordEmailCode.verifyCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 10.543875
+  type: 'test'
+  ...
+# Subtest: generated signIn.resetPasswordPhoneCode.verifyCode keeps its explicit authentication strategy
+ok 42 - generated signIn.resetPasswordPhoneCode.verifyCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 11.298333
+  type: 'test'
+  ...
+# Subtest: generated signIn.mfa.verifyPhoneCode keeps its explicit authentication strategy
+ok 43 - generated signIn.mfa.verifyPhoneCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 9.1505
+  type: 'test'
+  ...
+# Subtest: generated signIn.mfa.verifyEmailCode keeps its explicit authentication strategy
+ok 44 - generated signIn.mfa.verifyEmailCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 8.810416
+  type: 'test'
+  ...
+# Subtest: generated signIn.mfa.verifyTOTP keeps its explicit authentication strategy
+ok 45 - generated signIn.mfa.verifyTOTP keeps its explicit authentication strategy
+  ---
+  duration_ms: 9.459583
+  type: 'test'
+  ...
+# Subtest: generated signIn.mfa.verifyBackupCode keeps its explicit authentication strategy
+ok 46 - generated signIn.mfa.verifyBackupCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 9.690083
+  type: 'test'
+  ...
+# Subtest: generated signUp.verifications.sendEmailCode keeps its explicit authentication strategy
+ok 47 - generated signUp.verifications.sendEmailCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 8.2415
+  type: 'test'
+  ...
+# Subtest: generated signUp.verifications.sendPhoneCode keeps its explicit authentication strategy
+ok 48 - generated signUp.verifications.sendPhoneCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 11.714541
+  type: 'test'
+  ...
+# Subtest: generated signUp.verifications.verifyEmailCode keeps its explicit authentication strategy
+ok 49 - generated signUp.verifications.verifyEmailCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 16.9995
+  type: 'test'
+  ...
+# Subtest: generated signUp.verifications.verifyPhoneCode keeps its explicit authentication strategy
+ok 50 - generated signUp.verifications.verifyPhoneCode keeps its explicit authentication strategy
+  ---
+  duration_ms: 15.252
+  type: 'test'
+  ...
+# Subtest: future password sign-in reuses the current identifier through the canonical create request
+ok 51 - future password sign-in reuses the current identifier through the canonical create request
+  ---
+  duration_ms: 21.661334
+  type: 'test'
+  ...
+# (node:67774) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: biometric local availability reports ready from source policy without authentication
+ok 52 - biometric local availability reports ready from source policy without authentication
+  ---
+  duration_ms: 30.887792
+  type: 'test'
+  ...
+# Subtest: biometric local availability reports disabled from source policy without authentication
+ok 53 - biometric local availability reports disabled from source policy without authentication
+  ---
+  duration_ms: 19.91025
+  type: 'test'
+  ...
+# Subtest: biometric local availability reports unsupported from source policy without authentication
+ok 54 - biometric local availability reports unsupported from source policy without authentication
+  ---
+  duration_ms: 5.9225
+  type: 'test'
+  ...
+# Subtest: biometric local availability reports missingKey from source policy without authentication
+ok 55 - biometric local availability reports missingKey from source policy without authentication
+  ---
+  duration_ms: 15.341958
+  type: 'test'
+  ...
+# Subtest: biometric local availability reports noLocal from source policy without authentication
+ok 56 - biometric local availability reports noLocal from source policy without authentication
+  ---
+  duration_ms: 12.892833
+  type: 'test'
+  ...
+# Subtest: biometric local availability reports noCapability from source policy without authentication
+ok 57 - biometric local availability reports noCapability from source policy without authentication
+  ---
+  duration_ms: 5.321
+  type: 'test'
+  ...
+# Subtest: biometric sign-in creates and attempts the canonical future resource without activation or secret snapshots
+ok 58 - biometric sign-in creates and attempts the canonical future resource without activation or secret snapshots
+  ---
+  duration_ms: 10.733375
+  type: 'test'
+  ...
+# Subtest: cancelled biometric prompt preserves local enrollment and sends no attempt
+ok 59 - cancelled biometric prompt preserves local enrollment and sends no attempt
+  ---
+  duration_ms: 7.80275
+  type: 'test'
+  ...
+# Subtest: signed-in reconciliation removes a revoked local credential
+ok 60 - signed-in reconciliation removes a revoked local credential
+  ---
+  duration_ms: 11.046792
+  type: 'test'
+  ...
+# Subtest: enrollment saves normalized local metadata, replaces the installation key, and sends source-owned request bodies
+ok 61 - enrollment saves normalized local metadata, replaces the installation key, and sends source-owned request bodies
+  ---
+  duration_ms: 24.932458
+  type: 'test'
+  ...
+# Subtest: enrollment storage failure revokes the new server credential and removes its private key
+ok 62 - enrollment storage failure revokes the new server credential and removes its private key
+  ---
+  duration_ms: 21.973666
+  type: 'test'
+  ...
+# Subtest: account-scoped local cleanup preserves other users and retries pending deletions after restart
+ok 63 - account-scoped local cleanup preserves other users and retries pending deletions after restart
+  ---
+  duration_ms: 6.130917
+  type: 'test'
+  ...
+# Subtest: reset cancels a biometric prompt without sending its eventual signature
+ok 64 - reset cancels a biometric prompt without sending its eventual signature
+  ---
+  duration_ms: 10.071917
+  type: 'test'
+  ...
+# Subtest: biometric wrongCredential challenge fails before a system prompt
+ok 65 - biometric wrongCredential challenge fails before a system prompt
+  ---
+  duration_ms: 14.011542
+  type: 'test'
+  ...
+# Subtest: biometric expired challenge fails before a system prompt
+ok 66 - biometric expired challenge fails before a system prompt
+  ---
+  duration_ms: 8.202541
+  type: 'test'
+  ...
+# Subtest: server validation removes missing credentials but preserves them on transient errors
+ok 67 - server validation removes missing credentials but preserves them on transient errors
+  ---
+  duration_ms: 26.205875
+  type: 'test'
+  ...
+# Subtest: canonical account deletion removes local biometric metadata and retains a failed cleanup for restart
+ok 68 - canonical account deletion removes local biometric metadata and retains a failed cleanup for restart
+  ---
+  duration_ms: 13.222042
+  type: 'test'
+  ...
+# Subtest: legacy Android metadata remains usable with policy (omitted default)
+ok 69 - legacy Android metadata remains usable with policy (omitted default)
+  ---
+  duration_ms: 9.598625
+  type: 'test'
+  ...
+# Subtest: legacy Android metadata remains usable with policy biometry_current_set
+ok 70 - legacy Android metadata remains usable with policy biometry_current_set
+  ---
+  duration_ms: 59.148333
+  type: 'test'
+  ...
+# Subtest: a new Apple installation deletes only its own surviving biometric keys before becoming available
+ok 71 - a new Apple installation deletes only its own surviving biometric keys before becoming available
+  ---
+  duration_ms: 15.250417
+  type: 'test'
+  ...
+# Subtest: an existing Apple installation preserves its enrolled credential
+ok 72 - an existing Apple installation preserves its enrolled credential
+  ---
+  duration_ms: 10.071875
+  type: 'test'
+  ...
+# Subtest: failed installation cleanup blocks use and coalesces a later successful retry
+ok 73 - failed installation cleanup blocks use and coalesces a later successful retry
+  ---
+  duration_ms: 23.570417
+  type: 'test'
+  ...
+# Subtest: installation completion waits for successful biometrics.storage.read
+ok 74 - installation completion waits for successful biometrics.storage.read
+  ---
+  duration_ms: 14.17475
+  type: 'test'
+  ...
+# Subtest: installation completion waits for successful biometrics.storage.write
+ok 75 - installation completion waits for successful biometrics.storage.write
+  ---
+  duration_ms: 14.262875
+  type: 'test'
+  ...
+# Subtest: installation completion waits for successful biometrics.installation.markCurrent
+ok 76 - installation completion waits for successful biometrics.installation.markCurrent
+  ---
+  duration_ms: 21.955042
+  type: 'test'
+  ...
+# Subtest: biometric enroll preserves unrelated raw metadata
+ok 77 - biometric enroll preserves unrelated raw metadata
+  ---
+  duration_ms: 10.210209
+  type: 'test'
+  ...
+# Subtest: biometric revoke preserves unrelated raw metadata
+ok 78 - biometric revoke preserves unrelated raw metadata
+  ---
+  duration_ms: 20.983875
+  type: 'test'
+  ...
+# Subtest: biometric forgetLocalCredentials preserves unrelated raw metadata
+ok 79 - biometric forgetLocalCredentials preserves unrelated raw metadata
+  ---
+  duration_ms: 9.137458
+  type: 'test'
+  ...
+# Subtest: biometric availability preserves unrelated raw metadata
+ok 80 - biometric availability preserves unrelated raw metadata
+  ---
+  duration_ms: 9.532958
+  type: 'test'
+  ...
+# Subtest: biometric validateLocalCredential preserves unrelated raw metadata
+ok 81 - biometric validateLocalCredential preserves unrelated raw metadata
+  ---
+  duration_ms: 23.890792
+  type: 'test'
+  ...
+# Subtest: biometric localAvailability preserves unrelated raw metadata
+ok 82 - biometric localAvailability preserves unrelated raw metadata
+  ---
+  duration_ms: 9.409625
+  type: 'test'
+  ...
+# Subtest: biometric enrollment refuses to overwrite unreadable metadata (not-json)
+ok 83 - biometric enrollment refuses to overwrite unreadable metadata (not-json)
+  ---
+  duration_ms: 6.934291
+  type: 'test'
+  ...
+# Subtest: biometric enrollment refuses to overwrite unreadable metadata ({"not":"a list"})
+ok 84 - biometric enrollment refuses to overwrite unreadable metadata ({"not":"a list"})
+  ---
+  duration_ms: 28.184667
+  type: 'test'
+  ...
+# Subtest: biometric enrollment deletes a replaced key after saving the same credential ID
+ok 85 - biometric enrollment deletes a replaced key after saving the same credential ID
+  ---
+  duration_ms: 41.467666
+  type: 'test'
+  ...
+# Subtest: server biometric revocation survives local biometrics.storage.read failure
+ok 86 - server biometric revocation survives local biometrics.storage.read failure
+  ---
+  duration_ms: 17.148083
+  type: 'test'
+  ...
+# Subtest: server biometric revocation survives local biometrics.storage.write failure
+ok 87 - server biometric revocation survives local biometrics.storage.write failure
+  ---
+  duration_ms: 15.052167
+  type: 'test'
+  ...
+# Subtest: server biometric revocation survives local biometrics.deleteKey failure
+ok 88 - server biometric revocation survives local biometrics.deleteKey failure
+  ---
+  duration_ms: 11.082333
+  type: 'test'
+  ...
+# Subtest: saved biometric enrollment survives a subsequent cleanup read failure
+ok 89 - saved biometric enrollment survives a subsequent cleanup read failure
+  ---
+  duration_ms: 6.959958
+  type: 'test'
+  ...
+# Subtest: biometric list preserves backend fields and known values
+ok 90 - biometric list preserves backend fields and known values
+  ---
+  duration_ms: 23.664542
+  type: 'test'
+  ...
+# Subtest: biometric list preserves backend fields and future values
+ok 91 - biometric list preserves backend fields and future values
+  ---
+  duration_ms: 21.234542
+  type: 'test'
+  ...
+# Subtest: biometric enrollment uses ios policy default and exact request fields
+ok 92 - biometric enrollment uses ios policy default and exact request fields
+  ---
+  duration_ms: 13.264333
+  type: 'test'
+  ...
+# Subtest: biometric enrollment uses android policy default and exact request fields
+ok 93 - biometric enrollment uses android policy default and exact request fields
+  ---
+  duration_ms: 21.739541
+  type: 'test'
+  ...
+# Subtest: biometric enrollment uses ios policy biometry_any and exact request fields
+ok 94 - biometric enrollment uses ios policy biometry_any and exact request fields
+  ---
+  duration_ms: 10.205542
+  type: 'test'
+  ...
+# Subtest: biometric enrollment uses ios policy biometry_or_device_passcode and exact request fields
+ok 95 - biometric enrollment uses ios policy biometry_or_device_passcode and exact request fields
+  ---
+  duration_ms: 8.395417
+  type: 'test'
+  ...
+# Subtest: biometric selection honors newest through sign-in
+ok 96 - biometric selection honors newest through sign-in
+  ---
+  duration_ms: 17.363875
+  type: 'test'
+  ...
+# Subtest: biometric selection honors explicit ID through sign-in
+ok 97 - biometric selection honors explicit ID through sign-in
+  ---
+  duration_ms: 38.888291
+  type: 'test'
+  ...
+# Subtest: biometric selection honors normalized hint through sign-in
+ok 98 - biometric selection honors normalized hint through sign-in
+  ---
+  duration_ms: 17.498625
+  type: 'test'
+  ...
+# Subtest: biometric selection honors current user through sign-in
+ok 99 - biometric selection honors current user through sign-in
+  ---
+  duration_ms: 16.749167
+  type: 'test'
+  ...
+# Subtest: biometric selection honors changed hint with currentUser through sign-in
+ok 100 - biometric selection honors changed hint with currentUser through sign-in
+  ---
+  duration_ms: 12.409542
+  type: 'test'
+  ...
+# Subtest: biometric selection honors stale newer credential through sign-in
+ok 101 - biometric selection honors stale newer credential through sign-in
+  ---
+  duration_ms: 12.00525
+  type: 'test'
+  ...
+# Subtest: biometric availability handles local signed-in without unnecessary authenticated HTTP
+ok 102 - biometric availability handles local signed-in without unnecessary authenticated HTTP
+  ---
+  duration_ms: 35.206875
+  type: 'test'
+  ...
+# Subtest: biometric availability handles expired without unnecessary authenticated HTTP
+ok 103 - biometric availability handles expired without unnecessary authenticated HTTP
+  ---
+  duration_ms: 6.342042
+  type: 'test'
+  ...
+# Subtest: biometric availability handles hint mismatch without unnecessary authenticated HTTP
+ok 104 - biometric availability handles hint mismatch without unnecessary authenticated HTTP
+  ---
+  duration_ms: 10.424458
+  type: 'test'
+  ...
+# Subtest: biometric availability handles other user without unnecessary authenticated HTTP
+ok 105 - biometric availability handles other user without unnecessary authenticated HTTP
+  ---
+  duration_ms: 8.420083
+  type: 'test'
+  ...
+# Subtest: biometric availability handles native disabled without unnecessary authenticated HTTP
+ok 106 - biometric availability handles native disabled without unnecessary authenticated HTTP
+  ---
+  duration_ms: 8.210875
+  type: 'test'
+  ...
+# Subtest: biometric sign_ins handles trusted_device_not_registered for trusted_device_id
+ok 107 - biometric sign_ins handles trusted_device_not_registered for trusted_device_id
+  ---
+  duration_ms: 6.865542
+  type: 'test'
+  ...
+# Subtest: biometric attempt_first_factor handles form_resource_not_found for trusted_device_id
+ok 108 - biometric attempt_first_factor handles form_resource_not_found for trusted_device_id
+  ---
+  duration_ms: 6.747083
+  type: 'test'
+  ...
+# Subtest: biometric sign_ins handles form_resource_not_found for identifier
+ok 109 - biometric sign_ins handles form_resource_not_found for identifier
+  ---
+  duration_ms: 6.837083
+  type: 'test'
+  ...
+# Subtest: biometric enrollment and current-device revocation require an eligible session (active)
+ok 110 - biometric enrollment and current-device revocation require an eligible session (active)
+  ---
+  duration_ms: 9.7915
+  type: 'test'
+  ...
+# Subtest: biometric enrollment and current-device revocation require an eligible session (pending)
+ok 111 - biometric enrollment and current-device revocation require an eligible session (pending)
+  ---
+  duration_ms: 6.984041
+  type: 'test'
+  ...
+# Subtest: biometric enrollment and current-device revocation require an eligible session (signed-out)
+ok 112 - biometric enrollment and current-device revocation require an eligible session (signed-out)
+  ---
+  duration_ms: 5.582375
+  type: 'test'
+  ...
+# Subtest: current-device revocation preserves other users and returns null without a matching local record
+ok 113 - current-device revocation preserves other users and returns null without a matching local record
+  ---
+  duration_ms: 7.773917
+  type: 'test'
+  ...
+# Subtest: biometric validation preserves the outcome of form_resource_not_found for trusted_device_id
+ok 114 - biometric validation preserves the outcome of form_resource_not_found for trusted_device_id
+  ---
+  duration_ms: 6.373
+  type: 'test'
+  ...
+# Subtest: biometric validation preserves the outcome of native_api_disabled for feature
+ok 115 - biometric validation preserves the outcome of native_api_disabled for feature
+  ---
+  duration_ms: 9.252291
+  type: 'test'
+  ...
+# Subtest: biometric validation preserves the outcome of feature_not_enabled for feature
+ok 116 - biometric validation preserves the outcome of feature_not_enabled for feature
+  ---
+  duration_ms: 14.004042
+  type: 'test'
+  ...
+# Subtest: biometric validation preserves the outcome of form_resource_not_found for identifier
+ok 117 - biometric validation preserves the outcome of form_resource_not_found for identifier
+  ---
+  duration_ms: 7.554625
+  type: 'test'
+  ...
+# Subtest: biometric validation tries an older credential after removing a missing newest one
+ok 118 - biometric validation tries an older credential after removing a missing newest one
+  ---
+  duration_ms: 7.285125
+  type: 'test'
+  ...
+# Subtest: biometric enrollment aborts and cleans up when its initiating session disappears during prepare
+ok 119 - biometric enrollment aborts and cleans up when its initiating session disappears during prepare
+  ---
+  duration_ms: 14.24775
+  type: 'test'
+  ...
+# Subtest: biometric enrollment aborts and cleans up when its initiating session disappears during attempt
+ok 120 - biometric enrollment aborts and cleans up when its initiating session disappears during attempt
+  ---
+  duration_ms: 9.279166
+  type: 'test'
+  ...
+# Subtest: biometric sign-in rejects an absent challenge without preparing a separate factor
+ok 121 - biometric sign-in rejects an absent challenge without preparing a separate factor
+  ---
+  duration_ms: 12.454042
+  type: 'test'
+  ...
+# Subtest: biometric enrollment rolls back persisted metadata if selection changes during the save
+ok 122 - biometric enrollment rolls back persisted metadata if selection changes during the save
+  ---
+  duration_ms: 9.779125
+  type: 'test'
+  ...
+# Subtest: account biometric cleanup preserves retryable metadata after a key failure
+ok 123 - account biometric cleanup preserves retryable metadata after a key failure
+  ---
+  duration_ms: 9.505958
+  type: 'test'
+  ...
+# Subtest: account biometric cleanup preserves retryable metadata after a write failure
+ok 124 - account biometric cleanup preserves retryable metadata after a write failure
+  ---
+  duration_ms: 11.664333
+  type: 'test'
+  ...
+# Subtest: replacement enrollment keeps committed metadata when deleting the prior key fails
+ok 125 - replacement enrollment keeps committed metadata when deleting the prior key fails
+  ---
+  duration_ms: 7.001208
+  type: 'test'
+  ...
+# Subtest: biometric selection skips local records missing policy
+ok 126 - biometric selection skips local records missing policy
+  ---
+  duration_ms: 4.990791
+  type: 'test'
+  ...
+# Subtest: biometric selection skips local records missing userId
+ok 127 - biometric selection skips local records missing userId
+  ---
+  duration_ms: 5.272166
+  type: 'test'
+  ...
+# Subtest: failed biometric enrollment removes only its new key and preserves existing enrollments
+ok 128 - failed biometric enrollment removes only its new key and preserves existing enrollments
+  ---
+  duration_ms: 6.907208
+  type: 'test'
+  ...
+# Subtest: successful enrollment replaces current-app credentials across users without revoking their server IDs
+ok 129 - successful enrollment replaces current-app credentials across users without revoking their server IDs
+  ---
+  duration_ms: 6.464458
+  type: 'test'
+  ...
+# Subtest: enrollment normalizes omitted identifier hints
+ok 130 - enrollment normalizes omitted identifier hints
+  ---
+  duration_ms: 7.219167
+  type: 'test'
+  ...
+# Subtest: enrollment normalizes blank identifier hints
+ok 131 - enrollment normalizes blank identifier hints
+  ---
+  duration_ms: 7.239667
+  type: 'test'
+  ...
+# (node:67775) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: credential rotation rejects a later-issued response authenticated with the old credential
+ok 132 - credential rotation rejects a later-issued response authenticated with the old credential
+  ---
+  duration_ms: 34.249292
+  type: 'test'
+  ...
+# Subtest: canonical client without a response credential requires a credential before hydration
+ok 133 - canonical client without a response credential requires a credential before hydration
+  ---
+  duration_ms: 18.469417
+  type: 'test'
+  ...
+# Subtest: canonical client without a response credential requires the restored credential
+ok 134 - canonical client without a response credential requires the restored credential
+  ---
+  duration_ms: 13.801208
+  type: 'test'
+  ...
+# (node:67776) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: empty foreground client response preserves accepted identity: newer session=false
+ok 135 - empty foreground client response preserves accepted identity: newer session=false
+  ---
+  duration_ms: 36.606583
+  type: 'test'
+  ...
+# Subtest: empty foreground client response preserves accepted identity: newer session=true
+ok 136 - empty foreground client response preserves accepted identity: newer session=true
+  ---
+  duration_ms: 11.008917
+  type: 'test'
+  ...
+# Subtest: session changes become visible only after the client credential is persisted
+ok 137 - session changes become visible only after the client credential is persisted
+  ---
+  duration_ms: 11.196042
+  type: 'test'
+  ...
+# Subtest: failed credential persistence preserves the visible session and permits retry
+ok 138 - failed credential persistence preserves the visible session and permits retry
+  ---
+  duration_ms: 8.775708
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: older server date
+ok 139 - client response ordering preserves server state: older server date
+  ---
+  duration_ms: 12.772458
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: equal date and older client version
+ok 140 - client response ordering preserves server state: equal date and older client version
+  ---
+  duration_ms: 15.197292
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: missing server dates
+ok 141 - client response ordering preserves server state: missing server dates
+  ---
+  duration_ms: 13.876625
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: invalid server dates
+ok 142 - client response ordering preserves server state: invalid server dates
+  ---
+  duration_ms: 13.527667
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: newer server date despite older request
+ok 143 - client response ordering preserves server state: newer server date despite older request
+  ---
+  duration_ms: 9.977792
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: equal date and newer client version despite older request
+ok 144 - client response ordering preserves server state: equal date and newer client version despite older request
+  ---
+  duration_ms: 28.203417
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: older meta.client response
+ok 145 - client response ordering preserves server state: older meta.client response
+  ---
+  duration_ms: 12.948125
+  type: 'test'
+  ...
+# Subtest: client response ordering preserves server state: newer meta.client server date
+ok 146 - client response ordering preserves server state: newer meta.client server date
+  ---
+  duration_ms: 17.284625
+  type: 'test'
+  ...
+# Subtest: an older foreground client reply cannot remove a task accepted by a newer session response
+ok 147 - an older foreground client reply cannot remove a task accepted by a newer session response
+  ---
+  duration_ms: 15.348417
+  type: 'test'
+  ...
+# Subtest: authentication reset starts a new response-date history without signing out the session
+ok 148 - authentication reset starts a new response-date history without signing out the session
+  ---
+  duration_ms: 11.260917
+  type: 'test'
+  ...
+# (node:67777) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: reconnection refreshes resources once and background restoration waits for foreground
+ok 149 - reconnection refreshes resources once and background restoration waits for foreground
+  ---
+  duration_ms: 165.071417
+  type: 'test'
+  ...
+# Subtest: foreground while offline waits for reconnection and duplicate recovery events share a reload
+ok 150 - foreground while offline waits for reconnection and duplicate recovery events share a reload
+  ---
+  duration_ms: 104.129667
+  type: 'test'
+  ...
+# Subtest: invalid connectivity values fail explicitly; disposed owners ignore restoration
+ok 151 - invalid connectivity values fail explicitly; disposed owners ignore restoration
+  ---
+  duration_ms: 39.576666
+  type: 'test'
+  ...
+# Subtest: restoration during a failing reload retries after it settles and preserves the owner
+ok 152 - restoration during a failing reload retries after it settles and preserves the owner
+  ---
+  duration_ms: 69.271625
+  type: 'test'
+  ...
+# (node:67778) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated email contact creation, verification, and deletion publish usable state
+ok 153 - generated email contact creation, verification, and deletion publish usable state
+  ---
+  duration_ms: 82.365875
+  type: 'test'
+  ...
+# Subtest: generated phone contact creation, verification, and deletion publish usable state
+ok 154 - generated phone contact creation, verification, and deletion publish usable state
+  ---
+  duration_ms: 36.512791
+  type: 'test'
+  ...
+# (node:67779) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: environment accepts missing organization settings with canonical defaults
+ok 155 - environment accepts missing organization settings with canonical defaults
+  ---
+  duration_ms: 52.007417
+  type: 'test'
+  ...
+# Subtest: environment accepts empty organization settings with canonical defaults
+ok 156 - environment accepts empty organization settings with canonical defaults
+  ---
+  duration_ms: 6.743125
+  type: 'test'
+  ...
+# Subtest: environment accepts null children organization settings with canonical defaults
+ok 157 - environment accepts null children organization settings with canonical defaults
+  ---
+  duration_ms: 5.020459
+  type: 'test'
+  ...
+# Subtest: environment accepts partial organization settings with canonical defaults
+ok 158 - environment accepts partial organization settings with canonical defaults
+  ---
+  duration_ms: 5.38375
+  type: 'test'
+  ...
+# Subtest: environment accepts partial nested settings organization settings with canonical defaults
+ok 159 - environment accepts partial nested settings organization settings with canonical defaults
+  ---
+  duration_ms: 7.585292
+  type: 'test'
+  ...
+# Subtest: environment accepts complete organization settings with canonical defaults
+ok 160 - environment accepts complete organization settings with canonical defaults
+  ---
+  duration_ms: 8.052166
+  type: 'test'
+  ...
+# Subtest: display support email preserves missing
+ok 161 - display support email preserves missing
+  ---
+  duration_ms: 6.21775
+  type: 'test'
+  ...
+# Subtest: display support email preserves null
+ok 162 - display support email preserves null
+  ---
+  duration_ms: 9.938125
+  type: 'test'
+  ...
+# Subtest: display support email preserves help@example.com
+ok 163 - display support email preserves help@example.com
+  ---
+  duration_ms: 19.966708
+  type: 'test'
+  ...
+# Subtest: user attribute preserves missing immutable and factor settings
+ok 164 - user attribute preserves missing immutable and factor settings
+  ---
+  duration_ms: 9.088416
+  type: 'test'
+  ...
+# Subtest: user attribute preserves false immutable and factor settings
+ok 165 - user attribute preserves false immutable and factor settings
+  ---
+  duration_ms: 5.091625
+  type: 'test'
+  ...
+# Subtest: user attribute preserves true immutable and factor settings
+ok 166 - user attribute preserves true immutable and factor settings
+  ---
+  duration_ms: 10.009042
+  type: 'test'
+  ...
+# Subtest: passkey attributes preserve first factor configuration
+ok 167 - passkey attributes preserve first factor configuration
+  ---
+  duration_ms: 18.315708
+  type: 'test'
+  ...
+# Subtest: passkey attributes preserve registration only configuration
+ok 168 - passkey attributes preserve registration only configuration
+  ---
+  duration_ms: 12.920042
+  type: 'test'
+  ...
+# Subtest: passkey attributes preserve disabled configuration
+ok 169 - passkey attributes preserve disabled configuration
+  ---
+  duration_ms: 14.275791
+  type: 'test'
+  ...
+# Subtest: missing required passkey attribute fails the generated contract
+ok 170 - missing required passkey attribute fails the generated contract
+  ---
+  duration_ms: 8.948958
+  type: 'test'
+  ...
+# Subtest: development warning preserves missing/default false
+ok 171 - development warning preserves missing/default false
+  ---
+  duration_ms: 8.8045
+  type: 'test'
+  ...
+# Subtest: development warning preserves false
+ok 172 - development warning preserves false
+  ---
+  duration_ms: 5.081834
+  type: 'test'
+  ...
+# Subtest: development warning preserves true
+ok 173 - development warning preserves true
+  ---
+  duration_ms: 10.406416
+  type: 'test'
+  ...
+# Subtest: auth configuration preserves missing
+ok 174 - auth configuration preserves missing
+  ---
+  duration_ms: 6.732666
+  type: 'test'
+  ...
+# Subtest: auth configuration preserves single session only
+ok 175 - auth configuration preserves single session only
+  ---
+  duration_ms: 5.266041
+  type: 'test'
+  ...
+# Subtest: auth configuration preserves all native flags
+ok 176 - auth configuration preserves all native flags
+  ---
+  duration_ms: 5.434083
+  type: 'test'
+  ...
+# Subtest: commerce configuration preserves missing
+ok 177 - commerce configuration preserves missing
+  ---
+  duration_ms: 8.452291
+  type: 'test'
+  ...
+# Subtest: commerce configuration preserves user
+ok 178 - commerce configuration preserves user
+  ---
+  duration_ms: 10.390791
+  type: 'test'
+  ...
+# Subtest: commerce configuration preserves organization
+ok 179 - commerce configuration preserves organization
+  ---
+  duration_ms: 9.372708
+  type: 'test'
+  ...
+# Subtest: commerce configuration preserves null publishable key
+ok 180 - commerce configuration preserves null publishable key
+  ---
+  duration_ms: 29.04925
+  type: 'test'
+  ...
+# Subtest: commerce configuration preserves future field
+ok 181 - commerce configuration preserves future field
+  ---
+  duration_ms: 14.812917
+  type: 'test'
+  ...
+# (node:67780) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: authentication failure preserves HTTP 422, trace and retry metadata
+ok 182 - authentication failure preserves HTTP 422, trace and retry metadata
+  ---
+  duration_ms: 35.8725
+  type: 'test'
+  ...
+# Subtest: authentication failure preserves HTTP 429, trace and retry metadata
+ok 183 - authentication failure preserves HTTP 429, trace and retry metadata
+  ---
+  duration_ms: 9.05675
+  type: 'test'
+  ...
+# (node:67781) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: native external account create completes the browser roundtrip in core
+ok 184 - native external account create completes the browser roundtrip in core
+  ---
+  duration_ms: 41.188833
+  type: 'test'
+  ...
+# Subtest: native external account reauthorize completes the browser roundtrip in core
+ok 185 - native external account reauthorize completes the browser roundtrip in core
+  ---
+  duration_ms: 12.037
+  type: 'test'
+  ...
+# Subtest: native external account recreate completes the browser roundtrip in core
+ok 186 - native external account recreate completes the browser roundtrip in core
+  ---
+  duration_ms: 10.4795
+  type: 'test'
+  ...
+# Subtest: native Apple account linking uses an identity token and refreshes the canonical user
+ok 187 - native Apple account linking uses an identity token and refreshes the canonical user
+  ---
+  duration_ms: 10.730666
+  type: 'test'
+  ...
+# Subtest: native Apple account linking preserves a supplied token without requesting another identity
+ok 188 - native Apple account linking preserves a supplied token without requesting another identity
+  ---
+  duration_ms: 15.847333
+  type: 'test'
+  ...
+# Subtest: external account cancel does not reconcile an unverified callback
+ok 189 - external account cancel does not reconcile an unverified callback
+  ---
+  duration_ms: 18.775208
+  type: 'test'
+  ...
+# Subtest: external account mismatch does not reconcile an unverified callback
+ok 190 - external account mismatch does not reconcile an unverified callback
+  ---
+  duration_ms: 6.041625
+  type: 'test'
+  ...
+# Subtest: sign-out cancels pending account authorization and ignores a late callback
+ok 191 - sign-out cancels pending account authorization and ignores a late callback
+  ---
+  duration_ms: 15.145459
+  type: 'test'
+  ...
+# Subtest: external account deletion removes the account without corrupting a held resource
+ok 192 - external account deletion removes the account without corrupting a held resource
+  ---
+  duration_ms: 9.513791
+  type: 'test'
+  ...
+# Subtest: external account reauthorization preserves multiple scopes and omits an absent OIDC prompt
+ok 193 - external account reauthorization preserves multiple scopes and omits an absent OIDC prompt
+  ---
+  duration_ms: 24.089958
+  type: 'test'
+  ...
+# (node:67782) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: foreground recovery does not invalidate an in-flight OAuth callback redemption
+ok 194 - foreground recovery does not invalidate an in-flight OAuth callback redemption
+  ---
+  duration_ms: 75.041084
+  type: 'test'
+  ...
+# Subtest: queued foreground recovery respects failure while a resource call settles
+ok 195 - queued foreground recovery respects failure while a resource call settles
+  ---
+  duration_ms: 77.670917
+  type: 'test'
+  ...
+# Subtest: queued foreground recovery respects cancelled while a resource call settles
+ok 196 - queued foreground recovery respects cancelled while a resource call settles
+  ---
+  duration_ms: 75.919166
+  type: 'test'
+  ...
+# Subtest: queued foreground recovery respects background while a resource call settles
+ok 197 - queued foreground recovery respects background while a resource call settles
+  ---
+  duration_ms: 102.16075
+  type: 'test'
+  ...
+# Subtest: queued foreground recovery respects offline while a resource call settles
+ok 198 - queued foreground recovery respects offline while a resource call settles
+  ---
+  duration_ms: 109.331208
+  type: 'test'
+  ...
+# Subtest: queued foreground recovery respects disposed while a resource call settles
+ok 199 - queued foreground recovery respects disposed while a resource call settles
+  ---
+  duration_ms: 70.291792
+  type: 'test'
+  ...
+# (node:67783) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: client replacement retires the previous completed authentication attempt
+ok 200 - client replacement retires the previous completed authentication attempt
+  ---
+  duration_ms: 60.207541
+  type: 'test'
+  ...
+# Subtest: sign-out retires the previous completed authentication attempt
+ok 201 - sign-out retires the previous completed authentication attempt
+  ---
+  duration_ms: 16.981625
+  type: 'test'
+  ...
+# Subtest: a queued token-only response preserves the newly accepted client
+ok 202 - a queued token-only response preserves the newly accepted client
+  ---
+  duration_ms: 19.530667
+  type: 'test'
+  ...
+# Subtest: completed signIn survives an ordinary refresh before finalization: cleared=false
+ok 203 - completed signIn survives an ordinary refresh before finalization: cleared=false
+  ---
+  duration_ms: 19.517625
+  type: 'test'
+  ...
+# Subtest: completed signIn survives an ordinary refresh before finalization: cleared=true
+ok 204 - completed signIn survives an ordinary refresh before finalization: cleared=true
+  ---
+  duration_ms: 19.828083
+  type: 'test'
+  ...
+# Subtest: completed signUp survives an ordinary refresh before finalization: cleared=false
+ok 205 - completed signUp survives an ordinary refresh before finalization: cleared=false
+  ---
+  duration_ms: 31.159084
+  type: 'test'
+  ...
+# Subtest: completed signUp survives an ordinary refresh before finalization: cleared=true
+ok 206 - completed signUp survives an ordinary refresh before finalization: cleared=true
+  ---
+  duration_ms: 16.204791
+  type: 'test'
+  ...
+# (node:67784) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: embedded authentication uses host locale fr-CA
+ok 207 - embedded authentication uses host locale fr-CA
+  ---
+  duration_ms: 79.562
+  type: 'test'
+  ...
+# Subtest: embedded authentication uses host locale ja-JP
+ok 208 - embedded authentication uses host locale ja-JP
+  ---
+  duration_ms: 16.431416
+  type: 'test'
+  ...
+# Subtest: embedded authentication uses host locale (absent)
+ok 209 - embedded authentication uses host locale (absent)
+  ---
+  duration_ms: 12.535083
+  type: 'test'
+  ...
+# (node:67786) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: signIn email-link storage failure preserves the persistence-before-request boundary
+ok 210 - signIn email-link storage failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 33.100417
+  type: 'test'
+  ...
+# Subtest: signIn email-link prepare failure preserves the persistence-before-request boundary
+ok 211 - signIn email-link prepare failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 8.189834
+  type: 'test'
+  ...
+# Subtest: signUp email-link storage failure preserves the persistence-before-request boundary
+ok 212 - signUp email-link storage failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 21.841375
+  type: 'test'
+  ...
+# Subtest: signUp email-link prepare failure preserves the persistence-before-request boundary
+ok 213 - signUp email-link prepare failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 10.01225
+  type: 'test'
+  ...
+# Subtest: native signIn email link stores PKCE and returns the canonical resource without activation
+ok 214 - native signIn email link stores PKCE and returns the canonical resource without activation
+  ---
+  duration_ms: 13.347875
+  type: 'test'
+  ...
+# Subtest: native signUp email link stores PKCE and returns the canonical resource without activation
+ok 215 - native signUp email link stores PKCE and returns the canonical resource without activation
+  ---
+  duration_ms: 40.132792
+  type: 'test'
+  ...
+# Subtest: email-link callbacks survive restart and reject a different route or flow before HTTP
+ok 216 - email-link callbacks survive restart and reject a different route or flow before HTTP
+  ---
+  duration_ms: 18.649291
+  type: 'test'
+  ...
+# Subtest: concurrent callbacks share one completion request
+ok 217 - concurrent callbacks share one completion request
+  ---
+  duration_ms: 21.195291
+  type: 'test'
+  ...
+# Subtest: email link approval_token_expired clears its saved verifier
+ok 218 - email link approval_token_expired clears its saved verifier
+  ---
+  duration_ms: 10.057459
+  type: 'test'
+  ...
+# Subtest: email link temporarily_unavailable preserves its saved verifier
+ok 219 - email link temporarily_unavailable preserves its saved verifier
+  ---
+  duration_ms: 9.064125
+  type: 'test'
+  ...
+# Subtest: reset during a secure-storage write clears the eventual record and does not prepare the factor
+ok 220 - reset during a secure-storage write clears the eventual record and does not prepare the factor
+  ---
+  duration_ms: 7.715833
+  type: 'test'
+  ...
+# Subtest: imports a saved ios email-link record through the same source validation
+ok 221 - imports a saved ios email-link record through the same source validation
+  ---
+  duration_ms: 8.830792
+  type: 'test'
+  ...
+# Subtest: imports a saved android email-link record through the same source validation
+ok 222 - imports a saved android email-link record through the same source validation
+  ---
+  duration_ms: 15.68925
+  type: 'test'
+  ...
+# Subtest: expired email-link records are removed before any completion request
+ok 223 - expired email-link records are removed before any completion request
+  ---
+  duration_ms: 17.671542
+  type: 'test'
+  ...
+# Subtest: reset fences a delayed completion response and its credential write
+ok 224 - reset fences a delayed completion response and its credential write
+  ---
+  duration_ms: 40.068042
+  type: 'test'
+  ...
+# Subtest: preserves the previous native email-link route form clerk-test://sso-callback\#flow_id=sia_native&approval_token=fixture_approval
+ok 225 - preserves the previous native email-link route form clerk-test://sso-callback\#flow_id=sia_native&approval_token=fixture_approval
+  ---
+  duration_ms: 10.155792
+  type: 'test'
+  ...
+# Subtest: preserves the previous native email-link route form clerk-test://sso-callback/?flow_id=sia_native&approval_token=fixture_approval
+ok 226 - preserves the previous native email-link route form clerk-test://sso-callback/?flow_id=sia_native&approval_token=fixture_approval
+  ---
+  duration_ms: 30.96025
+  type: 'test'
+  ...
+# Subtest: preserves the previous native email-link route form CLERK-TEST://SSO-CALLBACK/\#flow_id=sia_native&approval_token=fixture_approval
+ok 227 - preserves the previous native email-link route form CLERK-TEST://SSO-CALLBACK/\#flow_id=sia_native&approval_token=fixture_approval
+  ---
+  duration_ms: 10.702583
+  type: 'test'
+  ...
+# Subtest: email-link route mismatches and incomplete callbacks do not consume stored credentials
+ok 228 - email-link route mismatches and incomplete callbacks do not consume stored credentials
+  ---
+  duration_ms: 41.598167
+  type: 'test'
+  ...
+# Subtest: email-link query values take precedence over fragment values
+ok 229 - email-link query values take precedence over fragment values
+  ---
+  duration_ms: 15.043833
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: "UNSUPPORTED"
+ok 230 - invalid Android email-link state is discarded before redemption: "UNSUPPORTED"
+  ---
+  duration_ms: 9.805458
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: ""
+ok 231 - invalid Android email-link state is discarded before redemption: ""
+  ---
+  duration_ms: 9.678583
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: null
+ok 232 - invalid Android email-link state is discarded before redemption: null
+  ---
+  duration_ms: 5.734375
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: 7
+ok 233 - invalid Android email-link state is discarded before redemption: 7
+  ---
+  duration_ms: 19.737792
+  type: 'test'
+  ...
+# Subtest: legacy iOS absent email-link kind remains a sign-in record: undefined
+ok 234 - legacy iOS absent email-link kind remains a sign-in record: undefined
+  ---
+  duration_ms: 8.5105
+  type: 'test'
+  ...
+# Subtest: legacy iOS absent email-link kind remains a sign-in record: null
+ok 235 - legacy iOS absent email-link kind remains a sign-in record: null
+  ---
+  duration_ms: 9.660375
+  type: 'test'
+  ...
+# Subtest: incomplete signIn email-link completion publishes remaining requirements without activation
+ok 236 - incomplete signIn email-link completion publishes remaining requirements without activation
+  ---
+  duration_ms: 9.329208
+  type: 'test'
+  ...
+# Subtest: incomplete signUp email-link completion publishes remaining requirements without activation
+ok 237 - incomplete signUp email-link completion publishes remaining requirements without activation
+  ---
+  duration_ms: 11.206791
+  type: 'test'
+  ...
+# Subtest: sign-up email-link rejects ticket completion and consumes its verifier
+ok 238 - sign-up email-link rejects ticket completion and consumes its verifier
+  ---
+  duration_ms: 87.997375
+  type: 'test'
+  ...
+# Subtest: sign-up email-link rejects wrong-signup completion and consumes its verifier
+ok 239 - sign-up email-link rejects wrong-signup completion and consumes its verifier
+  ---
+  duration_ms: 38.456792
+  type: 'test'
+  ...
+# Subtest: sign-up email-link rejects null completion and consumes its verifier
+ok 240 - sign-up email-link rejects null completion and consumes its verifier
+  ---
+  duration_ms: 22.356416
+  type: 'test'
+  ...
+# Subtest: starting a newer email link fences an old completion and preserves the new verifier
+ok 241 - starting a newer email link fences an old completion and preserves the new verifier
+  ---
+  duration_ms: 15.113584
+  type: 'test'
+  ...
+# Subtest: email-link error approval_token_consumed/422 preserves the canonical cleanup policy
+ok 242 - email-link error approval_token_consumed/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 10.50375
+  type: 'test'
+  ...
+# Subtest: email-link error approval_token_invalid/422 preserves the canonical cleanup policy
+ok 243 - email-link error approval_token_invalid/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 17.624458
+  type: 'test'
+  ...
+# Subtest: email-link error pkce_verification_failed/422 preserves the canonical cleanup policy
+ok 244 - email-link error pkce_verification_failed/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 14.805834
+  type: 'test'
+  ...
+# Subtest: email-link error flow_not_approved/422 preserves the canonical cleanup policy
+ok 245 - email-link error flow_not_approved/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 14.939667
+  type: 'test'
+  ...
+# Subtest: email-link error form_param_value_invalid/flow_id preserves the canonical cleanup policy
+ok 246 - email-link error form_param_value_invalid/flow_id preserves the canonical cleanup policy
+  ---
+  duration_ms: 9.913084
+  type: 'test'
+  ...
+# Subtest: email-link error form_param_value_invalid/identifier preserves the canonical cleanup policy
+ok 247 - email-link error form_param_value_invalid/identifier preserves the canonical cleanup policy
+  ---
+  duration_ms: 14.265084
+  type: 'test'
+  ...
+# Subtest: email-link error server_error/500 preserves the canonical cleanup policy
+ok 248 - email-link error server_error/500 preserves the canonical cleanup policy
+  ---
+  duration_ms: 8.949334
+  type: 'test'
+  ...
+# Subtest: email-link error too_many_requests/429 preserves the canonical cleanup policy
+ok 249 - email-link error too_many_requests/429 preserves the canonical cleanup policy
+  ---
+  duration_ms: 12.062625
+  type: 'test'
+  ...
+# (node:67787) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/utils/passkeyFailureStage.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: mapped record inputs validate required keys and declared custom key patterns
+ok 250 - mapped record inputs validate required keys and declared custom key patterns
+  ---
+  duration_ms: 1.193833
+  type: 'test'
+  ...
+# Subtest: mapped record outputs preserve new server keys while checking their values
+ok 251 - mapped record outputs preserve new server keys while checking their values
+  ---
+  duration_ms: 0.0885
+  type: 'test'
+  ...
+# (node:67788) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: shared Google credential flow: existing
+ok 252 - shared Google credential flow: existing
+  ---
+  duration_ms: 41.943459
+  type: 'test'
+  ...
+# Subtest: shared Google credential flow: new
+ok 253 - shared Google credential flow: new
+  ---
+  duration_ms: 10.870542
+  type: 'test'
+  ...
+# Subtest: shared Google credential flow: sign-in-only
+ok 254 - shared Google credential flow: sign-in-only
+  ---
+  duration_ms: 6.959625
+  type: 'test'
+  ...
+# Subtest: shared Google credential flow: rejected
+ok 255 - shared Google credential flow: rejected
+  ---
+  duration_ms: 5.665875
+  type: 'test'
+  ...
+# Subtest: shared Google credential flow: empty-picker
+ok 256 - shared Google credential flow: empty-picker
+  ---
+  duration_ms: 11.43925
+  type: 'test'
+  ...
+# Subtest: shared Google credential flow: cancelled
+ok 257 - shared Google credential flow: cancelled
+  ---
+  duration_ms: 34.7105
+  type: 'test'
+  ...
+# Subtest: identifier screen signIn, missing=true
+ok 258 - identifier screen signIn, missing=true
+  ---
+  duration_ms: 8.405875
+  type: 'test'
+  ...
+# Subtest: identifier screen signIn, missing=false
+ok 259 - identifier screen signIn, missing=false
+  ---
+  duration_ms: 11.87825
+  type: 'test'
+  ...
+# Subtest: identifier screen signUp, missing=true
+ok 260 - identifier screen signUp, missing=true
+  ---
+  duration_ms: 12.804375
+  type: 'test'
+  ...
+# Subtest: identifier screen signUp, missing=false
+ok 261 - identifier screen signUp, missing=false
+  ---
+  duration_ms: 11.683083
+  type: 'test'
+  ...
+# Subtest: identifier screen signInOrUp, missing=true
+ok 262 - identifier screen signInOrUp, missing=true
+  ---
+  duration_ms: 10.618166
+  type: 'test'
+  ...
+# Subtest: identifier screen signInOrUp, missing=false
+ok 263 - identifier screen signInOrUp, missing=false
+  ---
+  duration_ms: 16.747375
+  type: 'test'
+  ...
+# Subtest: reset cancels the Google picker before a late token can authenticate
+ok 264 - reset cancels the Google picker before a late token can authenticate
+  ---
+  duration_ms: 16.428417
+  type: 'test'
+  ...
+# (node:67789) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: prebuilt Apple SSO preserves terminal errors and restriction boundaries: waitlist-existing
+ok 265 - prebuilt Apple SSO preserves terminal errors and restriction boundaries: waitlist-existing
+  ---
+  duration_ms: 40.290166
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves terminal errors and restriction boundaries: waitlist-new
+ok 266 - prebuilt Apple SSO preserves terminal errors and restriction boundaries: waitlist-new
+  ---
+  duration_ms: 14.577583
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves terminal errors and restriction boundaries: transfer-verification-error
+ok 267 - prebuilt Apple SSO preserves terminal errors and restriction boundaries: transfer-verification-error
+  ---
+  duration_ms: 18.333667
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves terminal errors and restriction boundaries: transfer-request-error
+ok 268 - prebuilt Apple SSO preserves terminal errors and restriction boundaries: transfer-request-error
+  ---
+  duration_ms: 18.70325
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves terminal errors and restriction boundaries: unrelated-signup-error
+ok 269 - prebuilt Apple SSO preserves terminal errors and restriction boundaries: unrelated-signup-error
+  ---
+  duration_ms: 12.048709
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves terminal errors and restriction boundaries: signup-only-restricted
+ok 270 - prebuilt Apple SSO preserves terminal errors and restriction boundaries: signup-only-restricted
+  ---
+  duration_ms: 10.647292
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves one credential and explicit finalize: new-user
+ok 271 - prebuilt Apple SSO preserves one credential and explicit finalize: new-user
+  ---
+  duration_ms: 14.020333
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves one credential and explicit finalize: existing-user
+ok 272 - prebuilt Apple SSO preserves one credential and explicit finalize: existing-user
+  ---
+  duration_ms: 22.012167
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves one credential and explicit finalize: restricted-existing
+ok 273 - prebuilt Apple SSO preserves one credential and explicit finalize: restricted-existing
+  ---
+  duration_ms: 16.52775
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves one credential and explicit finalize: restricted-new
+ok 274 - prebuilt Apple SSO preserves one credential and explicit finalize: restricted-new
+  ---
+  duration_ms: 11.746167
+  type: 'test'
+  ...
+# Subtest: prebuilt Apple SSO preserves one credential and explicit finalize: sign-in-only
+ok 275 - prebuilt Apple SSO preserves one credential and explicit finalize: sign-in-only
+  ---
+  duration_ms: 12.254917
+  type: 'test'
+  ...
+# Subtest: prebuilt OAuth completes the future SSO browser roundtrip before optional transfer: true
+ok 276 - prebuilt OAuth completes the future SSO browser roundtrip before optional transfer: true
+  ---
+  duration_ms: 12.082125
+  type: 'test'
+  ...
+# Subtest: prebuilt OAuth completes the future SSO browser roundtrip before optional transfer: false
+ok 277 - prebuilt OAuth completes the future SSO browser roundtrip before optional transfer: false
+  ---
+  duration_ms: 7.471208
+  type: 'test'
+  ...
+# Subtest: reset cancels a prebuilt Apple prompt without beginning authentication
+ok 278 - reset cancels a prebuilt Apple prompt without beginning authentication
+  ---
+  duration_ms: 17.739292
+  type: 'test'
+  ...
+# (node:67790) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a generated GET recovers from a transient network failure
+ok 279 - a generated GET recovers from a transient network failure
+  ---
+  duration_ms: 199.556292
+  type: 'test'
+  ...
+# Subtest: a generated authentication mutation does not replay after a lost response
+ok 280 - a generated authentication mutation does not replay after a lost response
+  ---
+  duration_ms: 8.308625
+  type: 'test'
+  ...
+# Subtest: a persistent GET network failure stops at the core retry limit
+ok 281 - a persistent GET network failure stops at the core retry limit
+  ---
+  duration_ms: 12.380041
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 400 without transport replay
+ok 282 - a generated GET surfaces HTTP 400 without transport replay
+  ---
+  duration_ms: 10.268042
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 403 without transport replay
+ok 283 - a generated GET surfaces HTTP 403 without transport replay
+  ---
+  duration_ms: 10.657542
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 404 without transport replay
+ok 284 - a generated GET surfaces HTTP 404 without transport replay
+  ---
+  duration_ms: 10.380958
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 408 without transport replay
+ok 285 - a generated GET surfaces HTTP 408 without transport replay
+  ---
+  duration_ms: 7.806375
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 422 without transport replay
+ok 286 - a generated GET surfaces HTTP 422 without transport replay
+  ---
+  duration_ms: 8.942917
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 425 without transport replay
+ok 287 - a generated GET surfaces HTTP 425 without transport replay
+  ---
+  duration_ms: 17.567875
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 429 without transport replay
+ok 288 - a generated GET surfaces HTTP 429 without transport replay
+  ---
+  duration_ms: 9.409042
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 500 without transport replay
+ok 289 - a generated GET surfaces HTTP 500 without transport replay
+  ---
+  duration_ms: 6.594792
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 502 without transport replay
+ok 290 - a generated GET surfaces HTTP 502 without transport replay
+  ---
+  duration_ms: 7.698917
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 503 without transport replay
+ok 291 - a generated GET surfaces HTTP 503 without transport replay
+  ---
+  duration_ms: 8.019166
+  type: 'test'
+  ...
+# Subtest: a generated GET surfaces HTTP 504 without transport replay
+ok 292 - a generated GET surfaces HTTP 504 without transport replay
+  ---
+  duration_ms: 15.859792
+  type: 'test'
+  ...
+# Subtest: an unauthorized client refresh does not recursively refresh the client
+ok 293 - an unauthorized client refresh does not recursively refresh the client
+  ---
+  duration_ms: 8.960084
+  type: 'test'
+  ...
+# Subtest: concurrent unauthorized operations finish after their independent recovery requests
+ok 294 - concurrent unauthorized operations finish after their independent recovery requests
+  ---
+  duration_ms: 8.145041
+  type: 'test'
+  ...
+# Subtest: a generated GET does not retry after sign-out
+ok 295 - a generated GET does not retry after sign-out
+  ---
+  duration_ms: 22.1695
+  type: 'test'
+  ...
+# Subtest: a generated GET does not retry after credential-rotation
+ok 296 - a generated GET does not retry after credential-rotation
+  ---
+  duration_ms: 10.151125
+  type: 'test'
+  ...
+# (node:67791) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated organization defaults accept no form
+ok 297 - generated organization defaults accept no form
+  ---
+  duration_ms: 31.390042
+  type: 'test'
+  ...
+# Subtest: generated organization defaults accept missing advisory severity
+ok 298 - generated organization defaults accept missing advisory severity
+  ---
+  duration_ms: 9.372666
+  type: 'test'
+  ...
+# Subtest: generated organization defaults accept partial branding
+ok 299 - generated organization defaults accept partial branding
+  ---
+  duration_ms: 8.947834
+  type: 'test'
+  ...
+# Subtest: generated organization defaults accept missing slug
+ok 300 - generated organization defaults accept missing slug
+  ---
+  duration_ms: 10.773375
+  type: 'test'
+  ...
+# (node:67792) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: organization invitations preserve projected data with present image and slug
+ok 301 - organization invitations preserve projected data with present image and slug
+  ---
+  duration_ms: 40.704125
+  type: 'test'
+  ...
+# Subtest: organization invitations preserve projected data with null image and slug
+ok 302 - organization invitations preserve projected data with null image and slug
+  ---
+  duration_ms: 7.265542
+  type: 'test'
+  ...
+# Subtest: organization invitations preserve projected data with omitted image and slug
+ok 303 - organization invitations preserve projected data with omitted image and slug
+  ---
+  duration_ms: 8.759208
+  type: 'test'
+  ...
+# Subtest: organization invitations preserve projected data with null image and omitted slug
+ok 304 - organization invitations preserve projected data with null image and omitted slug
+  ---
+  duration_ms: 10.259625
+  type: 'test'
+  ...
+# Subtest: organization suggestions preserve projected data with present image and slug
+ok 305 - organization suggestions preserve projected data with present image and slug
+  ---
+  duration_ms: 7.291666
+  type: 'test'
+  ...
+# Subtest: organization suggestions preserve projected data with null image and slug
+ok 306 - organization suggestions preserve projected data with null image and slug
+  ---
+  duration_ms: 8.445792
+  type: 'test'
+  ...
+# Subtest: organization suggestions preserve projected data with omitted image and slug
+ok 307 - organization suggestions preserve projected data with omitted image and slug
+  ---
+  duration_ms: 5.875625
+  type: 'test'
+  ...
+# Subtest: organization suggestions preserve projected data with null image and omitted slug
+ok 308 - organization suggestions preserve projected data with null image and omitted slug
+  ---
+  duration_ms: 21.144375
+  type: 'test'
+  ...
+# (node:67793) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated organization getRoles preserves filters {}
+ok 309 - generated organization getRoles preserves filters {}
+  ---
+  duration_ms: 41.570958
+  type: 'test'
+  ...
+# Subtest: generated organization getMemberships preserves filters {"paginated":["true"]}
+ok 310 - generated organization getMemberships preserves filters {"paginated":["true"]}
+  ---
+  duration_ms: 7.100125
+  type: 'test'
+  ...
+# Subtest: generated organization getMemberships preserves filters {"query":["test"],"paginated":["true"]}
+ok 311 - generated organization getMemberships preserves filters {"query":["test"],"paginated":["true"]}
+  ---
+  duration_ms: 9.855458
+  type: 'test'
+  ...
+# Subtest: generated organization getMemberships preserves filters {"role":["org:admin","org:member"],"paginated":["true"]}
+ok 312 - generated organization getMemberships preserves filters {"role":["org:admin","org:member"],"paginated":["true"]}
+  ---
+  duration_ms: 11.997209
+  type: 'test'
+  ...
+# Subtest: generated organization getInvitations preserves filters {"status":[]}
+ok 313 - generated organization getInvitations preserves filters {"status":[]}
+  ---
+  duration_ms: 15.502959
+  type: 'test'
+  ...
+# Subtest: generated organization getInvitations preserves filters {"status":["pending"]}
+ok 314 - generated organization getInvitations preserves filters {"status":["pending"]}
+  ---
+  duration_ms: 10.988791
+  type: 'test'
+  ...
+# Subtest: generated organization getInvitations preserves filters {"status":["pending","accepted"]}
+ok 315 - generated organization getInvitations preserves filters {"status":["pending","accepted"]}
+  ---
+  duration_ms: 6.471166
+  type: 'test'
+  ...
+# Subtest: generated organization getDomains preserves filters {}
+ok 316 - generated organization getDomains preserves filters {}
+  ---
+  duration_ms: 7.842458
+  type: 'test'
+  ...
+# Subtest: generated organization getDomains preserves filters {"enrollment_mode":["automatic_invitation"]}
+ok 317 - generated organization getDomains preserves filters {"enrollment_mode":["automatic_invitation"]}
+  ---
+  duration_ms: 10.314583
+  type: 'test'
+  ...
+# Subtest: generated organization getDomains preserves filters {"enrollment_mode":["automatic_suggestion"]}
+ok 318 - generated organization getDomains preserves filters {"enrollment_mode":["automatic_suggestion"]}
+  ---
+  duration_ms: 9.738209
+  type: 'test'
+  ...
+# Subtest: generated organization getMembershipRequests preserves filters {}
+ok 319 - generated organization getMembershipRequests preserves filters {}
+  ---
+  duration_ms: 8.728208
+  type: 'test'
+  ...
+# Subtest: generated organization getMembershipRequests preserves filters {"status":["pending"]}
+ok 320 - generated organization getMembershipRequests preserves filters {"status":["pending"]}
+  ---
+  duration_ms: 10.272667
+  type: 'test'
+  ...
+# Subtest: generated logo removal returns a usable organization: receipt
+ok 321 - generated logo removal returns a usable organization: receipt
+  ---
+  duration_ms: 11.437
+  type: 'test'
+  ...
+# Subtest: generated logo removal returns a usable organization: resource
+ok 322 - generated logo removal returns a usable organization: resource
+  ---
+  duration_ms: 10.459708
+  type: 'test'
+  ...
+# Subtest: generated logo removal returns a usable organization: rejected
+ok 323 - generated logo removal returns a usable organization: rejected
+  ---
+  duration_ms: 8.98375
+  type: 'test'
+  ...
+# Subtest: a separately fetched organization does not alias an older active root
+ok 324 - a separately fetched organization does not alias an older active root
+  ---
+  duration_ms: 10.407
+  type: 'test'
+  ...
+# Subtest: organization enrollment modes preserve future output values but reject unknown query input
+ok 325 - organization enrollment modes preserve future output values but reject unknown query input
+  ---
+  duration_ms: 47.598084
+  type: 'test'
+  ...
+# Subtest: generated Organization.update preserves its request and result [{"name":"Renamed"}]
+ok 326 - generated Organization.update preserves its request and result [{"name":"Renamed"}]
+  ---
+  duration_ms: 13.365542
+  type: 'test'
+  ...
+# Subtest: generated Organization.update preserves its request and result [{"name":"Renamed","slug":"new-slug"}]
+ok 327 - generated Organization.update preserves its request and result [{"name":"Renamed","slug":"new-slug"}]
+  ---
+  duration_ms: 7.801708
+  type: 'test'
+  ...
+# Subtest: generated Organization.destroy preserves its request and result []
+ok 328 - generated Organization.destroy preserves its request and result []
+  ---
+  duration_ms: 93.011459
+  type: 'test'
+  ...
+# Subtest: generated Clerk.createOrganization preserves its request and result [{"name":"New organization"}]
+ok 329 - generated Clerk.createOrganization preserves its request and result [{"name":"New organization"}]
+  ---
+  duration_ms: 9.772833
+  type: 'test'
+  ...
+# Subtest: generated Clerk.createOrganization preserves its request and result [{"name":"New organization","slug":"new-slug"}]
+ok 330 - generated Clerk.createOrganization preserves its request and result [{"name":"New organization","slug":"new-slug"}]
+  ---
+  duration_ms: 9.772625
+  type: 'test'
+  ...
+# Subtest: generated Organization.addMember preserves its request and result [{"userId":"user_123","role":"org:member"}]
+ok 331 - generated Organization.addMember preserves its request and result [{"userId":"user_123","role":"org:member"}]
+  ---
+  duration_ms: 6.273166
+  type: 'test'
+  ...
+# Subtest: generated Organization.updateMember preserves its request and result [{"userId":"user_123","role":"org:admin"}]
+ok 332 - generated Organization.updateMember preserves its request and result [{"userId":"user_123","role":"org:admin"}]
+  ---
+  duration_ms: 7.815708
+  type: 'test'
+  ...
+# Subtest: generated Organization.removeMember preserves its request and result ["user_123"]
+ok 333 - generated Organization.removeMember preserves its request and result ["user_123"]
+  ---
+  duration_ms: 24.22075
+  type: 'test'
+  ...
+# Subtest: generated Organization.inviteMember preserves its request and result [{"emailAddress":"invitee@example.com","role":"org:member"}]
+ok 334 - generated Organization.inviteMember preserves its request and result [{"emailAddress":"invitee@example.com","role":"org:member"}]
+  ---
+  duration_ms: 8.273375
+  type: 'test'
+  ...
+# Subtest: generated Organization.inviteMembers preserves its request and result [{"emailAddresses":["invitee@example.com","second@example.com"],"role":"org:member"}]
+ok 335 - generated Organization.inviteMembers preserves its request and result [{"emailAddresses":["invitee@example.com","second@example.com"],"role":"org:member"}]
+  ---
+  duration_ms: 12.792208
+  type: 'test'
+  ...
+# Subtest: generated Organization.createDomain preserves its request and result ["example.com"]
+ok 336 - generated Organization.createDomain preserves its request and result ["example.com"]
+  ---
+  duration_ms: 9.033416
+  type: 'test'
+  ...
+# Subtest: generated Organization.getDomain preserves its request and result [{"domainId":"orgdom_contract"}]
+ok 337 - generated Organization.getDomain preserves its request and result [{"domainId":"orgdom_contract"}]
+  ---
+  duration_ms: 7.020833
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.prepareAffiliationVerification preserves its request and result [{"affiliationEmailAddress":"user@example.com"}]
+ok 338 - generated OrganizationDomain.prepareAffiliationVerification preserves its request and result [{"affiliationEmailAddress":"user@example.com"}]
+  ---
+  duration_ms: 11.283583
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.attemptAffiliationVerification preserves its request and result [{"code":"123456"}]
+ok 339 - generated OrganizationDomain.attemptAffiliationVerification preserves its request and result [{"code":"123456"}]
+  ---
+  duration_ms: 39.524417
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation"}]
+ok 340 - generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation"}]
+  ---
+  duration_ms: 16.388333
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation","deletePending":true}]
+ok 341 - generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation","deletePending":true}]
+  ---
+  duration_ms: 18.325458
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation","deletePending":false}]
+ok 342 - generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation","deletePending":false}]
+  ---
+  duration_ms: 11.246334
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.delete preserves its request and result []
+ok 343 - generated OrganizationDomain.delete preserves its request and result []
+  ---
+  duration_ms: 8.867542
+  type: 'test'
+  ...
+# Subtest: generated OrganizationMembership.update preserves its request and result [{"role":"org:admin"}]
+ok 344 - generated OrganizationMembership.update preserves its request and result [{"role":"org:admin"}]
+  ---
+  duration_ms: 8.3695
+  type: 'test'
+  ...
+# Subtest: generated OrganizationInvitation.revoke preserves its request and result []
+ok 345 - generated OrganizationInvitation.revoke preserves its request and result []
+  ---
+  duration_ms: 7.909667
+  type: 'test'
+  ...
+# Subtest: generated OrganizationMembershipRequest.accept preserves its request and result []
+ok 346 - generated OrganizationMembershipRequest.accept preserves its request and result []
+  ---
+  duration_ms: 9.326875
+  type: 'test'
+  ...
+# Subtest: generated OrganizationMembershipRequest.reject preserves its request and result []
+ok 347 - generated OrganizationMembershipRequest.reject preserves its request and result []
+  ---
+  duration_ms: 20.208125
+  type: 'test'
+  ...
+# Subtest: generated Organization.update preserves API error detail
+ok 348 - generated Organization.update preserves API error detail
+  ---
+  duration_ms: 8.805459
+  type: 'test'
+  ...
+# Subtest: generated Organization.createDomain preserves API error detail
+ok 349 - generated Organization.createDomain preserves API error detail
+  ---
+  duration_ms: 6.813209
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.prepareAffiliationVerification preserves API error detail
+ok 350 - generated OrganizationDomain.prepareAffiliationVerification preserves API error detail
+  ---
+  duration_ms: 8.960542
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.attemptAffiliationVerification preserves API error detail
+ok 351 - generated OrganizationDomain.attemptAffiliationVerification preserves API error detail
+  ---
+  duration_ms: 6.624125
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.updateEnrollmentMode preserves API error detail
+ok 352 - generated OrganizationDomain.updateEnrollmentMode preserves API error detail
+  ---
+  duration_ms: 9.0785
+  type: 'test'
+  ...
+# Subtest: generated OrganizationDomain.delete preserves API error detail
+ok 353 - generated OrganizationDomain.delete preserves API error detail
+  ---
+  duration_ms: 7.305334
+  type: 'test'
+  ...
+# Subtest: generated organization logo upload preserves binary data
+ok 354 - generated organization logo upload preserves binary data
+  ---
+  duration_ms: 6.450542
+  type: 'test'
+  ...
+# Subtest: generated organization logo upload preserves string data
+ok 355 - generated organization logo upload preserves string data
+  ---
+  duration_ms: 5.88225
+  type: 'test'
+  ...
+# (node:67794) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: organization membership permissions preserve present server values
+ok 356 - organization membership permissions preserve present server values
+  ---
+  duration_ms: 28.457042
+  type: 'test'
+  ...
+# Subtest: organization membership permissions preserve null server values
+ok 357 - organization membership permissions preserve null server values
+  ---
+  duration_ms: 8.39925
+  type: 'test'
+  ...
+# Subtest: organization membership permissions preserve omitted server values
+ok 358 - organization membership permissions preserve omitted server values
+  ---
+  duration_ms: 5.630708
+  type: 'test'
+  ...
+# Subtest: active organization uses matching membership for org_active
+ok 359 - active organization uses matching membership for org_active
+  ---
+  duration_ms: 6.830083
+  type: 'test'
+  ...
+# Subtest: active organization uses matching membership for null
+ok 360 - active organization uses matching membership for null
+  ---
+  duration_ms: 8.889417
+  type: 'test'
+  ...
+# Subtest: active organization uses matching membership for org_missing
+ok 361 - active organization uses matching membership for org_missing
+  ---
+  duration_ms: 6.568666
+  type: 'test'
+  ...
+# Subtest: organization domain preserves manual_invitation and verified
+ok 362 - organization domain preserves manual_invitation and verified
+  ---
+  duration_ms: 7.682333
+  type: 'test'
+  ...
+# Subtest: organization domain preserves automatic_invitation and unverified
+ok 363 - organization domain preserves automatic_invitation and unverified
+  ---
+  duration_ms: 6.743291
+  type: 'test'
+  ...
+# Subtest: organization domain preserves automatic_suggestion and null
+ok 364 - organization domain preserves automatic_suggestion and null
+  ---
+  duration_ms: 26.020125
+  type: 'test'
+  ...
+# Subtest: organization domain preserves enterprise_sso and expired
+ok 365 - organization domain preserves enterprise_sso and expired
+  ---
+  duration_ms: 20.60675
+  type: 'test'
+  ...
+# Subtest: organization domain preserves future_mode and future_status
+ok 366 - organization domain preserves future_mode and future_status
+  ---
+  duration_ms: 8.379083
+  type: 'test'
+  ...
+# (node:67795) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated organization creation preserves name and omitted slug
+ok 367 - generated organization creation preserves name and omitted slug
+  ---
+  duration_ms: 35.286958
+  type: 'test'
+  ...
+# Subtest: generated organization creation preserves name and explicit slug
+ok 368 - generated organization creation preserves name and explicit slug
+  ---
+  duration_ms: 9.541208
+  type: 'test'
+  ...
+# Subtest: generated organization lookup returns the requested organization resource
+ok 369 - generated organization lookup returns the requested organization resource
+  ---
+  duration_ms: 9.069625
+  type: 'test'
+  ...
+# Subtest: generated membership deletion returns its declared resource: receipt
+ok 370 - generated membership deletion returns its declared resource: receipt
+  ---
+  duration_ms: 23.247583
+  type: 'test'
+  ...
+# Subtest: generated membership deletion returns its declared resource: resource
+ok 371 - generated membership deletion returns its declared resource: resource
+  ---
+  duration_ms: 13.279875
+  type: 'test'
+  ...
+# Subtest: generated membership deletion returns its declared resource: rejected
+ok 372 - generated membership deletion returns its declared resource: rejected
+  ---
+  duration_ms: 8.672041
+  type: 'test'
+  ...
+# (node:67796) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: server assertion options preserve relying party, credential order and transports
+ok 373 - server assertion options preserve relying party, credential order and transports
+  ---
+  duration_ms: 36.592666
+  type: 'test'
+  ...
+# Subtest: missing relying party fails before native presentation without a domain fallback
+ok 374 - missing relying party fails before native presentation without a domain fallback
+  ---
+  duration_ms: 11.871459
+  type: 'test'
+  ...
+# Subtest: registration-style relying party fails before native presentation without a domain fallback
+ok 375 - registration-style relying party fails before native presentation without a domain fallback
+  ---
+  duration_ms: 8.812042
+  type: 'test'
+  ...
+# Subtest: empty relying party fails before native presentation without a domain fallback
+ok 376 - empty relying party fails before native presentation without a domain fallback
+  ---
+  duration_ms: 11.914458
+  type: 'test'
+  ...
+# Subtest: whitespace relying party fails before native presentation without a domain fallback
+ok 377 - whitespace relying party fails before native presentation without a domain fallback
+  ---
+  duration_ms: 14.688791
+  type: 'test'
+  ...
+# Subtest: non-string relying party fails before native presentation without a domain fallback
+ok 378 - non-string relying party fails before native presentation without a domain fallback
+  ---
+  duration_ms: 27.042542
+  type: 'test'
+  ...
+# Subtest: missing credential ID rejects the server list instead of dropping entries
+ok 379 - missing credential ID rejects the server list instead of dropping entries
+  ---
+  duration_ms: 9.769542
+  type: 'test'
+  ...
+# Subtest: invalid credential ID rejects the server list instead of dropping entries
+ok 380 - invalid credential ID rejects the server list instead of dropping entries
+  ---
+  duration_ms: 10.429916
+  type: 'test'
+  ...
+# (node:67797) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated passkey registration stops at creation-rejected
+ok 381 - generated passkey registration stops at creation-rejected
+  ---
+  duration_ms: 45.856291
+  type: 'test'
+  ...
+# Subtest: generated passkey registration stops at verification-rejected
+ok 382 - generated passkey registration stops at verification-rejected
+  ---
+  duration_ms: 10.478583
+  type: 'test'
+  ...
+# Subtest: generated passkey registration stops at provider-failed
+ok 383 - generated passkey registration stops at provider-failed
+  ---
+  duration_ms: 8.431917
+  type: 'test'
+  ...
+# Subtest: generated passkey registration stops at invalid-credential
+ok 384 - generated passkey registration stops at invalid-credential
+  ---
+  duration_ms: 8.093833
+  type: 'test'
+  ...
+# Subtest: generated passkey registration stops at missing-options
+ok 385 - generated passkey registration stops at missing-options
+  ---
+  duration_ms: 42.450042
+  type: 'test'
+  ...
+# Subtest: generated passkey registration stops at unsupported
+ok 386 - generated passkey registration stops at unsupported
+  ---
+  duration_ms: 8.828458
+  type: 'test'
+  ...
+# (node:67798) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated passkey registration supports rename and deletion receipts
+ok 387 - generated passkey registration supports rename and deletion receipts
+  ---
+  duration_ms: 38.686625
+  type: 'test'
+  ...
+# Subtest: generated passkey registration stops after native cancellation
+ok 388 - generated passkey registration stops after native cancellation
+  ---
+  duration_ms: 21.687416
+  type: 'test'
+  ...
+# (node:67799) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: future passkey forwards native autofill presentation and binary options
+ok 389 - future passkey forwards native autofill presentation and binary options
+  ---
+  duration_ms: 33.517041
+  type: 'test'
+  ...
+# Subtest: future passkey forwards native discoverable presentation and binary options
+ok 390 - future passkey forwards native discoverable presentation and binary options
+  ---
+  duration_ms: 8.926333
+  type: 'test'
+  ...
+# Subtest: future passkey prepares and attempts the active second factor without recreating sign-in
+ok 391 - future passkey prepares and attempts the active second factor without recreating sign-in
+  ---
+  duration_ms: 15.139333
+  type: 'test'
+  ...
+# Subtest: passkey failure retains source stage and error: preparingFirstFactor
+ok 392 - passkey failure retains source stage and error: preparingFirstFactor
+  ---
+  duration_ms: 12.840875
+  type: 'test'
+  ...
+# Subtest: passkey failure retains source stage and error: requestingAuthorization
+ok 393 - passkey failure retains source stage and error: requestingAuthorization
+  ---
+  duration_ms: 23.592959
+  type: 'test'
+  ...
+# Subtest: passkey failure retains source stage and error: attemptingFirstFactor
+ok 394 - passkey failure retains source stage and error: attemptingFirstFactor
+  ---
+  duration_ms: 13.042833
+  type: 'test'
+  ...
+# Subtest: second-factor passkey reports preparingSecondFactor without replacing its attempt
+ok 395 - second-factor passkey reports preparingSecondFactor without replacing its attempt
+  ---
+  duration_ms: 11.4355
+  type: 'test'
+  ...
+# Subtest: second-factor passkey reports attemptingSecondFactor without replacing its attempt
+ok 396 - second-factor passkey reports attemptingSecondFactor without replacing its attempt
+  ---
+  duration_ms: 63.574792
+  type: 'test'
+  ...
+# Subtest: unknown passkey provider failure retains the attempt without submitting a credential
+ok 397 - unknown passkey provider failure retains the attempt without submitting a credential
+  ---
+  duration_ms: 9.091042
+  type: 'test'
+  ...
+# Subtest: email sign-in can follow an automatic passkey failure: user_cancelled
+ok 398 - email sign-in can follow an automatic passkey failure: user_cancelled
+  ---
+  duration_ms: 12.505834
+  type: 'test'
+  ...
+# Subtest: email sign-in can follow an automatic passkey failure: host_failure
+ok 399 - email sign-in can follow an automatic passkey failure: host_failure
+  ---
+  duration_ms: 18.801541
+  type: 'test'
+  ...
+# Subtest: email sign-in can follow an automatic passkey failure: presentation_unavailable
+ok 400 - email sign-in can follow an automatic passkey failure: presentation_unavailable
+  ---
+  duration_ms: 35.42425
+  type: 'test'
+  ...
+# Subtest: email sign-in can follow an automatic passkey failure: invalid_credential_response
+ok 401 - email sign-in can follow an automatic passkey failure: invalid_credential_response
+  ---
+  duration_ms: 34.747959
+  type: 'test'
+  ...
+# (node:67800) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: production handshake rejects mismatched bindings before HTTP or storage
+ok 402 - production handshake rejects mismatched bindings before HTTP or storage
+  ---
+  duration_ms: 26.027916
+  type: 'test'
+  ...
+# Subtest: generated email verification preserves MFA requirements and returned domain errors
+ok 403 - generated email verification preserves MFA requirements and returned domain errors
+  ---
+  duration_ms: 34.886417
+  type: 'test'
+  ...
+# Subtest: local reset replaces the attempt, invalidates held groups, and makes no HTTP request
+ok 404 - local reset replaces the attempt, invalidates held groups, and makes no HTTP request
+  ---
+  duration_ms: 8.904208
+  type: 'test'
+  ...
+# Subtest: reset cancels an outstanding browser effect and ignores its late callback
+ok 405 - reset cancels an outstanding browser effect and ignores its late callback
+  ---
+  duration_ms: 14.136583
+  type: 'test'
+  ...
+# Subtest: explicit finalize adopts the active session before completion without navigation
+ok 406 - explicit finalize adopts the active session before completion without navigation
+  ---
+  duration_ms: 13.799583
+  type: 'test'
+  ...
+# Subtest: explicit finalize adopts the pending session before completion without navigation
+ok 407 - explicit finalize adopts the pending session before completion without navigation
+  ---
+  duration_ms: 36.805083
+  type: 'test'
+  ...
+# Subtest: sign-out fences a finalization response and its credential before it can restore a session
+ok 408 - sign-out fences a finalization response and its credential before it can restore a session
+  ---
+  duration_ms: 53.210375
+  type: 'test'
+  ...
+# Subtest: background is nonfatal and foreground recovers resources through the core
+ok 409 - background is nonfatal and foreground recovers resources through the core
+  ---
+  duration_ms: 12.039375
+  type: 'test'
+  ...
+# Subtest: native settings are projected from the owner with typed configuration
+ok 410 - native settings are projected from the owner with typed configuration
+  ---
+  duration_ms: 8.929208
+  type: 'test'
+  ...
+# Subtest: custom OAuth configuration survives the generated native settings projection
+ok 411 - custom OAuth configuration survives the generated native settings projection
+  ---
+  duration_ms: 7.599792
+  type: 'test'
+  ...
+# Subtest: phone recovery codes use an explicit generated read and never enter observable state
+ok 412 - phone recovery codes use an explicit generated read and never enter observable state
+  ---
+  duration_ms: 9.750166
+  type: 'test'
+  ...
+# Subtest: the canonical environment resource refreshes settings before generated completion
+ok 413 - the canonical environment resource refreshes settings before generated completion
+  ---
+  duration_ms: 29.947292
+  type: 'test'
+  ...
+# Subtest: native client metadata uses the existing client without exposing legacy auth resources
+ok 414 - native client metadata uses the existing client without exposing legacy auth resources
+  ---
+  duration_ms: 19.082375
+  type: 'test'
+  ...
+# Subtest: identification timestamps survive core hydration and generated state projection
+ok 415 - identification timestamps survive core hydration and generated state projection
+  ---
+  duration_ms: 5.802709
+  type: 'test'
+  ...
+# Subtest: native auth settings refresh through the canonical environment and default to disabled
+ok 416 - native auth settings refresh through the canonical environment and default to disabled
+  ---
+  duration_ms: 11.493917
+  type: 'test'
+  ...
+# Subtest: instance environment strings preserve known and future server values
+ok 417 - instance environment strings preserve known and future server values
+  ---
+  duration_ms: 39.836958
+  type: 'test'
+  ...
+# (node:67801) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: ios requests identify the native SDK release
+ok 418 - ios requests identify the native SDK release
+  ---
+  duration_ms: 48.867667
+  type: 'test'
+  ...
+# Subtest: android requests identify the native SDK release
+ok 419 - android requests identify the native SDK release
+  ---
+  duration_ms: 9.250125
+  type: 'test'
+  ...
+# Subtest: desktop Apple requests retain native credentials without being classified as mobile
+ok 420 - desktop Apple requests retain native credentials without being classified as mobile
+  ---
+  duration_ms: 7.067875
+  type: 'test'
+  ...
+# Subtest: malformed device classification fails before HTTP
+ok 421 - malformed device classification fails before HTTP
+  ---
+  duration_ms: 13.333291
+  type: 'test'
+  ...
+# Subtest: unknown SDK version is omitted and invalid values fail before HTTP
+ok 422 - unknown SDK version is omitted and invalid values fail before HTTP
+  ---
+  duration_ms: 17.377334
+  type: 'test'
+  ...
+# (node:67802) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: mfa.sendPhoneCode preserves selected default factor
+ok 423 - mfa.sendPhoneCode preserves selected default factor
+  ---
+  duration_ms: 40.955334
+  type: 'test'
+  ...
+# Subtest: mfa.sendPhoneCode preserves selected second factor
+ok 424 - mfa.sendPhoneCode preserves selected second factor
+  ---
+  duration_ms: 12.723333
+  type: 'test'
+  ...
+# Subtest: mfa.sendPhoneCode preserves selected unknown factor
+ok 425 - mfa.sendPhoneCode preserves selected unknown factor
+  ---
+  duration_ms: 14.787625
+  type: 'test'
+  ...
+# Subtest: mfa.sendEmailCode preserves selected default factor
+ok 426 - mfa.sendEmailCode preserves selected default factor
+  ---
+  duration_ms: 13.981125
+  type: 'test'
+  ...
+# Subtest: mfa.sendEmailCode preserves selected second factor
+ok 427 - mfa.sendEmailCode preserves selected second factor
+  ---
+  duration_ms: 10.386375
+  type: 'test'
+  ...
+# Subtest: mfa.sendEmailCode preserves selected unknown factor
+ok 428 - mfa.sendEmailCode preserves selected unknown factor
+  ---
+  duration_ms: 10.32
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode.sendCode preserves selected default factor
+ok 429 - resetPasswordPhoneCode.sendCode preserves selected default factor
+  ---
+  duration_ms: 8.039
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode.sendCode preserves selected second factor
+ok 430 - resetPasswordPhoneCode.sendCode preserves selected second factor
+  ---
+  duration_ms: 11.914167
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode.sendCode preserves selected unknown factor
+ok 431 - resetPasswordPhoneCode.sendCode preserves selected unknown factor
+  ---
+  duration_ms: 10.4555
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode.sendCode preserves selected default factor
+ok 432 - resetPasswordEmailCode.sendCode preserves selected default factor
+  ---
+  duration_ms: 9.349292
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode.sendCode preserves selected second factor
+ok 433 - resetPasswordEmailCode.sendCode preserves selected second factor
+  ---
+  duration_ms: 12.524333
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode.sendCode preserves selected unknown factor
+ok 434 - resetPasswordEmailCode.sendCode preserves selected unknown factor
+  ---
+  duration_ms: 9.418834
+  type: 'test'
+  ...
+# Subtest: native factor projection preserves known discriminants before unknown enum fallback
+ok 435 - native factor projection preserves known discriminants before unknown enum fallback
+  ---
+  duration_ms: 13.062375
+  type: 'test'
+  ...
+# (node:67803) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: rejected organization activation preserves session organization and cached token: 401
+ok 436 - rejected organization activation preserves session organization and cached token: 401
+  ---
+  duration_ms: 51.111041
+  type: 'test'
+  ...
+# Subtest: rejected organization activation preserves session organization and cached token: 403
+ok 437 - rejected organization activation preserves session organization and cached token: 403
+  ---
+  duration_ms: 11.727375
+  type: 'test'
+  ...
+# Subtest: forced organization selection rejects personal selection without a request
+ok 438 - forced organization selection rejects personal selection without a request
+  ---
+  duration_ms: 6.733125
+  type: 'test'
+  ...
+# Subtest: a retained session reads a fresh template token after accepted organization activation
+ok 439 - a retained session reads a fresh template token after accepted organization activation
+  ---
+  duration_ms: 43.403458
+  type: 'test'
+  ...
+# Subtest: accepted organization activation preserves canonical option meaning: org_next
+ok 440 - accepted organization activation preserves canonical option meaning: org_next
+  ---
+  duration_ms: 12.241209
+  type: 'test'
+  ...
+# Subtest: accepted organization activation preserves canonical option meaning: null
+ok 441 - accepted organization activation preserves canonical option meaning: null
+  ---
+  duration_ms: 7.684916
+  type: 'test'
+  ...
+# Subtest: accepted organization activation preserves canonical option meaning: undefined
+ok 442 - accepted organization activation preserves canonical option meaning: undefined
+  ---
+  duration_ms: 11.2195
+  type: 'test'
+  ...
+# Subtest: a pending rejected switch cannot publish its target or overwrite a newer accepted switch
+ok 443 - a pending rejected switch cannot publish its target or overwrite a newer accepted switch
+  ---
+  duration_ms: 16.375666
+  type: 'test'
+  ...
+# (node:67804) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated session authorization: existing plan
+ok 444 - generated session authorization: existing plan
+  ---
+  duration_ms: 47.336375
+  type: 'test'
+  ...
+# Subtest: generated session authorization: missing plan
+ok 445 - generated session authorization: missing plan
+  ---
+  duration_ms: 7.196417
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature o:reservations
+ok 446 - generated session authorization: feature o:reservations
+  ---
+  duration_ms: 10.963334
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature org:reservations
+ok 447 - generated session authorization: feature org:reservations
+  ---
+  duration_ms: 12.277666
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature organization:reservations
+ok 448 - generated session authorization: feature organization:reservations
+  ---
+  duration_ms: 9.02425
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature reservations
+ok 449 - generated session authorization: feature reservations
+  ---
+  duration_ms: 9.32575
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature u:dashboard
+ok 450 - generated session authorization: feature u:dashboard
+  ---
+  duration_ms: 14.402125
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature user:dashboard
+ok 451 - generated session authorization: feature user:dashboard
+  ---
+  duration_ms: 12.916083
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature dashboard
+ok 452 - generated session authorization: feature dashboard
+  ---
+  duration_ms: 28.626125
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature o:support
+ok 453 - generated session authorization: feature o:support
+  ---
+  duration_ms: 13.067917
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature u:support
+ok 454 - generated session authorization: feature u:support
+  ---
+  duration_ms: 8.25025
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature o:billing
+ok 455 - generated session authorization: feature o:billing
+  ---
+  duration_ms: 6.167625
+  type: 'test'
+  ...
+# Subtest: generated session authorization: feature u:billing
+ok 456 - generated session authorization: feature u:billing
+  ---
+  duration_ms: 26.771584
+  type: 'test'
+  ...
+# Subtest: generated session authorization: unknown feature scope
+ok 457 - generated session authorization: unknown feature scope
+  ---
+  duration_ms: 27.115125
+  type: 'test'
+  ...
+# Subtest: generated session authorization: missing feature
+ok 458 - generated session authorization: missing feature
+  ---
+  duration_ms: 15.521875
+  type: 'test'
+  ...
+# Subtest: generated session authorization: empty request
+ok 459 - generated session authorization: empty request
+  ---
+  duration_ms: 8.950667
+  type: 'test'
+  ...
+# Subtest: generated session authorization: role prefix
+ok 460 - generated session authorization: role prefix
+  ---
+  duration_ms: 7.501167
+  type: 'test'
+  ...
+# Subtest: generated session authorization: role without prefix
+ok 461 - generated session authorization: role without prefix
+  ---
+  duration_ms: 20.648083
+  type: 'test'
+  ...
+# Subtest: generated session authorization: wrong role
+ok 462 - generated session authorization: wrong role
+  ---
+  duration_ms: 9.977667
+  type: 'test'
+  ...
+# Subtest: generated session authorization: permission present
+ok 463 - generated session authorization: permission present
+  ---
+  duration_ms: 7.823708
+  type: 'test'
+  ...
+# Subtest: generated session authorization: permission absent
+ok 464 - generated session authorization: permission absent
+  ---
+  duration_ms: 15.095708
+  type: 'test'
+  ...
+# Subtest: generated session authorization: permission without org
+ok 465 - generated session authorization: permission without org
+  ---
+  duration_ms: 5.931416
+  type: 'test'
+  ...
+# Subtest: generated session authorization: role without org
+ok 466 - generated session authorization: role without org
+  ---
+  duration_ms: 5.419833
+  type: 'test'
+  ...
+# Subtest: generated session authorization: project factor ages
+ok 467 - generated session authorization: project factor ages
+  ---
+  duration_ms: 6.2895
+  type: 'test'
+  ...
+# Subtest: generated session authorization: missing factor ages
+ok 468 - generated session authorization: missing factor ages
+  ---
+  duration_ms: 7.009167
+  type: 'test'
+  ...
+# Subtest: generated session authorization: fresh permission and reverification
+ok 469 - generated session authorization: fresh permission and reverification
+  ---
+  duration_ms: 5.795875
+  type: 'test'
+  ...
+# Subtest: generated session authorization: stale reverification
+ok 470 - generated session authorization: stale reverification
+  ---
+  duration_ms: 7.928084
+  type: 'test'
+  ...
+# Subtest: generated session authorization: strict MFA without second factor
+ok 471 - generated session authorization: strict MFA without second factor
+  ---
+  duration_ms: 5.807292
+  type: 'test'
+  ...
+# Subtest: generated session authorization: no enrolled factors
+ok 472 - generated session authorization: no enrolled factors
+  ---
+  duration_ms: 6.315708
+  type: 'test'
+  ...
+# Subtest: generated session authorization: missing feature despite fresh factors
+ok 473 - generated session authorization: missing feature despite fresh factors
+  ---
+  duration_ms: 5.392708
+  type: 'test'
+  ...
+# Subtest: generated session authorization: missing feature claims
+ok 474 - generated session authorization: missing feature claims
+  ---
+  duration_ms: 4.965042
+  type: 'test'
+  ...
+# Subtest: generated session authorization: missing plan claims
+ok 475 - generated session authorization: missing plan claims
+  ---
+  duration_ms: 7.485
+  type: 'test'
+  ...
+# Subtest: generated session authorization: malformed feature claim
+ok 476 - generated session authorization: malformed feature claim
+  ---
+  duration_ms: 5.408333
+  type: 'test'
+  ...
+# Subtest: generated session authorization: user feature without org
+ok 477 - generated session authorization: user feature without org
+  ---
+  duration_ms: 6.836667
+  type: 'test'
+  ...
+# Subtest: generated session authorization: org feature absent without org
+ok 478 - generated session authorization: org feature absent without org
+  ---
+  duration_ms: 26.882708
+  type: 'test'
+  ...
+# Subtest: generated session authorization: invalid maximum age 0
+ok 479 - generated session authorization: invalid maximum age 0
+  ---
+  duration_ms: 9.765792
+  type: 'test'
+  ...
+# Subtest: generated session authorization: invalid maximum age -1
+ok 480 - generated session authorization: invalid maximum age -1
+  ---
+  duration_ms: 7.059208
+  type: 'test'
+  ...
+# Subtest: generated session authorization: unknown reverification level
+ok 481 - generated session authorization: unknown reverification level
+  ---
+  duration_ms: 7.941875
+  type: 'test'
+  ...
+# Subtest: authorization observes changed membership permissions after session reload
+ok 482 - authorization observes changed membership permissions after session reload
+  ---
+  duration_ms: 9.258
+  type: 'test'
+  ...
+# Subtest: authorization rejects omitted required factor ages at startup
+ok 483 - authorization rejects omitted required factor ages at startup
+  ---
+  duration_ms: 6.54075
+  type: 'test'
+  ...
+# Subtest: authorization rejects malformed required factor ages at startup
+ok 484 - authorization rejects malformed required factor ages at startup
+  ---
+  duration_ms: 5.06875
+  type: 'test'
+  ...
+# (node:67805) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated session passkey verification stops at preparation-rejected
+ok 485 - generated session passkey verification stops at preparation-rejected
+  ---
+  duration_ms: 42.512167
+  type: 'test'
+  ...
+# Subtest: generated session passkey verification stops at submission-rejected
+ok 486 - generated session passkey verification stops at submission-rejected
+  ---
+  duration_ms: 19.105208
+  type: 'test'
+  ...
+# Subtest: generated session passkey verification stops at missing-options
+ok 487 - generated session passkey verification stops at missing-options
+  ---
+  duration_ms: 20.143625
+  type: 'test'
+  ...
+# Subtest: generated session passkey verification stops at provider-failed
+ok 488 - generated session passkey verification stops at provider-failed
+  ---
+  duration_ms: 11.249125
+  type: 'test'
+  ...
+# Subtest: generated session passkey verification stops at invalid-credential
+ok 489 - generated session passkey verification stops at invalid-credential
+  ---
+  duration_ms: 9.765791
+  type: 'test'
+  ...
+# Subtest: generated session passkey verification stops at unsupported
+ok 490 - generated session passkey verification stops at unsupported
+  ---
+  duration_ms: 8.486625
+  type: 'test'
+  ...
+# (node:67806) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated session revocation: current
+ok 491 - generated session revocation: current
+  ---
+  duration_ms: 49.608292
+  type: 'test'
+  ...
+# Subtest: generated session revocation: other
+ok 492 - generated session revocation: other
+  ---
+  duration_ms: 15.007792
+  type: 'test'
+  ...
+# Subtest: generated session revocation: rejected
+ok 493 - generated session revocation: rejected
+  ---
+  duration_ms: 9.262792
+  type: 'test'
+  ...
+# Subtest: pending task survives generated projection: setup-mfa
+ok 494 - pending task survives generated projection: setup-mfa
+  ---
+  duration_ms: 6.688125
+  type: 'test'
+  ...
+# Subtest: pending task survives generated projection: reset-password
+ok 495 - pending task survives generated projection: reset-password
+  ---
+  duration_ms: 5.310083
+  type: 'test'
+  ...
+# Subtest: pending task survives generated projection: another-task
+ok 496 - pending task survives generated projection: another-task
+  ---
+  duration_ms: 33.458125
+  type: 'test'
+  ...
+# Subtest: a session without user identity denies authorization
+ok 497 - a session without user identity denies authorization
+  ---
+  duration_ms: 11.743
+  type: 'test'
+  ...
+# (node:67807) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated sign-out request and cache policy: scoped=false, rejected=false
+ok 498 - generated sign-out request and cache policy: scoped=false, rejected=false
+  ---
+  duration_ms: 49.131959
+  type: 'test'
+  ...
+# Subtest: generated sign-out request and cache policy: scoped=false, rejected=true
+ok 499 - generated sign-out request and cache policy: scoped=false, rejected=true
+  ---
+  duration_ms: 23.223583
+  type: 'test'
+  ...
+# Subtest: generated sign-out request and cache policy: scoped=true, rejected=false
+ok 500 - generated sign-out request and cache policy: scoped=true, rejected=false
+  ---
+  duration_ms: 13.216042
+  type: 'test'
+  ...
+# Subtest: generated sign-out request and cache policy: scoped=true, rejected=true
+ok 501 - generated sign-out request and cache policy: scoped=true, rejected=true
+  ---
+  duration_ms: 20.226667
+  type: 'test'
+  ...
+# (node:67808) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: initial core selection: missing selection falls back to the first signed-in session
+ok 502 - initial core selection: missing selection falls back to the first signed-in session
+  ---
+  duration_ms: 27.840542
+  type: 'test'
+  ...
+# Subtest: initial core selection: unmatched selection falls back to the first signed-in session
+ok 503 - initial core selection: unmatched selection falls back to the first signed-in session
+  ---
+  duration_ms: 8.219542
+  type: 'test'
+  ...
+# Subtest: initial core selection: selected pending session is retained
+ok 504 - initial core selection: selected pending session is retained
+  ---
+  duration_ms: 6.03525
+  type: 'test'
+  ...
+# Subtest: initial core selection: selected active session is retained
+ok 505 - initial core selection: selected active session is retained
+  ---
+  duration_ms: 7.154666
+  type: 'test'
+  ...
+# Subtest: initial core selection: selection wins across multiple sessions
+ok 506 - initial core selection: selection wins across multiple sessions
+  ---
+  duration_ms: 13.376625
+  type: 'test'
+  ...
+# Subtest: initial core selection: inactive sessions are excluded from initial selection
+ok 507 - initial core selection: inactive sessions are excluded from initial selection
+  ---
+  duration_ms: 4.897208
+  type: 'test'
+  ...
+# Subtest: session reload publishes unchanged state before completing
+ok 508 - session reload publishes unchanged state before completing
+  ---
+  duration_ms: 10.724458
+  type: 'test'
+  ...
+# Subtest: session reload publishes timestamp state before completing
+ok 509 - session reload publishes timestamp state before completing
+  ---
+  duration_ms: 26.653625
+  type: 'test'
+  ...
+# Subtest: session reload publishes pending state before completing
+ok 510 - session reload publishes pending state before completing
+  ---
+  duration_ms: 10.915
+  type: 'test'
+  ...
+# Subtest: session reload publishes expired state before completing
+ok 511 - session reload publishes expired state before completing
+  ---
+  duration_ms: 17.889
+  type: 'test'
+  ...
+# Subtest: session reload publishes removed state before completing
+ok 512 - session reload publishes removed state before completing
+  ---
+  duration_ms: 27.001208
+  type: 'test'
+  ...
+# Subtest: session reload publishes replaced state before completing
+ok 513 - session reload publishes replaced state before completing
+  ---
+  duration_ms: 7.778625
+  type: 'test'
+  ...
+# Subtest: the active organization is derived from session membership: org_one
+ok 514 - the active organization is derived from session membership: org_one
+  ---
+  duration_ms: 6.781583
+  type: 'test'
+  ...
+# Subtest: the active organization is derived from session membership: null
+ok 515 - the active organization is derived from session membership: null
+  ---
+  duration_ms: 7.73225
+  type: 'test'
+  ...
+# Subtest: the active organization is derived from session membership: org_missing
+ok 516 - the active organization is derived from session membership: org_missing
+  ---
+  duration_ms: 9.696042
+  type: 'test'
+  ...
+# Subtest: session reload publishes the changed organization before completion: org_two
+ok 517 - session reload publishes the changed organization before completion: org_two
+  ---
+  duration_ms: 7.735
+  type: 'test'
+  ...
+# Subtest: session reload publishes the changed organization before completion: null
+ok 518 - session reload publishes the changed organization before completion: null
+  ---
+  duration_ms: 12.608417
+  type: 'test'
+  ...
+# (node:67809) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated token request preserves shared policy: first mint
+ok 519 - generated token request preserves shared policy: first mint
+  ---
+  duration_ms: 33.844958
+  type: 'test'
+  ...
+# Subtest: generated token request preserves shared policy: forced first mint
+ok 520 - generated token request preserves shared policy: forced first mint
+  ---
+  duration_ms: 9.538458
+  type: 'test'
+  ...
+# Subtest: generated token request preserves shared policy: previous token and forced origin
+ok 521 - generated token request preserves shared policy: previous token and forced origin
+  ---
+  duration_ms: 9.819042
+  type: 'test'
+  ...
+# Subtest: generated token request preserves shared policy: disabled minter
+ok 522 - generated token request preserves shared policy: disabled minter
+  ---
+  duration_ms: 8.102708
+  type: 'test'
+  ...
+# Subtest: generated token request preserves shared policy: template ignores mint parameters
+ok 523 - generated token request preserves shared policy: template ignores mint parameters
+  ---
+  duration_ms: 9.284959
+  type: 'test'
+  ...
+# Subtest: a nonselected available session coalesces token requests without changing selection
+ok 524 - a nonselected available session coalesces token requests without changing selection
+  ---
+  duration_ms: 20.121416
+  type: 'test'
+  ...
+# (node:67810) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated session verification: startVerification first_factor
+ok 525 - generated session verification: startVerification first_factor
+  ---
+  duration_ms: 36.531041
+  type: 'test'
+  ...
+# Subtest: generated session verification: startVerification second_factor
+ok 526 - generated session verification: startVerification second_factor
+  ---
+  duration_ms: 7.841583
+  type: 'test'
+  ...
+# Subtest: generated session verification: startVerification multi_factor
+ok 527 - generated session verification: startVerification multi_factor
+  ---
+  duration_ms: 13.188458
+  type: 'test'
+  ...
+# Subtest: generated session verification: prepareFirstFactorVerification passkey
+ok 528 - generated session verification: prepareFirstFactorVerification passkey
+  ---
+  duration_ms: 8.695125
+  type: 'test'
+  ...
+# Subtest: generated session verification: prepareFirstFactorVerification email_code
+ok 529 - generated session verification: prepareFirstFactorVerification email_code
+  ---
+  duration_ms: 9.056708
+  type: 'test'
+  ...
+# Subtest: generated session verification: prepareFirstFactorVerification phone_code
+ok 530 - generated session verification: prepareFirstFactorVerification phone_code
+  ---
+  duration_ms: 12.065542
+  type: 'test'
+  ...
+# Subtest: generated session verification: prepareFirstFactorVerification enterprise_sso
+ok 531 - generated session verification: prepareFirstFactorVerification enterprise_sso
+  ---
+  duration_ms: 8.498542
+  type: 'test'
+  ...
+# Subtest: generated session verification: attemptFirstFactorVerification email_code
+ok 532 - generated session verification: attemptFirstFactorVerification email_code
+  ---
+  duration_ms: 30.00075
+  type: 'test'
+  ...
+# Subtest: generated session verification: attemptFirstFactorVerification phone_code
+ok 533 - generated session verification: attemptFirstFactorVerification phone_code
+  ---
+  duration_ms: 14.089083
+  type: 'test'
+  ...
+# Subtest: generated session verification: attemptFirstFactorVerification password
+ok 534 - generated session verification: attemptFirstFactorVerification password
+  ---
+  duration_ms: 9.31275
+  type: 'test'
+  ...
+# Subtest: generated session verification: prepareSecondFactorVerification phone_code
+ok 535 - generated session verification: prepareSecondFactorVerification phone_code
+  ---
+  duration_ms: 12.504584
+  type: 'test'
+  ...
+# Subtest: generated session verification: attemptSecondFactorVerification phone_code
+ok 536 - generated session verification: attemptSecondFactorVerification phone_code
+  ---
+  duration_ms: 12.487542
+  type: 'test'
+  ...
+# Subtest: generated session verification: attemptSecondFactorVerification totp
+ok 537 - generated session verification: attemptSecondFactorVerification totp
+  ---
+  duration_ms: 7.068
+  type: 'test'
+  ...
+# Subtest: generated session verification: attemptSecondFactorVerification backup_code
+ok 538 - generated session verification: attemptSecondFactorVerification backup_code
+  ---
+  duration_ms: 10.906334
+  type: 'test'
+  ...
+# Subtest: session passkey reverification prepares and submits credential
+ok 539 - session passkey reverification prepares and submits credential
+  ---
+  duration_ms: 11.149667
+  type: 'test'
+  ...
+# Subtest: session passkey reverification propagates cancellation
+ok 540 - session passkey reverification propagates cancellation
+  ---
+  duration_ms: 8.026167
+  type: 'test'
+  ...
+# Subtest: session verification preserves structured invalid-code failure and permits retry
+ok 541 - session verification preserves structured invalid-code failure and permits retry
+  ---
+  duration_ms: 7.532791
+  type: 'test'
+  ...
+# Subtest: session verification does not expose the inherited method without a reload endpoint
+ok 542 - session verification does not expose the inherited method without a reload endpoint
+  ---
+  duration_ms: 6.732041
+  type: 'test'
+  ...
+# (node:67811) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: nested client sign-in preserves needs_client_trust and related fields
+ok 543 - nested client sign-in preserves needs_client_trust and related fields
+  ---
+  duration_ms: 45.801208
+  type: 'test'
+  ...
+# Subtest: nested client sign-in preserves future_sign_in_status and related fields
+ok 544 - nested client sign-in preserves future_sign_in_status and related fields
+  ---
+  duration_ms: 8.893167
+  type: 'test'
+  ...
+# Subtest: server updates replace unknown sign-in status while preserving the resource handle
+ok 545 - server updates replace unknown sign-in status while preserving the resource handle
+  ---
+  duration_ms: 10.516417
+  type: 'test'
+  ...
+# (node:67813) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: signIn.sso runs the generated operation on the real future facade without a browser global or implicit finalization
+ok 546 - signIn.sso runs the generated operation on the real future facade without a browser global or implicit finalization
+  ---
+  duration_ms: 40.937125
+  type: 'test'
+  ...
+# Subtest: signIn.sso preserves remaining requirements
+ok 547 - signIn.sso preserves remaining requirements
+  ---
+  duration_ms: 6.335833
+  type: 'test'
+  ...
+# Subtest: signIn.sso returns native cancellation through its error envelope without reconciling or activating
+ok 548 - signIn.sso returns native cancellation through its error envelope without reconciling or activating
+  ---
+  duration_ms: 4.652792
+  type: 'test'
+  ...
+# Subtest: signIn.sso rejects an unrelated callback before sending a nonce
+ok 549 - signIn.sso rejects an unrelated callback before sending a nonce
+  ---
+  duration_ms: 7.415292
+  type: 'test'
+  ...
+# Subtest: signUp.sso runs the generated operation on the real future facade without a browser global or implicit finalization
+ok 550 - signUp.sso runs the generated operation on the real future facade without a browser global or implicit finalization
+  ---
+  duration_ms: 6.203167
+  type: 'test'
+  ...
+# Subtest: signUp.sso preserves remaining requirements
+ok 551 - signUp.sso preserves remaining requirements
+  ---
+  duration_ms: 10.286083
+  type: 'test'
+  ...
+# Subtest: signUp.sso returns native cancellation through its error envelope without reconciling or activating
+ok 552 - signUp.sso returns native cancellation through its error envelope without reconciling or activating
+  ---
+  duration_ms: 4.450417
+  type: 'test'
+  ...
+# Subtest: signUp.sso rejects an unrelated callback before sending a nonce
+ok 553 - signUp.sso rejects an unrelated callback before sending a nonce
+  ---
+  duration_ms: 6.140416
+  type: 'test'
+  ...
+# Subtest: signIn.sso preserves native query nonce semantics
+ok 554 - signIn.sso preserves native query nonce semantics
+  ---
+  duration_ms: 38.875417
+  type: 'test'
+  ...
+# Subtest: signUp.sso preserves native query nonce semantics
+ok 555 - signUp.sso preserves native query nonce semantics
+  ---
+  duration_ms: 25.882459
+  type: 'test'
+  ...
+# Subtest: signIn.sso preserves the caller's raw OIDC prompt string
+ok 556 - signIn.sso preserves the caller's raw OIDC prompt string
+  ---
+  duration_ms: 74.583458
+  type: 'test'
+  ...
+# Subtest: signUp.sso preserves the caller's raw OIDC prompt string
+ok 557 - signUp.sso preserves the caller's raw OIDC prompt string
+  ---
+  duration_ms: 46.866167
+  type: 'test'
+  ...
+# (node:67814) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: coalesced token callers cancel independently: 0
+ok 558 - coalesced token callers cancel independently: 0
+  ---
+  duration_ms: 58.288833
+  type: 'test'
+  ...
+# Subtest: coalesced token callers cancel independently: 1
+ok 559 - coalesced token callers cancel independently: 1
+  ---
+  duration_ms: 11.192208
+  type: 'test'
+  ...
+# Subtest: coalesced token callers cancel independently: 0,1
+ok 560 - coalesced token callers cancel independently: 0,1
+  ---
+  duration_ms: 10.603375
+  type: 'test'
+  ...
+# Subtest: a shared token failure reaches the surviving caller and permits recovery: cancelled=0
+ok 561 - a shared token failure reaches the surviving caller and permits recovery: cancelled=0
+  ---
+  duration_ms: 15.181458
+  type: 'test'
+  ...
+# Subtest: a shared token failure reaches the surviving caller and permits recovery: cancelled=1
+ok 562 - a shared token failure reaches the surviving caller and permits recovery: cancelled=1
+  ---
+  duration_ms: 8.0495
+  type: 'test'
+  ...
+# (node:67815) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Session.getToken handles valid raw token
+ok 563 - Session.getToken handles valid raw token
+  ---
+  duration_ms: 47.00975
+  type: 'test'
+  ...
+# Subtest: Session.getToken handles missing JWT segment
+ok 564 - Session.getToken handles missing JWT segment
+  ---
+  duration_ms: 27.113708
+  type: 'test'
+  ...
+# Subtest: Session.getToken handles invalid base64 header
+ok 565 - Session.getToken handles invalid base64 header
+  ---
+  duration_ms: 22.31
+  type: 'test'
+  ...
+# Subtest: Session.getToken handles invalid JSON payload
+ok 566 - Session.getToken handles invalid JSON payload
+  ---
+  duration_ms: 28.45575
+  type: 'test'
+  ...
+# (node:67816) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: cache clear ignores a pending proactive refresh with replacement=false
+ok 567 - cache clear ignores a pending proactive refresh with replacement=false
+  ---
+  duration_ms: 33.018875
+  type: 'test'
+  ...
+# Subtest: cache clear ignores a pending proactive refresh with replacement=true
+ok 568 - cache clear ignores a pending proactive refresh with replacement=true
+  ---
+  duration_ms: 11.93625
+  type: 'test'
+  ...
+# Subtest: clearing the token cache fences earlier requests when old reply arrives first=false
+ok 569 - clearing the token cache fences earlier requests when old reply arrives first=false
+  ---
+  duration_ms: 12.63025
+  type: 'test'
+  ...
+# Subtest: clearing the token cache fences earlier requests when old reply arrives first=true
+ok 570 - clearing the token cache fences earlier requests when old reply arrives first=true
+  ---
+  duration_ms: 8.634833
+  type: 'test'
+  ...
+# (node:67817) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: generated token calls preserve canonical snapshot policy: initial
+ok 571 - generated token calls preserve canonical snapshot policy: initial
+  ---
+  duration_ms: 41.747
+  type: 'test'
+  ...
+# Subtest: generated token calls preserve canonical snapshot policy: clear
+ok 572 - generated token calls preserve canonical snapshot policy: clear
+  ---
+  duration_ms: 10.305625
+  type: 'test'
+  ...
+# Subtest: generated token calls preserve canonical snapshot policy: mintTie
+ok 573 - generated token calls preserve canonical snapshot policy: mintTie
+  ---
+  duration_ms: 12.565833
+  type: 'test'
+  ...
+# Subtest: generated token calls preserve canonical snapshot policy: stale
+ok 574 - generated token calls preserve canonical snapshot policy: stale
+  ---
+  duration_ms: 12.899583
+  type: 'test'
+  ...
+# Subtest: generated token calls preserve canonical snapshot policy: fresh
+ok 575 - generated token calls preserve canonical snapshot policy: fresh
+  ---
+  duration_ms: 13.703375
+  type: 'test'
+  ...
+# Subtest: generated token calls preserve canonical snapshot policy: tie
+ok 576 - generated token calls preserve canonical snapshot policy: tie
+  ---
+  duration_ms: 13.912166
+  type: 'test'
+  ...
+# Subtest: generated token calls preserve canonical snapshot policy: expired
+ok 577 - generated token calls preserve canonical snapshot policy: expired
+  ---
+  duration_ms: 10.370542
+  type: 'test'
+  ...
+# (node:67818) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/utils/passkeyFailureStage.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: recognized discriminants beat closed enum fallback without losing future field values
+ok 578 - recognized discriminants beat closed enum fallback without losing future field values
+  ---
+  duration_ms: 1.184458
+  type: 'test'
+  ...
+# Subtest: malformed recognized discriminants cannot fall back to the closed enum branch
+ok 579 - malformed recognized discriminants cannot fall back to the closed enum branch
+  ---
+  duration_ms: 0.206542
+  type: 'test'
+  ...
+# Subtest: recognized discriminants beat open enum fallback without losing future field values
+ok 580 - recognized discriminants beat open enum fallback without losing future field values
+  ---
+  duration_ms: 0.081875
+  type: 'test'
+  ...
+# Subtest: malformed recognized discriminants cannot fall back to the open enum branch
+ok 581 - malformed recognized discriminants cannot fall back to the open enum branch
+  ---
+  duration_ms: 0.04875
+  type: 'test'
+  ...
+# (node:67819) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: clearing both profile names clears the generated full name (null)
+ok 582 - clearing both profile names clears the generated full name (null)
+  ---
+  duration_ms: 33.771167
+  type: 'test'
+  ...
+# Subtest: clearing both profile names clears the generated full name ("")
+ok 583 - clearing both profile names clears the generated full name ("")
+  ---
+  duration_ms: 8.608791
+  type: 'test'
+  ...
+# Subtest: profile image removal returns a usable generated image (receipt)
+ok 584 - profile image removal returns a usable generated image (receipt)
+  ---
+  duration_ms: 10.777167
+  type: 'test'
+  ...
+# Subtest: profile image removal returns a usable generated image (resource)
+ok 585 - profile image removal returns a usable generated image (resource)
+  ---
+  duration_ms: 9.865083
+  type: 'test'
+  ...
+# Subtest: profile image removal returns a usable generated image (rejected)
+ok 586 - profile image removal returns a usable generated image (rejected)
+  ---
+  duration_ms: 7.538542
+  type: 'test'
+  ...
+# Subtest: generated deprecated user metadata replacement uses identical
+ok 587 - generated deprecated user metadata replacement uses identical
+  ---
+  duration_ms: 7.587792
+  type: 'test'
+  ...
+# Subtest: generated deprecated user metadata replacement uses reloaded-current
+ok 588 - generated deprecated user metadata replacement uses reloaded-current
+  ---
+  duration_ms: 6.723958
+  type: 'test'
+  ...
+# Subtest: generated deprecated user metadata replacement uses reloaded-null
+ok 589 - generated deprecated user metadata replacement uses reloaded-null
+  ---
+  duration_ms: 9.428542
+  type: 'test'
+  ...
+# Subtest: generated deprecated user metadata replacement uses profile-current
+ok 590 - generated deprecated user metadata replacement uses profile-current
+  ---
+  duration_ms: 6.158333
+  type: 'test'
+  ...
+# Subtest: generated deprecated user metadata replacement uses profile-null
+ok 591 - generated deprecated user metadata replacement uses profile-null
+  ---
+  duration_ms: 6.059583
+  type: 'test'
+  ...
+# Subtest: generated metadata deep-merge forwards the explicit patch without replacing unrelated fields
+ok 592 - generated metadata deep-merge forwards the explicit patch without replacing unrelated fields
+  ---
+  duration_ms: 6.87725
+  type: 'test'
+  ...
+# Subtest: generated password update preserves current password and sign-out flag (true)
+ok 593 - generated password update preserves current password and sign-out flag (true)
+  ---
+  duration_ms: 6.117083
+  type: 'test'
+  ...
+# Subtest: generated password update preserves current password and sign-out flag (false)
+ok 594 - generated password update preserves current password and sign-out flag (false)
+  ---
+  duration_ms: 7.081459
+  type: 'test'
+  ...
+# Subtest: generated user image upload preserves binary data and published profile state
+ok 595 - generated user image upload preserves binary data and published profile state
+  ---
+  duration_ms: 14.855542
+  type: 'test'
+  ...
+# Subtest: generated user image upload preserves string data and published profile state
+ok 596 - generated user image upload preserves string data and published profile state
+  ---
+  duration_ms: 7.496291
+  type: 'test'
+  ...
+# Subtest: generated TOTP enrollment, verification, recovery and removal preserve explicit results and client flags
+ok 597 - generated TOTP enrollment, verification, recovery and removal preserve explicit results and client flags
+  ---
+  duration_ms: 17.082708
+  type: 'test'
+  ...
+# Subtest: generated user getOrganizationInvitations preserves page 1 and status filters
+ok 598 - generated user getOrganizationInvitations preserves page 1 and status filters
+  ---
+  duration_ms: 8.600959
+  type: 'test'
+  ...
+# Subtest: generated user getOrganizationInvitations preserves page 2 and status filters
+ok 599 - generated user getOrganizationInvitations preserves page 2 and status filters
+  ---
+  duration_ms: 9.712334
+  type: 'test'
+  ...
+# Subtest: generated user getOrganizationSuggestions preserves page 1 and status filters
+ok 600 - generated user getOrganizationSuggestions preserves page 1 and status filters
+  ---
+  duration_ms: 7.415875
+  type: 'test'
+  ...
+# Subtest: generated user getOrganizationSuggestions preserves page 2 and status filters
+ok 601 - generated user getOrganizationSuggestions preserves page 2 and status filters
+  ---
+  duration_ms: 6.532125
+  type: 'test'
+  ...
+# Subtest: generated user getOrganizationMemberships preserves page 1 and status filters
+ok 602 - generated user getOrganizationMemberships preserves page 1 and status filters
+  ---
+  duration_ms: 8.875958
+  type: 'test'
+  ...
+# Subtest: generated user getOrganizationMemberships preserves page 3 and status filters
+ok 603 - generated user getOrganizationMemberships preserves page 3 and status filters
+  ---
+  duration_ms: 6.232083
+  type: 'test'
+  ...
+# Subtest: generated leaveOrganization publishes client membership changes (rejected=false)
+ok 604 - generated leaveOrganization publishes client membership changes (rejected=false)
+  ---
+  duration_ms: 11.16425
+  type: 'test'
+  ...
+# Subtest: generated leaveOrganization publishes client membership changes (rejected=true)
+ok 605 - generated leaveOrganization publishes client membership changes (rejected=true)
+  ---
+  duration_ms: 5.824417
+  type: 'test'
+  ...
+# Subtest: generated user deletion reconciles the server's cleared client (rejected=false)
+ok 606 - generated user deletion reconciles the server's cleared client (rejected=false)
+  ---
+  duration_ms: 6.951916
+  type: 'test'
+  ...
+# Subtest: generated user deletion reconciles the server's cleared client (rejected=true)
+ok 607 - generated user deletion reconciles the server's cleared client (rejected=true)
+  ---
+  duration_ms: 6.005792
+  type: 'test'
+  ...
+# Subtest: user invitation filters follow the canonical single-status contract
+ok 608 - user invitation filters follow the canonical single-status contract
+  ---
+  duration_ms: 5.376792
+  type: 'test'
+  ...
+1..608
+# tests 608
+# suites 0
+# pass 608
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1322.487083

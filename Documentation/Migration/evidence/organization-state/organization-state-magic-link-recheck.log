@@ -1,0 +1,254 @@
+TAP version 13
+# (node:67690) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: signIn email-link storage failure preserves the persistence-before-request boundary
+ok 1 - signIn email-link storage failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 26.828041
+  type: 'test'
+  ...
+# Subtest: signIn email-link prepare failure preserves the persistence-before-request boundary
+ok 2 - signIn email-link prepare failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 7.819833
+  type: 'test'
+  ...
+# Subtest: signUp email-link storage failure preserves the persistence-before-request boundary
+ok 3 - signUp email-link storage failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 6.61475
+  type: 'test'
+  ...
+# Subtest: signUp email-link prepare failure preserves the persistence-before-request boundary
+ok 4 - signUp email-link prepare failure preserves the persistence-before-request boundary
+  ---
+  duration_ms: 6.692167
+  type: 'test'
+  ...
+# Subtest: native signIn email link stores PKCE and returns the canonical resource without activation
+ok 5 - native signIn email link stores PKCE and returns the canonical resource without activation
+  ---
+  duration_ms: 11.419333
+  type: 'test'
+  ...
+# Subtest: native signUp email link stores PKCE and returns the canonical resource without activation
+ok 6 - native signUp email link stores PKCE and returns the canonical resource without activation
+  ---
+  duration_ms: 11.040084
+  type: 'test'
+  ...
+# Subtest: email-link callbacks survive restart and reject a different route or flow before HTTP
+ok 7 - email-link callbacks survive restart and reject a different route or flow before HTTP
+  ---
+  duration_ms: 14.610292
+  type: 'test'
+  ...
+# Subtest: concurrent callbacks share one completion request
+ok 8 - concurrent callbacks share one completion request
+  ---
+  duration_ms: 8.954083
+  type: 'test'
+  ...
+# Subtest: email link approval_token_expired clears its saved verifier
+ok 9 - email link approval_token_expired clears its saved verifier
+  ---
+  duration_ms: 7.28925
+  type: 'test'
+  ...
+# Subtest: email link temporarily_unavailable preserves its saved verifier
+ok 10 - email link temporarily_unavailable preserves its saved verifier
+  ---
+  duration_ms: 8.951542
+  type: 'test'
+  ...
+# Subtest: reset during a secure-storage write clears the eventual record and does not prepare the factor
+ok 11 - reset during a secure-storage write clears the eventual record and does not prepare the factor
+  ---
+  duration_ms: 6.800458
+  type: 'test'
+  ...
+# Subtest: imports a saved ios email-link record through the same source validation
+ok 12 - imports a saved ios email-link record through the same source validation
+  ---
+  duration_ms: 6.112959
+  type: 'test'
+  ...
+# Subtest: imports a saved android email-link record through the same source validation
+ok 13 - imports a saved android email-link record through the same source validation
+  ---
+  duration_ms: 5.866916
+  type: 'test'
+  ...
+# Subtest: expired email-link records are removed before any completion request
+ok 14 - expired email-link records are removed before any completion request
+  ---
+  duration_ms: 5.460667
+  type: 'test'
+  ...
+# Subtest: reset fences a delayed completion response and its credential write
+ok 15 - reset fences a delayed completion response and its credential write
+  ---
+  duration_ms: 8.867209
+  type: 'test'
+  ...
+# Subtest: preserves the previous native email-link route form clerk-test://sso-callback\#flow_id=sia_native&approval_token=fixture_approval
+ok 16 - preserves the previous native email-link route form clerk-test://sso-callback\#flow_id=sia_native&approval_token=fixture_approval
+  ---
+  duration_ms: 8.464
+  type: 'test'
+  ...
+# Subtest: preserves the previous native email-link route form clerk-test://sso-callback/?flow_id=sia_native&approval_token=fixture_approval
+ok 17 - preserves the previous native email-link route form clerk-test://sso-callback/?flow_id=sia_native&approval_token=fixture_approval
+  ---
+  duration_ms: 8.090167
+  type: 'test'
+  ...
+# Subtest: preserves the previous native email-link route form CLERK-TEST://SSO-CALLBACK/\#flow_id=sia_native&approval_token=fixture_approval
+ok 18 - preserves the previous native email-link route form CLERK-TEST://SSO-CALLBACK/\#flow_id=sia_native&approval_token=fixture_approval
+  ---
+  duration_ms: 9.169292
+  type: 'test'
+  ...
+# Subtest: email-link route mismatches and incomplete callbacks do not consume stored credentials
+ok 19 - email-link route mismatches and incomplete callbacks do not consume stored credentials
+  ---
+  duration_ms: 8.067458
+  type: 'test'
+  ...
+# Subtest: email-link query values take precedence over fragment values
+ok 20 - email-link query values take precedence over fragment values
+  ---
+  duration_ms: 6.762334
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: "UNSUPPORTED"
+ok 21 - invalid Android email-link state is discarded before redemption: "UNSUPPORTED"
+  ---
+  duration_ms: 5.986125
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: ""
+ok 22 - invalid Android email-link state is discarded before redemption: ""
+  ---
+  duration_ms: 4.747625
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: null
+ok 23 - invalid Android email-link state is discarded before redemption: null
+  ---
+  duration_ms: 4.957084
+  type: 'test'
+  ...
+# Subtest: invalid Android email-link state is discarded before redemption: 7
+ok 24 - invalid Android email-link state is discarded before redemption: 7
+  ---
+  duration_ms: 5.228375
+  type: 'test'
+  ...
+# Subtest: legacy iOS absent email-link kind remains a sign-in record: undefined
+ok 25 - legacy iOS absent email-link kind remains a sign-in record: undefined
+  ---
+  duration_ms: 6.53725
+  type: 'test'
+  ...
+# Subtest: legacy iOS absent email-link kind remains a sign-in record: null
+ok 26 - legacy iOS absent email-link kind remains a sign-in record: null
+  ---
+  duration_ms: 8.779125
+  type: 'test'
+  ...
+# Subtest: incomplete signIn email-link completion publishes remaining requirements without activation
+ok 27 - incomplete signIn email-link completion publishes remaining requirements without activation
+  ---
+  duration_ms: 7.803
+  type: 'test'
+  ...
+# Subtest: incomplete signUp email-link completion publishes remaining requirements without activation
+ok 28 - incomplete signUp email-link completion publishes remaining requirements without activation
+  ---
+  duration_ms: 7.158959
+  type: 'test'
+  ...
+# Subtest: sign-up email-link rejects ticket completion and consumes its verifier
+ok 29 - sign-up email-link rejects ticket completion and consumes its verifier
+  ---
+  duration_ms: 6.714459
+  type: 'test'
+  ...
+# Subtest: sign-up email-link rejects wrong-signup completion and consumes its verifier
+ok 30 - sign-up email-link rejects wrong-signup completion and consumes its verifier
+  ---
+  duration_ms: 7.250916
+  type: 'test'
+  ...
+# Subtest: sign-up email-link rejects null completion and consumes its verifier
+ok 31 - sign-up email-link rejects null completion and consumes its verifier
+  ---
+  duration_ms: 7.345584
+  type: 'test'
+  ...
+# Subtest: starting a newer email link fences an old completion and preserves the new verifier
+ok 32 - starting a newer email link fences an old completion and preserves the new verifier
+  ---
+  duration_ms: 8.731375
+  type: 'test'
+  ...
+# Subtest: email-link error approval_token_consumed/422 preserves the canonical cleanup policy
+ok 33 - email-link error approval_token_consumed/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 9.009041
+  type: 'test'
+  ...
+# Subtest: email-link error approval_token_invalid/422 preserves the canonical cleanup policy
+ok 34 - email-link error approval_token_invalid/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 7.244541
+  type: 'test'
+  ...
+# Subtest: email-link error pkce_verification_failed/422 preserves the canonical cleanup policy
+ok 35 - email-link error pkce_verification_failed/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 7.301459
+  type: 'test'
+  ...
+# Subtest: email-link error flow_not_approved/422 preserves the canonical cleanup policy
+ok 36 - email-link error flow_not_approved/422 preserves the canonical cleanup policy
+  ---
+  duration_ms: 7.046917
+  type: 'test'
+  ...
+# Subtest: email-link error form_param_value_invalid/flow_id preserves the canonical cleanup policy
+ok 37 - email-link error form_param_value_invalid/flow_id preserves the canonical cleanup policy
+  ---
+  duration_ms: 6.81675
+  type: 'test'
+  ...
+# Subtest: email-link error form_param_value_invalid/identifier preserves the canonical cleanup policy
+ok 38 - email-link error form_param_value_invalid/identifier preserves the canonical cleanup policy
+  ---
+  duration_ms: 6.776458
+  type: 'test'
+  ...
+# Subtest: email-link error server_error/500 preserves the canonical cleanup policy
+ok 39 - email-link error server_error/500 preserves the canonical cleanup policy
+  ---
+  duration_ms: 6.881708
+  type: 'test'
+  ...
+# Subtest: email-link error too_many_requests/429 preserves the canonical cleanup policy
+ok 40 - email-link error too_many_requests/429 preserves the canonical cleanup policy
+  ---
+  duration_ms: 8.308958
+  type: 'test'
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 436.507

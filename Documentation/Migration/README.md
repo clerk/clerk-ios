@@ -155,3 +155,5 @@ The [token-only credential upgrade](token-only-credential-upgrade.md) preserves 
 [Passkey assertion options](passkey-options.md) documents server option preservation, shared relying-party validation, and the packaged macOS/iOS Simulator checks.
 
 [Organization invitation and suggestion projection](organization-public-data.md) documents normalization of missing image/slug fields and the remaining legacy timestamp difference.
+
+[Organization state and presentation](organization-state-test-audit.md) documents canonical defaults, permission lists, domain enum values and active-organization membership traversal.

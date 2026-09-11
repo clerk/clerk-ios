@@ -1,0 +1,134 @@
+{
+  "legacy": {
+    "baseline": "1ea9f97250e9e3b266b7fbcfe37d9373e4fc393f",
+    "files": [
+      {
+        "path": "source/api/src/test/java/com/clerk/api/organizations/OrganizationCreationDefaultsTest.kt",
+        "sha256": "4f971562cece1c1db7760700eaf56b10ab48bfe1ef38de27ac86ad884a9d93a3",
+        "declarations": [
+          "decodes partial organization creation defaults"
+        ]
+      },
+      {
+        "path": "source/api/src/test/java/com/clerk/api/organizations/OrganizationDomainTest.kt",
+        "sha256": "2b551fc5763a31caddf36ccfcce0e1d5fb8ada089272f05818f2300b61c1e385",
+        "declarations": [
+          "enrollmentModeType maps known enrollment modes",
+          "enrollmentModeType preserves unknown enrollment modes",
+          "isVerified reflects verification status"
+        ]
+      },
+      {
+        "path": "source/api/src/test/java/com/clerk/api/organizations/OrganizationMembershipTest.kt",
+        "sha256": "9f8f6168acf3847bd812380b1d8a9b027228604343b2616b09995fd1f67e1638",
+        "declarations": [
+          "permission helpers read raw and system permission keys",
+          "permission helpers return false for missing permissions"
+        ]
+      },
+      {
+        "path": "source/api/src/test/java/com/clerk/api/sdk/ClerkOrganizationTest.kt",
+        "sha256": "1bc797f31cd7f025ed71d799549c79d8995ef31f4d0c5d091959b6800ebf64b3",
+        "declarations": [
+          "organizationMembership returns membership matching active organization id",
+          "organizationMembership returns null when no active organization id exists"
+        ]
+      }
+    ]
+  },
+  "retainedLegacyFiles": 38,
+  "focusedSharedTests": 15,
+  "fullSharedTests": 608,
+  "swiftReportedTests": 282,
+  "swiftSkippedLiveTests": [
+    [
+      "fetchAndDecodeEnvironment()",
+      "Requires with-email-codes in .keys.json"
+    ],
+    [
+      "signUpAndSignIn()",
+      "Requires with-email-codes in .keys.json"
+    ]
+  ],
+  "swiftUIPermissionCases": 8,
+  "swiftUIVerificationCases": 6,
+  "androidPackagedCases": {
+    "OrganizationStateContractTest": [
+      "membershipPreservesAllPermissionKeys",
+      "nullMembershipPermissionsBecomeEmpty",
+      "omittedMembershipPermissionsBecomeEmpty",
+      "activeOrganizationSelectsMatchingMembership",
+      "noActiveOrganizationPreservesMemberships",
+      "unknownActiveOrganizationDoesNotSelectAnotherMembership",
+      "manualDomainPreservesVerifiedStatus",
+      "automaticInvitationDomainPreservesUnverifiedStatus",
+      "automaticSuggestionDomainPreservesAbsentVerification",
+      "enterpriseDomainPreservesExpiredStatus",
+      "domainPreservesUnknownModeAndVerificationStatus"
+    ],
+    "OrganizationDefaultsTest": [
+      "absentFormUsesCanonicalEmptyDefaults",
+      "absentSeverityDefaultsToWarning",
+      "absentSlugUsesCanonicalEmptyString",
+      "partialBrandingPreservesLogoAndAdvisory"
+    ]
+  },
+  "androidUICases": {
+    "organizationprofile.OrganizationPresentationTest": [
+      "only verified domain status counts as verified",
+      "each organization action requires its own permission",
+      "empty permissions hide all organization actions"
+    ],
+    "organizationswitcher.OrganizationSwitcherBehaviorTest": [
+      "activeOrganizationMembership uses matching user membership when pages have not loaded",
+      "activeOrganizationMembership returns null when session has no active organization",
+      "shouldShowOrganizationSwitcher requires user session and enabled organizations",
+      "activeOrganizationMembership returns membership matching active organization id"
+    ]
+  },
+  "iosSimulatorCases": [
+    "\"no-form\"",
+    "\"no-severity\"",
+    "\"no-slug\"",
+    "\"partial-branding\"",
+    "\"active\"",
+    "\"automatic_invitation\"",
+    "\"automatic_suggestion\"",
+    "\"enterprise_sso\"",
+    "\"future_mode\"",
+    "\"manual_invitation\"",
+    "\"missing-active\"",
+    "\"no-active\"",
+    "\"permissions-null\"",
+    "\"permissions-omitted\"",
+    "\"permissions-present\""
+  ],
+  "ciSelectedCases": 160,
+  "coreRevision": "4c7c77f5b7e5d52b0c4e65ce8b59b8854e956972",
+  "bundleSHA256": "d0142b55cfa80ef2e7d5769ae95e460b9c798fa451b9f3fc5eef78d63652a6bd",
+  "contractHash": "0f8387f260072ba6f894442b73d50afa6bda5f1205ed3c9209f5d6b1cfba16ce",
+  "noProductionChanges": true,
+  "sourceHashes": {
+    "javascript/packages/mobile-runtime/test/organization-defaults.test.mjs": "8a2943597c4141cfa3ef8c3ed4be55f57a9343c1cc3669de459f855303c370b7",
+    "javascript/packages/mobile-runtime/test/organization-state.test.mjs": "69600ce527051bce9e543ceb2038a5825729fc5f32494afb187c87ed9f14e851",
+    "clerk-android/NativeCoreTests/Android/OrganizationStateContractTest.kt": "31fd29e740695b118d6900cd187a0034dea478580ca1354cd8f50fc683472d22",
+    "clerk-android/NativeCoreTests/Android/OrganizationDefaultsTest.kt": "6500500f670fcf0d8b75152feeb798820e50b6f97361bc1de3946f4a738796ae",
+    "clerk-android/scripts/run-auth-entry-contract.sh": "da4590ca912218d9e0199273698ecd57988b643f516c13648f2e846173382ed4",
+    "clerk-android/source/ui/src/test/java/com/clerk/ui/organizationprofile/OrganizationPresentationTest.kt": "66f34b9ac3c2f5262dfd903ac04808c50c455ad50467846b392ed77d78d25fb4",
+    "clerk-android/source/ui/src/test/java/com/clerk/ui/organizationswitcher/OrganizationSwitcherBehaviorTest.kt": "3a6fcb88987ac8d37b7f652f70b3d0f2d9feb74890e93eb98074bd0f819250c0",
+    "clerk-ios/NativeCoreContractTests/OrganizationStateContractTests.swift": "5c7d355e0a89717441af9b97f94c99716dfc0f9a43b6374bf277b4173358d57d",
+    "clerk-ios/NativeCoreContractTests/OrganizationDefaultsTests.swift": "5f40a76786a8aa005987fa0625631e87ea02a041019fcf22181b038e15c9ea40",
+    "clerk-ios/Tests/UI/OrganizationAccountListCoreTests.swift": "b172fcf664dc068caaed72b60f94c7d03651578351723bcda896575b40a50a7a"
+  },
+  "earlierFailure": "A Node v24.15.0 test process crashed in V8 garbage collection. The cause is undetermined; isolated 40-case and full 608-case reruns passed with unchanged flags.",
+  "evidenceHashes": {
+    "organization-state-ios-tests.json": "42dca980cee4dc06c0659afb79c70677f1da430568a6a3240f849ca5fa2f256d",
+    "organization-state-shared-after-format.log": "69f41397affd68dd35adeb616277ebce2cdc41baf6184bb31e8a3da63976d400",
+    "organization-state-runtime-recheck.log": "bafb0a40a758b0c9cb6ae613547fdc2d0c8e4b171ce15c4aea5c895e66c4969c",
+    "organization-state-magic-link-recheck.log": "4731f91e835089ec3f2acb408121f95c20f32231e1e7dd8e2a72642453097717",
+    "organization-state-runtime-all.log": "e18bb86f6735d88a14a52aa84455525a1664794f951daa85cd12cb07c068e9fa",
+    "organization-state-node-crash.json": "7427f8074b1ffc632d7a79bc49000d788b9315f2d2f050f7db64b68541d7c2b1",
+    "organization-state-ios-summary.json": "c57edeb6aa5bc8e73b5309088c439b17d50821438b0c79b4cc05f0739c167b7a",
+    "organization-state-swift-all-final.log": "8d99bf8c49335187877608d9c30b6c26b1b89cd5e04a191250ed464d4b00217e"
+  }
+}

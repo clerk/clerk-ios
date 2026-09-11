@@ -1,0 +1,171 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "9A1571DF-CC3D-465F-A2E1-C89EC2388B31",
+      "deviceName" : "iPhone Air + Watch",
+      "modelName" : "iPhone Air",
+      "osBuildNumber" : "23F77",
+      "osVersion" : "26.5",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "duration" : "0.055s",
+                      "durationInSeconds" : 0.055357933044433594,
+                      "name" : "\"no-form\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.045s",
+                      "durationInSeconds" : 0.045011043548583984,
+                      "name" : "\"no-severity\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.045s",
+                      "durationInSeconds" : 0.04503178596496582,
+                      "name" : "\"no-slug\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.045s",
+                      "durationInSeconds" : 0.044532060623168945,
+                      "name" : "\"partial-branding\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    }
+                  ],
+                  "duration" : "0.047s",
+                  "durationInSeconds" : 0.047483205795288086,
+                  "name" : "organizationDefaultsNormalizePartialResponses(scenario:)",
+                  "nodeIdentifier" : "PackagedCoreTests/organizationDefaultsNormalizePartialResponses(scenario:)",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests/organizationDefaultsNormalizePartialResponses(scenario:)",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                },
+                {
+                  "children" : [
+                    {
+                      "duration" : "0.041s",
+                      "durationInSeconds" : 0.04097318649291992,
+                      "name" : "\"active\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.046s",
+                      "durationInSeconds" : 0.045549869537353516,
+                      "name" : "\"automatic_invitation\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.047s",
+                      "durationInSeconds" : 0.046820878982543945,
+                      "name" : "\"automatic_suggestion\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.045s",
+                      "durationInSeconds" : 0.04511594772338867,
+                      "name" : "\"enterprise_sso\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.047s",
+                      "durationInSeconds" : 0.04733896255493164,
+                      "name" : "\"future_mode\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.046s",
+                      "durationInSeconds" : 0.04575800895690918,
+                      "name" : "\"manual_invitation\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.041s",
+                      "durationInSeconds" : 0.041204214096069336,
+                      "name" : "\"missing-active\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.04s",
+                      "durationInSeconds" : 0.040435075759887695,
+                      "name" : "\"no-active\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.04s",
+                      "durationInSeconds" : 0.03999495506286621,
+                      "name" : "\"permissions-null\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.041s",
+                      "durationInSeconds" : 0.04068398475646973,
+                      "name" : "\"permissions-omitted\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.04s",
+                      "durationInSeconds" : 0.04009604454040527,
+                      "name" : "\"permissions-present\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    }
+                  ],
+                  "duration" : "0.043s",
+                  "durationInSeconds" : 0.04308828440579501,
+                  "name" : "organizationStatePreservesCanonicalValues(scenario:)",
+                  "nodeIdentifier" : "PackagedCoreTests/organizationStatePreservesCanonicalValues(scenario:)",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests/organizationStatePreservesCanonicalValues(scenario:)",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PackagedCoreTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "NativeCoreContractTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "NativeCoreContractTests",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

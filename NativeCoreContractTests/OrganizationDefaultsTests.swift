@@ -4,7 +4,7 @@ import Foundation
 import Testing
 
 extension PackagedCoreTests {
-  @Test(arguments: ["no-form", "no-severity", "no-slug"])
+  @Test(arguments: ["no-form", "no-severity", "no-slug", "partial-branding"])
   func organizationDefaultsNormalizePartialResponses(scenario: String) async throws {
     let host = try OrganizationDefaultsCapabilities(scenario: scenario)
     let key = "pk_test_" + Data("native-core.clerk.accounts.dev$".utf8).base64EncodedString()
@@ -13,14 +13,15 @@ extension PackagedCoreTests {
     let user = try #require(clerk.user)
     let defaults = try await user.getOrganizationCreationDefaults()
     #expect(host.reads == 1)
-    #expect(defaults.form.name == (scenario == "no-form" ? "" : "My Organization"))
+    #expect(defaults.form.name == (scenario == "no-form" ? "" : (scenario == "partial-branding" ? "Acme" : "My Organization")))
     #expect(defaults.form.slug == (scenario == "no-severity" ? "my-organization" : ""))
-    #expect(defaults.form.logo == nil)
+    #expect(defaults.form.logo == (scenario == "partial-branding" ? "https://img.clerk.com/acme.png" : nil))
     #expect(defaults.form.blurHash == nil)
-    if scenario == "no-severity" {
+    if scenario == "no-severity" || scenario == "partial-branding" {
       #expect(defaults.advisory?.code == "organization_already_exists")
       #expect(defaults.advisory?.severity == "warning")
-      #expect(defaults.advisory?.meta["organization_domain"] == "clerk.dev")
+      #expect(defaults.advisory?.meta["organization_domain"] == (scenario == "partial-branding" ? "acme.test" : "clerk.dev"))
+      #expect(defaults.advisory?.meta["organization_name"] == (scenario == "partial-branding" ? "Acme" : "Clerk"))
     } else { #expect(defaults.advisory == nil) }
   }
 }
@@ -37,6 +38,7 @@ extension PackagedCoreTests {
     base = try FixtureCapabilities(data: PackageProof.fixtureData())
     base.clientResponse = base.fixtures["authenticatedClient"]
     switch scenario {
+    case "partial-branding": payload = #"{"advisory":{"code":"organization_already_exists","meta":{"organization_domain":"acme.test","organization_name":"Acme"}},"form":{"name":"Acme","logo":"https://img.clerk.com/acme.png"}}"#
     case "no-form": payload = #"{"advisory":null,"form":null}"#
     case "no-severity": payload = #"{"advisory":{"code":"organization_already_exists","meta":{"organization_domain":"clerk.dev","organization_name":"Clerk"}},"form":{"name":"My Organization","slug":"my-organization","logo":null,"blur_hash":null}}"#
     default: payload = #"{"advisory":null,"form":{"name":"My Organization","logo":null,"blur_hash":null}}"#

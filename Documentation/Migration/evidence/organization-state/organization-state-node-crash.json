@@ -1,0 +1,69 @@
+{
+  "pid": 66362,
+  "captureTime": "2026-09-10 21:23:06.1296 -0400",
+  "procName": "node",
+  "exception": {
+    "codes": "0x0000000000000001, 0x0000000000000006",
+    "rawCodes": [
+      1,
+      6
+    ],
+    "type": "EXC_BAD_ACCESS",
+    "signal": "SIGSEGV",
+    "subtype": "KERN_INVALID_ADDRESS at 0x0000000000000006"
+  },
+  "faultingThread": 0,
+  "nodeVersion": "v24.15.0",
+  "testFile": "packages/mobile-runtime/test/magic-link.test.mjs",
+  "frames": [
+    {
+      "symbol": "v8::internal::ClearStaleLeftTrimmedPointerVisitor::VisitRootPointers(v8::internal::Root, char const*, v8::internal::FullObjectSlot, v8::internal::FullObjectSlot)",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::InternalFrame::Iterate(v8::internal::RootVisitor*) const",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::Isolate::Iterate(v8::internal::RootVisitor*, v8::internal::ThreadLocalTop*)",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::Heap::IterateRoots(v8::internal::RootVisitor*, v8::base::EnumSet<v8::internal::SkipRoot, int>, v8::internal::Heap::IterateRootsMode)",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::MarkCompactCollector::MarkRoots(v8::internal::RootVisitor*)",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::MarkCompactCollector::MarkLiveObjects()",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::MarkCompactCollector::CollectGarbage()",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::Heap::MarkCompact()",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::Heap::PerformGarbageCollection(v8::internal::GarbageCollector, v8::internal::GarbageCollectionReason, char const*)",
+      "image": "node"
+    },
+    {
+      "symbol": "v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags)::$_1::operator()() const",
+      "image": "node"
+    },
+    {
+      "symbol": "void heap::base::Stack::SetMarkerAndCallbackImpl<v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags)::$_1>(heap::base::Stack*, void*, void const*)",
+      "image": "node"
+    },
+    {
+      "symbol": "PushAllRegistersAndIterateStack",
+      "image": "node"
+    }
+  ],
+  "interpretation": "The fault occurs during V8 garbage collection. Root cause is undetermined. The 40-case file and 608-case complete rerun both passed without changed runtime flags."
+}

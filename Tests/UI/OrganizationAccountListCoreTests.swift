@@ -6,6 +6,36 @@ import Foundation
 import Testing
 
 @MainActor @Suite(.serialized) struct OrganizationAccountListCoreTests {
+  @Test(arguments: Array(-1 ... 6))
+  func organizationActionsRequireTheirOwnPermission(grantIndex: Int) async throws {
+    let grants = ["org:sys_profile:manage", "org:sys_profile:delete", "org:sys_memberships:read", "org:sys_memberships:manage", "org:sys_domains:read", "org:sys_domains:manage", "custom:permission"]
+    let host = try OrganizationListCapabilities()
+    var payload = try host.membership(id: "permissions").object()
+    payload["permissions"] = .array(grantIndex < 0 ? [] : [.string(grants[grantIndex])])
+    host.memberships = [.object(payload)]
+    let clerk = try await host.connect()
+    defer { clerk.close() }
+    let page = try await #require(clerk.user).getOrganizationMemberships()
+    let member = try #require(page.data.first)
+    let actions = [member.canManageProfile, member.canDeleteOrganization, member.canReadMemberships, member.canManageMemberships, member.canReadDomains, member.canManageDomains]
+    #expect(actions == (0 ..< 6).map { $0 == grantIndex })
+  }
+
+  @Test(arguments: ["verified", "unverified", "failed", "expired", "future_status", "absent"])
+  func organizationDomainPresentationRequiresVerifiedStatus(status: String) async throws {
+    let host = try OrganizationListCapabilities()
+    host.memberships = try [host.membership(id: "verification")]
+    let verification: JSONValue = status == "absent" ? .null : .object(["status": .string(status), "strategy": .string("email_code"), "attempts": .number(0), "expires_at": .number(1_713_200_000_000)])
+    host.domains = [.object(["object": .string("organization_domain"), "id": .string("orgdom_ui"), "organization_id": .string("org_verification"), "name": .string("example.com"), "enrollment_mode": .string("manual_invitation"), "verification": verification, "affiliation_email_address": .null, "total_pending_invitations": .number(0), "total_pending_suggestions": .number(0), "created_at": .number(1_713_200_000_000), "updated_at": .number(1_713_200_000_000)])]
+    let clerk = try await host.connect()
+    defer { clerk.close() }
+    let memberships = try await #require(clerk.user).getOrganizationMemberships()
+    let organization = try #require(memberships.data.first).organization
+    let page = try await organization.getDomains()
+    let domain = try #require(page.data.first)
+    #expect(domain.isVerified == (status == "verified"))
+  }
+
   @Test func initialLoadUsesGeneratedCollectionsAndCreationDefaults() async throws {
     let host = try OrganizationListCapabilities()
     host.memberships = try [host.membership(id: "mem_1")]
@@ -143,6 +173,7 @@ import Testing
   var invitations: [JSONValue] = []
   var memberships: [JSONValue] = []
   var suggestions: [JSONValue] = []
+  var domains: [JSONValue] = []
   var requests: [(path: String, query: [String: String])] = []
   var failedCollection: String?
   var firstMembershipPageSize: Int?
@@ -205,6 +236,8 @@ import Testing
       payload = try suggestion(id: url.deletingLastPathComponent().lastPathComponent, status: "accepted")
     } else if url.path.hasSuffix("/organization_suggestions") {
       payload = paginated(suggestions, query: query)
+    } else if url.path.hasSuffix("/domains") {
+      payload = paginated(domains, query: query)
     } else if url.path.hasSuffix("/organization_creation_defaults") {
       payload = .object(["advisory": .null, "form": .object(["name": .string("Suggested organization"), "slug": .string("suggested"), "logo": .null, "blur_hash": .null])])
     } else { return try await base.perform(capability, arguments: arguments) }
