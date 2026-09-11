@@ -1,0 +1,796 @@
+.../electron-passkeys/npm/darwin-x64     |  WARN  Unsupported platform: wanted: {"cpu":["x64"],"os":["darwin"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+.../npm/win32-arm64-msvc                 |  WARN  Unsupported platform: wanted: {"cpu":["arm64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+.../electron-passkeys/npm/win32-x64-msvc |  WARN  Unsupported platform: wanted: {"cpu":["x64"],"os":["win32"],"libc":["any"]} (current: {"os":"darwin","cpu":"arm64","libc":"unknown"})
+
+> @clerk/mobile-runtime@0.0.0 test /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime
+> node --no-opt --test test/*.test.mjs
+
+(node:38401) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ signIn.sso uses the native Apple identity provider and leaves finalization explicit (41.84775ms)
+✔ signUp.sso uses the native Apple identity provider and leaves finalization explicit (9.1035ms)
+✔ Apple identity cancellation and unavailable providers do not start an authentication request (28.681709ms)
+✔ reset fences a pending Apple identity result before an authentication request (11.059709ms)
+✔ native Apple identity respects enabled profile attributes: [false,false] (20.341709ms)
+✔ native Apple identity respects enabled profile attributes: [true,false] (10.697125ms)
+✔ native Apple identity respects enabled profile attributes: [false,true] (11.10775ms)
+✔ native Apple identity respects enabled profile attributes: [true,true] (57.623708ms)
+(node:38402) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ the attached owner's client deletion clears its credential for "Bearer" (49.280917ms)
+✔ the attached owner's client deletion clears its credential for "Bearer " (19.365708ms)
+✔ attached handshake validates the existing owner and bindings without another initialization request (9.625667ms)
+✔ native snapshots tolerate the React Native window without a browser location (12.589875ms)
+✔ native calls mutate the existing JavaScript facade and direct JavaScript reset invalidates its native group (20.702458ms)
+✔ direct JavaScript verification publishes through the same native projection (49.891834ms)
+✔ JavaScript reset fences an in-flight native verification and its credential write (10.257166ms)
+✔ JavaScript sign-out fences native authentication even before a session exists (9.787917ms)
+✔ detaching native views preserves pending JavaScript work and reattaches without a new client (10.098166ms)
+✔ native reset preserves its own completion and rejects references from another projection (23.257542ms)
+✔ an OS host attaches after load and preserves an application passkey adapter (4.407416ms)
+✔ replacing and removing a native host changes subsequent auth request locales (6.429584ms)
+✔ an attached Apple host reconciles installation metadata on the existing core owner (4.997875ms)
+(node:38403) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sign-up create and update preserve metadata JSON, profile fields and explicit consent (68.761291ms)
+✔ resetPasswordEmailCode preserves revoke-other-sessions choice true (8.319ms)
+✔ resetPasswordEmailCode preserves revoke-other-sessions choice false (8.417667ms)
+✔ resetPasswordEmailCode preserves revoke-other-sessions choice (default) (17.507834ms)
+✔ resetPasswordPhoneCode preserves revoke-other-sessions choice true (17.300292ms)
+✔ resetPasswordPhoneCode preserves revoke-other-sessions choice false (8.112917ms)
+✔ resetPasswordPhoneCode preserves revoke-other-sessions choice (default) (14.582208ms)
+✔ generated SignIn.create preserves direct authentication fields ["identifier"] (12.846667ms)
+✔ generated SignIn.create preserves direct authentication fields ["identifier","password"] (15.877791ms)
+✔ generated SignIn.ticket preserves direct authentication fields ["ticket"] (21.787166ms)
+✔ generated SignIn.create preserves direct authentication fields ["strategy","token"] (8.567834ms)
+✔ generated SignUp.create preserves direct authentication fields ["emailAddress","password"] (25.13675ms)
+✔ generated SignUp.create preserves direct authentication fields ["transfer","unsafeMetadata","legalAccepted"] (16.81825ms)
+✔ generated SignUp.create preserves direct authentication fields ["strategy","token","firstName","lastName","unsafeMetadata"] (6.541125ms)
+✔ generated SignUp.ticket preserves direct authentication fields ["ticket","unsafeMetadata"] (10.55975ms)
+(node:38404) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated signIn.emailCode.sendCode keeps its explicit authentication strategy (58.733834ms)
+✔ generated signIn.phoneCode.sendCode keeps its explicit authentication strategy (10.664084ms)
+✔ generated signIn.emailCode.verifyCode keeps its explicit authentication strategy (9.284458ms)
+✔ generated signIn.phoneCode.verifyCode keeps its explicit authentication strategy (11.632917ms)
+✔ generated signIn.resetPasswordEmailCode.verifyCode keeps its explicit authentication strategy (39.449792ms)
+✔ generated signIn.resetPasswordPhoneCode.verifyCode keeps its explicit authentication strategy (29.2315ms)
+✔ generated signIn.mfa.verifyPhoneCode keeps its explicit authentication strategy (18.868666ms)
+✔ generated signIn.mfa.verifyEmailCode keeps its explicit authentication strategy (12.309792ms)
+✔ generated signIn.mfa.verifyTOTP keeps its explicit authentication strategy (9.932ms)
+✔ generated signIn.mfa.verifyBackupCode keeps its explicit authentication strategy (10.395875ms)
+✔ generated signUp.verifications.sendEmailCode keeps its explicit authentication strategy (9.166667ms)
+✔ generated signUp.verifications.sendPhoneCode keeps its explicit authentication strategy (9.0395ms)
+✔ generated signUp.verifications.verifyEmailCode keeps its explicit authentication strategy (7.108458ms)
+✔ generated signUp.verifications.verifyPhoneCode keeps its explicit authentication strategy (7.250083ms)
+✔ future password sign-in reuses the current identifier through the canonical create request (8.869ms)
+(node:38405) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ biometric local availability reports ready from source policy without authentication (41.220917ms)
+✔ biometric local availability reports disabled from source policy without authentication (11.768875ms)
+✔ biometric local availability reports unsupported from source policy without authentication (8.097292ms)
+✔ biometric local availability reports missingKey from source policy without authentication (16.735542ms)
+✔ biometric local availability reports noLocal from source policy without authentication (11.41875ms)
+✔ biometric local availability reports noCapability from source policy without authentication (10.8365ms)
+✔ biometric sign-in creates and attempts the canonical future resource without activation or secret snapshots (43.21575ms)
+✔ cancelled biometric prompt preserves local enrollment and sends no attempt (17.559ms)
+✔ signed-in reconciliation removes a revoked local credential (8.340083ms)
+✔ enrollment saves normalized local metadata, replaces the installation key, and sends source-owned request bodies (34.570083ms)
+✔ enrollment storage failure revokes the new server credential and removes its private key (9.708375ms)
+✔ account-scoped local cleanup preserves other users and retries pending deletions after restart (5.427792ms)
+✔ reset cancels a biometric prompt without sending its eventual signature (19.33625ms)
+✔ biometric wrongCredential challenge fails before a system prompt (8.916292ms)
+✔ biometric expired challenge fails before a system prompt (11.844625ms)
+✔ server validation removes missing credentials but preserves them on transient errors (14.129667ms)
+✔ canonical account deletion removes local biometric metadata and retains a failed cleanup for restart (8.014ms)
+✔ legacy Android metadata remains usable with policy (omitted default) (12.328875ms)
+✔ legacy Android metadata remains usable with policy biometry_current_set (13.316625ms)
+✔ a new Apple installation deletes only its own surviving biometric keys before becoming available (18.963416ms)
+✔ an existing Apple installation preserves its enrolled credential (7.339875ms)
+✔ failed installation cleanup blocks use and coalesces a later successful retry (8.097417ms)
+✔ installation completion waits for successful biometrics.storage.read (14.023584ms)
+✔ installation completion waits for successful biometrics.storage.write (5.761042ms)
+✔ installation completion waits for successful biometrics.installation.markCurrent (6.277042ms)
+✔ biometric enroll preserves unrelated raw metadata (6.999375ms)
+✔ biometric revoke preserves unrelated raw metadata (8.445584ms)
+✔ biometric forgetLocalCredentials preserves unrelated raw metadata (7.673458ms)
+✔ biometric availability preserves unrelated raw metadata (6.996375ms)
+✔ biometric validateLocalCredential preserves unrelated raw metadata (7.611084ms)
+✔ biometric localAvailability preserves unrelated raw metadata (7.857208ms)
+✔ biometric enrollment refuses to overwrite unreadable metadata (not-json) (52.887291ms)
+✔ biometric enrollment refuses to overwrite unreadable metadata ({"not":"a list"}) (5.610125ms)
+✔ biometric enrollment deletes a replaced key after saving the same credential ID (15.851209ms)
+✔ server biometric revocation survives local biometrics.storage.read failure (21.943ms)
+✔ server biometric revocation survives local biometrics.storage.write failure (17.638208ms)
+✔ server biometric revocation survives local biometrics.deleteKey failure (13.115167ms)
+✔ saved biometric enrollment survives a subsequent cleanup read failure (8.273625ms)
+✔ biometric list preserves backend fields and known values (27.644416ms)
+✔ biometric list preserves backend fields and future values (14.663042ms)
+✔ biometric enrollment uses ios policy default and exact request fields (8.304ms)
+✔ biometric enrollment uses android policy default and exact request fields (82.161292ms)
+✔ biometric enrollment uses ios policy biometry_any and exact request fields (11.80775ms)
+✔ biometric enrollment uses ios policy biometry_or_device_passcode and exact request fields (28.559041ms)
+✔ biometric selection honors newest through sign-in (12.244542ms)
+✔ biometric selection honors explicit ID through sign-in (9.162542ms)
+✔ biometric selection honors normalized hint through sign-in (12.385958ms)
+✔ biometric selection honors current user through sign-in (9.41625ms)
+✔ biometric selection honors changed hint with currentUser through sign-in (8.492542ms)
+✔ biometric selection honors stale newer credential through sign-in (30.936959ms)
+✔ biometric availability handles local signed-in without unnecessary authenticated HTTP (18.948459ms)
+✔ biometric availability handles expired without unnecessary authenticated HTTP (10.21725ms)
+✔ biometric availability handles hint mismatch without unnecessary authenticated HTTP (14.716833ms)
+✔ biometric availability handles other user without unnecessary authenticated HTTP (11.274333ms)
+✔ biometric availability handles native disabled without unnecessary authenticated HTTP (21.588125ms)
+✔ biometric sign_ins handles trusted_device_not_registered for trusted_device_id (7.86825ms)
+✔ biometric attempt_first_factor handles form_resource_not_found for trusted_device_id (9.406208ms)
+✔ biometric sign_ins handles form_resource_not_found for identifier (14.451791ms)
+✔ biometric enrollment and current-device revocation require an eligible session (active) (10.287625ms)
+✔ biometric enrollment and current-device revocation require an eligible session (pending) (8.849208ms)
+✔ biometric enrollment and current-device revocation require an eligible session (signed-out) (8.259916ms)
+✔ current-device revocation preserves other users and returns null without a matching local record (10.693417ms)
+✔ biometric validation preserves the outcome of form_resource_not_found for trusted_device_id (7.853958ms)
+✔ biometric validation preserves the outcome of native_api_disabled for feature (6.146333ms)
+✔ biometric validation preserves the outcome of feature_not_enabled for feature (6.308875ms)
+✔ biometric validation preserves the outcome of form_resource_not_found for identifier (5.989209ms)
+✔ biometric validation tries an older credential after removing a missing newest one (5.92225ms)
+✔ biometric enrollment aborts and cleans up when its initiating session disappears during prepare (6.92275ms)
+✔ biometric enrollment aborts and cleans up when its initiating session disappears during attempt (6.813583ms)
+✔ biometric sign-in rejects an absent challenge without preparing a separate factor (6.357333ms)
+✔ biometric enrollment rolls back persisted metadata if selection changes during the save (7.514209ms)
+✔ account biometric cleanup preserves retryable metadata after a key failure (6.343417ms)
+✔ account biometric cleanup preserves retryable metadata after a write failure (18.980166ms)
+✔ replacement enrollment keeps committed metadata when deleting the prior key fails (8.286959ms)
+✔ biometric selection skips local records missing policy (5.073541ms)
+✔ biometric selection skips local records missing userId (5.435083ms)
+✔ failed biometric enrollment removes only its new key and preserves existing enrollments (6.249875ms)
+✔ successful enrollment replaces current-app credentials across users without revoking their server IDs (6.423375ms)
+✔ enrollment normalizes omitted identifier hints (7.335917ms)
+✔ enrollment normalizes blank identifier hints (6.857458ms)
+(node:38406) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ credential rotation rejects a later-issued response authenticated with the old credential (49.491542ms)
+✔ canonical client without a response credential requires a credential before hydration (5.223ms)
+✔ canonical client without a response credential requires the restored credential (22.554333ms)
+(node:38407) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ empty foreground client response preserves accepted identity: newer session=false (53.646667ms)
+✔ empty foreground client response preserves accepted identity: newer session=true (13.962209ms)
+✔ session changes become visible only after the client credential is persisted (8.370083ms)
+✔ failed credential persistence preserves the visible session and permits retry (12.108333ms)
+✔ client response ordering preserves server state: older server date (15.554792ms)
+✔ client response ordering preserves server state: equal date and older client version (10.266875ms)
+✔ client response ordering preserves server state: missing server dates (10.540708ms)
+✔ client response ordering preserves server state: invalid server dates (9.210083ms)
+✔ client response ordering preserves server state: newer server date despite older request (13.367208ms)
+✔ client response ordering preserves server state: equal date and newer client version despite older request (24.220875ms)
+✔ client response ordering preserves server state: older meta.client response (11.021875ms)
+✔ client response ordering preserves server state: newer meta.client server date (34.119042ms)
+✔ an older foreground client reply cannot remove a task accepted by a newer session response (11.150209ms)
+✔ authentication reset starts a new response-date history without signing out the session (9.67125ms)
+(node:38408) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ reconnection refreshes resources once and background restoration waits for foreground (170.619334ms)
+✔ foreground while offline waits for reconnection and duplicate recovery events share a reload (103.45475ms)
+✔ invalid connectivity values fail explicitly; disposed owners ignore restoration (37.954ms)
+✔ restoration during a failing reload retries after it settles and preserves the owner (72.444209ms)
+(node:38409) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated email contact creation, verification, and deletion publish usable state (68.3455ms)
+✔ generated phone contact creation, verification, and deletion publish usable state (17.338417ms)
+(node:38410) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ environment accepts missing organization settings with canonical defaults (34.53725ms)
+✔ environment accepts empty organization settings with canonical defaults (6.637375ms)
+✔ environment accepts null children organization settings with canonical defaults (4.73775ms)
+✔ environment accepts partial organization settings with canonical defaults (10.296333ms)
+✔ environment accepts partial nested settings organization settings with canonical defaults (8.456084ms)
+✔ environment accepts complete organization settings with canonical defaults (31.502459ms)
+✔ display support email preserves missing (14.99625ms)
+✔ display support email preserves null (19.344417ms)
+✔ display support email preserves help@example.com (6.315667ms)
+✔ user attribute preserves missing immutable and factor settings (10.20225ms)
+✔ user attribute preserves false immutable and factor settings (6.21975ms)
+✔ user attribute preserves true immutable and factor settings (7.760292ms)
+✔ passkey attributes preserve first factor configuration (25.056084ms)
+✔ passkey attributes preserve registration only configuration (18.571917ms)
+✔ passkey attributes preserve disabled configuration (8.112834ms)
+✔ missing required passkey attribute fails the generated contract (8.131042ms)
+✔ development warning preserves missing/default false (16.385ms)
+✔ development warning preserves false (8.858208ms)
+✔ development warning preserves true (11.007208ms)
+✔ auth configuration preserves missing (4.523458ms)
+✔ auth configuration preserves single session only (5.663125ms)
+✔ auth configuration preserves all native flags (4.715209ms)
+✔ commerce configuration preserves missing (8.829084ms)
+✔ commerce configuration preserves user (15.539916ms)
+✔ commerce configuration preserves organization (7.773583ms)
+✔ commerce configuration preserves null publishable key (13.103541ms)
+✔ commerce configuration preserves future field (8.029208ms)
+(node:38411) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ authentication failure preserves HTTP 422, trace and retry metadata (37.055833ms)
+✔ authentication failure preserves HTTP 429, trace and retry metadata (35.101709ms)
+(node:38412) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ native external account create completes the browser roundtrip in core (31.826417ms)
+✔ native external account reauthorize completes the browser roundtrip in core (34.711ms)
+✔ native external account recreate completes the browser roundtrip in core (22.58325ms)
+✔ native Apple account linking uses an identity token and refreshes the canonical user (15.522208ms)
+✔ native Apple account linking preserves a supplied token without requesting another identity (19.356334ms)
+✔ external account cancel does not reconcile an unverified callback (19.11575ms)
+✔ external account mismatch does not reconcile an unverified callback (6.257166ms)
+✔ sign-out cancels pending account authorization and ignores a late callback (25.852084ms)
+✔ external account deletion removes the account without corrupting a held resource (9.463125ms)
+✔ external account reauthorization preserves multiple scopes and omits an absent OIDC prompt (10.390792ms)
+(node:38413) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ foreground recovery does not invalidate an in-flight OAuth callback redemption (98.075542ms)
+✔ queued foreground recovery respects failure while a resource call settles (80.203167ms)
+✔ queued foreground recovery respects cancelled while a resource call settles (74.693917ms)
+✔ queued foreground recovery respects background while a resource call settles (106.402666ms)
+✔ queued foreground recovery respects offline while a resource call settles (102.716834ms)
+✔ queued foreground recovery respects disposed while a resource call settles (74.976792ms)
+(node:38414) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ client replacement retires the previous completed authentication attempt (52.679ms)
+✔ sign-out retires the previous completed authentication attempt (8.810791ms)
+✔ a queued token-only response preserves the newly accepted client (8.971125ms)
+✔ completed signIn survives an ordinary refresh before finalization: cleared=false (33.087042ms)
+✔ completed signIn survives an ordinary refresh before finalization: cleared=true (16.242208ms)
+✔ completed signUp survives an ordinary refresh before finalization: cleared=false (15.290625ms)
+✔ completed signUp survives an ordinary refresh before finalization: cleared=true (18.572458ms)
+(node:38415) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ embedded authentication uses host locale fr-CA (72.584875ms)
+✔ embedded authentication uses host locale ja-JP (15.559042ms)
+✔ embedded authentication uses host locale (absent) (25.580875ms)
+(node:38416) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ signIn email-link storage failure preserves the persistence-before-request boundary (44.6575ms)
+✔ signIn email-link prepare failure preserves the persistence-before-request boundary (32.460709ms)
+✔ signUp email-link storage failure preserves the persistence-before-request boundary (16.116084ms)
+✔ signUp email-link prepare failure preserves the persistence-before-request boundary (14.272ms)
+✔ native signIn email link stores PKCE and returns the canonical resource without activation (11.279834ms)
+✔ native signUp email link stores PKCE and returns the canonical resource without activation (16.530583ms)
+✔ email-link callbacks survive restart and reject a different route or flow before HTTP (55.682625ms)
+✔ concurrent callbacks share one completion request (15.864125ms)
+✔ email link approval_token_expired clears its saved verifier (8.059375ms)
+✔ email link temporarily_unavailable preserves its saved verifier (7.919875ms)
+✔ reset during a secure-storage write clears the eventual record and does not prepare the factor (9.327541ms)
+✔ imports a saved ios email-link record through the same source validation (12.273583ms)
+✔ imports a saved android email-link record through the same source validation (12.505459ms)
+✔ expired email-link records are removed before any completion request (7.1635ms)
+✔ reset fences a delayed completion response and its credential write (15.2105ms)
+✔ preserves the previous native email-link route form clerk-test://sso-callback#flow_id=sia_native&approval_token=fixture_approval (19.940375ms)
+✔ preserves the previous native email-link route form clerk-test://sso-callback/?flow_id=sia_native&approval_token=fixture_approval (37.29375ms)
+✔ preserves the previous native email-link route form CLERK-TEST://SSO-CALLBACK/#flow_id=sia_native&approval_token=fixture_approval (23.8985ms)
+✔ email-link route mismatches and incomplete callbacks do not consume stored credentials (64.817833ms)
+✔ email-link query values take precedence over fragment values (10.47175ms)
+✔ invalid Android email-link state is discarded before redemption: "UNSUPPORTED" (5.917084ms)
+✔ invalid Android email-link state is discarded before redemption: "" (6.7445ms)
+✔ invalid Android email-link state is discarded before redemption: null (6.446041ms)
+✔ invalid Android email-link state is discarded before redemption: 7 (36.67225ms)
+✔ legacy iOS absent email-link kind remains a sign-in record: undefined (8.136792ms)
+✔ legacy iOS absent email-link kind remains a sign-in record: null (9.856459ms)
+✔ incomplete signIn email-link completion publishes remaining requirements without activation (11.318458ms)
+✔ incomplete signUp email-link completion publishes remaining requirements without activation (28.075792ms)
+✔ sign-up email-link rejects ticket completion and consumes its verifier (19.704375ms)
+✔ sign-up email-link rejects wrong-signup completion and consumes its verifier (10.960584ms)
+✔ sign-up email-link rejects null completion and consumes its verifier (10.237375ms)
+✔ starting a newer email link fences an old completion and preserves the new verifier (23.974584ms)
+✔ email-link error approval_token_consumed/422 preserves the canonical cleanup policy (12.43025ms)
+✔ email-link error approval_token_invalid/422 preserves the canonical cleanup policy (53.980375ms)
+✔ email-link error pkce_verification_failed/422 preserves the canonical cleanup policy (10.372125ms)
+✔ email-link error flow_not_approved/422 preserves the canonical cleanup policy (8.526084ms)
+✔ email-link error form_param_value_invalid/flow_id preserves the canonical cleanup policy (7.884583ms)
+✔ email-link error form_param_value_invalid/identifier preserves the canonical cleanup policy (7.015791ms)
+✔ email-link error server_error/500 preserves the canonical cleanup policy (18.017209ms)
+✔ email-link error too_many_requests/429 preserves the canonical cleanup policy (7.585208ms)
+(node:38417) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/utils/passkeyFailureStage.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ mapped record inputs validate required keys and declared custom key patterns (1.272ms)
+✔ mapped record outputs preserve new server keys while checking their values (0.091792ms)
+(node:38418) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ shared Google credential flow: existing (38.306375ms)
+✔ shared Google credential flow: new (21.51825ms)
+✔ shared Google credential flow: sign-in-only (9.220959ms)
+✔ shared Google credential flow: rejected (7.240167ms)
+✔ shared Google credential flow: empty-picker (11.853958ms)
+✔ shared Google credential flow: cancelled (8.114875ms)
+✔ identifier screen signIn, missing=true (7.179291ms)
+✔ identifier screen signIn, missing=false (9.041625ms)
+✔ identifier screen signUp, missing=true (8.543417ms)
+✔ identifier screen signUp, missing=false (7.097458ms)
+✔ identifier screen signInOrUp, missing=true (11.680041ms)
+✔ identifier screen signInOrUp, missing=false (7.753125ms)
+✔ reset cancels the Google picker before a late token can authenticate (15.32925ms)
+(node:38419) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ prebuilt Apple SSO preserves terminal errors and restriction boundaries: waitlist-existing (40.847625ms)
+✔ prebuilt Apple SSO preserves terminal errors and restriction boundaries: waitlist-new (15.078917ms)
+✔ prebuilt Apple SSO preserves terminal errors and restriction boundaries: transfer-verification-error (14.78325ms)
+✔ prebuilt Apple SSO preserves terminal errors and restriction boundaries: transfer-request-error (24.525709ms)
+✔ prebuilt Apple SSO preserves terminal errors and restriction boundaries: unrelated-signup-error (22.712583ms)
+✔ prebuilt Apple SSO preserves terminal errors and restriction boundaries: signup-only-restricted (7.099875ms)
+✔ prebuilt Apple SSO preserves one credential and explicit finalize: new-user (9.47475ms)
+✔ prebuilt Apple SSO preserves one credential and explicit finalize: existing-user (10.132292ms)
+✔ prebuilt Apple SSO preserves one credential and explicit finalize: restricted-existing (12.168792ms)
+✔ prebuilt Apple SSO preserves one credential and explicit finalize: restricted-new (30.263917ms)
+✔ prebuilt Apple SSO preserves one credential and explicit finalize: sign-in-only (14.686583ms)
+✔ prebuilt OAuth completes the future SSO browser roundtrip before optional transfer: true (23.407125ms)
+✔ prebuilt OAuth completes the future SSO browser roundtrip before optional transfer: false (18.615417ms)
+✔ reset cancels a prebuilt Apple prompt without beginning authentication (35.588291ms)
+(node:38420) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ a generated GET recovers from a transient network failure (189.054584ms)
+✔ a generated authentication mutation does not replay after a lost response (14.765083ms)
+✔ a persistent GET network failure stops at the core retry limit (16.664583ms)
+✔ a generated GET surfaces HTTP 400 without transport replay (11.207209ms)
+✔ a generated GET surfaces HTTP 403 without transport replay (11.151ms)
+✔ a generated GET surfaces HTTP 404 without transport replay (8.424416ms)
+✔ a generated GET surfaces HTTP 408 without transport replay (11.551ms)
+✔ a generated GET surfaces HTTP 422 without transport replay (11.708375ms)
+✔ a generated GET surfaces HTTP 425 without transport replay (7.042375ms)
+✔ a generated GET surfaces HTTP 429 without transport replay (12.619208ms)
+✔ a generated GET surfaces HTTP 500 without transport replay (15.032417ms)
+✔ a generated GET surfaces HTTP 502 without transport replay (9.219459ms)
+✔ a generated GET surfaces HTTP 503 without transport replay (8.214ms)
+✔ a generated GET surfaces HTTP 504 without transport replay (12.113209ms)
+✔ an unauthorized client refresh does not recursively refresh the client (8.952959ms)
+✔ concurrent unauthorized operations finish after their independent recovery requests (13.64075ms)
+✔ a generated GET does not retry after sign-out (10.442125ms)
+✔ a generated GET does not retry after credential-rotation (41.053ms)
+(node:38421) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated organization defaults accept no form (32.6125ms)
+✔ generated organization defaults accept missing advisory severity (7.849834ms)
+✔ generated organization defaults accept missing slug (9.823584ms)
+(node:38422) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ organization invitations preserve projected data with present image and slug (34.63775ms)
+✔ organization invitations preserve projected data with null image and slug (8.447125ms)
+✔ organization invitations preserve projected data with omitted image and slug (32.500625ms)
+✔ organization invitations preserve projected data with null image and omitted slug (15.520959ms)
+✔ organization suggestions preserve projected data with present image and slug (23.633583ms)
+✔ organization suggestions preserve projected data with null image and slug (6.936792ms)
+✔ organization suggestions preserve projected data with omitted image and slug (6.034916ms)
+✔ organization suggestions preserve projected data with null image and omitted slug (30.981125ms)
+(node:38423) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated organization getRoles preserves filters {} (35.569917ms)
+✔ generated organization getMemberships preserves filters {"paginated":["true"]} (10.797458ms)
+✔ generated organization getMemberships preserves filters {"query":["test"],"paginated":["true"]} (10.590667ms)
+✔ generated organization getMemberships preserves filters {"role":["org:admin","org:member"],"paginated":["true"]} (19.788916ms)
+✔ generated organization getInvitations preserves filters {"status":[]} (10.024875ms)
+✔ generated organization getInvitations preserves filters {"status":["pending"]} (7.964333ms)
+✔ generated organization getInvitations preserves filters {"status":["pending","accepted"]} (17.734542ms)
+✔ generated organization getDomains preserves filters {} (6.175458ms)
+✔ generated organization getDomains preserves filters {"enrollment_mode":["automatic_invitation"]} (9.153708ms)
+✔ generated organization getDomains preserves filters {"enrollment_mode":["automatic_suggestion"]} (7.001375ms)
+✔ generated organization getMembershipRequests preserves filters {} (7.868542ms)
+✔ generated organization getMembershipRequests preserves filters {"status":["pending"]} (7.580541ms)
+✔ generated logo removal returns a usable organization: receipt (9.583666ms)
+✔ generated logo removal returns a usable organization: resource (6.757416ms)
+✔ generated logo removal returns a usable organization: rejected (7.323833ms)
+✔ a separately fetched organization does not alias an older active root (8.563ms)
+✔ organization enrollment modes preserve future output values but reject unknown query input (7.298334ms)
+✔ generated Organization.update preserves its request and result [{"name":"Renamed"}] (10.795875ms)
+✔ generated Organization.update preserves its request and result [{"name":"Renamed","slug":"new-slug"}] (7.720791ms)
+✔ generated Organization.destroy preserves its request and result [] (7.171375ms)
+✔ generated Clerk.createOrganization preserves its request and result [{"name":"New organization"}] (9.485667ms)
+✔ generated Clerk.createOrganization preserves its request and result [{"name":"New organization","slug":"new-slug"}] (72.89025ms)
+✔ generated Organization.addMember preserves its request and result [{"userId":"user_123","role":"org:member"}] (10.456625ms)
+✔ generated Organization.updateMember preserves its request and result [{"userId":"user_123","role":"org:admin"}] (6.719584ms)
+✔ generated Organization.removeMember preserves its request and result ["user_123"] (69.097167ms)
+✔ generated Organization.inviteMember preserves its request and result [{"emailAddress":"invitee@example.com","role":"org:member"}] (8.19575ms)
+✔ generated Organization.inviteMembers preserves its request and result [{"emailAddresses":["invitee@example.com","second@example.com"],"role":"org:member"}] (13.372917ms)
+✔ generated Organization.createDomain preserves its request and result ["example.com"] (8.001916ms)
+✔ generated Organization.getDomain preserves its request and result [{"domainId":"orgdom_contract"}] (36.604375ms)
+✔ generated OrganizationDomain.prepareAffiliationVerification preserves its request and result [{"affiliationEmailAddress":"user@example.com"}] (12.646875ms)
+✔ generated OrganizationDomain.attemptAffiliationVerification preserves its request and result [{"code":"123456"}] (9.665667ms)
+✔ generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation"}] (8.455417ms)
+✔ generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation","deletePending":true}] (20.665666ms)
+✔ generated OrganizationDomain.updateEnrollmentMode preserves its request and result [{"enrollmentMode":"automatic_invitation","deletePending":false}] (10.350291ms)
+✔ generated OrganizationDomain.delete preserves its request and result [] (9.647333ms)
+✔ generated OrganizationMembership.update preserves its request and result [{"role":"org:admin"}] (10.016ms)
+✔ generated OrganizationInvitation.revoke preserves its request and result [] (8.835375ms)
+✔ generated OrganizationMembershipRequest.accept preserves its request and result [] (12.639125ms)
+✔ generated OrganizationMembershipRequest.reject preserves its request and result [] (10.921375ms)
+✔ generated Organization.update preserves API error detail (7.290542ms)
+✔ generated Organization.createDomain preserves API error detail (6.791541ms)
+✔ generated OrganizationDomain.prepareAffiliationVerification preserves API error detail (7.665166ms)
+✔ generated OrganizationDomain.attemptAffiliationVerification preserves API error detail (7.411708ms)
+✔ generated OrganizationDomain.updateEnrollmentMode preserves API error detail (7.689709ms)
+✔ generated OrganizationDomain.delete preserves API error detail (7.744709ms)
+✔ generated organization logo upload preserves binary data (9.563583ms)
+✔ generated organization logo upload preserves string data (7.809916ms)
+(node:38424) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated organization creation preserves name and omitted slug (26.989708ms)
+✔ generated organization creation preserves name and explicit slug (8.176083ms)
+✔ generated organization lookup returns the requested organization resource (9.810584ms)
+✔ generated membership deletion returns its declared resource: receipt (10.562541ms)
+✔ generated membership deletion returns its declared resource: resource (19.061375ms)
+✔ generated membership deletion returns its declared resource: rejected (9.859459ms)
+(node:38425) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ server assertion options preserve relying party, credential order and transports (39.144ms)
+✔ missing relying party fails before native presentation without a domain fallback (10.706875ms)
+✔ registration-style relying party fails before native presentation without a domain fallback (8.585334ms)
+✔ empty relying party fails before native presentation without a domain fallback (10.710125ms)
+✔ whitespace relying party fails before native presentation without a domain fallback (10.633625ms)
+✔ non-string relying party fails before native presentation without a domain fallback (21.522958ms)
+✔ missing credential ID rejects the server list instead of dropping entries (13.032667ms)
+✔ invalid credential ID rejects the server list instead of dropping entries (11.985208ms)
+(node:38426) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated passkey registration stops at creation-rejected (30.413292ms)
+✔ generated passkey registration stops at verification-rejected (10.063875ms)
+✔ generated passkey registration stops at provider-failed (19.976625ms)
+✔ generated passkey registration stops at invalid-credential (19.927708ms)
+✔ generated passkey registration stops at missing-options (10.697916ms)
+✔ generated passkey registration stops at unsupported (14.581833ms)
+(node:38427) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated passkey registration supports rename and deletion receipts (39.9795ms)
+✔ generated passkey registration stops after native cancellation (9.927041ms)
+(node:38428) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ future passkey forwards native autofill presentation and binary options (43.96775ms)
+✔ future passkey forwards native discoverable presentation and binary options (11.959083ms)
+✔ future passkey prepares and attempts the active second factor without recreating sign-in (23.446084ms)
+✔ passkey failure retains source stage and error: preparingFirstFactor (13.819666ms)
+✔ passkey failure retains source stage and error: requestingAuthorization (33.553958ms)
+✔ passkey failure retains source stage and error: attemptingFirstFactor (8.531041ms)
+✔ second-factor passkey reports preparingSecondFactor without replacing its attempt (24.571625ms)
+✔ second-factor passkey reports attemptingSecondFactor without replacing its attempt (12.565292ms)
+✔ unknown passkey provider failure retains the attempt without submitting a credential (28.657209ms)
+✔ email sign-in can follow an automatic passkey failure: user_cancelled (31.947375ms)
+✔ email sign-in can follow an automatic passkey failure: host_failure (9.917ms)
+✔ email sign-in can follow an automatic passkey failure: presentation_unavailable (11.75475ms)
+✔ email sign-in can follow an automatic passkey failure: invalid_credential_response (54.6545ms)
+(node:38429) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ production handshake rejects mismatched bindings before HTTP or storage (15.807542ms)
+✔ generated email verification preserves MFA requirements and returned domain errors (25.176834ms)
+✔ local reset replaces the attempt, invalidates held groups, and makes no HTTP request (18.304958ms)
+✔ reset cancels an outstanding browser effect and ignores its late callback (11.483834ms)
+✔ explicit finalize adopts the active session before completion without navigation (23.591208ms)
+✔ explicit finalize adopts the pending session before completion without navigation (10.850834ms)
+✔ sign-out fences a finalization response and its credential before it can restore a session (70.085292ms)
+✔ background is nonfatal and foreground recovers resources through the core (13.712792ms)
+✔ native settings are projected from the owner with typed configuration (16.601542ms)
+✔ custom OAuth configuration survives the generated native settings projection (10.66825ms)
+✔ phone recovery codes use an explicit generated read and never enter observable state (9.696292ms)
+✔ the canonical environment resource refreshes settings before generated completion (12.216375ms)
+✔ native client metadata uses the existing client without exposing legacy auth resources (5.751458ms)
+✔ identification timestamps survive core hydration and generated state projection (5.566584ms)
+✔ native auth settings refresh through the canonical environment and default to disabled (13.986875ms)
+✔ instance environment strings preserve known and future server values (45.52675ms)
+(node:38430) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ ios requests identify the native SDK release (29.963417ms)
+✔ android requests identify the native SDK release (12.5045ms)
+✔ desktop Apple requests retain native credentials without being classified as mobile (6.091334ms)
+✔ malformed device classification fails before HTTP (25.844667ms)
+✔ unknown SDK version is omitted and invalid values fail before HTTP (20.473083ms)
+(node:38431) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ test/selected-code-factors.test.mjs (350.184042ms)
+(node:38432) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ rejected organization activation preserves session organization and cached token: 401 (44.51375ms)
+✔ rejected organization activation preserves session organization and cached token: 403 (13.789959ms)
+✔ forced organization selection rejects personal selection without a request (9.539958ms)
+✔ a retained session reads a fresh template token after accepted organization activation (21.948167ms)
+✔ accepted organization activation preserves canonical option meaning: org_next (12.026917ms)
+✔ accepted organization activation preserves canonical option meaning: null (14.065917ms)
+✔ accepted organization activation preserves canonical option meaning: undefined (12.249833ms)
+✔ a pending rejected switch cannot publish its target or overwrite a newer accepted switch (20.075375ms)
+(node:38433) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated session authorization: existing plan (37.451458ms)
+✔ generated session authorization: missing plan (12.496458ms)
+✔ generated session authorization: feature o:reservations (10.196542ms)
+✔ generated session authorization: feature org:reservations (10.65675ms)
+✔ generated session authorization: feature organization:reservations (8.242417ms)
+✔ generated session authorization: feature reservations (9.053417ms)
+✔ generated session authorization: feature u:dashboard (6.988833ms)
+✔ generated session authorization: feature user:dashboard (5.967542ms)
+✔ generated session authorization: feature dashboard (10.806166ms)
+✔ generated session authorization: feature o:support (17.319125ms)
+✔ generated session authorization: feature u:support (5.7825ms)
+✔ generated session authorization: feature o:billing (8.057167ms)
+✔ generated session authorization: feature u:billing (24.14375ms)
+✔ generated session authorization: unknown feature scope (8.340208ms)
+✔ generated session authorization: missing feature (31.707667ms)
+✔ generated session authorization: empty request (14.3135ms)
+✔ generated session authorization: role prefix (9.723625ms)
+✔ generated session authorization: role without prefix (23.587542ms)
+✔ generated session authorization: wrong role (10.729541ms)
+✔ generated session authorization: permission present (8.271917ms)
+✔ generated session authorization: permission absent (10.485ms)
+✔ generated session authorization: permission without org (54.268625ms)
+✔ generated session authorization: role without org (13.535625ms)
+✔ generated session authorization: project factor ages (6.933792ms)
+✔ generated session authorization: missing factor ages (7.93625ms)
+✔ generated session authorization: fresh permission and reverification (6.621083ms)
+✔ generated session authorization: stale reverification (9.445667ms)
+✔ generated session authorization: strict MFA without second factor (5.590375ms)
+✔ generated session authorization: no enrolled factors (6.027458ms)
+✔ generated session authorization: missing feature despite fresh factors (6.196959ms)
+✔ generated session authorization: missing feature claims (5.957959ms)
+✔ generated session authorization: missing plan claims (8.819708ms)
+✔ generated session authorization: malformed feature claim (5.516709ms)
+✔ generated session authorization: user feature without org (5.13675ms)
+✔ generated session authorization: org feature absent without org (5.205125ms)
+✔ generated session authorization: invalid maximum age 0 (5.191666ms)
+✔ generated session authorization: invalid maximum age -1 (5.246583ms)
+✔ generated session authorization: unknown reverification level (5.840875ms)
+✔ authorization observes changed membership permissions after session reload (7.839458ms)
+✔ authorization rejects omitted required factor ages at startup (4.508542ms)
+✔ authorization rejects malformed required factor ages at startup (7.09225ms)
+(node:38434) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated session passkey verification stops at preparation-rejected (31.362875ms)
+✔ generated session passkey verification stops at submission-rejected (9.198084ms)
+✔ generated session passkey verification stops at missing-options (14.044542ms)
+✔ generated session passkey verification stops at provider-failed (14.807417ms)
+✔ generated session passkey verification stops at invalid-credential (9.504292ms)
+✔ generated session passkey verification stops at unsupported (9.502125ms)
+(node:38435) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated session revocation: current (38.544541ms)
+✔ generated session revocation: other (24.763875ms)
+✔ generated session revocation: rejected (28.262917ms)
+✔ pending task survives generated projection: setup-mfa (9.481958ms)
+✔ pending task survives generated projection: reset-password (7.668125ms)
+✔ pending task survives generated projection: another-task (14.332959ms)
+✔ a session without user identity denies authorization (12.927458ms)
+(node:38436) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated sign-out request and cache policy: scoped=false, rejected=false (38.892083ms)
+✔ generated sign-out request and cache policy: scoped=false, rejected=true (14.255042ms)
+✔ generated sign-out request and cache policy: scoped=true, rejected=false (21.267084ms)
+✔ generated sign-out request and cache policy: scoped=true, rejected=true (13.759458ms)
+(node:38437) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ initial core selection: missing selection falls back to the first signed-in session (31.824167ms)
+✔ initial core selection: unmatched selection falls back to the first signed-in session (8.640834ms)
+✔ initial core selection: selected pending session is retained (12.943125ms)
+✔ initial core selection: selected active session is retained (7.249625ms)
+✔ initial core selection: selection wins across multiple sessions (11.907875ms)
+✔ initial core selection: inactive sessions are excluded from initial selection (6.235042ms)
+✔ session reload publishes unchanged state before completing (7.965916ms)
+✔ session reload publishes timestamp state before completing (20.301959ms)
+✔ session reload publishes pending state before completing (7.57875ms)
+✔ session reload publishes expired state before completing (16.667ms)
+✔ session reload publishes removed state before completing (20.021792ms)
+✔ session reload publishes replaced state before completing (18.525833ms)
+✔ the active organization is derived from session membership: org_one (10.157167ms)
+✔ the active organization is derived from session membership: null (15.547333ms)
+✔ the active organization is derived from session membership: org_missing (6.152958ms)
+✔ session reload publishes the changed organization before completion: org_two (8.725125ms)
+✔ session reload publishes the changed organization before completion: null (7.448875ms)
+(node:38438) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated token request preserves shared policy: first mint (37.557542ms)
+✔ generated token request preserves shared policy: forced first mint (26.829167ms)
+✔ generated token request preserves shared policy: previous token and forced origin (8.269167ms)
+✔ generated token request preserves shared policy: disabled minter (10.023458ms)
+✔ generated token request preserves shared policy: template ignores mint parameters (8.92325ms)
+✔ a nonselected available session coalesces token requests without changing selection (11.410791ms)
+(node:38439) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated session verification: startVerification first_factor (30.599791ms)
+✔ generated session verification: startVerification second_factor (10.024584ms)
+✔ generated session verification: startVerification multi_factor (21.346125ms)
+✔ generated session verification: prepareFirstFactorVerification passkey (10.093959ms)
+✔ generated session verification: prepareFirstFactorVerification email_code (8.488292ms)
+✔ generated session verification: prepareFirstFactorVerification phone_code (9.695208ms)
+✔ generated session verification: prepareFirstFactorVerification enterprise_sso (10.805125ms)
+✔ generated session verification: attemptFirstFactorVerification email_code (20.83ms)
+✔ generated session verification: attemptFirstFactorVerification phone_code (8.956625ms)
+✔ generated session verification: attemptFirstFactorVerification password (6.820833ms)
+✔ generated session verification: prepareSecondFactorVerification phone_code (7.410209ms)
+✔ generated session verification: attemptSecondFactorVerification phone_code (16.453292ms)
+✔ generated session verification: attemptSecondFactorVerification totp (6.738583ms)
+✔ generated session verification: attemptSecondFactorVerification backup_code (9.455042ms)
+✔ session passkey reverification prepares and submits credential (8.579542ms)
+✔ session passkey reverification propagates cancellation (6.800791ms)
+✔ session verification preserves structured invalid-code failure and permits retry (8.779916ms)
+✔ session verification does not expose the inherited method without a reload endpoint (13.329917ms)
+(node:38440) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ nested client sign-in preserves needs_client_trust and related fields (50.112458ms)
+✔ nested client sign-in preserves future_sign_in_status and related fields (19.9295ms)
+✔ server updates replace unknown sign-in status while preserving the resource handle (21.432459ms)
+(node:38441) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ signIn.sso runs the generated operation on the real future facade without a browser global or implicit finalization (33.649042ms)
+✔ signIn.sso preserves remaining requirements (7.1995ms)
+✔ signIn.sso returns native cancellation through its error envelope without reconciling or activating (6.273041ms)
+✔ signIn.sso rejects an unrelated callback before sending a nonce (6.067041ms)
+✔ signUp.sso runs the generated operation on the real future facade without a browser global or implicit finalization (7.117958ms)
+✔ signUp.sso preserves remaining requirements (8.063458ms)
+✔ signUp.sso returns native cancellation through its error envelope without reconciling or activating (6.099042ms)
+✔ signUp.sso rejects an unrelated callback before sending a nonce (5.816834ms)
+✔ signIn.sso preserves native query nonce semantics (38.290666ms)
+✔ signUp.sso preserves native query nonce semantics (30.043667ms)
+✔ signIn.sso preserves the caller's raw OIDC prompt string (39.939958ms)
+✔ signUp.sso preserves the caller's raw OIDC prompt string (45.747958ms)
+(node:38442) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ coalesced token callers cancel independently: 0 (34.969125ms)
+✔ coalesced token callers cancel independently: 1 (10.158166ms)
+✔ coalesced token callers cancel independently: 0,1 (16.739625ms)
+✔ a shared token failure reaches the surviving caller and permits recovery: cancelled=0 (9.310625ms)
+✔ a shared token failure reaches the surviving caller and permits recovery: cancelled=1 (10.349541ms)
+(node:38443) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Session.getToken handles valid raw token (34.446ms)
+✔ Session.getToken handles missing JWT segment (42.701833ms)
+✔ Session.getToken handles invalid base64 header (27.058542ms)
+✔ Session.getToken handles invalid JSON payload (29.648041ms)
+(node:38444) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ cache clear ignores a pending proactive refresh with replacement=false (37.381041ms)
+✔ cache clear ignores a pending proactive refresh with replacement=true (10.20875ms)
+✔ clearing the token cache fences earlier requests when old reply arrives first=false (9.687875ms)
+✔ clearing the token cache fences earlier requests when old reply arrives first=true (9.595375ms)
+(node:38445) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ generated token calls preserve canonical snapshot policy: initial (31.667541ms)
+✔ generated token calls preserve canonical snapshot policy: clear (10.302125ms)
+✔ generated token calls preserve canonical snapshot policy: mintTie (8.96675ms)
+✔ generated token calls preserve canonical snapshot policy: stale (12.413042ms)
+✔ generated token calls preserve canonical snapshot policy: fresh (9.766334ms)
+✔ generated token calls preserve canonical snapshot policy: tie (13.328958ms)
+✔ generated token calls preserve canonical snapshot policy: expired (9.855291ms)
+(node:38446) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/utils/passkeyFailureStage.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ recognized discriminants beat closed enum fallback without losing future field values (1.196459ms)
+✔ malformed recognized discriminants cannot fall back to the closed enum branch (0.203208ms)
+✔ recognized discriminants beat open enum fallback without losing future field values (0.084875ms)
+✔ malformed recognized discriminants cannot fall back to the open enum branch (0.049042ms)
+(node:38447) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ clearing both profile names clears the generated full name (null) (31.72475ms)
+✔ clearing both profile names clears the generated full name ("") (7.30225ms)
+✔ profile image removal returns a usable generated image (receipt) (10.542459ms)
+✔ profile image removal returns a usable generated image (resource) (9.862458ms)
+✔ profile image removal returns a usable generated image (rejected) (7.761458ms)
+✔ generated deprecated user metadata replacement uses identical (8.456833ms)
+✔ generated deprecated user metadata replacement uses reloaded-current (6.437791ms)
+✔ generated deprecated user metadata replacement uses reloaded-null (11.844291ms)
+✔ generated deprecated user metadata replacement uses profile-current (6.07275ms)
+✔ generated deprecated user metadata replacement uses profile-null (6.011959ms)
+✔ generated metadata deep-merge forwards the explicit patch without replacing unrelated fields (6.928ms)
+✔ generated password update preserves current password and sign-out flag (true) (5.788083ms)
+✔ generated password update preserves current password and sign-out flag (false) (5.590041ms)
+✔ generated user image upload preserves binary data and published profile state (8.097958ms)
+✔ generated user image upload preserves string data and published profile state (6.443208ms)
+✔ generated TOTP enrollment, verification, recovery and removal preserve explicit results and client flags (17.665417ms)
+✔ generated user getOrganizationInvitations preserves page 1 and status filters (7.223541ms)
+✔ generated user getOrganizationInvitations preserves page 2 and status filters (7.1305ms)
+✔ generated user getOrganizationSuggestions preserves page 1 and status filters (6.043667ms)
+✔ generated user getOrganizationSuggestions preserves page 2 and status filters (6.258542ms)
+✔ generated user getOrganizationMemberships preserves page 1 and status filters (5.79325ms)
+✔ generated user getOrganizationMemberships preserves page 3 and status filters (5.401334ms)
+✔ generated leaveOrganization publishes client membership changes (rejected=false) (8.308917ms)
+✔ generated leaveOrganization publishes client membership changes (rejected=true) (5.91725ms)
+✔ generated user deletion reconciles the server's cleared client (rejected=false) (6.889166ms)
+✔ generated user deletion reconciles the server's cleared client (rejected=true) (5.983208ms)
+✔ user invitation filters follow the canonical single-status contract (5.775917ms)
+ℹ tests 584
+ℹ suites 0
+ℹ pass 583
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1259.9435
+
+✖ failing tests:
+
+test at test/selected-code-factors.test.mjs:1:1
+✖ test/selected-code-factors.test.mjs (350.184042ms)
+  'test failed'
+/Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @clerk/mobile-runtime@0.0.0 test: `node --no-opt --test test/*.test.mjs`
+Exit status 1

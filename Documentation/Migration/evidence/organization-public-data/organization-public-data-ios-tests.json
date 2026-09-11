@@ -1,0 +1,111 @@
+{
+  "devices" : [
+    {
+      "architecture" : "arm64",
+      "deviceId" : "9A1571DF-CC3D-465F-A2E1-C89EC2388B31",
+      "deviceName" : "iPhone Air + Watch",
+      "modelName" : "iPhone Air",
+      "osBuildNumber" : "23F77",
+      "osVersion" : "26.5",
+      "platform" : "iOS Simulator"
+    }
+  ],
+  "testNodes" : [
+    {
+      "children" : [
+        {
+          "children" : [
+            {
+              "children" : [
+                {
+                  "children" : [
+                    {
+                      "duration" : "0.044s",
+                      "durationInSeconds" : 0.043820858001708984,
+                      "name" : "false, \"mixed\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.044s",
+                      "durationInSeconds" : 0.044172048568725586,
+                      "name" : "false, \"null\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.043s",
+                      "durationInSeconds" : 0.0434260368347168,
+                      "name" : "false, \"omitted\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.055s",
+                      "durationInSeconds" : 0.05492901802062988,
+                      "name" : "false, \"present\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.043s",
+                      "durationInSeconds" : 0.04304194450378418,
+                      "name" : "true, \"mixed\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.044s",
+                      "durationInSeconds" : 0.04365682601928711,
+                      "name" : "true, \"null\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.044s",
+                      "durationInSeconds" : 0.04439711570739746,
+                      "name" : "true, \"omitted\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    },
+                    {
+                      "duration" : "0.044s",
+                      "durationInSeconds" : 0.04364609718322754,
+                      "name" : "true, \"present\"",
+                      "nodeType" : "Arguments",
+                      "result" : "Passed"
+                    }
+                  ],
+                  "duration" : "0.045s",
+                  "durationInSeconds" : 0.04513624310493469,
+                  "name" : "organizationPublicDataDefaultsMissingBranding(suggestion:scenario:)",
+                  "nodeIdentifier" : "PackagedCoreTests/organizationPublicDataDefaultsMissingBranding(suggestion:scenario:)",
+                  "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests/organizationPublicDataDefaultsMissingBranding(suggestion:scenario:)",
+                  "nodeType" : "Test Case",
+                  "result" : "Passed"
+                }
+              ],
+              "name" : "PackagedCoreTests",
+              "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests/PackagedCoreTests",
+              "nodeType" : "Test Suite",
+              "result" : "Passed"
+            }
+          ],
+          "name" : "NativeCoreContractTests",
+          "nodeIdentifierURL" : "test://com.apple.xcode/Clerk/NativeCoreContractTests",
+          "nodeType" : "Unit test bundle",
+          "result" : "Passed"
+        }
+      ],
+      "name" : "NativeCoreContractTests",
+      "nodeType" : "Test Plan",
+      "result" : "Passed"
+    }
+  ],
+  "testPlanConfigurations" : [
+    {
+      "configurationId" : "1",
+      "configurationName" : "Test Scheme Action"
+    }
+  ]
+}

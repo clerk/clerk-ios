@@ -13197,10 +13197,10 @@ isDevOrStagingUrl: (url) => {
 				this.status = data.status;
 				this.publicOrganizationData = {
 					hasImage: data.public_organization_data.has_image,
-					imageUrl: data.public_organization_data.image_url,
+					imageUrl: data.public_organization_data.image_url ?? "",
 					name: data.public_organization_data.name,
 					id: data.public_organization_data.id,
-					slug: data.public_organization_data.slug
+					slug: data.public_organization_data.slug ?? null
 				};
 				this.createdAt = unixEpochToDate(data.created_at);
 				this.updatedAt = unixEpochToDate(data.updated_at);
@@ -16988,10 +16988,10 @@ isDevOrStagingUrl: (url) => {
 				this.emailAddress = data.email_address;
 				this.publicOrganizationData = {
 					hasImage: data.public_organization_data.has_image,
-					imageUrl: data.public_organization_data.image_url,
+					imageUrl: data.public_organization_data.image_url ?? "",
 					name: data.public_organization_data.name,
 					id: data.public_organization_data.id,
-					slug: data.public_organization_data.slug
+					slug: data.public_organization_data.slug ?? null
 				};
 				this.publicMetadata = data.public_metadata;
 				this.role = data.role;

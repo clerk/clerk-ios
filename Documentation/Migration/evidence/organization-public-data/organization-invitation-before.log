@@ -1,0 +1,166 @@
+(node:36555) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ organization invitations preserve projected data with present image and slug (26.410875ms)
+✖ organization invitations preserve projected data with null image and slug (6.774542ms)
+✖ organization invitations preserve projected data with omitted image and slug (6.01375ms)
+✖ organization invitations preserve projected data with null image and omitted slug (6.31425ms)
+✔ organization suggestions preserve projected data with present image and slug (5.457041ms)
+✖ organization suggestions preserve projected data with null image and slug (6.0375ms)
+✖ organization suggestions preserve projected data with omitted image and slug (6.000417ms)
+✖ organization suggestions preserve projected data with null image and omitted slug (7.89275ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 2
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 167.998625
+
+✖ failing tests:
+
+test at work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:13:3
+✖ organization invitations preserve projected data with null image and slug (6.774542ms)
+  AssertionError [ERR_ASSERTION]: {"kind":"bridge","code":"invalid_projection:UserOrganizationInvitation.publicOrganizationData","message":"The operation could not be completed."}
+  + actual - expected
+  
+  + {
+  +   code: 'invalid_projection:UserOrganizationInvitation.publicOrganizationData',
+  +   kind: 'bridge',
+  +   message: 'The operation could not be completed.'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:35:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'bridge', code: 'invalid_projection:UserOrganizationInvitation.publicOrganizationData', message: 'The operation could not be completed.' },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:13:3
+✖ organization invitations preserve projected data with omitted image and slug (6.01375ms)
+  AssertionError [ERR_ASSERTION]: {"kind":"bridge","code":"invalid_projection:UserOrganizationInvitation.publicOrganizationData","message":"The operation could not be completed."}
+  + actual - expected
+  
+  + {
+  +   code: 'invalid_projection:UserOrganizationInvitation.publicOrganizationData',
+  +   kind: 'bridge',
+  +   message: 'The operation could not be completed.'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:35:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'bridge', code: 'invalid_projection:UserOrganizationInvitation.publicOrganizationData', message: 'The operation could not be completed.' },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:13:3
+✖ organization invitations preserve projected data with null image and omitted slug (6.31425ms)
+  AssertionError [ERR_ASSERTION]: {"kind":"bridge","code":"invalid_projection:UserOrganizationInvitation.publicOrganizationData","message":"The operation could not be completed."}
+  + actual - expected
+  
+  + {
+  +   code: 'invalid_projection:UserOrganizationInvitation.publicOrganizationData',
+  +   kind: 'bridge',
+  +   message: 'The operation could not be completed.'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:35:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'bridge', code: 'invalid_projection:UserOrganizationInvitation.publicOrganizationData', message: 'The operation could not be completed.' },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:13:3
+✖ organization suggestions preserve projected data with null image and slug (6.0375ms)
+  AssertionError [ERR_ASSERTION]: {"kind":"bridge","code":"invalid_projection:OrganizationSuggestion.publicOrganizationData","message":"The operation could not be completed."}
+  + actual - expected
+  
+  + {
+  +   code: 'invalid_projection:OrganizationSuggestion.publicOrganizationData',
+  +   kind: 'bridge',
+  +   message: 'The operation could not be completed.'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:35:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'bridge', code: 'invalid_projection:OrganizationSuggestion.publicOrganizationData', message: 'The operation could not be completed.' },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:13:3
+✖ organization suggestions preserve projected data with omitted image and slug (6.000417ms)
+  AssertionError [ERR_ASSERTION]: {"kind":"bridge","code":"invalid_projection:OrganizationSuggestion.publicOrganizationData","message":"The operation could not be completed."}
+  + actual - expected
+  
+  + {
+  +   code: 'invalid_projection:OrganizationSuggestion.publicOrganizationData',
+  +   kind: 'bridge',
+  +   message: 'The operation could not be completed.'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:35:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'bridge', code: 'invalid_projection:OrganizationSuggestion.publicOrganizationData', message: 'The operation could not be completed.' },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:13:3
+✖ organization suggestions preserve projected data with null image and omitted slug (7.89275ms)
+  AssertionError [ERR_ASSERTION]: {"kind":"bridge","code":"invalid_projection:OrganizationSuggestion.publicOrganizationData","message":"The operation could not be completed."}
+  + actual - expected
+  
+  + {
+  +   code: 'invalid_projection:OrganizationSuggestion.publicOrganizationData',
+  +   kind: 'bridge',
+  +   message: 'The operation could not be completed.'
+  + }
+  - undefined
+  
+      at TestContext.<anonymous> (file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs:35:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: { kind: 'bridge', code: 'invalid_projection:OrganizationSuggestion.publicOrganizationData', message: 'The operation could not be completed.' },
+    expected: undefined,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

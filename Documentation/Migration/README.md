@@ -153,3 +153,5 @@ The [token-only credential upgrade](token-only-credential-upgrade.md) preserves 
 [Foreground recovery during browser authentication](foreground-auth-recovery.md) records the shared credential-rotation race, correction, and native lifecycle regression proof.
 
 [Passkey assertion options](passkey-options.md) documents server option preservation, shared relying-party validation, and the packaged macOS/iOS Simulator checks.
+
+[Organization invitation and suggestion projection](organization-public-data.md) documents normalization of missing image/slug fields and the remaining legacy timestamp difference.

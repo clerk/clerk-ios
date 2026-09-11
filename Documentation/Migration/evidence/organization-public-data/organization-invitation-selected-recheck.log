@@ -1,0 +1,92 @@
+TAP version 13
+# (node:40357) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/src/test/fixtures.ts is not specified and it doesn't parse as CommonJS.
+# Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+# To eliminate this warning, add "type": "module" to /Users/mikepitre/Documents/Codex/2026-09-08/i/work/trees/javascript/packages/clerk-js/package.json.
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: mfa.sendPhoneCode preserves selected default factor
+ok 1 - mfa.sendPhoneCode preserves selected default factor
+  ---
+  duration_ms: 27.113
+  type: 'test'
+  ...
+# Subtest: mfa.sendPhoneCode preserves selected second factor
+ok 2 - mfa.sendPhoneCode preserves selected second factor
+  ---
+  duration_ms: 7.323042
+  type: 'test'
+  ...
+# Subtest: mfa.sendPhoneCode preserves selected unknown factor
+ok 3 - mfa.sendPhoneCode preserves selected unknown factor
+  ---
+  duration_ms: 6.2
+  type: 'test'
+  ...
+# Subtest: mfa.sendEmailCode preserves selected default factor
+ok 4 - mfa.sendEmailCode preserves selected default factor
+  ---
+  duration_ms: 6.910041
+  type: 'test'
+  ...
+# Subtest: mfa.sendEmailCode preserves selected second factor
+ok 5 - mfa.sendEmailCode preserves selected second factor
+  ---
+  duration_ms: 7.326833
+  type: 'test'
+  ...
+# Subtest: mfa.sendEmailCode preserves selected unknown factor
+ok 6 - mfa.sendEmailCode preserves selected unknown factor
+  ---
+  duration_ms: 7.203167
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode.sendCode preserves selected default factor
+ok 7 - resetPasswordPhoneCode.sendCode preserves selected default factor
+  ---
+  duration_ms: 6.289125
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode.sendCode preserves selected second factor
+ok 8 - resetPasswordPhoneCode.sendCode preserves selected second factor
+  ---
+  duration_ms: 6.466708
+  type: 'test'
+  ...
+# Subtest: resetPasswordPhoneCode.sendCode preserves selected unknown factor
+ok 9 - resetPasswordPhoneCode.sendCode preserves selected unknown factor
+  ---
+  duration_ms: 6.184042
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode.sendCode preserves selected default factor
+ok 10 - resetPasswordEmailCode.sendCode preserves selected default factor
+  ---
+  duration_ms: 6.747792
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode.sendCode preserves selected second factor
+ok 11 - resetPasswordEmailCode.sendCode preserves selected second factor
+  ---
+  duration_ms: 6.893791
+  type: 'test'
+  ...
+# Subtest: resetPasswordEmailCode.sendCode preserves selected unknown factor
+ok 12 - resetPasswordEmailCode.sendCode preserves selected unknown factor
+  ---
+  duration_ms: 5.672917
+  type: 'test'
+  ...
+# Subtest: native factor projection preserves known discriminants before unknown enum fallback
+ok 13 - native factor projection preserves known discriminants before unknown enum fallback
+  ---
+  duration_ms: 6.37125
+  type: 'test'
+  ...
+1..13
+# tests 13
+# suites 0
+# pass 13
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 206.176417

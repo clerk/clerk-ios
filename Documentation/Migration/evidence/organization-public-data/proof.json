@@ -1,0 +1,54 @@
+{
+  "coreRevision": "4c7c77f5b7e5d52b0c4e65ce8b59b8854e956972",
+  "bundleSHA256": "d0142b55cfa80ef2e7d5769ae95e460b9c798fa451b9f3fc5eef78d63652a6bd",
+  "contractHash": "0f8387f260072ba6f894442b73d50afa6bda5f1205ed3c9209f5d6b1cfba16ce",
+  "sourceHashes": {
+    "javascript/packages/clerk-js/src/core/resources/UserOrganizationInvitation.ts": "9e0cb21ea274b30591954bfc0bd1add95e6147ed9656d4e185ef239e20956e6c",
+    "javascript/packages/clerk-js/src/core/resources/OrganizationSuggestion.ts": "30158fe95ee02d3d11741807104cacc7be6f294e4bb1f4dad630de833b732513",
+    "javascript/packages/mobile-runtime/test/organization-invitation-projection.test.mjs": "7f972796d7d746cee4837e9a54588b544f374d65c91168ee41b597916c388ffa",
+    "clerk-android/NativeCoreTests/Android/OrganizationPublicDataTest.kt": "55bec08e4fcbbed3e45c01e93d9ac3724931709228f780cb26f21c15a1ec09c4",
+    "clerk-android/scripts/run-auth-entry-contract.sh": "5678e5f10704908e57babecd4e0ffa21f48d905968382611c78db8f4aee84847",
+    "clerk-ios/NativeCoreContractTests/OrganizationPublicDataTests.swift": "07c87ecdd3bb815457ee7e2f407382aa31e29b3f903ad12d13621f63da55ee68"
+  },
+  "before": {
+    "passed": 2,
+    "failed": 6
+  },
+  "focusedSharedTests": 82,
+  "fullSharedTests": 596,
+  "swiftTests": 279,
+  "androidCases": [
+    "invitationPreservesPresentBranding",
+    "invitationDefaultsNullBranding",
+    "invitationDefaultsOmittedBranding",
+    "invitationDefaultsNullImageAndOmittedSlug",
+    "suggestionPreservesPresentBranding",
+    "suggestionDefaultsNullBranding",
+    "suggestionDefaultsOmittedBranding",
+    "suggestionDefaultsNullImageAndOmittedSlug"
+  ],
+  "iosCases": [
+    "false, \"mixed\"",
+    "false, \"null\"",
+    "false, \"omitted\"",
+    "false, \"present\"",
+    "true, \"mixed\"",
+    "true, \"null\"",
+    "true, \"omitted\"",
+    "true, \"present\""
+  ],
+  "ciSelectedCases": 145,
+  "retainedLegacyFiles": 43,
+  "timestampCompatibility": "Epoch-second interpretation remains unresolved; retained legacy invitation test is not retired.",
+  "evidenceHashes": {
+    "organization-invitation-runtime-recheck.log": "5b232d0449a3e20013444fd57ba368f600b4c026ead458c09b07dece2bdf707e",
+    "organization-invitation-after.log": "f1568d8c6b88d122b23eba9782e06d5f0ae0e16ad5abd78629e0192da78f7207",
+    "organization-invitation-runtime-all.log": "1a8ff82b17fd43f6e492236044cd75cfe69e357d38fccecfd5aba5d9cc1abfd3",
+    "organization-public-data-ios-tests.json": "649790c1f2e0d3914e053c10ff4040a1e8318ded34166161b883310bfe2a356f",
+    "organization-invitation-date-probe.log": "87fce32a3c64c222de2aacd382fbf1427e6e65ea56c2ee2059af899eddb31885",
+    "organization-invitation-swift-all-after.log": "6bf86aca6755c0d0be3da12c6da9440994f784afcb130a6d1b0e4d57a77ac11e",
+    "organization-invitation-selected-recheck.log": "4be547df7840013aa380e3a97d6dc0b6e28ee0c6b1a003c53e278da7464ee9c9",
+    "organization-invitation-before.log": "f1bdba4a613391dafe1695ac60e8b803b99e67e5673c410c0ffe74d94e496495",
+    "organization-public-data-ios-summary.json": "b045df9abe8ed0d9b20f0a72abb4155a4fbb41be10e14accfb671d2d91471c5e"
+  }
+}
