@@ -1315,14 +1315,16 @@ struct BiometricCredentialsTests {
 }
 
 private let biometricCredentialChallengeClientData = "{\"challenge_id\":\"tdch_123\"}"
-private let biometricCredentialChallenge = BiometricCredentialChallenge(
-  challenge: "challenge",
-  challengeId: "tdch_123",
-  biometricCredentialId: "tdc_123",
-  clientData: biometricCredentialChallengeClientData,
-  expiresAt: Date(timeIntervalSince1970: 1_710_000_000),
-  algorithm: .es256
-)
+private var biometricCredentialChallenge: BiometricCredentialChallenge {
+  BiometricCredentialChallenge(
+    challenge: "challenge",
+    challengeId: "tdch_123",
+    biometricCredentialId: "tdc_123",
+    clientData: biometricCredentialChallengeClientData,
+    expiresAt: Date(timeIntervalSinceNow: 300),
+    algorithm: .es256
+  )
+}
 
 private func enabledBiometricCredentialEnvironment() -> Clerk.Environment {
   var environment = Clerk.Environment.mock
@@ -1700,6 +1702,56 @@ extension BiometricCredentialsTests {
     }))
     await #expect(throws: BiometricCredentialKeyManagerError.self) {
       try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
+    }
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+  }
+
+  @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
+  func reverifyExpiredChallengeDoesNotPromptSubmitOrDeleteCredential(level: Session.BiometricVerificationLevel) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    var challenge = biometricCredentialChallenge
+    challenge.expiresAt = .distantPast
+    let factor = Verification(strategy: .biometricCredential, biometricCredentialChallenge: challenge)
+    let prepared = SessionVerification(
+      status: level == .firstFactor ? .needsFirstFactor : .needsSecondFactor,
+      level: .multiFactor,
+      firstFactorVerification: level == .firstFactor ? factor : nil,
+      secondFactorVerification: level == .secondFactor ? factor : nil
+    )
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { _, _ in
+        #expect(level == .firstFactor)
+        return prepared
+      },
+      attemptFirstFactorVerification: { _, _ in
+        Issue.record("Expired challenges must not submit a first-factor verification.")
+        return .mockComplete
+      },
+      prepareSecondFactorVerification: { _, _ in
+        #expect(level == .secondFactor)
+        return prepared
+      },
+      attemptSecondFactorVerification: { _, _ in
+        Issue.record("Expired challenges must not submit a second-factor verification.")
+        return .mockComplete
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(
+      sign: { _, _, _ in
+        Issue.record("Expired challenges must not show the biometric prompt.")
+        throw CancellationError()
+      },
+      deleteKey: { _ in
+        Issue.record("An expired challenge must not delete the enrolled key.")
+      }
+    ))
+
+    do {
+      _ = try await Session.mock.verifyWithBiometrics(level: level, biometricCredentials: setup.biometricCredentials)
+      Issue.record("Expected an expired challenge to fail before signing.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Biometric reverification challenge has expired.")
     }
     #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
   }

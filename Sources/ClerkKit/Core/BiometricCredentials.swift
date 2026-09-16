@@ -245,6 +245,9 @@ public struct BiometricCredentials {
     guard challenge.biometricCredentialId == credential.id else {
       throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
     }
+    guard challenge.expiresAt > Date() else {
+      throw ClerkClientError(message: "Biometric reverification challenge has expired.")
+    }
     return try keyManager.sign(
       clientData: challenge.clientData,
       localKeyId: credential.localKeyId,
