@@ -1315,14 +1315,16 @@ struct BiometricCredentialsTests {
 }
 
 private let biometricCredentialChallengeClientData = "{\"challenge_id\":\"tdch_123\"}"
-private let biometricCredentialChallenge = BiometricCredentialChallenge(
-  challenge: "challenge",
-  challengeId: "tdch_123",
-  biometricCredentialId: "tdc_123",
-  clientData: biometricCredentialChallengeClientData,
-  expiresAt: Date(timeIntervalSince1970: 1_710_000_000),
-  algorithm: .es256
-)
+private var biometricCredentialChallenge: BiometricCredentialChallenge {
+  BiometricCredentialChallenge(
+    challenge: "challenge",
+    challengeId: "tdch_123",
+    biometricCredentialId: "tdc_123",
+    clientData: biometricCredentialChallengeClientData,
+    expiresAt: Date(timeIntervalSinceNow: 300),
+    algorithm: .es256
+  )
+}
 
 private func enabledBiometricCredentialEnvironment() -> Clerk.Environment {
   var environment = Clerk.Environment.mock
@@ -1445,4 +1447,372 @@ extension SignIn {
       createdSessionId: "sess_123"
     )
   }
+}
+
+extension BiometricCredentialsTests {
+  @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
+  func reverifyResolvesUserForSessionReturnedByBackend(level: Session.BiometricVerificationLevel) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    // The session being reverified belongs to a different user than the active session.
+    var client = Client.mock
+    client.sessions = [.mock2, .mock]
+    client.lastActiveSessionId = Session.mock2.id
+    Clerk.shared.client = client
+    let calls = LockIsolated<[String]>([])
+    let factor = Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge)
+    let service = MockSessionService(
+      startVerification: { id, _ in
+        #expect(id == Session.mock.id)
+        calls.withValue { $0.append("start") }
+        return try decodedBiometricReverification(status: .needsFirstFactor)
+      },
+      prepareFirstFactorVerification: { id, params in
+        #expect(level == .firstFactor)
+        #expect(id == Session.mock.id)
+        #expect(params.biometricCredentialId == "tdc_123")
+        calls.withValue { $0.append("prepare") }
+        var prepared = try decodedBiometricReverification(status: .needsFirstFactor)
+        prepared.firstFactorVerification = factor
+        return prepared
+      },
+      attemptFirstFactorVerification: { id, params in
+        #expect(id == Session.mock.id)
+        if level == .secondFactor {
+          #expect(params.strategy == .password)
+          #expect(params.password == "test-password")
+          calls.withValue { $0.append("password") }
+          return try decodedBiometricReverification(status: .needsSecondFactor)
+        }
+        #expect(params.strategy == .biometricCredential)
+        #expect(params.biometricCredentialId == "tdc_123")
+        calls.withValue { $0.append("attempt") }
+        return try decodedBiometricReverification(status: .complete)
+      },
+      prepareSecondFactorVerification: { id, params in
+        #expect(level == .secondFactor)
+        #expect(id == Session.mock.id)
+        #expect(params.biometricCredentialId == "tdc_123")
+        calls.withValue { $0.append("prepare") }
+        var prepared = try decodedBiometricReverification(status: .needsSecondFactor)
+        prepared.secondFactorVerification = factor
+        return prepared
+      },
+      attemptSecondFactorVerification: { id, params in
+        #expect(level == .secondFactor)
+        #expect(id == Session.mock.id)
+        #expect(params.strategy == .biometricCredential)
+        #expect(params.biometricCredentialId == "tdc_123")
+        calls.withValue { $0.append("attempt") }
+        return try decodedBiometricReverification(status: .complete)
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(sign: { data, key, _ in
+      #expect(key == BiometricCredentialLocalRecord.mock.localKeyId)
+      calls.withValue { $0.append("sign") }
+      return .init(clientData: data, signature: "signed-challenge")
+    }))
+
+    var verification = try await Session.mock.startVerification(level: .multiFactor)
+    if level == .secondFactor {
+      let session = try #require(verification.session)
+      #expect(session.user == nil)
+      verification = try await session.verifyWithPassword("test-password")
+      #expect(verification.status == .needsSecondFactor)
+    }
+    let session = try #require(verification.session)
+    #expect(session.user == nil)
+    let result = try await session.verifyWithBiometrics(level: level, biometricCredentials: setup.biometricCredentials)
+
+    #expect(result.status == .complete)
+    #expect(result.session?.id == Session.mock.id)
+    #expect(Clerk.shared.session?.id == Session.mock2.id)
+    #expect(calls.value == (level == .firstFactor
+        ? ["start", "prepare", "sign", "attempt"]
+        : ["start", "password", "prepare", "sign", "attempt"]))
+  }
+
+  @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor], [false, true])
+  func reverifyRejectsMissingUserInMatchingClientSession(
+    level: Session.BiometricVerificationLevel,
+    includesMatchingSession: Bool
+  ) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    var client = Client.mock
+    client.sessions = [.mock2]
+    client.lastActiveSessionId = Session.mock2.id
+    let verification = try decodedBiometricReverification(status: level == .firstFactor ? .needsFirstFactor : .needsSecondFactor)
+    let session = try #require(verification.session)
+    if includesMatchingSession {
+      client.sessions.append(session)
+    }
+    Clerk.shared.client = client
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { _, _ in
+        Issue.record("Must resolve the session's user before preparing a challenge.")
+        return .mockNeedsFirstFactor
+      },
+      prepareSecondFactorVerification: { _, _ in
+        Issue.record("Must resolve the session's user before preparing a challenge.")
+        return .mockNeedsSecondFactor
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    // A usable credential for the active user must not substitute for the missing owner.
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
+        Issue.record("Must not prompt without resolving the session's user.")
+        throw CancellationError()
+      }),
+      localCredential: localCredential(id: "tdc_other", localKeyId: "other-key", userID: User.mock2.id, createdAt: .now)
+    )
+
+    await #expect(throws: ClerkClientError.self) {
+      try await session.verifyWithBiometrics(level: level, biometricCredentials: setup.biometricCredentials)
+    }
+  }
+
+  @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
+  func reverifySignsSessionChallengeAndClearsCachedTokens(level: Session.BiometricVerificationLevel) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    let session = Session.mock
+    let calls = LockIsolated<[String]>([])
+    let factor = Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge)
+    let prepared = SessionVerification(
+      status: level == .firstFactor ? .needsFirstFactor : .needsSecondFactor,
+      level: .multiFactor,
+      firstFactorVerification: level == .firstFactor ? factor : nil,
+      secondFactorVerification: level == .secondFactor ? factor : nil
+    )
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { id, params in
+        #expect(level == .firstFactor)
+        #expect(id == session.id)
+        #expect(params.biometricCredentialId == "tdc_123")
+        #expect(params.strategy == .biometricCredential)
+        calls.withValue { $0.append("prepare") }
+        return prepared
+      },
+      attemptFirstFactorVerification: { id, params in
+        #expect(level == .firstFactor)
+        #expect(id == session.id)
+        #expect(params.strategy == .biometricCredential)
+        #expect(params.biometricCredentialId == "tdc_123")
+        #expect(params.clientData == biometricCredentialChallengeClientData)
+        #expect(params.signature == "signed-challenge")
+        #expect(params.algorithm == .es256)
+        calls.withValue { $0.append("attempt") }
+        return SessionVerification(status: .complete, level: .multiFactor)
+      },
+      prepareSecondFactorVerification: { id, params in
+        #expect(level == .secondFactor)
+        #expect(id == session.id)
+        #expect(params.biometricCredentialId == "tdc_123")
+        #expect(params.strategy == .biometricCredential)
+        calls.withValue { $0.append("prepare") }
+        return prepared
+      },
+      attemptSecondFactorVerification: { id, params in
+        #expect(level == .secondFactor)
+        #expect(id == session.id)
+        #expect(params.strategy == .biometricCredential)
+        #expect(params.biometricCredentialId == "tdc_123")
+        #expect(params.clientData == biometricCredentialChallengeClientData)
+        #expect(params.signature == "signed-challenge")
+        #expect(params.algorithm == .es256)
+        calls.withValue { $0.append("attempt") }
+        return SessionVerification(status: .complete, level: .multiFactor)
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      signInService: MockSignInService(create: { _ in
+        Issue.record("Reverification must not create a sign-in.")
+        return .mock
+      }),
+      keyManager: MockBiometricCredentialKeyManager(sign: { data, key, reason in
+        #expect(data == biometricCredentialChallengeClientData)
+        #expect(key == BiometricCredentialLocalRecord.mock.localKeyId)
+        #expect(reason == "Confirm payment")
+        calls.withValue { $0.append("sign") }
+        return .init(clientData: data, signature: "signed-challenge")
+      })
+    )
+    await SessionTokensCache.shared.insertToken(.init(jwt: "stale.jwt"), cacheKey: session.tokenCacheKey(template: nil))
+    let result = try await session.verifyWithBiometrics(reason: "Confirm payment", level: level, biometricCredentials: setup.biometricCredentials)
+    #expect(result.status == .complete)
+    #expect(calls.value == ["prepare", "sign", "attempt"])
+    #expect(await SessionTokensCache.shared.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
+  }
+
+  @Test
+  func reverifyRejectsAnotherUsersCredentialBeforeNetworkOrBiometricPrompt() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
+        Issue.record("Must not prompt for another user's credential.")
+        throw CancellationError()
+      }),
+      localCredential: localCredential(id: "tdc_other", localKeyId: "other-key", userID: "other-user", createdAt: .now)
+    )
+    let service = MockSessionService(prepareFirstFactorVerification: { _, _ in
+      Issue.record("Must not prepare another user's credential.")
+      return .mockNeedsFirstFactor
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    await #expect(throws: ClerkClientError.self) {
+      try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
+    }
+  }
+
+  @Test(arguments: [false, true])
+  func reverifyRejectsMissingOrMismatchedChallengeBeforePrompt(mismatched: Bool) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    var challenge = biometricCredentialChallenge
+    challenge.biometricCredentialId = "tdc_other"
+    let prepared = SessionVerification(status: .needsFirstFactor, level: .firstFactor,
+                                       firstFactorVerification: mismatched ? Verification(strategy: .biometricCredential, biometricCredentialChallenge: challenge) : nil)
+    let service = MockSessionService(prepareFirstFactorVerification: { _, _ in prepared })
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
+      Issue.record("Must not sign an invalid challenge.")
+      throw CancellationError()
+    }))
+    await #expect(throws: ClerkClientError.self) {
+      try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
+    }
+  }
+
+  @Test
+  func reverifyCancellationDoesNotSubmitOrDeleteCredential() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { _, _ in
+        SessionVerification(status: .needsFirstFactor, level: .firstFactor,
+                            firstFactorVerification: Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge))
+      },
+      attemptFirstFactorVerification: { _, _ in
+        Issue.record("Cancelled biometrics must not submit a verification.")
+        return .mockComplete
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
+      throw BiometricCredentialKeyManagerError.biometricAuthenticationCanceled
+    }))
+    await #expect(throws: BiometricCredentialKeyManagerError.self) {
+      try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
+    }
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+  }
+
+  @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
+  func reverifyExpiredChallengeDoesNotPromptSubmitOrDeleteCredential(level: Session.BiometricVerificationLevel) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    var challenge = biometricCredentialChallenge
+    challenge.expiresAt = .distantPast
+    let factor = Verification(strategy: .biometricCredential, biometricCredentialChallenge: challenge)
+    let prepared = SessionVerification(
+      status: level == .firstFactor ? .needsFirstFactor : .needsSecondFactor,
+      level: .multiFactor,
+      firstFactorVerification: level == .firstFactor ? factor : nil,
+      secondFactorVerification: level == .secondFactor ? factor : nil
+    )
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { _, _ in
+        #expect(level == .firstFactor)
+        return prepared
+      },
+      attemptFirstFactorVerification: { _, _ in
+        Issue.record("Expired challenges must not submit a first-factor verification.")
+        return .mockComplete
+      },
+      prepareSecondFactorVerification: { _, _ in
+        #expect(level == .secondFactor)
+        return prepared
+      },
+      attemptSecondFactorVerification: { _, _ in
+        Issue.record("Expired challenges must not submit a second-factor verification.")
+        return .mockComplete
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(
+      sign: { _, _, _ in
+        Issue.record("Expired challenges must not show the biometric prompt.")
+        throw CancellationError()
+      },
+      deleteKey: { _ in
+        Issue.record("An expired challenge must not delete the enrolled key.")
+      }
+    ))
+
+    do {
+      _ = try await Session.mock.verifyWithBiometrics(level: level, biometricCredentials: setup.biometricCredentials)
+      Issue.record("Expected an expired challenge to fail before signing.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "Biometric reverification challenge has expired.")
+    }
+    #expect(try setup.credentialStore.credential(id: "tdc_123") != nil)
+  }
+
+  @Test
+  func reverifyRemovesRevokedCredential() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    let service = MockSessionService(prepareFirstFactorVerification: { _, _ in
+      throw missingBiometricCredentialError(code: "trusted_device_not_registered")
+    })
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let setup = try makeBiometricCredentialsWithLocalCredential()
+    await #expect(throws: ClerkClientError.self) {
+      try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
+    }
+    #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+  }
+
+  @Test
+  func biometricReverificationParamsMatchBackendWireNames() throws {
+    func json(_ value: some Encodable) throws -> [String: Any] {
+      try #require(JSONSerialization.jsonObject(with: JSONEncoder.clerkEncoder.encode(value)) as? [String: Any])
+    }
+    let prepareFirst = try json(Session.PrepareFirstFactorVerificationParams(strategy: .biometricCredential, biometricCredentialId: "tdc_123"))
+    let prepareSecond = try json(Session.PrepareSecondFactorVerificationParams(strategy: .biometricCredential, biometricCredentialId: "tdc_123"))
+    let attemptFirst = try json(Session.AttemptFirstFactorVerificationParams(strategy: .biometricCredential,
+                                                                             biometricCredentialId: "tdc_123", clientData: "exact-data", signature: "signature", algorithm: .es256))
+    let attemptSecond = try json(Session.AttemptSecondFactorVerificationParams(strategy: .biometricCredential,
+                                                                               biometricCredentialId: "tdc_123", clientData: "exact-data", signature: "signature", algorithm: .es256))
+    for params in [prepareFirst, prepareSecond, attemptFirst, attemptSecond] {
+      #expect(params["strategy"] as? String == "trusted_device")
+      #expect(params["trusted_device_id"] as? String == "tdc_123")
+      #expect(params["biometric_credential_id"] == nil)
+    }
+    for params in [attemptFirst, attemptSecond] {
+      #expect(params["client_data"] as? String == "exact-data")
+      #expect(params["signature"] as? String == "signature")
+      #expect(params["algorithm"] as? String == "ES256")
+    }
+  }
+}
+
+/// Reverification embeds a lightweight session, unlike the hydrated sessions in the client.
+private func decodedBiometricReverification(status: SessionVerification.Status) throws -> SessionVerification {
+  let json = """
+  {
+    "object": "session_reverification",
+    "status": "\(status.rawValue)",
+    "level": "multi_factor",
+    "session": {
+      "object": "session",
+      "id": "\(Session.mock.id)",
+      "status": "active",
+      "user": null,
+      "last_active_at": 1710000000000,
+      "expire_at": 1710600000000,
+      "abandon_at": 1712600000000,
+      "created_at": 1710000000000,
+      "updated_at": 1710000000000
+    }
+  }
+  """
+  return try JSONDecoder.clerkDecoder.decode(SessionVerification.self, from: Data(json.utf8))
 }

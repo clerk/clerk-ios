@@ -18,6 +18,15 @@ extension Session {
     case secondFactor
   }
 
+  /// The factor stage a biometric credential should verify during session reverification.
+  public enum BiometricVerificationLevel: Sendable {
+    /// Verifies the first factor and may satisfy an existing second-factor requirement.
+    case firstFactor
+
+    /// Verifies a second-factor stage that is already in progress.
+    case secondFactor
+  }
+
   // MARK: - Reverification (Step-up)
 
   /// Starts an in-session reverification (step-up) flow.
@@ -35,6 +44,33 @@ extension Session {
     try await Clerk.shared.dependencies.sessionService.startVerification(
       sessionId: id,
       params: .init(level: level)
+    )
+  }
+
+  /// Verifies the current session using a biometric credential enrolled on this app installation.
+  ///
+  /// Start the flow with ``startVerification(level:)`` and follow its returned status.
+  /// A biometric credential submitted as the first factor can also satisfy an existing
+  /// second-factor requirement. Use `.secondFactor` when the flow is waiting for that stage.
+  ///
+  /// Biometric reverification shares the instance's native biometric sign-in settings.
+  /// Disabling biometric sign-in also disables biometric reverification, even for
+  /// credentials that are already enrolled.
+  ///
+  /// - Parameters:
+  ///   - reason: The explanation shown in the system biometric prompt.
+  ///   - level: The factor stage to verify. Defaults to `.firstFactor`.
+  /// - Returns: The resulting verification. On completion, cached tokens for this session
+  ///   are cleared so the next token request includes the updated factor verification ages.
+  @discardableResult @MainActor
+  public func verifyWithBiometrics(
+    reason: String? = nil,
+    level: BiometricVerificationLevel = .firstFactor
+  ) async throws -> SessionVerification {
+    try await verifyWithBiometrics(
+      reason: reason,
+      level: level,
+      biometricCredentials: Clerk.shared.biometricCredentials
     )
   }
 
@@ -222,6 +258,79 @@ extension Session {
   }
 
   // MARK: - Internal helpers
+
+  @MainActor
+  func verifyWithBiometrics(
+    reason: String? = nil,
+    level: BiometricVerificationLevel = .firstFactor,
+    biometricCredentials: BiometricCredentials
+  ) async throws -> SessionVerification {
+    // Reverification responses omit the user from their embedded session.
+    let userID = user?.id ?? Clerk.shared.client?.sessions.first(where: { $0.id == id })?.user?.id
+    guard status.allowsBiometricCredentialEnrollment, let userID else {
+      throw ClerkClientError(message: "Biometric reverification requires an active or pending session with a user.")
+    }
+
+    let localCredential = try biometricCredentials.localCredential(for: userID)
+
+    let service = Clerk.shared.dependencies.sessionService
+    do {
+      try _Concurrency.Task.checkCancellation()
+      let prepared = if level == .secondFactor {
+        try await service.prepareSecondFactorVerification(
+          sessionId: id,
+          params: .init(strategy: .biometricCredential, biometricCredentialId: localCredential.id)
+        )
+      } else {
+        try await service.prepareFirstFactorVerification(
+          sessionId: id,
+          params: .init(strategy: .biometricCredential, biometricCredentialId: localCredential.id)
+        )
+      }
+      let factor = level == .secondFactor ? prepared.secondFactorVerification : prepared.firstFactorVerification
+      guard factor?.strategy == .biometricCredential,
+            let challenge = factor?.biometricCredentialChallenge
+      else {
+        throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
+      }
+      try _Concurrency.Task.checkCancellation()
+      let signature = try biometricCredentials.sign(
+        challenge: challenge,
+        credential: localCredential,
+        reason: reason ?? "Use biometrics to verify your identity."
+      )
+      try _Concurrency.Task.checkCancellation()
+      let verified = if level == .secondFactor {
+        try await service.attemptSecondFactorVerification(
+          sessionId: id,
+          params: .init(
+            strategy: .biometricCredential,
+            biometricCredentialId: localCredential.id,
+            clientData: signature.clientData,
+            signature: signature.signature,
+            algorithm: signature.algorithm
+          )
+        )
+      } else {
+        try await service.attemptFirstFactorVerification(
+          sessionId: id,
+          params: .init(
+            strategy: .biometricCredential,
+            biometricCredentialId: localCredential.id,
+            clientData: signature.clientData,
+            signature: signature.signature,
+            algorithm: signature.algorithm
+          )
+        )
+      }
+      if verified.status == .complete {
+        await SessionTokensCache.shared.removeTokens(sessionId: id)
+      }
+      return verified
+    } catch {
+      throw biometricCredentials.handleBiometricCredentialError(error, localCredential: localCredential)
+    }
+  }
 
   /// Prepares the first factor of an in-session reverification flow.
   @discardableResult @MainActor

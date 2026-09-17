@@ -225,6 +225,36 @@ public struct BiometricCredentials {
     return credentials.count
   }
 
+  /// Selects a local credential for an explicit user without reconciling through `/me`.
+  /// The caller's session endpoint validates ownership of the server credential.
+  func localCredential(for userID: String) throws -> BiometricCredentialLocalRecord {
+    switch try localCredentialCandidates(id: nil, identifierHint: nil, userID: userID) {
+    case let .available(credentials):
+      return credentials[0]
+    case .unavailable:
+      throw ClerkClientError(message: "Biometric reverification is unavailable for this session.")
+    }
+  }
+
+  /// Signs a server challenge using the selected credential's existing local key.
+  func sign(
+    challenge: BiometricCredentialChallenge,
+    credential: BiometricCredentialLocalRecord,
+    reason: String?
+  ) throws -> BiometricCredentialKeySignature {
+    guard challenge.biometricCredentialId == credential.id else {
+      throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
+    }
+    guard challenge.expiresAt > Date() else {
+      throw ClerkClientError(message: "Biometric reverification challenge has expired.")
+    }
+    return try keyManager.sign(
+      clientData: challenge.clientData,
+      localKeyId: credential.localKeyId,
+      localizedReason: reason
+    )
+  }
+
   /// Signs in with a locally enrolled biometric credential.
   ///
   /// - Parameters:
@@ -257,7 +287,7 @@ public struct BiometricCredentials {
         biometricCredentialId: biometricCredentialId
       ))
     } catch {
-      throw handleBiometricSignInError(error, localCredential: localCredential)
+      throw handleBiometricCredentialError(error, localCredential: localCredential)
     }
 
     let challenge = try biometricCredentialChallenge(from: signIn)
@@ -279,7 +309,7 @@ public struct BiometricCredentials {
         )
       )
     } catch {
-      throw handleBiometricSignInError(error, localCredential: localCredential)
+      throw handleBiometricCredentialError(error, localCredential: localCredential)
     }
   }
 }
@@ -571,7 +601,7 @@ extension BiometricCredentials {
     return biometricCredentialChallenge
   }
 
-  private func handleBiometricSignInError(
+  func handleBiometricCredentialError(
     _ error: Error,
     localCredential: BiometricCredentialLocalRecord
   ) -> Error {

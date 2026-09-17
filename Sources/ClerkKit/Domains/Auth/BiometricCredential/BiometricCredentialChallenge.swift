@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// A server challenge for biometric credential enrollment or sign-in.
+/// A server challenge for biometric credential enrollment, sign-in, or session reverification.
 public struct BiometricCredentialChallenge: Codable, Equatable, Hashable, Sendable {
   /// The resource object name.
   public var object: String
@@ -16,7 +16,7 @@ public struct BiometricCredentialChallenge: Codable, Equatable, Hashable, Sendab
   /// The unique identifier of the challenge.
   public var challengeId: String
 
-  /// The biometric credential ID for sign-in challenges.
+  /// The biometric credential ID for sign-in and reverification challenges.
   public var biometricCredentialId: String?
 
   /// The exact client data string that must be signed.
