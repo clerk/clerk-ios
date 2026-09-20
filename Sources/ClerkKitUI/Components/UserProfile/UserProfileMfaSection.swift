@@ -13,8 +13,6 @@ struct UserProfileMfaSection: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(UserProfileSheetNavigation.self) private var navigation
 
-  @State private var addMfaHeight: CGFloat = 400
-
   private var user: User? {
     clerk.user
   }
@@ -76,10 +74,7 @@ struct UserProfileMfaSection: View {
       UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
     }
     .sheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
-      UserProfileAddMfaView(contentHeight: $addMfaHeight)
-      #if os(iOS)
-      .presentationDetents([.height(addMfaHeight)])
-      #endif
+      UserProfileAddMfaView()
       .environment(clerk)
       .environment(navigation)
     }

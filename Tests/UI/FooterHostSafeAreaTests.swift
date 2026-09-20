@@ -79,23 +79,59 @@ struct FooterHostSafeAreaTests {
   }
 
   @Test
-  func resizingAnEmbeddedHostRefreshesTheInset() async throws {
+  func resizingAnEmbeddedHostRefreshesTheObservedInset() async throws {
     let fixture = FooterHostingFixture(consumesSafeArea: true)
     defer { fixture.close() }
     await fixture.layout()
     let originalFrame = fixture.window.frame
-    let originalInset = fixture.window.safeAreaInsets.bottom
+    let originalInset = fixture.parent.view.safeAreaInsets.bottom
     #expect(originalInset > 0)
     #expect(try #require(fixture.recorder.safeArea).additionalPadding == originalInset)
 
-    fixture.window.frame.size.height -= originalInset
+    // A scene-less window does not consistently change its safe area when resized.
+    // Control that UIKit input while retaining the real observer and layout callbacks.
+    fixture.container.reportedBottomInset = 0
+    fixture.window.frame.size.width -= 80
     await fixture.layout()
-    #expect(fixture.window.safeAreaInsets.bottom == 0)
+    #expect(fixture.parent.view.safeAreaInsets.bottom == 0)
+    #expect(try #require(fixture.recorder.safeArea).hostInset == 0)
     #expect(try #require(fixture.recorder.safeArea).additionalPadding == 0)
 
+    fixture.container.reportedBottomInset = originalInset
     fixture.window.frame = originalFrame
     await fixture.layout()
+    #expect(fixture.parent.view.safeAreaInsets.bottom == originalInset)
+    #expect(try #require(fixture.recorder.safeArea).hostInset == originalInset)
     #expect(try #require(fixture.recorder.safeArea).additionalPadding == originalInset)
+  }
+
+  @Test(arguments: [false, true])
+  func asymmetricHorizontalSafeAreasSurviveHostResizing(leadingEdge: Bool) async throws {
+    let fixture = FooterHostingFixture(consumesSafeArea: true)
+    defer { fixture.close() }
+    fixture.host.additionalSafeAreaInsets.left = leadingEdge ? 64 : 0
+    fixture.host.additionalSafeAreaInsets.right = leadingEdge ? 0 : 64
+    await fixture.layout()
+
+    if leadingEdge {
+      #expect(fixture.host.view.safeAreaInsets.left >= 64)
+    } else {
+      #expect(fixture.host.view.safeAreaInsets.right >= 64)
+    }
+    let originalInset = fixture.parent.view.safeAreaInsets.bottom
+    #expect(originalInset > 0)
+    #expect(try #require(fixture.recorder.safeArea).additionalPadding == originalInset)
+    try fixture.expectHorizontalSafeAreaIsRespected()
+    let originalContentFrame = try #require(fixture.recorder.contentFrame)
+
+    fixture.container.reportedBottomInset = 0
+    fixture.window.frame.size.width -= 80
+    await fixture.layout()
+
+    #expect(fixture.parent.view.safeAreaInsets.bottom == 0)
+    #expect(try #require(fixture.recorder.safeArea).additionalPadding == 0)
+    try fixture.expectHorizontalSafeAreaIsRespected()
+    #expect(try #require(fixture.recorder.contentFrame).width < originalContentFrame.width)
   }
 
   @Test
@@ -155,6 +191,7 @@ struct FooterHostSafeAreaTests {
 private final class FooterHostingFixture {
   let recorder = FooterInsetRecorder()
   let parent = UIViewController()
+  let container = FooterSafeAreaContainerView()
   let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
   let host: UIViewController
 
@@ -168,6 +205,7 @@ private final class FooterHostingFixture {
       recorder: recorder,
       tracksHostSafeArea: tracksHostSafeArea
     ))
+    parent.view = container
     parent.additionalSafeAreaInsets.bottom = additionalInset
     parent.addChild(host)
     parent.view.addSubview(host.view)
@@ -208,11 +246,41 @@ private final class FooterHostingFixture {
     window.isHidden = true
     window.rootViewController = nil
   }
+
+  func expectHorizontalSafeAreaIsRespected() throws {
+    let safeFrame = host.view.safeAreaLayoutGuide.layoutFrame
+    let contentFrame = try #require(recorder.contentFrame)
+    let footerFrame = try #require(recorder.footerFrame)
+    #expect(abs(contentFrame.minX - safeFrame.minX) < 0.5)
+    #expect(abs(contentFrame.maxX - safeFrame.maxX) < 0.5)
+    #expect(abs(footerFrame.minX - safeFrame.minX) < 0.5)
+    #expect(abs(footerFrame.maxX - safeFrame.maxX) < 0.5)
+  }
+}
+
+@MainActor
+private final class FooterSafeAreaContainerView: UIView {
+  var reportedBottomInset: CGFloat? {
+    didSet {
+      safeAreaInsetsDidChange()
+      setNeedsLayout()
+    }
+  }
+
+  override var safeAreaInsets: UIEdgeInsets {
+    var insets = super.safeAreaInsets
+    if let reportedBottomInset {
+      insets.bottom = reportedBottomInset
+    }
+    return insets
+  }
 }
 
 @MainActor
 private final class FooterInsetRecorder {
   var safeArea: FooterSafeArea?
+  var contentFrame: CGRect?
+  var footerFrame: CGRect?
 }
 
 private struct FooterInsetProbe: View {
@@ -220,15 +288,28 @@ private struct FooterInsetProbe: View {
   var tracksHostSafeArea = true
 
   var body: some View {
-    Color.clear.bottomTrackedFooter(
-      isPresented: true,
-      tracksHostSafeArea: tracksHostSafeArea
-    ) { safeArea in
-      Color.clear.frame(height: 16)
-        .onChange(of: [safeArea.containerInset, safeArea.hostInset], initial: true) {
-          recorder.safeArea = safeArea
-        }
-    }
+    Color.clear
+      .onGeometryChange(for: CGRect.self) { geometry in
+        geometry.frame(in: .global)
+      } action: { frame in
+        recorder.contentFrame = frame
+      }
+      .bottomTrackedFooter(
+        isPresented: true,
+        tracksHostSafeArea: tracksHostSafeArea
+      ) { safeArea in
+        Color.clear.frame(height: 16)
+          .padding(.bottom, safeArea.additionalPadding)
+          .onGeometryChange(for: CGRect.self) { geometry in
+            geometry.frame(in: .global)
+          } action: { frame in
+            recorder.footerFrame = frame
+          }
+          .onChange(of: [safeArea.containerInset, safeArea.hostInset], initial: true) {
+            recorder.safeArea = safeArea
+          }
+      }
+      .environment(\.layoutDirection, .leftToRight)
   }
 }
 

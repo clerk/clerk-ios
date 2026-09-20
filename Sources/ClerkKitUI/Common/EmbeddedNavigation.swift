@@ -59,7 +59,7 @@ private struct HostBackToolbarModifier: ViewModifier {
 
   private var hostBackToolbarPlacement: ToolbarItemPlacement {
     #if os(iOS)
-    .topBarLeading
+    .cancellationAction
     #else
     .navigation
     #endif
