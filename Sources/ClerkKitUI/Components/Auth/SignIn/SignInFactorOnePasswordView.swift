@@ -82,49 +82,10 @@ struct SignInFactorOnePasswordView: View {
         }
         .padding(.bottom, 16)
 
-        HStack(spacing: 16) {
-          Button {
-            navigation.path.append(
-              AuthView.Destination.signInFactorOneUseAnotherMethod(
-                currentFactor: factor
-              )
-            )
-          } label: {
-            Text("Use another method", bundle: .module)
-              .frame(maxWidth: .infinity)
-          }
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignIn.useAnotherMethodButton)
-
-          Rectangle()
-            .foregroundStyle(theme.colors.border)
-            .frame(width: 1, height: 16)
-
-          Button {
-            if signIn?.resetPasswordFactor != nil {
-              navigation.path.append(
-                AuthView.Destination.signInForgotPassword
-              )
-            } else {
-              navigation.path.append(
-                AuthView.Destination.signInFactorOneUseAnotherMethod(
-                  currentFactor: factor
-                )
-              )
-            }
-          } label: {
-            Text("Forgot password?", bundle: .module)
-              .frame(maxWidth: .infinity)
-          }
-        }
-        .buttonStyle(
-          .primary(
-            config: .init(
-              emphasis: .none,
-              size: .small
-            )
-          )
+        SignInPasswordActionsView(
+          onUseAnotherMethod: showOtherMethods,
+          onForgotPassword: showPasswordReset
         )
-        .simultaneousGesture(TapGesture())
         .padding(.bottom, 32)
 
         SecuredByClerkView()
@@ -139,6 +100,20 @@ struct SignInFactorOnePasswordView: View {
 }
 
 extension SignInFactorOnePasswordView {
+  func showOtherMethods() {
+    navigation.path.append(
+      AuthView.Destination.signInFactorOneUseAnotherMethod(currentFactor: factor)
+    )
+  }
+
+  func showPasswordReset() {
+    if signIn?.resetPasswordFactor != nil {
+      navigation.path.append(AuthView.Destination.signInForgotPassword)
+    } else {
+      showOtherMethods()
+    }
+  }
+
   func submitPassword() async {
     isFocused = false
 
