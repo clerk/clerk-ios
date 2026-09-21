@@ -16,7 +16,6 @@ struct UserProfileDetailView: View {
   @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
   @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?
   @State private var addConnectedAccountIsPresented = false
-  @State private var connectAccountSheetHeight: CGFloat = 200
 
   private var user: User? {
     clerk.user
@@ -168,10 +167,7 @@ struct UserProfileDetailView: View {
         .environment(codeLimiter)
     }
     .sheet(isPresented: $addConnectedAccountIsPresented) {
-      UserProfileAddConnectedAccountView(contentHeight: $connectAccountSheetHeight)
-      #if os(iOS)
-      .presentationDetents([.height(connectAccountSheetHeight)])
-      #endif
+      UserProfileAddConnectedAccountView()
       .environment(clerk)
     }
     .task {

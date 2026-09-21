@@ -14,7 +14,7 @@ struct UserProfileAddConnectedAccountView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  @Binding private var contentHeight: CGFloat
+  @State private var navigationInset: CGFloat?
   @State private var error: Error?
 
   private var user: User? {
@@ -23,18 +23,6 @@ struct UserProfileAddConnectedAccountView: View {
 
   private var unconnectedProviders: [OAuthProvider] {
     user?.unconnectedProviders ?? []
-  }
-
-  var extraContentHeight: CGFloat {
-    if #available(iOS 26.0, *) {
-      0
-    } else {
-      7
-    }
-  }
-
-  init(contentHeight: Binding<CGFloat> = .constant(0)) {
-    _contentHeight = contentHeight
   }
 
   var body: some View {
@@ -69,15 +57,14 @@ struct UserProfileAddConnectedAccountView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         .preGlassSolidNavBar()
-        .preGlassDetentSheetBackground()
-        .onGeometryChange(for: CGFloat.self) { proxy in
-          proxy.size.height
-        } action: { newValue in
-          contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-        }
         #endif
+        .preGlassDetentSheetBackground()
+        .contentSizedSheet(additionalHeight: navigationInset)
       }
       .scrollBounceBehavior(.basedOnSize)
+      .onGeometryChange(for: CGFloat.self) { geometry in
+        geometry.safeAreaInsets.top
+      } action: { navigationInset = $0 }
       .background(theme.colors.background)
       .toolbar {
         CancelToolbarItem {
@@ -120,7 +107,7 @@ extension UserProfileAddConnectedAccountView {
 }
 
 #Preview {
-  UserProfileAddConnectedAccountView(contentHeight: .constant(300))
+  UserProfileAddConnectedAccountView()
   #if os(iOS)
   .clerkPreview()
   #elseif os(macOS)

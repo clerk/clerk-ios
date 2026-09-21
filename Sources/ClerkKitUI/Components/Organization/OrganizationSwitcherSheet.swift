@@ -16,7 +16,7 @@ struct OrganizationSwitcherSheet: View {
   private let onManageOrganization: () -> Void
   private let onSwitchAccount: () -> Void
 
-  @State private var contentHeight: CGFloat = 220
+  @State private var navigationInset: CGFloat?
 
   init(
     organization: Organization,
@@ -59,19 +59,12 @@ struct OrganizationSwitcherSheet: View {
             }
           )
         }
-        #if os(iOS)
-        .onGeometryChange(
-          for: CGFloat.self,
-          of: { proxy in
-            proxy.size.height
-          },
-          action: { newValue in
-            contentHeight = newValue + UITabBarController().tabBar.frame.size.height
-          }
-        )
-        #endif
+        .contentSizedSheet(additionalHeight: navigationInset)
       }
       .scrollBounceBehavior(.basedOnSize)
+      .onGeometryChange(for: CGFloat.self) { geometry in
+        geometry.safeAreaInsets.top
+      } action: { navigationInset = $0 }
       #if os(iOS)
       .navigationBarTitleDisplayMode(.inline)
       #endif
@@ -98,9 +91,7 @@ struct OrganizationSwitcherSheet: View {
         }
       }
     }
-    #if os(iOS)
-    .presentationDetents([.height(contentHeight)])
-    #elseif os(macOS)
+    #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)
     #endif
   }

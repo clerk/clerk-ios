@@ -109,7 +109,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   private let oauthConfig: UserProfileOAuthConfiguration
 
   @State private var updateProfileIsPresented = false
-  @State private var accountSwitcherHeight: CGFloat = 400
   @State private var initialPathCount = 0
   @State private var internalPath = NavigationPath()
   @State private var sheetNavigation = UserProfileSheetNavigation()
@@ -198,16 +197,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
       .clerkErrorPresenting($error)
       .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
-        #if os(iOS)
-        UserButtonAccountSwitcher(contentHeight: $accountSwitcherHeight)
-          .presentationDetents([.height(accountSwitcherHeight)])
-          .environment(clerk)
-          .environment(sheetNavigation)
-        #elseif os(macOS)
         UserButtonAccountSwitcher()
           .environment(clerk)
           .environment(sheetNavigation)
-        #endif
       }
       .sheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)

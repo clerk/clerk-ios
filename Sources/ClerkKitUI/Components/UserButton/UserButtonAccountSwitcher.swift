@@ -14,7 +14,7 @@ struct UserButtonAccountSwitcher: View {
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(\.dismiss) private var dismiss
 
-  @Binding private var contentHeight: CGFloat
+  @State private var navigationInset: CGFloat?
   @State private var error: Error?
 
   private var sessions: [Session] {
@@ -49,20 +49,6 @@ struct UserButtonAccountSwitcher: View {
       self.error = error
       ClerkLogger.error("Failed to sign out of all accounts", error: error)
     }
-  }
-
-  #if os(iOS)
-  private var extraContentHeight: CGFloat {
-    if #available(iOS 26.0, *) {
-      0
-    } else {
-      7
-    }
-  }
-  #endif
-
-  init(contentHeight: Binding<CGFloat> = .constant(0)) {
-    _contentHeight = contentHeight
   }
 
   var body: some View {
@@ -135,18 +121,12 @@ struct UserButtonAccountSwitcher: View {
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
           }
-          #if os(iOS)
-          .onGeometryChange(
-            for: CGFloat.self,
-            of: { proxy in
-              proxy.size.height
-            },
-            action: { newValue in
-              contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-            }
-          )
-          #endif
+          .contentSizedSheet(additionalHeight: navigationInset)
         }
+        .scrollBounceBehavior(.basedOnSize)
+        .onGeometryChange(for: CGFloat.self) { geometry in
+          geometry.safeAreaInsets.top
+        } action: { navigationInset = $0 }
       }
       .animation(.default, value: sessions)
       .clerkErrorPresenting($error)

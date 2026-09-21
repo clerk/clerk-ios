@@ -15,8 +15,7 @@ struct UserProfileAddMfaView: View {
   @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var error: Error?
-
-  @Binding private var contentHeight: CGFloat
+  @State private var navigationInset: CGFloat?
 
   enum PresentedView: Identifiable, Hashable {
     case sms
@@ -38,30 +37,12 @@ struct UserProfileAddMfaView: View {
     }
   }
 
-  private var extraContentHeight: CGFloat {
-    #if os(iOS)
-    if #available(iOS 26.0, *) {
-      0
-    } else {
-      7
-    }
-    #else
-    0
-    #endif
-  }
-
   private var environment: Clerk.Environment? {
     clerk.environment
   }
 
   private var user: User? {
     clerk.user
-  }
-
-  init(
-    contentHeight: Binding<CGFloat> = .constant(0)
-  ) {
-    _contentHeight = contentHeight
   }
 
   var body: some View {
@@ -129,18 +110,15 @@ struct UserProfileAddMfaView: View {
               .foregroundStyle(theme.colors.foreground)
           }
         }
-        #if os(iOS)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-          proxy.size.height
-        } action: { newValue in
-          contentHeight = newValue + UITabBarController().tabBar.frame.size.height + extraContentHeight
-        }
-        #endif
+        .contentSizedSheet(additionalHeight: navigationInset)
       }
       #if os(macOS)
       .frame(minWidth: 460, maxWidth: 620)
       #endif
       .scrollBounceBehavior(.basedOnSize)
+      .onGeometryChange(for: CGFloat.self) { geometry in
+        geometry.safeAreaInsets.top
+      } action: { navigationInset = $0 }
     }
   }
 }
