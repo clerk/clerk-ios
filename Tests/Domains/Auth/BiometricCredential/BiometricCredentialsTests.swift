@@ -1341,6 +1341,7 @@ private func localCredential(
   userID: String = User.mock.id,
   appIdentifier: String = "com.clerk.example",
   identifierHint: String? = nil,
+  policy: BiometricCredentialPolicy = .biometryCurrentSet,
   createdAt: Date
 ) -> BiometricCredentialLocalRecord {
   BiometricCredentialLocalRecord(
@@ -1349,6 +1350,7 @@ private func localCredential(
     userID: userID,
     appIdentifier: appIdentifier,
     identifierHint: identifierHint,
+    policy: policy,
     createdAt: createdAt,
     updatedAt: createdAt
   )
@@ -1450,6 +1452,98 @@ extension SignIn {
 }
 
 extension BiometricCredentialsTests {
+  @Test(arguments: [BiometricCredentialPolicy.biometryAny, .biometryOrDevicePasscode],
+        [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
+  func reverifyRejectsWeakerPoliciesWithoutPromptingOrDeleting(
+    policy: BiometricCredentialPolicy,
+    level: Session.BiometricVerificationLevel
+  ) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    let credential = localCredential(id: "tdc_123", localKeyId: "tdlk_mock", policy: policy,
+                                     createdAt: Date(timeIntervalSinceReferenceDate: 10))
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      keyManager: MockBiometricCredentialKeyManager(
+        sign: { _, _, _ in
+          Issue.record("An incompatible credential must not prompt or sign.")
+          throw CancellationError()
+        },
+        deleteKey: { _ in Issue.record("An incompatible credential must remain available for sign-in.") }
+      ),
+      localCredential: credential
+    )
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { _, _ in
+        Issue.record("An incompatible credential must be rejected before a network request.")
+        return .mockNeedsFirstFactor
+      },
+      prepareSecondFactorVerification: { _, _ in
+        Issue.record("An incompatible credential must be rejected before a network request.")
+        return .mockNeedsSecondFactor
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+
+    await #expect(throws: BiometricCredentialError.policyIncompatible) {
+      try await Session.mock.verifyWithBiometrics(level: level, biometricCredentials: setup.biometricCredentials)
+    }
+    #expect(try setup.credentialStore.credential(id: credential.id) == credential)
+  }
+
+  @Test(arguments: [BiometricCredentialPolicy.biometryAny, .biometryOrDevicePasscode])
+  func reverifySelectsStrictCredentialEvenWhenWeakerCredentialIsNewer(policy: BiometricCredentialPolicy) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    let setup = try makeBiometricCredentialsWithLocalCredential(localCredential: localCredential(
+      id: "tdc_123", localKeyId: "tdlk_mock", createdAt: Date(timeIntervalSinceReferenceDate: 10)
+    ))
+    try setup.credentialStore.save(localCredential(
+      id: "tdc_weaker", localKeyId: "tdlk_weaker", policy: policy, createdAt: Date(timeIntervalSinceReferenceDate: 20)
+    ))
+    let service = MockSessionService(
+      prepareFirstFactorVerification: { _, params in
+        #expect(params.biometricCredentialId == "tdc_123")
+        return SessionVerification(status: .needsFirstFactor, level: .firstFactor,
+                                   firstFactorVerification: Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge))
+      },
+      attemptFirstFactorVerification: { _, params in
+        #expect(params.biometricCredentialId == "tdc_123")
+        return SessionVerification(status: .complete, level: .firstFactor)
+      }
+    )
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+
+    let result = try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
+
+    #expect(result.status == .complete)
+    #expect(try setup.credentialStore.credential(id: "tdc_weaker")?.policy == policy)
+  }
+
+  @Test(arguments: [BiometricCredentialPolicy.biometryAny, .biometryOrDevicePasscode])
+  func signInStillAcceptsWeakerPolicies(policy: BiometricCredentialPolicy) async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    Clerk.shared.client = .mockSignedOut
+    let credential = localCredential(id: "tdc_123", localKeyId: "tdlk_mock", policy: policy, createdAt: .now)
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      signInService: MockSignInService(
+        create: { _ in .mockBiometricCredentialChallenge },
+        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
+      ),
+      localCredential: credential
+    )
+
+    let result = try await setup.biometricCredentials.signIn()
+
+    #expect(result.status == .complete)
+    #expect(try setup.credentialStore.credential(id: credential.id)?.policy == policy)
+  }
+
+  @Test
+  func incompatiblePolicyErrorPreservesCodeWhenBridgedToNSError() {
+    let error = BiometricCredentialError.policyIncompatible as NSError
+    #expect(error.domain == "ClerkKit.BiometricCredentialError")
+    #expect(error.userInfo["code"] as? String == "biometric_credential_policy_incompatible")
+    #expect(error.localizedDescription == BiometricCredentialError.policyIncompatible.errorDescription)
+  }
+
   @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
   func reverifyResolvesUserForSessionReturnedByBackend(level: Session.BiometricVerificationLevel) async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()

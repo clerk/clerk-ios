@@ -53,6 +53,10 @@ extension Session {
   /// A biometric credential submitted as the first factor can also satisfy an existing
   /// second-factor requirement. Use `.secondFactor` when the flow is waiting for that stage.
   ///
+  /// Requires a credential enrolled with ``BiometricCredentialPolicy/biometryCurrentSet``.
+  /// Other policies throw ``BiometricCredentialError/policyIncompatible``; offer another
+  /// verification method. Existing credentials remain available for sign-in and are not replaced.
+  ///
   /// Biometric reverification shares the instance's native biometric sign-in settings.
   /// Disabling biometric sign-in also disables biometric reverification, even for
   /// credentials that are already enrolled.
