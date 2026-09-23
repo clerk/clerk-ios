@@ -225,12 +225,15 @@ public struct BiometricCredentials {
     return credentials.count
   }
 
-  /// Selects a local credential for an explicit user without reconciling through `/me`.
+  /// Selects a credential bound to the current biometric set without reconciling through `/me`.
   /// The caller's session endpoint validates ownership of the server credential.
   func localCredential(for userID: String) throws -> BiometricCredentialLocalRecord {
     switch try localCredentialCandidates(id: nil, identifierHint: nil, userID: userID) {
     case let .available(credentials):
-      return credentials[0]
+      guard let credential = credentials.first(where: { $0.policy == .biometryCurrentSet }) else {
+        throw BiometricCredentialError.policyIncompatible
+      }
+      return credential
     case .unavailable:
       throw ClerkClientError(message: "Biometric reverification is unavailable for this session.")
     }
