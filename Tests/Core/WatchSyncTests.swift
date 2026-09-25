@@ -165,12 +165,12 @@ struct WatchSyncStateMergeTests {
   }
 
   @Test
-  func onlyThePhoneCanClearAcrossGenerations() {
+  func aClearOnEitherDeviceClearsTheOther() {
     let signedInState = WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100))
     let newerClear = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1)
 
     #expect(newerClear.supersedes(signedInState, from: .phone))
-    #expect(!newerClear.supersedes(signedInState, from: .watch))
+    #expect(newerClear.supersedes(signedInState, from: .watch))
   }
 
   @Test
@@ -217,10 +217,9 @@ struct WatchConnectivityCoordinatorTests {
   }
 
   @Test
-  func watchClearDoesNotSignOutPhoneButItsGenerationIsLearned() throws {
+  func watchClearSignsOutThePhone() throws {
     let (clerk, keychain) = try makeClerk(token: "token", client: signedIn("phone"), serverDate: date(100))
-    let transport = RecordingWatchSyncTransport()
-    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
 
     coordinator.apply(
       WatchSyncPayload(state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1), environment: nil),
@@ -228,13 +227,22 @@ struct WatchConnectivityCoordinatorTests {
       to: clerk
     )
 
-    #expect(clerk.identityController.currentDeviceToken == "token")
-    #expect(clerk.client?.id == "phone")
+    #expect(clerk.identityController.currentDeviceToken == nil)
+    #expect(clerk.client == nil)
     #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
-    // The reply carries the learned generation, so the watch adopts the phone's state.
-    let reply = try #require(transport.sent.last?.state)
-    #expect(reply.deviceToken == "token")
-    #expect(reply.clearGeneration == 1)
+  }
+
+  @Test
+  func watchSignOutSignsOutThePhone() throws {
+    let (clerk, _) = try makeClerk(token: "token", client: signedIn("client"), serverDate: date(100))
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+
+    // Signing out on the watch ends the session on the Client both devices share.
+    coordinator.apply(payload(token: "token", client: signedOut("client"), serverDate: date(200)), from: .watch, to: clerk)
+
+    #expect(clerk.identityController.currentDeviceToken == "token")
+    #expect(clerk.client?.id == "client")
+    #expect(clerk.client?.sessions.isEmpty == true)
   }
 
   @Test
