@@ -110,7 +110,7 @@ struct ClerkTests {
     try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue)
-    try keychain.set("100", forKey: ClerkKeychainKey.watchSyncClearedAt.rawValue)
+    try keychain.set("4", forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue)
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     try keychain.set("{}", forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
@@ -137,12 +137,10 @@ struct ClerkTests {
     for key in ClerkKeychainKey.allCases {
       #expect(
         try keychain.hasItem(forKey: key.rawValue)
-          == [.sharedSessionSyncAdopted, .watchSyncClearedAt].contains(key)
+          == [.sharedSessionSyncAdopted, .watchSyncClearGeneration].contains(key)
       )
     }
-    #expect(
-      try #require(WatchSyncClearMarker.load(from: keychain)) > Date(timeIntervalSince1970: 100)
-    )
+    #expect(WatchSyncClearMarker.generation(in: keychain) == 5)
     _ = try? await Clerk.shared.keychainClearTask?.value
   }
 
@@ -558,8 +556,7 @@ struct ClerkTests {
     let legacyShared = InMemoryKeychain()
     let appLocal = InMemoryKeychain()
     let identityKeychain = InMemoryKeychain()
-    let earlierClear = Date(timeIntervalSince1970: 100)
-    try WatchSyncClearMarker.record(earlierClear, in: appLocal)
+    try WatchSyncClearMarker.record(in: appLocal)
     try legacyShared.set(
       "legacy-token",
       forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
@@ -585,7 +582,7 @@ struct ClerkTests {
       deleteSharedSessionOwnerSlot: false
     )
 
-    #expect(try #require(WatchSyncClearMarker.load(from: appLocal)) > earlierClear)
+    #expect(WatchSyncClearMarker.generation(in: appLocal) == 2)
     #expect(
       try legacyShared.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil
     )
@@ -1056,7 +1053,7 @@ struct ClerkTests {
 
     // Verify all keys are deleted (including ones that didn't exist), except the new Watch clear time.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearedAt))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
     }
   }
 

@@ -258,7 +258,7 @@ extension Clerk {
         )
       }
     }
-    let preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted, .watchSyncClearedAt]
+    let preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted, .watchSyncClearGeneration]
     clearAllKeychainItems(
       in: dependencies.appLocalKeychain,
       preserving: preservedKeys,
@@ -628,7 +628,7 @@ extension Clerk {
     try WatchSyncClearMarker.record(in: dependencies.watchSyncKeychain)
     let preservedKeys: Set<ClerkKeychainKey> = [
       .sharedSessionSyncAdopted,
-      .watchSyncClearedAt,
+      .watchSyncClearGeneration,
     ]
     if deleteSharedSessionOwnerSlot {
       try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(in: dependencies)

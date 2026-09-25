@@ -19,14 +19,17 @@ package struct WatchSyncState: Equatable {
   let client: Client?
   /// `Date` header of the response that produced `client`.
   let serverDate: Date?
-  /// When this device last cleared its local Clerk storage.
-  let clearedAt: Date?
+  /// How many clears this state has seen, merged by maximum across both devices. A state from
+  /// before a clear has a lower generation than any state after it, whatever the device and
+  /// server clocks say. Payloads from earlier SDKs carry none and count as generation 0, so
+  /// they can never undo a clear.
+  let clearGeneration: Int
 
-  init(deviceToken: String?, client: Client?, serverDate: Date?, clearedAt: Date? = nil) {
+  init(deviceToken: String?, client: Client?, serverDate: Date?, clearGeneration: Int = 0) {
     self.deviceToken = deviceToken.nilIfEmpty
     self.client = client
     self.serverDate = serverDate
-    self.clearedAt = clearedAt
+    self.clearGeneration = clearGeneration
   }
 
   var isCleared: Bool {
@@ -37,13 +40,13 @@ package struct WatchSyncState: Equatable {
     client?.sessions.isEmpty == false
   }
 
-  /// The most recent auth event this state reflects.
-  var orderingDate: Date {
-    max(serverDate ?? .distantPast, clearedAt ?? .distantPast)
-  }
-
   /// Whether `self`, received from `source`, should replace `local`.
   func supersedes(_ local: WatchSyncState, from source: WatchSyncSource) -> Bool {
+    // A state from a newer clear generation replaces anything older; only the phone can clear the other device.
+    if clearGeneration != local.clearGeneration {
+      return clearGeneration > local.clearGeneration && (!isCleared || source == .phone)
+    }
+
     // Same token: both devices share one server-side Client, so the newer snapshot wins.
     if deviceToken == local.deviceToken {
       guard let client else { return false }
@@ -55,9 +58,6 @@ package struct WatchSyncState: Equatable {
     }
 
     // Different tokens name different Clients.
-    if let localClearedAt = local.clearedAt, orderingDate <= localClearedAt {
-      return false // Never bring back an identity from before this device's last clear.
-    }
     if isCleared { return source == .phone } // Only the phone can clear the other device.
     if local.isCleared { return true } // Seed a device that has no token.
     if hasSession != local.hasSession { return hasSession } // A signed-in Client beats a signed-out one.
@@ -71,7 +71,8 @@ package struct WatchSyncPayload: Equatable {
     static let deviceToken = "clerkDeviceToken"
     static let client = "clerkClient"
     static let serverDate = "clerkClientServerFetchDate"
-    static let clearedAt = "clerkWatchSyncClearedAt"
+    static let clearGeneration = "clerkWatchSyncClearGeneration"
+    static let legacyDeviceTokenState = "watchSyncDeviceTokenState"
     static let environment = "clerkEnvironment"
   }
 
@@ -97,12 +98,13 @@ package struct WatchSyncPayload: Equatable {
       try? JSONDecoder.clerkDecoder.decode(Client.self, from: $0)
     }
     let isCurrentSchema = context[Key.schema] as? Int == Self.schemaVersion
+    // Payloads from earlier SDKs describe a state when they include a token or an explicit clear.
+    let isLegacyClear = context[Key.legacyDeviceTokenState] as? String == "cleared"
 
-    // A complete state needs a decodable client paired with its token. Payloads
-    // from older SDKs only describe a state when they include a token.
+    // A complete state needs a decodable client paired with its token.
     if (clientData != nil && client == nil)
       || (client != nil && deviceToken == nil)
-      || (!isCurrentSchema && deviceToken == nil)
+      || (!isCurrentSchema && deviceToken == nil && !isLegacyClear)
     {
       state = nil
     } else {
@@ -110,7 +112,7 @@ package struct WatchSyncPayload: Equatable {
         deviceToken: deviceToken,
         client: client,
         serverDate: Self.date(context[Key.serverDate]),
-        clearedAt: isCurrentSchema ? Self.date(context[Key.clearedAt]) : nil
+        clearGeneration: isCurrentSchema ? (context[Key.clearGeneration] as? Int ?? 0) : 0
       )
     }
 
@@ -124,7 +126,7 @@ package struct WatchSyncPayload: Equatable {
       context[Key.deviceToken] = state.deviceToken
       context[Key.client] = state.client.flatMap { try? JSONEncoder.clerkEncoder.encode($0) }
       context[Key.serverDate] = state.serverDate?.timeIntervalSince1970
-      context[Key.clearedAt] = state.clearedAt?.timeIntervalSince1970
+      context[Key.clearGeneration] = state.clearGeneration
     }
     context[Key.environment] = environment.flatMap { try? JSONEncoder.clerkEncoder.encode($0) }
     return context

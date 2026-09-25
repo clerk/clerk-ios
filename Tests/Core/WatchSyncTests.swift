@@ -20,7 +20,7 @@ struct WatchSyncPayloadTests {
       deviceToken: "token",
       client: signedIn("client"),
       serverDate: date(100),
-      clearedAt: date(50)
+      clearGeneration: 3
     )
     let payload = WatchSyncPayload(state: state, environment: .mock)
 
@@ -31,13 +31,13 @@ struct WatchSyncPayloadTests {
     #expect(decodedState.client?.id == "client")
     #expect(decodedState.client?.lastActiveSessionId == state.client?.lastActiveSessionId)
     #expect(decodedState.serverDate == date(100))
-    #expect(decodedState.clearedAt == date(50))
+    #expect(decodedState.clearGeneration == 3)
     #expect(decoded.environment == .mock)
   }
 
   @Test
   func clearedStateRoundTripsWithoutToken() throws {
-    let state = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearedAt: date(50))
+    let state = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 2)
     let payload = WatchSyncPayload(state: state, environment: nil)
 
     let decoded = try #require(WatchSyncPayload(applicationContext: payload.applicationContext))
@@ -60,12 +60,12 @@ struct WatchSyncPayloadTests {
     #expect(state.deviceToken == "legacy-token")
     #expect(state.client?.id == "legacy-client")
     #expect(state.serverDate == date(100))
-    #expect(state.clearedAt == nil)
+    #expect(state.clearGeneration == 0)
   }
 
   @Test
-  func legacyPayloadWithoutTokenCarriesNoState() throws {
-    let clearOnly: [String: Any] = [
+  func legacyClearDecodesAsAClearedStateAndOtherTokenlessPayloadsCarryNone() throws {
+    let clear: [String: Any] = [
       "watchSyncDeviceTokenState": "cleared",
       "watchSyncDeviceTokenVersion": 4,
     ]
@@ -74,7 +74,9 @@ struct WatchSyncPayloadTests {
       "clerkEnvironment": JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
     ]
 
-    #expect(WatchSyncPayload(applicationContext: clearOnly) == nil)
+    let clearState = try #require(WatchSyncPayload(applicationContext: clear)?.state)
+    #expect(clearState.isCleared)
+    #expect(clearState.clearGeneration == 0)
     let payload = try #require(WatchSyncPayload(applicationContext: environmentOnly))
     #expect(payload.state == nil)
     #expect(payload.environment == .mock)
@@ -138,20 +140,39 @@ struct WatchSyncStateMergeTests {
   @Test
   func onlyThePhoneCanClearTheOtherDevice() {
     let signedInState = WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100))
-    let cleared = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearedAt: date(200))
+    let cleared = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil)
 
     #expect(cleared.supersedes(signedInState, from: .phone))
     #expect(!cleared.supersedes(signedInState, from: .watch))
   }
 
   @Test(arguments: [WatchSyncSource.phone, .watch])
-  func stateFromBeforeLocalClearIsRejected(source: WatchSyncSource) {
-    let local = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearedAt: date(200))
-    let stale = WatchSyncState(deviceToken: "old-token", client: signedIn("old"), serverDate: date(150))
-    let fresh = WatchSyncState(deviceToken: "new-token", client: signedIn("new"), serverDate: date(250))
+  func stateFromBeforeAClearLosesWhateverItsServerDate(source: WatchSyncSource) {
+    let local = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1)
+    // The server's clock is ahead of the device that cleared, so its date looks newer than the clear.
+    let stale = WatchSyncState(deviceToken: "old-token", client: signedIn("old"), serverDate: .distantFuture)
+    let afterClear = WatchSyncState(deviceToken: "new-token", client: signedOut("new"), serverDate: date(50), clearGeneration: 1)
 
     #expect(!stale.supersedes(local, from: source))
-    #expect(fresh.supersedes(local, from: source))
+    #expect(afterClear.supersedes(local, from: source))
+  }
+
+  @Test
+  func newerGenerationReplacesAnOlderSignedInState() {
+    let staleWatch = WatchSyncState(deviceToken: "old-token", client: signedIn("old"), serverDate: date(300))
+    let phoneAfterClear = WatchSyncState(deviceToken: "new-token", client: signedOut("new"), serverDate: date(100), clearGeneration: 1)
+
+    #expect(phoneAfterClear.supersedes(staleWatch, from: .phone))
+    #expect(!staleWatch.supersedes(phoneAfterClear, from: .watch))
+  }
+
+  @Test
+  func onlyThePhoneCanClearAcrossGenerations() {
+    let signedInState = WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100))
+    let newerClear = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1)
+
+    #expect(newerClear.supersedes(signedInState, from: .phone))
+    #expect(!newerClear.supersedes(signedInState, from: .watch))
   }
 
   @Test
@@ -193,26 +214,29 @@ struct WatchConnectivityCoordinatorTests {
 
     coordinator.apply(payload(token: "phone-token", client: signedIn("phone"), serverDate: date(100)), from: .phone, to: clerk)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.identityController.currentDeviceToken == "phone-token")
     #expect(clerk.client?.id == "phone")
   }
 
   @Test
-  func watchClearDoesNotSignOutPhone() throws {
+  func watchClearDoesNotSignOutPhoneButItsGenerationIsLearned() throws {
     let (clerk, keychain) = try makeClerk(token: "token", client: signedIn("phone"), serverDate: date(100))
     let transport = RecordingWatchSyncTransport()
     let coordinator = WatchConnectivityCoordinator(transport: transport)
 
     coordinator.apply(
-      WatchSyncPayload(state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearedAt: date(300)), environment: nil),
+      WatchSyncPayload(state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1), environment: nil),
       from: .watch,
       to: clerk
     )
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "token")
+    #expect(clerk.identityController.currentDeviceToken == "token")
     #expect(clerk.client?.id == "phone")
-    // The phone's state predates the watch's clear, so the watch would reject it anyway.
-    #expect(transport.sent.isEmpty)
+    #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
+    // The reply carries the learned generation, so the watch adopts the phone's state.
+    let reply = try #require(transport.sent.last?.state)
+    #expect(reply.deviceToken == "token")
+    #expect(reply.clearGeneration == 1)
   }
 
   @Test
@@ -248,47 +272,63 @@ struct WatchConnectivityCoordinatorTests {
 
     coordinator.apply(payload(token: "phone-token", client: nil, serverDate: nil), from: .phone, to: clerk)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.identityController.currentDeviceToken == "phone-token")
     try await waitUntil { clerk.client?.id == "refreshed" }
   }
 
   @Test
-  func adoptedPhoneClearBlocksOlderPhoneState() throws {
+  func adoptedPhoneClearBlocksStateFromBeforeIt() throws {
     let (clerk, keychain) = try makeClerk(token: "token", client: signedIn("client"), serverDate: date(100))
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
 
     coordinator.apply(
-      WatchSyncPayload(state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearedAt: date(200)), environment: nil),
+      WatchSyncPayload(state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1), environment: nil),
       from: .phone,
       to: clerk
     )
     #expect(clerk.client == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
-    #expect(WatchSyncClearMarker.load(from: keychain) == date(200))
+    #expect(clerk.identityController.currentDeviceToken == nil)
+    #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
 
-    coordinator.apply(payload(token: "token", client: signedIn("client"), serverDate: date(100)), from: .phone, to: clerk)
+    coordinator.apply(payload(token: "token", client: signedIn("client"), serverDate: .distantFuture), from: .phone, to: clerk)
     #expect(clerk.client == nil)
 
-    coordinator.apply(payload(token: "new-token", client: signedIn("new"), serverDate: date(300)), from: .phone, to: clerk)
+    coordinator.apply(payload(token: "new-token", client: signedIn("new"), serverDate: date(50), generation: 1), from: .phone, to: clerk)
     #expect(clerk.client?.id == "new")
   }
 
   @Test
   func localClearBlocksStateFromBeforeTheClear() throws {
     let (clerk, keychain) = try makeClerk()
-    try WatchSyncClearMarker.record(date(200), in: keychain)
+    try WatchSyncClearMarker.record(in: keychain)
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
 
-    coordinator.apply(payload(token: "old-token", client: signedIn("old"), serverDate: date(150)), from: .watch, to: clerk)
+    coordinator.apply(payload(token: "old-token", client: signedIn("old"), serverDate: .distantFuture), from: .watch, to: clerk)
 
     #expect(clerk.client == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(clerk.identityController.currentDeviceToken == nil)
+  }
+
+  @Test
+  func clearRecordedBySDK15IsHonoredAfterUpgrading() throws {
+    let (clerk, keychain) = try makeClerk()
+    try keychain.set(
+      Data(#"{"device_token_state":"cleared","device_token_version":1726000000000,"auth_state":"cleared","auth_version":1726000000000}"#.utf8),
+      forKey: ClerkKeychainKey.watchSyncMetadata.rawValue
+    )
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+
+    coordinator.apply(payload(token: "pre-clear-token", client: signedIn("old"), serverDate: .distantFuture), from: .watch, to: clerk)
+
+    #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
+    #expect(clerk.client == nil)
+    #expect(clerk.identityController.currentDeviceToken == nil)
   }
 
   @Test
   func localChangeSendsCompleteState() throws {
     let (clerk, keychain) = try makeClerk(token: "token", client: signedIn("client"), serverDate: date(100))
-    try WatchSyncClearMarker.record(date(50), in: keychain)
+    try WatchSyncClearMarker.record(in: keychain)
     clerk.environment = .mock
     let transport = RecordingWatchSyncTransport()
     let coordinator = WatchConnectivityCoordinator(transport: transport)
@@ -300,8 +340,30 @@ struct WatchConnectivityCoordinatorTests {
     #expect(state.deviceToken == "token")
     #expect(state.client?.id == "client")
     #expect(state.serverDate == date(100))
-    #expect(state.clearedAt == date(50))
+    #expect(state.clearGeneration == 1)
     #expect(sent.environment == .mock)
+  }
+
+  @Test
+  func environmentFromTheWatchIsIgnored() throws {
+    let (clerk, _) = try makeClerk(token: "phone-token", client: signedIn("phone"), serverDate: date(100))
+    var phoneEnvironment = Clerk.Environment.mock
+    phoneEnvironment.displayConfig.applicationName = "Phone"
+    clerk.environment = phoneEnvironment
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+
+    coordinator.apply(
+      WatchSyncPayload(
+        state: WatchSyncState(deviceToken: "watch-token", client: signedOut("watch"), serverDate: date(200)),
+        environment: .mock
+      ),
+      from: .watch,
+      to: clerk
+    )
+
+    #expect(clerk.environment?.displayConfig.applicationName == "Phone")
+    #expect(transport.sent.last?.environment?.displayConfig.applicationName == "Phone")
   }
 
   @Test
@@ -356,9 +418,9 @@ struct WatchConnectivityCoordinatorTests {
     return (clerk, keychain)
   }
 
-  private func payload(token: String, client: Client?, serverDate: Date?) -> WatchSyncPayload {
+  private func payload(token: String, client: Client?, serverDate: Date?, generation: Int = 0) -> WatchSyncPayload {
     WatchSyncPayload(
-      state: WatchSyncState(deviceToken: token, client: client, serverDate: serverDate),
+      state: WatchSyncState(deviceToken: token, client: client, serverDate: serverDate, clearGeneration: generation),
       environment: nil
     )
   }
