@@ -110,6 +110,7 @@ struct ClerkTests {
     try keychain.set("set", forKey: ClerkKeychainKey.sharedSessionSyncAuthState.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue)
+    try keychain.set("100", forKey: ClerkKeychainKey.watchSyncClearedAt.rawValue)
     try keychain.set("set", forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)
     try keychain.set("{}", forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
     try keychain.set("1", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
@@ -131,12 +132,17 @@ struct ClerkTests {
     // Clear all keychain items
     Clerk.clearAllKeychainItems()
 
-    // The adoption marker remains so disabling sync never falls back to legacy shared state.
+    // The adoption marker remains so disabling sync never falls back to legacy shared state,
+    // and the Watch clear time remains so paired-device state from before the clear is rejected.
     for key in ClerkKeychainKey.allCases {
       #expect(
-        try keychain.hasItem(forKey: key.rawValue) == (key == .sharedSessionSyncAdopted)
+        try keychain.hasItem(forKey: key.rawValue)
+          == [.sharedSessionSyncAdopted, .watchSyncClearedAt].contains(key)
       )
     }
+    #expect(
+      try #require(WatchSyncClearMarker.load(from: keychain)) > Date(timeIntervalSince1970: 100)
+    )
     _ = try? await Clerk.shared.keychainClearTask?.value
   }
 
@@ -259,17 +265,14 @@ struct ClerkTests {
     clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(.mock)
 
     let requestIdentity = try await clerk.identityController.captureRequestIdentity()
-    let watchPayload = try WatchSyncPayload(
-      clerk: clerk,
-      metadata: .empty,
-      authGeneration: WatchSyncVersion(rawValue: 1)
-    )
+    let watchState = WatchSyncState(of: clerk)
 
     #expect(clerk.client?.id == Client.mock.id)
     #expect(clerk.authoritativeClient == nil)
     #expect(requestIdentity.deviceToken == "device-token")
     #expect(requestIdentity.clientID == nil)
-    #expect(watchPayload.clientUpdate == .notIncluded)
+    #expect(watchState.deviceToken == "device-token")
+    #expect(watchState.client == nil)
 
     clerk.identityController.prepareForConfiguration()
     #expect(clerk.authoritativeClient == nil)
@@ -551,18 +554,12 @@ struct ClerkTests {
   }
 
   @Test
-  func strictReconfigurationClearPreservesNewWatchTombstone() async throws {
+  func strictReconfigurationClearRecordsWatchClearTime() async throws {
     let legacyShared = InMemoryKeychain()
     let appLocal = InMemoryKeychain()
     let identityKeychain = InMemoryKeychain()
-    try WatchSyncMetadataStore(keychain: legacyShared).save(
-      WatchSyncMetadataRecord(
-        deviceTokenState: .set,
-        deviceTokenVersion: 9,
-        authState: .set,
-        authVersion: 9
-      )
-    )
+    let earlierClear = Date(timeIntervalSince1970: 100)
+    try WatchSyncClearMarker.record(earlierClear, in: appLocal)
     try legacyShared.set(
       "legacy-token",
       forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
@@ -588,13 +585,7 @@ struct ClerkTests {
       deleteSharedSessionOwnerSlot: false
     )
 
-    let metadata = try WatchSyncMetadataStore(keychain: appLocal).load()
-    let clearVersion = try #require(metadata.authVersion)
-    #expect(clearVersion > 9)
-    #expect(metadata.deviceTokenVersion == clearVersion)
-    #expect(metadata.deviceTokenState == .cleared)
-    #expect(metadata.authState == .cleared)
-    #expect(!metadata.hasPendingIdentityMetadata)
+    #expect(try #require(WatchSyncClearMarker.load(from: appLocal)) > earlierClear)
     #expect(
       try legacyShared.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil
     )
@@ -1008,14 +999,13 @@ struct ClerkTests {
     )
     clerk.hydrateIdentityIfNeeded(initialIdentity)
     let capturedResponseGeneration = clerk.clientResponseGeneration
+    var phoneClient = Client.mock
+    phoneClient.id = "phone-client"
     let payload = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .cleared(
-        serverFetchDate: Date(timeIntervalSince1970: 200),
-        version: WatchSyncVersion(rawValue: 1)
+      state: WatchSyncState(
+        deviceToken: "token",
+        client: phoneClient,
+        serverDate: Date(timeIntervalSince1970: 200)
       ),
       environment: nil
     )
@@ -1043,8 +1033,8 @@ struct ClerkTests {
     await watchCoordinator.waitForIdentityPublications()
     try await responseTask.value
 
-    #expect(clerk.client == nil)
-    #expect(try store.load()?.client == nil)
+    #expect(clerk.client?.id == "phone-client")
+    #expect(try store.load()?.client?.id == "phone-client")
   }
 
   @Test
@@ -1064,9 +1054,9 @@ struct ClerkTests {
     // Clear all keychain items (should not throw even though some keys don't exist)
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted (including ones that didn't exist)
+    // Verify all keys are deleted (including ones that didn't exist), except the new Watch clear time.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == false)
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearedAt))
     }
   }
 

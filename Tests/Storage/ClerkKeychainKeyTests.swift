@@ -15,7 +15,7 @@ struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {
     let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 19)
+    #expect(allCases.count == 20)
 
     // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))
@@ -25,6 +25,7 @@ struct ClerkKeychainKeyTests {
     #expect(allCases.contains(.sharedSessionSyncAuthState))
     #expect(allCases.contains(.sharedSessionSyncAuthVersion))
     #expect(allCases.contains(.sharedSessionSyncEnvironmentVersion))
+    #expect(allCases.contains(.watchSyncClearedAt))
     #expect(allCases.contains(.watchSyncAuthState))
     #expect(allCases.contains(.watchSyncMetadata))
     #expect(allCases.contains(.watchSyncAuthVersion))
@@ -48,6 +49,7 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.sharedSessionSyncAuthState.rawValue == "sharedSessionSyncAuthState")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue == "sharedSessionSyncAuthVersion")
     #expect(ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue == "sharedSessionSyncEnvironmentVersion")
+    #expect(ClerkKeychainKey.watchSyncClearedAt.rawValue == "clerkWatchSyncClearedAt")
     #expect(ClerkKeychainKey.watchSyncAuthState.rawValue == "watchSyncAuthState")
     #expect(ClerkKeychainKey.watchSyncMetadata.rawValue == "clerkWatchSyncMetadataV2")
     #expect(ClerkKeychainKey.watchSyncAuthVersion.rawValue == "watchSyncAuthVersion")

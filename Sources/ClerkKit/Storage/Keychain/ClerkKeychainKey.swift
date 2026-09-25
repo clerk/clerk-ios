@@ -33,13 +33,16 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for detecting explicit sibling-app environment sync events.
   case sharedSessionSyncEnvironmentVersion
 
-  /// Key for the last explicit watch auth sync state.
+  /// When this device last cleared its Clerk storage. Watch sync rejects paired-device state older than this.
+  case watchSyncClearedAt = "clerkWatchSyncClearedAt"
+
+  /// Legacy watch auth sync state. Retained so clears remove it from existing installs.
   case watchSyncAuthState
 
-  /// Atomic app-local Watch identity ordering metadata.
+  /// Legacy watch identity ordering metadata. Retained so clears remove it from existing installs.
   case watchSyncMetadata = "clerkWatchSyncMetadataV2"
 
-  /// Key for ordering explicit watch auth sync events.
+  /// Legacy watch auth sync version. Retained so clears remove it from existing installs.
   case watchSyncAuthVersion
 
   /// Key for device authentication token received from the server.
@@ -51,13 +54,13 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for detecting explicit sibling-app device-token sync events.
   case sharedSessionSyncDeviceTokenVersion
 
-  /// Key for the last explicit watch device-token sync state.
+  /// Legacy watch device-token sync state. Retained so clears remove it from existing installs.
   case watchSyncDeviceTokenState
 
-  /// Key for ordering explicit watch device-token sync events.
+  /// Legacy watch device-token sync version. Retained so clears remove it from existing installs.
   case watchSyncDeviceTokenVersion
 
-  /// Key for tracking whether device token has been synced to watch app.
+  /// Legacy watch device-token sync flag. Retained so clears remove it from existing installs.
   case watchSyncDeviceTokenSynced = "clerkDeviceTokenSynced"
 
   /// Key for App Attest key ID.
