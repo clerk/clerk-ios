@@ -34,8 +34,8 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsDeviceTokenHeaderWhenPresent() async throws {
-    let keychain = createTestKeychain()
-    try keychain.set("test-device-token", forKey: "clerkDeviceToken")
+    _ = createTestKeychain()
+    try Clerk.shared.seedIdentity(deviceToken: "test-device-token")
 
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
@@ -46,24 +46,18 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func adoptedIdentityUsesHydratedTokenWithoutReadingStoragePerRequest() async throws {
+  func requestsUseTheLoadedTokenWithoutReadingStorage() async throws {
     let clerk = Clerk()
-    let identity = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "hydrated-token",
-      client: .mock,
-      serverDate: nil
-    )
-    let store = ReadCountingIdentityStore(identity: identity)
+    let keychain = ReadCountingKeychain()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(
         runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
       ),
-      atomicIdentityStore: store,
+      keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    clerk.hydrateIdentityIfNeeded(identity)
-    store.resetReadCount()
+    try clerk.seedIdentity(deviceToken: "hydrated-token", client: .mock)
+    keychain.resetReadCount()
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
 
     for _ in 0 ..< 3 {
@@ -72,62 +66,7 @@ struct ClerkHeaderRequestMiddlewareTests {
       #expect(request.value(forHTTPHeaderField: "Authorization") == "hydrated-token")
     }
 
-    #expect(store.readCount == 0)
-  }
-
-  @Test
-  func appLocalRequestSnapshotWaitsBehindQueuedIdentityTransition() async throws {
-    let clerk = Clerk()
-    let store = ReadCountingIdentityStore(identity: SharedSessionLocalIdentity(
-      state: .cleared,
-      deviceToken: nil,
-      client: nil,
-      serverDate: nil
-    ))
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(
-        runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
-      ),
-      atomicIdentityStore: store,
-      telemetryCollector: clerk.dependencies.telemetryCollector
-    )
-    let localIdentityIO = try #require(clerk.dependencies.atomicIdentityIO)
-    let gate = RequestIdentityOperationGate()
-    let identity = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "queued-token",
-      client: .mock,
-      serverDate: nil
-    )
-    let transition = clerk.identityController.enqueueLocalOperation { operationRevision in
-      await gate.suspend()
-      return try await clerk.identityController.persistAndApplyAtomicIdentity(
-        identity,
-        through: localIdentityIO,
-        operationRevision: operationRevision,
-        fenceAllClientResponses: false
-      )
-    }
-    try await gate.waitUntilSuspended()
-
-    let requestStarted = RequestStartSignal()
-    var didPrepare = false
-    let requestTask = Task { @MainActor in
-      var request = try URLRequest(url: #require(URL(string: "https://example.com")))
-      await requestStarted.signal()
-      try await ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
-        .prepare(&request)
-      didPrepare = true
-      return request
-    }
-    await requestStarted.wait()
-    #expect(!didPrepare)
-
-    gate.resume()
-    #expect(try await transition.value)
-    let request = try await requestTask.value
-    #expect(request.value(forHTTPHeaderField: "Authorization") == "queued-token")
-    #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == Client.mock.id)
+    #expect(keychain.readCount == 0)
   }
 
   @Test
@@ -182,21 +121,14 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func concurrentAtomicTokenlessRequestsShareStartupTakeoverGeneration() async throws {
+  func concurrentTokenlessRequestsShareStartupTakeoverGeneration() async throws {
     let clerk = Clerk()
     let startupGate = RequestIdentityOperationGate()
     let startupCancellationObserved = RequestStartSignal()
-    let identityStore = ReadCountingIdentityStore(identity: SharedSessionLocalIdentity(
-      state: .cleared,
-      deviceToken: nil,
-      client: nil,
-      serverDate: nil
-    ))
     var startupClient = Client.mock
     startupClient.id = "startup-refresh-client"
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      atomicIdentityStore: identityStore,
       clientService: MockClientService(get: {
         await startupGate.suspend()
         #expect(Task.isCancelled)
@@ -212,15 +144,8 @@ struct ClerkHeaderRequestMiddlewareTests {
     }
     try await startupGate.waitUntilSuspended()
     let startupGeneration = clerk.clientResponseGeneration
-    clerk.identityController.localDeviceToken = " \n\t "
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: clerk.runtimeScope)
     let signUpURL = try #require(URL(string: "https://example.com/v1/client/sign_ups"))
-    let identityGate = RequestIdentityOperationGate()
-    let blocker = clerk.identityController.enqueueLocalOperation { _ in
-      await identityGate.suspend()
-    }
-    try await identityGate.waitUntilSuspended()
-    let revisionBeforeRequests = clerk.identityController.localOperationRevision
 
     func prepareTokenlessRequest() async throws -> URLRequest {
       var request = URLRequest(url: signUpURL)
@@ -231,11 +156,6 @@ struct ClerkHeaderRequestMiddlewareTests {
 
     async let firstRequest = prepareTokenlessRequest()
     async let secondRequest = prepareTokenlessRequest()
-    try await waitUntil {
-      clerk.identityController.localOperationRevision >= revisionBeforeRequests + 2
-    }
-    identityGate.resume()
-    _ = try await blocker.value
     let (first, second) = try await (firstRequest, secondRequest)
 
     #expect(first.clerkRequestDeviceToken == nil)
@@ -350,21 +270,11 @@ struct ClerkHeaderRequestMiddlewareTests {
       update: .client(client),
       deviceTokenUpdate: .set("response-token"),
       requestDeviceToken: nil,
-      baseGeneration: 0,
       serverDate: nil,
       isCanonicalClientRequest: true,
       clientResponseGeneration: generation,
       responseSequence: nil
     )
-  }
-
-  private func waitUntil(_ condition: () -> Bool) async throws {
-    let deadline = ContinuousClock.now + .seconds(1)
-    while ContinuousClock.now < deadline {
-      if condition() { return }
-      await Task.yield()
-    }
-    throw ClerkClientError(message: "Timed out waiting for request identity capture.")
   }
 }
 
@@ -412,17 +322,10 @@ private actor RequestStartSignal {
   }
 }
 
-private final class ReadCountingIdentityStore: @unchecked Sendable, SharedSessionLocalIdentityStoring {
+private final class ReadCountingKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
   private let lock = NSLock()
-  private var record: SharedSessionLocalIdentityRecord?
   private var reads = 0
-
-  init(identity: SharedSessionLocalIdentity) {
-    record = SharedSessionLocalIdentityRecord(
-      acceptedIdentity: identity,
-      pendingPublication: nil
-    )
-  }
 
   var readCount: Int {
     lock.withLock { reads }
@@ -432,18 +335,21 @@ private final class ReadCountingIdentityStore: @unchecked Sendable, SharedSessio
     lock.withLock { reads = 0 }
   }
 
-  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
-    lock.withLock {
-      reads += 1
-      return record
-    }
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
   }
 
-  func updateRecord(
-    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
-  ) throws {
-    try lock.withLock {
-      record = try update(record)
-    }
+  func data(forKey key: String) throws -> Data? {
+    lock.withLock { reads += 1 }
+    return try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    lock.withLock { reads += 1 }
+    return try backing.hasItem(forKey: key)
   }
 }

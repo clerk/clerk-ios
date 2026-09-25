@@ -1,26 +1,27 @@
-# Shared Session Sync Contract
+# Identity Persistence and Sync
 
-Shared-session sync treats the device token and `Client` as one authentication identity. `ClerkIdentityController` is the single boundary for identity changes from cache hydration, requests, network responses, Watch payloads, device-token replacement, clears, and reconfiguration. It chooses the active persistence mode and fences response ordering.
+The device token and `Client` form one authentication identity. The token names a server-side Client, so two apps or devices holding the same token share one Client and only need to agree on the newest snapshot of it. The server stays the authority: whenever state is in doubt, the SDK keeps a token and refreshes the Client.
 
-`SharedSessionSyncCoordinator` owns shared transport: owner slots, logical generations, notifications, pending publication recovery, peer reconciliation, and slot deletion. Each app writes only its own owner slot, enumerates compatible peer slots, reduces valid events to one winner, persists that winner atomically in app-local Keychain storage, then applies it to memory.
+## One Record
 
-## Event Ordering
+`ClerkIdentityStore` persists `{deviceToken, client, serverDate}` as a single Keychain item, along with a `revision` UUID that changes on every write. Because it is one item, a reader never sees a token paired with another identity's Client. Saving an identity without a token deletes the item.
 
-Compatible events are ordered by:
+The record lives in the configured Keychain (`KeychainConfig.service` and `accessGroup`) and records which Clerk instance wrote it; a record for another instance is ignored and replaced by the next write. With an access group, every app and extension in the group reads and writes the same item. Two exceptions keep the identity app-local, with sharing off: an app that adopted shared-session sync in SDK 1.5 and then turned it off, and an app that lacks the group entitlement.
 
-1. Higher logical generation.
-2. Presence of server date.
-3. Later server date.
-4. Lexicographically greater owner identifier.
-5. Lexicographically greater event UUID string.
+A `Client` that no longer decodes, for example one written by a newer SDK in another app, is dropped while the device token is kept, so the next refresh restores it instead of signing the user out.
 
-The reducer deduplicates identical replicated events and rejects conflicting reuse of an event ID. It does not inspect `Client.updatedAt` and does not give sign-out special priority.
+`ClerkIdentityController` is the only writer. `commit` writes the record, then updates memory. A write that changes the device token must succeed, because losing a new token signs the user out on the next launch; other write failures are logged and the next response rewrites the record. Keychain access is synchronous on the main actor.
 
-## Pending Publication
+## Shared-Session Sync
 
-The app-local atomic record may contain one accepted identity and one immutable pending publication event. Local publication stages that pending event, writes the same event to the app owner slot, reduces all compatible slots, then commits the selected identity and clears the matching pending intent.
+With `sharedSessionSync: .enabled`, the controller also:
 
-There is no transaction across the app-local record and owner slot. Restart recovery must resolve either side of a partial publication from the immutable pending event plus observed slots.
+1. Re-reads the record's revision before capturing a request identity, applying a response, applying a Watch transition, or replacing the device token, and on foreground. If another process wrote since this app last read or wrote, it adopts that identity.
+2. Posts a Darwin notification after each write. Other apps re-read on receipt. Reading does not post, so notifications cannot loop.
+
+Adopting another app's identity with a different token fences in-flight responses (`clientResponseGeneration`), so a response for the old token cannot overwrite it. Adopting a newer snapshot for the same token sets a server-date floor in `ClientResponseOrderingGate`, so a response the server produced earlier cannot overwrite it.
+
+Two apps writing at the same instant is last-writer-wins; the next response or refresh corrects the Client.
 
 ## Response Payloads
 
@@ -28,11 +29,11 @@ Frontend mutation responses can carry the operation result in `response` and the
 
 Null piggyback fields mean no Client update. A canonical `/v1/client` response with `response: null` and `client: null` is also preserve/no-update, including backend database-maintenance responses. Native client deletion is the explicit clear path: `DELETE /v1/client` clears the device token and identity when the response has `Authorization: Bearer `.
 
-Request sequence, client-response generation, shared-session base generation, canonical-client flag, and request device token form one response checkpoint. A response may advance ordering only after its complete identity transition is durable and selected.
+Request sequence, client-response generation, canonical-client flag, and request device token form one response checkpoint.
 
 ## Watch Sync
 
-Each device sends its complete auth state (device token, authoritative Client, server date, and last local clear time) through `updateApplicationContext` whenever it changes. The receiver submits the incoming state as one external identity transition if `WatchSyncState.supersedes(_:from:)` says it wins:
+Each device sends its complete auth state (device token, authoritative Client, server date, and last local clear time) through `updateApplicationContext` whenever it changes. The receiver applies the incoming state as one external identity transition if `WatchSyncState.supersedes(_:from:)` says it wins:
 
 1. Same token: the devices share one server-side Client, so the newer snapshot wins (server date, then `Client.updatedAt`).
 2. Different tokens: state older than the receiver's last local clear is rejected, only the phone can clear the other device, a device without a token accepts any token, a signed-in Client beats a signed-out one, and otherwise the phone wins.
@@ -41,6 +42,16 @@ A receiver that rejects a state replies with its own state only when its state w
 
 ## Clear And Reconfigure
 
-Destructive local clear fences prepared responses, clears the live atomic identity, drains SDK writers, deletes this app's owner slot, scrubs reusable legacy credentials, and releases the local-clear barrier only after shared transport is withdrawn. If owner-slot withdrawal fails, reconciliation and request capture remain barriered until a clear retry succeeds.
+`clearAllKeychainItems()` records the clear time for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. With shared-session sync, the identity is shared, so a clear signs out every app sharing it.
 
-Reconfiguration is destructive: it drains the old runtime, clears source and destination credentials, withdraws this app's source owner slot, and installs the new configuration without migrating the previous identity. If shared-session sync is enabled in the destination, normal reconciliation may subsequently hydrate an identity published by another participating app.
+Reconfiguration clears Clerk storage for the source and destination configurations without migrating the previous identity. An identity stored in an access group belongs to every app and extension in the group, so reconfiguration leaves it; a destination for another Clerk instance ignores it.
+
+## Migration From Earlier Versions
+
+`ClerkIdentityMigration` runs once per app and moves an existing identity into the record, preferring the SDK 1.5 atomic record over the earlier separate token, Client, and date items. Apps that adopted shared-session sync in SDK 1.5 skip the separate items, which that adoption left stale.
+
+When another app already wrote the record, it is kept unless it is signed out and this app's identity is signed in. A shared-session clear interrupted in SDK 1.5 is honored by migrating nothing.
+
+The migration then deletes every earlier copy, including this app's SDK 1.5 owner slot. Separate items in an access group are left for sibling apps still on an earlier SDK; a clear removes them. The migration is marked done only after every deletion succeeds, and not while the access group is unreachable, so it runs again on the next launch.
+
+Apps on SDK 1.5 and later versions do not see each other's shared sessions; update every app that shares an access group together.

@@ -39,7 +39,6 @@ final class MockHostedAuthService: HostedAuthServiceProtocol {
           ? .set("mock-device-token")
           : .absent,
         requestDeviceToken: requestIdentity.deviceToken,
-        baseGeneration: requestIdentity.baseGeneration,
         serverDate: nil,
         isCanonicalClientRequest: true,
         clientResponseGeneration: requestIdentity.clientResponseGeneration,

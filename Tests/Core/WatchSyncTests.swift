@@ -193,7 +193,7 @@ struct WatchConnectivityCoordinatorTests {
 
     coordinator.apply(payload(token: "phone-token", client: signedIn("phone"), serverDate: date(100)), from: .phone, to: clerk)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.identityController.currentDeviceToken == "phone-token")
     #expect(clerk.client?.id == "phone")
   }
 
@@ -209,7 +209,7 @@ struct WatchConnectivityCoordinatorTests {
       to: clerk
     )
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "token")
+    #expect(clerk.identityController.currentDeviceToken == "token")
     #expect(clerk.client?.id == "phone")
     // The phone's state predates the watch's clear, so the watch would reject it anyway.
     #expect(transport.sent.isEmpty)
@@ -248,7 +248,7 @@ struct WatchConnectivityCoordinatorTests {
 
     coordinator.apply(payload(token: "phone-token", client: nil, serverDate: nil), from: .phone, to: clerk)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "phone-token")
+    #expect(clerk.identityController.currentDeviceToken == "phone-token")
     try await waitUntil { clerk.client?.id == "refreshed" }
   }
 
@@ -263,7 +263,7 @@ struct WatchConnectivityCoordinatorTests {
       to: clerk
     )
     #expect(clerk.client == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(WatchSyncClearMarker.load(from: keychain) == date(200))
 
     coordinator.apply(payload(token: "token", client: signedIn("client"), serverDate: date(100)), from: .phone, to: clerk)
@@ -282,7 +282,7 @@ struct WatchConnectivityCoordinatorTests {
     coordinator.apply(payload(token: "old-token", client: signedIn("old"), serverDate: date(150)), from: .watch, to: clerk)
 
     #expect(clerk.client == nil)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(clerk.identityController.currentDeviceToken == nil)
   }
 
   @Test
@@ -340,9 +340,6 @@ struct WatchConnectivityCoordinatorTests {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
-    if let token {
-      try keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
@@ -350,9 +347,7 @@ struct WatchConnectivityCoordinatorTests {
     )
     try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
     clerk.dependencies = dependencies
-    if let client {
-      clerk.applyResponseClient(client, responseSequence: 1, serverDate: serverDate)
-    }
+    try clerk.seedIdentity(deviceToken: token, client: client, serverDate: serverDate)
     return (clerk, keychain)
   }
 

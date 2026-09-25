@@ -17,7 +17,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var transport: (any WatchSyncTransport)?
   private var isActive = true
   private var isApplyingRemoteEnvironment = false
-  private var transitionTasks: [UUID: Task<Void, Never>] = [:]
   private var refreshTask: Task<Void, Never>?
 
   /// - Parameter transport: Overrides the platform WatchConnectivity transport.
@@ -59,10 +58,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
     guard let incoming = payload.state else { return }
     let localSource: WatchSyncSource = source == .phone ? .watch : .phone
-    let taskID = UUID()
     do {
-      let task = try clerk.identityController.submitExternalTransition { [weak self, weak clerk] in
-        guard let self, let clerk, isActive else { return nil }
+      try clerk.identityController.applyExternalTransition {
         let local = WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
           if local.supersedes(incoming, from: localSource) {
@@ -84,17 +81,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
           }
         )
       }
-      if let task {
-        track(task, id: taskID)
-      }
     } catch {
       ClerkLogger.logError(error, message: "Failed to apply Clerk auth state from the paired device")
-    }
-  }
-
-  func waitForIdentityPublications() async {
-    while let task = transitionTasks.values.first {
-      await task.value
     }
   }
 
@@ -149,19 +137,6 @@ extension WatchConnectivityCoordinator {
 
   private func refreshDidFinish() {
     refreshTask = nil
-  }
-
-  private func track(_ task: Task<Void, Error>, id: UUID) {
-    transitionTasks[id] = Task { [weak self] in
-      do {
-        try await task.value
-      } catch is CancellationError {
-        // Superseded or invalidated by a newer identity operation.
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to apply Clerk auth state from the paired device")
-      }
-      self?.transitionTasks[id] = nil
-    }
   }
 }
 

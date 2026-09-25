@@ -4,10 +4,12 @@
 //
 
 extension Clerk {
-  /// Reloads this app's persisted atomic or legacy Clerk state.
+  /// Reloads the persisted Clerk identity and cached environment.
   ///
-  /// When shared-session sync is enabled, this reconciles all compatible sibling
-  /// owner slots. In app-local mode, it reloads the persisted identity directly.
+  /// Use this when another app or extension sharing the same Keychain access group
+  /// may have changed the identity. With shared-session sync, Clerk also does this
+  /// automatically when another app writes, when the app enters the foreground, and
+  /// before each request.
   ///
   /// - Returns: `true` when any in-memory identity or environment value changed.
   @discardableResult

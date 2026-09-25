@@ -24,6 +24,12 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key indicating that this app adopted stable app-local shared-session persistence.
   case sharedSessionSyncAdopted = "clerkSharedSessionSyncAdoptedV2"
 
+  /// The device token, Client, and server date, stored together as one record.
+  case identity = "clerkIdentityV3"
+
+  /// Key indicating that this app moved its identity into the single identity record.
+  case identityMigrated = "clerkIdentityMigrationV3"
+
   /// Key for the last explicit sibling-app auth sync state.
   case sharedSessionSyncAuthState
 
