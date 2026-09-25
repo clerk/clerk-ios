@@ -25,6 +25,11 @@ extension Clerk {
     .watchSyncClearGeneration,
   ]
 
+  /// Keys the app clears leave for their identity step. The identity store removes the identity where
+  /// it lives; a record elsewhere, such as in the access group of an app with sync off, belongs to
+  /// other apps.
+  private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.identity])
+
   /// Clears Clerk authentication and private cached data from Keychain.
   ///
   /// This method deletes Clerk-stored authentication and application data, including:
@@ -79,8 +84,16 @@ extension Clerk {
     var failures = Self.clearIdentityAndMarkClear(in: dependencies, configuration: configuration) {
       try identityController.clearIdentity()
     }
-    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.appLocalKeychain, configuration: configuration)
-    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.keychain, configuration: configuration)
+    failures += Self.clearAllKeychainItemsCollectingFailures(
+      in: dependencies.appLocalKeychain,
+      preserving: Self.keysPreservedAlongsideIdentity,
+      configuration: configuration
+    )
+    failures += Self.clearAllKeychainItemsCollectingFailures(
+      in: dependencies.keychain,
+      preserving: Self.keysPreservedAlongsideIdentity,
+      configuration: configuration
+    )
     guard failures.isEmpty else {
       throw KeychainClearError(failedItems: failures)
     }
@@ -98,15 +111,14 @@ extension Clerk {
         try dependencies.identityStore.delete()
       }
     }
-    let preservedKeys = keepsIdentity ? preservedKeychainKeys.union([.identity]) : preservedKeychainKeys
     failures += clearAllKeychainItemsCollectingFailures(
       in: dependencies.appLocalKeychain,
-      preserving: preservedKeys,
+      preserving: keysPreservedAlongsideIdentity,
       configuration: configuration
     )
     failures += clearAllKeychainItemsCollectingFailures(
       in: dependencies.keychain,
-      preserving: preservedKeys,
+      preserving: keysPreservedAlongsideIdentity,
       configuration: configuration
     )
     guard failures.isEmpty else {

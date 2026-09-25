@@ -184,6 +184,32 @@ struct ClerkTests {
   }
 
   @Test
+  func clearsLeaveTheGroupIdentityOfAppsWithSyncOn() throws {
+    // An app that adopted sync in SDK 1.5 and turned it off keeps its identity app-local, while
+    // sibling apps with sync on keep theirs in the access group.
+    let groupKeychain = InMemoryKeychain()
+    let identityKeychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: groupKeychain,
+      appLocalKeychain: InMemoryKeychain(),
+      identityKeychain: identityKeychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    let siblingIdentity = Data("sibling identity".utf8)
+    try groupKeychain.set(siblingIdentity, forKey: ClerkKeychainKey.identity.rawValue)
+    Clerk.shared.dependencies = dependencies
+    try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock)
+
+    Clerk.clearAllKeychainItems()
+    #expect(try identityKeychain.hasItem(forKey: ClerkKeychainKey.identity.rawValue) == false)
+    #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
+
+    try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
+    #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
+  }
+
+  @Test
   func watchTransitionFencesOlderNetworkResponses() async throws {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
