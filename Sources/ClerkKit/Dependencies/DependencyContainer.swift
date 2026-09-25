@@ -223,17 +223,6 @@ final class DependencyContainer: Dependencies {
     // when sync is off, in app-local storage.
     let wasAdopted = migratesPersistentState
       && (try? AppLocalStateAdoption.isAdopted(in: adoptionMarkerKeychain)) == true
-    if migratesPersistentState, syncEnabled, !wasAdopted {
-      do {
-        try AppLocalStateAdoption(
-          markerKeychain: adoptionMarkerKeychain,
-          appLocal: configuredAppLocal,
-          shared: shared
-        ).adoptIfNeeded()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to move Clerk's private state out of the shared Keychain group")
-      }
-    }
 
     // The identity lives in the configured Keychain, which is shared when it has an access group.
     // If this app lacks the group entitlement, fall back to app-local storage without sharing.
@@ -259,6 +248,18 @@ final class DependencyContainer: Dependencies {
     }
     let identityStore = ClerkIdentityStore(keychain: identityKeychain, instanceFingerprint: namespace.fingerprint)
 
+    if migratesPersistentState, syncEnabled, !wasAdopted, !accessGroupIsUnreadable {
+      do {
+        try AppLocalStateAdoption(
+          markerKeychain: adoptionMarkerKeychain,
+          appLocal: configuredAppLocal,
+          shared: shared
+        ).adoptIfNeeded()
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to move Clerk's private state out of the shared Keychain group")
+      }
+    }
+
     if migratesPersistentState {
       do {
         try ClerkIdentityMigration(
@@ -269,7 +270,7 @@ final class DependencyContainer: Dependencies {
           accessGroup: config.normalizedAccessGroup,
           ownerIdentifier: ownerIdentifier,
           instanceFingerprint: namespace.fingerprint,
-          readsLegacyItems: !wasAdopted,
+          readsLegacyItems: !wasAdopted && !accessGroupIsUnreadable,
           finalizes: !accessGroupIsUnreadable
         ).migrateIfNeeded()
       } catch {
