@@ -17,7 +17,7 @@ extension Clerk {
   }
 
   /// Non-secret markers kept across clears: where this app's private state lives, that its
-  /// identity was already migrated, and when it last cleared (so Watch state from before
+  /// identity was already migrated, and how many clears it has seen (so Watch state from before
   /// the clear is rejected).
   static let preservedKeychainKeys: Set<ClerkKeychainKey> = [
     .sharedSessionSyncAdopted,
@@ -36,7 +36,7 @@ extension Clerk {
   /// shared, so this signs out every app sharing it.
   ///
   /// Clerk keeps non-secret markers that record where this app's private state lives, that
-  /// its storage was migrated, and when it last cleared. They contain no token or Client.
+  /// its storage was migrated, and how many clears it has seen. They contain no token or Client.
   ///
   /// This method is useful for:
   /// - Debugging and testing
