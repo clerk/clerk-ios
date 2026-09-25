@@ -33,16 +33,17 @@ Request sequence, client-response generation, canonical-client flag, and request
 
 ## Watch Sync
 
-Each device sends its complete auth state (device token, authoritative Client, server date, and last local clear time) through `updateApplicationContext` whenever it changes. The receiver applies the incoming state as one external identity transition if `WatchSyncState.supersedes(_:from:)` says it wins:
+Each device sends its complete auth state (device token, authoritative Client, server date, and clear generation) through `updateApplicationContext` whenever it changes. The clear generation counts clears; every local clear increments it and both devices keep the maximum they have seen. The receiver applies the incoming state as one external identity transition if `WatchSyncState.supersedes(_:from:)` says it wins:
 
-1. Same token: the devices share one server-side Client, so the newer snapshot wins (server date, then `Client.updatedAt`).
-2. Different tokens: state older than the receiver's last local clear is rejected, only the phone can clear the other device, a device without a token accepts any token, a signed-in Client beats a signed-out one, and otherwise the phone wins.
+1. Different clear generations: a state from the newer generation wins, except that only the phone can clear the other device. A state from before a clear can never undo it, whatever the device and server clocks say.
+2. Same token: the devices share one server-side Client, so the newer snapshot wins (server date, then `Client.updatedAt`).
+3. Different tokens: only the phone can clear the other device, a device without a token accepts any token, a signed-in Client beats a signed-out one, and otherwise the phone wins.
 
-A receiver that rejects a state replies with its own state only when its state would win on the other device, so exchanges converge without loops. Adopting a token without a Client refreshes the Client from the server. The only persisted Watch state is the last local clear time, which survives Keychain clears.
+A receiver learns a newer generation even when it rejects the state, and replies with its own state only when that state would win on the other device, so exchanges converge without loops. Adopting a token without a Client refreshes the Client from the server. Only the phone's environment is adopted. Payloads from earlier SDKs count as generation 0, and after upgrading, a clear recorded by SDK 1.5 starts the generation at 1.
 
 ## Clear And Reconfigure
 
-`clearAllKeychainItems()` records the clear time for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. With shared-session sync, the identity is shared, so a clear signs out every app sharing it.
+`clearAllKeychainItems()` records the clear for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. With shared-session sync, the identity is shared, so a clear signs out every app sharing it.
 
 Reconfiguration clears Clerk storage for the source and destination configurations without migrating the previous identity. An identity stored in an access group belongs to every app and extension in the group, so reconfiguration leaves it; a destination for another Clerk instance ignores it.
 

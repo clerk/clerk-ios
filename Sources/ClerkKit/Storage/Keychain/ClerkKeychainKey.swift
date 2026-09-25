@@ -39,8 +39,8 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for detecting explicit sibling-app environment sync events.
   case sharedSessionSyncEnvironmentVersion
 
-  /// When this device last cleared its Clerk storage. Watch sync rejects paired-device state older than this.
-  case watchSyncClearedAt = "clerkWatchSyncClearedAt"
+  /// How many Clerk storage clears this device and its paired device have seen. Watch sync rejects state from an older generation.
+  case watchSyncClearGeneration = "clerkWatchSyncClearGeneration"
 
   /// Legacy watch auth sync state. Retained so clears remove it from existing installs.
   case watchSyncAuthState

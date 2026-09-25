@@ -110,7 +110,7 @@ struct ClerkTests {
     )
     try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
     for key in ClerkKeychainKey.allCases {
-      try keychain.set(key == .watchSyncClearedAt ? "100" : "value", forKey: key.rawValue)
+      try keychain.set(key == .watchSyncClearGeneration ? "4" : "value", forKey: key.rawValue)
     }
 
     Clerk.clearAllKeychainItems()
@@ -121,7 +121,7 @@ struct ClerkTests {
     #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
-    #expect(try #require(WatchSyncClearMarker.load(from: keychain)) > Date(timeIntervalSince1970: 100))
+    #expect(WatchSyncClearMarker.generation(in: keychain) == 5)
   }
 
   @Test
@@ -164,7 +164,7 @@ struct ClerkTests {
 
     #expect(try shared.identityStore.load()?.identity.deviceToken == "shared-token")
     #expect(try local.identityStore.load() == nil)
-    #expect(WatchSyncClearMarker.load(from: shared.watchSyncKeychain) != nil)
+    #expect(WatchSyncClearMarker.generation(in: shared.watchSyncKeychain) == 1)
   }
 
   @Test
@@ -238,7 +238,7 @@ struct ClerkTests {
 
     // Verify all keys are deleted (including ones that didn't exist), except the new Watch clear time.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearedAt))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
     }
   }
 

@@ -22,7 +22,7 @@ extension Clerk {
   static let preservedKeychainKeys: Set<ClerkKeychainKey> = [
     .sharedSessionSyncAdopted,
     .identityMigrated,
-    .watchSyncClearedAt,
+    .watchSyncClearGeneration,
   ]
 
   /// Clears Clerk authentication and private cached data from Keychain.
@@ -152,8 +152,8 @@ extension Clerk {
     do {
       try WatchSyncClearMarker.record(in: dependencies.watchSyncKeychain)
     } catch {
-      failures.append(ClerkKeychainKey.watchSyncClearedAt.rawValue)
-      ClerkLogger.logError(error, message: "Failed to record the Watch clear time", configuration: configuration)
+      failures.append(ClerkKeychainKey.watchSyncClearGeneration.rawValue)
+      ClerkLogger.logError(error, message: "Failed to record the Watch clear", configuration: configuration)
     }
     do {
       try removeIdentity()

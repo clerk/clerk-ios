@@ -50,7 +50,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
     guard isActive else { return }
 
-    if let environment = payload.environment, environment != clerk.environment {
+    // The phone fetches its own environment, so only the phone's is worth adopting.
+    if source == .phone, let environment = payload.environment, environment != clerk.environment {
       isApplyingRemoteEnvironment = true
       clerk.environment = environment
       isApplyingRemoteEnvironment = false
@@ -62,7 +63,12 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       try clerk.identityController.applyExternalTransition {
         let local = WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
-          if local.supersedes(incoming, from: localSource) {
+          // Learn a newer clear generation even when its state loses, such as a clear from the
+          // watch, so the reply is not dismissed as older than the peer's clear.
+          if incoming.clearGeneration > local.clearGeneration {
+            recordClearGeneration(incoming.clearGeneration, in: clerk)
+          }
+          if WatchSyncState(of: clerk).supersedes(incoming, from: localSource) {
             sync(from: clerk)
           }
           return nil
@@ -102,22 +108,24 @@ extension WatchSyncState {
       deviceToken: deviceToken,
       client: deviceToken == nil ? nil : clerk.authoritativeClient,
       serverDate: clerk.lastClientServerFetchDate,
-      clearedAt: WatchSyncClearMarker.load(from: clerk.dependencies.watchSyncKeychain)
+      clearGeneration: WatchSyncClearMarker.generation(in: clerk.dependencies.watchSyncKeychain)
     )
   }
 }
 
 extension WatchConnectivityCoordinator {
   private func didAdopt(_ incoming: WatchSyncState, into clerk: Clerk) {
-    if incoming.isCleared, let clearedAt = incoming.clearedAt {
-      do {
-        try WatchSyncClearMarker.record(clearedAt, in: clerk.dependencies.watchSyncKeychain)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to record the paired device's Clerk clear")
-      }
-    }
+    recordClearGeneration(incoming.clearGeneration, in: clerk)
     if incoming.deviceToken != nil, incoming.client == nil {
       refreshClient(for: clerk)
+    }
+  }
+
+  private func recordClearGeneration(_ generation: Int, in clerk: Clerk) {
+    do {
+      try WatchSyncClearMarker.raise(to: generation, in: clerk.dependencies.watchSyncKeychain)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to record the paired device's Clerk clear")
     }
   }
 
@@ -140,23 +148,41 @@ extension WatchConnectivityCoordinator {
   }
 }
 
-/// Persists when this device last cleared its Clerk storage, so paired-device
-/// state from before the clear cannot bring the old identity back.
+/// Persists the clear generation: how many clears this device and its counterpart have seen.
+/// Paired-device state from before a clear carries a lower generation, so it cannot bring the
+/// old identity back.
 enum WatchSyncClearMarker {
-  static func load(from keychain: any KeychainStorage) -> Date? {
-    guard let value = try? keychain.string(forKey: ClerkKeychainKey.watchSyncClearedAt.rawValue),
-          let interval = TimeInterval(value)
-    else {
-      return nil
+  private static let key = ClerkKeychainKey.watchSyncClearGeneration.rawValue
+
+  static func generation(in keychain: any KeychainStorage) -> Int {
+    if let value = try? keychain.string(forKey: key), let generation = Int(value) {
+      return generation
     }
-    return Date(timeIntervalSince1970: interval)
+    // SDK 1.5 kept a clear tombstone in its Watch metadata; honor it once after upgrading.
+    let generation = legacyRecordIsCleared(in: keychain) ? 1 : 0
+    try? keychain.set(String(generation), forKey: key)
+    return generation
   }
 
-  static func record(_ date: Date = Date(), in keychain: any KeychainStorage) throws {
-    let clearedAt = max(date, load(from: keychain) ?? .distantPast)
-    try keychain.set(
-      String(clearedAt.timeIntervalSince1970),
-      forKey: ClerkKeychainKey.watchSyncClearedAt.rawValue
-    )
+  /// Records a clear on this device.
+  static func record(in keychain: any KeychainStorage) throws {
+    try keychain.set(String(generation(in: keychain) + 1), forKey: key)
+  }
+
+  /// Adopts a clear generation seen on the paired device.
+  static func raise(to generation: Int, in keychain: any KeychainStorage) throws {
+    guard generation > self.generation(in: keychain) else { return }
+    try keychain.set(String(generation), forKey: key)
+  }
+
+  private static func legacyRecordIsCleared(in keychain: any KeychainStorage) -> Bool {
+    if let data = try? keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue),
+       let record = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    {
+      return record["device_token_state"] as? String == "cleared"
+        || record["auth_state"] as? String == "cleared"
+    }
+    return (try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)) == "cleared"
+      || (try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)) == "cleared"
   }
 }
