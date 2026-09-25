@@ -66,12 +66,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
         guard let self, let clerk, isActive else { return nil }
         let local = WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
-          // Learn a newer clear generation even when its state loses, such as a clear from the
-          // watch, so the reply is not dismissed as older than the peer's clear.
-          if incoming.clearGeneration > local.clearGeneration {
-            recordClearGeneration(incoming.clearGeneration, in: clerk)
-          }
-          if WatchSyncState(of: clerk).supersedes(incoming, from: localSource) {
+          if local.supersedes(incoming, from: localSource) {
             sync(from: clerk)
           }
           return nil
@@ -184,7 +179,12 @@ enum WatchSyncClearMarker {
       return generation
     }
     // SDK 1.5 kept a clear tombstone in its Watch metadata; honor it once after upgrading.
+    // A watch clear in SDK 1.5 did not sign out the phone, so only the phone imports it.
+    #if os(watchOS)
+    let generation = 0
+    #else
     let generation = legacyRecordIsCleared(in: keychain) ? 1 : 0
+    #endif
     try? keychain.set(String(generation), forKey: key)
     return generation
   }

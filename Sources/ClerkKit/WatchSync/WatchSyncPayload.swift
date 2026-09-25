@@ -42,9 +42,9 @@ package struct WatchSyncState: Equatable {
 
   /// Whether `self`, received from `source`, should replace `local`.
   func supersedes(_ local: WatchSyncState, from source: WatchSyncSource) -> Bool {
-    // A state from a newer clear generation replaces anything older; only the phone can clear the other device.
+    // A state from a newer clear generation replaces anything older, so a clear on either device clears both.
     if clearGeneration != local.clearGeneration {
-      return clearGeneration > local.clearGeneration && (!isCleared || source == .phone)
+      return clearGeneration > local.clearGeneration
     }
 
     // Same token: both devices share one server-side Client, so the newer snapshot wins.

@@ -34,11 +34,11 @@ Request sequence, client-response generation, shared-session base generation, ca
 
 Each device sends its complete auth state (device token, authoritative Client, server date, and clear generation) through `updateApplicationContext` whenever it changes. The clear generation counts clears; every local clear increments it and both devices keep the maximum they have seen. The receiver submits the incoming state as one external identity transition if `WatchSyncState.supersedes(_:from:)` says it wins:
 
-1. Different clear generations: a state from the newer generation wins, except that only the phone can clear the other device. A state from before a clear can never undo it, whatever the device and server clocks say.
+1. Different clear generations: a state from the newer generation wins, so a clear on either device clears both. A state from before a clear can never undo it, whatever the device and server clocks say.
 2. Same token: the devices share one server-side Client, so the newer snapshot wins (server date, then `Client.updatedAt`).
-3. Different tokens: only the phone can clear the other device, a device without a token accepts any token, a signed-in Client beats a signed-out one, and otherwise the phone wins.
+3. Different tokens: a device without a token accepts any token, a signed-in Client beats a signed-out one, and otherwise the phone wins.
 
-A receiver learns a newer generation even when it rejects the state, and replies with its own state only when that state would win on the other device, so exchanges converge without loops. Adopting a token without a Client refreshes the Client from the server. Only the phone's environment is adopted. Payloads from earlier SDKs count as generation 0, and after upgrading, a clear recorded by SDK 1.5 starts the generation at 1.
+A receiver that rejects a state replies with its own state only when that state would win on the other device, so exchanges converge without loops. Adopting a token without a Client refreshes the Client from the server. Only the phone's environment is adopted. Payloads from earlier SDKs count as generation 0, and after upgrading, a clear recorded by SDK 1.5 on the phone starts the generation at 1.
 
 ## Clear And Reconfigure
 
