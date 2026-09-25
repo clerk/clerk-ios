@@ -143,6 +143,7 @@ struct ClerkIdentityControllerTests {
 
     #expect(clerk.client?.id == "undated")
     #expect(clerk.lastClientServerFetchDate == date(200))
+    #expect(try clerk.dependencies.identityStore.load()?.identity.serverDate == date(200))
   }
 
   @Test
@@ -236,6 +237,22 @@ struct ClerkIdentityControllerTests {
     #expect(sawCompletion)
   }
 
+  @Test
+  func failedClearWithSyncDoesNotSignBackIn() throws {
+    let keychain = DeleteFailingIdentityKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "client"))
+    clerk.identityController.startSharing(notifier: SilentNotifier())
+
+    #expect(throws: (any Error).self) {
+      try clerk.identityController.clearIdentity()
+    }
+
+    #expect(!clerk.identityController.reconcileWithStore())
+    #expect(clerk.deviceToken == nil)
+    #expect(clerk.client == nil)
+  }
+
   // MARK: - Helpers
 
   private func makeClerk(
@@ -325,6 +342,32 @@ private final class FailingAfterFirstWriteKeychain: @unchecked Sendable, Keychai
 
   func deleteItem(forKey key: String) throws {
     try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
+@MainActor
+private final class SilentNotifier: SharedSessionSyncNotifying {
+  func setHandler(_: @escaping @MainActor () -> Void) {}
+  func post() {}
+}
+
+private final class DeleteFailingIdentityKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey _: String) throws {
+    throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
   }
 
   func hasItem(forKey key: String) throws -> Bool {

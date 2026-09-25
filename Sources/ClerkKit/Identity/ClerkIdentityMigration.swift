@@ -70,7 +70,12 @@ struct ClerkIdentityMigration {
 
     let clearIntent = loadClearIntent()
     if clearIntent == nil, let identity = try loadAtomicIdentity() ?? loadLegacyIdentity() {
-      let existing = try? store.load()?.identity
+      let existing: ClerkIdentitySnapshot?
+      do {
+        existing = try store.load()?.identity
+      } catch ClerkIdentityStoreError.otherInstance {
+        existing = nil
+      }
       if existing == nil || (existing?.hasSession != true && identity.hasSession) {
         try store.save(identity)
       }

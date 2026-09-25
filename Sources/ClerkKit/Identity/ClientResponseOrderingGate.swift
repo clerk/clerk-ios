@@ -54,7 +54,8 @@ struct ClientResponseOrderingGate {
   }
 
   mutating func adoptExternalSnapshot(serverDate: Date?) {
-    externalSnapshotDate = serverDate
+    guard let serverDate else { return }
+    externalSnapshotDate = max(externalSnapshotDate ?? serverDate, serverDate)
     advanceServerDateWatermark(to: serverDate)
   }
 

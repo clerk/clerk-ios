@@ -239,7 +239,7 @@ final class DependencyContainer: Dependencies {
     // If this app lacks the group entitlement, fall back to app-local storage without sharing.
     var identityKeychain = syncEnabled || !wasAdopted ? shared : configuredAppLocal
     var identityIsInAccessGroup = config.normalizedAccessGroup != nil && (syncEnabled || !wasAdopted)
-    var lacksAccessGroupEntitlement = false
+    var accessGroupIsUnreadable = false
     if identityIsInAccessGroup, migratesPersistentState {
       do {
         _ = try shared.hasItem(forKey: ClerkKeychainKey.identity.rawValue)
@@ -249,7 +249,12 @@ final class DependencyContainer: Dependencies {
         )
         identityKeychain = configuredAppLocal
         identityIsInAccessGroup = false
-        lacksAccessGroupEntitlement = true
+        accessGroupIsUnreadable = true
+      } catch {
+        // For example, a background launch before first unlock. Keep the configured layout and
+        // let the migration finish on a later launch.
+        ClerkLogger.logError(error, message: "Failed to read the configured Keychain access group")
+        accessGroupIsUnreadable = true
       }
     }
     let identityStore = ClerkIdentityStore(keychain: identityKeychain, instanceFingerprint: namespace.fingerprint)
@@ -265,7 +270,7 @@ final class DependencyContainer: Dependencies {
           ownerIdentifier: ownerIdentifier,
           instanceFingerprint: namespace.fingerprint,
           readsLegacyItems: !wasAdopted,
-          finalizes: !lacksAccessGroupEntitlement
+          finalizes: !accessGroupIsUnreadable
         ).migrateIfNeeded()
       } catch {
         ClerkLogger.logError(error, message: "Failed to migrate Clerk Keychain storage from an earlier SDK version")

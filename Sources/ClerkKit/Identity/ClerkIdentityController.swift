@@ -3,6 +3,8 @@
 //  Clerk
 //
 
+// swiftlint:disable file_length
+
 import Foundation
 
 /// Owns Clerk's in-memory identity and its single persisted record.
@@ -249,12 +251,19 @@ extension ClerkIdentityController {
     guard let clerk else { return }
     fenceClientResponses()
     currentDeviceToken = nil
-    storedRevision = nil
     lastServerDate = nil
     clerk.setClientFromIdentityController(nil)
     clerk.emitInternalStateChange(.localStorageDidClear)
-    defer { notifier?.post() }
-    try store?.delete()
+    do {
+      try store?.delete()
+    } catch {
+      // Remember the record this clear could not delete, so reconciling does not mistake it
+      // for another app's write and sign the user back in.
+      storedRevision = try? store?.revision()
+      throw error
+    }
+    storedRevision = nil
+    notifier?.post()
   }
 
   /// Persists `identity`, then applies it to memory.
@@ -268,6 +277,16 @@ extension ClerkIdentityController {
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
     let tokenChanged = identity.deviceToken != currentDeviceToken
+    var identity = identity
+    // Persist the same server-date watermark memory keeps, so the next launch hydrates it.
+    if !tokenChanged, let watermark = lastServerDate, identity.serverDate.map({ $0 < watermark }) ?? true {
+      identity = ClerkIdentitySnapshot(
+        state: identity.state,
+        deviceToken: identity.deviceToken,
+        client: identity.client,
+        serverDate: watermark
+      )
+    }
     // A Client without a device token only exists in memory; it cannot be persisted.
     if let store, identity.deviceToken != nil || identity.client == nil {
       do {

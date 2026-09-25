@@ -122,8 +122,7 @@ struct ClerkIdentityMigrationTests {
     let env = Environment(accessGroup: nil)
     let failingLegacy = DeleteFailingKeychain()
     try failingLegacy.set("legacy-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    var migration = migration(env)
-    migration = ClerkIdentityMigration(
+    var migration = ClerkIdentityMigration(
       store: ClerkIdentityStore(keychain: env.legacy, instanceFingerprint: fingerprint),
       legacyKeychain: failingLegacy,
       markerKeychain: env.marker,
@@ -132,6 +131,7 @@ struct ClerkIdentityMigrationTests {
       ownerIdentifier: owner,
       instanceFingerprint: fingerprint
     )
+    migration.makeKeychain = { env.keychain($0, $1) }
 
     try migration.migrateIfNeeded()
 
