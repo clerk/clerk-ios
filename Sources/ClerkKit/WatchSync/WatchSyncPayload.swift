@@ -57,8 +57,9 @@ package struct WatchSyncState: Equatable {
       return client.updatedAt > localClient.updatedAt
     }
 
-    // Different tokens name different Clients.
-    if isCleared { return source == .phone } // Only the phone can clear the other device.
+    // Different tokens name different Clients. A clear always advances the generation, so a
+    // tokenless state from the same generation is a device that has not fetched a token yet.
+    if isCleared { return false }
     if local.isCleared { return true } // Seed a device that has no token.
     if hasSession != local.hasSession { return hasSession } // A signed-in Client beats a signed-out one.
     return source == .phone
@@ -72,7 +73,6 @@ package struct WatchSyncPayload: Equatable {
     static let client = "clerkClient"
     static let serverDate = "clerkClientServerFetchDate"
     static let clearGeneration = "clerkWatchSyncClearGeneration"
-    static let legacyDeviceTokenState = "watchSyncDeviceTokenState"
     static let environment = "clerkEnvironment"
   }
 
@@ -98,13 +98,12 @@ package struct WatchSyncPayload: Equatable {
       try? JSONDecoder.clerkDecoder.decode(Client.self, from: $0)
     }
     let isCurrentSchema = context[Key.schema] as? Int == Self.schemaVersion
-    // Payloads from earlier SDKs describe a state when they include a token or an explicit clear.
-    let isLegacyClear = context[Key.legacyDeviceTokenState] as? String == "cleared"
 
-    // A complete state needs a decodable client paired with its token.
+    // A complete state needs a decodable client paired with its token. Payloads from
+    // earlier SDKs only describe a state when they include a token.
     if (clientData != nil && client == nil)
       || (client != nil && deviceToken == nil)
-      || (!isCurrentSchema && deviceToken == nil && !isLegacyClear)
+      || (!isCurrentSchema && deviceToken == nil)
     {
       state = nil
     } else {

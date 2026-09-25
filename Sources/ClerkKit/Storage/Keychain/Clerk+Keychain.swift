@@ -122,9 +122,8 @@ extension Clerk {
   /// - App Attest key ID
   ///
   /// Clerk retains the non-secret shared-session adoption marker so disabling sync cannot
-  /// resurrect legacy shared credentials. After atomic shared-session adoption, Clerk also
-  /// retains Watch ordering metadata containing only transition state, versions, and
-  /// fingerprints so a stale Watch payload cannot restore cleared authentication. While an
+  /// resurrect legacy shared credentials. Clerk also retains a Watch clear generation, a
+  /// counter that lets Watch sync reject state from before this clear. While an
   /// owner slot is being withdrawn, Clerk retains a durable recovery intent so an interrupted
   /// clear is completed before the next configuration hydrates identity. These coordination
   /// records do not contain a reusable device token, Client, or Environment.

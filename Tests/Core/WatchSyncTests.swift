@@ -64,7 +64,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func legacyClearDecodesAsAClearedStateAndOtherTokenlessPayloadsCarryNone() throws {
+  func legacyPayloadWithoutTokenCarriesNoState() throws {
     let clear: [String: Any] = [
       "watchSyncDeviceTokenState": "cleared",
       "watchSyncDeviceTokenVersion": 4,
@@ -74,9 +74,7 @@ struct WatchSyncPayloadTests {
       "clerkEnvironment": JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
     ]
 
-    let clearState = try #require(WatchSyncPayload(applicationContext: clear)?.state)
-    #expect(clearState.isCleared)
-    #expect(clearState.clearGeneration == 0)
+    #expect(WatchSyncPayload(applicationContext: clear) == nil)
     let payload = try #require(WatchSyncPayload(applicationContext: environmentOnly))
     #expect(payload.state == nil)
     #expect(payload.environment == .mock)
@@ -138,12 +136,12 @@ struct WatchSyncStateMergeTests {
   }
 
   @Test
-  func onlyThePhoneCanClearTheOtherDevice() {
-    let signedInState = WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100))
-    let cleared = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil)
+  func phoneWithoutATokenYetDoesNotClearASignedInWatch() {
+    let watch = WatchSyncState(deviceToken: "watch-token", client: signedIn("watch"), serverDate: date(100))
+    let freshPhone = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil)
 
-    #expect(cleared.supersedes(signedInState, from: .phone))
-    #expect(!cleared.supersedes(signedInState, from: .watch))
+    #expect(!freshPhone.supersedes(watch, from: .phone))
+    #expect(watch.supersedes(freshPhone, from: .watch))
   }
 
   @Test(arguments: [WatchSyncSource.phone, .watch])
