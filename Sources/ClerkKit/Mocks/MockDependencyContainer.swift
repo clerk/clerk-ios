@@ -17,6 +17,7 @@ final class MockDependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
+  let identityMigrationMarkerKeychain: any KeychainStorage
   let identityIsInAccessGroup: Bool
   let sharesIdentity: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
@@ -98,6 +99,7 @@ final class MockDependencyContainer: Dependencies {
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
     self.appLocalKeychain = resolvedAppLocalKeychain
+    identityMigrationMarkerKeychain = resolvedAppLocalKeychain
     identityStore = ClerkIdentityStore(
       keychain: identityKeychain ?? resolvedKeychain,
       instanceFingerprint: ""

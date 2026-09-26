@@ -154,6 +154,29 @@ struct ClerkIdentityMigrationTests {
   }
 
   @Test
+  func clearBeforeTheMigrationFinishesIsNotUndone() throws {
+    let env = Environment()
+    try env.keychain(stableService).set(atomicRecord(token: "atomic-token"), forKey: "clerkSharedSessionLocalIdentityV2")
+    var unfinished = migration(env)
+    unfinished.finalizes = false
+    try unfinished.migrateIfNeeded()
+    #expect(try env.store.load()?.identity.deviceToken == "atomic-token")
+
+    // The app clears while the access group is unreachable, then relaunches with it reachable.
+    try ClerkIdentityMigration.recordClear(in: env.marker)
+    try env.store.delete()
+    try migration(env).migrateIfNeeded()
+
+    #expect(try env.store.load() == nil)
+    #expect(try env.keychain(stableService).hasItem(forKey: "clerkSharedSessionLocalIdentityV2") == false)
+    #expect(try env.marker.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.markerValue)
+
+    // A finished migration stays finished.
+    try ClerkIdentityMigration.recordClear(in: env.marker)
+    #expect(try env.marker.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.markerValue)
+  }
+
+  @Test
   func runsOncePerApp() throws {
     let env = Environment()
     try migration(env).migrateIfNeeded()

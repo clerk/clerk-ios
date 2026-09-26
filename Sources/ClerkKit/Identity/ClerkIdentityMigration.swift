@@ -12,14 +12,17 @@ import Foundation
 /// 1. The atomic app-local record written by shared-session sync in SDK 1.5.
 /// 2. The separate device-token, Client, and server-date items written before that.
 ///
-/// A shared-session clear that was interrupted in SDK 1.5 is honored by not migrating
-/// any identity. When another app in the access group already wrote the shared record,
+/// A clear recorded before the migration finished, including a shared-session clear
+/// interrupted in SDK 1.5, is honored by not migrating any identity. When another app in the access group already wrote the shared record,
 /// that record is kept unless it is signed out and this app's identity is signed in.
 ///
 /// The migration is marked done only after every earlier copy was deleted, so a failed
 /// deletion is retried on the next launch.
 struct ClerkIdentityMigration {
   static let markerValue = "3"
+  /// Recorded by a clear before the migration finished, so the next run removes earlier copies
+  /// without bringing the cleared identity back.
+  static let clearedMarkerValue = "cleared"
 
   /// Earlier-layout identity items in the configured Keychain.
   static let legacyIdentityKeys: [ClerkKeychainKey] = [
@@ -64,12 +67,21 @@ struct ClerkIdentityMigration {
   var finalizes = true
   var makeKeychain: (_ service: String, _ accessGroup: String?) -> any KeychainStorage = Self.liveKeychain
 
+  /// Records a clear, so a migration that has not finished cannot restore the cleared identity.
+  static func recordClear(in markerKeychain: any KeychainStorage) throws {
+    let marker = ClerkKeychainKey.identityMigrated.rawValue
+    guard try markerKeychain.string(forKey: marker) != markerValue else { return }
+    try markerKeychain.set(clearedMarkerValue, forKey: marker)
+  }
+
   func migrateIfNeeded() throws {
     let marker = ClerkKeychainKey.identityMigrated.rawValue
-    guard try markerKeychain.string(forKey: marker) != Self.markerValue else { return }
+    let state = try markerKeychain.string(forKey: marker)
+    guard state != Self.markerValue else { return }
 
     let clearIntent = loadClearIntent()
-    if clearIntent == nil, let identity = try loadAtomicIdentity() ?? loadLegacyIdentity() {
+    let wasCleared = state == Self.clearedMarkerValue || clearIntent != nil
+    if !wasCleared, let identity = try loadAtomicIdentity() ?? loadLegacyIdentity() {
       let existing: ClerkIdentitySnapshot?
       do {
         existing = try store.load()?.identity

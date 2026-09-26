@@ -14,8 +14,21 @@ final class DependencyContainer: Dependencies {
     let shared: any KeychainStorage
     let appLocal: any KeychainStorage
     let identityStore: ClerkIdentityStore
+    let identityMigrationMarker: any KeychainStorage
     let identityIsInAccessGroup: Bool
     let sharesIdentity: Bool
+
+    /// Every store in one injected Keychain.
+    static func injected(_ keychain: any KeychainStorage, instanceFingerprint: String) -> KeychainStorages {
+      KeychainStorages(
+        shared: keychain,
+        appLocal: keychain,
+        identityStore: ClerkIdentityStore(keychain: keychain, instanceFingerprint: instanceFingerprint),
+        identityMigrationMarker: keychain,
+        identityIsInAccessGroup: false,
+        sharesIdentity: false
+      )
+    }
   }
 
   // MARK: - Core Dependencies
@@ -24,6 +37,7 @@ final class DependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
+  let identityMigrationMarkerKeychain: any KeychainStorage
   let identityIsInAccessGroup: Bool
   let sharesIdentity: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
@@ -114,6 +128,7 @@ final class DependencyContainer: Dependencies {
     keychain = keychainStorages.shared
     appLocalKeychain = keychainStorages.appLocal
     identityStore = keychainStorages.identityStore
+    identityMigrationMarkerKeychain = keychainStorages.identityMigrationMarker
     identityIsInAccessGroup = keychainStorages.identityIsInAccessGroup
     sharesIdentity = keychainStorages.sharesIdentity
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
@@ -181,13 +196,7 @@ final class DependencyContainer: Dependencies {
           localizationBundle: .module
         )
       }
-      return KeychainStorages(
-        shared: keychainStorageOverride,
-        appLocal: keychainStorageOverride,
-        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride, instanceFingerprint: namespace.fingerprint),
-        identityIsInAccessGroup: false,
-        sharesIdentity: false
-      )
+      return .injected(keychainStorageOverride, instanceFingerprint: namespace.fingerprint)
     }
 
     let config = options.keychainConfig
@@ -282,6 +291,7 @@ final class DependencyContainer: Dependencies {
       shared: shared,
       appLocal: syncEnabled || wasAdopted ? configuredAppLocal : shared,
       identityStore: identityStore,
+      identityMigrationMarker: configuredAppLocal,
       identityIsInAccessGroup: identityIsInAccessGroup,
       sharesIdentity: syncEnabled && identityIsInAccessGroup
     )

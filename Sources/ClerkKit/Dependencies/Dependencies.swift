@@ -25,6 +25,9 @@ protocol Dependencies: AnyObject {
   /// The single persisted record holding the device token and Client.
   var identityStore: ClerkIdentityStore { get }
 
+  /// App-local Keychain holding the marker that records this app's identity migration.
+  var identityMigrationMarkerKeychain: any KeychainStorage { get }
+
   /// Whether ``identityStore`` is in the configured access group, where other apps and extensions can read it.
   var identityIsInAccessGroup: Bool { get }
 

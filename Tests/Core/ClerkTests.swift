@@ -122,6 +122,7 @@ struct ClerkTests {
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
     #expect(WatchSyncClearMarker.generation(in: keychain) == 5)
+    #expect(try keychain.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.clearedMarkerValue)
   }
 
   @Test
@@ -262,9 +263,9 @@ struct ClerkTests {
     // Clear all keychain items (should not throw even though some keys don't exist)
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted (including ones that didn't exist), except the new Watch clear time.
+    // Verify all keys are deleted (including ones that didn't exist), except the markers the clear records.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == [.watchSyncClearGeneration, .identityMigrated].contains(key))
     }
   }
 

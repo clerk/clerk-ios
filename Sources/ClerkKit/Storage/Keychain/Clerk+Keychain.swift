@@ -153,7 +153,8 @@ extension Clerk {
     )
   }
 
-  /// Records the clear for Watch sync, then removes the identity. Returns the items that failed.
+  /// Records the clear for Watch sync and for an unfinished identity migration, then removes the
+  /// identity. Returns the items that failed.
   @MainActor
   private static func clearIdentityAndMarkClear(
     in dependencies: any Dependencies,
@@ -166,6 +167,12 @@ extension Clerk {
     } catch {
       failures.append(ClerkKeychainKey.watchSyncClearGeneration.rawValue)
       ClerkLogger.logError(error, message: "Failed to record the Watch clear", configuration: configuration)
+    }
+    do {
+      try ClerkIdentityMigration.recordClear(in: dependencies.identityMigrationMarkerKeychain)
+    } catch {
+      failures.append(ClerkKeychainKey.identityMigrated.rawValue)
+      ClerkLogger.logError(error, message: "Failed to record the clear for the identity migration", configuration: configuration)
     }
     do {
       try removeIdentity()
