@@ -146,8 +146,8 @@ struct ClerkLoggerTests {
       options: options
     )
 
-    await #expect(throws: ClerkClientError.self) {
-      try await Clerk.clearLocalClerkStorageStrictly(in: dependencies)
+    #expect(throws: ClerkClientError.self) {
+      try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
     }
 
     let deadline = ContinuousClock.now + .seconds(1)

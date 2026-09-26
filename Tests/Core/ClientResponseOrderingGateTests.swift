@@ -86,4 +86,17 @@ struct ClientResponseOrderingGateTests {
     #expect(gate.lastAcceptedSequence == nil)
     #expect(gate.lastAcceptedServerDate == date)
   }
+
+  @Test
+  func responsesOlderThanAnAdoptedSnapshotAreRejected() {
+    var gate = ClientResponseOrderingGate()
+    gate.adoptExternalSnapshot(serverDate: Date(timeIntervalSince1970: 200))
+
+    #expect(!gate.accepts(sequence: 1, serverDate: Date(timeIntervalSince1970: 100), incomingUpdatedAt: nil, currentUpdatedAt: nil))
+    #expect(gate.accepts(sequence: 1, serverDate: Date(timeIntervalSince1970: 300), incomingUpdatedAt: nil, currentUpdatedAt: nil))
+    #expect(gate.accepts(sequence: 1, serverDate: nil, incomingUpdatedAt: nil, currentUpdatedAt: nil))
+
+    gate.resetSequence()
+    #expect(gate.accepts(sequence: 1, serverDate: Date(timeIntervalSince1970: 100), incomingUpdatedAt: nil, currentUpdatedAt: nil))
+  }
 }

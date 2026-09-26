@@ -8,6 +8,18 @@ let mockBaseUrl = URL(string: "https://mock.clerk.accounts.dev")!
 let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
 extension Clerk {
+  /// Persists an identity and loads it the way configuration does.
+  @MainActor
+  func seedIdentity(deviceToken: String?, client: Client? = nil, serverDate: Date? = nil) throws {
+    try dependencies.identityStore.save(ClerkIdentitySnapshot(
+      state: client == nil ? .cleared : .present,
+      deviceToken: deviceToken,
+      client: client,
+      serverDate: serverDate
+    ))
+    identityController.hydrate()
+  }
+
   @MainActor
   func applyResponseClient(
     _ incoming: Client?,
@@ -16,7 +28,7 @@ extension Clerk {
     clientResponseGeneration: ClientResponseGeneration? = nil,
     completedAuthFlow: TransferFlowResult? = nil
   ) {
-    identityController.applyLegacyResponseClient(
+    identityController.applyResponseClient(
       incoming,
       responseSequence: responseSequence,
       serverDate: serverDate,

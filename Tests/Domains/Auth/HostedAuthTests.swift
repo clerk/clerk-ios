@@ -209,11 +209,8 @@ struct HostedAuthFlowTests {
 
     #expect(session.id == Session.mock2.id)
     #expect(Clerk.shared.client == activatedClient)
-    #expect(
-      try Clerk.shared.dependencies.identityKeychain.string(
-        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-      ) == "hosted_auth_test_device_token"
-    )
+    #expect(Clerk.shared.identityController.currentDeviceToken == "hosted_auth_test_device_token")
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.deviceToken == "hosted_auth_test_device_token")
     #expect(Clerk.shared.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
     #expect(createParams.value?.redirectUrl == "myapp:///hosted-auth-callback")
     #expect(createParams.value?.mode == .signUp)
@@ -573,7 +570,6 @@ struct HostedAuthFlowTests {
             update: .explicitClear,
             deviceTokenUpdate: .clear,
             requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
-            baseGeneration: nil,
             serverDate: Date(timeIntervalSince1970: 200),
             isCanonicalClientRequest: true,
             clientResponseGeneration: Clerk.shared.clientResponseGeneration,
@@ -589,10 +585,7 @@ struct HostedAuthFlowTests {
       }),
       initialClient: .mock
     )
-    try Clerk.shared.dependencies.identityKeychain.set(
-      "initial-token",
-      forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-    )
+    try Clerk.shared.seedIdentity(deviceToken: "initial-token", client: .mock)
 
     do {
       _ = try await Clerk.shared.auth.performHostedAuth(
@@ -617,11 +610,8 @@ struct HostedAuthFlowTests {
 
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client == nil)
-    #expect(
-      try Clerk.shared.dependencies.identityKeychain.string(
-        forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-      ) == nil
-    )
+    #expect(Clerk.shared.identityController.currentDeviceToken == nil)
+    #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
   }
 
   @Test
@@ -950,7 +940,6 @@ private func hostedAuthRedeemResponse(
       update: client.map(ClientResponseUpdate.client) ?? .absent,
       deviceTokenUpdate: .set("hosted_auth_test_device_token"),
       requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
-      baseGeneration: 0,
       serverDate: serverDate,
       isCanonicalClientRequest: true,
       clientResponseGeneration: Clerk.shared.clientResponseGeneration,

@@ -15,7 +15,7 @@ struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {
     let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 20)
+    #expect(allCases.count == 22)
 
     // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))

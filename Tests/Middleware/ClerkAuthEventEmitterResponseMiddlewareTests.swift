@@ -85,7 +85,6 @@ struct ClerkAuthEventEmitterResponseMiddlewareTests {
         update: .client(currentClient),
         deviceTokenUpdate: .absent,
         requestDeviceToken: "token",
-        baseGeneration: nil,
         serverDate: nil,
         isCanonicalClientRequest: false,
         clientResponseGeneration: clerk.clientResponseGeneration,

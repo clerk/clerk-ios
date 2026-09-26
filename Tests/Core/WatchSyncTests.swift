@@ -1,4 +1,4 @@
-@testable import ClerkKit
+@_spi(FrameworkIntegration) @testable import ClerkKit
 import Foundation
 import Testing
 
@@ -438,9 +438,6 @@ struct WatchConnectivityCoordinatorTests {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
-    if let token {
-      try keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
@@ -448,9 +445,7 @@ struct WatchConnectivityCoordinatorTests {
     )
     try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
     clerk.dependencies = dependencies
-    if let client {
-      clerk.applyResponseClient(client, responseSequence: 1, serverDate: serverDate)
-    }
+    try clerk.seedIdentity(deviceToken: token, client: client, serverDate: serverDate)
     return (clerk, keychain)
   }
 

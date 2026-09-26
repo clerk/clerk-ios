@@ -443,7 +443,7 @@ struct ClerkAPIClientTests {
   @Test
   func retryPreservesFirstPreparedSharedIdentityContext() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
+    let observedContexts = LockIsolated<[(String?, String?, Bool, String?)]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-context")!
     let mock = try Mock(
       url: testURL,
@@ -473,15 +473,15 @@ struct ClerkAPIClientTests {
     #expect(prepareCount.value == 2)
     #expect(observedContexts.value.count == 2)
     #expect(observedContexts.value.allSatisfy {
-      $0.0 == 1 && $0.1 == "token-1" && $0.2 == "client-1" && $0.3
-        && $0.4 == "request-token-1"
+      $0.0 == "token-1" && $0.1 == "client-1" && $0.2
+        && $0.3 == "request-token-1"
     })
   }
 
   @Test
   func retryRestoresFrozenClerkContextBeforeCustomSigningMiddleware() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
+    let observedContexts = LockIsolated<[(String?, String?, Bool, String?)]>([])
     let signedAuthorizations = LockIsolated<[String?]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-signature")!
     let mock = try Mock(
@@ -513,13 +513,13 @@ struct ClerkAPIClientTests {
 
     #expect(prepareCount.value == 2)
     #expect(signedAuthorizations.value == ["token-1", "token-1"])
-    #expect(observedContexts.value.allSatisfy { $0.1 == "token-1" })
+    #expect(observedContexts.value.allSatisfy { $0.0 == "token-1" })
   }
 
   @Test
   func retryIsCancelledWhenPreparedClerkIdentityChanges() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
+    let observedContexts = LockIsolated<[(String?, String?, Bool, String?)]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-identity-change")!
     let mock = try Mock(
       url: testURL,
@@ -553,7 +553,7 @@ struct ClerkAPIClientTests {
   @Test
   func retryIsCancelledWhenRequestDeviceTokenPropertyChanges() async throws {
     let prepareCount = LockIsolated(0)
-    let observedContexts = LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>([])
+    let observedContexts = LockIsolated<[(String?, String?, Bool, String?)]>([])
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/retry-request-token-change")!
     let mock = try Mock(
       url: testURL,
@@ -629,7 +629,6 @@ struct ClerkAPIClientTests {
     #expect(metadata.deviceTokenUpdate == .set("rotated-device-token"))
     #expect(metadata.checkpoint.requestSequence == response.requestSequence)
     #expect(metadata.checkpoint.clientResponseGeneration == expectedClientResponseGeneration)
-    #expect(metadata.checkpoint.sharedSessionBaseGeneration == 42)
     #expect(metadata.checkpoint.isCanonicalClientRequest)
     #expect(metadata.checkpoint.requestDeviceToken == "request-device-token")
     #expect(metadata.serverDate == ISO8601DateFormatter().date(from: "2026-07-18T14:00:00Z"))
@@ -637,7 +636,6 @@ struct ClerkAPIClientTests {
     let context = metadata.context(update: .absent)
     #expect(context.deviceTokenUpdate == .set("rotated-device-token"))
     #expect(context.requestDeviceToken == "request-device-token")
-    #expect(context.baseGeneration == 42)
     #expect(context.serverDate == metadata.serverDate)
     #expect(context.isCanonicalClientRequest)
     #expect(context.clientResponseGeneration == expectedClientResponseGeneration)
@@ -685,7 +683,6 @@ private struct PreparedDeferredClientSyncContextMiddleware: ClerkRequestMiddlewa
 
   func prepare(_ request: inout URLRequest) async throws {
     request.setClerkClientResponseGeneration(clientResponseGeneration)
-    request.setClerkSharedSessionBaseGeneration(42)
     request.setClerkCanonicalClientRequest(true)
     request.setClerkRequestDeviceToken("request-device-token")
   }
@@ -730,7 +727,6 @@ private struct ChangingSharedIdentityContextMiddleware: ClerkRequestMiddleware {
     }
     let contextAttempt = changesBetweenAttempts ? attempt : 1
     let requestTokenAttempt = requestDeviceTokenChangesBetweenAttempts ? attempt : contextAttempt
-    request.setClerkSharedSessionBaseGeneration(UInt64(contextAttempt))
     request.setClerkCanonicalClientRequest(contextAttempt == 1)
     request.setClerkRequestDeviceToken("request-token-\(requestTokenAttempt)")
     request.setValue("token-\(contextAttempt)", forHTTPHeaderField: "Authorization")
@@ -753,12 +749,11 @@ private struct RecordingRetryContextMiddleware: ClerkResponseMiddleware {
     case firstAttempt
   }
 
-  let contexts: LockIsolated<[(UInt64?, String?, String?, Bool, String?)]>
+  let contexts: LockIsolated<[(String?, String?, Bool, String?)]>
 
   func validate(_: HTTPURLResponse, data _: Data, for request: URLRequest) async throws {
     let count = contexts.withValue {
       $0.append((
-        request.clerkSharedSessionBaseGeneration,
         request.value(forHTTPHeaderField: "Authorization"),
         request.value(forHTTPHeaderField: "x-clerk-client-id"),
         request.clerkIsCanonicalClientRequest,

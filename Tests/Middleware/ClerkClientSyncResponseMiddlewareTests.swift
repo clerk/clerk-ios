@@ -149,20 +149,10 @@ struct ClerkClientSyncResponseMiddlewareTests {
   func validateAtomicallyClearsIdentityForNativeClientDeletionContract() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
-    try identityStore.save(SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "current-token",
-      client: Client.mock,
-      serverDate: .distantPast
-    ))
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      atomicIdentityStore: identityStore
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
     )
-    try clerk.hydrateIdentityIfNeeded(#require(try identityStore.load()))
+    try clerk.seedIdentity(deviceToken: "current-token", client: Client.mock, serverDate: .distantPast)
     let deletedClient = client(id: "deleted-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
       ClientOnlyEnvelope(response: deletedClient, client: nil)
@@ -181,24 +171,19 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: data, for: request)
 
-    let stored = try #require(try identityStore.load())
-    #expect(stored.state == .cleared)
-    #expect(stored.deviceToken == nil)
-    #expect(stored.client == nil)
+    #expect(try clerk.dependencies.identityStore.load() == nil)
+    #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(clerk.client == nil)
   }
 
   @Test
   func disabledAutomaticSyncDefersClientButStillAppliesExplicitClear() async throws {
     let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
     )
     let existingClient = client(id: "existing-client", updatedAt: .distantPast)
-    clerk.client = existingClient
+    try clerk.seedIdentity(deviceToken: "current-token", client: existingClient)
     let incomingClient = client(id: "incoming-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
       ClientOnlyEnvelope(response: incomingClient, client: nil)
@@ -220,10 +205,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await middleware.validate(positiveResponse, data: data, for: request)
 
     #expect(clerk.client?.id == existingClient.id)
-    #expect(
-      try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-        == "current-token"
-    )
+    #expect(clerk.identityController.currentDeviceToken == "current-token")
 
     let clearResponse = try #require(HTTPURLResponse(
       url: url,
@@ -234,10 +216,8 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await middleware.validate(clearResponse, data: data, for: request)
 
     #expect(clerk.client == nil)
-    #expect(
-      try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-        == nil
-    )
+    #expect(clerk.identityController.currentDeviceToken == nil)
+    #expect(try clerk.dependencies.identityStore.load() == nil)
   }
 
   @Test
@@ -362,7 +342,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     var request = URLRequest(url: url)
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
 
-    clerk.identityController.clearCachedClientStateAfterDeviceTokenChange()
+    clerk.identityController.fenceClientResponses()
 
     try await middleware.validate(response, data: data, for: request)
 
@@ -421,24 +401,17 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
-  func validateAtomicallyPersistsCompleteResponseAfterSharedTransportIsDisabled() async throws {
+  func validatePersistsTokenAndClientTogether() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
-    let previous = SharedSessionLocalIdentity(
-      state: .present,
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    )
+    try clerk.seedIdentity(
       deviceToken: "old-token",
       client: client(id: "old-client", updatedAt: .distantPast),
       serverDate: Date(timeIntervalSince1970: 100)
     )
-    try identityStore.save(previous)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      atomicIdentityStore: identityStore
-    )
-    clerk.hydrateIdentityIfNeeded(previous)
     let expectedClient = client(id: "new-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
       ClientOnlyEnvelope(response: expectedClient, client: nil)
@@ -458,72 +431,20 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: data, for: request)
 
-    let stored = try #require(try identityStore.load())
+    let stored = try #require(try clerk.dependencies.identityStore.load()?.identity)
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
     #expect(clerk.client?.id == expectedClient.id)
   }
 
   @Test
-  func validatePersistsAdoptedIdentityOffMainActor() async throws {
+  func validatePreservesIdentityForCanonicalNullResponse() async throws {
     configureClerkForTesting()
     let clerk = Clerk()
-    let previous = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "old-token",
-      client: client(id: "old-client", updatedAt: .distantPast),
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-    let identityStore = ThreadRecordingIdentityStore(identity: previous)
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      atomicIdentityStore: identityStore
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
     )
-    clerk.hydrateIdentityIfNeeded(previous)
-    let expectedClient = client(id: "new-client", updatedAt: .distantFuture)
-    let data = try JSONEncoder.clerkEncoder.encode(
-      ClientOnlyEnvelope(response: expectedClient, client: nil)
-    )
-    let url = try #require(URL(string: "https://example.com/v1/client"))
-    let response = try #require(HTTPURLResponse(
-      url: url,
-      statusCode: 200,
-      httpVersion: nil,
-      headerFields: ["Authorization": "new-token"]
-    ))
-    var request = URLRequest(url: url)
-    request.setValue("old-token", forHTTPHeaderField: "Authorization")
-    request.setClerkCanonicalClientRequest(true)
-    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
-    request.setClerkRequestSequence(1)
-
-    try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
-      .validate(response, data: data, for: request)
-
-    #expect(identityStore.updateCount == 1)
-    #expect(identityStore.mainThreadUpdateCount == 0)
-    #expect(clerk.client?.id == expectedClient.id)
-  }
-
-  @Test
-  func validateAtomicallyPreservesIdentityForCanonicalNullResponse() async throws {
-    configureClerkForTesting()
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
-    let previous = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "token",
-      client: Client.mock,
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-    try identityStore.save(previous)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      atomicIdentityStore: identityStore
-    )
-    clerk.hydrateIdentityIfNeeded(previous)
+    try clerk.seedIdentity(deviceToken: "token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
     let url = try #require(URL(string: "https://example.com/v1/client"))
     let response = try #require(HTTPURLResponse(
       url: url,
@@ -539,7 +460,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: Data(#"{"response":null,"client":null}"#.utf8), for: request)
 
-    let stored = try #require(try identityStore.load())
+    let stored = try #require(try clerk.dependencies.identityStore.load()?.identity)
     #expect(stored.state == .present)
     #expect(stored.deviceToken == "token")
     #expect(stored.client?.id == Client.mock.id)
@@ -561,44 +482,6 @@ private final class AuthFlowGateRecordingObserver: ClerkInternalStateChangeObser
   func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
     guard case .clientDidChange = change else { return }
     valuesAtClientChange.append(clerk.isAuthFlowComplete)
-  }
-}
-
-private final class ThreadRecordingIdentityStore: @unchecked Sendable, SharedSessionLocalIdentityStoring {
-  private let lock = NSLock()
-  private var record: SharedSessionLocalIdentityRecord?
-  private var updates = 0
-  private var mainThreadUpdates = 0
-
-  init(identity: SharedSessionLocalIdentity) {
-    record = SharedSessionLocalIdentityRecord(
-      acceptedIdentity: identity,
-      pendingPublication: nil
-    )
-  }
-
-  var updateCount: Int {
-    lock.withLock { updates }
-  }
-
-  var mainThreadUpdateCount: Int {
-    lock.withLock { mainThreadUpdates }
-  }
-
-  func loadRecord() throws -> SharedSessionLocalIdentityRecord? {
-    lock.withLock { record }
-  }
-
-  func updateRecord(
-    _ update: (SharedSessionLocalIdentityRecord?) throws -> SharedSessionLocalIdentityRecord?
-  ) throws {
-    try lock.withLock {
-      updates += 1
-      if Thread.isMainThread {
-        mainThreadUpdates += 1
-      }
-      record = try update(record)
-    }
   }
 }
 

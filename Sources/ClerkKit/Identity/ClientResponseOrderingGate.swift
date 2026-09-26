@@ -8,6 +8,9 @@ import Foundation
 struct ClientResponseOrderingGate {
   private(set) var lastAcceptedSequence: Int?
   var lastAcceptedServerDate: Date?
+  /// Server date of a snapshot adopted from another app. Responses the server produced
+  /// earlier than that snapshot cannot replace it.
+  private var externalSnapshotDate: Date?
 
   init(
     lastAcceptedSequence: Int? = nil,
@@ -23,6 +26,9 @@ struct ClientResponseOrderingGate {
     incomingUpdatedAt: Date?,
     currentUpdatedAt: Date?
   ) -> Bool {
+    if let externalSnapshotDate, let serverDate, serverDate < externalSnapshotDate {
+      return false
+    }
     guard let sequence,
           let lastAcceptedSequence,
           sequence <= lastAcceptedSequence
@@ -47,13 +53,21 @@ struct ClientResponseOrderingGate {
     lastAcceptedServerDate = max(lastAcceptedServerDate ?? serverDate, serverDate)
   }
 
+  mutating func adoptExternalSnapshot(serverDate: Date?) {
+    guard let serverDate else { return }
+    externalSnapshotDate = max(externalSnapshotDate ?? serverDate, serverDate)
+    advanceServerDateWatermark(to: serverDate)
+  }
+
   mutating func reset() {
     lastAcceptedSequence = nil
     lastAcceptedServerDate = nil
+    externalSnapshotDate = nil
   }
 
   mutating func resetSequence() {
     lastAcceptedSequence = nil
+    externalSnapshotDate = nil
   }
 
   private func responseIsNewer(

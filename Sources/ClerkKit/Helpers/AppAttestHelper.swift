@@ -125,7 +125,7 @@ enum AppAttestHelper {
     }
 
     let challenge = try await getChallenge()
-    guard let clientId = await Clerk.shared.identityController.persistedClientID() else {
+    guard let clientId = Clerk.shared.identityController.persistedClientID() else {
       throw ClerkClientError(message: "Client ID is unavailable.", localizationBundle: .module)
     }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])

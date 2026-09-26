@@ -22,27 +22,17 @@ protocol Dependencies: AnyObject {
   /// Keychain storage scoped to this app rather than the configured shared access group.
   var appLocalKeychain: any KeychainStorage { get }
 
-  /// Stable app-local storage for the atomic token and client identity.
-  var identityKeychain: any KeychainStorage { get }
+  /// The single persisted record holding the device token and Client.
+  var identityStore: ClerkIdentityStore { get }
 
-  /// The previous bundle-identifier app-local cache used only during adoption.
-  var legacyAppLocalKeychain: (any KeychainStorage)? { get }
+  /// App-local Keychain holding the marker that records this app's identity migration.
+  var identityMigrationMarkerKeychain: any KeychainStorage { get }
 
-  /// Atomic app-local identity storage used after shared-session adoption.
-  var atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? { get }
+  /// Whether ``identityStore`` is in the configured access group, where other apps and extensions can read it.
+  var identityIsInAccessGroup: Bool { get }
 
-  /// Serialized off-main access to the atomic app-local identity storage.
-  var atomicIdentityIO: SharedSessionLocalIdentityIO? { get }
-
-  /// Stable owner used for this app's discoverable shared-session slot.
-  var sharedSessionOwnerIdentifier: String? { get }
-
-  /// Bundle-local journal and exact Keychain targets used to finish interrupted identity clears.
-  var sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? { get }
-
-  /// Whether this configuration just adopted legacy shared-session state and may
-  /// use the legacy Client as provisional launch UI.
-  var shouldHydrateProvisionalLegacyClient: Bool { get }
+  /// Whether other apps share ``identityStore`` and should be kept in sync with it.
+  var sharesIdentity: Bool { get }
 
   /// Manager for local biometric-credential private keys.
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }

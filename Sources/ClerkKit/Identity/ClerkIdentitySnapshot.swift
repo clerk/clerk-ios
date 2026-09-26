@@ -47,8 +47,32 @@ struct ClerkIdentitySnapshot: Codable, Equatable {
   }
 }
 
+extension ClerkIdentitySnapshot {
+  /// Keeps the device token when the Client cannot be decoded, for example after a newer
+  /// SDK in another app wrote a Client shape this version does not understand. Losing the
+  /// token would sign the user out; the next refresh restores the Client.
+  init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    let deviceToken = try container.decodeIfPresent(String.self, forKey: .deviceToken)
+    let client: Client?
+    do {
+      client = try container.decodeIfPresent(Client.self, forKey: .client)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to decode the persisted Clerk client; keeping the device token")
+      client = nil
+    }
+    try self.init(
+      state: client == nil ? .cleared : container.decode(ClerkIdentityState.self, forKey: .state),
+      deviceToken: deviceToken,
+      client: client,
+      serverDate: container.decodeIfPresent(Date.self, forKey: .serverDate)
+    )
+  }
+
+  static let signedOut = ClerkIdentitySnapshot(state: .cleared, deviceToken: nil, client: nil, serverDate: nil)
+}
+
 struct ClerkIdentityRequestSnapshot {
-  let baseGeneration: UInt64
   let deviceToken: String?
   let clientID: String?
   let clientResponseGeneration: ClientResponseGeneration
