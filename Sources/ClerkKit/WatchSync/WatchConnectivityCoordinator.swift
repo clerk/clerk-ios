@@ -7,907 +7,216 @@
 
 import Foundation
 
-/// Coordinates WatchConnectivity as a transport for Clerk auth state.
+/// Keeps the phone and watch on the same Clerk auth state.
+///
+/// Each side sends its complete ``WatchSyncState`` whenever it changes. The receiver
+/// adopts it when ``WatchSyncState/supersedes(_:from:)`` says it should, and otherwise
+/// replies with its own state when that state would win on the other side.
 @MainActor
 final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
-  private struct IdentityCandidate {
-    let state: SharedSessionIdentityEvent.State
-    let deviceToken: String?
-    let client: Client?
-    let serverDate: Date?
-    let tokenVersion: WatchSyncVersion?
-    let authVersion: WatchSyncVersion?
-    let requiresClientRefresh: Bool
-  }
+  private var transport: (any WatchSyncTransport)?
+  private var isActive = true
+  private var isApplyingRemoteEnvironment = false
+  private var transitionTasks: [UUID: Task<Void, Never>] = [:]
+  private var refreshTask: Task<Void, Never>?
 
-  private struct VersionAcceptance {
-    let version: WatchSyncVersion?
-    let updateIsIncluded: Bool
-    let acceptedVersion: WatchSyncVersion?
-    let acceptedFingerprint: String?
-    let pendingVersion: WatchSyncVersion?
-    let pendingFingerprint: String?
-    let current: WatchSyncVersion?
-    let allowsAuthoritativeVersionReset: Bool
-    let incomingFingerprint: String
-    let durableFingerprint: String
-    let source: WatchSyncSource
-  }
-
-  private struct AuthoritativeVersionResetCandidate {
-    let updateIsIncluded: Bool
-    let incomingVersion: WatchSyncVersion?
-    let currentVersion: WatchSyncVersion?
-    let effectiveState: WatchSyncMetadataState?
-    let effectiveSource: WatchSyncSource?
-    let effectiveFingerprint: String?
-    let durableFingerprint: String
-    let source: WatchSyncSource
-  }
-
-  private var watchConnectivitySync: (any WatchConnectivitySyncing)?
-  private var authGeneration: WatchSyncVersion?
-  private var isAcceptingIdentityUpdates = true
-  private var isApplyingRemotePayload = false
-  private var isRefreshScheduled = false
-  private var identityPublicationTasks: [UUID: Task<Void, Error>] = [:]
-  private var activeRemoteIdentityApplications: Set<UUID> = []
-  var activeIdentityPublicationCount: Int {
-    identityPublicationTasks.count
-  }
-
-  private var clientRefreshTask: Task<Void, Never>?
-  private var clientRefreshTaskID: UUID?
-
-  init() {
-    #if os(iOS)
-    watchConnectivitySync = createWatchConnectivityManager(
-      payloadHandler: { [weak self] payload in
-        self?.apply(payload, from: .watch, to: Clerk.shared)
+  /// - Parameter transport: Overrides the platform WatchConnectivity transport.
+  init(transport: (any WatchSyncTransport)? = nil) {
+    self.transport = transport ?? makePlatformWatchSyncTransport(
+      onReceive: { [weak self] payload, source in
+        self?.apply(payload, from: source, to: Clerk.shared)
       },
-      activationHandler: { [weak self] in
-        self?.syncCurrentState(from: Clerk.shared)
+      onActivate: { [weak self] in
+        self?.sync(from: Clerk.shared)
       }
     )
-    #elseif os(watchOS)
-    watchConnectivitySync = WatchSyncReceiver(
-      payloadHandler: { [weak self] payload in
-        self?.apply(payload, from: .phone, to: Clerk.shared)
-      },
-      activationHandler: { [weak self] in
-        self?.syncCurrentState(from: Clerk.shared)
-      }
-    )
-    #else
-    watchConnectivitySync = nil
-    #endif
   }
 
   func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
-    guard isAcceptingIdentityUpdates else { return }
-
     switch change {
-    case let .clientDidChange(previousClient, client):
-      guard !isApplyingRemotePayload,
-            !clerk.identityController.isApplyingIdentityTransition,
-            shouldPublishLocalAuthChange(previousClient: previousClient, client: client, clerk: clerk)
-      else {
-        return
-      }
-
-      let metadata = try persistAuthState(
-        client == nil ? .cleared : .set,
-        version: nil,
-        client: client,
-        serverDate: clerk.lastClientServerFetchDate,
-        keychain: clerk.dependencies.watchSyncKeychain
-      )
-      try syncCurrentState(from: clerk, metadata: metadata)
     case .environmentDidChange:
-      guard !isApplyingRemotePayload else { return }
-      syncCurrentState(from: clerk)
-    case let .deviceTokenDidChange(previousToken, token):
-      let metadata: WatchSyncMetadataRecord? = if previousToken != token {
-        try persistDeviceTokenState(
-          token == nil ? .cleared : .set,
-          deviceToken: token,
-          version: nil,
-          keychain: clerk.dependencies.watchSyncKeychain
-        )
-      } else {
-        nil
-      }
-
-      if let metadata {
-        try syncCurrentState(from: clerk, metadata: metadata)
-      } else {
-        syncCurrentState(from: clerk)
-      }
-    case .identityDidChange:
-      guard !isApplyingRemotePayload else { return }
-      let keychain = clerk.dependencies.watchSyncKeychain
-      let metadata = try persistCurrentIdentityMetadata(
-        from: clerk,
-        keychain: keychain
-      )
-      try syncCurrentState(from: clerk, metadata: metadata)
-    case .localStorageDidClear:
-      identityPublicationTasks.values.forEach { $0.cancel() }
-      identityPublicationTasks.removeAll()
-      activeRemoteIdentityApplications.removeAll()
-      clientRefreshTask?.cancel()
-      clientRefreshTask = nil
-      clientRefreshTaskID = nil
-      isApplyingRemotePayload = false
-      isRefreshScheduled = false
-      let metadata = try WatchSyncMetadataStore(
-        keychain: clerk.dependencies.watchSyncKeychain
-      ).saveClearTombstone()
-      try syncCurrentState(from: clerk, metadata: metadata)
-    case .applicationDidEnterForeground:
-      syncCurrentState(from: clerk)
+      guard !isApplyingRemoteEnvironment else { return }
+      sync(from: clerk)
+    case .clientDidChange, .deviceTokenDidChange, .identityDidChange,
+         .localStorageDidClear, .applicationDidEnterForeground:
+      sync(from: clerk)
     }
   }
 
-  func syncCurrentState(from clerk: Clerk) {
-    guard isAcceptingIdentityUpdates, watchConnectivitySync != nil else { return }
-
-    let watchSyncKeychain = clerk.dependencies.watchSyncKeychain
+  func sync(from clerk: Clerk) {
+    guard isActive else { return }
     do {
-      let metadata = try resolvedWatchMetadata(
-        clerk: clerk,
-        keychain: watchSyncKeychain
-      )
-      try syncCurrentState(from: clerk, metadata: metadata)
+      try transport?.send(WatchSyncPayload(state: WatchSyncState(of: clerk), environment: clerk.environment))
     } catch {
-      ClerkLogger.logError(error, message: "Failed to read Watch identity metadata for sync")
+      ClerkLogger.logError(error, message: "Failed to read the Clerk clear generation, so auth state was not sent to the paired device")
     }
-  }
-
-  private func syncCurrentState(
-    from clerk: Clerk,
-    metadata: WatchSyncMetadataRecord
-  ) throws {
-    guard isAcceptingIdentityUpdates, let watchConnectivitySync else { return }
-    if let effectiveAuthVersion = effectiveVersion(
-      accepted: metadata.authVersion,
-      pending: metadata.pendingAuthVersion
-    ) {
-      authGeneration = maxVersion(authGeneration, effectiveAuthVersion)
-    }
-    let payload = try WatchSyncPayload(
-      clerk: clerk,
-      metadata: metadata,
-      authGeneration: authGeneration ?? .initial
-    )
-    watchConnectivitySync.sync(payload)
   }
 
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
-    guard isAcceptingIdentityUpdates else { return }
+    guard isActive else { return }
 
-    if let environment = payload.environment {
-      withApplyingRemotePayload {
-        clerk.environment = environment
-      }
-    }
-
-    guard payload.deviceTokenUpdate != .notIncluded
-      || payload.clientUpdate != .notIncluded
-    else {
-      return
+    // The phone fetches its own environment, so only the phone's is worth adopting.
+    if source == .phone, let environment = payload.environment, environment != clerk.environment {
+      isApplyingRemoteEnvironment = true
+      clerk.environment = environment
+      isApplyingRemoteEnvironment = false
     }
 
-    enqueueIdentityPayload(payload, source: source, for: clerk)
-  }
-}
-
-extension WatchConnectivityCoordinator {
-  private func identityCandidate(
-    from payload: WatchSyncPayload,
-    source: WatchSyncSource,
-    clerk: Clerk,
-    watchSyncKeychain: any KeychainStorage
-  ) throws -> IdentityCandidate? {
-    guard payload.deviceTokenUpdate != .notIncluded
-      || payload.clientUpdate != .notIncluded
-    else {
-      return nil
-    }
-
-    let metadata = try WatchSyncMetadataStore(keychain: watchSyncKeychain).load()
-    guard acceptsIdentityVersions(
-      in: payload,
-      metadata: metadata,
-      source: source,
-      clerk: clerk
-    ) else {
-      return nil
-    }
-
-    let currentToken = clerk.deviceToken.nilIfEmpty
-    let deviceToken: String?
-    switch payload.deviceTokenUpdate {
-    case .notIncluded:
-      deviceToken = currentToken
-    case .tokenSet(let token, _):
-      guard let token = Optional(token).nilIfEmpty else { return nil }
-      deviceToken = token
-    case .tokenCleared:
-      deviceToken = nil
-    }
-
-    let client: Client?
-    let serverDate: Date?
-    let requiresClientRefresh: Bool
-    switch payload.clientUpdate {
-    case .notIncluded:
-      switch payload.deviceTokenUpdate {
-      case .notIncluded:
-        return nil
-      case .tokenSet:
-        if deviceToken == currentToken {
-          client = clerk.authoritativeClient
-          serverDate = client == nil ? nil : clerk.lastClientServerFetchDate
-          requiresClientRefresh = client == nil
-        } else {
-          client = nil
-          serverDate = nil
-          requiresClientRefresh = true
-        }
-      case .tokenCleared:
-        client = nil
-        serverDate = nil
-        requiresClientRefresh = false
-      }
-    case .snapshot(let snapshot, let date, _):
-      guard case .tokenSet(let pairedToken, _) = payload.deviceTokenUpdate,
-            Optional(pairedToken).nilIfEmpty == deviceToken
-      else {
-        scheduleRefresh(for: clerk)
-        return nil
-      }
-      client = snapshot
-      serverDate = date
-      requiresClientRefresh = false
-    case .cleared(let date, _):
-      client = nil
-      serverDate = date
-      requiresClientRefresh = false
-    }
-
-    guard client == nil || deviceToken != nil else {
-      scheduleRefresh(for: clerk)
-      return nil
-    }
-    if !source.incomingDeviceIsAuthoritative,
-       !shouldApplyNonAuthoritativeIdentityUpdate(
-         deviceToken: deviceToken,
-         client: client,
-         serverDate: serverDate,
-         clientUpdate: payload.clientUpdate,
-         clerk: clerk
-       )
-    {
-      return nil
-    }
-    if isAlreadyAcceptedIdentityPayload(payload, metadata: metadata, clerk: clerk) {
-      return nil
-    }
-
-    return IdentityCandidate(
-      state: client == nil ? .cleared : .present,
-      deviceToken: deviceToken,
-      client: client,
-      serverDate: serverDate,
-      tokenVersion: payload.deviceTokenUpdate.version,
-      authVersion: payload.clientUpdate.version,
-      requiresClientRefresh: requiresClientRefresh
-    )
-  }
-
-  private func accepts(_ candidate: VersionAcceptance) -> Bool {
-    guard candidate.updateIsIncluded else { return true }
-    guard let version = candidate.version else {
-      return legacyVersionlessUpdateIsAccepted(candidate)
-    }
-    if let current = candidate.current {
-      guard version >= current
-        || candidate.allowsAuthoritativeVersionReset
-      else {
-        return false
-      }
-    }
-    if version == candidate.pendingVersion {
-      return candidate.incomingFingerprint == candidate.pendingFingerprint
-    }
-    if version == candidate.acceptedVersion || version == candidate.current {
-      if let acceptedFingerprint = candidate.acceptedFingerprint {
-        guard acceptedFingerprint == candidate.durableFingerprint else {
-          return false
-        }
-        return candidate.incomingFingerprint == acceptedFingerprint
-      }
-      return candidate.incomingFingerprint == candidate.durableFingerprint
-    }
-    if let current = candidate.current {
-      if version < current, candidate.allowsAuthoritativeVersionReset {
-        return true
-      }
-      return candidate.source.incomingDeviceIsAuthoritative || version > current
-    }
-    return true
-  }
-
-  private func legacyVersionlessUpdateIsAccepted(_ candidate: VersionAcceptance) -> Bool {
-    guard candidate.pendingVersion == nil else { return false }
-    if candidate.acceptedVersion == nil, candidate.current == nil {
-      return true
-    }
-    return candidate.acceptedVersion == WatchSyncVersion.initial
-      && candidate.current == WatchSyncVersion.initial
-      && candidate.acceptedFingerprint == nil
-  }
-
-  private func isAlreadyAcceptedIdentityPayload(
-    _ payload: WatchSyncPayload,
-    metadata: WatchSyncMetadataRecord,
-    clerk: Clerk
-  ) -> Bool {
-    let includesToken = payload.deviceTokenUpdate != .notIncluded
-    let includesAuth = payload.clientUpdate != .notIncluded
-    guard includesToken || includesAuth else { return false }
-
-    let incomingTokenFingerprint: String = switch payload.deviceTokenUpdate {
-    case .notIncluded:
-      Self.deviceTokenFingerprint(clerk.deviceToken)
-    case .tokenSet(let token, _):
-      Self.deviceTokenFingerprint(Optional(token).nilIfEmpty)
-    case .tokenCleared:
-      Self.deviceTokenFingerprint(nil)
-    }
-    let tokenIsAccepted: Bool = if !includesToken {
-      true
-    } else if let version = payload.deviceTokenUpdate.version {
-      metadata.pendingDeviceTokenVersion != version.rawValue
-        && metadata.deviceTokenVersion == version.rawValue
-        && metadata.deviceTokenFingerprint == incomingTokenFingerprint
-        && metadata.deviceTokenFingerprint == Self.deviceTokenFingerprint(clerk.deviceToken)
-    } else {
-      false
-    }
-
-    let authIsAccepted: Bool = if !includesAuth {
-      true
-    } else if let version = payload.clientUpdate.version,
-              let incomingFingerprint = try? Self.authFingerprint(
-                client: payload.clientUpdate.client,
-                serverDate: payload.clientUpdate.serverFetchDate
-              ),
-              let durableFingerprint = try? Self.authFingerprint(
-                client: clerk.client,
-                serverDate: clerk.lastClientServerFetchDate
-              )
-    {
-      metadata.pendingAuthVersion != version.rawValue
-        && metadata.authVersion == version.rawValue
-        && metadata.authFingerprint == incomingFingerprint
-        && metadata.authFingerprint == durableFingerprint
-    } else {
-      false
-    }
-
-    return tokenIsAccepted && authIsAccepted
-  }
-
-  private func acceptsIdentityVersions(
-    in payload: WatchSyncPayload,
-    metadata: WatchSyncMetadataRecord,
-    source: WatchSyncSource,
-    clerk: Clerk
-  ) -> Bool {
-    let incomingTokenFingerprint: String = switch payload.deviceTokenUpdate {
-    case .notIncluded:
-      Self.deviceTokenFingerprint(clerk.deviceToken)
-    case .tokenSet(let token, _):
-      Self.deviceTokenFingerprint(Optional(token).nilIfEmpty)
-    case .tokenCleared:
-      Self.deviceTokenFingerprint(nil)
-    }
-    let tokenCurrent = effectiveVersion(
-      accepted: metadata.deviceTokenVersion,
-      pending: metadata.pendingDeviceTokenVersion
-    )
-    let durableTokenFingerprint = Self.deviceTokenFingerprint(clerk.deviceToken)
-    let acceptedAuthVersion = maxVersion(
-      authGeneration,
-      metadata.authVersion.map(WatchSyncVersion.init(rawValue:))
-    )
-    let authCurrent = maxVersion(
-      acceptedAuthVersion,
-      effectiveVersion(
-        accepted: metadata.authVersion,
-        pending: metadata.pendingAuthVersion
-      )
-    )
-    let incomingAuthFingerprint: String
-    let durableAuthFingerprint: String
+    guard let incoming = payload.state else { return }
+    let localSource: WatchSyncSource = source == .phone ? .watch : .phone
+    let taskID = UUID()
     do {
-      incomingAuthFingerprint = try Self.authFingerprint(
-        client: payload.clientUpdate.client,
-        serverDate: payload.clientUpdate.serverFetchDate
-      )
-      durableAuthFingerprint = try Self.authFingerprint(
-        client: clerk.client,
-        serverDate: clerk.lastClientServerFetchDate
-      )
-    } catch {
-      return false
-    }
-    let allowsTokenAuthoritativeVersionReset = allowsAuthoritativeVersionReset(
-      deviceTokenResetCandidate(
-        payload: payload,
-        metadata: metadata,
-        source: source,
-        currentVersion: tokenCurrent,
-        durableFingerprint: durableTokenFingerprint
-      )
-    )
-    let allowsAuthAuthoritativeVersionReset = allowsAuthoritativeVersionReset(
-      authResetCandidate(
-        payload: payload,
-        metadata: metadata,
-        source: source,
-        currentVersion: authCurrent,
-        durableFingerprint: durableAuthFingerprint
-      )
-    )
-    guard accepts(VersionAcceptance(
-      version: payload.deviceTokenUpdate.version,
-      updateIsIncluded: payload.deviceTokenUpdate != .notIncluded,
-      acceptedVersion: metadata.deviceTokenVersion.map(WatchSyncVersion.init(rawValue:)),
-      acceptedFingerprint: metadata.deviceTokenFingerprint,
-      pendingVersion: metadata.pendingDeviceTokenVersion.map(WatchSyncVersion.init(rawValue:)),
-      pendingFingerprint: metadata.pendingDeviceTokenFingerprint,
-      current: tokenCurrent,
-      allowsAuthoritativeVersionReset: allowsTokenAuthoritativeVersionReset,
-      incomingFingerprint: incomingTokenFingerprint,
-      durableFingerprint: durableTokenFingerprint,
-      source: source
-    )) else {
-      return false
-    }
-    guard accepts(VersionAcceptance(
-      version: payload.clientUpdate.version,
-      updateIsIncluded: payload.clientUpdate != .notIncluded,
-      acceptedVersion: acceptedAuthVersion,
-      acceptedFingerprint: metadata.authFingerprint,
-      pendingVersion: metadata.pendingAuthVersion.map(WatchSyncVersion.init(rawValue:)),
-      pendingFingerprint: metadata.pendingAuthFingerprint,
-      current: authCurrent,
-      allowsAuthoritativeVersionReset: allowsAuthAuthoritativeVersionReset,
-      incomingFingerprint: incomingAuthFingerprint,
-      durableFingerprint: durableAuthFingerprint,
-      source: source
-    )) else {
-      scheduleRefreshForRejectedClientIfNeeded(
-        payload.clientUpdate,
-        source: source,
-        clerk: clerk
-      )
-      return false
-    }
-    return true
-  }
-
-  private func deviceTokenResetCandidate(
-    payload: WatchSyncPayload,
-    metadata: WatchSyncMetadataRecord,
-    source: WatchSyncSource,
-    currentVersion: WatchSyncVersion?,
-    durableFingerprint: String
-  ) -> AuthoritativeVersionResetCandidate {
-    AuthoritativeVersionResetCandidate(
-      updateIsIncluded: payload.deviceTokenUpdate != .notIncluded,
-      incomingVersion: payload.deviceTokenUpdate.version,
-      currentVersion: currentVersion,
-      effectiveState: metadata.effectiveDeviceTokenState,
-      effectiveSource: metadata.effectiveDeviceTokenSource,
-      effectiveFingerprint: metadata.effectiveDeviceTokenFingerprint,
-      durableFingerprint: durableFingerprint,
-      source: source
-    )
-  }
-
-  private func authResetCandidate(
-    payload: WatchSyncPayload,
-    metadata: WatchSyncMetadataRecord,
-    source: WatchSyncSource,
-    currentVersion: WatchSyncVersion?,
-    durableFingerprint: String
-  ) -> AuthoritativeVersionResetCandidate {
-    AuthoritativeVersionResetCandidate(
-      updateIsIncluded: payload.clientUpdate != .notIncluded,
-      incomingVersion: payload.clientUpdate.version,
-      currentVersion: currentVersion,
-      effectiveState: metadata.effectiveAuthState,
-      effectiveSource: metadata.effectiveAuthSource,
-      effectiveFingerprint: metadata.effectiveAuthFingerprint,
-      durableFingerprint: durableFingerprint,
-      source: source
-    )
-  }
-
-  private func allowsAuthoritativeVersionReset(
-    _ candidate: AuthoritativeVersionResetCandidate
-  ) -> Bool {
-    guard candidate.source.incomingDeviceIsAuthoritative,
-          candidate.updateIsIncluded,
-          let incomingVersion = candidate.incomingVersion,
-          let currentVersion = candidate.currentVersion,
-          incomingVersion < currentVersion,
-          candidate.effectiveState != .cleared,
-          canAuthoritativePayloadResetWatermark(
-            source: candidate.source,
-            effectiveSource: candidate.effectiveSource,
-            effectiveFingerprint: candidate.effectiveFingerprint,
-            durableFingerprint: candidate.durableFingerprint
-          )
-    else {
-      return false
-    }
-    return true
-  }
-
-  private func canAuthoritativePayloadResetWatermark(
-    source: WatchSyncSource,
-    effectiveSource: WatchSyncSource?,
-    effectiveFingerprint: String?,
-    durableFingerprint: String
-  ) -> Bool {
-    if let effectiveSource {
-      return effectiveSource != source
-    }
-    guard let effectiveFingerprint else { return false }
-    return effectiveFingerprint != durableFingerprint
-  }
-
-  private func scheduleRefreshForRejectedClientIfNeeded(
-    _ update: WatchSyncClientUpdate,
-    source: WatchSyncSource,
-    clerk: Clerk
-  ) {
-    guard !source.incomingDeviceIsAuthoritative,
-          update != .notIncluded,
-          let incomingDate = update.serverFetchDate
-    else {
-      return
-    }
-    if let currentDate = clerk.lastClientServerFetchDate,
-       incomingDate <= currentDate
-    {
-      return
-    }
-    scheduleRefresh(for: clerk)
-  }
-
-  private func shouldApplyNonAuthoritativeClientUpdate(
-    _ update: WatchSyncClientUpdate,
-    serverDate: Date?,
-    clerk: Clerk
-  ) -> Bool {
-    guard update != .notIncluded else { return true }
-    if let serverDate,
-       let currentDate = clerk.lastClientServerFetchDate,
-       serverDate < currentDate
-    {
-      return false
-    }
-
-    switch update {
-    case .notIncluded:
-      return true
-    case .cleared:
-      guard clerk.client == nil else {
-        scheduleRefresh(for: clerk)
-        return false
-      }
-      return true
-    case .snapshot:
-      if let serverDate,
-         let currentDate = clerk.lastClientServerFetchDate,
-         serverDate > currentDate
-      {
-        return true
-      }
-      guard clerk.client == nil, clerk.lastClientServerFetchDate == nil else {
-        scheduleRefresh(for: clerk)
-        return false
-      }
-      scheduleRefresh(for: clerk)
-      return true
-    }
-  }
-
-  private func shouldApplyNonAuthoritativeIdentityUpdate(
-    deviceToken: String?,
-    client: Client?,
-    serverDate: Date?,
-    clientUpdate: WatchSyncClientUpdate,
-    clerk: Clerk
-  ) -> Bool {
-    let currentToken = clerk.deviceToken.nilIfEmpty
-    guard currentToken != nil || clerk.client != nil else {
-      return shouldApplyNonAuthoritativeClientUpdate(
-        clientUpdate,
-        serverDate: serverDate,
-        clerk: clerk
-      )
-    }
-
-    let incomingAuthFingerprint = try? Self.authFingerprint(
-      client: client,
-      serverDate: serverDate
-    )
-    let currentAuthFingerprint = try? Self.authFingerprint(
-      client: clerk.client,
-      serverDate: clerk.lastClientServerFetchDate
-    )
-    guard deviceToken.nilIfEmpty == currentToken,
-          incomingAuthFingerprint == currentAuthFingerprint
-    else {
-      scheduleRefresh(for: clerk)
-      return false
-    }
-    return true
-  }
-
-  private func persistCurrentIdentityMetadata(
-    from clerk: Clerk,
-    keychain: any KeychainStorage
-  ) throws -> WatchSyncMetadataRecord {
-    let store = WatchSyncMetadataStore(keychain: keychain)
-    var record = try store.load()
-    let deviceTokenVersion = try WatchSyncVersion(
-      rawValue: record.effectiveDeviceTokenVersion
-    ).next()
-    let authVersion = try max(
-      authGeneration ?? .initial,
-      effectiveVersion(
-        accepted: record.authVersion,
-        pending: record.pendingAuthVersion
-      ) ?? .initial
-    ).next()
-
-    let deviceToken = clerk.deviceToken.nilIfEmpty
-    record.deviceTokenState = deviceToken == nil ? .cleared : .set
-    record.deviceTokenVersion = deviceTokenVersion.rawValue
-    record.deviceTokenFingerprint = Self.deviceTokenFingerprint(deviceToken)
-    record.deviceTokenSource = nil
-    record.discardPendingDeviceToken()
-    record.authState = clerk.client == nil ? .cleared : .set
-    record.authVersion = authVersion.rawValue
-    record.authFingerprint = try Self.authFingerprint(
-      client: clerk.client,
-      serverDate: clerk.lastClientServerFetchDate
-    )
-    record.authSource = nil
-    record.discardPendingAuth()
-    try store.save(record)
-    setAuthGeneration(authVersion)
-    return record
-  }
-
-  private func stagePendingWatchMetadata(
-    for candidate: IdentityCandidate,
-    source: WatchSyncSource,
-    keychain: any KeychainStorage
-  ) throws {
-    try stagePendingWatchMetadata(
-      WatchSyncPendingMetadataIntent(
-        source: source,
-        deviceToken: candidate.deviceToken,
-        client: candidate.client,
-        serverDate: candidate.serverDate,
-        tokenVersion: candidate.tokenVersion,
-        authVersion: candidate.authVersion
-      ),
-      keychain: keychain
-    )
-  }
-
-  private func enqueueIdentityPayload(
-    _ payload: WatchSyncPayload,
-    source: WatchSyncSource,
-    for clerk: Clerk
-  ) {
-    guard isAcceptingIdentityUpdates else { return }
-    let operationID = UUID()
-    do {
-      let operationTask = try clerk.identityController.submitExternalTransition { [weak self, weak clerk] in
-        guard let self, let clerk, isAcceptingIdentityUpdates else { return nil }
-        let keychain = clerk.dependencies.watchSyncKeychain
-        let candidate: IdentityCandidate
-        do {
-          guard let resolved = try identityCandidate(
-            from: payload,
-            source: source,
-            clerk: clerk,
-            watchSyncKeychain: keychain
-          ) else {
-            return nil
+      let task = try clerk.identityController.submitExternalTransition { [weak self, weak clerk] in
+        guard let self, let clerk, isActive else { return nil }
+        // Without the clear generation this device cannot order the states, so it rejects the payload.
+        let local = try WatchSyncState(of: clerk)
+        guard incoming.supersedes(local, from: source) else {
+          if local.supersedes(incoming, from: localSource) {
+            sync(from: clerk)
           }
-          candidate = resolved
-        } catch {
-          ClerkLogger.logError(error, message: "Failed to read Watch identity metadata; rejecting identity update")
           return nil
         }
 
-        beginApplyingRemoteIdentity(operationID)
-        let identity = try ClerkIdentitySnapshot(
-          state: candidate.state,
-          deviceToken: candidate.deviceToken,
-          client: candidate.client,
-          serverDate: candidate.serverDate
-        ).validated()
-        return ClerkIdentityController.ExternalTransition(
-          identity: identity,
-          stage: { [weak self] in
-            guard let self else { throw CancellationError() }
-            try stagePendingWatchMetadata(for: candidate, source: source, keychain: keychain)
-          },
+        return try ClerkIdentityController.ExternalTransition(
+          identity: ClerkIdentitySnapshot(
+            state: incoming.client == nil ? .cleared : .present,
+            deviceToken: incoming.deviceToken,
+            client: incoming.client,
+            serverDate: incoming.serverDate
+          ).validated(),
           didApply: { [weak self, weak clerk] in
             guard let self, let clerk else { return }
-            do {
-              try promotePendingWatchMetadata(
-                tokenVersion: candidate.tokenVersion,
-                authVersion: candidate.authVersion,
-                keychain: keychain
-              )
-            } catch {
-              ClerkLogger.logError(error, message: "Failed to finalize Watch identity metadata")
-            }
-            syncCurrentState(from: clerk)
-            if candidate.requiresClientRefresh {
-              scheduleRefresh(for: clerk)
-            }
-          },
-          didNotApply: { [weak self] in
-            guard let self else { return }
-            do {
-              try discardPendingWatchMetadata(
-                tokenVersion: candidate.tokenVersion,
-                authVersion: candidate.authVersion,
-                keychain: keychain
-              )
-            } catch {
-              ClerkLogger.logError(
-                error,
-                message: "Failed to discard superseded Watch identity metadata"
-              )
-            }
+            didAdopt(incoming, into: clerk)
           }
         )
       }
-      if let operationTask {
-        trackIdentityPublication(operationTask, operationID: operationID)
-      } else {
-        finishIdentityPublication(operationID)
+      if let task {
+        track(task, id: taskID)
       }
-    } catch is CancellationError {
-      finishIdentityPublication(operationID)
     } catch {
-      finishIdentityPublication(operationID)
-      ClerkLogger.logError(error, message: "Failed to persist atomic Watch identity update")
+      ClerkLogger.logError(error, message: "Failed to apply Clerk auth state from the paired device")
     }
-  }
-
-  private func trackIdentityPublication(
-    _ operationTask: Task<Void, Error>,
-    operationID: UUID
-  ) {
-    let trackedTask = Task { @MainActor [weak self] in
-      defer { self?.finishIdentityPublication(operationID) }
-      do {
-        return try await withTaskCancellationHandler {
-          try await operationTask.value
-        } onCancel: {
-          operationTask.cancel()
-        }
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to apply Watch identity transition")
-        throw error
-      }
-    }
-    identityPublicationTasks[operationID] = trackedTask
   }
 
   func waitForIdentityPublications() async {
-    while !identityPublicationTasks.isEmpty {
-      let tasks = Array(identityPublicationTasks.values)
-      for task in tasks {
-        _ = try? await task.value
-      }
+    while let task = transitionTasks.values.first {
+      await task.value
     }
   }
 
   func stopAcceptingIdentityUpdates() {
-    guard isAcceptingIdentityUpdates else { return }
-    isAcceptingIdentityUpdates = false
-    clientRefreshTask?.cancel()
-    clientRefreshTask = nil
-    clientRefreshTaskID = nil
-    isRefreshScheduled = false
+    isActive = false
+    refreshTask?.cancel()
+    refreshTask = nil
   }
+}
 
-  private func beginApplyingRemoteIdentity(_ operationID: UUID) {
-    activeRemoteIdentityApplications.insert(operationID)
-    isApplyingRemotePayload = true
-  }
-
-  private func withApplyingRemotePayload(_ operation: () -> Void) {
-    let previousApplyingState = isApplyingRemotePayload
-    isApplyingRemotePayload = true
-    defer { isApplyingRemotePayload = previousApplyingState }
-    operation()
-  }
-
-  private func finishIdentityPublication(_ operationID: UUID) {
-    identityPublicationTasks.removeValue(forKey: operationID)
-    activeRemoteIdentityApplications.remove(operationID)
-    isApplyingRemotePayload = !activeRemoteIdentityApplications.isEmpty
-  }
-
-  private func effectiveVersion(accepted: Int?, pending: Int?) -> WatchSyncVersion? {
-    maxVersion(
-      accepted.map(WatchSyncVersion.init(rawValue:)),
-      pending.map(WatchSyncVersion.init(rawValue:))
+extension WatchSyncState {
+  /// The state this device reports to its counterpart.
+  ///
+  /// - Throws: When the clear generation cannot be read.
+  @MainActor
+  init(of clerk: Clerk) throws {
+    let deviceToken = clerk.deviceToken
+    try self.init(
+      deviceToken: deviceToken,
+      client: deviceToken == nil ? nil : clerk.authoritativeClient,
+      serverDate: clerk.lastClientServerFetchDate,
+      clearGeneration: WatchSyncClearMarker.generation(in: clerk.dependencies.watchSyncKeychain)
     )
   }
+}
 
-  private func maxVersion(
-    _ lhs: WatchSyncVersion?,
-    _ rhs: WatchSyncVersion?
-  ) -> WatchSyncVersion? {
-    switch (lhs, rhs) {
-    case (nil, nil):
-      nil
-    case (let version?, nil), (nil, let version?):
-      version
-    case (let lhs?, let rhs?):
-      max(lhs, rhs)
+extension WatchConnectivityCoordinator {
+  private func didAdopt(_ incoming: WatchSyncState, into clerk: Clerk) {
+    recordClearGeneration(incoming.clearGeneration, in: clerk)
+    if incoming.deviceToken != nil, incoming.client == nil {
+      refreshClient(for: clerk)
     }
   }
 
-  func currentAuthVersion(keychain: any KeychainStorage) throws -> WatchSyncVersion {
-    try max(authGeneration ?? .initial, readAuthVersion(keychain: keychain))
-  }
-
-  func setAuthGeneration(_ version: WatchSyncVersion) {
-    authGeneration = version
-  }
-
-  func markRefreshScheduled(_ taskID: UUID) -> Bool {
-    guard isAcceptingIdentityUpdates, !isRefreshScheduled else { return false }
-    isRefreshScheduled = true
-    clientRefreshTaskID = taskID
-    return true
-  }
-
-  func clearRefreshScheduled(_ taskID: UUID) {
-    guard clientRefreshTaskID == taskID else { return }
-    isRefreshScheduled = false
-    clientRefreshTask = nil
-    clientRefreshTaskID = nil
-  }
-
-  func setRefreshTask(_ task: Task<Void, Never>?, taskID: UUID) {
-    guard clientRefreshTaskID == taskID else {
-      task?.cancel()
-      return
+  private func recordClearGeneration(_ generation: Int, in clerk: Clerk) {
+    do {
+      try WatchSyncClearMarker.raise(to: generation, in: clerk.dependencies.watchSyncKeychain)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to record the paired device's Clerk clear")
     }
-    clientRefreshTask = task
+  }
+
+  private func refreshClient(for clerk: Clerk) {
+    guard isActive, refreshTask == nil else { return }
+    refreshTask = clerk.scheduleManagedTask { [weak self, weak clerk] in
+      do {
+        try await clerk?.refreshClient()
+      } catch is CancellationError {
+        // Managed cleanup cancels this task when Clerk reconfigures or resets.
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
+      }
+      await self?.refreshDidFinish()
+    }
+  }
+
+  private func refreshDidFinish() {
+    refreshTask = nil
+  }
+
+  private func track(_ task: Task<Void, Error>, id: UUID) {
+    transitionTasks[id] = Task { [weak self] in
+      do {
+        try await task.value
+      } catch is CancellationError {
+        // Superseded or invalidated by a newer identity operation.
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to apply Clerk auth state from the paired device")
+      }
+      self?.transitionTasks[id] = nil
+    }
+  }
+}
+
+/// Persists the clear generation: how many clears this device and its counterpart have seen.
+/// Paired-device state from before a clear carries a lower generation, so it cannot bring the
+/// old identity back.
+enum WatchSyncClearMarker {
+  private static let key = ClerkKeychainKey.watchSyncClearGeneration.rawValue
+
+  /// - Throws: When the Keychain cannot be read, such as before the first unlock. Assuming 0 would
+  ///   let a clear record a lower generation than the paired device's pre-clear state.
+  static func generation(in keychain: any KeychainStorage) throws -> Int {
+    if let value = try keychain.string(forKey: key) {
+      return Int(value) ?? 0
+    }
+    // SDK 1.5 kept a clear tombstone in its Watch metadata; honor it once after upgrading.
+    // A watch clear in SDK 1.5 did not sign out the phone, so only the phone imports it.
+    #if os(watchOS)
+    let generation = 0
+    #else
+    let generation = legacyRecordIsCleared(in: keychain) ? 1 : 0
+    #endif
+    try? keychain.set(String(generation), forKey: key)
+    return generation
+  }
+
+  /// Records a clear on this device.
+  static func record(in keychain: any KeychainStorage) throws {
+    try keychain.set(String(generation(in: keychain) + 1), forKey: key)
+  }
+
+  /// Adopts a clear generation seen on the paired device.
+  static func raise(to generation: Int, in keychain: any KeychainStorage) throws {
+    guard try generation > self.generation(in: keychain) else { return }
+    try keychain.set(String(generation), forKey: key)
+  }
+
+  private static func legacyRecordIsCleared(in keychain: any KeychainStorage) -> Bool {
+    if let data = try? keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue),
+       let record = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    {
+      return record["device_token_state"] as? String == "cleared"
+        || record["auth_state"] as? String == "cleared"
+    }
+    return (try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)) == "cleared"
+      || (try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)) == "cleared"
   }
 }
