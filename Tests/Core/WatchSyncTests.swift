@@ -135,6 +135,15 @@ struct WatchSyncStateMergeTests {
     #expect(!tokenOnly.supersedes(snapshot, from: .phone))
   }
 
+  @Test(arguments: [WatchSyncSource.phone, .watch])
+  func signOutThatRotatesTheTokenReplacesTheOlderSignedInSnapshot(source: WatchSyncSource) {
+    let signedInState = WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100))
+    let signedOutState = WatchSyncState(deviceToken: "rotated-token", client: signedOut("client"), serverDate: date(200))
+
+    #expect(signedOutState.supersedes(signedInState, from: source))
+    #expect(!signedInState.supersedes(signedOutState, from: source))
+  }
+
   @Test
   func phoneWithoutATokenYetDoesNotClearASignedInWatch() {
     let watch = WatchSyncState(deviceToken: "watch-token", client: signedIn("watch"), serverDate: date(100))

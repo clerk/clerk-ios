@@ -47,8 +47,9 @@ package struct WatchSyncState: Equatable {
       return clearGeneration > local.clearGeneration
     }
 
-    // Same token: both devices share one server-side Client, so the newer snapshot wins.
-    if deviceToken == local.deviceToken {
+    // Same Client: both devices share one server-side Client, so the newer snapshot wins.
+    // Signing in or out rotates the device token but keeps the Client.
+    if deviceToken == local.deviceToken || (client != nil && client?.id == local.client?.id) {
       guard let client else { return false }
       guard let localClient = local.client else { return true }
       guard let serverDate else { return false }
@@ -57,7 +58,7 @@ package struct WatchSyncState: Equatable {
       return client.updatedAt > localClient.updatedAt
     }
 
-    // Different tokens name different Clients. A clear always advances the generation, so a
+    // Different tokens and Clients. A clear always advances the generation, so a
     // tokenless state from the same generation is a device that has not fetched a token yet.
     if isCleared { return false }
     if local.isCleared { return true } // Seed a device that has no token.
