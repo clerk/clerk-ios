@@ -50,11 +50,15 @@ struct ClerkIdentityStore {
     /// Changes on every write, so a reader can tell whether another process wrote since it last looked.
     let revision: UUID
     let instanceFingerprint: String
+    /// The bundle identifier of the app that wrote the record, when known.
+    var writer: String?
     let identity: ClerkIdentitySnapshot
   }
 
   let keychain: any KeychainStorage
   let instanceFingerprint: String
+  /// Recorded as the ``Record/writer`` of each save.
+  var writer: String?
   let key = ClerkKeychainKey.identity.rawValue
 
   func load() throws -> Record? {
@@ -91,6 +95,7 @@ struct ClerkIdentityStore {
       schemaVersion: Record.schemaVersion,
       revision: UUID(),
       instanceFingerprint: instanceFingerprint,
+      writer: writer,
       identity: identity
     )
     try keychain.set(JSONEncoder.clerkEncoder.encode(record), forKey: key)

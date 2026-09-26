@@ -176,11 +176,25 @@ extension Clerk {
     }
     do {
       try removeIdentity()
+      try deleteGroupIdentityLastWrittenHere(in: dependencies)
     } catch {
       failures.append(dependencies.identityStore.key)
       ClerkLogger.logError(error, message: "Failed to delete the Clerk identity", configuration: configuration)
     }
     return failures
+  }
+
+  /// Deletes this app's own record from the access group when its identity now lives elsewhere, as
+  /// after turning off sync that was adopted in SDK 1.5. A sibling app that shares the record
+  /// rewrites it on every response, so a record whose last writer is this app is no longer in use.
+  @MainActor
+  private static func deleteGroupIdentityLastWrittenHere(in dependencies: any Dependencies) throws {
+    let identityStore = dependencies.identityStore
+    guard !dependencies.identityIsInAccessGroup, let writer = identityStore.writer else { return }
+    let groupStore = ClerkIdentityStore(keychain: dependencies.keychain, instanceFingerprint: identityStore.instanceFingerprint)
+    // An unreadable group, such as one missing from the entitlement, holds nothing to delete.
+    guard (try? groupStore.load())?.writer == writer else { return }
+    try groupStore.delete()
   }
 
   @MainActor

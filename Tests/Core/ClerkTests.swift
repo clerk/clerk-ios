@@ -211,6 +211,33 @@ struct ClerkTests {
   }
 
   @Test
+  func clearDeletesTheGroupIdentityThisAppLastWroteBeforeTurningSyncOff() throws {
+    let groupKeychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: Clerk.shared.dependencies.apiClient,
+      keychain: groupKeychain,
+      appLocalKeychain: InMemoryKeychain(),
+      identityKeychain: InMemoryKeychain(),
+      identityWriter: "com.example.app",
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    let groupStore = ClerkIdentityStore(keychain: groupKeychain, instanceFingerprint: "")
+    Clerk.shared.dependencies = dependencies
+
+    var ownStore = groupStore
+    ownStore.writer = "com.example.app"
+    try ownStore.save(ClerkIdentitySnapshot(state: .present, deviceToken: "own-token", client: .mock, serverDate: nil))
+    Clerk.clearAllKeychainItems()
+    #expect(try groupStore.load() == nil)
+
+    var siblingStore = groupStore
+    siblingStore.writer = "com.example.sibling"
+    try siblingStore.save(ClerkIdentitySnapshot(state: .present, deviceToken: "sibling-token", client: .mock, serverDate: nil))
+    Clerk.clearAllKeychainItems()
+    #expect(try groupStore.load()?.identity.deviceToken == "sibling-token")
+  }
+
+  @Test
   func watchTransitionFencesOlderNetworkResponses() async throws {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(

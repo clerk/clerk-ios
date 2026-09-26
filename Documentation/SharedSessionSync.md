@@ -43,7 +43,7 @@ A receiver that rejects a state replies with its own state only when that state 
 
 ## Clear And Reconfigure
 
-`clearAllKeychainItems()` records the clear for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. With shared-session sync, the identity is shared, so a clear signs out every app sharing it.
+`clearAllKeychainItems()` records the clear for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. With shared-session sync, the identity is shared, so a clear signs out every app sharing it. An app whose identity is app-local while its Keychain has an access group, such as one that turned off sync adopted in SDK 1.5, also deletes the group record when it was the last app to write it; a record a sibling app still uses names that sibling as its writer and is kept.
 
 Reconfiguration clears Clerk storage for the source and destination configurations without migrating the previous identity. An identity stored in an access group belongs to every app and extension in the group, so reconfiguration leaves it; a destination for another Clerk instance ignores it.
 

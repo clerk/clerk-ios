@@ -255,7 +255,11 @@ final class DependencyContainer: Dependencies {
         accessGroupIsUnreadable = true
       }
     }
-    let identityStore = ClerkIdentityStore(keychain: identityKeychain, instanceFingerprint: namespace.fingerprint)
+    let identityStore = ClerkIdentityStore(
+      keychain: identityKeychain,
+      instanceFingerprint: namespace.fingerprint,
+      writer: ownerIdentifier.nilIfEmpty
+    )
 
     if migratesPersistentState, syncEnabled, !wasAdopted, !accessGroupIsUnreadable {
       do {
