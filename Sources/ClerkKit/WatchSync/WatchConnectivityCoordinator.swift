@@ -45,7 +45,11 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   func sync(from clerk: Clerk) {
     guard isActive else { return }
-    transport?.send(WatchSyncPayload(state: WatchSyncState(of: clerk), environment: clerk.environment))
+    do {
+      try transport?.send(WatchSyncPayload(state: WatchSyncState(of: clerk), environment: clerk.environment))
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to read the Clerk clear generation, so auth state was not sent to the paired device")
+    }
   }
 
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
@@ -64,7 +68,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     do {
       let task = try clerk.identityController.submitExternalTransition { [weak self, weak clerk] in
         guard let self, let clerk, isActive else { return nil }
-        let local = WatchSyncState(of: clerk)
+        // Without the clear generation this device cannot order the states, so it rejects the payload.
+        let local = try WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
           if local.supersedes(incoming, from: localSource) {
             sync(from: clerk)
@@ -108,10 +113,12 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
 extension WatchSyncState {
   /// The state this device reports to its counterpart.
+  ///
+  /// - Throws: When the clear generation cannot be read.
   @MainActor
-  init(of clerk: Clerk) {
+  init(of clerk: Clerk) throws {
     let deviceToken = clerk.deviceToken
-    self.init(
+    try self.init(
       deviceToken: deviceToken,
       client: deviceToken == nil ? nil : clerk.authoritativeClient,
       serverDate: clerk.lastClientServerFetchDate,
@@ -174,9 +181,11 @@ extension WatchConnectivityCoordinator {
 enum WatchSyncClearMarker {
   private static let key = ClerkKeychainKey.watchSyncClearGeneration.rawValue
 
-  static func generation(in keychain: any KeychainStorage) -> Int {
-    if let value = try? keychain.string(forKey: key), let generation = Int(value) {
-      return generation
+  /// - Throws: When the Keychain cannot be read, such as before the first unlock. Assuming 0 would
+  ///   let a clear record a lower generation than the paired device's pre-clear state.
+  static func generation(in keychain: any KeychainStorage) throws -> Int {
+    if let value = try keychain.string(forKey: key) {
+      return Int(value) ?? 0
     }
     // SDK 1.5 kept a clear tombstone in its Watch metadata; honor it once after upgrading.
     // A watch clear in SDK 1.5 did not sign out the phone, so only the phone imports it.
@@ -196,7 +205,7 @@ enum WatchSyncClearMarker {
 
   /// Adopts a clear generation seen on the paired device.
   static func raise(to generation: Int, in keychain: any KeychainStorage) throws {
-    guard generation > self.generation(in: keychain) else { return }
+    guard try generation > self.generation(in: keychain) else { return }
     try keychain.set(String(generation), forKey: key)
   }
 

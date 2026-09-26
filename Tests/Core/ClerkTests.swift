@@ -140,7 +140,7 @@ struct ClerkTests {
           == [.sharedSessionSyncAdopted, .watchSyncClearGeneration].contains(key)
       )
     }
-    #expect(WatchSyncClearMarker.generation(in: keychain) == 5)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 5)
     _ = try? await Clerk.shared.keychainClearTask?.value
   }
 
@@ -263,7 +263,7 @@ struct ClerkTests {
     clerk.identityController.hydrateProvisionalLegacyClientIfNeeded(.mock)
 
     let requestIdentity = try await clerk.identityController.captureRequestIdentity()
-    let watchState = WatchSyncState(of: clerk)
+    let watchState = try WatchSyncState(of: clerk)
 
     #expect(clerk.client?.id == Client.mock.id)
     #expect(clerk.authoritativeClient == nil)
@@ -582,7 +582,7 @@ struct ClerkTests {
       deleteSharedSessionOwnerSlot: false
     )
 
-    #expect(WatchSyncClearMarker.generation(in: appLocal) == 2)
+    #expect(try WatchSyncClearMarker.generation(in: appLocal) == 2)
     #expect(
       try legacyShared.data(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil
     )
