@@ -121,7 +121,7 @@ struct ClerkTests {
     #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
-    #expect(WatchSyncClearMarker.generation(in: keychain) == 5)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 5)
     #expect(try keychain.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.clearedMarkerValue)
   }
 
@@ -165,7 +165,7 @@ struct ClerkTests {
 
     #expect(try shared.identityStore.load()?.identity.deviceToken == "shared-token")
     #expect(try local.identityStore.load() == nil)
-    #expect(WatchSyncClearMarker.generation(in: shared.watchSyncKeychain) == 1)
+    #expect(try WatchSyncClearMarker.generation(in: shared.watchSyncKeychain) == 1)
   }
 
   @Test

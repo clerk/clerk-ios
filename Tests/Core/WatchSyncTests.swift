@@ -248,7 +248,7 @@ struct WatchConnectivityCoordinatorTests {
 
     #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(clerk.client == nil)
-    #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 1)
   }
 
   @Test
@@ -313,7 +313,7 @@ struct WatchConnectivityCoordinatorTests {
     )
     #expect(clerk.client == nil)
     #expect(clerk.identityController.currentDeviceToken == nil)
-    #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 1)
 
     coordinator.apply(payload(token: "token", client: signedIn("client"), serverDate: .distantFuture), from: .phone, to: clerk)
     #expect(clerk.client == nil)
@@ -335,6 +335,17 @@ struct WatchConnectivityCoordinatorTests {
   }
 
   @Test
+  func unreadableClearGenerationFailsClosed() throws {
+    // For example, a background launch before the first unlock after a reboot.
+    let keychain = ReadFailingKeychain()
+    try keychain.backing.set("4", forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue)
+
+    #expect(throws: (any Error).self) { try WatchSyncClearMarker.record(in: keychain) }
+    #expect(throws: (any Error).self) { try WatchSyncClearMarker.raise(to: 9, in: keychain) }
+    #expect(try keychain.backing.string(forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue) == "4")
+  }
+
+  @Test
   func clearRecordedBySDK15IsHonoredAfterUpgrading() throws {
     let (clerk, keychain) = try makeClerk()
     try keychain.set(
@@ -345,7 +356,7 @@ struct WatchConnectivityCoordinatorTests {
 
     coordinator.apply(payload(token: "pre-clear-token", client: signedIn("old"), serverDate: .distantFuture), from: .watch, to: clerk)
 
-    #expect(WatchSyncClearMarker.generation(in: keychain) == 1)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 1)
     #expect(clerk.client == nil)
     #expect(clerk.identityController.currentDeviceToken == nil)
   }
@@ -475,4 +486,25 @@ private func signedOut(_ id: String, updatedAt: TimeInterval = 1000) -> Client {
   client.id = id
   client.updatedAt = date(updatedAt)
   return client
+}
+
+/// A Keychain that cannot be read, as before the first unlock, but records writes in `backing`.
+private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
+  let backing = InMemoryKeychain()
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey _: String) throws -> Data? {
+    throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey _: String) throws -> Bool {
+    throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
+  }
 }
