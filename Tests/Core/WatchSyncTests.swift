@@ -145,6 +145,16 @@ struct WatchSyncStateMergeTests {
   }
 
   @Test
+  func phoneTokenWinsBetweenEquallyNewSnapshotsOfOneClient() {
+    let phone = WatchSyncState(deviceToken: "phone-token", client: signedIn("client"), serverDate: date(100))
+    let watch = WatchSyncState(deviceToken: "watch-token", client: signedIn("client"), serverDate: date(100))
+
+    #expect(phone.supersedes(watch, from: .phone))
+    #expect(!watch.supersedes(phone, from: .watch))
+    #expect(!phone.supersedes(phone, from: .phone))
+  }
+
+  @Test
   func phoneWithoutATokenYetDoesNotClearASignedInWatch() {
     let watch = WatchSyncState(deviceToken: "watch-token", client: signedIn("watch"), serverDate: date(100))
     let freshPhone = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil)

@@ -55,7 +55,9 @@ package struct WatchSyncState: Equatable {
       guard let serverDate else { return false }
       guard let localDate = local.serverDate else { return true }
       if serverDate != localDate { return serverDate > localDate }
-      return client.updatedAt > localClient.updatedAt
+      if client.updatedAt != localClient.updatedAt { return client.updatedAt > localClient.updatedAt }
+      // Equally new snapshots under different tokens: the phone's token wins, so the devices converge.
+      return deviceToken != local.deviceToken && source == .phone
     }
 
     // Different tokens and Clients. A clear always advances the generation, so a
