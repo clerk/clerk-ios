@@ -6,7 +6,7 @@ The device token and `Client` form one authentication identity. The token names 
 
 `ClerkIdentityStore` persists `{deviceToken, client, serverDate}` as a single Keychain item, along with a `revision` UUID that changes on every write. Because it is one item, a reader never sees a token paired with another identity's Client. Saving an identity without a token deletes the item.
 
-The record lives in the configured Keychain (`KeychainConfig.service` and `accessGroup`) and records which Clerk instance wrote it; a record for another instance is ignored and replaced by the next write. With an access group, every app and extension in the group reads and writes the same item. Two exceptions keep the identity app-local, with sharing off: an app that adopted shared-session sync in SDK 1.5 and then turned it off, and an app that lacks the group entitlement.
+The record lives in the configured Keychain (`KeychainConfig.service` and `accessGroup`) and records which Clerk instance wrote it; a record for another instance is ignored and replaced by the next write. With an access group, every app and extension in the group that runs this SDK version reads and writes the same item; apps on earlier SDKs keep their own storage (see Migration From Earlier Versions). Two exceptions keep the identity app-local, with sharing off: an app that adopted shared-session sync in SDK 1.5 and then turned it off, and an app that lacks the group entitlement. Enabling `sharedSessionSync` without an access group makes `Clerk.configure` throw.
 
 A `Client` that no longer decodes, for example one written by a newer SDK in another app, is dropped while the device token is kept, so the next refresh restores it instead of signing the user out.
 
@@ -55,4 +55,4 @@ When another app already wrote the record, it is kept unless it is signed out an
 
 The migration then deletes every earlier copy, including this app's SDK 1.5 owner slot. Separate items in an access group are left for sibling apps still on an earlier SDK; a clear removes them. The migration is marked done only after every deletion succeeds, and not while the access group is unreachable, so it runs again on the next launch.
 
-Apps on SDK 1.5 and later versions do not see each other's shared sessions; update every app that shares an access group together.
+An app on SDK 1.5 and an app on this version do not see each other's shared sessions; update every app that shares an access group together.
