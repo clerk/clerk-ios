@@ -13,6 +13,24 @@ struct ClerkTests {
     configureClerkForTesting()
   }
 
+  @Test
+  func replacingMockDependenciesDiscardsThePreviousStorageRevision() async throws {
+    let clerk = Clerk.shared
+    try clerk.seedIdentity(deviceToken: "previous-token", client: .mock)
+    let previousStore = clerk.dependencies.identityStore
+    let previousRecord = try #require(try previousStore.load())
+
+    setupMockAPIClient()
+
+    #expect(clerk.identityController.currentDeviceToken == nil)
+    #expect(try clerk.dependencies.identityStore.load() == nil)
+    let result = try await clerk.identityController.updateDeviceToken(to: "new-token")
+    #expect(result == .applied)
+    #expect(clerk.identityController.currentDeviceToken == "new-token")
+    #expect(try clerk.dependencies.identityStore.load()?.identity.deviceToken == "new-token")
+    #expect(try previousStore.load() == previousRecord)
+  }
+
   private func configureDependencies(
     signInService: MockSignInService? = nil,
     sessionService: MockSessionService? = nil,

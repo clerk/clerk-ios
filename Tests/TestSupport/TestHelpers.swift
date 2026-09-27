@@ -81,6 +81,8 @@ func setupMockAPIClient() {
     phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
     externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
   )
+  // The replacement has fresh storage; discard the identity/revision hydrated by configure().
+  Clerk.shared.identityController.prepareForConfiguration()
 }
 
 /// Creates a mock API client configured to use MockingURLProtocol for testing.
