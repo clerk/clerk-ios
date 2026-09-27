@@ -36,6 +36,33 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
+  func payloadAlsoCarriesTheVersionedKeysAnSDK15PeerNeeds() throws {
+    let signedInContext = WatchSyncPayload(
+      state: WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100)),
+      environment: nil
+    ).applicationContext
+    #expect(signedInContext["watchSyncDeviceTokenState"] as? String == "set")
+    #expect(signedInContext["watchSyncAuthState"] as? String == "set")
+    let version = try #require(signedInContext["watchSyncAuthVersion"] as? Int)
+    #expect(version > Int(date(0).timeIntervalSince1970))
+
+    let clearedContext = WatchSyncPayload(
+      state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1),
+      environment: nil
+    ).applicationContext
+    #expect(clearedContext["watchSyncDeviceTokenState"] as? String == "cleared")
+    #expect(clearedContext["watchSyncAuthState"] as? String == "cleared")
+
+    // A device that has not fetched a token yet must not sign out an SDK 1.5 peer.
+    let freshContext = WatchSyncPayload(
+      state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil),
+      environment: nil
+    ).applicationContext
+    #expect(freshContext["watchSyncDeviceTokenState"] == nil)
+    #expect(freshContext["watchSyncAuthState"] == nil)
+  }
+
+  @Test
   func clearedStateRoundTripsWithoutToken() throws {
     let state = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 2)
     let payload = WatchSyncPayload(state: state, environment: nil)
