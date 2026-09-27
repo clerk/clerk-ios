@@ -148,6 +148,40 @@ struct ClerkIdentityMigrationTests {
     #expect(try env.marker.string(forKey: migration(env).markerKey) == ClerkIdentityMigration.markerValue)
   }
 
+  @Test(arguments: [false, true], [false, true])
+  func retiredAtomicIdentityDoesNotCompeteWithANewGroupsPublication(sharedWasAccessible: Bool, hasPublication: Bool) throws {
+    let env = Environment()
+    let atomic = env.keychain(stableService)
+    try atomic.set(atomicRecord(token: "old-token"), forKey: "clerkSharedSessionLocalIdentityV2")
+    let previous = env.keychain("previous-service")
+    let previousStore = ClerkIdentityStore(keychain: previous, instanceFingerprint: fingerprint)
+    var first = ClerkIdentityMigration(
+      store: previousStore, legacyKeychain: previous, markerKeychain: previous,
+      configuredService: "previous-service", accessGroup: nil, ownerIdentifier: owner,
+      instanceFingerprint: fingerprint, destination: .init(service: "previous-service", accessGroup: nil),
+      finalizes: sharedWasAccessible
+    )
+    let service = stableService
+    first.makeKeychain = { name, group in
+      if name == service { return DeleteFailingKeychain(backing: atomic) }
+      return env.keychain(name, group)
+    }
+    try first.migrateIfNeeded()
+    try #require(try previousStore.load()?.identity.deviceToken == "old-token")
+    try #require(try atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
+    try previousStore.clear()
+    if hasPublication {
+      try saveSlot(in: env, owner: "sibling", identity: .init(
+        state: .present, deviceToken: "new-group-token", client: .mock, serverDate: nil
+      ), generation: 1)
+    }
+
+    try migration(env).migrateIfNeeded()
+
+    #expect(try env.store.load()?.identity.deviceToken == (hasPublication ? "new-group-token" : nil))
+    #expect(try env.store.load()?.identity.client?.id == (hasPublication ? Client.mock.id : nil))
+  }
+
   @Test
   func unreachableAccessGroupCopiesTheIdentityWithoutFinishing() throws {
     let env = Environment()

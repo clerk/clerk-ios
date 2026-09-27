@@ -198,9 +198,15 @@ struct ClerkIdentityMigration {
   }
 
   private func recordSourceRetirements(destinationEstablished: Bool) throws {
-    guard finalizes, let destination else { return }
+    guard let destination else { return }
     let journal = makeKeychain(stableIdentityService, nil)
-    for (_, service) in localSources {
+    // The atomic source follows the app across service changes. Retire it once
+    // V4 exists, even if cleanup or shared-group access has not recovered yet.
+    var sources = finalizes ? localSources.map(\.1) : []
+    if try journal.hasItem(forKey: Self.atomicRecordKey) {
+      sources.append(stableIdentityService)
+    }
+    for service in sources {
       // No move took place if the source is already the selected local backend.
       guard service != destination.service || destination.accessGroup != nil,
             try !sourceWasRetired(service) else { continue }
@@ -229,7 +235,9 @@ struct ClerkIdentityMigration {
   private func loadAtomicIdentity() throws -> ClerkIdentitySnapshot? {
     var publications = try loadPublishedIdentities()
     let keychain = makeKeychain(stableIdentityService, nil)
-    guard let data = try keychain.data(forKey: Self.atomicRecordKey) else {
+    guard try !sourceWasRetired(stableIdentityService),
+          let data = try keychain.data(forKey: Self.atomicRecordKey)
+    else {
       return try winningPublication(publications)?.identity
     }
     struct Header: Decodable { let schemaVersion: Int? }

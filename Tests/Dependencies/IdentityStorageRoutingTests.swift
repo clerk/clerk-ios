@@ -243,6 +243,68 @@ struct IdentityStorageRoutingTests {
     database.rejectAtomicDeletion = false
     #expect(try app(database, service: "app.a", sharing: false).deviceToken == nil)
   }
+
+  @Test(arguments: [false, true], [false, true])
+  func retainedAtomicSourceCannotUndoAPublicClearAfterChangingService(cleanupFails: Bool, adoptedSync: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let atomic = try seedAtomicIdentity(database)
+    if adoptedSync {
+      try atomic.set("2", forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue)
+    }
+    database.rejectAtomicDeletion = cleanupFails
+    let original = try app(database, service: "app.a", sharing: false)
+    try #require(original.deviceToken == "old-login")
+    try #require(try atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2") == cleanupFails)
+
+    try original.clearKeychainItems()
+    try #require(try original.dependencies.identityStore.load()?.identity == .signedOut)
+    database.rejectAtomicDeletion = false
+    let sharing = try app(database, service: "common-service", sharing: true)
+
+    #expect(sharing.deviceToken == nil)
+    #expect(sharing.client?.id == nil)
+    #expect(try !atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
+    #expect(try app(database, service: "common-service", sharing: true).deviceToken == nil)
+  }
+
+  @Test(arguments: [false, true])
+  func atomicRetirementAcrossServicesRequiresACommittedDestination(copyFails: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let atomic = try seedAtomicIdentity(database)
+    try atomic.set("2", forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue)
+    database.rejectAtomicDeletion = true
+    database.rejectIdentityCreation = copyFails
+    database.rejectRetirementCompletion = !copyFails
+    let interrupted = try app(database, service: "app.a", sharing: false)
+    #expect(interrupted.deviceToken == nil)
+    let store = interrupted.dependencies.identityStore
+    #expect(try store.load()?.identity.deviceToken == (copyFails ? nil : "old-login"))
+    if !copyFails {
+      // Model a clear committed before the migration completion write recovered.
+      try store.clear()
+    }
+    database.rejectIdentityCreation = false
+    database.rejectRetirementCompletion = false
+    database.rejectAtomicDeletion = false
+
+    let sharing = try app(database, service: "common-service", sharing: true)
+
+    #expect(sharing.deviceToken == (copyFails ? "old-login" : nil))
+    #expect(sharing.client?.id == (copyFails ? Client.mock.id : nil))
+    #expect(try !atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
+  }
+
+  private func seedAtomicIdentity(_ database: AccessGroupKeychainDatabase) throws -> SystemKeychain {
+    let config = ConfigurationManager()
+    try config.configure(publishableKey: testPublishableKey, options: .init())
+    let fingerprint = SharedSessionNamespace(frontendApiUrl: config.frontendApiUrl, publishableKey: testPublishableKey).fingerprint
+    let atomic = SystemKeychain(service: "app.a.clerk.identity.v2.\(fingerprint)",
+                                secItemClient: database.client(owner: "app.a", sharedGroupIsDefault: false))
+    try atomic.set(JSONEncoder.clerkEncoder.encode(ClerkIdentitySnapshot(
+      state: .present, deviceToken: "old-login", client: .mock, serverDate: nil
+    )), forKey: "clerkSharedSessionLocalIdentityV2")
+    return atomic
+  }
 }
 
 /// Models Apple's access-group matching while exercising the actual SystemKeychain
