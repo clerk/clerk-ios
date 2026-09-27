@@ -572,6 +572,7 @@ struct HostedAuthFlowTests {
             requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
             serverDate: Date(timeIntervalSince1970: 200),
             isCanonicalClientRequest: true,
+            requestMethod: "POST",
             clientResponseGeneration: Clerk.shared.clientResponseGeneration,
             responseSequence: 1
           )
@@ -942,6 +943,7 @@ private func hostedAuthRedeemResponse(
       requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
       serverDate: serverDate,
       isCanonicalClientRequest: true,
+      requestMethod: "POST",
       clientResponseGeneration: Clerk.shared.clientResponseGeneration,
       responseSequence: responseSequence
     )

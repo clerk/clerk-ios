@@ -1,9 +1,110 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
+import Mocker
 import Testing
 
 extension HostedAuthFlowTests {
+  enum RedemptionConflict: CaseIterable {
+    case refresh, clear, replacement, recoveryRead
+  }
+
+  @Test(arguments: RedemptionConflict.allCases)
+  func redeemConflictRecoversOnceWithoutRepeatingRedemption(conflict: RedemptionConflict) async throws {
+    Mocker.removeAll()
+    defer { Mocker.removeAll() }
+    configureClerkForTesting()
+    let clerk = Clerk.shared
+    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let redemptions = LockIsolated(0)
+    let reads = LockIsolated(0)
+    let activations = LockIsolated(0)
+    let keychain = FailableIdentityKeychain()
+    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    let redeemedClient = makeHostedAuthPersistenceClient(
+      id: initialClient.id, sessions: [.mock], lastActiveSessionId: Session.mock.id
+    )
+    let body = try JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: redeemedClient, client: nil))
+    var response = Mock(
+      url: mockBaseUrl.appendingPathComponent("v1/client"), ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [.post: body, .get: body],
+      additionalHeaders: ["Authorization": "redeemed-token", "Date": "Thu, 01 Jan 1970 00:03:20 GMT"]
+    )
+    response.onRequestHandler = OnRequestHandler { @Sendable request in
+      if request.httpMethod == "POST" {
+        redemptions.withValue { $0 += 1 }
+        #expect(request.urlEncodedFormBody?["_method"] == "GET")
+        #expect(request.urlEncodedFormBody?["rotating_token_nonce"] == "nonce_123")
+      } else {
+        #expect(request.httpMethod == "GET")
+        reads.withValue { $0 += 1 }
+      }
+    }
+    response.register()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: apiClient, identityKeychain: keychain, sharesIdentity: true,
+      clientService: ClientService(apiClient: apiClient),
+      hostedAuthService: MockHostedAuthService(
+        create: { params in
+          createParams.setValue(params)
+          return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+        },
+        redeem: { params in
+          let response = try await HostedAuthService(apiClient: apiClient).redeem(params: params)
+          keychain.beforeWrite = {
+            let store = clerk.dependencies.identityStore
+            switch conflict {
+            case .clear:
+              try store.clear()
+            case .replacement:
+              try store.save(.init(state: .present, deviceToken: "other-token", client: initialClient,
+                                   serverDate: Date(timeIntervalSince1970: 150)))
+            case .refresh, .recoveryRead:
+              try store.save(.init(state: .present, deviceToken: "initial-token", client: initialClient,
+                                   serverDate: Date(timeIntervalSince1970: 150)))
+              if conflict == .recoveryRead {
+                keychain.beforeWrite = {
+                  try store.save(.init(state: .present, deviceToken: "initial-token", client: initialClient,
+                                       serverDate: Date(timeIntervalSince1970: 175)))
+                }
+              }
+            }
+          }
+          return response
+        }
+      ),
+      sessionService: MockSessionService(setActive: { sessionId, _ in
+        activations.withValue { $0 += 1 }
+        #expect(sessionId == Session.mock.id)
+        let persisted = try clerk.dependencies.identityStore.load()?.identity
+        #expect(persisted?.deviceToken == "redeemed-token")
+        #expect(persisted?.client?.id == redeemedClient.id)
+        #expect(persisted?.client?.sessions.map(\.id) == [Session.mock.id])
+        clerk.client = redeemedClient
+      })
+    )
+    try clerk.dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
+    try clerk.seedIdentity(deviceToken: "initial-token", client: initialClient, serverDate: Date(timeIntervalSince1970: 100))
+    clerk.identityController.startSharing(notifier: SilentNotifier())
+
+    if conflict == .refresh {
+      let session = try await performHostedAuth(createParams: createParams, createdSessionId: Session.mock.id)
+      #expect(session.id == Session.mock.id)
+      #expect(activations.value == 1)
+      #expect(try clerk.dependencies.identityStore.load()?.identity.deviceToken == "redeemed-token")
+    } else {
+      await #expect(throws: ClerkClientError.self) {
+        _ = try await performHostedAuth(createParams: createParams, createdSessionId: Session.mock.id)
+      }
+      #expect(activations.value == 0)
+      let token = conflict == .clear ? nil : conflict == .replacement ? "other-token" : "initial-token"
+      #expect(clerk.identityController.currentDeviceToken == token)
+      #expect(try clerk.dependencies.identityStore.load()?.identity.deviceToken == token)
+    }
+    #expect(redemptions.value == 1)
+    #expect(reads.value == (conflict == .refresh || conflict == .recoveryRead ? 1 : 0))
+  }
+
   @Test
   func redeemPersistsIdentityBeforeActivation() async throws {
     let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
@@ -260,6 +361,7 @@ private func hostedAuthRedeemResponse(client: Client) -> HostedAuthRedeemRespons
       requestDeviceToken: "initial-token",
       serverDate: Date(timeIntervalSince1970: 200),
       isCanonicalClientRequest: true,
+      requestMethod: "POST",
       clientResponseGeneration: Clerk.shared.clientResponseGeneration,
       responseSequence: 1
     )
@@ -299,6 +401,7 @@ private final class FailableIdentityKeychain: @unchecked Sendable, KeychainStora
   private let backing = InMemoryKeychain()
   private let lock = NSLock()
   private var shouldFail = false
+  var beforeWrite: (() throws -> Void)?
 
   var failsWrites: Bool {
     get { lock.withLock { shouldFail } }
@@ -307,6 +410,9 @@ private final class FailableIdentityKeychain: @unchecked Sendable, KeychainStora
 
   func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
     guard !failsWrites else { throw Failure.write }
+    let action = beforeWrite
+    beforeWrite = nil
+    try action?()
     return try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
   }
 

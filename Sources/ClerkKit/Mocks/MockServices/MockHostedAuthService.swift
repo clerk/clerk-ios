@@ -41,6 +41,7 @@ final class MockHostedAuthService: HostedAuthServiceProtocol {
         requestDeviceToken: requestIdentity.deviceToken,
         serverDate: nil,
         isCanonicalClientRequest: true,
+        requestMethod: "POST",
         clientResponseGeneration: requestIdentity.clientResponseGeneration,
         responseSequence: nil
       )

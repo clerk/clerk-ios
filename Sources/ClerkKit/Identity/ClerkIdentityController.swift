@@ -452,8 +452,9 @@ extension ClerkIdentityController {
       ))
     } catch ClerkIdentityStoreError.writeConflict {
       // The server operation already ran. Recover with a read, never by making
-      // the caller repeat its mutation. A canonical read cannot recurse here.
-      if !context.isCanonicalClientRequest, storedRecord?.epoch == epoch {
+      // the caller repeat its mutation. Only a canonical GET skips recovery;
+      // hosted-auth redemption also returns a canonical Client but consumes a nonce.
+      if !context.isCanonicalClientRead, storedRecord?.epoch == epoch {
         let runtime = clerk.runtimeScope
         do {
           try await clerk.refreshClient(skipClientId: true)

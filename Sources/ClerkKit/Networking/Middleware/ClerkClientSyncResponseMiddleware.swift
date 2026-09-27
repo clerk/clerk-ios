@@ -130,6 +130,8 @@ struct ClientSyncResponseContext {
   let requestDeviceToken: String?
   let serverDate: Date?
   let isCanonicalClientRequest: Bool
+  /// The physical method: hosted redemption is a POST even with `_method=GET` in its body.
+  let requestMethod: String
   let clientResponseGeneration: ClientResponseGeneration?
   let responseSequence: Int?
   let completedAuthFlow: TransferFlowResult?
@@ -141,6 +143,7 @@ struct ClientSyncResponseContext {
     requestDeviceToken: String?,
     serverDate: Date?,
     isCanonicalClientRequest: Bool,
+    requestMethod: String = "GET",
     clientResponseGeneration: ClientResponseGeneration?,
     responseSequence: Int?,
     completedAuthFlow: TransferFlowResult? = nil,
@@ -151,10 +154,15 @@ struct ClientSyncResponseContext {
     self.requestDeviceToken = requestDeviceToken
     self.serverDate = serverDate
     self.isCanonicalClientRequest = isCanonicalClientRequest
+    self.requestMethod = requestMethod
     self.clientResponseGeneration = clientResponseGeneration
     self.responseSequence = responseSequence
     self.completedAuthFlow = completedAuthFlow
     self.authFlowRegistrationId = authFlowRegistrationId
+  }
+
+  var isCanonicalClientRead: Bool {
+    isCanonicalClientRequest && requestMethod == "GET"
   }
 
   func resolvedIdentityPayload(
@@ -219,6 +227,7 @@ struct ClientSyncResponseMetadata {
   let deviceTokenUpdate: ClerkDeviceTokenResponseUpdate
   let checkpoint: ClerkRequestCheckpoint
   let serverDate: Date?
+  private let requestMethod: String
 
   init(response: HTTPURLResponse, request: URLRequest) {
     deviceTokenUpdate = ClerkDeviceTokenResponseUpdate(
@@ -226,6 +235,7 @@ struct ClientSyncResponseMetadata {
     )
     checkpoint = request.clerkRequestCheckpoint
     serverDate = response.serverDate
+    requestMethod = request.httpMethod ?? "GET"
   }
 
   func context(
@@ -238,6 +248,7 @@ struct ClientSyncResponseMetadata {
       requestDeviceToken: checkpoint.requestDeviceToken,
       serverDate: serverDate,
       isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
+      requestMethod: requestMethod,
       clientResponseGeneration: checkpoint.clientResponseGeneration,
       responseSequence: checkpoint.requestSequence,
       completedAuthFlow: completedAuthFlow,

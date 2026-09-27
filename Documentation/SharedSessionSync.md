@@ -27,7 +27,7 @@ Adopting a different identity epoch fences in-flight responses (`clientResponseG
 
 Explicit server clears have no Client `updatedAt`. They can tie that floor when their response sequence is current, while older sequences, older or missing server dates, and stale identity generations remain rejected.
 
-A competing write makes the conditional update fail. The controller reloads the winner without rebasing a prepared response. A successful server mutation stays successful: when the identity epoch is unchanged, the SDK makes one fresh canonical Client read, then resolves the original auth-flow completion against the adopted session. A conflicting canonical read adopts the winner and stops. If the recovery read fails, the SDK retains the adopted state and logs the failure; normal refresh handles subsequent reconciliation. The mutation is never repeated for a storage conflict. Watch and explicit token transitions still report conflicts to their callers.
+A competing write makes the conditional update fail. The controller reloads the winner without rebasing a prepared response. A successful server mutation stays successful: when the identity epoch is unchanged, the SDK makes one fresh canonical Client read, then resolves the original auth-flow completion against the adopted session. Hosted-auth redemption also receives this recovery: it consumes a nonce through a physical POST, even though it returns a canonical Client. A conflicting canonical GET adopts the winner and stops. If the recovery read fails, the SDK retains the adopted state and logs the failure; normal refresh handles subsequent reconciliation. The mutation is never repeated for a storage conflict. Watch and explicit token transitions still report conflicts to their callers.
 
 Explicit clears make one conditional attempt and report failure. Before reading shared storage, a clear persists a credential-free intent in app-local storage, scoped to the Clerk instance and target Keychain configuration. Once read, the intent also records the target identity epoch. Requests remain blocked after a failed clear. On restart, recovery clears that same epoch before hydration, but preserves a later identity epoch; a crash after committing the tombstone therefore cannot wipe a subsequent login. Successful cleanup removes the intent. There are no fixed-count retry loops.
 
@@ -39,7 +39,7 @@ Frontend mutation responses can carry the operation result in `response` and the
 
 Null piggyback fields mean no Client update. A canonical `/v1/client` response with `response: null` and `client: null` is also preserve/no-update, including backend database-maintenance responses. Native client deletion is the explicit clear path: `DELETE /v1/client` clears the device token and identity when the response has `Authorization: Bearer `.
 
-Request sequence, client-response generation, canonical-client flag, and request device token form one response checkpoint.
+Request sequence, client-response generation, canonical-client flag, and request device token form one response checkpoint. Response metadata also retains the physical HTTP method to distinguish canonical reads from redemption.
 
 ## Watch Sync
 
