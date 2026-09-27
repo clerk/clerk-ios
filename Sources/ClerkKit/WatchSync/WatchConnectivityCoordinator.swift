@@ -49,9 +49,16 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   }
 
   func sync(from clerk: Clerk) {
-    guard isActive, clerk.identityController.canPublishIdentity else { return }
+    guard isActive, let transport, clerk.identityController.canPublishIdentity else { return }
     do {
-      try transport?.send(WatchSyncPayload(state: WatchSyncState(of: clerk), environment: clerk.environment))
+      let state = try WatchSyncState(of: clerk)
+      let version = try WatchSyncLegacyPublication.version(
+        for: state, store: clerk.dependencies.identityStore, legacyKeychain: clerk.dependencies.watchSyncKeychain
+      )
+      transport.send(WatchSyncPayload(
+        state: state, environment: clerk.environment,
+        legacyVersion: version.map { .init(token: $0, auth: $0) }
+      ))
     } catch {
       ClerkLogger.logError(error, message: "Failed to prepare Clerk auth state for the paired device")
     }

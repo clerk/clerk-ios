@@ -37,18 +37,19 @@ struct WatchSyncPayloadTests {
 
   @Test
   func payloadAlsoCarriesTheVersionedKeysAnSDK15PeerNeeds() throws {
+    // The coordinator persists each version before constructing the payload.
     let signedInContext = WatchSyncPayload(
       state: WatchSyncState(deviceToken: "token", client: signedIn("client"), serverDate: date(100)),
-      environment: nil
+      environment: nil, legacyVersion: .init(token: 1, auth: 1)
     ).applicationContext
     #expect(signedInContext["watchSyncDeviceTokenState"] as? String == "set")
     #expect(signedInContext["watchSyncAuthState"] as? String == "set")
     let version = try #require(signedInContext["watchSyncAuthVersion"] as? Int)
-    #expect(version > Int(date(0).timeIntervalSince1970))
+    #expect(version == 1)
 
     let clearedContext = WatchSyncPayload(
       state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1),
-      environment: nil
+      environment: nil, legacyVersion: .init(token: 2, auth: 2)
     ).applicationContext
     #expect(clearedContext["watchSyncDeviceTokenState"] as? String == "cleared")
     #expect(clearedContext["watchSyncAuthState"] as? String == "cleared")
@@ -332,6 +333,44 @@ struct WatchSyncStateMergeTests {
 @MainActor
 @Suite(.serialized)
 struct WatchConnectivityCoordinatorTests {
+  @Test
+  func outboundPhoneClearsAndLaterSignInsKeepLegacyOrderingAcrossRestart() throws {
+    let (clerk, keychain) = try makeClerk(token: "old-token", client: signedIn("old"), serverDate: date(100))
+    let previousVersion = 4_000_000_000_000
+    try keychain.set(JSONSerialization.data(withJSONObject: [
+      "device_token_version": previousVersion - 2, "auth_version": previousVersion - 1,
+      "pending_auth_version": previousVersion,
+    ]), forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    clerk.internalStateChanges.addObserver(coordinator)
+    coordinator.sync(from: clerk)
+    let before = try #require(transport.sent.last?.applicationContext)
+    let beforeVersion = try #require(before["watchSyncDeviceTokenVersion"] as? Int)
+    #expect(beforeVersion > previousVersion)
+    #expect(before["watchSyncDeviceTokenState"] as? String == "set")
+    try clerk.clearKeychainItems()
+    let clear = try #require(transport.sent.last?.applicationContext)
+    let clearVersion = try #require(clear["watchSyncDeviceTokenVersion"] as? Int)
+    #expect(clear["watchSyncDeviceTokenState"] as? String == "cleared")
+    #expect(clear["watchSyncAuthState"] as? String == "cleared")
+    #expect(clear["watchSyncAuthVersion"] as? Int == clearVersion)
+    #expect(clearVersion > beforeVersion)
+    clerk.identityController.prepareForConfiguration()
+    clerk.identityController.hydrate()
+    let restarted = WatchConnectivityCoordinator(transport: transport)
+    restarted.sync(from: clerk)
+    #expect(transport.sent.last?.applicationContext["watchSyncDeviceTokenVersion"] as? Int == clearVersion)
+    try clerk.seedIdentity(deviceToken: "new-token", client: signedIn("new"), serverDate: date(200))
+    restarted.sync(from: clerk)
+    let login = try #require(transport.sent.last?.applicationContext)
+    let loginVersion = try #require(login["watchSyncDeviceTokenVersion"] as? Int)
+    #expect(loginVersion > clearVersion)
+    #expect(login["watchSyncDeviceTokenState"] as? String == "set")
+    #expect(login["watchSyncAuthState"] as? String == "set")
+    #expect(login["watchSyncAuthVersion"] as? Int == loginVersion)
+  }
+
   @Test
   func legacyPhoneClearIsOrderedAcrossRestartAndLaterSignIn() throws {
     let (clerk, keychain) = try makeClerk(token: "old-token", client: signedIn("old"), serverDate: date(100))

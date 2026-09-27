@@ -6,6 +6,44 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct KeychainPreparationRecoveryTests {
+  @Test(arguments: [false, true], [false, true])
+  func unfinishedRetirementRecoversWhenTheGroupEntitlementIsRemoved(temporaryFailure: Bool, destinationCommitted: Bool) async throws {
+    let fixture = try Fixture()
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: false, hasAccessGroup: false)
+    try original.seedIdentity(deviceToken: "old-login", client: .mock)
+    let grouped = Clerk()
+    grouped.dependencies = try fixture.container(clerk: grouped, sync: false)
+    grouped.identityController.hydrate()
+    try #require(grouped.deviceToken == "old-login")
+    let key = "\(grouped.dependencies.identityStore.key).retiredSource.\(SharedSessionNamespace.sha256(fixture.service))"
+    let data = try #require(try fixture.marker.data(forKey: key))
+    var retirement = try JSONDecoder.clerkDecoder.decode(ClerkIdentityMigration.SourceRetirement.self, from: data)
+    retirement.completed = false // Exit after copying the identity but before journal completion.
+    try fixture.marker.set(JSONEncoder.clerkEncoder.encode(retirement), forKey: key)
+    if !destinationCommitted { try fixture.storage(fixture.group).backing.deleteItem(forKey: grouped.dependencies.identityStore.key) }
+    fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(
+      temporaryFailure ? errSecInteractionNotAllowed : errSecMissingEntitlement
+    )
+    let local = Clerk()
+    local.dependencies = try fixture.container(clerk: local, sync: false, hasAccessGroup: false)
+    local.identityController.hydrate()
+    if temporaryFailure {
+      await #expect(throws: (any Error).self) { try await local.identityController.captureRequestIdentity() }
+      fixture.storage(fixture.group).readError = nil
+      #expect(try await local.identityController.captureRequestIdentity().deviceToken == "old-login")
+    } else {
+      #expect(try await local.identityController.captureRequestIdentity().deviceToken == nil)
+      #expect(local.identityController.canPublishIdentity)
+      try local.seedIdentity(deviceToken: "new-local-login", client: .mock)
+      let restarted = Clerk()
+      restarted.dependencies = try fixture.container(clerk: restarted, sync: false, hasAccessGroup: false)
+      restarted.identityController.hydrate()
+      #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == "new-local-login")
+      #expect(try fixture.storage(nil).backing.data(forKey: original.dependencies.identityStore.key) != nil)
+    }
+  }
+
   @Test(arguments: [false, true])
   func removingAnAccessGroupUsesTheCurrentIdentityInsteadOfItsRetiredSource(cleared: Bool) throws {
     let fixture = try Fixture()

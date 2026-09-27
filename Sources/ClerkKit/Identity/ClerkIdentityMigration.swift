@@ -200,7 +200,13 @@ struct ClerkIdentityMigration {
     )
     // A failed copy leaves the source usable. A committed destination, including a
     // later clear, permanently supersedes it without deleting an unscoped record.
-    guard try destination.load() != nil else { return nil }
+    do {
+      guard try destination.load() != nil else { return nil }
+    } catch let error as KeychainError where error.isMissingEntitlement && retirement.destination.accessGroup != nil {
+      // The copy may have committed before the entitlement was removed. Fence the
+      // source conservatively; local recovery will start signed out if it cannot
+      // reach the replacement. Temporary Keychain failures must still retry.
+    }
     retirement.completed = true
     try journal.set(JSONEncoder.clerkEncoder.encode(retirement), forKey: key)
     return retirement
