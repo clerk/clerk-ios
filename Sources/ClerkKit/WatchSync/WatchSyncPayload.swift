@@ -79,6 +79,15 @@ package struct WatchSyncPayload: Equatable {
     static let environment = "clerkEnvironment"
   }
 
+  /// Keys an SDK 1.5 peer reads. Once synced, SDK 1.5 accepts only versioned updates, so a payload
+  /// without them could not sign out a paired device that has not updated yet. Remove after one release.
+  private enum LegacyKey {
+    static let deviceTokenState = "watchSyncDeviceTokenState"
+    static let deviceTokenVersion = "watchSyncDeviceTokenVersion"
+    static let authState = "watchSyncAuthState"
+    static let authVersion = "watchSyncAuthVersion"
+  }
+
   private static let schemaVersion = 2
 
   /// `nil` when the payload carries no usable auth state.
@@ -129,9 +138,30 @@ package struct WatchSyncPayload: Equatable {
       context[Key.client] = state.client.flatMap { try? JSONEncoder.clerkEncoder.encode($0) }
       context[Key.serverDate] = state.serverDate?.timeIntervalSince1970
       context[Key.clearGeneration] = state.clearGeneration
+      Self.addLegacyKeys(for: state, to: &context)
     }
     context[Key.environment] = environment.flatMap { try? JSONEncoder.clerkEncoder.encode($0) }
     return context
+  }
+
+  /// Describes `state` for an SDK 1.5 peer, versioned by send time so each payload is newer than
+  /// the last one it accepted.
+  private static func addLegacyKeys(for state: WatchSyncState, to context: inout [String: Any]) {
+    let version = Int(Date().timeIntervalSince1970 * 1000)
+    if state.deviceToken != nil {
+      context[LegacyKey.deviceTokenState] = "set"
+      context[LegacyKey.deviceTokenVersion] = version
+      if state.client != nil {
+        context[LegacyKey.authState] = "set"
+        context[LegacyKey.authVersion] = version
+      }
+    } else if state.clearGeneration > 0 {
+      // Only a clear; a device that has not fetched a token yet must not sign out its peer.
+      context[LegacyKey.deviceTokenState] = "cleared"
+      context[LegacyKey.deviceTokenVersion] = version
+      context[LegacyKey.authState] = "cleared"
+      context[LegacyKey.authVersion] = version
+    }
   }
 
   private static func date(_ value: Any?) -> Date? {
