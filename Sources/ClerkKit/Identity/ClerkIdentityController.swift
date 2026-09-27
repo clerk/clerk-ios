@@ -356,6 +356,82 @@ extension ClerkIdentityController {
     }
   }
 
+  func compareAndSetDeviceToken(
+    _ deviceToken: String?,
+    expected: String?
+  ) async throws -> Bool {
+    guard let clerk else { throw CancellationError() }
+
+    switch persistenceMode(for: clerk) {
+    case .shared(let coordinator):
+      let task = coordinator.enqueueSerializedLocalIdentityOperation { [weak self, weak clerk] in
+        guard let self,
+              let clerk,
+              case .shared(let currentCoordinator) = persistenceMode(for: clerk),
+              currentCoordinator === coordinator
+        else {
+          throw CancellationError()
+        }
+        guard currentDeviceToken == expected else { return false }
+        guard deviceToken != expected else { return true }
+        let identity = try rotatedIdentity(with: deviceToken, clerk: clerk)
+        let didApply = try await coordinator.publishReservedLocalIdentity(
+          state: identity.state,
+          deviceToken: identity.deviceToken,
+          client: identity.client,
+          serverDate: identity.serverDate
+        )
+        return didApply || currentDeviceToken == deviceToken
+      }
+      return try await task.value
+    case .atomicLocal(let localIdentityIO):
+      let task = enqueueLocalOperation { [weak self, weak clerk] operationRevision in
+        guard let self,
+              let clerk,
+              clerk.sharedSessionSyncCoordinator == nil,
+              clerk.dependencies.atomicIdentityIO === localIdentityIO
+        else {
+          throw CancellationError()
+        }
+        guard currentDeviceToken == expected else { return false }
+        guard deviceToken != expected else { return true }
+        return try await persistAndApplyAtomicIdentity(
+          rotatedIdentity(with: deviceToken, clerk: clerk),
+          through: localIdentityIO,
+          operationRevision: operationRevision,
+          fenceAllClientResponses: false
+        )
+      }
+      return try await task.value
+    case .legacy:
+      guard currentDeviceToken == expected else { return false }
+      guard deviceToken != expected else { return true }
+      let identity = try rotatedIdentity(with: deviceToken, clerk: clerk)
+      try persistLegacyIdentity(identity, clerk: clerk)
+      applyIdentityToMemory(
+        identity,
+        clerk: clerk,
+        fenceAllClientResponses: true,
+        emitIdentityChange: true,
+        fenceTokenChange: false
+      )
+      return true
+    }
+  }
+
+  private func rotatedIdentity(
+    with deviceToken: String?,
+    clerk: Clerk
+  ) throws -> ClerkIdentitySnapshot {
+    let client = deviceToken == nil ? nil : clerk.authoritativeClient
+    return try ClerkIdentitySnapshot(
+      state: client == nil ? .cleared : .present,
+      deviceToken: deviceToken,
+      client: client,
+      serverDate: lastServerDate
+    ).validated()
+  }
+
   private func clearedIdentity(with deviceToken: String) throws -> ClerkIdentitySnapshot {
     try ClerkIdentitySnapshot(
       state: .cleared,

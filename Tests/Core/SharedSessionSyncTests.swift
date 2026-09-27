@@ -2877,6 +2877,91 @@ struct SharedSessionSyncTests {
   }
 
   @Test
+  func setDeviceTokenPublishesMatchingTokenWithCurrentClientWithoutRefreshing() async throws {
+    let backend = TestSlotBackend()
+    let refreshed = LockIsolated(false)
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "old-token",
+      client: makeClient(id: "current-client"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: previous,
+      clientService: MockClientService(get: {
+        refreshed.setValue(true)
+        return nil
+      })
+    )
+
+    let didSet = try await node.clerk.setDeviceToken("new-token", expected: "old-token")
+
+    let event = try #require(backend.allSlots().first?.event)
+    #expect(didSet)
+    #expect(event.state == .present)
+    #expect(event.deviceToken == "new-token")
+    #expect(event.client?.id == "current-client")
+    #expect(node.coordinator.currentDeviceToken == "new-token")
+    #expect(node.clerk.deviceToken == "new-token")
+    #expect(node.clerk.client?.id == "current-client")
+    #expect(try node.localStore.load()?.deviceToken == "new-token")
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenDoesNotPublishWhenExpectedTokenIsStale() async throws {
+    let backend = TestSlotBackend()
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "current-token",
+      client: makeClient(id: "current-client"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: previous
+    )
+
+    let didSet = try await node.clerk.setDeviceToken("new-token", expected: "stale-token")
+
+    #expect(didSet == false)
+    #expect(backend.allSlots().isEmpty)
+    #expect(node.clerk.deviceToken == "current-token")
+    #expect(node.clerk.client?.id == "current-client")
+    #expect(try node.localStore.load()?.deviceToken == "current-token")
+  }
+
+  @Test
+  func setDeviceTokenPublishesClearedIdentityWhenClearingMatchingToken() async throws {
+    let backend = TestSlotBackend()
+    let previous = SharedSessionLocalIdentity(
+      state: .present,
+      deviceToken: "old-token",
+      client: makeClient(id: "current-client"),
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    let node = try makeNode(
+      owner: "app.a",
+      backend: backend,
+      initialIdentity: previous
+    )
+
+    let didSet = try await node.clerk.setDeviceToken(nil, expected: "old-token")
+
+    let event = try #require(backend.allSlots().first?.event)
+    #expect(didSet)
+    #expect(event.state == .cleared)
+    #expect(event.deviceToken == nil)
+    #expect(event.client == nil)
+    #expect(node.clerk.deviceToken == nil)
+    #expect(node.clerk.client == nil)
+    #expect(try node.localStore.load()?.deviceToken == nil)
+  }
+
+  @Test
   func shutdownDeletesOwnSlotAfterSuspendedPublicationAndFencesOldWork() async throws {
     let backend = TestSlotBackend()
     backend.suspendNextSave()
