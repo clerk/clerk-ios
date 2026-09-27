@@ -48,7 +48,7 @@ struct DependencyContainerKeychainTests {
     // Restart after private-state adoption but before creating the new identity record.
     let restarted = try DependencyContainer(
       publishableKey: testPublishableKey, options: options,
-      runtimeScope: ClerkRuntimeScope(epoch: .initial), migratesPersistentStateOverride: true,
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
       ownerIdentifierProvider: { service }
     )
 
@@ -97,7 +97,8 @@ struct DependencyContainerKeychainTests {
       options: .init(
         keychainConfig: .init(service: "service")
       ),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial)
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      migratesPersistentStateOverride: false
     )
 
     #expect(container.keychain is SystemKeychain)
@@ -109,7 +110,8 @@ struct DependencyContainerKeychainTests {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service")),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial)
+      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      migratesPersistentStateOverride: false
     )
     let fingerprint = SharedSessionNamespace(
       frontendApiUrl: container.configurationManager.frontendApiUrl,
@@ -132,6 +134,7 @@ struct DependencyContainerKeychainTests {
         sharedSessionSync: .enabled
       ),
       runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      keychainFactory: { _, _ in InMemoryKeychain() },
       ownerIdentifierProvider: { "com.example.app" }
     )
 
@@ -147,6 +150,7 @@ struct DependencyContainerKeychainTests {
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service", accessGroup: "group.example")),
       runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      keychainFactory: { _, _ in InMemoryKeychain() },
       ownerIdentifierProvider: { "com.example.extension" }
     )
 

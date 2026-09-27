@@ -11,7 +11,7 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
     let service = SuspendedInvalidAuthClientService()
     defer { service.cancelAll() }
     let clerk = Clerk()
-    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), clientService: service)
+    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), clientService: service.service)
     let old = clerk.startRefreshClientAfterInvalidAuth()
     try await service.waitForRequests(1)
     clerk.cleanupManagers()
@@ -58,11 +58,12 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
 }
 
 @MainActor
-final class SuspendedInvalidAuthClientService: ClientServiceProtocol {
+final class SuspendedInvalidAuthClientService {
+  lazy var service = MockClientService { [unowned self] in try await nextClient() }
   private(set) var calls = 0
-  private var requests: [Int: CheckedContinuation<ClientServiceResponse, any Error>] = [:]
+  private var requests: [Int: CheckedContinuation<Client?, any Error>] = [:]
 
-  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
+  func nextClient() async throws -> Client? {
     let index = calls
     calls += 1
     // Deliberately defer cancellation completion, as a transport may do.
@@ -78,7 +79,7 @@ final class SuspendedInvalidAuthClientService: ClientServiceProtocol {
   }
 
   func complete(_ index: Int) {
-    requests.removeValue(forKey: index)?.resume(returning: ClientServiceResponse(client: .mock, requestSequence: nil, serverDate: nil))
+    requests.removeValue(forKey: index)?.resume(returning: .mock)
   }
 
   func cancelAll() {

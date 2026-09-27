@@ -161,9 +161,9 @@ struct IdentityHydrationRecoveryTests {
   }
 
   @Test
-  func clientResponseAfterFailedHydrationKeepsTheRecoveredToken() throws {
+  func clientResponseAfterFailedHydrationKeepsTheRecoveredToken() async throws {
     let clerk = try makeAppAfterFailedHydration()
-    clerk.identityController.applyResponseClient(.mockSignedOut, serverDate: Date(timeIntervalSince1970: 200))
+    try await clerk.applyResponseClient(.mockSignedOut, serverDate: Date(timeIntervalSince1970: 200))
 
     #expect(clerk.deviceToken == "signed-in-phone-token")
     #expect(clerk.client?.sessions.isEmpty == true)

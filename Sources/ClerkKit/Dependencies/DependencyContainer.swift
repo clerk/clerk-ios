@@ -122,7 +122,7 @@ final class DependencyContainer: Dependencies {
       ownerIdentifier: ownerIdentifierProvider()?.trimmingCharacters(in: .whitespacesAndNewlines),
       isReconfiguration: isReconfiguration,
       migratesPersistentState: migratesPersistentStateOverride
-        ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests),
+        ?? !publishableKey.isEmpty,
       keychainStorageOverride: keychainStorageOverride,
       makeKeychain: keychainFactory ?? Self.makeKeychainStorage
     )

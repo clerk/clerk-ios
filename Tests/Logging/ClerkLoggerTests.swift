@@ -21,7 +21,7 @@ struct ClerkLoggerTests {
   func info_WithDefaultForce_RespectsLogLevel() {
     // Configure with error log level (default)
     let options = Clerk.Options(logLevel: .error)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+    configureClerkForTesting(options: options)
 
     // info() with default force: false should not log when log level is .error
     // We can't easily test console output, but we can verify shouldLog returns false
@@ -33,7 +33,7 @@ struct ClerkLoggerTests {
   func info_WithForceTrue_AlwaysLogs() {
     // Configure with error log level
     let options = Clerk.Options(logLevel: .error)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+    configureClerkForTesting(options: options)
 
     // Even with .error log level, force: true should bypass the check
     // We verify this by calling info() with force: true - it should not check shouldLog
@@ -52,7 +52,7 @@ struct ClerkLoggerTests {
   func info_WithForceFalse_RespectsLogLevel() {
     // Configure with error log level
     let options = Clerk.Options(logLevel: .error)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+    configureClerkForTesting(options: options)
 
     // info() with force: false should respect log level
     let shouldLog = ClerkLogger.shouldLog(level: .info)
@@ -97,7 +97,7 @@ struct ClerkLoggerTests {
       logLevel: .error,
       loggerHandler: errorHandler
     )
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+    configureClerkForTesting(options: options)
 
     // Call info() with force: true
     ClerkLogger.info("Test message", force: true)
@@ -111,7 +111,7 @@ struct ClerkLoggerTests {
   func error_AlwaysLogsRegardlessOfLogLevel() {
     // Configure with verbose log level (most restrictive)
     let options = Clerk.Options(logLevel: .verbose)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+    configureClerkForTesting(options: options)
 
     // error() should always log regardless of log level (uses forceLog: true)
     // We verify this by checking that error level always passes shouldLog check

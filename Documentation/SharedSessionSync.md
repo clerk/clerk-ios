@@ -37,6 +37,10 @@ Explicit clears make one conditional attempt and report failure. Before reading 
 
 ## Response Payloads
 
+Network responses enter `ClerkIdentityController.applyNetworkResponse` once through response middleware. Hosted-auth redemption and session activation deliberately defer that same handler until their operation-specific checks or cleanup finish. `refreshClient()` returns the controller's accepted identity after the request; it never reapplies the decoded HTTP snapshot. This matters when a conditional write loses: the returned network payload may differ from the identity that won in storage.
+
+Mocked refreshes supply synthetic HTTP responses to the same request and response middleware, with the owning API client's runtime and request sequence. Mock and preview identities use isolated in-memory storage with a matching device token and Client. Production persistence has no memory-only exception for incomplete fixtures. Tests opt into isolated configuration explicitly; running under a test process does not change normal configuration or migration behavior.
+
 Frontend mutation responses can carry the operation result in `response` and the authoritative Client snapshot in sibling `client`. Error responses can carry the snapshot in `meta.client`. A removed Session plus a signed-out Client is a normal Client update, not an identity clear.
 
 Null piggyback fields mean no Client update. A canonical `/v1/client` response with `response: null` and `client: null` is also preserve/no-update, including backend database-maintenance responses. Native client deletion is the explicit clear path: `DELETE /v1/client` clears the device token and identity when the response has `Authorization: Bearer `.

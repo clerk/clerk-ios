@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct OAuthProviderIconImageUrlTests {
   init() {
-    Clerk.configure(publishableKey: testPublishableKey)
+    configureClerkForTesting()
   }
 
   @Test

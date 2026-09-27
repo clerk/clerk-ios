@@ -45,7 +45,7 @@ struct LastUsedAuthTests {
   }
 
   private func configureBiometricCredentialLastAuth() {
-    Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
+    configureClerkForTesting()
     var client = Client.mock
     client.lastAuthenticationStrategy = .biometricCredential
     Clerk.shared.client = client

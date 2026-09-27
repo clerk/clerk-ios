@@ -610,7 +610,7 @@ struct WatchConnectivityCoordinatorTests {
   @Test(arguments: RefreshTransition.allCases, [false, true])
   func replacementRefreshSurvivesAnObsoleteTaskFinishing(transition: RefreshTransition, stopBeforeCompletion: Bool) async throws {
     let service = SuspendedWatchClientService()
-    let (clerk, _) = try makeClerk(clientService: service)
+    let (clerk, _) = try makeClerk(clientService: service.service)
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
     clerk.internalStateChanges.addObserver(coordinator)
     defer {
@@ -808,7 +808,7 @@ struct WatchConnectivityCoordinatorTests {
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
       clientService: clientService ?? MockClientService(get: { throw CancellationError() })
     )
@@ -842,18 +842,19 @@ struct WatchConnectivityCoordinatorTests {
 // MARK: - Fixtures
 
 @MainActor
-private final class SuspendedWatchClientService: ClientServiceProtocol {
-  private var requests: [Int: CheckedContinuation<ClientServiceResponse, any Error>] = [:]
+private final class SuspendedWatchClientService {
+  lazy var service = MockClientService { [unowned self] in try await nextClient() }
+  private var requests: [Int: CheckedContinuation<Client?, any Error>] = [:]
   private(set) var calls = 0
 
-  func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
+  func nextClient() async throws -> Client? {
     let index = calls
     calls += 1
     return try await withCheckedThrowingContinuation { requests[index] = $0 }
   }
 
   func completeRequest(_ index: Int, with client: Client) {
-    requests.removeValue(forKey: index)?.resume(returning: ClientServiceResponse(client: client, requestSequence: nil, serverDate: nil))
+    requests.removeValue(forKey: index)?.resume(returning: client)
   }
 
   func cancelPendingRequests() {

@@ -139,8 +139,17 @@ extension Clerk {
     )
 
     // Replace dependencies with mock services
+    clerk.cleanupManagers()
     clerk.dependencies = container
-    clerk.setClientFromIdentityController(mockClient)
+    clerk.identityController.prepareForConfiguration()
+    do {
+      try container.identityStore.save(
+        .init(state: .present, deviceToken: "mock-device-token", client: mockClient, serverDate: nil), replacing: nil
+      )
+    } catch {
+      preconditionFailure("Failed to create the preview identity: \(error)")
+    }
+    clerk.identityController.hydrate()
     clerk.environment = mockEnvironment
 
     return clerk

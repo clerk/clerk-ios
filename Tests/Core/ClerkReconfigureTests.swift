@@ -22,7 +22,7 @@ struct ClerkReconfigureTests {
     let clerk = Clerk.shared
     let service = SuspendedInvalidAuthClientService()
     defer { service.cancelAll() }
-    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), clientService: service)
+    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), clientService: service.service)
     try clerk.seedIdentity(deviceToken: "old-token", client: .mock)
     let oldStore = clerk.dependencies.identityStore
     let refresh = clerk.startRefreshClientAfterInvalidAuth()
@@ -94,7 +94,7 @@ struct ClerkReconfigureTests {
     var signIn = SignIn.mock
     signIn.status = .complete
     signIn.createdSessionId = Client.mock.currentSession?.id
-    reconfigured.applyResponseClient(.mock, completedAuthFlow: .signIn(signIn))
+    try await reconfigured.applyResponseClient(.mock, completedAuthFlow: .signIn(signIn))
 
     #expect(reconfigured.isAuthFlowComplete == false)
     let snapshot = try #require(reconfigured.authFlowSnapshot(for: owner))
@@ -371,8 +371,8 @@ struct ClerkReconfigureTests {
     #expect(persisted.revision == peerRevision)
     #expect(!clerk.identityController.reconcileWithStore())
 
-    clerk.applyResponseClient(originalClient, responseSequence: 100, serverDate: .distantFuture,
-                              clientResponseGeneration: oldGeneration)
+    try await clerk.applyResponseClient(originalClient, responseSequence: 100, serverDate: .distantFuture,
+                                        clientResponseGeneration: oldGeneration)
     #expect(clerk.client == persisted.identity.client)
     #expect(clerk.lastClientServerFetchDate == peerIdentity.serverDate)
   }
@@ -623,7 +623,7 @@ struct ClerkReconfigureTests {
     mock.register()
 
     let oldRequest = Task { @MainActor in
-      try await oldClientService.getResponse()
+      try await oldClientService.get()
     }
     try await Task.sleep(for: .milliseconds(20))
 

@@ -20,6 +20,7 @@ extension Clerk {
     identityController.hydrate()
   }
 
+  /// Sends a synthetic response through the production identity response handler.
   @MainActor
   func applyResponseClient(
     _ incoming: Client?,
@@ -27,15 +28,19 @@ extension Clerk {
     serverDate: Date? = nil,
     clientResponseGeneration: ClientResponseGeneration? = nil,
     completedAuthFlow: TransferFlowResult? = nil
-  ) {
-    identityController.applyResponseClient(
-      incoming,
-      responseSequence: responseSequence,
+  ) async throws {
+    let requestIdentity = try await identityController.captureRequestIdentity()
+    try await identityController.applyNetworkResponse(ClientSyncResponseContext(
+      update: incoming.map(ClientResponseUpdate.client) ?? .explicitClear,
+      deviceTokenUpdate: incoming == nil ? .clear : (requestIdentity.deviceToken == nil ? .set("test-device-token") : .absent),
+      requestDeviceToken: requestIdentity.deviceToken,
       serverDate: serverDate,
-      clientResponseGeneration: clientResponseGeneration,
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: clientResponseGeneration ?? requestIdentity.clientResponseGeneration,
+      responseSequence: responseSequence,
       completedAuthFlow: completedAuthFlow,
-      completedAuthFlowOwnerId: authFlowRegistrationId
-    )
+      authFlowRegistrationId: authFlowRegistrationId
+    ))
   }
 }
 
@@ -44,9 +49,9 @@ extension Clerk {
 ///
 /// This function should be called at the start of each test suite or test to ensure proper isolation.
 @MainActor
-func configureClerkForTesting() {
-  // Configure Clerk with test publishable key
-  Clerk.configure(publishableKey: testPublishableKey)
+func configureClerkForTesting(options: Clerk.Options = .init()) {
+  // Opt into isolated persistence explicitly; normal configuration keeps its app behavior.
+  try! Clerk.configureForTesting(publishableKey: testPublishableKey, options: options, keychainStorage: InMemoryKeychain())
 
   // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()

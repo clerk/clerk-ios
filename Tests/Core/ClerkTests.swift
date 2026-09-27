@@ -14,6 +14,35 @@ struct ClerkTests {
   }
 
   @Test
+  func configureDoesNotImplicitlyReplaceAnExistingInstanceUnderTests() throws {
+    let existing = Clerk.shared
+    try existing.seedIdentity(deviceToken: "existing-token", client: .mock)
+
+    let configured = Clerk.configure(publishableKey: testPublishableKey)
+
+    #expect(configured === existing)
+    #expect(configured.identityController.currentDeviceToken == "existing-token")
+  }
+
+  @Test(arguments: [true, false])
+  func mockRefreshUsesItsOwnPersistedIdentity(isSignedIn: Bool) async throws {
+    let shared = Clerk.shared
+    try shared.seedIdentity(deviceToken: "shared-token", client: .mock)
+    let sharedRecord = try shared.dependencies.identityStore.load()
+    let mock = isSignedIn ? Clerk.mock : Clerk.mockSignedOut
+    let expectedId = mock.client?.id
+
+    let refreshed = try await mock.refreshClient()
+
+    #expect(refreshed?.id == expectedId)
+    #expect(refreshed?.sessions.isEmpty == !isSignedIn)
+    #expect(mock.identityController.currentDeviceToken == "mock-device-token")
+    #expect(try mock.dependencies.identityStore.load()?.identity.client == refreshed)
+    #expect(try shared.dependencies.identityStore.load() == sharedRecord)
+    #expect(shared.identityController.currentDeviceToken == "shared-token")
+  }
+
+  @Test
   func replacingMockDependenciesDiscardsThePreviousStorageRevision() async throws {
     let clerk = Clerk.shared
     try clerk.seedIdentity(deviceToken: "previous-token", client: .mock)
@@ -618,10 +647,10 @@ struct ClerkTests {
   }
 
   @Test
-  func rejectedSecondRegistrationDoesNotStealInFlightWork() throws {
+  func rejectedSecondRegistrationDoesNotStealInFlightWork() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let original = try #require(awaitingAuthFlow(in: clerk, for: registration))
     let originalRevision = try #require(
       clerk.authFlowSnapshot(for: registration)?.revision
@@ -672,14 +701,14 @@ struct ClerkTests {
   }
 
   @Test
-  func dismissibleAuthFlowCompletionDoesNotGateSignedInContent() throws {
+  func dismissibleAuthFlowCompletionDoesNotGateSignedInContent() async throws {
     let clerk = Clerk.mock
     let registration = try #require(
       clerk.registerAuthFlow(role: .dismissible)
     )
     let completion = completedAuthFlow()
 
-    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completion)
 
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(awaiting.sessionId == clerk.session?.id)
@@ -689,11 +718,11 @@ struct ClerkTests {
   }
 
   @Test
-  func externalActiveSessionHoldsRootUntilAuthViewCompletes() throws {
+  func externalActiveSessionHoldsRootUntilAuthViewCompletes() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
 
-    clerk.applyResponseClient(.mock)
+    try await clerk.applyResponseClient(.mock)
 
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(awaiting.sessionId == clerk.session?.id)
@@ -801,21 +830,21 @@ struct ClerkTests {
   }
 
   @Test
-  func completedAuthenticationDoesNotGateWithoutRootRegistration() {
+  func completedAuthenticationDoesNotGateWithoutRootRegistration() async throws {
     let clerk = Clerk.mockSignedOut
 
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
 
     #expect(clerk.isAuthFlowComplete)
   }
 
   @Test
-  func acceptedCompletionBlocksRootUntilItsExactWorkCompletes() throws {
+  func acceptedCompletionBlocksRootUntilItsExactWorkCompletes() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     let completion = completedAuthFlow()
 
-    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completion)
 
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(awaiting.sessionId == clerk.session?.id)
@@ -830,12 +859,12 @@ struct ClerkTests {
   }
 
   @Test
-  func presentationRetainsExactWorkAcrossRefreshAndLaterCompletion() throws {
+  func presentationRetainsExactWorkAcrossRefreshAndLaterCompletion() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     let completion = completedAuthFlow()
 
-    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completion)
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     let token = try #require(clerk.startAuthFlowPresentation(
       for: registration,
@@ -847,8 +876,8 @@ struct ClerkTests {
     laterSignIn.id = "sign_in_later"
     laterSignIn.status = .complete
     laterSignIn.createdSessionId = Client.mock.currentSession?.id
-    clerk.applyResponseClient(.mock)
-    clerk.applyResponseClient(.mock, completedAuthFlow: .signIn(laterSignIn))
+    try await clerk.applyResponseClient(.mock)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: .signIn(laterSignIn))
 
     let presenting = try #require(presentingAuthFlow(in: clerk, for: registration))
     #expect(presenting.workId == awaiting.workId)
@@ -869,11 +898,11 @@ struct ClerkTests {
   }
 
   @Test
-  func replayedCompletionPreservesResolvedPostAuthWork() throws {
+  func replayedCompletionPreservesResolvedPostAuthWork() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     let completion = completedAuthFlow()
-    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completion)
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     let token = try #require(clerk.startAuthFlowPresentation(
       for: registration,
@@ -883,7 +912,7 @@ struct ClerkTests {
     #expect(clerk.finishAuthFlowPresentation(token))
     let resolved = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
-    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completion)
 
     let replayed = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(replayed.work == resolved.work)
@@ -895,7 +924,7 @@ struct ClerkTests {
   }
 
   @Test
-  func acceptedCompletionForAnotherSessionReplacesPresentedWork() throws {
+  func acceptedCompletionForAnotherSessionReplacesPresentedWork() async throws {
     var sessionA = try #require(Client.mock.currentSession)
     sessionA.id = "session-a"
     var clientA = Client.mock
@@ -907,7 +936,7 @@ struct ClerkTests {
     signInA.createdSessionId = sessionA.id
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(clientA, completedAuthFlow: .signIn(signInA))
+    try await clerk.applyResponseClient(clientA, completedAuthFlow: .signIn(signInA))
     let awaitingA = try #require(awaitingAuthFlow(in: clerk, for: registration))
     let tokenA = try #require(clerk.startAuthFlowPresentation(
       for: registration,
@@ -924,7 +953,7 @@ struct ClerkTests {
     signInB.status = .complete
     signInB.createdSessionId = sessionB.id
 
-    clerk.applyResponseClient(clientB, completedAuthFlow: .signIn(signInB))
+    try await clerk.applyResponseClient(clientB, completedAuthFlow: .signIn(signInB))
 
     let awaitingB = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(awaitingB.workId != awaitingA.workId)
@@ -935,18 +964,18 @@ struct ClerkTests {
   }
 
   @Test
-  func newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks() throws {
+  func newerCompletionReplacesAwaitingWorkAndRejectsStaleCallbacks() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
 
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let first = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
     var laterSignIn = SignIn.mock
     laterSignIn.id = "sign_in_later"
     laterSignIn.status = .complete
     laterSignIn.createdSessionId = Client.mock.currentSession?.id
-    clerk.applyResponseClient(.mock, completedAuthFlow: .signIn(laterSignIn))
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: .signIn(laterSignIn))
 
     let later = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(later.workId != first.workId)
@@ -961,7 +990,7 @@ struct ClerkTests {
   }
 
   @Test
-  func completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation() throws {
+  func completionWaitsForItsSessionAcrossOrdinaryRefreshUntilActivation() async throws {
     var sessionA = try #require(Client.mock.currentSession)
     sessionA.id = "session-a"
     var sessionB = sessionA
@@ -980,7 +1009,7 @@ struct ClerkTests {
     signIn.createdSessionId = sessionA.id
     let completion = TransferFlowResult.signIn(signIn)
 
-    clerk.applyResponseClient(
+    try await clerk.applyResponseClient(
       pendingActivationClient,
       completedAuthFlow: completion
     )
@@ -992,7 +1021,7 @@ struct ClerkTests {
       clerk.authFlowSnapshot(for: registration)?.revision
     )
 
-    clerk.applyResponseClient(pendingActivationClient)
+    try await clerk.applyResponseClient(pendingActivationClient)
 
     let refreshed = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(refreshed.workId == awaiting.workId)
@@ -1001,7 +1030,7 @@ struct ClerkTests {
 
     var activatedClient = pendingActivationClient
     activatedClient.lastActiveSessionId = sessionA.id
-    clerk.applyResponseClient(activatedClient)
+    try await clerk.applyResponseClient(activatedClient)
 
     #expect(clerk.session?.id == sessionA.id)
     let activated = try #require(awaitingAuthFlow(in: clerk, for: registration))
@@ -1146,7 +1175,7 @@ struct ClerkTests {
   }
 
   @Test
-  func failedSessionActivationAdoptsTheAuthoritativeCurrentSession() throws {
+  func failedSessionActivationAdoptsTheAuthoritativeCurrentSession() async throws {
     var sessionA = try #require(Client.mock.currentSession)
     sessionA.id = "session-a"
     var sessionB = sessionA
@@ -1164,7 +1193,7 @@ struct ClerkTests {
     signIn.status = .complete
     signIn.createdSessionId = sessionA.id
 
-    clerk.applyResponseClient(client, completedAuthFlow: .signIn(signIn))
+    try await clerk.applyResponseClient(client, completedAuthFlow: .signIn(signIn))
     let owned = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(owned.sessionId == sessionA.id)
     let activation = try #require(clerk.beginCompletedAuthSessionActivation(
@@ -1183,7 +1212,7 @@ struct ClerkTests {
   }
 
   @Test
-  func finishedCompletedActivationAdoptsANewerAuthoritativeSession() throws {
+  func finishedCompletedActivationAdoptsANewerAuthoritativeSession() async throws {
     var sessionA = try #require(Client.mock.currentSession)
     sessionA.id = "session-a"
     var sessionB = sessionA
@@ -1201,7 +1230,7 @@ struct ClerkTests {
     signIn.status = .complete
     signIn.createdSessionId = sessionA.id
 
-    clerk.applyResponseClient(
+    try await clerk.applyResponseClient(
       completedClient,
       completedAuthFlow: .signIn(signIn)
     )
@@ -1228,7 +1257,7 @@ struct ClerkTests {
   }
 
   @Test
-  func acceptedCompletionWaitsWhileItsViableSessionHasNotBeenSelected() throws {
+  func acceptedCompletionWaitsWhileItsViableSessionHasNotBeenSelected() async throws {
     var session = try #require(Client.mock.currentSession)
     session.id = "session-a"
     var unselectedClient = Client.mock
@@ -1240,13 +1269,13 @@ struct ClerkTests {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
 
-    clerk.applyResponseClient(
+    try await clerk.applyResponseClient(
       unselectedClient,
       completedAuthFlow: .signIn(signIn)
     )
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
-    clerk.applyResponseClient(unselectedClient)
+    try await clerk.applyResponseClient(unselectedClient)
 
     let retained = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(retained.workId == awaiting.workId)
@@ -1254,7 +1283,7 @@ struct ClerkTests {
 
     var selectedClient = unselectedClient
     selectedClient.lastActiveSessionId = session.id
-    clerk.applyResponseClient(selectedClient)
+    try await clerk.applyResponseClient(selectedClient)
 
     let selected = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(selected.workId == awaiting.workId)
@@ -1310,7 +1339,7 @@ struct ClerkTests {
   }
 
   @Test
-  func sessionTaskPresentationRemainsUntilItsTokenFinishes() throws {
+  func sessionTaskPresentationRemainsUntilItsTokenFinishes() async throws {
     var pendingClient = Client.mock
     pendingClient.sessions[0].status = .pending
     pendingClient.sessions[0].tasks = [.setupMfa]
@@ -1332,7 +1361,7 @@ struct ClerkTests {
 
     var activeClient = pendingClient
     activeClient.sessions[0].status = .active
-    clerk.applyResponseClient(activeClient)
+    try await clerk.applyResponseClient(activeClient)
 
     let presenting = try #require(presentingAuthFlow(in: clerk, for: registration))
     #expect(presenting.workId == awaiting.workId)
@@ -1348,10 +1377,10 @@ struct ClerkTests {
   }
 
   @Test
-  func finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion() throws {
+  func finishingBiometricCredentialEnrollmentReturnsItsExactAuthWorkForCompletion() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
     let token = try #require(clerk.startAuthFlowPresentation(
@@ -1376,10 +1405,10 @@ struct ClerkTests {
   }
 
   @Test
-  func completingAuthFlowIsAcceptedOnceForAnOrdinaryFlow() throws {
+  func completingAuthFlowIsAcceptedOnceForAnOrdinaryFlow() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
     #expect(clerk.completeAuthFlow(awaiting.work))
@@ -1390,10 +1419,10 @@ struct ClerkTests {
   }
 
   @Test
-  func completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment() throws {
+  func completingAuthFlowIsAcceptedOnceAfterBiometricCredentialEnrollment() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
     let token = try #require(clerk.startAuthFlowPresentation(
@@ -1413,7 +1442,7 @@ struct ClerkTests {
   }
 
   @Test
-  func finishingEnrollmentForPendingSignUpAdvancesToTasksWithoutReoffering() throws {
+  func finishingEnrollmentForPendingSignUpAdvancesToTasksWithoutReoffering() async throws {
     var pendingClient = Client.mock
     pendingClient.sessions[0].status = .pending
     pendingClient.sessions[0].tasks = [.setupMfa]
@@ -1424,7 +1453,7 @@ struct ClerkTests {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
 
-    clerk.applyResponseClient(
+    try await clerk.applyResponseClient(
       pendingClient,
       completedAuthFlow: .signUp(signUp)
     )
@@ -1456,10 +1485,10 @@ struct ClerkTests {
   }
 
   @Test
-  func taskAppearingDuringEnrollmentWaitsForEnrollmentToFinish() throws {
+  func taskAppearingDuringEnrollmentWaitsForEnrollmentToFinish() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let awaitingEnrollment = try #require(
       awaitingAuthFlow(in: clerk, for: registration)
     )
@@ -1472,7 +1501,7 @@ struct ClerkTests {
     var pendingClient = Client.mock
     pendingClient.sessions[0].status = .pending
     pendingClient.sessions[0].tasks = [.setupMfa]
-    clerk.applyResponseClient(pendingClient)
+    try await clerk.applyResponseClient(pendingClient)
 
     #expect(clerk.authFlowPresentationIsCurrent(enrollmentToken))
     #expect(
@@ -1620,11 +1649,11 @@ struct ClerkTests {
   }
 
   @Test
-  func staleCompletedActivationCannotMutateANewerRegistration() throws {
+  func staleCompletedActivationCannotMutateANewerRegistration() async throws {
     let clerk = Clerk.mockSignedOut
     let staleRegistration = try #require(clerk.registerAuthFlow())
     let completion = completedAuthFlow()
-    clerk.applyResponseClient(.mock, completedAuthFlow: completion)
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completion)
     let completedSessionId = try #require(completion.createdSessionId)
     let staleActivation = try #require(
       clerk.beginCompletedAuthSessionActivation(
@@ -1660,10 +1689,10 @@ struct ClerkTests {
   }
 
   @Test
-  func completedRootWorkCanReleaseOwnershipAndRearmAfterSignOut() throws {
+  func completedRootWorkCanReleaseOwnershipAndRearmAfterSignOut() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
 
     #expect(clerk.completeAuthFlow(awaiting.work))
@@ -1680,10 +1709,10 @@ struct ClerkTests {
   }
 
   @Test
-  func terminalCurrentSessionClearsPresentedPostAuthWork() throws {
+  func terminalCurrentSessionClearsPresentedPostAuthWork() async throws {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let awaiting = try #require(awaitingAuthFlow(in: clerk, for: registration))
     #expect(clerk.startAuthFlowPresentation(
       for: registration,
@@ -1693,7 +1722,7 @@ struct ClerkTests {
     var terminalClient = Client.mock
     terminalClient.sessions[0].status = .ended
 
-    clerk.applyResponseClient(terminalClient)
+    try await clerk.applyResponseClient(terminalClient)
 
     #expect(observesAuthFlow(in: clerk, for: registration))
     #expect(clerk.isAuthFlowComplete == false)
@@ -1750,7 +1779,7 @@ struct ClerkTests {
     let clerk = Clerk.mockSignedOut
     var registration = clerk.registerAuthFlow()
     _ = try #require(registration)
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
 
     registration = nil
     try await waitUntil { clerk.authFlowRegistrationId == nil }
@@ -1761,14 +1790,14 @@ struct ClerkTests {
   }
 
   @Test
-  func staleRegistrationCannotMutateANewerAuthFlow() throws {
+  func staleRegistrationCannotMutateANewerAuthFlow() async throws {
     let clerk = Clerk.mockSignedOut
     let previousRegistration = try #require(clerk.registerAuthFlow())
     previousRegistration.cancel()
 
     let currentRegistration = try #require(clerk.registerAuthFlow())
     previousRegistration.cancel()
-    clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
+    try await clerk.applyResponseClient(.mock, completedAuthFlow: completedAuthFlow())
     let current = try #require(awaitingAuthFlow(in: clerk, for: currentRegistration))
 
     #expect(clerk.startAuthFlowPresentation(

@@ -13,18 +13,32 @@ import Foundation
 
 extension Clerk {
   public static var mock: Clerk {
-    let clerk = Clerk()
-    clerk.setClientFromIdentityController(.mock)
-    clerk.environment = .mock
+    let clerk = makeMock(client: .mock)
     clerk.sessionsByUserId = [User.mock.id: [.mock, .mock2]]
     return clerk
   }
 
   public static var mockSignedOut: Clerk {
-    let clerk = Clerk()
-    clerk.setClientFromIdentityController(.mockSignedOut)
-    clerk.environment = .mock
+    let clerk = makeMock(client: .mockSignedOut)
     clerk.sessionsByUserId = [:]
+    return clerk
+  }
+
+  private static func makeMock(client: Client) -> Clerk {
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: APIClient(baseURL: URL(string: "https://mock.clerk.accounts.dev"), runtimeScope: clerk.runtimeScope),
+      clientService: MockClientService { client }
+    )
+    do {
+      try clerk.dependencies.identityStore.save(
+        .init(state: .present, deviceToken: "mock-device-token", client: client, serverDate: nil), replacing: nil
+      )
+    } catch {
+      preconditionFailure("Failed to create the mock identity: \(error)")
+    }
+    clerk.identityController.hydrate()
+    clerk.environment = .mock
     return clerk
   }
 }

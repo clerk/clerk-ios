@@ -453,16 +453,9 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) -> Clerk {
-    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
-      if EnvironmentDetection.isRunningInTests {
-        // Clean up old managers before resetting to prevent background tasks from interfering
-        existing.cleanupManagers()
-        _shared = nil
-      } else {
-        ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
-        return existing
-      }
+      ClerkLogger.warning("Clerk has already been configured. Configure can only be called once.")
+      return existing
     }
 
     let clerk = Clerk()
@@ -617,24 +610,9 @@ extension Clerk {
   func refreshClient(skipClientId: Bool) async throws -> Client? {
     try Task.checkCancellation()
     let runtime = runtimeScope
-    let clientResponseGeneration = clientResponseGeneration
-    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
+    _ = try await dependencies.clientService.get(skipClientId: skipClientId)
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
-    // Real responses were already applied (or superseded) by the middleware.
-    // Applying them again could rebase a response that lost a conditional write.
-    guard !response.identityWasSynchronized else { return client }
-    switch response.update {
-    case .client(let responseClient):
-      identityController.applyResponseClient(
-        responseClient,
-        responseSequence: response.requestSequence,
-        serverDate: response.serverDate,
-        clientResponseGeneration: clientResponseGeneration
-      )
-    case .preserve:
-      break
-    }
     return client
   }
 

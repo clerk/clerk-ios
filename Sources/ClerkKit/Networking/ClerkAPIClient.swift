@@ -43,7 +43,7 @@ actor APIClient {
   private let encoder: JSONEncoder
   private let decoder: JSONDecoder
   private let pipeline: NetworkingPipeline
-  private let runtimeScope: ClerkRuntimeScope
+  let runtimeScope: ClerkRuntimeScope
   private var nextRequestSequenceNumber = 0
 
   init(
@@ -192,7 +192,7 @@ actor APIClient {
     }
   }
 
-  private func makeRequestSequence() -> Int {
+  func makeRequestSequence() -> Int {
     nextRequestSequenceNumber += 1
     return nextRequestSequenceNumber
   }

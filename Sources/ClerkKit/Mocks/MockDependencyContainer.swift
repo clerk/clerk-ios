@@ -118,6 +118,7 @@ final class MockDependencyContainer: Dependencies {
 
     // Use custom services if provided, otherwise use mock services
     self.clientService = clientService ?? MockClientService()
+    (self.clientService as? MockClientService)?.bind(to: apiClient)
     self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()

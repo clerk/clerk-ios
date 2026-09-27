@@ -356,7 +356,7 @@ struct HostedAuthFlowTests {
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
+      clientService: clientService.service,
       initialClient: .mock
     )
 
@@ -950,22 +950,16 @@ private func hostedAuthRedeemResponse(
   )
 }
 
-private final class HostedAuthClientService: ClientServiceProtocol {
+private final class HostedAuthClientService {
   let skipClientIdValues = LockIsolated<[Bool]>([])
-  let getHandler: @Sendable () async throws -> Client?
+  let service = MockClientService()
 
   init(get: @escaping @Sendable () async throws -> Client?) {
-    getHandler = get
-  }
-
-  @MainActor
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
-    skipClientIdValues.withValue { $0.append(skipClientId) }
-    return try await ClientServiceResponse(
-      client: getHandler(),
-      requestSequence: nil,
-      serverDate: nil
-    )
+    let values = skipClientIdValues
+    service.responseHandler = { request in
+      values.withValue { $0.append(request.value(forHTTPHeaderField: "x-clerk-client-id") == nil) }
+      return try await .init(client: get())
+    }
   }
 }
 

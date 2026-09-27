@@ -7,57 +7,57 @@ import Testing
 @Suite(.serialized)
 struct ClerkResponseClientStateTests {
   @Test
-  func applyResponseClientSetsFirstClient() {
+  func applyResponseClientSetsFirstClient() async throws {
     let clerk = makeIsolatedClerk()
     let incoming = client(id: "client-first", updatedAt: 2000)
 
     clerk.client = nil
-    clerk.applyResponseClient(incoming)
+    try await clerk.applyResponseClient(incoming)
 
     #expect(clerk.client?.id == incoming.id)
   }
 
   @Test
-  func applyResponseClientWithoutSequenceReplacesExistingClient() {
+  func applyResponseClientWithoutSequenceReplacesExistingClient() async throws {
     let clerk = makeIsolatedClerk()
     let current = client(id: "client-current", updatedAt: 3000, lastActiveSessionId: "session-a")
     let replacement = client(id: "client-replacement", updatedAt: 2000, lastActiveSessionId: "session-b")
     clerk.client = current
 
-    clerk.applyResponseClient(replacement)
+    try await clerk.applyResponseClient(replacement)
 
     #expect(clerk.client?.id == replacement.id)
     #expect(clerk.client?.lastActiveSessionId == "session-b")
   }
 
   @Test
-  func applyResponseClientAcceptsNewerResponseSequenceEvenWhenUpdatedAtIsOlder() {
+  func applyResponseClientAcceptsNewerResponseSequenceEvenWhenUpdatedAtIsOlder() async throws {
     let clerk = makeIsolatedClerk()
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 4000)
     let replacement = client(id: "client-replacement", signInId: "sign-in-new", updatedAt: 3000)
 
     clerk.client = nil
-    clerk.applyResponseClient(original, responseSequence: 1)
-    clerk.applyResponseClient(replacement, responseSequence: 2)
+    try await clerk.applyResponseClient(original, responseSequence: 1)
+    try await clerk.applyResponseClient(replacement, responseSequence: 2)
 
     #expect(clerk.client?.signIn?.id == replacement.signIn?.id)
   }
 
   @Test
-  func applyResponseClientIgnoresOlderResponseSequenceEvenWhenUpdatedAtIsNewer() {
+  func applyResponseClientIgnoresOlderResponseSequenceEvenWhenUpdatedAtIsNewer() async throws {
     let clerk = makeIsolatedClerk()
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
     let stale = client(id: "client-stale", signInId: "sign-in-stale", updatedAt: 5000)
 
     clerk.client = nil
-    clerk.applyResponseClient(original, responseSequence: 2)
-    clerk.applyResponseClient(stale, responseSequence: 1)
+    try await clerk.applyResponseClient(original, responseSequence: 2)
+    try await clerk.applyResponseClient(stale, responseSequence: 1)
 
     #expect(clerk.client?.signIn?.id == original.signIn?.id)
   }
 
   @Test
-  func applyResponseClientDoesNotRegressServerDateWatermark() {
+  func applyResponseClientDoesNotRegressServerDateWatermark() async throws {
     let clerk = makeIsolatedClerk()
     let first = client(id: "client-first", updatedAt: 1000)
     let second = client(id: "client-second", updatedAt: 2000)
@@ -66,9 +66,9 @@ struct ClerkResponseClientStateTests {
     let date100 = Date(timeIntervalSince1970: 100)
     let date150 = Date(timeIntervalSince1970: 150)
 
-    clerk.applyResponseClient(first, responseSequence: 10, serverDate: date200)
-    clerk.applyResponseClient(second, responseSequence: 11, serverDate: date100)
-    clerk.applyResponseClient(stale, responseSequence: 10, serverDate: date150)
+    try await clerk.applyResponseClient(first, responseSequence: 10, serverDate: date200)
+    try await clerk.applyResponseClient(second, responseSequence: 11, serverDate: date100)
+    try await clerk.applyResponseClient(stale, responseSequence: 10, serverDate: date150)
 
     #expect(clerk.client?.id == second.id)
     #expect(clerk.lastClientServerFetchDate == date200)
@@ -86,14 +86,14 @@ struct ClerkResponseClientStateTests {
     completed.sessions = [pendingSession]
 
     clerk.client = nil
-    clerk.applyResponseClient(
+    try await clerk.applyResponseClient(
       refreshedBeforeCompletion,
       responseSequence: 2,
       serverDate: Date(timeIntervalSince1970: 100)
     )
 
     let event = try await captureNextAuthEvent(from: clerk) {
-      clerk.applyResponseClient(
+      try await clerk.applyResponseClient(
         completed,
         responseSequence: 1,
         serverDate: Date(timeIntervalSince1970: 101)
@@ -113,7 +113,7 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func applyResponseClientAcceptsOlderResponseSequenceWhenServerDateTiesAndClientUpdatedAtIsNewer() {
+  func applyResponseClientAcceptsOlderResponseSequenceWhenServerDateTiesAndClientUpdatedAtIsNewer() async throws {
     let clerk = makeIsolatedClerk()
     let refreshedBeforeCompletion = client(id: "client-current", signUpId: "sign-up-pending", updatedAt: 3000)
     var completed = client(id: "client-current", updatedAt: 4000, lastActiveSessionId: "session-pending")
@@ -125,33 +125,33 @@ struct ClerkResponseClientStateTests {
     let serverDate = Date(timeIntervalSince1970: 100)
 
     clerk.client = nil
-    clerk.applyResponseClient(refreshedBeforeCompletion, responseSequence: 2, serverDate: serverDate)
-    clerk.applyResponseClient(completed, responseSequence: 1, serverDate: serverDate)
+    try await clerk.applyResponseClient(refreshedBeforeCompletion, responseSequence: 2, serverDate: serverDate)
+    try await clerk.applyResponseClient(completed, responseSequence: 1, serverDate: serverDate)
 
     #expect(clerk.client?.currentSession?.id == "session-pending")
     #expect(clerk.client?.currentSession?.tasks == [.chooseOrganization])
   }
 
   @Test
-  func applyResponseClientNilIgnoresOlderResponseSequence() {
+  func applyResponseClientNilIgnoresOlderResponseSequence() async throws {
     let clerk = makeIsolatedClerk()
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
 
     clerk.client = nil
-    clerk.applyResponseClient(original, responseSequence: 2)
-    clerk.applyResponseClient(nil, responseSequence: 1)
+    try await clerk.applyResponseClient(original, responseSequence: 2)
+    try await clerk.applyResponseClient(nil, responseSequence: 1)
 
     #expect(clerk.client?.signIn?.id == original.signIn?.id)
   }
 
   @Test
-  func applyResponseClientStoresServerDate() {
+  func applyResponseClientStoresServerDate() async throws {
     let clerk = makeIsolatedClerk()
     let serverDate = Date(timeIntervalSince1970: 1000)
     let incoming = client(id: "client-1", updatedAt: 2000)
 
     clerk.client = nil
-    clerk.applyResponseClient(incoming, serverDate: serverDate)
+    try await clerk.applyResponseClient(incoming, serverDate: serverDate)
 
     #expect(clerk.lastClientServerFetchDate == serverDate)
   }
@@ -168,7 +168,7 @@ struct ClerkResponseClientStateTests {
 
     clerk.client = nil
     let event = try await captureNextAuthEvent(from: clerk) {
-      clerk.applyResponseClient(incoming)
+      try await clerk.applyResponseClient(incoming)
     }
 
     if let event {
@@ -188,7 +188,7 @@ struct ClerkResponseClientStateTests {
 
     clerk.client = nil
     let event = try await captureNextAuthEvent(from: clerk) {
-      clerk.applyResponseClient(incoming)
+      try await clerk.applyResponseClient(incoming)
     }
 
     if let event {
@@ -208,7 +208,7 @@ struct ClerkResponseClientStateTests {
 
     clerk.client = incoming
     let event = try await captureNextAuthEvent(from: clerk) {
-      clerk.applyResponseClient(incoming)
+      try await clerk.applyResponseClient(incoming)
     }
 
     if let event {
@@ -217,7 +217,7 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func organizationReturnsActiveSessionOrganization() {
+  func organizationReturnsActiveSessionOrganization() async throws {
     configureClerkForTesting()
     var organization = Organization.mock
     organization.id = "org-active"
@@ -239,7 +239,7 @@ struct ClerkResponseClientStateTests {
     client.sessions = [session]
     client.lastActiveSessionId = session.id
 
-    Clerk.shared.applyResponseClient(client)
+    try await Clerk.shared.applyResponseClient(client)
 
     #expect(Clerk.shared.organization?.id == organization.id)
     #expect(Clerk.shared.organization?.name == "Active Organization")
@@ -247,7 +247,7 @@ struct ClerkResponseClientStateTests {
   }
 
   @Test
-  func organizationReturnsNilWhenSessionHasNoActiveOrganization() {
+  func organizationReturnsNilWhenSessionHasNoActiveOrganization() async throws {
     configureClerkForTesting()
     var session = Session.mock
     session.id = "session-personal"
@@ -258,7 +258,7 @@ struct ClerkResponseClientStateTests {
     client.sessions = [session]
     client.lastActiveSessionId = session.id
 
-    Clerk.shared.applyResponseClient(client)
+    try await Clerk.shared.applyResponseClient(client)
 
     #expect(Clerk.shared.organization == nil)
     #expect(Clerk.shared.organizationMembership == nil)
@@ -267,7 +267,7 @@ struct ClerkResponseClientStateTests {
   // MARK: - Cleanup
 
   @Test
-  func cleanupManagersResetsLastAppliedClientResponseSequence() {
+  func cleanupManagersResetsLastAppliedClientResponseSequence() async throws {
     let clerk = makeIsolatedClerk()
     let original = client(id: "client-original", signInId: "sign-in-old", updatedAt: 3000)
     let replacement = client(id: "client-replacement", signInId: "sign-in-new", updatedAt: 2000)
@@ -278,11 +278,11 @@ struct ClerkResponseClientStateTests {
     )
 
     clerk.client = nil
-    clerk.applyResponseClient(original, responseSequence: 10)
+    try await clerk.applyResponseClient(original, responseSequence: 10)
     clerk.setCallbackContinuation(.signIn(pendingSignIn))
 
     clerk.cleanupManagers()
-    clerk.applyResponseClient(replacement, responseSequence: 1)
+    try await clerk.applyResponseClient(replacement, responseSequence: 1)
 
     #expect(clerk.client?.signIn?.id == replacement.signIn?.id)
     #expect(clerk.callbackContinuation == nil)
@@ -355,7 +355,7 @@ struct ClerkResponseClientStateTests {
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       clientService: clientService ?? MockClientService(get: { nil })
     )
     try! (clerk.dependencies as! MockDependencyContainer)

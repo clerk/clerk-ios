@@ -192,7 +192,7 @@ struct IdentityCoordinationTests {
   @Test
   func conflictingMutationRefreshesOnceAndResolvesItsOwnedCompletion() async throws {
     let service = RecoveryClientService()
-    let (clerk, storage) = try makeClerk(clientService: service)
+    let (clerk, storage) = try makeClerk(clientService: service.service)
     clerk.setClientFromIdentityController(.mockSignedOut)
     clerk.environment = .mock
     let registration = try #require(clerk.registerAuthFlow())
@@ -225,7 +225,7 @@ struct IdentityCoordinationTests {
   func failedRecoveryReadDoesNotTurnASuccessfulMutationIntoARetry() async throws {
     let service = RecoveryClientService()
     service.failure = URLError(.notConnectedToInternet)
-    let (clerk, storage) = try makeClerk(clientService: service)
+    let (clerk, storage) = try makeClerk(clientService: service.service)
     storage.beforeWrite = {
       try clerk.dependencies.identityStore.save(ClerkIdentitySnapshot(
         state: .present, deviceToken: "token", client: .mockSignedOut,
@@ -242,7 +242,7 @@ struct IdentityCoordinationTests {
   @Test
   func peerClearDoesNotFetchOrRecreateAnIdentityDuringMutationRecovery() async throws {
     let service = RecoveryClientService()
-    let (clerk, storage) = try makeClerk(clientService: service)
+    let (clerk, storage) = try makeClerk(clientService: service.service)
     storage.beforeWrite = { _ = try clerk.dependencies.identityStore.clear() }
 
     try await clerk.identityController.applyNetworkResponse(context(clerk, date: 400, canonical: false))
@@ -476,16 +476,19 @@ struct IdentityCoordinationTests {
 }
 
 @MainActor
-private final class RecoveryClientService: ClientServiceProtocol {
+private final class RecoveryClientService {
   var reads = 0
   var failure: (any Error)?
-
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
-    #expect(skipClientId)
-    reads += 1
-    if let failure { throw failure }
-    return ClientServiceResponse(client: .mock, requestSequence: 11, serverDate: Date(timeIntervalSince1970: 500))
-  }
+  lazy var service: MockClientService = {
+    let service = MockClientService()
+    service.responseHandler = { [unowned self] request in
+      #expect(request.value(forHTTPHeaderField: "x-clerk-client-id") == nil)
+      reads += 1
+      if let failure { throw failure }
+      return .init(client: .mock, serverDate: Date(timeIntervalSince1970: 500))
+    }
+    return service
+  }()
 }
 
 /// Models another process writing precisely between the controller's read and conditional write.

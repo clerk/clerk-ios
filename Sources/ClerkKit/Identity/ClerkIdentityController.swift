@@ -389,8 +389,7 @@ extension ClerkIdentityController {
     }
     guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
     var epochChanged = false
-    // A Client without a device token only exists in memory; it cannot be persisted.
-    if let store, identity.deviceToken != nil || identity.client == nil {
+    if let store {
       let record: ClerkIdentityStore.Record
       do {
         record = try store.save(
@@ -484,43 +483,6 @@ extension ClerkIdentityController {
     }
     responseOrderingGate.record(sequence: context.responseSequence)
     emitAcceptedAuthCompletion(context.completedAuthFlow, clerk: clerk)
-  }
-
-  /// Applies a Client decoded outside the response middleware, keeping the current device token.
-  func applyResponseClient(
-    _ incoming: Client?,
-    responseSequence: Int? = nil,
-    serverDate: Date? = nil,
-    clientResponseGeneration: ClientResponseGeneration? = nil,
-    completedAuthFlow: TransferFlowResult? = nil,
-    completedAuthFlowOwnerId: UUID? = nil
-  ) {
-    do {
-      try ensureHydrated()
-      if isSharingIdentity { try reconcile() }
-      guard responseCanBeAccepted(
-        incoming,
-        responseSequence: responseSequence,
-        serverDate: serverDate,
-        clientResponseGeneration: clientResponseGeneration
-      ) else {
-        resolveSupersededAuthFlowCompletion(completedAuthFlow, ownerId: completedAuthFlowOwnerId)
-        return
-      }
-
-      let identity = ClerkIdentitySnapshot(
-        state: incoming == nil ? .cleared : .present,
-        deviceToken: currentDeviceToken,
-        client: incoming,
-        serverDate: serverDate
-      )
-      try commit(identity, authFlowUpdate: authFlowUpdate(for: completedAuthFlow, ownerId: completedAuthFlowOwnerId))
-      responseOrderingGate.record(sequence: responseSequence)
-    } catch ClerkIdentityStoreError.writeConflict {
-      resolveSupersededAuthFlowCompletion(completedAuthFlow, ownerId: completedAuthFlowOwnerId)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to apply the Clerk client")
-    }
   }
 
   private func responseCanBeAccepted(

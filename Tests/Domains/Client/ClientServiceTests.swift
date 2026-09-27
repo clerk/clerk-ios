@@ -12,7 +12,7 @@ struct ClientServiceTests {
   }
 
   @Test
-  func testGetResponse() async throws {
+  func getResponse() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
 
@@ -30,12 +30,12 @@ struct ClientServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.clientService.getResponse()
+    _ = try await Clerk.shared.dependencies.clientService.get()
     #expect(requestHandled.value)
   }
 
   @Test
-  func getResponseIncludesRequestSequence() async throws {
+  func getAppliesTheResponseBeforeReturning() async throws {
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
 
     let mock = try Mock(
@@ -47,9 +47,9 @@ struct ClientServiceTests {
     )
     mock.register()
 
-    let response = try await Clerk.shared.dependencies.clientService.getResponse()
+    let response = try await Clerk.shared.dependencies.clientService.get()
 
-    #expect(response.client?.id == Client.mock.id)
-    #expect(response.requestSequence == 1)
+    #expect(response?.id == Client.mock.id)
+    #expect(Clerk.shared.client?.id == response?.id)
   }
 }
