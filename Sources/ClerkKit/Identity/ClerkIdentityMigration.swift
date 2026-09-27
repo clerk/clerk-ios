@@ -5,7 +5,7 @@
 
 import Foundation
 
-/// Moves an existing identity into ``ClerkIdentityStore`` once per app, then removes
+/// Moves an existing identity into ``ClerkIdentityStore`` once per app, then retires
 /// the storage used by earlier SDK versions.
 ///
 /// Sources, in order of preference:
@@ -18,10 +18,20 @@ import Foundation
 /// any identity. When another app in the access group already wrote the shared record,
 /// that record is authoritative, even when signed out.
 ///
-/// The migration is marked done only after every earlier copy was deleted, so a failed
-/// deletion is retried on the next launch.
+/// Only app-attributed records are deleted. Unscoped legacy items are retained because
+/// they may belong to a sibling; migration markers prevent this app from importing them again.
 struct ClerkIdentityMigration {
   static let markerValue = "4"
+
+  struct Destination: Codable {
+    let service: String
+    let accessGroup: String?
+  }
+
+  private struct SourceRetirement: Codable {
+    let destination: Destination
+    var completed: Bool
+  }
 
   /// Earlier-layout identity items in the configured Keychain.
   static let legacyIdentityKeys: [ClerkKeychainKey] = [
@@ -78,6 +88,8 @@ struct ClerkIdentityMigration {
   let accessGroup: String?
   let ownerIdentifier: String?
   let instanceFingerprint: String
+  /// The actual backend selected by layout discovery, including local fallback namespaces.
+  var destination: Destination?
   /// The previous bundle-ID service when first enabling sharing with a common service.
   var previousAppLocalService: String?
   /// Apps that adopted shared-session sync in SDK 1.5 left stale separate items behind, so only
@@ -97,13 +109,16 @@ struct ClerkIdentityMigration {
     let alreadyMigrated = try markerKeychain.string(forKey: marker) == Self.markerValue
 
     let clearIntent = alreadyMigrated ? nil : try loadClearIntent()
+    // Journal the destination before copying. If the process exits after the copy,
+    // even a launch with the old configuration can establish that its source is retired.
+    try recordSourceRetirements(destinationEstablished: false)
     // An existing record (including a clear tombstone) is authoritative. Importing
     // an old signed-in copy over it could undo another app's sign-out.
     if try store.load() == nil {
       do {
         if clearIntent != nil {
           try store.save(.signedOut, replacing: nil)
-        } else if !alreadyMigrated, let identity = try loadAtomicIdentity() {
+        } else if !alreadyMigrated, try !sourceWasRetired(configuredService), let identity = try loadAtomicIdentity() {
           try store.save(identity, replacing: nil)
         } else if let record = try loadCurrentFormatIdentity() {
           // The old migration marker only describes format adoption. Moving to
@@ -118,6 +133,10 @@ struct ClerkIdentityMigration {
       }
     }
 
+    if try store.load() != nil {
+      try recordSourceRetirements(destinationEstablished: true)
+    }
+
     guard !alreadyMigrated else { return }
     guard finalizes, removeEarlierStorage(clearIntent: clearIntent) else { return }
     try markerKeychain.set(Self.markerValue, forKey: marker)
@@ -126,11 +145,8 @@ struct ClerkIdentityMigration {
   // MARK: - Sources
 
   private func loadCurrentFormatIdentity() throws -> ClerkIdentityStore.Record? {
-    var sources: [(any KeychainStorage, String)] = [(markerKeychain, configuredService)]
-    if let previousAppLocalKeychain, let previousAppLocalService {
-      sources.append((previousAppLocalKeychain, previousAppLocalService))
-    }
-    for (keychain, service) in sources {
+    for (keychain, service) in localSources {
+      guard try !sourceWasRetired(service) else { continue }
       let source = ClerkIdentityStore(
         keychain: keychain, instanceFingerprint: instanceFingerprint,
         clearIntentKeychain: makeKeychain(stableIdentityService, nil),
@@ -140,6 +156,49 @@ struct ClerkIdentityMigration {
       if let record = try source.load() { return record }
     }
     return nil
+  }
+
+  private var localSources: [(any KeychainStorage, String)] {
+    var sources: [(any KeychainStorage, String)] = [(markerKeychain, configuredService)]
+    if let previousAppLocalKeychain, let previousAppLocalService {
+      sources.append((previousAppLocalKeychain, previousAppLocalService))
+    }
+    return sources
+  }
+
+  private func retirementKey(_ service: String) -> String {
+    "\(store.key).retiredSource.\(SharedSessionNamespace.sha256(service))"
+  }
+
+  private func sourceWasRetired(_ service: String) throws -> Bool {
+    let journal = makeKeychain(stableIdentityService, nil)
+    let key = retirementKey(service)
+    guard let data = try journal.data(forKey: key) else { return false }
+    var retirement = try JSONDecoder.clerkDecoder.decode(SourceRetirement.self, from: data)
+    if retirement.completed { return true }
+    let destination = ClerkIdentityStore(
+      keychain: makeKeychain(retirement.destination.service, retirement.destination.accessGroup),
+      instanceFingerprint: instanceFingerprint
+    )
+    // A failed copy leaves the source usable. A committed destination, including a
+    // later clear, permanently supersedes it without deleting an unscoped record.
+    guard try destination.load() != nil else { return false }
+    retirement.completed = true
+    try journal.set(JSONEncoder.clerkEncoder.encode(retirement), forKey: key)
+    return true
+  }
+
+  private func recordSourceRetirements(destinationEstablished: Bool) throws {
+    guard finalizes, let destination else { return }
+    let journal = makeKeychain(stableIdentityService, nil)
+    for (_, service) in localSources {
+      // No move took place if the source is already the selected local backend.
+      guard service != destination.service || destination.accessGroup != nil,
+            try !sourceWasRetired(service) else { continue }
+      try journal.set(JSONEncoder.clerkEncoder.encode(SourceRetirement(
+        destination: destination, completed: destinationEstablished
+      )), forKey: retirementKey(service))
+    }
   }
 
   private var stableIdentityService: String {
@@ -239,10 +298,14 @@ struct ClerkIdentityMigration {
   private func loadLegacyIdentity() throws -> ClerkIdentitySnapshot? {
     guard readsLegacyItems else { return nil }
     // Enabling sharing for the first time must include this app's existing local credentials.
-    if let local = try loadLegacyIdentity(from: markerKeychain) { return local }
-    if let previousAppLocalKeychain,
-       let previous = try loadLegacyIdentity(from: previousAppLocalKeychain) { return previous }
-    return readsSharedLegacyItems ? try loadLegacyIdentity(from: legacyKeychain) : nil
+    for (keychain, service) in localSources {
+      guard try !sourceWasRetired(service),
+            try keychain.string(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(instanceFingerprint)") != Self.markerValue
+      else { continue }
+      if let identity = try loadLegacyIdentity(from: keychain) { return identity }
+    }
+    return try readsSharedLegacyItems && !sourceWasRetired(configuredService)
+      ? loadLegacyIdentity(from: legacyKeychain) : nil
   }
 
   private var previousAppLocalKeychain: (any KeychainStorage)? {
@@ -266,21 +329,14 @@ struct ClerkIdentityMigration {
 
   // MARK: - Cleanup
 
-  /// Deletes every earlier copy of the identity. Separate items in an access group are left
-  /// for sibling apps still on an earlier SDK, which read them; a clear removes them.
+  /// Deletes app-attributed atomic records and slots. Separate legacy items are left
+  /// for siblings: omitting an access group does not establish private ownership.
   ///
   /// - Returns: `true` when every deletion succeeded.
   private func removeEarlierStorage(clearIntent: ClearIntent?) -> Bool {
-    var deletions: [(any KeychainStorage, String)] = accessGroup == nil
-      ? Self.legacyIdentityKeys.map { (legacyKeychain, $0.rawValue) }
-      : []
-    if accessGroup != nil {
-      deletions += Self.legacyIdentityKeys.map { (markerKeychain, $0.rawValue) }
-    }
-    if let previousAppLocalKeychain {
-      deletions += Self.legacyIdentityKeys.map { (previousAppLocalKeychain, $0.rawValue) }
-    }
-    deletions.append((makeKeychain(stableIdentityService, nil), Self.atomicRecordKey))
+    var deletions: [(any KeychainStorage, String)] = [
+      (makeKeychain(stableIdentityService, nil), Self.atomicRecordKey),
+    ]
     if let ownerIdentifier = ownerIdentifier.nilIfEmpty, let accessGroup {
       deletions.append((
         makeKeychain(Self.ownerSlotService(configuredService, instanceFingerprint), accessGroup),

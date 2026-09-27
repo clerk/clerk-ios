@@ -32,6 +32,9 @@ struct DependencyContainerKeychainTests {
       }
       try? initial.keychain.deleteItem(forKey: initial.identityStore.key)
       try? initial.keychain.deleteItem(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(fingerprint)")
+      try? marker.deleteItem(forKey: "\(initial.identityStore.key).retiredSource.\(SharedSessionNamespace.sha256(service))")
+      try? SystemKeychain(service: DependencyContainer.localIdentityService(configuredService: service, ownerIdentifier: service))
+        .deleteItem(forKey: initial.identityStore.key)
     }
     try initial.keychain.set("legacy-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     if legacyIdentityWasAdopted {
@@ -52,7 +55,9 @@ struct DependencyContainerKeychainTests {
     #expect(try restarted.identityStore.load()?.identity.deviceToken == (legacyIdentityWasAdopted ? nil : "legacy-token"))
     #expect(try AppLocalStateAdoption.usesAppLocalStorage(in: marker))
     #expect(try AppLocalStateAdoption.hasLegacyIdentityAdoption(in: marker) == legacyIdentityWasAdopted)
-    #expect(try initial.keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    // This unscoped service could include sibling-owned items. Migration preserves
+    // them and relies on its markers to prevent re-importing this app's stale token.
+    #expect(try initial.keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue))
   }
   #endif
 

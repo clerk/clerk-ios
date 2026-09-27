@@ -33,6 +33,7 @@ struct DeferredKeychainStorage: KeychainStorage {
 final class KeychainStorageLayout: @unchecked Sendable {
   struct Selection {
     let identity: any KeychainStorage
+    let identityService: String
     let appLocal: any KeychainStorage
     let identityIsInAccessGroup: Bool
     let sharedIsAccessible: Bool

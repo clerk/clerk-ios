@@ -105,7 +105,7 @@ struct KeychainPreparationRecoveryTests {
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == nil)
     for key in ClerkIdentityMigration.legacyIdentityKeys {
-      #expect(try previous.hasItem(forKey: key.rawValue) == (!sync && [.clerkDeviceToken, .cachedClient, .cachedClientServerDate].contains(key)))
+      #expect(try previous.hasItem(forKey: key.rawValue) == [.clerkDeviceToken, .cachedClient, .cachedClientServerDate].contains(key))
     }
     if sync { try clerk.identityController.clearIdentity() }
     let restarted = Clerk()
@@ -129,7 +129,7 @@ struct KeychainPreparationRecoveryTests {
     clerk.identityController.hydrate()
 
     #expect(clerk.deviceToken == (hasGroupIdentity ? nil : "current-local-login"))
-    #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "previous-login")
   }
 
   @Test
@@ -147,7 +147,7 @@ struct KeychainPreparationRecoveryTests {
 
     previous.readError = nil
     #expect(try await clerk.identityController.captureRequestIdentity().deviceToken == "existing-login")
-    #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "existing-login")
   }
 
   @Test
@@ -167,7 +167,7 @@ struct KeychainPreparationRecoveryTests {
     restarted.dependencies = try fixture.container(clerk: restarted, sync: true, owner: "previous.bundle.service")
     restarted.identityController.hydrate()
     #expect(restarted.deviceToken == nil)
-    #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "old-login")
   }
 
   @Test(arguments: [false, true])

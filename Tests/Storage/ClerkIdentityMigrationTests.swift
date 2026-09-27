@@ -9,7 +9,7 @@ struct ClerkIdentityMigrationTests {
   private let accessGroup = "TEAMID.shared"
 
   @Test
-  func migratesOnlyTheTokenFromSeparateLegacyItemsAndRemovesThem() throws {
+  func migratesOnlyTheTokenAndPreservesAmbiguousLegacyItems() throws {
     let env = Environment(accessGroup: nil)
     try env.legacy.set("legacy-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try env.legacy.set(JSONEncoder.clerkEncoder.encode(Client.mock), forKey: ClerkKeychainKey.cachedClient.rawValue)
@@ -25,7 +25,7 @@ struct ClerkIdentityMigrationTests {
     #expect(identity.client == nil)
     #expect(identity.serverDate == nil)
     for key in ClerkIdentityMigration.legacyIdentityKeys {
-      #expect(try env.legacy.hasItem(forKey: key.rawValue) == false)
+      #expect(try env.legacy.hasItem(forKey: key.rawValue) == [.clerkDeviceToken, .cachedClient, .cachedClientServerDate].contains(key))
     }
     #expect(try env.legacy.string(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == "keep")
   }
@@ -127,24 +127,25 @@ struct ClerkIdentityMigrationTests {
 
   @Test
   func failedCleanupIsRetriedOnTheNextLaunch() throws {
-    let env = Environment(accessGroup: nil)
-    let failingLegacy = DeleteFailingKeychain()
-    try failingLegacy.set("legacy-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    var migration = ClerkIdentityMigration(
-      store: ClerkIdentityStore(keychain: env.legacy, instanceFingerprint: fingerprint),
-      legacyKeychain: failingLegacy,
-      markerKeychain: env.marker,
-      configuredService: service,
-      accessGroup: nil,
-      ownerIdentifier: owner,
-      instanceFingerprint: fingerprint
-    )
-    migration.makeKeychain = { env.keychain($0, $1) }
+    let env = Environment()
+    let atomic = env.keychain(stableService)
+    try atomic.set(atomicRecord(token: "atomic-token"), forKey: "clerkSharedSessionLocalIdentityV2")
+    let service = stableService
+    var firstAttempt = migration(env)
+    firstAttempt.makeKeychain = { name, group in
+      if name == service { return DeleteFailingKeychain(backing: atomic) }
+      return env.keychain(name, group)
+    }
 
-    try migration.migrateIfNeeded()
+    try firstAttempt.migrateIfNeeded()
 
-    #expect(try env.store.load()?.identity.deviceToken == "legacy-token")
-    #expect(try env.marker.string(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(fingerprint)") == nil)
+    #expect(try env.store.load()?.identity.deviceToken == "atomic-token")
+    #expect(try env.marker.string(forKey: "clerkIdentityMigrationV4.instance") == nil)
+    #expect(try atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
+
+    try migration(env).migrateIfNeeded()
+    #expect(try !atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
+    #expect(try env.marker.string(forKey: "clerkIdentityMigrationV4.instance") == ClerkIdentityMigration.markerValue)
   }
 
   @Test

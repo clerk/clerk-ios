@@ -234,6 +234,7 @@ final class DependencyContainer: Dependencies {
     let layout = makeKeychainLayout(
       syncEnabled: syncEnabled, config: config, shared: shared,
       configuredAppLocal: configuredAppLocal, localIdentity: localIdentity,
+      localIdentityService: localIdentityService(configuredService: config.service, ownerIdentifier: ownerIdentifier),
       adoptionMarkerKeychain: adoptionMarkerKeychain
     )
     var identityStore = ClerkIdentityStore(
@@ -270,6 +271,7 @@ final class DependencyContainer: Dependencies {
         store: migrationStore, legacyKeychain: shared, markerKeychain: configuredAppLocal,
         configuredService: config.service, accessGroup: config.normalizedAccessGroup,
         ownerIdentifier: ownerIdentifier, instanceFingerprint: namespace.fingerprint,
+        destination: .init(service: selected.identityService, accessGroup: selected.identityIsInAccessGroup ? config.normalizedAccessGroup : nil),
         previousAppLocalService: syncEnabled ? ownerIdentifier : nil,
         readsLegacyItems: !AppLocalStateAdoption.hasLegacyIdentityAdoption(in: adoptionMarkerKeychain),
         readsSharedLegacyItems: selected.sharedIsAccessible,
@@ -299,12 +301,14 @@ final class DependencyContainer: Dependencies {
     shared: any KeychainStorage,
     configuredAppLocal: any KeychainStorage,
     localIdentity: any KeychainStorage,
+    localIdentityService: String,
     adoptionMarkerKeychain: any KeychainStorage
   ) -> KeychainStorageLayout {
     KeychainStorageLayout {
       // A failed marker read is unknown, never evidence that adoption did not happen.
       let wasAdopted = try AppLocalStateAdoption.usesAppLocalStorage(in: adoptionMarkerKeychain)
       var identity: any KeychainStorage = syncEnabled || !wasAdopted ? shared : localIdentity
+      var identityService = syncEnabled || !wasAdopted ? config.service : localIdentityService
       var isShared = config.normalizedAccessGroup != nil && (syncEnabled || !wasAdopted)
       var sharedIsAccessible = true
       if config.normalizedAccessGroup != nil {
@@ -315,6 +319,7 @@ final class DependencyContainer: Dependencies {
             "Clerk cannot access the configured Keychain access group, so authentication stays local to this app and shared-session sync is off. Add the access group to this app's Keychain Sharing entitlement, then relaunch."
           )
           identity = localIdentity
+          identityService = localIdentityService
           isShared = false
           sharedIsAccessible = false
         }
@@ -322,7 +327,7 @@ final class DependencyContainer: Dependencies {
         // so temporary unavailability cannot permanently exclude legacy credentials.
       }
       return KeychainStorageLayout.Selection(
-        identity: identity,
+        identity: identity, identityService: identityService,
         appLocal: syncEnabled || wasAdopted || !sharedIsAccessible ? configuredAppLocal : shared,
         identityIsInAccessGroup: isShared, sharedIsAccessible: sharedIsAccessible
       )

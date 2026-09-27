@@ -52,6 +52,130 @@ struct IdentityStorageRoutingTests {
     try unscoped.deleteItem(forKey: "identity")
     #expect(try shared.data(forKey: "identity") == nil)
   }
+
+  private func app(_ database: AccessGroupKeychainDatabase, service: String, sharing: Bool,
+                   sharedGroupIsDefault: Bool = false) throws -> Clerk
+  {
+    let clerk = Clerk()
+    let client = database.client(owner: "app.a", sharedGroupIsDefault: sharedGroupIsDefault)
+    clerk.dependencies = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: .init(telemetryEnabled: false,
+                     keychainConfig: .init(service: service, accessGroup: sharing ? "shared" : nil),
+                     sharedSessionSync: sharing ? .enabled : nil),
+      runtimeScope: clerk.runtimeScope, migratesPersistentStateOverride: true,
+      keychainFactory: { SystemKeychain(service: $0, accessGroup: $1, secItemClient: client) },
+      ownerIdentifierProvider: { "app.a" }
+    )
+    clerk.identityController.hydrate()
+    return clerk
+  }
+
+  @Test(arguments: [false, true], [false, true])
+  func migratedSourceMustNotRestoreClearedLogin(sameService: Bool, establishedSharedClear: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let original = try app(database, service: "app.a", sharing: false)
+    try original.seedIdentity(deviceToken: "original-login", client: .mock)
+    let sharedService = sameService ? "app.a" : "common-service"
+    if establishedSharedClear {
+      let keychain = SystemKeychain(service: sharedService, accessGroup: "shared",
+                                    secItemClient: database.client(owner: "app.a", sharedGroupIsDefault: false))
+      try ClerkIdentityStore(keychain: keychain, instanceFingerprint: original.dependencies.identityStore.instanceFingerprint).clear()
+    }
+    let sharing = try app(database, service: sharedService, sharing: true)
+    try #require(sharing.deviceToken == (establishedSharedClear ? nil : "original-login"))
+    try #require(sharing.client?.id == (establishedSharedClear ? nil : Client.mock.id))
+    try sharing.clearKeychainItems()
+    try #require(sharing.deviceToken == nil)
+    let sharedRelaunch = try app(database, service: sharedService, sharing: true)
+    try #require(sharedRelaunch.deviceToken == nil)
+    let restoredConfiguration = try app(database, service: "app.a", sharing: false)
+    #expect(restoredConfiguration.deviceToken == nil)
+    #expect(restoredConfiguration.client == nil)
+    try restoredConfiguration.seedIdentity(deviceToken: "new-local-login", client: .mock)
+    #expect(try app(database, service: "app.a", sharing: false).deviceToken == "new-local-login")
+  }
+
+  @Test(arguments: [false, true])
+  func migrationCleanupMustPreserveSiblingLegacyCredentials(sharedGroupIsDefault: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let firstClient = database.client(owner: "app.a", sharedGroupIsDefault: sharedGroupIsDefault)
+    let shared = SystemKeychain(service: "common-service", accessGroup: "shared", secItemClient: firstClient)
+    let tokenKey = ClerkKeychainKey.clerkDeviceToken.rawValue
+    try shared.set("legacy-shared-login", forKey: tokenKey)
+    for key in ClerkIdentityMigration.legacyIdentityKeys where key != .clerkDeviceToken {
+      try shared.set("sibling-value", forKey: key.rawValue)
+    }
+    let siblingClient = database.client(owner: "app.b", sharedGroupIsDefault: false)
+    let siblingShared = SystemKeychain(service: "common-service", accessGroup: "shared", secItemClient: siblingClient)
+    try #require(try siblingShared.string(forKey: tokenKey) == "legacy-shared-login")
+    let upgraded = try app(database, service: "common-service", sharing: true, sharedGroupIsDefault: sharedGroupIsDefault)
+    try #require(upgraded.deviceToken == "legacy-shared-login")
+    #expect(try siblingShared.string(forKey: tokenKey) == "legacy-shared-login")
+    for key in ClerkIdentityMigration.legacyIdentityKeys where key != .clerkDeviceToken {
+      #expect(try siblingShared.string(forKey: key.rawValue) == "sibling-value")
+    }
+  }
+
+  @Test(arguments: [false, true])
+  func failedMigrationCopyKeepsItsSourceRecoverable(returnToOriginalConfiguration: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let original = try app(database, service: "app.a", sharing: false)
+    try original.seedIdentity(deviceToken: "original-login", client: .mock)
+    database.rejectIdentityCreation = true
+    let failed = try app(database, service: "common-service", sharing: true)
+    #expect(failed.deviceToken == nil)
+    #expect(try failed.dependencies.identityStore.load() == nil)
+
+    database.rejectIdentityCreation = false
+    let recovered = try app(database, service: returnToOriginalConfiguration ? "app.a" : "common-service",
+                            sharing: !returnToOriginalConfiguration)
+    #expect(recovered.deviceToken == "original-login")
+    #expect(recovered.client?.id == Client.mock.id)
+  }
+
+  @Test
+  func interruptedSourceRetirementIsRecoveredFromTheCommittedDestination() throws {
+    let database = AccessGroupKeychainDatabase()
+    let original = try app(database, service: "app.a", sharing: false)
+    try original.seedIdentity(deviceToken: "original-login", client: .mock)
+    database.rejectRetirementCompletion = true
+    let interrupted = try app(database, service: "common-service", sharing: true)
+    #expect(interrupted.deviceToken == nil)
+    #expect(try interrupted.dependencies.identityStore.load()?.identity.deviceToken == "original-login")
+    // A peer can clear the committed shared record while this app has not finished
+    // recording completion. Restart directly in the original configuration.
+    try interrupted.dependencies.identityStore.clear()
+    database.rejectRetirementCompletion = false
+    let restored = try app(database, service: "app.a", sharing: false)
+    #expect(restored.deviceToken == nil)
+    #expect(restored.client == nil)
+  }
+
+  @Test(arguments: [false, true])
+  func retainedLegacySourceCannotRestoreAClearedMigratedLogin(interruptedAtomicCleanup: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let client = database.client(owner: "app.a", sharedGroupIsDefault: false)
+    let original = SystemKeychain(service: "app.a", accessGroup: "app.a", secItemClient: client)
+    let key = ClerkKeychainKey.clerkDeviceToken.rawValue
+    try original.set("legacy-login", forKey: key)
+    if interruptedAtomicCleanup {
+      let config = ConfigurationManager()
+      try config.configure(publishableKey: testPublishableKey, options: .init())
+      let fingerprint = SharedSessionNamespace(frontendApiUrl: config.frontendApiUrl, publishableKey: testPublishableKey).fingerprint
+      let atomic = SystemKeychain(service: "app.a.clerk.identity.v2.\(fingerprint)", secItemClient: client)
+      try atomic.set(JSONEncoder.clerkEncoder.encode(ClerkIdentitySnapshot(
+        state: .present, deviceToken: "legacy-login", client: .mock, serverDate: nil
+      )), forKey: "clerkSharedSessionLocalIdentityV2")
+      database.rejectAtomicDeletion = true
+    }
+    let sharing = try app(database, service: "common-service", sharing: true)
+    #expect(sharing.deviceToken == "legacy-login")
+    #expect(try original.string(forKey: key) == "legacy-login")
+    try sharing.clearKeychainItems()
+    database.rejectAtomicDeletion = false
+    #expect(try app(database, service: "app.a", sharing: false).deviceToken == nil)
+  }
 }
 
 /// Models Apple's access-group matching while exercising the actual SystemKeychain
@@ -59,6 +183,9 @@ struct IdentityStorageRoutingTests {
 private final class AccessGroupKeychainDatabase: @unchecked Sendable {
   private let lock = NSLock()
   private var items: [[String: Any]] = []
+  var rejectIdentityCreation = false
+  var rejectRetirementCompletion = false
+  var rejectAtomicDeletion = false
 
   func client(owner: String, sharedGroupIsDefault: Bool) -> SystemKeychain.SecItemClient {
     let groups = sharedGroupIsDefault ? ["shared", owner] : [owner, "shared"]
@@ -66,6 +193,8 @@ private final class AccessGroupKeychainDatabase: @unchecked Sendable {
       add: { query, _ in
         self.lock.withLock {
           var item = query as! [String: Any]
+          if self.rejectIdentityCreation, item[kSecAttrGeneric as String] != nil { return errSecInteractionNotAllowed }
+          if self.rejectsRetirementWrite(query: item, attributes: item) { return errSecInteractionNotAllowed }
           item[kSecAttrAccessGroup as String] = item[kSecAttrAccessGroup as String] ?? groups[0]
           guard groups.contains(item[kSecAttrAccessGroup as String] as! String) else { return errSecMissingEntitlement }
           let identityKeys = [kSecClass, kSecAttrService, kSecAttrAccount, kSecAttrAccessGroup].map { $0 as String }
@@ -77,6 +206,9 @@ private final class AccessGroupKeychainDatabase: @unchecked Sendable {
       },
       update: { query, attributes in
         self.lock.withLock {
+          if self.rejectsRetirementWrite(query: query as! [String: Any], attributes: attributes as! [String: Any]) {
+            return errSecInteractionNotAllowed
+          }
           let indices = self.items.indices.filter { self.matches(self.items[$0], query: query as! [String: Any], groups: groups) }
           guard !indices.isEmpty else { return errSecItemNotFound }
           for index in indices {
@@ -100,12 +232,23 @@ private final class AccessGroupKeychainDatabase: @unchecked Sendable {
       },
       delete: { query in
         self.lock.withLock {
+          if self.rejectAtomicDeletion,
+             (query as! [String: Any])[kSecAttrAccount as String] as? String == "clerkSharedSessionLocalIdentityV2"
+          { return errSecInteractionNotAllowed }
           let count = self.items.count
           self.items.removeAll { self.matches($0, query: query as! [String: Any], groups: groups) }
           return self.items.count == count ? errSecItemNotFound : errSecSuccess
         }
       }
     )
+  }
+
+  private func rejectsRetirementWrite(query: [String: Any], attributes: [String: Any]) -> Bool {
+    guard rejectRetirementCompletion,
+          let key = query[kSecAttrAccount as String] as? String, key.contains(".retiredSource."),
+          let data = attributes[kSecValueData as String] as? Data,
+          let value = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return false }
+    return value["completed"] as? Bool == true
   }
 
   private func matches(_ item: [String: Any], query: [String: Any], groups: [String]) -> Bool {
