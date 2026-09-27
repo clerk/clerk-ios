@@ -87,6 +87,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
             serverDate: incoming.serverDate
           ).validated(),
           watchClearGeneration: incoming.clearGeneration,
+          recordsClear: incoming.clearGeneration > local.clearGeneration,
           didApply: { [weak self, weak clerk] in
             guard let self, let clerk else { return }
             didAdopt(incoming, into: clerk)

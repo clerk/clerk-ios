@@ -27,6 +27,8 @@ final class ClerkIdentityController {
     let identity: ClerkIdentitySnapshot
     var fenceAllClientResponses = true
     var watchClearGeneration: Int?
+    /// A clear can arrive with a refreshed token/Client instead of a tokenless snapshot.
+    var recordsClear = false
     var didApply: @MainActor () -> Void = {}
   }
 
@@ -263,7 +265,7 @@ extension ClerkIdentityController {
     guard let transition = try prepare() else { return }
     try commit(
       transition.identity, fenceResponses: transition.fenceAllClientResponses,
-      watchClearGeneration: transition.watchClearGeneration
+      watchClearGeneration: transition.watchClearGeneration, recordsClear: transition.recordsClear
     )
     transition.didApply()
   }
@@ -357,6 +359,7 @@ extension ClerkIdentityController {
     _ identity: ClerkIdentitySnapshot,
     fenceResponses: Bool = false,
     watchClearGeneration: Int? = nil,
+    recordsClear: Bool = false,
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
     try ensureHydrated()
@@ -377,7 +380,9 @@ extension ClerkIdentityController {
     if let store, identity.deviceToken != nil || identity.client == nil {
       let record: ClerkIdentityStore.Record
       do {
-        record = try store.save(identity, replacing: storedRecord, watchClearGeneration: watchClearGeneration)
+        record = try store.save(
+          identity, replacing: storedRecord, watchClearGeneration: watchClearGeneration, recordsClear: recordsClear
+        )
       } catch ClerkIdentityStoreError.writeConflict {
         // Adopt the winner, but do not give this prepared transition a new revision.
         try reconcile()

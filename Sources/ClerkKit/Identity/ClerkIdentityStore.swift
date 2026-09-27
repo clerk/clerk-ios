@@ -138,10 +138,15 @@ struct ClerkIdentityStore {
   }
 
   /// Replaces only the snapshot on which the caller based its decision.
-  /// Clears are credential-free records, never an unversioned absence.
+  /// Explicit clears retain credential-free records rather than an unversioned absence.
+  /// `recordsClear` preserves a newly observed paired-device clear even when its
+  /// snapshot already includes a later token. The caller compares the incoming
+  /// generation to its local counter; an echo of a known counter is not a new clear.
   @discardableResult
-  func save(_ identity: ClerkIdentitySnapshot, replacing expected: Record?, watchClearGeneration: Int? = nil) throws -> Record {
-    try write(identity, replacing: expected, watchClearGeneration: watchClearGeneration)
+  func save(_ identity: ClerkIdentitySnapshot, replacing expected: Record?, watchClearGeneration: Int? = nil,
+            recordsClear: Bool = false) throws -> Record
+  {
+    try write(identity, replacing: expected, watchClearGeneration: watchClearGeneration, recordsClear: recordsClear)
   }
 
   /// A backend handoff retains identity and Watch epochs, but starts a new storage revision.
@@ -157,18 +162,18 @@ struct ClerkIdentityStore {
 
   private func write(
     _ identity: ClerkIdentitySnapshot, replacing expected: Record?, clearID: UUID? = nil,
-    watchClearGeneration: Int? = nil
+    watchClearGeneration: Int? = nil, recordsClear: Bool = false
   ) throws -> Record {
     let identity = try identity.validated()
     if let watchClearGeneration, watchClearGeneration < 0 { throw KeychainError.invalidStringEncoding }
     let epoch: UUID = if let clearID {
       clearID
-    } else if let expected, identity.deviceToken != nil, identity.deviceToken == expected.identity.deviceToken {
+    } else if !recordsClear, let expected, identity.deviceToken != nil, identity.deviceToken == expected.identity.deviceToken {
       expected.epoch
     } else {
       UUID()
     }
-    let clearEpoch = identity.deviceToken == nil ? epoch : expected?.clearEpoch
+    let clearEpoch = recordsClear || identity.deviceToken == nil ? epoch : expected?.clearEpoch
     let record = Record(
       schemaVersion: Record.schemaVersion,
       revision: clearID ?? UUID(),

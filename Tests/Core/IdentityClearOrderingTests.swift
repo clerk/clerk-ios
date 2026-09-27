@@ -6,6 +6,97 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct IdentityClearOrderingTests {
+  @Test(arguments: [false, true], [false, true])
+  func coalescedWatchClearProtectsSiblingsAndEarlierResponses(signedIn: Bool, reusesToken: Bool) async throws {
+    let shared = InMemoryKeychain()
+    let first = try makeApp(shared: shared, local: InMemoryKeychain(), counter: 5)
+    try first.seedIdentity(deviceToken: "old-token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
+    let beforeClear = try #require(try first.dependencies.identityStore.load())
+    let oldWatch = try WatchSyncState(of: first)
+    let request = try await first.identityController.captureRequestIdentity()
+    let sibling = try makeApp(shared: shared, local: InMemoryKeychain(), counter: 1)
+    let siblingWatch = try makeApp(shared: InMemoryKeychain(), local: InMemoryKeychain(), counter: 1)
+    try siblingWatch.seedIdentity(deviceToken: "old-token", client: .mock)
+    try siblingWatch.identityController.clearIdentity()
+    let token = reusesToken ? "old-token" : "post-clear-token"
+    var client = signedIn ? Client.mock : Client.mockSignedOut
+    client.id = reusesToken ? Client.mock.id : "post-clear-client"
+    try siblingWatch.seedIdentity(deviceToken: token, client: client, serverDate: Date(timeIntervalSince1970: 200))
+    let state = try WatchSyncState(of: siblingWatch)
+    try #require(state.clearGeneration == 2)
+    let payload = WatchSyncPayload(state: state, environment: nil)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+
+    // Deliver only the snapshot after the Watch refresh/sign-in, never its tokenless clear.
+    coordinator.apply(payload, from: .watch, to: sibling)
+    let winner = try #require(try sibling.dependencies.identityStore.load())
+    #expect(winner.identity.deviceToken == token)
+    #expect(winner.epoch != beforeClear.epoch)
+    #expect(winner.clearEpoch == winner.epoch)
+    #expect(winner.watchClearEpoch == winner.clearEpoch)
+    #expect(try WatchSyncState(of: sibling).clearGeneration == 2)
+    coordinator.apply(payload, from: .watch, to: sibling)
+    #expect(try sibling.dependencies.identityStore.load() == winner)
+
+    #expect(first.identityController.reconcileWithStore())
+    #expect(try WatchSyncState(of: first).clearGeneration == 6)
+    coordinator.apply(WatchSyncPayload(state: oldWatch, environment: nil), from: .watch, to: first)
+    try await first.identityController.applyNetworkResponse(ClientSyncResponseContext(
+      update: .client(.mock), deviceTokenUpdate: .absent, requestDeviceToken: request.deviceToken,
+      serverDate: Date(timeIntervalSince1970: 400), isCanonicalClientRequest: true,
+      clientResponseGeneration: request.clientResponseGeneration, responseSequence: 1
+    ))
+    #expect(first.deviceToken == token)
+    #expect(try first.dependencies.identityStore.load() == winner)
+
+    // A later snapshot at the same generation updates the Client without another clear.
+    coordinator.apply(WatchSyncPayload(state: WatchSyncState(
+      deviceToken: token, client: client, serverDate: Date(timeIntervalSince1970: 300), clearGeneration: 2
+    ), environment: nil), from: .watch, to: sibling)
+    let refreshed = try #require(try sibling.dependencies.identityStore.load())
+    #expect(refreshed.revision != winner.revision)
+    #expect(refreshed.epoch == winner.epoch)
+    #expect(refreshed.clearEpoch == winner.clearEpoch)
+    #expect(first.identityController.reconcileWithStore())
+    let restarted = Clerk()
+    restarted.dependencies = first.dependencies
+    restarted.identityController.hydrate()
+    #expect(restarted.deviceToken == token)
+    #expect(try WatchSyncState(of: restarted).clearGeneration == 6)
+  }
+
+  @Test
+  func watchEchoOfLocallyAdvancedCounterDoesNotRecordAnotherClear() throws {
+    let shared = InMemoryKeychain()
+    let first = try makeApp(shared: shared, local: InMemoryKeychain(), counter: 5)
+    try first.seedIdentity(deviceToken: "old-token", client: .mock)
+    let sibling = try makeApp(shared: shared, local: InMemoryKeychain(), counter: 1)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    coordinator.apply(WatchSyncPayload(state: WatchSyncState(
+      deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 2
+    ), environment: nil), from: .watch, to: sibling)
+    #expect(first.identityController.reconcileWithStore())
+    try first.seedIdentity(deviceToken: "new-token", client: .mock, serverDate: Date(timeIntervalSince1970: 200))
+    let beforeEcho = try #require(try first.dependencies.identityStore.load())
+    try #require(try WatchSyncState(of: first).clearGeneration == 6)
+    try #require(beforeEcho.watchClearGeneration == 2)
+    // The Watch learned 6 from this phone. A refresh echoing that counter is not a new clear.
+    let payload = WatchSyncPayload(state: WatchSyncState(
+      deviceToken: "new-token", client: .mock, serverDate: Date(timeIntervalSince1970: 300), clearGeneration: 6
+    ), environment: nil)
+    coordinator.apply(payload, from: .watch, to: first)
+    let afterEcho = try #require(try first.dependencies.identityStore.load())
+    #expect(afterEcho.revision != beforeEcho.revision)
+    #expect(afterEcho.epoch == beforeEcho.epoch)
+    #expect(afterEcho.clearEpoch == beforeEcho.clearEpoch)
+    #expect(afterEcho.watchClearGeneration == 6)
+    #expect(try WatchSyncState(of: first).clearGeneration == 6)
+    #expect(sibling.identityController.reconcileWithStore())
+    #expect(try WatchSyncState(of: sibling).clearGeneration == 6)
+    coordinator.apply(payload, from: .watch, to: first)
+    #expect(try first.dependencies.identityStore.load() == afterEcho)
+  }
+
   enum ClearObservationTiming: CaseIterable {
     case reconcile, restart, afterSignIn
   }
@@ -182,8 +273,8 @@ struct IdentityClearOrderingTests {
     #expect(try store.load()?.identity.deviceToken == nil)
   }
 
-  @Test(arguments: [false, true])
-  func committedWatchGenerationRecoversAfterPrivateMarkerFailure(recreated: Bool) throws {
+  @Test(arguments: [false, true], [false, true])
+  func committedWatchGenerationRecoversAfterPrivateMarkerFailure(recreated: Bool, coalesced: Bool) throws {
     let storage = FailingConditionalKeychain()
     let local = FailingConditionalKeychain()
     let clerk = Clerk()
@@ -195,14 +286,15 @@ struct IdentityClearOrderingTests {
     try local.set("0", forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue)
     local.failMarkerWrite = true
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
-    let clear = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 7)
+    let clear = WatchSyncState(deviceToken: coalesced ? "anonymous-token" : nil,
+                               client: coalesced ? .mockSignedOut : nil, serverDate: nil, clearGeneration: 7)
 
     coordinator.apply(WatchSyncPayload(state: clear, environment: nil), from: .phone, to: clerk)
 
     #expect(clerk.deviceToken == nil)
     #expect(try WatchSyncState(of: clerk).client == nil)
     let store = clerk.dependencies.identityStore
-    #expect(try store.load()?.identity.deviceToken == nil)
+    #expect(try store.load()?.identity.deviceToken == clear.deviceToken)
     #expect(try store.load()?.watchClearGeneration == 7)
     if recreated {
       try store.save(ClerkIdentitySnapshot(state: .present, deviceToken: "new-token", client: .mock, serverDate: nil))
@@ -212,14 +304,14 @@ struct IdentityClearOrderingTests {
     restarted.dependencies = clerk.dependencies
     restarted.identityController.hydrate()
 
-    #expect(restarted.deviceToken == (recreated ? "new-token" : nil))
+    #expect(restarted.deviceToken == (recreated ? "new-token" : clear.deviceToken))
     #expect(try WatchSyncState(of: restarted).clearGeneration == 7)
     coordinator.apply(WatchSyncPayload(state: clear, environment: nil), from: .phone, to: restarted)
-    #expect(restarted.deviceToken == (recreated ? "new-token" : nil))
+    #expect(restarted.deviceToken == (recreated ? "new-token" : clear.deviceToken))
   }
 
-  @Test
-  func conflictingWatchWriteDoesNotAdvanceTheWinnersGeneration() throws {
+  @Test(arguments: [false, true])
+  func conflictingWatchWriteDoesNotAdvanceTheWinnersGeneration(coalesced: Bool) throws {
     let storage = FailingConditionalKeychain()
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
@@ -233,12 +325,14 @@ struct IdentityClearOrderingTests {
     }
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
     coordinator.apply(WatchSyncPayload(
-      state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 7), environment: nil
+      state: WatchSyncState(deviceToken: coalesced ? "anonymous-token" : nil,
+                            client: coalesced ? .mockSignedOut : nil, serverDate: nil, clearGeneration: 7), environment: nil
     ), from: .phone, to: clerk)
 
     #expect(clerk.deviceToken == "winner")
     #expect(try WatchSyncState(of: clerk).clearGeneration == 0)
     #expect(try store.load()?.watchClearGeneration == nil)
+    #expect(try store.load()?.clearEpoch == nil)
   }
 }
 
