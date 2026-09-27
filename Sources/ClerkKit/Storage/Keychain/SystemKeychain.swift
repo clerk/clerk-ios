@@ -77,6 +77,27 @@ struct SystemKeychain: KeychainStorage {
     }
   }
 
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    var query = baseQuery(for: key)
+    let attributes: [String: Any] = [
+      kSecValueData as String: data,
+      kSecAttrGeneric as String: Data(newRevision.uuidString.utf8),
+      kSecAttrAccessible as String: accessibility.secValue,
+    ]
+    let status: OSStatus
+    if let expectedRevision {
+      query[kSecAttrGeneric as String] = Data(expectedRevision.uuidString.utf8)
+      status = secItemClient.update(query as CFDictionary, attributes as CFDictionary)
+      if status == errSecItemNotFound { return false }
+    } else {
+      query.merge(attributes) { _, new in new }
+      status = secItemClient.add(query as CFDictionary, nil)
+      if status == errSecDuplicateItem { return false }
+    }
+    guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
+    return true
+  }
+
   func deleteItem(forKey key: String) throws {
     let status = secItemClient.delete(baseQuery(for: key) as CFDictionary)
     switch status {
@@ -101,6 +122,28 @@ struct SystemKeychain: KeychainStorage {
       return false
     default:
       throw KeychainError.unexpectedStatus(status)
+    }
+  }
+
+  func allItems() throws -> [String: Data] {
+    var query = baseQuery(for: "")
+    query.removeValue(forKey: kSecAttrAccount as String)
+    query[kSecReturnAttributes as String] = true
+    query[kSecMatchLimit as String] = kSecMatchLimitAll
+    var result: CFTypeRef?
+    let status = secItemClient.copyMatching(query as CFDictionary, &result)
+    if status == errSecItemNotFound { return [:] }
+    guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
+    guard let items = result as? [[String: Any]] else {
+      throw KeychainError.unexpectedStatus(errSecDecode)
+    }
+    return try items.reduce(into: [:]) { values, item in
+      guard let account = item[kSecAttrAccount as String] as? String else {
+        throw KeychainError.unexpectedStatus(errSecDecode)
+      }
+      // The macOS legacy Keychain cannot combine password data with match-all.
+      // Read each account separately; a peer may have removed it since enumeration.
+      values[account] = try data(forKey: account)
     }
   }
 

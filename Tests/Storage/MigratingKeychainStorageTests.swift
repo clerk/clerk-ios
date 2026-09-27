@@ -10,6 +10,42 @@ import Testing
 @Suite(.serialized)
 struct MigratingKeychainStorageTests {
   @Test
+  func enumerationUsesOnlyThePrimarySlotBackend() throws {
+    let primary = InMemoryKeychain()
+    let fallback = InMemoryKeychain()
+    try primary.set(Data("current".utf8), forKey: "owner.a")
+    try fallback.set(Data("stale".utf8), forKey: "owner.a")
+    try fallback.set(Data("legacy-only".utf8), forKey: "owner.b")
+    let storage = MigratingKeychainStorage(primary: primary, fallback: fallback)
+
+    #expect(try storage.allItems() == ["owner.a": Data("current".utf8)])
+    #expect(try primary.data(forKey: "owner.b") == nil)
+  }
+
+  @Test
+  func enumerationPropagatesPrimaryFailureInsteadOfUsingFallback() throws {
+    let fallback = InMemoryKeychain()
+    try fallback.set(Data("stale".utf8), forKey: "owner.a")
+    let storage = MigratingKeychainStorage(primary: KeychainStorageSpy(), fallback: fallback)
+    // The spy deliberately lacks enumeration: the wrapper must propagate its error.
+    #expect(throws: (any Error).self) { try storage.allItems() }
+  }
+
+  @Test
+  func conditionalRecordsNeverAdoptAnUnversionedFallback() throws {
+    let primary = InMemoryKeychain()
+    let fallback = InMemoryKeychain()
+    let storage = MigratingKeychainStorage(primary: primary, fallback: fallback)
+    try fallback.set(Data("old credentials".utf8), forKey: "identity")
+    #expect(try storage.dataForConditionalUpdate(forKey: "identity") == nil)
+    let revision = UUID()
+    #expect(try storage.compareAndSwap(Data("cleared".utf8), forKey: "identity", expectedRevision: nil, newRevision: revision))
+    #expect(try storage.dataForConditionalUpdate(forKey: "identity") == Data("cleared".utf8))
+    #expect(try !storage.compareAndSwap(Data("stale".utf8), forKey: "identity", expectedRevision: UUID(), newRevision: UUID()))
+    #expect(try primary.data(forKey: "identity") == Data("cleared".utf8))
+  }
+
+  @Test
   func dataMigratesFallbackItemWhenPrimaryItemIsMissing() throws {
     let primary = KeychainStorageSpy()
     let fallback = KeychainStorageSpy()

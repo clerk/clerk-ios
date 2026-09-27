@@ -44,9 +44,28 @@ protocol KeychainStorage: Sendable {
   func data(forKey key: String) throws -> Data?
   func deleteItem(forKey key: String) throws
   func hasItem(forKey key: String) throws -> Bool
+  /// Reads items in this storage's service and access group for legacy migration.
+  func allItems() throws -> [String: Data]
+  func dataForConditionalUpdate(forKey key: String) throws -> Data?
+  /// Atomically creates an absent item, or replaces exactly the expected revision.
+  /// A conflict returns false and must never fall back to an unconditional write.
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool
 }
 
 extension KeychainStorage {
+  func allItems() throws -> [String: Data] {
+    throw KeychainError.unexpectedStatus(errSecUnimplemented)
+  }
+
+  func dataForConditionalUpdate(forKey key: String) throws -> Data? {
+    try data(forKey: key)
+  }
+
+  func compareAndSwap(_: Data, forKey _: String, expectedRevision _: UUID?, newRevision _: UUID) throws -> Bool {
+    // Custom stores must provide a real atomic implementation, not read-then-set.
+    throw KeychainError.unexpectedStatus(errSecUnimplemented)
+  }
+
   func set(_ value: String, forKey key: String) throws {
     try set(Data(value.utf8), forKey: key)
   }

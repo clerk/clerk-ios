@@ -14,6 +14,108 @@ import Testing
 /// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.
 @Suite(.serialized)
 struct SystemKeychainTests {
+  #if os(macOS)
+  @Test
+  func migrationEnumerationReadsRealKeychainItemsOnlyFromItsService() throws {
+    let service = "clerk.migration.enumeration.\(UUID().uuidString)"
+    let keychain = SystemKeychain(service: service)
+    let unrelated = SystemKeychain(service: "\(service).unrelated")
+    defer {
+      try? keychain.deleteItem(forKey: "owner.a")
+      try? keychain.deleteItem(forKey: "owner.b")
+      try? unrelated.deleteItem(forKey: "owner.other")
+    }
+    try keychain.set(Data("a".utf8), forKey: "owner.a")
+    try keychain.set(Data("b".utf8), forKey: "owner.b")
+    try unrelated.set(Data("other".utf8), forKey: "owner.other")
+
+    #expect(try keychain.allItems() == ["owner.a": Data("a".utf8), "owner.b": Data("b".utf8)])
+  }
+  #endif
+
+  @Test
+  func migrationEnumerationIsScopedToTheConfiguredServiceAndGroup() throws {
+    let spy = SecItemClientSpy()
+    let first = Data("first-slot".utf8)
+    let second = Data("second-slot".utf8)
+    spy.copyMatchingResults = [.items([
+      [kSecAttrAccount as String: "owner.a"],
+      [kSecAttrAccount as String: "owner.b"],
+    ]), .success(first), .success(second)]
+    let keychain = SystemKeychain(service: "legacy-slots", accessGroup: "group",
+                                  useDataProtectionKeychain: true, secItemClient: spy.client)
+
+    #expect(try keychain.allItems() == ["owner.a": first, "owner.b": second])
+    let query = try #require(spy.copyMatchingQueries.first)
+    #expect(query[kSecAttrService as String] as? String == "legacy-slots")
+    #expect(query[kSecAttrAccessGroup as String] as? String == "group")
+    #expect(query[kSecAttrAccount as String] == nil)
+    #expect(query[kSecMatchLimit as String] as? String == kSecMatchLimitAll as String)
+    #expect(query[kSecReturnAttributes as String] as? Bool == true)
+    #expect(query[kSecReturnData as String] == nil)
+    #expect(hasDataProtectionKeychainFlag(query))
+    #expect(spy.copyMatchingQueries.dropFirst().compactMap { $0[kSecAttrAccount as String] as? String } == ["owner.a", "owner.b"])
+    #expect(spy.copyMatchingQueries.allSatisfy { $0[kSecAttrService as String] as? String == "legacy-slots" })
+    #expect(spy.copyMatchingQueries.allSatisfy { $0[kSecAttrAccessGroup as String] as? String == "group" })
+  }
+
+  @Test
+  func unavailableMigrationEnumerationIsNotAnEmptyGroup() throws {
+    let spy = SecItemClientSpy()
+    spy.copyMatchingResults = [.status(errSecInteractionNotAllowed), .status(errSecItemNotFound)]
+    let keychain = SystemKeychain(service: "legacy-slots", secItemClient: spy.client)
+    #expect(throws: (any Error).self) { try keychain.allItems() }
+    #expect(try keychain.allItems().isEmpty)
+  }
+
+  @Test
+  func conditionalUpdateMatchesTheRevisionAndChangesItWithThePayload() throws {
+    let spy = SecItemClientSpy()
+    let keychain = SystemKeychain(service: "service", accessGroup: "group", secItemClient: spy.client)
+    let expected = UUID()
+    let next = UUID()
+    let payload = Data("replacement".utf8)
+    #expect(try keychain.compareAndSwap(payload, forKey: "identity", expectedRevision: expected, newRevision: next))
+    let query = try #require(spy.updateQueries.first)
+    let attributes = try #require(spy.updateAttributes.first)
+    #expect(query[kSecAttrGeneric as String] as? Data == Data(expected.uuidString.utf8))
+    #expect(query[kSecAttrAccessGroup as String] as? String == "group")
+    #expect(query[kSecAttrAccount as String] as? String == "identity")
+    #expect(attributes[kSecAttrGeneric as String] as? Data == Data(next.uuidString.utf8))
+    #expect(attributes[kSecValueData as String] as? Data == payload)
+    #expect(spy.addQueries.isEmpty)
+  }
+
+  @Test
+  func aConditionalUpdateConflictNeverFallsBackToAdd() throws {
+    let spy = SecItemClientSpy()
+    spy.updateResults = [errSecItemNotFound]
+    let keychain = SystemKeychain(service: "service", secItemClient: spy.client)
+    #expect(try !keychain.compareAndSwap(Data(), forKey: "identity", expectedRevision: UUID(), newRevision: UUID()))
+    #expect(spy.updateQueries.count == 1)
+    #expect(spy.addQueries.isEmpty)
+  }
+
+  @Test
+  func aConditionalCreationConflictNeverFallsBackToUpdate() throws {
+    let spy = SecItemClientSpy()
+    spy.addResults = [errSecDuplicateItem]
+    let keychain = SystemKeychain(service: "service", secItemClient: spy.client)
+    #expect(try !keychain.compareAndSwap(Data(), forKey: "identity", expectedRevision: nil, newRevision: UUID()))
+    #expect(spy.addQueries.count == 1)
+    #expect(spy.updateQueries.isEmpty)
+  }
+
+  @Test
+  func conditionalWriteAccessFailureIsNotAConflict() {
+    let spy = SecItemClientSpy()
+    spy.updateResults = [errSecInteractionNotAllowed]
+    let keychain = SystemKeychain(service: "service", secItemClient: spy.client)
+    #expect(throws: (any Error).self) {
+      try keychain.compareAndSwap(Data(), forKey: "identity", expectedRevision: UUID(), newRevision: UUID())
+    }
+  }
+
   @Test
   func setAndGetData() throws {
     let keychain = InMemoryKeychain()
@@ -183,6 +285,7 @@ struct SystemKeychainTests {
 private final class SecItemClientSpy: @unchecked Sendable {
   enum CopyMatchingResult {
     case success(Data)
+    case items([[String: Any]])
     case status(OSStatus)
   }
 
@@ -218,6 +321,9 @@ private final class SecItemClientSpy: @unchecked Sendable {
         switch self.copyMatchingResults.removeFirst() {
         case .success(let data):
           result?.pointee = data as CFData
+          return errSecSuccess
+        case .items(let items):
+          result?.pointee = items as CFArray
           return errSecSuccess
         case .status(let status):
           return status

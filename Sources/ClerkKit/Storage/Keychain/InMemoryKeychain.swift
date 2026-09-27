@@ -12,6 +12,7 @@ import Foundation
 package final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
   private let lock = NSLock()
   private var items: [String: Data] = [:]
+  private var revisions: [String: UUID] = [:]
 
   package init() {}
 
@@ -19,6 +20,19 @@ package final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
     lock.lock()
     defer { lock.unlock() }
     items[key] = data
+  }
+
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    if let expectedRevision {
+      guard items[key] != nil, revisions[key] == expectedRevision else { return false }
+    } else if items[key] != nil {
+      return false
+    }
+    items[key] = data
+    revisions[key] = newRevision
+    return true
   }
 
   package func data(forKey key: String) throws -> Data? {
@@ -31,11 +45,16 @@ package final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
     lock.lock()
     defer { lock.unlock() }
     items.removeValue(forKey: key)
+    revisions.removeValue(forKey: key)
   }
 
   package func hasItem(forKey key: String) throws -> Bool {
     lock.lock()
     defer { lock.unlock() }
     return items[key] != nil
+  }
+
+  func allItems() throws -> [String: Data] {
+    lock.withLock { items }
   }
 }

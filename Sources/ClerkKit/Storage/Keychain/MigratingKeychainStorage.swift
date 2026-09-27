@@ -16,6 +16,22 @@ struct MigratingKeychainStorage: KeychainStorage {
     try primary.set(data, forKey: key)
   }
 
+  /// Legacy owner slots were written only to the primary Data Protection backend.
+  /// Enumeration must not import stale items from the compatibility fallback.
+  func allItems() throws -> [String: Data] {
+    try primary.allItems()
+  }
+
+  /// Conditional records have one authoritative backend. Reading a fallback and
+  /// copying it with set() could overwrite a concurrent primary write or a clear.
+  func dataForConditionalUpdate(forKey key: String) throws -> Data? {
+    try primary.dataForConditionalUpdate(forKey: key)
+  }
+
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    try primary.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
+
   func data(forKey key: String) throws -> Data? {
     if let data = try primary.data(forKey: key) {
       return data
