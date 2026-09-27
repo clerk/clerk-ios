@@ -229,14 +229,19 @@ extension DependencyContainer {
       )
     }
 
+    let handoff = ClerkIdentityStorageHandoff(
+      config: config, instanceFingerprint: namespace.fingerprint,
+      sharedKeychain: shared, localKeychain: localIdentity, markerKeychain: adoptionMarkerKeychain,
+      makeKeychain: makeKeychain
+    )
     let layout = makeKeychainLayout(
       syncEnabled: syncEnabled, config: config, shared: shared,
       configuredAppLocal: configuredAppLocal, localIdentity: localIdentity,
       localIdentityService: localIdentityService(configuredService: config.service, ownerIdentifier: ownerIdentifier),
       adoptionMarkerKeychain: adoptionMarkerKeychain,
-      isRetiredLocalSource: {
-        try ClerkIdentityMigration.retiredSource(config.service, instanceFingerprint: namespace.fingerprint,
-                                                 journal: adoptionMarkerKeychain, makeKeychain: makeKeychain) != nil
+      needsIsolatedLocalIdentity: {
+        try handoff.hasSelection() || ClerkIdentityMigration.retiredSource(config.service, instanceFingerprint: namespace.fingerprint,
+                                                                           journal: adoptionMarkerKeychain, makeKeychain: makeKeychain) != nil
       }
     )
     var identityStore = ClerkIdentityStore(
@@ -245,9 +250,7 @@ extension DependencyContainer {
       clearIntentKeychain: adoptionMarkerKeychain,
       // A clear must be journaled before any storage read can fail. Include the
       // sharing mode so another configuration cannot consume the pending clear.
-      clearIntentScope: SharedSessionNamespace.sha256(
-        "\(config.service)\u{1F}\(config.normalizedAccessGroup ?? "")\u{1F}\(syncEnabled)"
-      ),
+      clearIntentScope: ClerkIdentityStorageHandoff.clearIntentScope(config: config, syncEnabled: syncEnabled),
       watchSyncOwnerIdentifier: ownerIdentifier.nilIfEmpty ?? config.service
     )
     let migrationStore = identityStore
@@ -263,12 +266,11 @@ extension DependencyContainer {
       // Only a missing entitlement permits intentionally incomplete local migration.
       if selected.sharedIsAccessible, config.normalizedAccessGroup != nil {
         _ = try shared.hasItem(forKey: ClerkKeychainKey.identity.rawValue)
+      }
+      if config.normalizedAccessGroup != nil || selected.identityService != config.service {
         // Honor an explicit clear before moving credentials to the selected backend.
         try migrationStore.recoverPendingClear()
-        try ClerkIdentityStorageHandoff(
-          config: config, instanceFingerprint: namespace.fingerprint,
-          sharedKeychain: shared, localKeychain: localIdentity, markerKeychain: adoptionMarkerKeychain
-        ).prepare(isShared: selected.identityIsInAccessGroup, clearIntentScope: migrationStore.clearIntentScope)
+        try handoff.prepare(isShared: selected.identityIsInAccessGroup, clearIntentScope: migrationStore.clearIntentScope)
       }
       let migration = try ClerkIdentityMigration(
         store: migrationStore, legacyKeychain: shared, markerKeychain: configuredAppLocal,
@@ -306,14 +308,14 @@ extension DependencyContainer {
     localIdentity: any KeychainStorage,
     localIdentityService: String,
     adoptionMarkerKeychain: any KeychainStorage,
-    isRetiredLocalSource: @escaping @Sendable () throws -> Bool
+    needsIsolatedLocalIdentity: @escaping @Sendable () throws -> Bool
   ) -> KeychainStorageLayout {
     KeychainStorageLayout {
       // A failed marker read is unknown, never evidence that adoption did not happen.
       let wasAdopted = try AppLocalStateAdoption.usesAppLocalStorage(in: adoptionMarkerKeychain)
-      // A retained unscoped V4 source must not become authoritative again when
-      // removing an access group. Use the isolated local backend for its replacement.
-      let needsLocalIdentity = try wasAdopted || (config.normalizedAccessGroup == nil && isRetiredLocalSource())
+      // Keep the selected identity when removing an access group, including a
+      // fallback login. A retained unscoped V4 source must not become authoritative again.
+      let needsLocalIdentity = try wasAdopted || (config.normalizedAccessGroup == nil && needsIsolatedLocalIdentity())
       var identity: any KeychainStorage = syncEnabled || !needsLocalIdentity ? shared : localIdentity
       var identityService = syncEnabled || !needsLocalIdentity ? config.service : localIdentityService
       var isShared = config.normalizedAccessGroup != nil && (syncEnabled || !needsLocalIdentity)

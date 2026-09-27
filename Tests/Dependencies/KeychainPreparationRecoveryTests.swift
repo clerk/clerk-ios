@@ -7,6 +7,163 @@ import Testing
 @Suite(.serialized)
 struct KeychainPreparationRecoveryTests {
   @Test(arguments: [false, true], [false, true])
+  func unfinishedFallbackClearSurvivesChangingSync(initialSync: Bool, changesSync: Bool) async throws {
+    let fixture = try Fixture()
+    fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: initialSync)
+    original.identityController.hydrate()
+    try original.seedIdentity(deviceToken: "forgotten-local-login", client: .mock)
+    try #require(!original.dependencies.identityIsInAccessGroup)
+    let originalStore = original.dependencies.identityStore
+    let fallback = fixture.factory.storage(DependencyContainer.localIdentityService(
+      configuredService: fixture.service, ownerIdentifier: fixture.service
+    ), nil)
+    fallback.failingDataKey = originalStore.key
+    #expect(throws: (any Error).self) { try original.identityController.clearIdentity() }
+    try #require(try fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
+    fallback.failingDataKey = nil
+
+    let restarted = Clerk()
+    let nextSync = changesSync ? !initialSync : initialSync
+    restarted.dependencies = try fixture.container(clerk: restarted, sync: nextSync)
+    restarted.identityController.hydrate()
+    #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
+    #expect(try !fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
+    try restarted.seedIdentity(deviceToken: "new-local-login", client: .mock)
+    let nextLaunch = Clerk()
+    nextLaunch.dependencies = try fixture.container(clerk: nextLaunch, sync: nextSync)
+    nextLaunch.identityController.hydrate()
+    #expect(nextLaunch.deviceToken == "new-local-login")
+  }
+
+  @Test(arguments: [false, true], [false, true])
+  func fallbackLoginSurvivesRemovingTheUnavailableGroup(initialSync: Bool, removesGroup: Bool) async throws {
+    let fixture = try Fixture()
+    fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: initialSync)
+    original.identityController.hydrate()
+    try original.seedIdentity(deviceToken: "fallback-login", client: .mock)
+    try #require(!original.dependencies.identityIsInAccessGroup)
+    let originalRecord = try #require(try original.dependencies.identityStore.load())
+
+    let restarted = Clerk()
+    restarted.dependencies = try fixture.container(clerk: restarted, sync: initialSync && !removesGroup, hasAccessGroup: !removesGroup)
+    restarted.identityController.hydrate()
+    #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == "fallback-login")
+    #expect(restarted.client?.id == Client.mock.id)
+    #expect(try restarted.dependencies.identityStore.load()?.epoch == originalRecord.epoch)
+  }
+
+  @Test(arguments: [false, true])
+  func fallbackScopeRecoveryWaitsForItsJournalBeforeExposingIdentity(removesGroup: Bool) async throws {
+    let fixture = try Fixture()
+    fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: true)
+    original.identityController.hydrate()
+    try original.seedIdentity(deviceToken: "forgotten-login", client: .mock)
+    let fallback = fixture.factory.storage(DependencyContainer.localIdentityService(
+      configuredService: fixture.service, ownerIdentifier: fixture.service
+    ), nil)
+    fallback.failingDataKey = original.dependencies.identityStore.key
+    #expect(throws: (any Error).self) { try original.identityController.clearIdentity() }
+    fallback.failingDataKey = nil
+    let clearKey = original.dependencies.identityStore.clearIntentKey
+    fixture.marker.failingDataKey = clearKey
+
+    let restarted = Clerk()
+    restarted.dependencies = try fixture.container(clerk: restarted, sync: false, hasAccessGroup: !removesGroup)
+    restarted.identityController.hydrate()
+    #expect(!restarted.identityController.canPublishIdentity)
+    await #expect(throws: (any Error).self) { try await restarted.identityController.captureRequestIdentity() }
+    fixture.marker.failingDataKey = nil
+    #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
+    #expect(restarted.identityController.canPublishIdentity)
+    #expect(try !fixture.marker.hasItem(forKey: clearKey))
+  }
+
+  @Test
+  func fallbackSelectionMustBeDurableBeforeRequestsCanUseItsLogin() async throws {
+    let fixture = try Fixture()
+    fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+    let fallback = ClerkIdentityStore(keychain: fixture.factory.storage(DependencyContainer.localIdentityService(
+      configuredService: fixture.service, ownerIdentifier: fixture.service
+    ), nil), instanceFingerprint: fixture.fingerprint)
+    try fallback.save(.init(state: .present, deviceToken: "fallback-login", client: .mock, serverDate: nil))
+    fixture.marker.writeError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
+    let clerk = Clerk()
+    clerk.dependencies = try fixture.container(clerk: clerk, sync: true)
+    clerk.identityController.hydrate()
+    #expect(!clerk.identityController.canPublishIdentity)
+    await #expect(throws: (any Error).self) { try await clerk.identityController.captureRequestIdentity() }
+    fixture.marker.writeError = nil
+    #expect(try await clerk.identityController.captureRequestIdentity().deviceToken == "fallback-login")
+    let restarted = Clerk()
+    restarted.dependencies = try fixture.container(clerk: restarted, sync: false, hasAccessGroup: false)
+    restarted.identityController.hydrate()
+    #expect(restarted.deviceToken == "fallback-login")
+  }
+
+  @Test(arguments: [false, true])
+  func correctedEntitlementThenRemovedGroupRetainsTheCurrentIdentity(groupEstablished: Bool) throws {
+    let fixture = try Fixture()
+    fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+    let fallback = Clerk()
+    fallback.dependencies = try fixture.container(clerk: fallback, sync: true)
+    fallback.identityController.hydrate()
+    try fallback.seedIdentity(deviceToken: "fallback-login", client: .mock)
+
+    fixture.storage(fixture.group).readError = nil
+    if groupEstablished {
+      try ClerkIdentityStore(keychain: fixture.storage(fixture.group), instanceFingerprint: fixture.fingerprint).save(.signedOut)
+    }
+    let shared = Clerk()
+    shared.dependencies = try fixture.container(clerk: shared, sync: true)
+    shared.identityController.hydrate()
+    #expect(shared.deviceToken == (groupEstablished ? nil : "fallback-login"))
+    try shared.seedIdentity(deviceToken: "current-group-login", client: .mock)
+    let current = try #require(try shared.dependencies.identityStore.load())
+    let local = Clerk()
+    local.dependencies = try fixture.container(clerk: local, sync: false, hasAccessGroup: false)
+    local.identityController.hydrate()
+    #expect(local.deviceToken == "current-group-login")
+    #expect(try local.dependencies.identityStore.load()?.epoch == current.epoch)
+    try local.clearKeychainItems()
+    #expect(try shared.dependencies.identityStore.load() == current)
+    let rejoined = Clerk()
+    rejoined.dependencies = try fixture.container(clerk: rejoined, sync: true)
+    rejoined.identityController.hydrate()
+    #expect(rejoined.deviceToken == "current-group-login")
+  }
+
+  @Test
+  func changingGroupsDoesNotApplyThePreviousGroupsPendingClear() throws {
+    let fixture = try Fixture()
+    let first = Clerk()
+    first.dependencies = try fixture.container(clerk: first, sync: true)
+    first.identityController.hydrate()
+    try first.seedIdentity(deviceToken: "first-group-login", client: .mock)
+    fixture.storage(fixture.group).failingDataKey = first.dependencies.identityStore.key
+    #expect(throws: (any Error).self) { try first.identityController.clearIdentity() }
+    fixture.storage(fixture.group).failingDataKey = nil
+
+    let otherStore = ClerkIdentityStore(keychain: fixture.storage("TEAM.other"), instanceFingerprint: fixture.fingerprint)
+    try otherStore.save(.init(state: .present, deviceToken: "other-group-login", client: .mock, serverDate: nil))
+    let other = Clerk()
+    other.dependencies = try fixture.container(clerk: other, sync: true, accessGroup: "TEAM.other")
+    other.identityController.hydrate()
+    #expect(other.deviceToken == "other-group-login")
+    #expect(try fixture.marker.hasItem(forKey: first.dependencies.identityStore.clearIntentKey))
+    let returned = Clerk()
+    returned.dependencies = try fixture.container(clerk: returned, sync: true)
+    returned.identityController.hydrate()
+    #expect(returned.deviceToken == nil)
+    #expect(try otherStore.load()?.identity.deviceToken == "other-group-login")
+  }
+
+  @Test(arguments: [false, true], [false, true])
   func unfinishedRetirementRecoversWhenTheGroupEntitlementIsRemoved(temporaryFailure: Bool, destinationCommitted: Bool) async throws {
     let fixture = try Fixture()
     let original = Clerk()
