@@ -78,6 +78,9 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     let localSource: WatchSyncSource = source == .phone ? .watch : .phone
     do {
       try clerk.identityController.applyExternalTransition {
+        try WatchSyncLegacyPublication.observePeerVersion(
+          in: payload, store: clerk.dependencies.identityStore, legacyKeychain: clerk.dependencies.watchSyncKeychain
+        )
         let local = try WatchSyncState(of: clerk)
         var incoming = received
         var phoneOrdering: WatchSyncPhoneOrdering?

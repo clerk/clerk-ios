@@ -6,18 +6,16 @@ import Foundation
 /// subsequent logins can advance past a clear even after a restart or clock change.
 enum WatchSyncLegacyPublication {
   private struct Record: Codable {
-    let fingerprint: String
+    let fingerprint: String?
     let version: Int
   }
 
   static func version(for state: WatchSyncState, store: ClerkIdentityStore,
-                      legacyKeychain: any KeychainStorage, now: Date = Date()) throws -> Int?
+                      legacyKeychain: any KeychainStorage) throws -> Int?
   {
     // An empty installation has not requested that an older paired app clear itself.
     guard !state.isCleared || state.clearGeneration > 0 else { return nil }
-    let key = "\(store.key).watchPublication.\(SharedSessionNamespace.sha256(store.watchSyncOwnerIdentifier))"
-    let previous = try store.clearJournal.data(forKey: key).map { try JSONDecoder.clerkDecoder.decode(Record.self, from: $0) }
-    if let previous, previous.version < 0 { throw KeychainError.invalidStringEncoding }
+    let previous = try load(in: store)
     struct Snapshot: Encodable {
       let identity: ClerkIdentitySnapshot
       let clearGeneration: Int
@@ -31,11 +29,39 @@ enum WatchSyncLegacyPublication {
     let fingerprint = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     if previous?.fingerprint == fingerprint { return previous?.version }
     let floor = try previous?.version ?? legacyFloor(in: legacyKeychain)
-    guard floor < Int.max,
-          let timestamp = Int(exactly: (now.timeIntervalSince1970 * 1000).rounded(.down)) else { throw KeychainError.invalidStringEncoding }
-    let version = max(floor + 1, timestamp)
-    try store.clearJournal.set(JSONEncoder.clerkEncoder.encode(Record(fingerprint: fingerprint, version: version)), forKey: key)
+    // Swift Int is 32-bit on arm64_32 Watch devices. Wall-clock milliseconds
+    // do not fit; the persisted counter already supplies the required ordering.
+    guard floor < Int.max else { throw KeychainError.invalidStringEncoding }
+    let version = floor + 1
+    try store.clearJournal.set(JSONEncoder.clerkEncoder.encode(Record(fingerprint: fingerprint, version: version)), forKey: key(in: store))
     return version
+  }
+
+  /// SDK 1.5 advances its counters after receiving a peer's version. Preserve
+  /// that floor even when its identity loses, so our reply remains readable.
+  static func observePeerVersion(in payload: WatchSyncPayload, store: ClerkIdentityStore,
+                                 legacyKeychain: any KeychainStorage) throws
+  {
+    guard payload.isLegacy, let version = payload.legacyVersion else { return }
+    let versions = [version.token, version.auth].compactMap { $0 }
+    guard versions.allSatisfy({ $0 >= 0 }) else { throw KeychainError.invalidStringEncoding }
+    guard let received = versions.max() else { return }
+    let previous = try load(in: store)
+    let floor = try previous?.version ?? legacyFloor(in: legacyKeychain)
+    guard received > floor else { return }
+    // Invalidate the fingerprint: the next publication must advance beyond
+    // this received version, even when our identity has not changed.
+    try store.clearJournal.set(JSONEncoder.clerkEncoder.encode(Record(fingerprint: nil, version: received)), forKey: key(in: store))
+  }
+
+  private static func key(in store: ClerkIdentityStore) -> String {
+    "\(store.key).watchPublication.\(SharedSessionNamespace.sha256(store.watchSyncOwnerIdentifier))"
+  }
+
+  private static func load(in store: ClerkIdentityStore) throws -> Record? {
+    let record = try store.clearJournal.data(forKey: key(in: store)).map { try JSONDecoder.clerkDecoder.decode(Record.self, from: $0) }
+    if let record, record.version < 0 { throw KeychainError.invalidStringEncoding }
+    return record
   }
 
   /// Reduce the old record to a non-secret numeric floor before deleting it.

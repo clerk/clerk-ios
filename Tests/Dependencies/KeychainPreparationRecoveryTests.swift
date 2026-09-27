@@ -6,6 +6,66 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct KeychainPreparationRecoveryTests {
+  @Test
+  func aGroupWriterWithoutTheSyncOptionRefreshesBeforeUsingTheIdentity() async throws {
+    let fixture = try Fixture()
+    let app = Clerk()
+    app.dependencies = try fixture.container(clerk: app, sync: false)
+    app.identityController.hydrate()
+    try app.seedIdentity(deviceToken: "old-login", client: .mock)
+    try #require(app.dependencies.identityIsInAccessGroup)
+    #expect(app.dependencies.sharesIdentity)
+    #expect(app.identityController.isSharingIdentity)
+    let oldRequest = try await app.identityController.captureRequestIdentity()
+    let sibling = ClerkIdentityStore(keychain: fixture.storage(fixture.group), instanceFingerprint: fixture.fingerprint)
+    try sibling.clear()
+    // Do not deliver a notification. Request preparation must discover the clear.
+    let afterClear = try await app.identityController.captureRequestIdentity()
+    #expect(afterClear.deviceToken == nil)
+    #expect(afterClear.clientResponseGeneration != oldRequest.clientResponseGeneration)
+    try sibling.save(.init(state: .present, deviceToken: "new-login", client: .mock, serverDate: nil))
+    #expect(try await app.identityController.captureRequestIdentity().deviceToken == "new-login")
+  }
+
+  @Test
+  func localClearRecoveryWatchReplayAndRejoiningPreserveTheirSeparateIdentities() async throws {
+    let fixture = try Fixture()
+    func launch(sync: Bool, grouped: Bool = true) throws -> Clerk {
+      let clerk = Clerk()
+      clerk.dependencies = try fixture.container(clerk: clerk, sync: sync, hasAccessGroup: grouped)
+      clerk.identityController.hydrate()
+      return clerk
+    }
+    let shared = try launch(sync: true)
+    try shared.seedIdentity(deviceToken: "group-login", client: .mock)
+    let sharedRecord = try #require(try shared.dependencies.identityStore.load())
+    let oldWatch = try WatchSyncPayload(state: WatchSyncState(of: shared), environment: nil)
+    let local = try launch(sync: false)
+    let localStorage = fixture.factory.storage(DependencyContainer.localIdentityService(
+      configuredService: fixture.service, ownerIdentifier: fixture.service
+    ), nil)
+    localStorage.failingDataKey = local.dependencies.identityStore.key
+    #expect(throws: (any Error).self) { try local.clearKeychainItems() }
+    localStorage.failingDataKey = nil
+    let restarted = try launch(sync: false, grouped: false)
+    #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
+    let watch = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    watch.apply(oldWatch, from: .watch, to: restarted)
+    #expect(restarted.deviceToken == nil)
+    try restarted.seedIdentity(deviceToken: "local-login", client: .mock)
+    watch.apply(oldWatch, from: .watch, to: restarted)
+    #expect(restarted.deviceToken == "local-login")
+    #expect(try shared.dependencies.identityStore.load() == sharedRecord)
+
+    let rejoined = try launch(sync: true)
+    #expect(rejoined.deviceToken == "group-login")
+    try rejoined.clearKeychainItems()
+    let departed = try launch(sync: false, grouped: false)
+    watch.apply(oldWatch, from: .watch, to: departed)
+    #expect(try await departed.identityController.captureRequestIdentity().deviceToken == nil)
+    #expect(try shared.dependencies.identityStore.load()?.identity == .signedOut)
+  }
+
   @Test(arguments: [false, true], [false, true])
   func unfinishedFallbackClearSurvivesChangingSync(initialSync: Bool, changesSync: Bool) async throws {
     let fixture = try Fixture()

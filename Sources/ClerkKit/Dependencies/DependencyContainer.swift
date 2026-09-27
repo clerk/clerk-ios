@@ -15,7 +15,6 @@ final class DependencyContainer: Dependencies {
     let appLocal: any KeychainStorage
     let identityStore: ClerkIdentityStore
     let identityIsInAccessGroup: Bool
-    let sharesIdentity: Bool
     var layout: KeychainStorageLayout?
     var reconfigurationPreparation: ClerkIdentityStore.Preparation?
   }
@@ -33,9 +32,9 @@ final class DependencyContainer: Dependencies {
 
   var sharesIdentity: Bool {
     if let layout = keychainStorages.layout {
-      return keychainStorages.sharesIdentity && layout.resolved?.identityIsInAccessGroup == true
+      return layout.resolved?.identityIsInAccessGroup == true
     }
-    return keychainStorages.sharesIdentity
+    return keychainStorages.identityIsInAccessGroup
   }
 
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
@@ -200,8 +199,7 @@ extension DependencyContainer {
         shared: keychainStorageOverride,
         appLocal: keychainStorageOverride,
         identityStore: ClerkIdentityStore(keychain: keychainStorageOverride, instanceFingerprint: namespace.fingerprint),
-        identityIsInAccessGroup: false,
-        sharesIdentity: false
+        identityIsInAccessGroup: false
       )
     }
 
@@ -224,8 +222,7 @@ extension DependencyContainer {
       return KeychainStorages(
         shared: shared, appLocal: syncEnabled ? configuredAppLocal : shared,
         identityStore: ClerkIdentityStore(keychain: shared, instanceFingerprint: namespace.fingerprint),
-        identityIsInAccessGroup: config.normalizedAccessGroup != nil,
-        sharesIdentity: config.normalizedAccessGroup != nil
+        identityIsInAccessGroup: config.normalizedAccessGroup != nil
       )
     }
 
@@ -295,7 +292,7 @@ extension DependencyContainer {
     return KeychainStorages(
       shared: shared, appLocal: DeferredKeychainStorage { try layout.get().appLocal },
       identityStore: identityStore, identityIsInAccessGroup: config.normalizedAccessGroup != nil,
-      sharesIdentity: config.normalizedAccessGroup != nil, layout: layout,
+      layout: layout,
       reconfigurationPreparation: isReconfiguration ? preparation : nil
     )
   }

@@ -375,7 +375,7 @@ struct WatchConnectivityCoordinatorTests {
   @Test
   func outboundPhoneClearsAndLaterSignInsKeepLegacyOrderingAcrossRestart() throws {
     let (clerk, keychain) = try makeClerk(token: "old-token", client: signedIn("old"), serverDate: date(100))
-    let previousVersion = 4_000_000_000_000
+    let previousVersion = 2_000_000_000
     try keychain.set(JSONSerialization.data(withJSONObject: [
       "device_token_version": previousVersion - 2, "auth_version": previousVersion - 1,
       "pending_auth_version": previousVersion,

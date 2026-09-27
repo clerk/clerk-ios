@@ -391,7 +391,9 @@ extension Clerk {
   }
 
   func startSharedSessionSyncIfNeeded(dependencies: any Dependencies) {
-    guard options.sharedSessionSync != nil, dependencies.sharesIdentity, !identityController.isSharingIdentity else { return }
+    // Every writer of a group record must refresh it before use, even without
+    // the option. Apps that disabled sharing use an isolated local backend.
+    guard dependencies.sharesIdentity, !identityController.isSharingIdentity else { return }
     identityController.startSharing(
       notifier: SharedSessionSyncDarwinNotifier(
         keychainConfig: options.keychainConfig,
