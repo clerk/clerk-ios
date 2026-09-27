@@ -6,6 +6,83 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct KeychainPreparationRecoveryTests {
+  @Test(arguments: [false, true])
+  func enablingSyncRecoversAnUnfinishedClearInTheSameSharedBackend(enablesSync: Bool) async throws {
+    let fixture = try Fixture()
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: false)
+    original.identityController.hydrate()
+    try original.seedIdentity(deviceToken: "forgotten-group-token", client: .mock)
+    try #require(original.dependencies.identityIsInAccessGroup)
+    let originalStore = original.dependencies.identityStore
+    fixture.storage(fixture.group).failingDataKey = originalStore.key
+    #expect(throws: (any Error).self) { try original.identityController.clearIdentity() }
+    try #require(try fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
+    fixture.storage(fixture.group).failingDataKey = nil
+
+    let restarted = Clerk()
+    restarted.dependencies = try fixture.container(clerk: restarted, sync: enablesSync)
+    restarted.identityController.hydrate()
+    try #require(restarted.dependencies.identityIsInAccessGroup)
+    #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
+    #expect(try restarted.dependencies.identityStore.load()?.identity == .signedOut)
+    #expect(try !fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
+    try restarted.seedIdentity(deviceToken: "new-login", client: .mock)
+    let nextLaunch = Clerk()
+    nextLaunch.dependencies = try fixture.container(clerk: nextLaunch, sync: enablesSync)
+    nextLaunch.identityController.hydrate()
+    #expect(nextLaunch.deviceToken == "new-login")
+  }
+
+  @Test
+  func previousClearScopeMustBeReadableBeforeEnablingSyncPublishesIdentity() async throws {
+    let fixture = try Fixture()
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: false)
+    original.identityController.hydrate()
+    try original.seedIdentity(deviceToken: "forgotten-group-token", client: .mock)
+    let store = original.dependencies.identityStore
+    fixture.storage(fixture.group).failingDataKey = store.key
+    #expect(throws: (any Error).self) { try original.identityController.clearIdentity() }
+    fixture.storage(fixture.group).failingDataKey = nil
+    fixture.marker.failingDataKey = store.clearIntentKey
+
+    let restarted = Clerk()
+    restarted.dependencies = try fixture.container(clerk: restarted, sync: true)
+    restarted.identityController.hydrate()
+    #expect(!restarted.identityController.canPublishIdentity)
+    await #expect(throws: (any Error).self) { try await restarted.identityController.captureRequestIdentity() }
+    fixture.marker.failingDataKey = nil
+    #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
+    #expect(try !fixture.marker.hasItem(forKey: store.clearIntentKey))
+    #expect(restarted.identityController.canPublishIdentity)
+  }
+
+  @Test
+  func unfinishedLocalClearDoesNotClearTheGroupWhenRejoining() throws {
+    let fixture = try Fixture()
+    let shared = Clerk()
+    shared.dependencies = try fixture.container(clerk: shared, sync: true)
+    shared.identityController.hydrate()
+    try shared.seedIdentity(deviceToken: "shared-token", client: .mock)
+    let sharedRecord = try #require(try shared.dependencies.identityStore.load())
+    let local = Clerk()
+    local.dependencies = try fixture.container(clerk: local, sync: false)
+    local.identityController.hydrate()
+    let localKeychain = fixture.factory.storage(DependencyContainer.localIdentityService(
+      configuredService: fixture.service, ownerIdentifier: fixture.service
+    ), nil)
+    localKeychain.failingDataKey = local.dependencies.identityStore.key
+    #expect(throws: (any Error).self) { try local.identityController.clearIdentity() }
+    localKeychain.failingDataKey = nil
+
+    let rejoined = Clerk()
+    rejoined.dependencies = try fixture.container(clerk: rejoined, sync: true)
+    rejoined.identityController.hydrate()
+    #expect(rejoined.deviceToken == "shared-token")
+    #expect(try shared.dependencies.identityStore.load() == sharedRecord)
+  }
+
   @Test(arguments: [false, true], [false, true])
   func enablingSharingPreservesTheCurrentRecordAcrossAServiceChange(sameService: Bool, cleared: Bool) throws {
     let fixture = try Fixture()

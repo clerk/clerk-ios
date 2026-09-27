@@ -318,7 +318,7 @@ extension ClerkIdentityController {
         return
       }
       let key = "\(store.clearIntentKey).watchClear"
-      let previous = try clerk.dependencies.appLocalKeychain.data(forKey: key).map {
+      let previous = try store.clearJournal.data(forKey: key).map {
         try JSONDecoder.clerkDecoder.decode(WatchClearObservation.self, from: $0)
       }
       let localGeneration = try WatchSyncClearMarker.generation(in: keychain)
@@ -336,7 +336,7 @@ extension ClerkIdentityController {
         }
         // Record the epoch and its chosen generation together before raising the
         // counter, so a failed write or restart retries without counting it again.
-        try clerk.dependencies.appLocalKeychain.set(JSONEncoder.clerkEncoder.encode(WatchClearObservation(
+        try store.clearJournal.set(JSONEncoder.clerkEncoder.encode(WatchClearObservation(
           epoch: epoch, generation: generation
         )), forKey: key)
       }

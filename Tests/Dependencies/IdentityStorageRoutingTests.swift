@@ -6,6 +6,45 @@ import Testing
 @MainActor
 struct IdentityStorageRoutingTests {
   @Test(arguments: [false, true])
+  func siblingObservationMustNotSuppressThisAppsWatchClear(restart: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    func app(_ owner: String, sharedDefault: Bool) throws -> Clerk {
+      let clerk = Clerk()
+      let client = database.client(owner: owner, sharedGroupIsDefault: sharedDefault)
+      clerk.dependencies = try DependencyContainer(
+        publishableKey: testPublishableKey,
+        options: .init(telemetryEnabled: false, keychainConfig: .init(service: "common-service", accessGroup: "shared"),
+                       sharedSessionSync: .enabled),
+        runtimeScope: clerk.runtimeScope, migratesPersistentStateOverride: true,
+        keychainFactory: { SystemKeychain(service: $0, accessGroup: $1, secItemClient: client) },
+        ownerIdentifierProvider: { owner }
+      )
+      clerk.identityController.hydrate()
+      return clerk
+    }
+    let first = try app("app.a", sharedDefault: true)
+    try first.seedIdentity(deviceToken: "old-token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
+    let sibling = try app("app.b", sharedDefault: false)
+    try sibling.dependencies.appLocalKeychain.set("5", forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue)
+    try first.dependencies.appLocalKeychain.set("1", forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue)
+    let oldWatch = try WatchSyncState(of: sibling)
+    try #require(oldWatch.clearGeneration == 5)
+    try first.identityController.clearIdentity()
+    let observer = restart ? try app("app.b", sharedDefault: false) : sibling
+    if !restart { #expect(observer.identityController.reconcileWithStore()) }
+    #expect(observer.deviceToken == nil)
+    #expect(try WatchSyncState(of: observer).clearGeneration == 6)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    coordinator.apply(WatchSyncPayload(state: oldWatch, environment: nil), from: .watch, to: observer)
+    #expect(observer.deviceToken == nil)
+    #expect(try observer.dependencies.identityStore.load()?.identity.deviceToken == nil)
+    // Restarting either app must retain its observation without counting it twice.
+    let firstGeneration = try WatchSyncState(of: first).clearGeneration
+    #expect(try WatchSyncState(of: app("app.b", sharedDefault: false)).clearGeneration == 6)
+    #expect(try WatchSyncState(of: app("app.a", sharedDefault: true)).clearGeneration == firstGeneration)
+  }
+
+  @Test(arguments: [false, true])
   func leavingSharingKeepsLocalUpdatesAndClearsOutOfTheGroup(sharedGroupIsDefault: Bool) throws {
     let database = AccessGroupKeychainDatabase()
     func app(_ owner: String, sharing: Bool) throws -> Clerk {

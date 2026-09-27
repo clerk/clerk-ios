@@ -224,7 +224,8 @@ struct ClerkIdentityStore {
     "\(key).pendingClear.\(clearIntentScope)"
   }
 
-  private var clearJournal: any KeychainStorage {
+  /// App-attributed storage for clear intents and this app's Watch observations.
+  var clearJournal: any KeychainStorage {
     clearIntentKeychain ?? keychain
   }
 

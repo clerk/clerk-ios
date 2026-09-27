@@ -4,6 +4,8 @@ import Foundation
 struct ClerkIdentityStorageHandoff {
   private struct Selection: Codable {
     let isShared: Bool
+    /// Sharing can change this scope without changing the identity's backend.
+    let clearIntentScope: String
     /// Detects a completed copy or a local clear before a failed handoff could be marked done.
     let localRevision: UUID?
   }
@@ -30,12 +32,26 @@ struct ClerkIdentityStorageHandoff {
     configurationScope = SharedSessionNamespace.sha256("\(config.service)\u{1F}\(config.normalizedAccessGroup ?? "")")
   }
 
-  func prepare(isShared: Bool) throws {
+  func prepare(isShared: Bool, clearIntentScope: String) throws {
     let key = "\(local.key).storageSelection.\(configurationScope)"
     let previous = try markerKeychain.data(forKey: key).map {
       try JSONDecoder.clerkDecoder.decode(Selection.self, from: $0)
     }
-    guard previous?.isShared != isShared else { return }
+    guard previous?.isShared != isShared || previous?.clearIntentScope != clearIntentScope else { return }
+    var shared = shared
+    var local = local
+    if let previous {
+      if previous.isShared {
+        shared.clearIntentScope = previous.clearIntentScope
+      } else {
+        local.clearIntentScope = previous.clearIntentScope
+      }
+      // The same backend can have an unfinished clear under the old sharing mode.
+      // Recover it before recording the new scope or exposing its credentials.
+      if previous.isShared == isShared {
+        try (isShared ? shared : local).recoverPendingClear()
+      }
+    }
     // Before importing a source, finish its own clear in its original backend.
     // A backend change must never revive credentials waiting to be forgotten.
     if isShared, try shared.load() == nil {
@@ -56,7 +72,7 @@ struct ClerkIdentityStorageHandoff {
     // Preparation cannot expose the destination until this succeeds. If it fails
     // after a copy, the changed local revision prevents replaying that copy.
     try markerKeychain.set(JSONEncoder.clerkEncoder.encode(Selection(
-      isShared: isShared, localRevision: isShared ? localRecord?.revision : nil
+      isShared: isShared, clearIntentScope: clearIntentScope, localRevision: isShared ? localRecord?.revision : nil
     )), forKey: key)
   }
 

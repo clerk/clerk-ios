@@ -265,7 +265,7 @@ final class DependencyContainer: Dependencies {
         try ClerkIdentityStorageHandoff(
           config: config, instanceFingerprint: namespace.fingerprint,
           sharedKeychain: shared, localKeychain: localIdentity, markerKeychain: adoptionMarkerKeychain
-        ).prepare(isShared: selected.identityIsInAccessGroup)
+        ).prepare(isShared: selected.identityIsInAccessGroup, clearIntentScope: migrationStore.clearIntentScope)
       }
       let migration = try ClerkIdentityMigration(
         store: migrationStore, legacyKeychain: shared, markerKeychain: configuredAppLocal,
