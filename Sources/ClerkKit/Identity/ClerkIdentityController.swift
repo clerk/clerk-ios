@@ -58,8 +58,9 @@ final class ClerkIdentityController {
 
   func watchPhoneOrdering(includeLegacy: Bool) throws -> WatchSyncPhoneOrdering {
     if let owner = store?.watchSyncOwnerIdentifier, let ordering = storedRecord?.watchPhoneOrdering?[owner] { return ordering }
-    guard includeLegacy, let clerk else { return WatchSyncPhoneOrdering() }
-    return try WatchSyncPhoneOrdering.loadLegacy(in: clerk.dependencies.watchSyncKeychain)
+    guard includeLegacy, let clerk, let store else { return WatchSyncPhoneOrdering() }
+    return try WatchSyncPhoneOrdering.loadPreservedLegacy(in: store)
+      ?? WatchSyncPhoneOrdering.loadLegacy(in: clerk.dependencies.watchSyncKeychain)
   }
 
   var isSharingIdentity: Bool {

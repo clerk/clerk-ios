@@ -88,8 +88,9 @@ extension Clerk {
       failures.append(dependencies.identityStore.key)
       ClerkLogger.logError(error, message: "Failed to clear the Clerk identity", configuration: configuration)
     }
-    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.appLocalKeychain, configuration: configuration)
-    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.keychain, configuration: configuration)
+    let preservedKeys = Self.preservingPhoneOrdering(in: dependencies, failures: &failures, configuration: configuration)
+    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.appLocalKeychain, preserving: preservedKeys, configuration: configuration)
+    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.keychain, preserving: preservedKeys, configuration: configuration)
     guard failures.isEmpty else {
       throw KeychainClearError(failedItems: failures)
     }
@@ -109,7 +110,8 @@ extension Clerk {
         try dependencies.identityStore.clear()
       }
     }
-    let preservedKeys = keepsIdentity ? preservedKeychainKeys.union([.identity]) : preservedKeychainKeys
+    var preservedKeys = preservingPhoneOrdering(in: dependencies, failures: &failures, configuration: configuration)
+    if keepsIdentity { preservedKeys.insert(.identity) }
     failures += clearAllKeychainItemsCollectingFailures(
       in: dependencies.appLocalKeychain,
       preserving: preservedKeys,
@@ -129,7 +131,7 @@ extension Clerk {
   @MainActor
   static func clearAllKeychainItems(
     in keychain: any KeychainStorage,
-    preserving preservedKeys: Set<ClerkKeychainKey> = preservedKeychainKeys
+    preserving preservedKeys: Set<ClerkKeychainKey> = preservedKeychainKeys.union([.watchSyncMetadata])
   ) {
     _ = clearAllKeychainItemsCollectingFailures(in: keychain, preserving: preservedKeys)
   }
@@ -138,7 +140,7 @@ extension Clerk {
   @MainActor
   static func clearAllKeychainItemsStrictly(
     in keychain: any KeychainStorage,
-    preserving preservedKeys: Set<ClerkKeychainKey> = preservedKeychainKeys
+    preserving preservedKeys: Set<ClerkKeychainKey> = preservedKeychainKeys.union([.watchSyncMetadata])
   ) throws {
     guard clearAllKeychainItemsCollectingFailures(in: keychain, preserving: preservedKeys).isEmpty else {
       throw reconfigurationClearError
@@ -150,6 +152,24 @@ extension Clerk {
       message: "Unable to clear Clerk keychain items during reconfiguration.",
       localizationBundle: .module
     )
+  }
+
+  /// Delete the legacy receive history only after this app has saved its own copy.
+  /// The storage-only cleanup helpers lack that owner context and retain it by default.
+  @MainActor
+  private static func preservingPhoneOrdering(
+    in dependencies: any Dependencies,
+    failures: inout [String],
+    configuration: ClerkLogger.Configuration
+  ) -> Set<ClerkKeychainKey> {
+    do {
+      try WatchSyncPhoneOrdering.preserveLegacy(in: dependencies.watchSyncKeychain, store: dependencies.identityStore)
+      return preservedKeychainKeys
+    } catch {
+      failures.append(ClerkKeychainKey.watchSyncMetadata.rawValue)
+      ClerkLogger.logError(error, message: "Failed to preserve incoming phone ordering before clearing", configuration: configuration)
+      return preservedKeychainKeys.union([.watchSyncMetadata])
+    }
   }
 
   /// Records the clear for Watch sync, then clears the identity. Returns the items that failed.

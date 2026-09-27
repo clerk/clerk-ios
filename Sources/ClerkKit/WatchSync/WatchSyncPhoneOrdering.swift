@@ -43,6 +43,34 @@ struct WatchSyncPhoneOrdering: Codable, Equatable {
     return true
   }
 
+  /// Retain only the previously committed phone stream before deleting SDK 1.5 metadata.
+  /// The per-app journal keeps this bootstrap history independent of sibling apps.
+  static func preserveLegacy(in keychain: any KeychainStorage, store: ClerkIdentityStore) throws {
+    let legacy = try loadLegacy(in: keychain)
+    guard legacy.version.token != nil || legacy.version.auth != nil else { return }
+    let previous = try loadPreservedLegacy(in: store)
+    var retained = previous ?? Self()
+    retained.version = .init(
+      token: [previous?.version.token, legacy.version.token].compactMap { $0 }.max(),
+      auth: [previous?.version.auth, legacy.version.auth].compactMap { $0 }.max()
+    )
+    if retained != previous {
+      try store.clearJournal.set(JSONEncoder.clerkEncoder.encode(retained), forKey: legacyKey(in: store))
+    }
+  }
+
+  static func loadPreservedLegacy(in store: ClerkIdentityStore) throws -> Self? {
+    guard let data = try store.clearJournal.data(forKey: legacyKey(in: store)) else { return nil }
+    let retained = try JSONDecoder.clerkDecoder.decode(Self.self, from: data)
+    guard retained.version.token.map({ $0 >= 0 }) ?? true,
+          retained.version.auth.map({ $0 >= 0 }) ?? true else { throw KeychainError.invalidStringEncoding }
+    return retained
+  }
+
+  private static func legacyKey(in store: ClerkIdentityStore) -> String {
+    "\(store.key).legacyPhoneOrdering.\(SharedSessionNamespace.sha256(store.watchSyncOwnerIdentifier))"
+  }
+
   static func loadLegacy(in keychain: any KeychainStorage) throws -> Self {
     // Only counters attributed to the phone can order its subsequent messages.
     // Watch-local counters are a different stream and must not become phone clears.

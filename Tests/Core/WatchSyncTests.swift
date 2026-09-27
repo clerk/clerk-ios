@@ -333,6 +333,45 @@ struct WatchSyncStateMergeTests {
 @MainActor
 @Suite(.serialized)
 struct WatchConnectivityCoordinatorTests {
+  @Test(arguments: [false, true], [false, true])
+  func clearingPreservesPhoneReceiveHistoryBeforeItsFirstCurrentPayload(reconfiguration: Bool, restarts: Bool) throws {
+    let (clerk, keychain) = try makeClerk(token: "old-token", client: signedIn("old"))
+    try keychain.set(JSONSerialization.data(withJSONObject: [
+      "device_token_version": 100, "device_token_source": "phone",
+      "auth_version": 100, "auth_source": "phone",
+      "pending_device_token_version": 500, "pending_device_token_source": "phone",
+      "pending_auth_version": 500, "pending_auth_source": "phone",
+    ]), forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
+    try #require(try clerk.dependencies.identityStore.load()?.watchPhoneOrdering == nil)
+    if reconfiguration {
+      try Clerk.clearLocalClerkStorageStrictly(in: clerk.dependencies)
+      clerk.identityController.prepareForConfiguration()
+      clerk.identityController.hydrate()
+    } else {
+      try clerk.clearKeychainItems()
+    }
+    #expect(try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) == nil)
+    try clerk.seedIdentity(deviceToken: "new-token", client: signedIn("new"))
+    let receiver: Clerk
+    if restarts {
+      receiver = Clerk()
+      receiver.dependencies = clerk.dependencies
+      receiver.identityController.hydrate()
+    } else {
+      receiver = clerk
+    }
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    try coordinator.apply(legacyPayload(token: nil, version: 99), from: .phone, to: receiver)
+    #expect(receiver.deviceToken == "new-token")
+    #expect(receiver.client?.id == "new")
+    try coordinator.apply(legacyPayload(token: nil, version: 100), from: .phone, to: receiver)
+    #expect(receiver.deviceToken == "new-token")
+    // A pending version was never accepted; it must not block a newer committed message.
+    try coordinator.apply(legacyPayload(token: nil, version: 101), from: .phone, to: receiver)
+    #expect(receiver.deviceToken == nil)
+    #expect(receiver.client == nil)
+  }
+
   @Test
   func outboundPhoneClearsAndLaterSignInsKeepLegacyOrderingAcrossRestart() throws {
     let (clerk, keychain) = try makeClerk(token: "old-token", client: signedIn("old"), serverDate: date(100))
