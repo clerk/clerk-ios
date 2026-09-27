@@ -297,7 +297,8 @@ final class DependencyContainer: Dependencies {
       identityStore: identityStore,
       identityMigrationMarker: configuredAppLocal,
       identityIsInAccessGroup: identityIsInAccessGroup,
-      sharesIdentity: syncEnabled && identityIsInAccessGroup
+      // Every app that writes the group record must re-read it, or it can write back a cleared identity.
+      sharesIdentity: identityIsInAccessGroup
     )
   }
 

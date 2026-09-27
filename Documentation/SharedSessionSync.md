@@ -14,7 +14,7 @@ A `Client` that no longer decodes, for example one written by a newer SDK in ano
 
 ## Shared-Session Sync
 
-With `sharedSessionSync: .enabled`, the controller also:
+Every app whose identity is in the access group keeps it in sync, whether or not it sets `sharedSessionSync`: an app that wrote the shared record without re-reading it, such as an extension without the option, could write back an identity another app cleared. Its controller:
 
 1. Re-reads the record's revision before capturing a request identity, applying a response, applying a Watch transition, or replacing the device token, and on foreground. If another process wrote since this app last read or wrote, it adopts that identity.
 2. Posts a Darwin notification after each write. Other apps re-read on receipt. Reading does not post, so notifications cannot loop.
@@ -22,6 +22,8 @@ With `sharedSessionSync: .enabled`, the controller also:
 Adopting another app's identity with a different token fences in-flight responses (`clientResponseGeneration`), so a response for the old token cannot overwrite it. Adopting a newer snapshot for the same token sets a server-date floor in `ClientResponseOrderingGate`, so a response the server produced earlier cannot overwrite it.
 
 Two apps writing at the same instant is last-writer-wins; the next response or refresh corrects the Client.
+
+`sharedSessionSync: .enabled` additionally requires an access group and a bundle identifier, and on first use moves this app's private state (the cached environment, a pending magic link, and the App Attest key ID) out of the group into app-local storage.
 
 ## Response Payloads
 
@@ -43,7 +45,7 @@ A receiver that rejects a state replies with its own state only when that state 
 
 ## Clear And Reconfigure
 
-`clearAllKeychainItems()` records the clear for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. With shared-session sync, the identity is shared, so a clear signs out every app sharing it. An app whose identity is app-local while its Keychain has an access group, such as one that turned off sync adopted in SDK 1.5, also deletes the group record when it was the last app to write it; a record a sibling app still uses names that sibling as its writer and is kept.
+`clearAllKeychainItems()` records the clear for Watch sync, deletes the identity record, signs out the in-memory Client, and deletes every other Clerk Keychain item except non-secret markers. When the identity is in an access group, it is shared, so a clear signs out every app sharing it. An app whose identity is app-local while its Keychain has an access group, such as one that turned off sync adopted in SDK 1.5, also deletes the group record when it was the last app to write it; a record a sibling app still uses names that sibling as its writer and is kept.
 
 Reconfiguration clears Clerk storage for the source and destination configurations without migrating the previous identity. An identity stored in an access group belongs to every app and extension in the group, so reconfiguration leaves it; a destination for another Clerk instance ignores it.
 
