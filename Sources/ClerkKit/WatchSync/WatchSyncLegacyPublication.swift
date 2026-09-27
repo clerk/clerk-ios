@@ -38,6 +38,13 @@ enum WatchSyncLegacyPublication {
     return version
   }
 
+  /// Reduce the old record to a non-secret numeric floor before deleting it.
+  /// Also works before the first publication, including while Watch sync is off.
+  static func preserveVersionFloor(in keychain: any KeychainStorage) throws {
+    let floor = try legacyFloor(in: keychain)
+    if floor > 0 { try keychain.set(String(floor), forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue) }
+  }
+
   private static func legacyFloor(in keychain: any KeychainStorage) throws -> Int {
     // Pending versions may already have reached the peer; never reuse them for a
     // different identity. Older installations used separate string items instead.
@@ -47,16 +54,15 @@ enum WatchSyncLegacyPublication {
       let pendingDeviceTokenVersion: Int?
       let pendingAuthVersion: Int?
     }
-    let versions: [Int]
+    var versions: [Int] = []
     if let data = try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) {
       let record = try JSONDecoder.clerkDecoder.decode(Metadata.self, from: data)
       versions = [record.deviceTokenVersion, record.authVersion, record.pendingDeviceTokenVersion, record.pendingAuthVersion].compactMap { $0 }
-    } else {
-      versions = try [ClerkKeychainKey.watchSyncDeviceTokenVersion, .watchSyncAuthVersion].compactMap { key in
-        guard let value = try keychain.string(forKey: key.rawValue) else { return nil }
-        guard let version = Int(value) else { throw KeychainError.invalidStringEncoding }
-        return version
-      }
+    }
+    versions += try [ClerkKeychainKey.watchSyncDeviceTokenVersion, .watchSyncAuthVersion].compactMap { key in
+      guard let value = try keychain.string(forKey: key.rawValue) else { return nil }
+      guard let version = Int(value) else { throw KeychainError.invalidStringEncoding }
+      return version
     }
     guard versions.allSatisfy({ $0 >= 0 }) else { throw KeychainError.invalidStringEncoding }
     return versions.max() ?? 0

@@ -18,12 +18,14 @@ extension Clerk {
 
   /// Non-secret markers kept across clears: where this app's private state lives, that its
   /// identity was already migrated, and how many clears it has seen (so Watch state from before
-  /// the clear is rejected).
+  /// the clear is rejected). Legacy counters keep publications newer than an older peer's state.
   static let preservedKeychainKeys: Set<ClerkKeychainKey> = [
     .sharedSessionSyncAdopted,
     .appLocalStateAdopted,
     .identityMigrated,
     .watchSyncClearGeneration,
+    .watchSyncAuthVersion,
+    .watchSyncDeviceTokenVersion,
   ]
 
   /// Clears Clerk authentication and private cached data from Keychain.
@@ -38,7 +40,7 @@ extension Clerk {
   /// When Watch connectivity is enabled, a clear on either paired device also clears the other.
   ///
   /// Clerk keeps non-secret markers that record where this app's private state lives, that
-  /// its storage was migrated, and how many clears it has seen. The identity is replaced with
+  /// its storage was migrated, and its current and legacy Watch ordering. The identity is replaced with
   /// a versioned clear record. These retained records contain no token or Client.
   ///
   /// This method is useful for:
@@ -181,6 +183,18 @@ extension Clerk {
   ) -> [String] {
     var failures: [String] = []
     var biometricCredentialDeletionFailed = false
+    var preservedKeys = preservedKeys
+    if preservedKeys.contains(.watchSyncAuthVersion) {
+      do {
+        try WatchSyncLegacyPublication.preserveVersionFloor(in: keychain)
+      } catch {
+        // Keep the source until its numbers can be saved. Authentication and
+        // private data are still cleared below; a retry can finish this cleanup.
+        preservedKeys.insert(.watchSyncMetadata)
+        failures.append(ClerkKeychainKey.watchSyncMetadata.rawValue)
+        ClerkLogger.logError(error, message: "Failed to preserve legacy Watch ordering before clearing", configuration: configuration)
+      }
+    }
 
     do {
       try BiometricCredentialLocalStore(keychain: keychain)

@@ -140,6 +140,7 @@ public final class Clerk {
 
   /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
+  private var invalidAuthRefreshTaskID: UUID?
 
   /// Configure-time client refresh, canceled when tokenless client creation starts.
   private var startupClientRefreshTask: Task<Void, Never>?
@@ -915,8 +916,14 @@ extension Clerk {
       return invalidAuthRefreshTask
     }
 
+    let taskID = UUID()
     let task = Task { [self] in
-      defer { invalidAuthRefreshTask = nil }
+      defer {
+        if invalidAuthRefreshTaskID == taskID {
+          invalidAuthRefreshTask = nil
+          invalidAuthRefreshTaskID = nil
+        }
+      }
 
       do {
         try await refreshClient()
@@ -926,6 +933,7 @@ extension Clerk {
     }
 
     invalidAuthRefreshTask = task
+    invalidAuthRefreshTaskID = taskID
     return task
   }
 
@@ -939,7 +947,9 @@ extension Clerk {
 
   /// Stops managers and waits for SDK-owned tasks, so none can write state for the old configuration.
   private func cleanupManagersAndWait() async {
+    let invalidAuthRefresh = invalidAuthRefreshTask
     stopManagers()
+    await invalidAuthRefresh?.value
     await taskCoordinator?.cancelAllAndWait()
     resetManagerStateForCleanup(finishAuthEventStreams: false)
     teardownManagers()
@@ -951,6 +961,7 @@ extension Clerk {
     cancelStartupClientRefresh()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
+    invalidAuthRefreshTaskID = nil
     urlHandlingCoordinator.cancelAll()
     cancelEnvironmentRefreshTask()
   }

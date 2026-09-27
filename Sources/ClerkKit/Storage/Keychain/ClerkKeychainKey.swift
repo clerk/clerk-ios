@@ -51,7 +51,7 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Legacy watch identity ordering metadata. Retained so clears remove it from existing installs.
   case watchSyncMetadata = "clerkWatchSyncMetadataV2"
 
-  /// Legacy watch auth sync version. Retained so clears remove it from existing installs.
+  /// Legacy Watch auth version; also preserves its maximum ordering floor across clears.
   case watchSyncAuthVersion
 
   /// Key for device authentication token received from the server.
@@ -66,7 +66,7 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Legacy watch device-token sync state. Retained so clears remove it from existing installs.
   case watchSyncDeviceTokenState
 
-  /// Legacy watch device-token sync version. Retained so clears remove it from existing installs.
+  /// Legacy Watch device-token version, retained across clears for mixed-version pairs.
   case watchSyncDeviceTokenVersion
 
   /// Legacy watch device-token sync flag. Retained so clears remove it from existing installs.

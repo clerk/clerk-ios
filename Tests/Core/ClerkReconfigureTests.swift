@@ -18,6 +18,34 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigurationDrainsInvalidAuthRefreshBeforeClearingItsStorage() async throws {
+    let clerk = Clerk.shared
+    let service = SuspendedInvalidAuthClientService()
+    defer { service.cancelAll() }
+    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), clientService: service)
+    try clerk.seedIdentity(deviceToken: "old-token", client: .mock)
+    let oldStore = clerk.dependencies.identityStore
+    let refresh = clerk.startRefreshClientAfterInvalidAuth()
+    try await service.waitForRequests(1)
+    let serviceName = "com.clerk.tests.invalid-auth-drain.\(UUID().uuidString)"
+    let reconfiguration = Task { @MainActor in
+      try await Clerk.reconfigure(publishableKey: testPublishableKey, options: .init(
+        keychainConfig: .init(service: serviceName)
+      ))
+    }
+    try await waitUntil { refresh.isCancelled }
+    // Cancellation is still suspended in the old service. Cleanup must not have
+    // cleared or replaced its configuration before that task actually finishes.
+    #expect(try oldStore.load()?.identity.deviceToken == "old-token")
+    service.complete(0)
+    await refresh.value
+    let reconfigured = try await reconfiguration.value
+    defer { reconfigured.cleanupManagers() }
+    #expect(try oldStore.load()?.identity == .signedOut)
+    #expect(reconfigured.client == nil)
+  }
+
+  @Test
   func reconfigureUpdatesConfiguration() async throws {
     let original = Clerk.shared
     let publishableKey = publishableKey(for: "ca.clerk.example.com")

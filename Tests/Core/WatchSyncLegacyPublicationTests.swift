@@ -4,6 +4,71 @@ import Testing
 
 struct WatchSyncLegacyPublicationTests {
   @Test
+  @MainActor
+  func failedFloorPreservationKeepsItsSourceUntilCleanupCanRetry() throws {
+    let keychain = PublicationJournal()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), keychain: keychain, identityKeychain: InMemoryKeychain()
+    )
+    try clerk.seedIdentity(deviceToken: "token", client: .mock)
+    let metadata = try JSONSerialization.data(withJSONObject: ["auth_version": 500_000])
+    try keychain.set(metadata, forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
+    try keychain.set("private-attest", forKey: ClerkKeychainKey.attestKeyId.rawValue)
+    keychain.failsFloorWrite = true
+    #expect(throws: (any Error).self) { try clerk.clearKeychainItems() }
+    #expect(clerk.deviceToken == nil)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.attestKeyId.rawValue) == nil)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) == metadata)
+    keychain.failsFloorWrite = false
+    try clerk.clearKeychainItems()
+    #expect(try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) == nil)
+    let version = try #require(try WatchSyncLegacyPublication.version(
+      for: WatchSyncState(of: clerk), store: clerk.dependencies.identityStore, legacyKeychain: keychain,
+      now: Date(timeIntervalSince1970: 100)
+    ))
+    #expect(version > 500_000)
+  }
+
+  @Test(arguments: [false, true], [false, true])
+  @MainActor
+  func clearingBeforeFirstPublicationPreservesLegacyOrdering(atomicMetadata: Bool, reconfiguration: Bool) throws {
+    let keychain = InMemoryKeychain()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), keychain: keychain)
+    try clerk.seedIdentity(deviceToken: "old-token", client: .mock)
+    if atomicMetadata {
+      try keychain.set(JSONSerialization.data(withJSONObject: [
+        "device_token_version": 300_000, "auth_version": 400_000, "pending_auth_version": 500_000,
+      ]), forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
+    } else {
+      try keychain.set("300000", forKey: ClerkKeychainKey.watchSyncDeviceTokenVersion.rawValue)
+      try keychain.set("500000", forKey: ClerkKeychainKey.watchSyncAuthVersion.rawValue)
+    }
+    if reconfiguration {
+      try Clerk.clearLocalClerkStorageStrictly(in: clerk.dependencies)
+    } else {
+      try clerk.clearKeychainItems()
+    }
+    let restarted = Clerk()
+    restarted.dependencies = clerk.dependencies
+    restarted.identityController.hydrate()
+    let clear = try WatchSyncState(of: restarted)
+    let version = try #require(try WatchSyncLegacyPublication.version(
+      for: clear, store: restarted.dependencies.identityStore, legacyKeychain: keychain, now: Date(timeIntervalSince1970: 100)
+    ))
+    #expect(clear.isCleared)
+    #expect(version > 500_000)
+    #expect(try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue) == nil)
+    try restarted.seedIdentity(deviceToken: "new-token", client: .mock)
+    let loginVersion = try #require(try WatchSyncLegacyPublication.version(
+      for: WatchSyncState(of: restarted), store: restarted.dependencies.identityStore,
+      legacyKeychain: keychain, now: Date(timeIntervalSince1970: 50)
+    ))
+    #expect(loginVersion > version)
+  }
+
+  @Test
   func emptyInstallIsNotALegacyClearAndTokenOnlyStateStillRequestsAClient() throws {
     let keychain = InMemoryKeychain()
     let store = ClerkIdentityStore(keychain: keychain, instanceFingerprint: "instance")
@@ -82,6 +147,7 @@ private final class PublicationJournal: KeychainStorage, @unchecked Sendable {
   private let backing = InMemoryKeychain()
   var failsRead = false
   var failsWrite = false
+  var failsFloorWrite = false
   func data(forKey key: String) throws -> Data? {
     if failsRead, key.contains(".watchPublication.") { throw KeychainError.invalidStringEncoding }
     return try backing.data(forKey: key)
@@ -89,6 +155,7 @@ private final class PublicationJournal: KeychainStorage, @unchecked Sendable {
 
   func set(_ data: Data, forKey key: String) throws {
     if failsWrite, key.contains(".watchPublication.") { throw KeychainError.invalidStringEncoding }
+    if failsFloorWrite, key == ClerkKeychainKey.watchSyncAuthVersion.rawValue { throw KeychainError.invalidStringEncoding }
     try backing.set(data, forKey: key)
   }
 

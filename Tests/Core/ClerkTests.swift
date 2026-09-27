@@ -128,8 +128,10 @@ struct ClerkTests {
     )
     try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
     for key in ClerkKeychainKey.allCases {
-      try keychain.set(key == .watchSyncClearGeneration ? "4" : "value", forKey: key.rawValue)
+      let isCounter = [ClerkKeychainKey.watchSyncClearGeneration, .watchSyncAuthVersion, .watchSyncDeviceTokenVersion].contains(key)
+      try keychain.set(isCounter ? "4" : "value", forKey: key.rawValue)
     }
+    try keychain.set(JSONSerialization.data(withJSONObject: ["auth_version": 4]), forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
 
     Clerk.clearAllKeychainItems()
 
