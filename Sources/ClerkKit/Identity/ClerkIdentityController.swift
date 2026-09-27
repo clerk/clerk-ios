@@ -300,21 +300,45 @@ extension ClerkIdentityController {
     notifier?.post()
   }
 
+  private struct WatchClearObservation: Codable {
+    let epoch: UUID
+    let generation: Int
+  }
+
   private func observeWatchClear(_ record: ClerkIdentityStore.Record?) throws {
     guard let clerk, let store, let record else { return }
     do {
-      // Recover the generation from the same committed record as the identity,
-      // including after a crash or a failed write to the private Watch marker.
-      if let generation = record.watchClearGeneration {
-        try WatchSyncClearMarker.raise(to: generation, in: clerk.dependencies.watchSyncKeychain)
+      let keychain = clerk.dependencies.watchSyncKeychain
+      guard let epoch = record.clearEpoch ?? (record.identity.deviceToken == nil ? record.epoch : nil) else {
+        if let generation = record.watchClearGeneration {
+          try WatchSyncClearMarker.raise(to: generation, in: keychain)
+        }
+        return
       }
-      guard let epoch = record.clearEpoch ?? (record.identity.deviceToken == nil ? record.epoch : nil) else { return }
-      let key = "\(store.clearIntentKey).watchEpoch"
-      guard try clerk.dependencies.appLocalKeychain.string(forKey: key) != epoch.uuidString else { return }
-      if record.watchClearEpoch != epoch {
-        try WatchSyncClearMarker.record(in: clerk.dependencies.watchSyncKeychain)
+      let key = "\(store.clearIntentKey).watchClear"
+      let previous = try clerk.dependencies.appLocalKeychain.data(forKey: key).map {
+        try JSONDecoder.clerkDecoder.decode(WatchClearObservation.self, from: $0)
       }
-      try clerk.dependencies.appLocalKeychain.set(epoch.uuidString, forKey: key)
+      let localGeneration = try WatchSyncClearMarker.generation(in: keychain)
+      var generation = max(localGeneration, record.watchClearGeneration ?? 0)
+      if let previous, previous.epoch == epoch {
+        guard previous.generation >= 0 else { throw KeychainError.invalidStringEncoding }
+        generation = max(generation, previous.generation)
+      } else {
+        // A sibling's counter can trail this app's. An unseen clear must advance
+        // beyond our old snapshots, even if the sibling already counted that clear.
+        if record.watchClearEpoch != epoch || generation == localGeneration {
+          let (next, overflow) = generation.addingReportingOverflow(1)
+          guard !overflow else { throw KeychainError.invalidStringEncoding }
+          generation = next
+        }
+        // Record the epoch and its chosen generation together before raising the
+        // counter, so a failed write or restart retries without counting it again.
+        try clerk.dependencies.appLocalKeychain.set(JSONEncoder.clerkEncoder.encode(WatchClearObservation(
+          epoch: epoch, generation: generation
+        )), forKey: key)
+      }
+      try WatchSyncClearMarker.raise(to: generation, in: keychain)
     } catch {
       // The shared clear may already be committed. Until the paired-device fence
       // is durable, do not expose credentials or accept a stale Watch transition.
