@@ -17,7 +17,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var transport: (any WatchSyncTransport)?
   private var isActive = true
   private var isApplyingRemoteEnvironment = false
-  private var refreshTask: Task<Void, Never>?
+  private(set) var refreshTask: Task<Void, Never>?
+  private var refreshGeneration: ClientResponseGeneration?
 
   /// - Parameter transport: Overrides the platform WatchConnectivity transport.
   init(transport: (any WatchSyncTransport)? = nil) {
@@ -36,8 +37,13 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     case .environmentDidChange:
       guard !isApplyingRemoteEnvironment else { return }
       sync(from: clerk)
-    case .clientDidChange, .deviceTokenDidChange, .identityDidChange,
-         .localStorageDidClear, .applicationDidEnterForeground:
+    case .localStorageDidClear:
+      cancelRefresh()
+      sync(from: clerk)
+    case .clientDidChange, .deviceTokenDidChange, .identityDidChange, .applicationDidEnterForeground:
+      if let refreshGeneration, refreshGeneration != clerk.clientResponseGeneration {
+        cancelRefresh()
+      }
       sync(from: clerk)
     }
   }
@@ -94,8 +100,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   func stopAcceptingIdentityUpdates() {
     isActive = false
-    refreshTask?.cancel()
-    refreshTask = nil
+    cancelRefresh()
   }
 }
 
@@ -132,7 +137,11 @@ extension WatchConnectivityCoordinator {
   }
 
   private func refreshClient(for clerk: Clerk) {
-    guard isActive, refreshTask == nil else { return }
+    guard isActive else { return }
+    let generation = clerk.clientResponseGeneration
+    guard refreshGeneration != generation else { return }
+    cancelRefresh()
+    refreshGeneration = generation
     refreshTask = clerk.scheduleManagedTask { [weak self, weak clerk] in
       do {
         try await clerk?.refreshClient()
@@ -141,12 +150,23 @@ extension WatchConnectivityCoordinator {
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
       }
-      await self?.refreshDidFinish()
+      await self?.refreshDidFinish(generation: generation)
     }
+    if refreshTask == nil { refreshGeneration = nil }
   }
 
-  private func refreshDidFinish() {
+  private func cancelRefresh() {
+    refreshTask?.cancel()
     refreshTask = nil
+    refreshGeneration = nil
+  }
+
+  private func refreshDidFinish(generation: ClientResponseGeneration) {
+    // Cancellation need not finish immediately. An old task cannot release the
+    // replacement task's ownership after a clear or a different phone identity.
+    guard refreshGeneration == generation else { return }
+    refreshTask = nil
+    refreshGeneration = nil
   }
 }
 
@@ -156,42 +176,43 @@ extension WatchConnectivityCoordinator {
 enum WatchSyncClearMarker {
   private static let key = ClerkKeychainKey.watchSyncClearGeneration.rawValue
 
-  /// - Throws: When the Keychain cannot be read, such as before the first unlock. Assuming 0 would
-  ///   let a clear record a lower generation than the paired device's pre-clear state.
   static func generation(in keychain: any KeychainStorage) throws -> Int {
     if let value = try keychain.string(forKey: key) {
-      return Int(value) ?? 0
+      guard let generation = Int(value), generation >= 0 else { throw KeychainError.invalidStringEncoding }
+      return generation
     }
-    // SDK 1.5 kept a clear tombstone in its Watch metadata; honor it once after upgrading.
-    // A watch clear in SDK 1.5 did not sign out the phone, so only the phone imports it.
+    // SDK 1.5 Watch clears were local. Upgrading must not turn one into a new phone clear.
     #if os(watchOS)
     let generation = 0
     #else
-    let generation = legacyRecordIsCleared(in: keychain) ? 1 : 0
+    let generation = try legacyRecordIsCleared(in: keychain) ? 1 : 0
     #endif
-    try? keychain.set(String(generation), forKey: key)
+    try keychain.set(String(generation), forKey: key)
     return generation
   }
 
   /// Records a clear on this device.
   static func record(in keychain: any KeychainStorage) throws {
-    try keychain.set(String(generation(in: keychain) + 1), forKey: key)
+    let (generation, overflow) = try generation(in: keychain).addingReportingOverflow(1)
+    guard !overflow else { throw KeychainError.invalidStringEncoding }
+    try keychain.set(String(generation), forKey: key)
   }
 
   /// Adopts a clear generation seen on the paired device.
   static func raise(to generation: Int, in keychain: any KeychainStorage) throws {
+    guard generation >= 0 else { throw KeychainError.invalidStringEncoding }
     guard try generation > self.generation(in: keychain) else { return }
     try keychain.set(String(generation), forKey: key)
   }
 
-  private static func legacyRecordIsCleared(in keychain: any KeychainStorage) -> Bool {
-    if let data = try? keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue),
+  private static func legacyRecordIsCleared(in keychain: any KeychainStorage) throws -> Bool {
+    if let data = try keychain.data(forKey: ClerkKeychainKey.watchSyncMetadata.rawValue),
        let record = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
     {
       return record["device_token_state"] as? String == "cleared"
         || record["auth_state"] as? String == "cleared"
     }
-    return (try? keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue)) == "cleared"
-      || (try? keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue)) == "cleared"
+    return try keychain.string(forKey: ClerkKeychainKey.watchSyncDeviceTokenState.rawValue) == "cleared"
+      || keychain.string(forKey: ClerkKeychainKey.watchSyncAuthState.rawValue) == "cleared"
   }
 }

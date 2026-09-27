@@ -19,10 +19,9 @@ package struct WatchSyncState: Equatable {
   let client: Client?
   /// `Date` header of the response that produced `client`.
   let serverDate: Date?
-  /// How many clears this state has seen, merged by maximum across both devices. A state from
-  /// before a clear has a lower generation than any state after it, whatever the device and
-  /// server clocks say. Payloads from earlier SDKs carry none and count as generation 0, so
-  /// they can never undo a clear.
+  /// The largest clear generation observed, incremented on each local clear. Lower generations
+  /// cannot restore pre-clear state. Independent offline clears can tie, in which case the
+  /// normal identity merge rules apply. Payloads from earlier SDKs carry none and count as 0.
   let clearGeneration: Int
 
   init(deviceToken: String?, client: Client?, serverDate: Date?, clearGeneration: Int = 0) {
@@ -37,18 +36,19 @@ package struct WatchSyncState: Equatable {
   }
 
   var hasSession: Bool {
-    client?.sessions.isEmpty == false
+    client?.sessions.contains { $0.status == .active || $0.status == .pending } == true
   }
 
   /// Whether `self`, received from `source`, should replace `local`.
   func supersedes(_ local: WatchSyncState, from source: WatchSyncSource) -> Bool {
-    // A state from a newer clear generation replaces anything older, so a clear on either device clears both.
+    // A newer clear generation wins in either direction, including a post-clear
+    // anonymous Client sent before the peer received the tokenless clear itself.
     if clearGeneration != local.clearGeneration {
       return clearGeneration > local.clearGeneration
     }
 
-    // Same Client: both devices share one server-side Client, so the newer snapshot wins.
-    // Signing in or out rotates the device token but keeps the Client.
+    // Signing in or out can rotate the token without changing the server-side Client.
+    // For the same Client, freshness takes priority over signed-in state and device.
     if deviceToken == local.deviceToken || (client != nil && client?.id == local.client?.id) {
       guard let client else { return false }
       guard let localClient = local.client else { return true }
@@ -56,14 +56,15 @@ package struct WatchSyncState: Equatable {
       guard let localDate = local.serverDate else { return true }
       if serverDate != localDate { return serverDate > localDate }
       if client.updatedAt != localClient.updatedAt { return client.updatedAt > localClient.updatedAt }
-      // Equally new snapshots under different tokens: the phone's token wins, so the devices converge.
       return deviceToken != local.deviceToken && source == .phone
     }
 
-    // Different tokens and Clients. A clear always advances the generation, so a
-    // tokenless state from the same generation is a device that has not fetched a token yet.
+    // Different Clients at the same generation: a tokenless state is not a new clear.
     if isCleared { return false }
     if local.isCleared { return true } // Seed a device that has no token.
+    // A phone token awaiting its Client is unresolved, not signed out. Keep that
+    // identity authoritative while its refresh is in flight (or awaiting a retry).
+    if source == .watch, local.client == nil { return false }
     if hasSession != local.hasSession { return hasSession } // A signed-in Client beats a signed-out one.
     return source == .phone
   }

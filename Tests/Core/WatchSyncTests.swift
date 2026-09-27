@@ -133,6 +133,28 @@ struct WatchSyncPayloadTests {
 // MARK: - Merge rule
 
 struct WatchSyncStateMergeTests {
+  @Test
+  func newerClearStillReplacesAnUnresolvedPhoneIdentity() {
+    let phone = WatchSyncState(deviceToken: "new-token", client: nil, serverDate: nil)
+    let clear = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1)
+    #expect(clear.supersedes(phone, from: .watch))
+    #expect(!phone.supersedes(clear, from: .phone))
+  }
+
+  @Test(arguments: [Session.SessionStatus.ended, .expired, .removed, .replaced, .abandoned], [false, true])
+  func terminalPhoneSessionsDoNotDefeatAnActiveOrPendingWatch(status: Session.SessionStatus, pending: Bool) {
+    var phoneClient = signedIn("phone")
+    phoneClient.sessions = phoneClient.sessions.map { var session = $0; session.status = status; return session }
+    var watchClient = signedIn("watch")
+    watchClient.sessions = watchClient.sessions.map { var session = $0; session.status = pending ? .pending : .active; return session }
+    let phone = WatchSyncState(deviceToken: "phone-token", client: phoneClient, serverDate: date(200))
+    let watch = WatchSyncState(deviceToken: "watch-token", client: watchClient, serverDate: date(100))
+    #expect(!phone.hasSession)
+    #expect(watch.hasSession)
+    #expect(watch.supersedes(phone, from: .watch))
+    #expect(!phone.supersedes(watch, from: .phone))
+  }
+
   @Test(arguments: [WatchSyncSource.phone, .watch])
   func sameTokenNewerSnapshotWinsFromEitherDevice(source: WatchSyncSource) {
     let local = WatchSyncState(deviceToken: "token", client: signedOut("client"), serverDate: date(100))
@@ -252,6 +274,32 @@ struct WatchSyncStateMergeTests {
 @Suite(.serialized)
 struct WatchConnectivityCoordinatorTests {
   @Test
+  @MainActor
+  func oldWatchSnapshotCannotReplacePhoneTokenWhileItsRefreshIsPending() async throws {
+    let (phone, _) = try makeClerk(token: "old-token", client: signedIn("old-client"), serverDate: date(100))
+    let oldWatch = try WatchSyncState(of: phone)
+    #expect(try await phone.identityController.updateDeviceToken(to: "new-token") == .applied)
+    let generation = phone.clientResponseGeneration
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+
+    coordinator.apply(WatchSyncPayload(state: oldWatch, environment: nil), from: .watch, to: phone)
+
+    #expect(phone.deviceToken == "new-token")
+    #expect(phone.client == nil)
+    #expect(phone.clientResponseGeneration == generation)
+    // The Watch can retain its signed-in snapshot while the phone resolves the new token.
+    #expect(try !WatchSyncState(of: phone).supersedes(oldWatch, from: .phone))
+    try await phone.identityController.applyNetworkResponse(ClientSyncResponseContext(
+      update: .client(signedIn("new-client")), deviceTokenUpdate: .absent,
+      requestDeviceToken: "new-token", serverDate: date(200), isCanonicalClientRequest: true,
+      clientResponseGeneration: generation, responseSequence: 1
+    ))
+    #expect(phone.deviceToken == "new-token")
+    #expect(phone.client?.id == "new-client")
+    #expect(try WatchSyncState(of: phone).supersedes(oldWatch, from: .phone))
+  }
+
+  @Test
   func phoneStateReplacesWatchIdentity() throws {
     let (clerk, keychain) = try makeClerk(token: "watch-token", client: signedIn("watch"), serverDate: date(200))
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
@@ -326,6 +374,55 @@ struct WatchConnectivityCoordinatorTests {
 
     #expect(clerk.identityController.currentDeviceToken == "phone-token")
     try await waitUntil { clerk.client?.id == "refreshed" }
+  }
+
+  enum RefreshTransition: CaseIterable {
+    case localClear, phoneClear, phoneTokenReplacement
+  }
+
+  @Test(arguments: RefreshTransition.allCases, [false, true])
+  func replacementRefreshSurvivesAnObsoleteTaskFinishing(transition: RefreshTransition, stopBeforeCompletion: Bool) async throws {
+    let service = SuspendedWatchClientService()
+    let (clerk, _) = try makeClerk(clientService: service)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    clerk.internalStateChanges.addObserver(coordinator)
+    defer {
+      clerk.cleanupManagers()
+      service.cancelPendingRequests()
+    }
+    coordinator.apply(payload(token: "old-token", client: nil, serverDate: nil), from: .phone, to: clerk)
+    try await waitUntil { service.calls == 1 }
+    let obsoleteTask = try #require(coordinator.refreshTask)
+
+    switch transition {
+    case .localClear:
+      try clerk.clearKeychainItems()
+    case .phoneClear:
+      coordinator.apply(WatchSyncPayload(
+        state: .init(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1), environment: nil
+      ), from: .phone, to: clerk)
+    case .phoneTokenReplacement:
+      break
+    }
+    let generation = transition == .phoneTokenReplacement ? 0 : 1
+    coordinator.apply(payload(token: "new-token", client: nil, serverDate: nil, generation: generation), from: .phone, to: clerk)
+    try await waitUntil { service.calls == 2 }
+    let replacementTask = try #require(coordinator.refreshTask)
+    try #require(service.calls == 2)
+    #expect(obsoleteTask.isCancelled)
+
+    // Simulate a transport that finishes after cancellation. Wait for the whole
+    // obsolete task, including its completion callback, while the new request waits.
+    service.completeRequest(0, with: signedIn("obsolete"))
+    await obsoleteTask.value
+    #expect(clerk.deviceToken == "new-token")
+    #expect(clerk.client == nil)
+    if stopBeforeCompletion { coordinator.stopAcceptingIdentityUpdates() }
+    service.completeRequest(1, with: signedIn("replacement"))
+    await replacementTask.value
+
+    #expect(clerk.client?.id == (stopBeforeCompletion ? nil : "replacement"))
+    #expect(replacementTask.isCancelled == stopBeforeCompletion)
   }
 
   @Test
@@ -496,6 +593,30 @@ struct WatchConnectivityCoordinatorTests {
 }
 
 // MARK: - Fixtures
+
+@MainActor
+private final class SuspendedWatchClientService: ClientServiceProtocol {
+  private var requests: [Int: CheckedContinuation<ClientServiceResponse, any Error>] = [:]
+  private(set) var calls = 0
+
+  func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
+    let index = calls
+    calls += 1
+    return try await withCheckedThrowingContinuation { requests[index] = $0 }
+  }
+
+  func completeRequest(_ index: Int, with client: Client) {
+    requests.removeValue(forKey: index)?.resume(returning: ClientServiceResponse(client: client, requestSequence: nil, serverDate: nil))
+  }
+
+  func cancelPendingRequests() {
+    let pending = requests.values
+    requests.removeAll()
+    for request in pending {
+      request.resume(throwing: CancellationError())
+    }
+  }
+}
 
 private func date(_ seconds: TimeInterval) -> Date {
   Date(timeIntervalSince1970: seconds)
