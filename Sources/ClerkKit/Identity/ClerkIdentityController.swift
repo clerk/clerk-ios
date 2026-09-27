@@ -27,6 +27,7 @@ final class ClerkIdentityController {
     let identity: ClerkIdentitySnapshot
     var fenceAllClientResponses = true
     var watchClearGeneration: Int?
+    var watchPhoneOrdering: WatchSyncPhoneOrdering?
     /// A clear can arrive with a refreshed token/Client instead of a tokenless snapshot.
     var recordsClear = false
     var didApply: @MainActor () -> Void = {}
@@ -53,6 +54,12 @@ final class ClerkIdentityController {
 
   var authoritativeClient: Client? {
     clerk?.client
+  }
+
+  func watchPhoneOrdering(includeLegacy: Bool) throws -> WatchSyncPhoneOrdering {
+    if let owner = store?.watchSyncOwnerIdentifier, let ordering = storedRecord?.watchPhoneOrdering?[owner] { return ordering }
+    guard includeLegacy, let clerk else { return WatchSyncPhoneOrdering() }
+    return try WatchSyncPhoneOrdering.loadLegacy(in: clerk.dependencies.watchSyncKeychain)
   }
 
   var isSharingIdentity: Bool {
@@ -265,7 +272,8 @@ extension ClerkIdentityController {
     guard let transition = try prepare() else { return }
     try commit(
       transition.identity, fenceResponses: transition.fenceAllClientResponses,
-      watchClearGeneration: transition.watchClearGeneration, recordsClear: transition.recordsClear
+      watchClearGeneration: transition.watchClearGeneration, recordsClear: transition.recordsClear,
+      watchPhoneOrdering: transition.watchPhoneOrdering
     )
     transition.didApply()
   }
@@ -311,7 +319,10 @@ extension ClerkIdentityController {
     guard let clerk, let store, let record else { return }
     do {
       let keychain = clerk.dependencies.watchSyncKeychain
-      guard let epoch = record.clearEpoch ?? (record.identity.deviceToken == nil ? record.epoch : nil) else {
+      // Remembering the phone's protocol on an empty installation is not a clear.
+      guard let epoch = record.clearEpoch
+        ?? (record.identity.deviceToken == nil && record.watchPhoneOrdering == nil ? record.epoch : nil)
+      else {
         if let generation = record.watchClearGeneration {
           try WatchSyncClearMarker.raise(to: generation, in: keychain)
         }
@@ -360,6 +371,7 @@ extension ClerkIdentityController {
     fenceResponses: Bool = false,
     watchClearGeneration: Int? = nil,
     recordsClear: Bool = false,
+    watchPhoneOrdering: WatchSyncPhoneOrdering? = nil,
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
     try ensureHydrated()
@@ -381,7 +393,8 @@ extension ClerkIdentityController {
       let record: ClerkIdentityStore.Record
       do {
         record = try store.save(
-          identity, replacing: storedRecord, watchClearGeneration: watchClearGeneration, recordsClear: recordsClear
+          identity, replacing: storedRecord, watchClearGeneration: watchClearGeneration,
+          recordsClear: recordsClear, watchPhoneOrdering: watchPhoneOrdering
         )
       } catch ClerkIdentityStoreError.writeConflict {
         // Adopt the winner, but do not give this prepared transition a new revision.

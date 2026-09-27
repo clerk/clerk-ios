@@ -121,14 +121,14 @@ struct IdentityStorageRoutingTests {
   }
 
   private func app(_ database: AccessGroupKeychainDatabase, service: String, sharing: Bool,
-                   sharedGroupIsDefault: Bool = false, owner: String = "app.a") throws -> Clerk
+                   sharedGroupIsDefault: Bool = false, owner: String = "app.a", accessGroup: String? = nil) throws -> Clerk
   {
     let clerk = Clerk()
     let client = database.client(owner: owner, sharedGroupIsDefault: sharedGroupIsDefault)
     clerk.dependencies = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(telemetryEnabled: false,
-                     keychainConfig: .init(service: service, accessGroup: sharing ? "shared" : nil),
+                     keychainConfig: .init(service: service, accessGroup: accessGroup ?? (sharing ? "shared" : nil)),
                      sharedSessionSync: sharing ? .enabled : nil),
       runtimeScope: clerk.runtimeScope, migratesPersistentStateOverride: true,
       keychainFactory: { SystemKeychain(service: $0, accessGroup: $1, secItemClient: client) },
@@ -136,6 +136,26 @@ struct IdentityStorageRoutingTests {
     )
     clerk.identityController.hydrate()
     return clerk
+  }
+
+  @Test(arguments: [false, true])
+  func removingAGroupCannotReopenRetiredStorageOrWriteToSiblings(sharedGroupIsDefault: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    let original = try app(database, service: "common-service", sharing: false, sharedGroupIsDefault: sharedGroupIsDefault)
+    try original.seedIdentity(deviceToken: "old-login", client: .mock)
+    let grouped = try app(database, service: "common-service", sharing: false,
+                          sharedGroupIsDefault: sharedGroupIsDefault, accessGroup: "shared")
+    try #require(grouped.deviceToken == "old-login")
+    try grouped.clearKeychainItems()
+    let groupRecord = try #require(try grouped.dependencies.identityStore.load())
+    let local = try app(database, service: "common-service", sharing: false, sharedGroupIsDefault: sharedGroupIsDefault)
+    #expect(local.deviceToken == nil)
+    try local.seedIdentity(deviceToken: "new-local-login", client: .mock)
+    #expect(try grouped.dependencies.identityStore.load() == groupRecord)
+    #expect(try app(database, service: "common-service", sharing: false,
+                    sharedGroupIsDefault: sharedGroupIsDefault).deviceToken == "new-local-login")
+    try local.clearKeychainItems()
+    #expect(try grouped.dependencies.identityStore.load() == groupRecord)
   }
 
   @Test(arguments: [false, true], [false, true])

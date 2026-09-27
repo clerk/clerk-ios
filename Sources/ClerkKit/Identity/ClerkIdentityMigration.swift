@@ -32,9 +32,10 @@ struct ClerkIdentityMigration {
     let accessGroup: String?
   }
 
-  private struct SourceRetirement: Codable {
+  struct SourceRetirement: Codable {
     let destination: Destination
     var completed: Bool
+    var clearIntentScope: String?
   }
 
   /// Earlier-layout identity items in the configured Keychain.
@@ -127,6 +128,8 @@ struct ClerkIdentityMigration {
       do {
         if clearIntent != nil {
           try store.save(.signedOut, replacing: nil)
+        } else if try restoreRetiredLocalSource() {
+          // Returning to local storage follows the replacement, never its retired copy.
         } else if !alreadyMigrated, try !sourceWasRetired(configuredService), let identity = try loadAtomicIdentity() {
           try store.save(identity, replacing: nil)
         } else if let record = try loadCurrentFormatIdentity() {
@@ -180,20 +183,49 @@ struct ClerkIdentityMigration {
   }
 
   private func sourceWasRetired(_ service: String) throws -> Bool {
-    let journal = makeKeychain(stableIdentityService, nil)
-    let key = retirementKey(service)
-    guard let data = try journal.data(forKey: key) else { return false }
+    try Self.retiredSource(service, instanceFingerprint: instanceFingerprint,
+                           journal: makeKeychain(stableIdentityService, nil), makeKeychain: makeKeychain) != nil
+  }
+
+  static func retiredSource(_ service: String, instanceFingerprint: String, journal: any KeychainStorage,
+                            makeKeychain: @Sendable (String, String?) -> any KeychainStorage) throws -> SourceRetirement?
+  {
+    let key = "\(ClerkKeychainKey.identity.rawValue).\(instanceFingerprint).retiredSource.\(SharedSessionNamespace.sha256(service))"
+    guard let data = try journal.data(forKey: key) else { return nil }
     var retirement = try JSONDecoder.clerkDecoder.decode(SourceRetirement.self, from: data)
-    if retirement.completed { return true }
+    if retirement.completed { return retirement }
     let destination = ClerkIdentityStore(
       keychain: makeKeychain(retirement.destination.service, retirement.destination.accessGroup),
       instanceFingerprint: instanceFingerprint
     )
     // A failed copy leaves the source usable. A committed destination, including a
     // later clear, permanently supersedes it without deleting an unscoped record.
-    guard try destination.load() != nil else { return false }
+    guard try destination.load() != nil else { return nil }
     retirement.completed = true
     try journal.set(JSONEncoder.clerkEncoder.encode(retirement), forKey: key)
+    return retirement
+  }
+
+  private func restoreRetiredLocalSource() throws -> Bool {
+    let journal = makeKeychain(stableIdentityService, nil)
+    guard accessGroup == nil, let destination, destination.service != configuredService,
+          let retirement = try Self.retiredSource(configuredService, instanceFingerprint: instanceFingerprint,
+                                                  journal: journal, makeKeychain: makeKeychain) else { return false }
+    let replacement = ClerkIdentityStore(
+      keychain: makeKeychain(retirement.destination.service, retirement.destination.accessGroup),
+      instanceFingerprint: instanceFingerprint, clearIntentKeychain: journal,
+      clearIntentScope: retirement.clearIntentScope ?? ""
+    )
+    do {
+      try replacement.recoverPendingClear()
+      if let record = try replacement.load() {
+        try store.importRecord(record, replacing: nil)
+        return true
+      }
+    } catch let error as KeychainError where error.isMissingEntitlement {
+      // The app may have removed the group entitlement together with its configuration.
+    }
+    try store.save(.signedOut, replacing: nil)
     return true
   }
 
@@ -211,7 +243,7 @@ struct ClerkIdentityMigration {
       guard service != destination.service || destination.accessGroup != nil,
             try !sourceWasRetired(service) else { continue }
       try journal.set(JSONEncoder.clerkEncoder.encode(SourceRetirement(
-        destination: destination, completed: destinationEstablished
+        destination: destination, completed: destinationEstablished, clearIntentScope: store.clearIntentScope
       )), forKey: retirementKey(service))
     }
   }

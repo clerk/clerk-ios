@@ -67,12 +67,32 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       isApplyingRemoteEnvironment = false
     }
 
-    guard let incoming = payload.state else { return }
+    guard let received = payload.state else { return }
     let localSource: WatchSyncSource = source == .phone ? .watch : .phone
     do {
       try clerk.identityController.applyExternalTransition {
         let local = try WatchSyncState(of: clerk)
+        var incoming = received
+        var phoneOrdering: WatchSyncPhoneOrdering?
+        var orderingChanged = false
+        if source == .phone {
+          var ordering = try clerk.identityController.watchPhoneOrdering(includeLegacy: payload.isLegacy)
+          let previous = ordering
+          guard let translated = try ordering.state(from: payload, replacing: local) else { return nil }
+          incoming = translated
+          phoneOrdering = ordering
+          orderingChanged = ordering != previous
+        } else if payload.isLegacy, incoming.isCleared {
+          return nil // SDK 1.5 Watch-only clears were never requests to clear the phone.
+        }
         guard incoming.supersedes(local, from: source) else {
+          if orderingChanged {
+            return try ClerkIdentityController.ExternalTransition(
+              identity: ClerkIdentitySnapshot(state: local.client == nil ? .cleared : .present,
+                                              deviceToken: local.deviceToken, client: local.client, serverDate: local.serverDate).validated(),
+              fenceAllClientResponses: false, watchPhoneOrdering: phoneOrdering
+            )
+          }
           if local.supersedes(incoming, from: localSource) {
             sync(from: clerk)
           }
@@ -87,6 +107,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
             serverDate: incoming.serverDate
           ).validated(),
           watchClearGeneration: incoming.clearGeneration,
+          watchPhoneOrdering: phoneOrdering,
           recordsClear: incoming.clearGeneration > local.clearGeneration,
           didApply: { [weak self, weak clerk] in
             guard let self, let clerk else { return }

@@ -95,6 +95,7 @@ struct ClerkIdentityStore {
     var watchClearGeneration: Int?
     /// The clear already accounted for by that generation, if any.
     var watchClearEpoch: UUID?
+    var watchPhoneOrdering: [String: WatchSyncPhoneOrdering]?
   }
 
   let keychain: any KeychainStorage
@@ -102,6 +103,7 @@ struct ClerkIdentityStore {
   var clearIntentKeychain: (any KeychainStorage)?
   var clearIntentScope = ""
   var preparation: Preparation?
+  var watchSyncOwnerIdentifier = Bundle.main.bundleIdentifier ?? "clerk"
   var key: String {
     "\(ClerkKeychainKey.identity.rawValue).\(instanceFingerprint)"
   }
@@ -144,9 +146,10 @@ struct ClerkIdentityStore {
   /// generation to its local counter; an echo of a known counter is not a new clear.
   @discardableResult
   func save(_ identity: ClerkIdentitySnapshot, replacing expected: Record?, watchClearGeneration: Int? = nil,
-            recordsClear: Bool = false) throws -> Record
+            recordsClear: Bool = false, watchPhoneOrdering: WatchSyncPhoneOrdering? = nil) throws -> Record
   {
-    try write(identity, replacing: expected, watchClearGeneration: watchClearGeneration, recordsClear: recordsClear)
+    try write(identity, replacing: expected, watchClearGeneration: watchClearGeneration,
+              recordsClear: recordsClear, watchPhoneOrdering: watchPhoneOrdering)
   }
 
   /// A backend handoff retains identity and Watch epochs, but starts a new storage revision.
@@ -155,25 +158,31 @@ struct ClerkIdentityStore {
     let record = Record(
       schemaVersion: Record.schemaVersion, revision: UUID(), instanceFingerprint: instanceFingerprint,
       identity: source.identity, epoch: source.epoch, clearEpoch: source.clearEpoch,
-      watchClearGeneration: source.watchClearGeneration, watchClearEpoch: source.watchClearEpoch
+      watchClearGeneration: source.watchClearGeneration, watchClearEpoch: source.watchClearEpoch,
+      watchPhoneOrdering: source.watchPhoneOrdering
     )
     try persist(record, replacing: expected)
   }
 
   private func write(
     _ identity: ClerkIdentitySnapshot, replacing expected: Record?, clearID: UUID? = nil,
-    watchClearGeneration: Int? = nil, recordsClear: Bool = false
+    watchClearGeneration: Int? = nil, recordsClear: Bool = false, watchPhoneOrdering: WatchSyncPhoneOrdering? = nil
   ) throws -> Record {
     let identity = try identity.validated()
     if let watchClearGeneration, watchClearGeneration < 0 { throw KeychainError.invalidStringEncoding }
-    let epoch: UUID = if let clearID {
+    let metadataOnly = watchPhoneOrdering != nil && !recordsClear && identity == (expected?.identity ?? .signedOut)
+    let epoch: UUID = if metadataOnly {
+      expected?.epoch ?? UUID()
+    } else if let clearID {
       clearID
     } else if !recordsClear, let expected, identity.deviceToken != nil, identity.deviceToken == expected.identity.deviceToken {
       expected.epoch
     } else {
       UUID()
     }
-    let clearEpoch = recordsClear || identity.deviceToken == nil ? epoch : expected?.clearEpoch
+    let clearEpoch = !metadataOnly && (recordsClear || identity.deviceToken == nil) ? epoch : expected?.clearEpoch
+    var phoneOrdering = expected?.watchPhoneOrdering ?? [:]
+    if let watchPhoneOrdering { phoneOrdering[watchSyncOwnerIdentifier] = watchPhoneOrdering }
     let record = Record(
       schemaVersion: Record.schemaVersion,
       revision: clearID ?? UUID(),
@@ -183,7 +192,8 @@ struct ClerkIdentityStore {
       clearEpoch: clearEpoch,
       watchClearGeneration: watchClearGeneration.map { max($0, expected?.watchClearGeneration ?? 0) }
         ?? expected?.watchClearGeneration,
-      watchClearEpoch: watchClearGeneration != nil ? clearEpoch : expected?.watchClearEpoch
+      watchClearEpoch: watchClearGeneration != nil ? clearEpoch : expected?.watchClearEpoch,
+      watchPhoneOrdering: phoneOrdering.isEmpty ? nil : phoneOrdering
     )
     try persist(record, replacing: expected)
     return record

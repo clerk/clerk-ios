@@ -173,7 +173,9 @@ final class DependencyContainer: Dependencies {
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)
   }
+}
 
+extension DependencyContainer {
   private static func makeKeychainStorages(
     options: Clerk.Options,
     frontendApiUrl: String,
@@ -214,12 +216,8 @@ final class DependencyContainer: Dependencies {
       localIdentityService(configuredService: config.service, ownerIdentifier: ownerIdentifier), nil
     )
     let adoptionMarkerKeychain = makeKeychain(
-      stableIdentityService(
-        configuredService: config.service,
-        instanceFingerprint: namespace.fingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      nil
+      stableIdentityService(configuredService: config.service, instanceFingerprint: namespace.fingerprint,
+                            ownerIdentifier: ownerIdentifier), nil
     )
 
     guard migratesPersistentState else {
@@ -235,7 +233,11 @@ final class DependencyContainer: Dependencies {
       syncEnabled: syncEnabled, config: config, shared: shared,
       configuredAppLocal: configuredAppLocal, localIdentity: localIdentity,
       localIdentityService: localIdentityService(configuredService: config.service, ownerIdentifier: ownerIdentifier),
-      adoptionMarkerKeychain: adoptionMarkerKeychain
+      adoptionMarkerKeychain: adoptionMarkerKeychain,
+      isRetiredLocalSource: {
+        try ClerkIdentityMigration.retiredSource(config.service, instanceFingerprint: namespace.fingerprint,
+                                                 journal: adoptionMarkerKeychain, makeKeychain: makeKeychain) != nil
+      }
     )
     var identityStore = ClerkIdentityStore(
       keychain: DeferredKeychainStorage { try layout.get().identity },
@@ -245,7 +247,8 @@ final class DependencyContainer: Dependencies {
       // sharing mode so another configuration cannot consume the pending clear.
       clearIntentScope: SharedSessionNamespace.sha256(
         "\(config.service)\u{1F}\(config.normalizedAccessGroup ?? "")\u{1F}\(syncEnabled)"
-      )
+      ),
+      watchSyncOwnerIdentifier: ownerIdentifier.nilIfEmpty ?? config.service
     )
     let migrationStore = identityStore
     let preparation = ClerkIdentityStore.Preparation {
@@ -302,14 +305,18 @@ final class DependencyContainer: Dependencies {
     configuredAppLocal: any KeychainStorage,
     localIdentity: any KeychainStorage,
     localIdentityService: String,
-    adoptionMarkerKeychain: any KeychainStorage
+    adoptionMarkerKeychain: any KeychainStorage,
+    isRetiredLocalSource: @escaping @Sendable () throws -> Bool
   ) -> KeychainStorageLayout {
     KeychainStorageLayout {
       // A failed marker read is unknown, never evidence that adoption did not happen.
       let wasAdopted = try AppLocalStateAdoption.usesAppLocalStorage(in: adoptionMarkerKeychain)
-      var identity: any KeychainStorage = syncEnabled || !wasAdopted ? shared : localIdentity
-      var identityService = syncEnabled || !wasAdopted ? config.service : localIdentityService
-      var isShared = config.normalizedAccessGroup != nil && (syncEnabled || !wasAdopted)
+      // A retained unscoped V4 source must not become authoritative again when
+      // removing an access group. Use the isolated local backend for its replacement.
+      let needsLocalIdentity = try wasAdopted || (config.normalizedAccessGroup == nil && isRetiredLocalSource())
+      var identity: any KeychainStorage = syncEnabled || !needsLocalIdentity ? shared : localIdentity
+      var identityService = syncEnabled || !needsLocalIdentity ? config.service : localIdentityService
+      var isShared = config.normalizedAccessGroup != nil && (syncEnabled || !needsLocalIdentity)
       var sharedIsAccessible = true
       if config.normalizedAccessGroup != nil {
         do {

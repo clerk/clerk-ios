@@ -79,6 +79,7 @@ struct WatchSyncPayloadTests {
       "clerkDeviceToken": "legacy-token",
       "clerkClient": JSONEncoder.clerkEncoder.encode(signedIn("legacy-client")),
       "clerkClientServerFetchDate": 100.0,
+      "watchSyncAuthState": "set",
       "watchSyncAuthVersion": 3,
     ]
 
@@ -91,7 +92,7 @@ struct WatchSyncPayloadTests {
   }
 
   @Test
-  func legacyPayloadWithoutTokenCarriesNoState() throws {
+  func legacyPayloadRequiresAnExplicitVersionedTokenClear() throws {
     let clear: [String: Any] = [
       "watchSyncDeviceTokenState": "cleared",
       "watchSyncDeviceTokenVersion": 4,
@@ -101,7 +102,8 @@ struct WatchSyncPayloadTests {
       "clerkEnvironment": JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock),
     ]
 
-    #expect(WatchSyncPayload(applicationContext: clear) == nil)
+    #expect(WatchSyncPayload(applicationContext: clear)?.state?.isCleared == true)
+    #expect(WatchSyncPayload(applicationContext: ["watchSyncDeviceTokenState": "cleared"]) == nil)
     let payload = try #require(WatchSyncPayload(applicationContext: environmentOnly))
     #expect(payload.state == nil)
     #expect(payload.environment == .mock)
@@ -330,6 +332,81 @@ struct WatchSyncStateMergeTests {
 @MainActor
 @Suite(.serialized)
 struct WatchConnectivityCoordinatorTests {
+  @Test
+  func legacyPhoneClearIsOrderedAcrossRestartAndLaterSignIn() throws {
+    let (clerk, keychain) = try makeClerk(token: "old-token", client: signedIn("old"), serverDate: date(100))
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    let clear = try legacyPayload(token: nil, version: 2)
+    coordinator.apply(clear, from: .watch, to: clerk)
+    #expect(clerk.deviceToken == "old-token")
+    coordinator.apply(clear, from: .phone, to: clerk)
+    #expect(clerk.deviceToken == nil)
+    #expect(clerk.client?.id == nil)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 1)
+    clerk.identityController.prepareForConfiguration()
+    clerk.identityController.hydrate()
+    coordinator.apply(clear, from: .phone, to: clerk)
+    try coordinator.apply(legacyPayload(token: "old-token", version: 1), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == nil)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 1)
+    try coordinator.apply(legacyPayload(token: "new-token", version: 3), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == "new-token")
+    coordinator.apply(clear, from: .phone, to: clerk)
+    #expect(clerk.deviceToken == "new-token")
+    try coordinator.apply(legacyPayload(token: nil, version: 4), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == nil)
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == 2)
+  }
+
+  @Test(arguments: ["phone", "watch"])
+  func legacyClearRespectsThePreviouslyAcceptedPhoneVersions(previousSource: String) throws {
+    let (clerk, keychain) = try makeClerk(token: "token", client: signedIn("client"))
+    try keychain.set(JSONSerialization.data(withJSONObject: [
+      "device_token_version": 4, "device_token_source": previousSource,
+      "auth_version": 4, "auth_source": previousSource,
+      "pending_device_token_version": 5, "pending_device_token_source": "phone",
+      "pending_auth_version": 5, "pending_auth_source": "phone",
+    ]), forKey: ClerkKeychainKey.watchSyncMetadata.rawValue)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    try coordinator.apply(legacyPayload(token: nil, version: 3), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == (previousSource == "phone" ? "token" : nil))
+    try coordinator.apply(legacyPayload(token: nil, version: 5, authVersion: 3), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == (previousSource == "phone" ? "token" : nil))
+    try coordinator.apply(legacyPayload(token: nil, version: 5), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == nil)
+  }
+
+  @Test(arguments: [false, true])
+  func currentPhoneSchemaClosesTheLegacyStreamWithoutInventingAClear(hasToken: Bool) throws {
+    let (clerk, keychain) = try makeClerk(token: hasToken ? "token" : nil, client: hasToken ? signedIn("client") : nil)
+    let before = try clerk.dependencies.identityStore.load()
+    let state = try WatchSyncState(of: clerk)
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+    coordinator.apply(.init(state: state, environment: nil), from: .phone, to: clerk)
+    let stored = try #require(try clerk.dependencies.identityStore.load())
+    #expect(stored.watchPhoneOrdering?[clerk.dependencies.identityStore.watchSyncOwnerIdentifier]?.usesCurrentSchema == true)
+    #expect(stored.clearEpoch == before?.clearEpoch)
+    if let before { #expect(stored.epoch == before.epoch) }
+    clerk.identityController.prepareForConfiguration()
+    clerk.identityController.hydrate()
+    try coordinator.apply(legacyPayload(token: nil, version: 99), from: .phone, to: clerk)
+    #expect(clerk.deviceToken == (hasToken ? "token" : nil))
+    #expect(try WatchSyncClearMarker.generation(in: keychain) == state.clearGeneration)
+  }
+
+  private func legacyPayload(token: String?, version: Int, authVersion: Int? = nil) throws -> WatchSyncPayload {
+    var context: [String: Any] = [
+      "watchSyncDeviceTokenState": token == nil ? "cleared" : "set", "watchSyncDeviceTokenVersion": version,
+      "watchSyncAuthState": token == nil ? "cleared" : "set", "watchSyncAuthVersion": authVersion ?? version,
+    ]
+    if let token {
+      context["clerkDeviceToken"] = token
+      context["clerkClient"] = try JSONEncoder.clerkEncoder.encode(signedIn(token))
+      context["clerkClientServerFetchDate"] = Double(version * 100)
+    }
+    return try #require(WatchSyncPayload(applicationContext: context))
+  }
+
   @Test(arguments: [WatchSyncSource.phone, .watch])
   func signOutWithARotatedTokenReachesThePeerAndSurvivesRestart(source: WatchSyncSource) throws {
     let (clerk, _) = try makeClerk(token: "old-token", client: signedIn("client"), serverDate: date(100))

@@ -7,6 +7,65 @@ import Testing
 @Suite(.serialized)
 struct KeychainPreparationRecoveryTests {
   @Test(arguments: [false, true])
+  func removingAnAccessGroupUsesTheCurrentIdentityInsteadOfItsRetiredSource(cleared: Bool) throws {
+    let fixture = try Fixture()
+    func app(hasAccessGroup: Bool) throws -> Clerk {
+      let clerk = Clerk()
+      clerk.dependencies = try fixture.container(clerk: clerk, sync: false, hasAccessGroup: hasAccessGroup)
+      clerk.identityController.hydrate()
+      return clerk
+    }
+    let original = try app(hasAccessGroup: false)
+    try original.seedIdentity(deviceToken: "original-login", client: .mock)
+    let grouped = try app(hasAccessGroup: true)
+    try #require(grouped.deviceToken == "original-login")
+    try grouped.seedIdentity(deviceToken: "current-login", client: .mock)
+    if cleared { try grouped.clearKeychainItems() }
+    let current = try #require(try grouped.dependencies.identityStore.load())
+
+    let local = try app(hasAccessGroup: false)
+
+    #expect(local.deviceToken == (cleared ? nil : "current-login"))
+    #expect(local.client?.id == (cleared ? nil : Client.mock.id))
+    #expect(try local.dependencies.identityStore.load()?.epoch == current.epoch)
+    try local.seedIdentity(deviceToken: "new-local-login", client: .mock)
+    #expect(try app(hasAccessGroup: false).deviceToken == "new-local-login")
+    #expect(try grouped.dependencies.identityStore.load() == current)
+    try local.clearKeychainItems()
+    #expect(try app(hasAccessGroup: false).deviceToken == nil)
+    #expect(try grouped.dependencies.identityStore.load() == current)
+  }
+
+  @Test(arguments: [false, true])
+  func retiredLocalRecoveryHonorsPendingClearsAndRemovedEntitlements(groupUnavailable: Bool) throws {
+    let fixture = try Fixture()
+    let original = Clerk()
+    original.dependencies = try fixture.container(clerk: original, sync: false, hasAccessGroup: false)
+    try original.seedIdentity(deviceToken: "old-login", client: .mock)
+    let grouped = Clerk()
+    grouped.dependencies = try fixture.container(clerk: grouped, sync: false)
+    grouped.identityController.hydrate()
+    try #require(grouped.deviceToken == "old-login")
+    if groupUnavailable {
+      fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
+    } else {
+      fixture.storage(fixture.group).writeError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
+      #expect(throws: (any Error).self) { try grouped.clearKeychainItems() }
+      fixture.storage(fixture.group).writeError = nil
+    }
+    let local = Clerk()
+    local.dependencies = try fixture.container(clerk: local, sync: false, hasAccessGroup: false)
+    local.identityController.hydrate()
+    #expect(local.deviceToken == nil)
+    #expect(local.identityController.canPublishIdentity)
+    #expect(try local.dependencies.identityStore.load()?.identity == .signedOut)
+    if !groupUnavailable {
+      #expect(try grouped.dependencies.identityStore.load()?.identity == .signedOut)
+      #expect(try !fixture.marker.hasItem(forKey: grouped.dependencies.identityStore.clearIntentKey))
+    }
+  }
+
+  @Test(arguments: [false, true])
   func enablingSyncRecoversAnUnfinishedClearInTheSameSharedBackend(enablesSync: Bool) async throws {
     let fixture = try Fixture()
     let original = Clerk()

@@ -78,6 +78,10 @@ package struct WatchSyncPayload: Equatable {
     static let serverDate = "clerkClientServerFetchDate"
     static let clearGeneration = "clerkWatchSyncClearGeneration"
     static let environment = "clerkEnvironment"
+    static let tokenState = "watchSyncDeviceTokenState"
+    static let tokenVersion = "watchSyncDeviceTokenVersion"
+    static let authState = "watchSyncAuthState"
+    static let authVersion = "watchSyncAuthVersion"
   }
 
   /// Keys an SDK 1.5 peer reads. Once synced, SDK 1.5 accepts only versioned updates, so a payload
@@ -94,10 +98,14 @@ package struct WatchSyncPayload: Equatable {
   /// `nil` when the payload carries no usable auth state.
   let state: WatchSyncState?
   let environment: Clerk.Environment?
+  let isLegacy: Bool
+  let legacyVersion: WatchSyncLegacyVersion?
 
   init(state: WatchSyncState?, environment: Clerk.Environment?) {
     self.state = state
     self.environment = environment
+    isLegacy = false
+    legacyVersion = nil
   }
 
   init?(applicationContext context: [String: Any]) {
@@ -111,12 +119,30 @@ package struct WatchSyncPayload: Equatable {
       try? JSONDecoder.clerkDecoder.decode(Client.self, from: $0)
     }
     let isCurrentSchema = context[Key.schema] as? Int == Self.schemaVersion
+    isLegacy = context[Key.schema] == nil
+    let tokenVersion = Self.version(context[Key.tokenVersion])
+    let authVersion = Self.version(context[Key.authVersion])
+    legacyVersion = isLegacy && (tokenVersion != nil || authVersion != nil)
+      ? WatchSyncLegacyVersion(token: tokenVersion, auth: authVersion) : nil
+    let explicitLegacyClear = isLegacy && context[Key.tokenState] as? String == "cleared"
+      && tokenVersion != nil && deviceToken == nil && clientData == nil
+    let invalidLegacyMetadata = isLegacy && (
+      (context[Key.tokenState] != nil && !["set", "cleared"].contains(context[Key.tokenState] as? String ?? ""))
+        || (context[Key.authState] != nil && !["set", "cleared"].contains(context[Key.authState] as? String ?? ""))
+        || (context[Key.tokenState] as? String == "set" && deviceToken == nil)
+        || (context[Key.authState] as? String == "set" && client == nil)
+        || (context[Key.tokenVersion] != nil && (tokenVersion == nil || context[Key.tokenState] == nil))
+        || (context[Key.authVersion] != nil && (authVersion == nil || context[Key.authState] == nil))
+        || (context[Key.tokenState] as? String == "cleared" && deviceToken != nil)
+        || (context[Key.authState] as? String == "cleared" && clientData != nil)
+    )
 
-    // A complete state needs a decodable client paired with its token. Payloads from
-    // earlier SDKs only describe a state when they include a token.
+    // Absence of a token is not a clear unless the protocol explicitly says so.
     if (clientData != nil && client == nil)
       || (client != nil && deviceToken == nil)
-      || (!isCurrentSchema && deviceToken == nil)
+      || (!isCurrentSchema && deviceToken == nil && !explicitLegacyClear)
+      || invalidLegacyMetadata
+      || (!isLegacy && !isCurrentSchema)
     {
       state = nil
     } else {
@@ -168,5 +194,18 @@ package struct WatchSyncPayload: Equatable {
   private static func date(_ value: Any?) -> Date? {
     guard let interval = value as? Double, interval.isFinite else { return nil }
     return Date(timeIntervalSince1970: interval)
+  }
+
+  private static func version(_ value: Any?) -> Int? {
+    let version: Int? = if let integer = value as? Int {
+      integer
+    } else if let string = value as? String {
+      Int(string)
+    } else if let number = value as? Double {
+      Int(exactly: number)
+    } else {
+      nil
+    }
+    return version.flatMap { $0 >= 0 ? $0 : nil }
   }
 }

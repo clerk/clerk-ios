@@ -4,6 +4,24 @@ import Testing
 
 struct ClerkIdentityStoreTests {
   @Test
+  func phoneOrderingRemainsIndependentForAppsSharingAnIdentity() throws {
+    let keychain = InMemoryKeychain()
+    let first = ClerkIdentityStore(keychain: keychain, instanceFingerprint: "instance", watchSyncOwnerIdentifier: "app.a")
+    let sibling = ClerkIdentityStore(keychain: keychain, instanceFingerprint: "instance", watchSyncOwnerIdentifier: "app.b")
+    let identity = ClerkIdentitySnapshot(state: .present, deviceToken: "token", client: .mock, serverDate: nil)
+    let modern = WatchSyncPhoneOrdering(usesCurrentSchema: true)
+    let legacy = WatchSyncPhoneOrdering(version: .init(token: 2, auth: 3))
+    let initial = try first.save(identity, replacing: nil, watchPhoneOrdering: modern)
+    try sibling.save(identity, replacing: initial, watchPhoneOrdering: legacy)
+    let record = try #require(try first.load())
+    #expect(record.watchPhoneOrdering?["app.a"] == modern)
+    #expect(record.watchPhoneOrdering?["app.b"] == legacy)
+    #expect(record.epoch == initial.epoch)
+    let cleared = try sibling.clear()
+    #expect(cleared.watchPhoneOrdering == record.watchPhoneOrdering)
+  }
+
+  @Test
   func importedRecordsKeepIdentityAndWatchHistoryButRejectAStaleDestination() throws {
     let source = ClerkIdentityStore(keychain: InMemoryKeychain(), instanceFingerprint: "instance")
     let cleared = try source.clear()

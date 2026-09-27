@@ -228,8 +228,8 @@ struct IdentityClearOrderingTests {
     #expect(try WatchSyncState(of: restarted).clearGeneration > generation)
   }
 
-  @Test
-  func phoneClearStillAppliesAfterIdentityWriteFailure() throws {
+  @Test(arguments: [false, true])
+  func phoneClearStillAppliesAfterIdentityWriteFailure(legacy: Bool) throws {
     let storage = FailingConditionalKeychain()
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
@@ -240,13 +240,24 @@ struct IdentityClearOrderingTests {
     let transport = RecordingWatchSyncTransport()
     let coordinator = WatchConnectivityCoordinator(transport: transport)
     let clear = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1)
+    let payload = try legacy ? #require(WatchSyncPayload(applicationContext: [
+      "watchSyncDeviceTokenState": "cleared", "watchSyncDeviceTokenVersion": 2,
+      "watchSyncAuthState": "cleared", "watchSyncAuthVersion": 2,
+    ])) : WatchSyncPayload(state: clear, environment: nil)
     storage.failWrites = true
-    coordinator.apply(WatchSyncPayload(state: clear, environment: nil), from: .phone, to: clerk)
+    coordinator.apply(payload, from: .phone, to: clerk)
+    #expect(try clerk.dependencies.identityStore.load()?.identity.deviceToken == "old-token")
+    #expect(try clerk.dependencies.identityStore.load()?.watchPhoneOrdering == nil)
     storage.failWrites = false
-    coordinator.apply(WatchSyncPayload(state: clear, environment: nil), from: .phone, to: clerk)
+    clerk.identityController.prepareForConfiguration()
+    clerk.identityController.hydrate()
+    coordinator.apply(payload, from: .phone, to: clerk)
     #expect(clerk.deviceToken == nil)
     #expect(clerk.client == nil)
     #expect(try !WatchSyncState(of: clerk).supersedes(clear, from: .watch))
+    let committed = try clerk.dependencies.identityStore.load()
+    coordinator.apply(payload, from: .phone, to: clerk)
+    #expect(try clerk.dependencies.identityStore.load() == committed)
   }
 
   @Test
