@@ -118,16 +118,15 @@ struct ClerkTests {
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == Clerk.preservedKeychainKeys.contains(key))
     }
-    #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity == .signedOut)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
     #expect(try WatchSyncClearMarker.generation(in: keychain) == 5)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.clearedMarkerValue)
   }
 
   @Test
-  func awaitedClearReportsIdentityDeletionFailureButStillSignsOut() async throws {
-    let identityKeychain = DeleteFailingKeychain(failingKey: "clerkIdentityV3")
+  func awaitedClearReportsTombstoneWriteFailureButStillSignsOut() async throws {
+    let identityKeychain = DeleteFailingKeychain(failingKey: "\(ClerkKeychainKey.identity.rawValue).")
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: InMemoryKeychain(),
@@ -144,7 +143,7 @@ struct ClerkTests {
 
     identityKeychain.allowDeletes()
     try await Clerk.clearAllKeychainItemsAndWait()
-    #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity == .signedOut)
   }
 
   @Test
@@ -164,7 +163,7 @@ struct ClerkTests {
     try Clerk.clearLocalClerkStorageStrictly(in: local)
 
     #expect(try shared.identityStore.load()?.identity.deviceToken == "shared-token")
-    #expect(try local.identityStore.load() == nil)
+    #expect(try local.identityStore.load()?.identity == .signedOut)
     #expect(try WatchSyncClearMarker.generation(in: shared.watchSyncKeychain) == 1)
   }
 
@@ -182,59 +181,6 @@ struct ClerkTests {
     try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
 
     #expect(try dependencies.identityStore.load()?.identity.deviceToken == "group-token")
-  }
-
-  @Test
-  func clearsLeaveTheGroupIdentityOfAppsWithSyncOn() throws {
-    // An app that adopted sync in SDK 1.5 and turned it off keeps its identity app-local, while
-    // sibling apps with sync on keep theirs in the access group.
-    let groupKeychain = InMemoryKeychain()
-    let identityKeychain = InMemoryKeychain()
-    let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: groupKeychain,
-      appLocalKeychain: InMemoryKeychain(),
-      identityKeychain: identityKeychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-    let siblingIdentity = Data("sibling identity".utf8)
-    try groupKeychain.set(siblingIdentity, forKey: ClerkKeychainKey.identity.rawValue)
-    Clerk.shared.dependencies = dependencies
-    try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock)
-
-    Clerk.clearAllKeychainItems()
-    #expect(try identityKeychain.hasItem(forKey: ClerkKeychainKey.identity.rawValue) == false)
-    #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
-
-    try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
-    #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
-  }
-
-  @Test
-  func clearDeletesTheGroupIdentityThisAppLastWroteBeforeTurningSyncOff() throws {
-    let groupKeychain = InMemoryKeychain()
-    let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: groupKeychain,
-      appLocalKeychain: InMemoryKeychain(),
-      identityKeychain: InMemoryKeychain(),
-      identityWriter: "com.example.app",
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-    let groupStore = ClerkIdentityStore(keychain: groupKeychain, instanceFingerprint: "")
-    Clerk.shared.dependencies = dependencies
-
-    var ownStore = groupStore
-    ownStore.writer = "com.example.app"
-    try ownStore.save(ClerkIdentitySnapshot(state: .present, deviceToken: "own-token", client: .mock, serverDate: nil))
-    Clerk.clearAllKeychainItems()
-    #expect(try groupStore.load() == nil)
-
-    var siblingStore = groupStore
-    siblingStore.writer = "com.example.sibling"
-    try siblingStore.save(ClerkIdentitySnapshot(state: .present, deviceToken: "sibling-token", client: .mock, serverDate: nil))
-    Clerk.clearAllKeychainItems()
-    #expect(try groupStore.load()?.identity.deviceToken == "sibling-token")
   }
 
   @Test
@@ -290,9 +236,9 @@ struct ClerkTests {
     // Clear all keychain items (should not throw even though some keys don't exist)
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted (including ones that didn't exist), except the markers the clear records.
+    // Verify all keys are deleted (including ones that didn't exist), except the new Watch clear time.
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == [.watchSyncClearGeneration, .identityMigrated].contains(key))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
     }
   }
 
@@ -2153,6 +2099,11 @@ private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage 
     lock.withLock { failuresRemaining = 0 }
   }
 
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    if expectedRevision != nil { try checkDeletionAllowed(forKey: key) }
+    return try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
+
   func set(_ data: Data, forKey key: String) throws {
     try backing.set(data, forKey: key)
   }
@@ -2162,6 +2113,11 @@ private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage 
   }
 
   func deleteItem(forKey key: String) throws {
+    try checkDeletionAllowed(forKey: key)
+    try backing.deleteItem(forKey: key)
+  }
+
+  private func checkDeletionAllowed(forKey key: String) throws {
     let shouldFail = lock.withLock {
       guard key == failingKey else { return false }
       if let failuresRemaining {
@@ -2172,7 +2128,6 @@ private final class DeleteFailingKeychain: @unchecked Sendable, KeychainStorage 
       return true
     }
     guard !shouldFail else { throw Failure.delete }
-    try backing.deleteItem(forKey: key)
   }
 
   func hasItem(forKey key: String) throws -> Bool {

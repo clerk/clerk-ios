@@ -611,7 +611,7 @@ struct HostedAuthFlowTests {
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
-    #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.state == .cleared)
   }
 
   @Test

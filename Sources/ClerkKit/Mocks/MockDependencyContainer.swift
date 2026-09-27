@@ -17,7 +17,6 @@ final class MockDependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
-  let identityMigrationMarkerKeychain: any KeychainStorage
   let identityIsInAccessGroup: Bool
   let sharesIdentity: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
@@ -74,8 +73,8 @@ final class MockDependencyContainer: Dependencies {
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
     sharesIdentity: Bool = false,
+    identityPreparation: ClerkIdentityStore.Preparation? = nil,
     identityIsInAccessGroup: Bool? = nil,
-    identityWriter: String? = nil,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
@@ -100,11 +99,11 @@ final class MockDependencyContainer: Dependencies {
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
     self.appLocalKeychain = resolvedAppLocalKeychain
-    identityMigrationMarkerKeychain = resolvedAppLocalKeychain
     identityStore = ClerkIdentityStore(
       keychain: identityKeychain ?? resolvedKeychain,
       instanceFingerprint: "",
-      writer: identityWriter
+      clearIntentKeychain: resolvedAppLocalKeychain,
+      preparation: identityPreparation
     )
     self.sharesIdentity = sharesIdentity
     self.identityIsInAccessGroup = identityIsInAccessGroup ?? sharesIdentity

@@ -9,20 +9,19 @@ import Foundation
 /// the storage used by earlier SDK versions.
 ///
 /// Sources, in order of preference:
-/// 1. The atomic app-local record written by shared-session sync in SDK 1.5.
-/// 2. The separate device-token, Client, and server-date items written before that.
+/// 1. The winning SDK 1.5 publication, including this app's pending publication.
+/// 2. The atomic app-local record, if no publication exists.
+/// 3. A current-format identity in the configured local or previous bundle-ID service.
+/// 4. The earlier separate device-token item; a refresh supplies its matching Client.
 ///
-/// A clear recorded before the migration finished, including a shared-session clear
-/// interrupted in SDK 1.5, is honored by not migrating any identity. When another app in the access group already wrote the shared record,
-/// that record is kept unless it is signed out and this app's identity is signed in.
+/// A shared-session clear that was interrupted in SDK 1.5 is honored by not migrating
+/// any identity. When another app in the access group already wrote the shared record,
+/// that record is authoritative, even when signed out.
 ///
 /// The migration is marked done only after every earlier copy was deleted, so a failed
 /// deletion is retried on the next launch.
 struct ClerkIdentityMigration {
-  static let markerValue = "3"
-  /// Recorded by a clear before the migration finished, so the next run removes earlier copies
-  /// without bringing the cleared identity back.
-  static let clearedMarkerValue = "cleared"
+  static let markerValue = "4"
 
   /// Earlier-layout identity items in the configured Keychain.
   static let legacyIdentityKeys: [ClerkKeychainKey] = [
@@ -40,7 +39,27 @@ struct ClerkIdentityMigration {
   private static let clearIntentKey = "clerkSharedSessionOwnerSlotClearIntentV1"
 
   private struct AtomicRecord: Decodable {
+    let schemaVersion: Int
     let acceptedIdentity: ClerkIdentitySnapshot?
+    let pendingPublication: Publication?
+    let requiresLegacyAdoptionPublication: Bool?
+  }
+
+  private struct Publication: Decodable, Equatable {
+    let id: UUID
+    let originOwnerIdentifier: String
+    let generation: UInt64
+    let identity: ClerkIdentitySnapshot
+
+    private enum CodingKeys: CodingKey { case id, originOwnerIdentifier, generation }
+
+    init(from decoder: any Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      id = try container.decode(UUID.self, forKey: .id)
+      originOwnerIdentifier = try container.decode(String.self, forKey: .originOwnerIdentifier)
+      generation = try container.decode(UInt64.self, forKey: .generation)
+      identity = try ClerkIdentitySnapshot(from: decoder).validated()
+    }
   }
 
   private struct ClearIntent: Decodable {
@@ -59,45 +78,69 @@ struct ClerkIdentityMigration {
   let accessGroup: String?
   let ownerIdentifier: String?
   let instanceFingerprint: String
+  /// The previous bundle-ID service when first enabling sharing with a common service.
+  var previousAppLocalService: String?
   /// Apps that adopted shared-session sync in SDK 1.5 left stale separate items behind, so only
   /// apps that never adopted it read them.
   var readsLegacyItems = true
+  var readsSharedLegacyItems = true
+  /// Only a group identity adopts sibling publications. An app that turned sync off stays local.
+  var readsSharedSlots = true
   /// `false` while the app cannot reach its access group: the identity is copied to the fallback
   /// store, but earlier copies are kept so the migration runs again once the group is reachable.
   var finalizes = true
-  var makeKeychain: (_ service: String, _ accessGroup: String?) -> any KeychainStorage = Self.liveKeychain
-
-  /// Records a clear, so a migration that has not finished cannot restore the cleared identity.
-  static func recordClear(in markerKeychain: any KeychainStorage) throws {
-    let marker = ClerkKeychainKey.identityMigrated.rawValue
-    guard try markerKeychain.string(forKey: marker) != markerValue else { return }
-    try markerKeychain.set(clearedMarkerValue, forKey: marker)
-  }
+  var makeKeychain: @Sendable (_ service: String, _ accessGroup: String?) -> any KeychainStorage = Self.liveKeychain
 
   func migrateIfNeeded() throws {
-    let marker = ClerkKeychainKey.identityMigrated.rawValue
-    let state = try markerKeychain.string(forKey: marker)
-    guard state != Self.markerValue else { return }
+    try store.recoverPendingClear()
+    let marker = "\(ClerkKeychainKey.identityMigrated.rawValue).\(instanceFingerprint)"
+    let alreadyMigrated = try markerKeychain.string(forKey: marker) == Self.markerValue
 
-    let clearIntent = loadClearIntent()
-    let wasCleared = state == Self.clearedMarkerValue || clearIntent != nil
-    if !wasCleared, let identity = try loadAtomicIdentity() ?? loadLegacyIdentity() {
-      let existing: ClerkIdentitySnapshot?
+    let clearIntent = alreadyMigrated ? nil : try loadClearIntent()
+    // An existing record (including a clear tombstone) is authoritative. Importing
+    // an old signed-in copy over it could undo another app's sign-out.
+    if try store.load() == nil {
       do {
-        existing = try store.load()?.identity
-      } catch ClerkIdentityStoreError.otherInstance {
-        existing = nil
-      }
-      if existing == nil || (existing?.hasSession != true && identity.hasSession) {
-        try store.save(identity)
+        if clearIntent != nil {
+          try store.save(.signedOut, replacing: nil)
+        } else if !alreadyMigrated, let identity = try loadAtomicIdentity() {
+          try store.save(identity, replacing: nil)
+        } else if let record = try loadCurrentFormatIdentity() {
+          // The old migration marker only describes format adoption. Moving to
+          // another service/backend must still carry the complete current record.
+          try store.importRecord(record, replacing: nil)
+        } else if !alreadyMigrated, let identity = try loadLegacyIdentity() {
+          try store.save(identity, replacing: nil)
+        }
+      } catch ClerkIdentityStoreError.writeConflict {
+        // A concurrent creator won. Verify that it is a supported record before cleanup.
+        _ = try store.load()
       }
     }
 
+    guard !alreadyMigrated else { return }
     guard finalizes, removeEarlierStorage(clearIntent: clearIntent) else { return }
     try markerKeychain.set(Self.markerValue, forKey: marker)
   }
 
   // MARK: - Sources
+
+  private func loadCurrentFormatIdentity() throws -> ClerkIdentityStore.Record? {
+    var sources: [(any KeychainStorage, String)] = [(markerKeychain, configuredService)]
+    if let previousAppLocalKeychain, let previousAppLocalService {
+      sources.append((previousAppLocalKeychain, previousAppLocalService))
+    }
+    for (keychain, service) in sources {
+      let source = ClerkIdentityStore(
+        keychain: keychain, instanceFingerprint: instanceFingerprint,
+        clearIntentKeychain: makeKeychain(stableIdentityService, nil),
+        clearIntentScope: SharedSessionNamespace.sha256("\(service)\u{1F}\u{1F}false")
+      )
+      try source.recoverPendingClear()
+      if let record = try source.load() { return record }
+    }
+    return nil
+  }
 
   private var stableIdentityService: String {
     let owner = ownerIdentifier.nilIfEmpty ?? configuredService
@@ -110,38 +153,114 @@ struct ClerkIdentityMigration {
     }
   }
 
-  private func loadClearIntent() -> ClearIntent? {
-    guard let data = try? clearJournal?.data(forKey: Self.clearIntentKey) else { return nil }
-    return try? JSONDecoder.clerkDecoder.decode(ClearIntent.self, from: data)
+  private func loadClearIntent() throws -> ClearIntent? {
+    guard let data = try clearJournal?.data(forKey: Self.clearIntentKey) else { return nil }
+    return try JSONDecoder.clerkDecoder.decode(ClearIntent.self, from: data)
   }
 
   private func loadAtomicIdentity() throws -> ClerkIdentitySnapshot? {
+    var publications = try loadPublishedIdentities()
     let keychain = makeKeychain(stableIdentityService, nil)
-    guard let data = try keychain.data(forKey: Self.atomicRecordKey),
-          let record = try? JSONDecoder.clerkDecoder.decode(AtomicRecord.self, from: data)
-    else {
-      return nil
+    guard let data = try keychain.data(forKey: Self.atomicRecordKey) else {
+      return try winningPublication(publications)?.identity
     }
-    return try? record.acceptedIdentity?.validated()
+    struct Header: Decodable { let schemaVersion: Int? }
+    let decoder = JSONDecoder.clerkDecoder
+    let version = try decoder.decode(Header.self, from: data).schemaVersion
+    guard let version else {
+      return try winningPublication(publications)?.identity
+        ?? decoder.decode(ClerkIdentitySnapshot.self, from: data).validated()
+    }
+    guard version == 1 else {
+      throw ClerkIdentityStoreError.unsupportedSchemaVersion(version)
+    }
+    let record = try decoder.decode(AtomicRecord.self, from: data)
+    if record.requiresLegacyAdoptionPublication == true, record.acceptedIdentity == nil {
+      throw ClerkIdentityMigrationError.missingPublicationIdentity
+    }
+    if let pending = record.pendingPublication {
+      guard pending.generation > 0, pending.originOwnerIdentifier == ownerIdentifier else {
+        throw ClerkIdentityMigrationError.invalidPendingPublication
+      }
+      publications.append(pending)
+    }
+    // Bootstrap the new record from the old group's selected state, even if this
+    // app has never joined it or has an older local copy. No legacy slot is written.
+    return try winningPublication(publications)?.identity ?? record.acceptedIdentity?.validated()
+  }
+
+  private func loadPublishedIdentities() throws -> [Publication] {
+    guard readsSharedSlots, readsSharedLegacyItems, finalizes, let accessGroup else { return [] }
+    let slots = makeKeychain(Self.ownerSlotService(configuredService, instanceFingerprint), accessGroup)
+    struct Slot: Decodable {
+      let schemaVersion: Int
+      let instanceFingerprint: String
+      let slotOwnerIdentifier: String
+      let event: Publication
+    }
+    return try slots.allItems().compactMap { account, data in
+      guard account.hasPrefix("owner.") else { return nil }
+      let slot = try JSONDecoder.clerkDecoder.decode(Slot.self, from: data)
+      guard slot.instanceFingerprint == instanceFingerprint else { return nil }
+      guard slot.schemaVersion == 2,
+            !slot.slotOwnerIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            account == Self.ownerSlotAccount(instanceFingerprint, slot.slotOwnerIdentifier),
+            slot.event.generation > 0,
+            !slot.event.originOwnerIdentifier.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+      else { throw ClerkIdentityMigrationError.invalidPublishedIdentity }
+      return slot.event
+    }
+  }
+
+  private func winningPublication(_ publications: [Publication]) throws -> Publication? {
+    var unique: [UUID: Publication] = [:]
+    for publication in publications {
+      if let previous = unique[publication.id], previous != publication {
+        throw ClerkIdentityMigrationError.invalidPublishedIdentity
+      }
+      unique[publication.id] = publication
+    }
+    // Same ordering as the slot reducer. Signed-in state has no special priority.
+    return unique.values.max { lhs, rhs in
+      if lhs.generation != rhs.generation { return lhs.generation < rhs.generation }
+      switch (lhs.identity.serverDate, rhs.identity.serverDate) {
+      case (nil, .some): return true
+      case (.some, nil): return false
+      case let (.some(left), .some(right)) where left != right: return left < right
+      default: break
+      }
+      if lhs.originOwnerIdentifier != rhs.originOwnerIdentifier {
+        return lhs.originOwnerIdentifier < rhs.originOwnerIdentifier
+      }
+      return lhs.id.uuidString < rhs.id.uuidString
+    }
   }
 
   private func loadLegacyIdentity() throws -> ClerkIdentitySnapshot? {
-    guard readsLegacyItems, let token = try legacyKeychain.string(
+    guard readsLegacyItems else { return nil }
+    // Enabling sharing for the first time must include this app's existing local credentials.
+    if let local = try loadLegacyIdentity(from: markerKeychain) { return local }
+    if let previousAppLocalKeychain,
+       let previous = try loadLegacyIdentity(from: previousAppLocalKeychain) { return previous }
+    return readsSharedLegacyItems ? try loadLegacyIdentity(from: legacyKeychain) : nil
+  }
+
+  private var previousAppLocalKeychain: (any KeychainStorage)? {
+    guard let service = previousAppLocalService.nilIfEmpty,
+          service != configuredService else { return nil }
+    return makeKeychain(service, nil)
+  }
+
+  private func loadLegacyIdentity(from source: any KeychainStorage) throws -> ClerkIdentitySnapshot? {
+    guard let token = try source.string(
       forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
     ).nilIfEmpty else {
       return nil
     }
-    let client = try legacyKeychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue).flatMap {
-      try? JSONDecoder.clerkDecoder.decode(Client.self, from: $0)
-    }
-    let serverDate = try legacyKeychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-      .flatMap(TimeInterval.init)
-      .map(Date.init(timeIntervalSince1970:))
+    // Separate writes cannot prove that the cached Client belongs to this token.
+    // Preserve the credential and let the next refresh establish a coherent identity.
     return try ClerkIdentitySnapshot(
-      state: client == nil ? .cleared : .present,
-      deviceToken: token,
-      client: client,
-      serverDate: serverDate
+      state: .cleared, deviceToken: token, client: nil, serverDate: nil
     ).validated()
   }
 
@@ -155,6 +274,12 @@ struct ClerkIdentityMigration {
     var deletions: [(any KeychainStorage, String)] = accessGroup == nil
       ? Self.legacyIdentityKeys.map { (legacyKeychain, $0.rawValue) }
       : []
+    if accessGroup != nil {
+      deletions += Self.legacyIdentityKeys.map { (markerKeychain, $0.rawValue) }
+    }
+    if let previousAppLocalKeychain {
+      deletions += Self.legacyIdentityKeys.map { (previousAppLocalKeychain, $0.rawValue) }
+    }
     deletions.append((makeKeychain(stableIdentityService, nil), Self.atomicRecordKey))
     if let ownerIdentifier = ownerIdentifier.nilIfEmpty, let accessGroup {
       deletions.append((
@@ -166,9 +291,6 @@ struct ClerkIdentityMigration {
       deletions.append((makeKeychain(clearIntent.localIdentityService, nil), Self.atomicRecordKey))
       deletions.append((makeKeychain(clearIntent.slotService, clearIntent.slotAccessGroup), clearIntent.slotAccount))
     }
-    if let clearJournal {
-      deletions.append((clearJournal, Self.clearIntentKey))
-    }
 
     var succeeded = true
     for (keychain, key) in deletions {
@@ -177,6 +299,15 @@ struct ClerkIdentityMigration {
       } catch {
         succeeded = false
         ClerkLogger.logError(error, message: "Failed to remove Clerk identity storage from an earlier SDK version")
+      }
+    }
+    // Keep the clear intent until every credential it protects was removed.
+    if succeeded, let clearJournal {
+      do {
+        try clearJournal.deleteItem(forKey: Self.clearIntentKey)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to remove the completed legacy clear intent")
+        succeeded = false
       }
     }
     return succeeded
@@ -200,8 +331,8 @@ struct ClerkIdentityMigration {
   }
 }
 
-extension ClerkIdentitySnapshot {
-  fileprivate var hasSession: Bool {
-    client?.sessions.isEmpty == false
-  }
+enum ClerkIdentityMigrationError: Error {
+  case missingPublicationIdentity
+  case invalidPendingPublication
+  case invalidPublishedIdentity
 }

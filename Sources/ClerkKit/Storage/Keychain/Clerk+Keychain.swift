@@ -21,14 +21,10 @@ extension Clerk {
   /// the clear is rejected).
   static let preservedKeychainKeys: Set<ClerkKeychainKey> = [
     .sharedSessionSyncAdopted,
+    .appLocalStateAdopted,
     .identityMigrated,
     .watchSyncClearGeneration,
   ]
-
-  /// Keys the app clears leave for their identity step. The identity store removes the identity where
-  /// it lives; a record elsewhere, such as in the access group of an app with sync off, belongs to
-  /// other apps.
-  private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.identity])
 
   /// Clears Clerk authentication and private cached data from Keychain.
   ///
@@ -39,9 +35,11 @@ extension Clerk {
   ///
   /// It also signs out the in-memory client. With shared-session sync, the identity is
   /// shared, so this signs out every app sharing it.
+  /// When Watch connectivity is enabled, a clear on either paired device also clears the other.
   ///
   /// Clerk keeps non-secret markers that record where this app's private state lives, that
-  /// its storage was migrated, and how many clears it has seen. They contain no token or Client.
+  /// its storage was migrated, and how many clears it has seen. The identity is replaced with
+  /// a versioned clear record. These retained records contain no token or Client.
   ///
   /// This method is useful for:
   /// - Debugging and testing
@@ -81,19 +79,15 @@ extension Clerk {
   @MainActor
   func clearKeychainItems() throws {
     let configuration = ClerkLogger.Configuration(options: options)
-    var failures = Self.clearIdentityAndMarkClear(in: dependencies, configuration: configuration) {
+    var failures: [String] = []
+    do {
       try identityController.clearIdentity()
+    } catch {
+      failures.append(dependencies.identityStore.key)
+      ClerkLogger.logError(error, message: "Failed to clear the Clerk identity", configuration: configuration)
     }
-    failures += Self.clearAllKeychainItemsCollectingFailures(
-      in: dependencies.appLocalKeychain,
-      preserving: Self.keysPreservedAlongsideIdentity,
-      configuration: configuration
-    )
-    failures += Self.clearAllKeychainItemsCollectingFailures(
-      in: dependencies.keychain,
-      preserving: Self.keysPreservedAlongsideIdentity,
-      configuration: configuration
-    )
+    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.appLocalKeychain, configuration: configuration)
+    failures += Self.clearAllKeychainItemsCollectingFailures(in: dependencies.keychain, configuration: configuration)
     guard failures.isEmpty else {
       throw KeychainClearError(failedItems: failures)
     }
@@ -104,21 +98,24 @@ extension Clerk {
   /// An identity stored in an access group belongs to every app and extension in the group, so it is left for them.
   @MainActor
   static func clearLocalClerkStorageStrictly(in dependencies: any Dependencies) throws {
+    // Do not decide whether an identity is app-local while its layout is unknown.
+    try dependencies.identityStore.prepareForUse()
     let configuration = ClerkLogger.Configuration(options: dependencies.configurationManager.options)
     let keepsIdentity = dependencies.identityIsInAccessGroup
     var failures = clearIdentityAndMarkClear(in: dependencies, configuration: configuration) {
       if !keepsIdentity {
-        try dependencies.identityStore.delete()
+        try dependencies.identityStore.clear()
       }
     }
+    let preservedKeys = keepsIdentity ? preservedKeychainKeys.union([.identity]) : preservedKeychainKeys
     failures += clearAllKeychainItemsCollectingFailures(
       in: dependencies.appLocalKeychain,
-      preserving: keysPreservedAlongsideIdentity,
+      preserving: preservedKeys,
       configuration: configuration
     )
     failures += clearAllKeychainItemsCollectingFailures(
       in: dependencies.keychain,
-      preserving: keysPreservedAlongsideIdentity,
+      preserving: preservedKeys,
       configuration: configuration
     )
     guard failures.isEmpty else {
@@ -153,8 +150,7 @@ extension Clerk {
     )
   }
 
-  /// Records the clear for Watch sync and for an unfinished identity migration, then removes the
-  /// identity. Returns the items that failed.
+  /// Records the clear for Watch sync, then clears the identity. Returns the items that failed.
   @MainActor
   private static func clearIdentityAndMarkClear(
     in dependencies: any Dependencies,
@@ -169,32 +165,12 @@ extension Clerk {
       ClerkLogger.logError(error, message: "Failed to record the Watch clear", configuration: configuration)
     }
     do {
-      try ClerkIdentityMigration.recordClear(in: dependencies.identityMigrationMarkerKeychain)
-    } catch {
-      failures.append(ClerkKeychainKey.identityMigrated.rawValue)
-      ClerkLogger.logError(error, message: "Failed to record the clear for the identity migration", configuration: configuration)
-    }
-    do {
       try removeIdentity()
-      try deleteGroupIdentityLastWrittenHere(in: dependencies)
     } catch {
       failures.append(dependencies.identityStore.key)
       ClerkLogger.logError(error, message: "Failed to delete the Clerk identity", configuration: configuration)
     }
     return failures
-  }
-
-  /// Deletes this app's own record from the access group when its identity now lives elsewhere, as
-  /// after turning off sync that was adopted in SDK 1.5. A sibling app that shares the record
-  /// rewrites it on every response, so a record whose last writer is this app is no longer in use.
-  @MainActor
-  private static func deleteGroupIdentityLastWrittenHere(in dependencies: any Dependencies) throws {
-    let identityStore = dependencies.identityStore
-    guard !dependencies.identityIsInAccessGroup, let writer = identityStore.writer else { return }
-    let groupStore = ClerkIdentityStore(keychain: dependencies.keychain, instanceFingerprint: identityStore.instanceFingerprint)
-    // An unreadable group, such as one missing from the entitlement, holds nothing to delete.
-    guard (try? groupStore.load())?.writer == writer else { return }
-    try groupStore.delete()
   }
 
   @MainActor

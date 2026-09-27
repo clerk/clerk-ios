@@ -110,21 +110,43 @@ struct SharedSessionSyncTests {
 
     #expect(first.clerk.deviceToken == nil)
     #expect(first.clerk.client == nil)
-    #expect(try first.store.load() == nil)
+    #expect(try first.store.load()?.identity == .signedOut)
   }
 
   @Test
-  func onlyWritesNotifyTheOtherApps() async throws {
+  func startupAndWritesNotifyButReadsDoNot() async throws {
     let hub = NotificationHub()
     let first = makeApp(hub: hub)
     let second = makeApp(hub: hub)
+    let startupPosts = hub.postCount
 
     try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
-    #expect(hub.postCount == 1)
+    #expect(hub.postCount == startupPosts + 1)
 
     _ = try await second.clerk.identityController.captureRequestIdentity()
     #expect(await !second.clerk.reloadFromSharedStorage())
-    #expect(hub.postCount == 1)
+    #expect(hub.postCount == startupPosts + 1)
+  }
+
+  @Test
+  func startingSyncNotifiesPeersOfChangesRecoveredBeforeStartup() async throws {
+    let hub = NotificationHub()
+    let first = makeApp(hub: hub)
+    try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
+    // A separate runtime performs migration/recovery before it installs a notifier.
+    let recovering = Clerk()
+    recovering.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: recovering.runtimeScope),
+      appLocalKeychain: InMemoryKeychain(), identityKeychain: hub.keychain, sharesIdentity: true
+    )
+    try recovering.dependencies.identityStore.clear()
+    #expect(first.clerk.deviceToken == "token")
+    recovering.identityController.hydrate()
+
+    recovering.identityController.startSharing(notifier: hub.makeNotifier())
+
+    #expect(first.clerk.deviceToken == nil)
+    #expect(first.clerk.client == nil)
   }
 
   @Test
@@ -145,6 +167,25 @@ struct SharedSessionSyncTests {
 
     #expect(second.clerk.deviceToken == "watch-token")
     #expect(second.clerk.client?.id == "watch")
+  }
+
+  @Test
+  func watchClearReachesEveryAppSharingThePhoneIdentity() async throws {
+    let hub = NotificationHub()
+    let first = makeApp(hub: hub)
+    let second = makeApp(hub: hub)
+    try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
+    let watch = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+
+    watch.apply(WatchSyncPayload(
+      state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1), environment: nil
+    ), from: .watch, to: first.clerk)
+
+    #expect(first.clerk.deviceToken == nil)
+    #expect(second.clerk.deviceToken == nil)
+    #expect(second.clerk.client == nil)
+    #expect(try first.clerk.dependencies.identityStore.load()?.watchClearGeneration == 1)
+    #expect(try WatchSyncState(of: second.clerk).clearGeneration == 1)
   }
 
   @Test

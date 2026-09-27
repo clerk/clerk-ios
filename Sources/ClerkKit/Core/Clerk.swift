@@ -389,8 +389,8 @@ extension Clerk {
     startStartupClientRefreshIfNeeded()
   }
 
-  private func startSharedSessionSyncIfNeeded(dependencies: any Dependencies) {
-    guard dependencies.sharesIdentity else { return }
+  func startSharedSessionSyncIfNeeded(dependencies: any Dependencies) {
+    guard options.sharedSessionSync != nil, dependencies.sharesIdentity, !identityController.isSharingIdentity else { return }
     identityController.startSharing(
       notifier: SharedSessionSyncDarwinNotifier(
         keychainConfig: options.keychainConfig,
@@ -547,7 +547,8 @@ extension Clerk {
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState),
+        isReconfiguration: true
       )
       let rollbackState = existing.captureReconfigurationRollbackState()
 
@@ -557,6 +558,7 @@ extension Clerk {
       do {
         try clearLocalClerkStorageStrictly(in: rollbackState.dependencies)
         try clearLocalClerkStorageStrictly(in: newDependencies)
+        try newDependencies.finishReconfiguration()
       } catch {
         existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
@@ -571,10 +573,12 @@ extension Clerk {
     let newDependencies = try DependencyContainer(
       publishableKey: publishableKey,
       options: options,
-      runtimeScope: clerk.runtimeScope
+      runtimeScope: clerk.runtimeScope,
+      isReconfiguration: true
     )
 
     try clearLocalClerkStorageStrictly(in: newDependencies)
+    try newDependencies.finishReconfiguration()
     clerk.installConfiguration(dependencies: newDependencies)
     _shared = clerk
     return clerk
@@ -614,6 +618,9 @@ extension Clerk {
     let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
+    // Real responses were already applied (or superseded) by the middleware.
+    // Applying them again could rebase a response that lost a conditional write.
+    guard !response.identityWasSynchronized else { return client }
     switch response.update {
     case .client(let responseClient):
       identityController.applyResponseClient(

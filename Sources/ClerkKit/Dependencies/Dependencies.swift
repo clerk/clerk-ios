@@ -22,11 +22,11 @@ protocol Dependencies: AnyObject {
   /// Keychain storage scoped to this app rather than the configured shared access group.
   var appLocalKeychain: any KeychainStorage { get }
 
+  /// Local Watch ordering metadata, with legacy fallback only when that storage is accessible.
+  var watchSyncKeychain: any KeychainStorage { get }
+
   /// The single persisted record holding the device token and Client.
   var identityStore: ClerkIdentityStore { get }
-
-  /// App-local Keychain holding the marker that records this app's identity migration.
-  var identityMigrationMarkerKeychain: any KeychainStorage { get }
 
   /// Whether ``identityStore`` is in the configured access group, where other apps and extensions can read it.
   var identityIsInAccessGroup: Bool { get }

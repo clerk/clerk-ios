@@ -24,10 +24,17 @@ struct ClientResponseOrderingGate {
     sequence: Int?,
     serverDate: Date?,
     incomingUpdatedAt: Date?,
-    currentUpdatedAt: Date?
+    currentUpdatedAt: Date?,
+    isExplicitClear: Bool = false
   ) -> Bool {
-    if let externalSnapshotDate, let serverDate, serverDate < externalSnapshotDate {
-      return false
+    if let externalSnapshotDate {
+      guard let serverDate, serverDate >= externalSnapshotDate else { return false }
+      if !isExplicitClear, serverDate == externalSnapshotDate,
+         let currentUpdatedAt,
+         incomingUpdatedAt.map({ $0 < currentUpdatedAt }) ?? true
+      {
+        return false
+      }
     }
     guard let sequence,
           let lastAcceptedSequence,

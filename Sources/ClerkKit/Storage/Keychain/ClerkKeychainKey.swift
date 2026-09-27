@@ -21,14 +21,17 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached environment data.
   case cachedEnvironment
 
-  /// Key indicating that this app adopted stable app-local shared-session persistence.
+  /// SDK 1.5 marker indicating completed identity and private-state adoption.
   case sharedSessionSyncAdopted = "clerkSharedSessionSyncAdoptedV2"
 
-  /// The device token, Client, and server date, stored together as one record.
-  case identity = "clerkIdentityV3"
+  /// Selects app-local private state independently of identity migration progress.
+  case appLocalStateAdopted = "clerkAppLocalStateAdoptedV1"
 
-  /// Key indicating that this app moved its identity into the single identity record.
-  case identityMigrated = "clerkIdentityMigrationV3"
+  /// Prefix for the versioned identity record; the instance fingerprint completes its account.
+  case identity = "clerkIdentityV4"
+
+  /// Prefix for the app-local migration marker, also suffixed with the instance fingerprint.
+  case identityMigrated = "clerkIdentityMigrationV4"
 
   /// Key for the last explicit sibling-app auth sync state.
   case sharedSessionSyncAuthState

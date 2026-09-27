@@ -5,6 +5,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ClerkClientSyncResponseMiddlewareTests {
+  private func isolatedClerk() -> Clerk {
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope))
+    return clerk
+  }
+
   @Test
   func decodeClientFromClientField() throws {
     let expectedClient = client(id: "client-field", updatedAt: .distantFuture)
@@ -45,7 +51,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validatePreservesClientWhenCanonicalResponseAndClientAreNull() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     clerk.client = Client.mock
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
@@ -70,7 +76,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateDoesNotClearClientForNonCanonicalNullFields() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     let existingClient = Client.mock
     clerk.client = existingClient
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
@@ -96,7 +102,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateAppliesSignedOutClientFromRemovedSessionEnvelope() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     clerk.client = Client.mock
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     var removedSession = Session.mock
@@ -124,7 +130,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateAppliesCanonicalClientWhenSiblingClientIsNull() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let expectedClient = client(id: "canonical-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(
@@ -171,7 +177,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: data, for: request)
 
-    #expect(try clerk.dependencies.identityStore.load() == nil)
+    #expect(try clerk.dependencies.identityStore.load()?.identity.state == .cleared)
     #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(clerk.client == nil)
   }
@@ -217,13 +223,13 @@ struct ClerkClientSyncResponseMiddlewareTests {
 
     #expect(clerk.client == nil)
     #expect(clerk.identityController.currentDeviceToken == nil)
-    #expect(try clerk.dependencies.identityStore.load() == nil)
+    #expect(try clerk.dependencies.identityStore.load()?.identity.state == .cleared)
   }
 
   @Test
   func validateAppliesClientFromClientResponseEnvelope() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     var session = Session.mock
     session.lastActiveOrganizationId = "org_test456"
@@ -250,7 +256,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateHoldsRegisteredAuthFlowBeforeApplyingCompletedSignInClient() async throws {
     configureClerkForTesting()
-    let clerk = Clerk.mockSignedOut
+    let clerk = isolatedClerk()
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    clerk.environment = .mock
     let registration = try #require(clerk.registerAuthFlow())
     let observer = AuthFlowGateRecordingObserver()
     clerk.internalStateChanges.addObserver(observer)
@@ -296,7 +304,9 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateHoldsRefreshedActiveClientUntilAuthViewCompletes() async throws {
     configureClerkForTesting()
-    let clerk = Clerk.mockSignedOut
+    let clerk = isolatedClerk()
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    clerk.environment = .mock
     let registration = try #require(clerk.registerAuthFlow())
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let data = try JSONEncoder.clerkEncoder.encode(ClientOnlyEnvelope(response: Client.mock, client: nil))
@@ -328,7 +338,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateIgnoresClientResponseFromStaleDeviceTokenGeneration() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let staleClient = client(id: "stale-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(ClientOnlyEnvelope(response: staleClient, client: nil))
@@ -352,7 +362,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateAppliesClientFromErrorMetaClientEnvelope() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let expectedClient = client(id: "error-meta-client", updatedAt: .distantFuture)
     let data = try JSONEncoder.clerkEncoder.encode(ErrorMetaClientEnvelope(
@@ -378,7 +388,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   @Test
   func validateDoesNotClearClientWhenPayloadHasNoClientField() async throws {
     configureClerkForTesting()
-    let clerk = Clerk()
+    let clerk = isolatedClerk()
     let existingClient = Client.mock
     clerk.client = existingClient
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))

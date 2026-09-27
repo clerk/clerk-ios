@@ -297,6 +297,58 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared.environment == .mock)
   }
 
+  @Test(arguments: [false, true])
+  func failedReconfigurationAdoptsTheCompleteSiblingIdentity(hasClient: Bool) async throws {
+    let clerk = Clerk.shared
+    let storage = RollbackPeerUpdateKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope), keychain: storage,
+      appLocalKeychain: InMemoryKeychain(), identityKeychain: storage, sharesIdentity: true,
+      clientService: MockClientService { throw CancellationError() }
+    )
+    try dependencies.configurationManager.configure(
+      publishableKey: testPublishableKey,
+      options: .init(telemetryEnabled: false, keychainConfig: .init(service: "rollback", accessGroup: "rollback.group"),
+                     sharedSessionSync: .enabled)
+    )
+    try clerk.performConfiguration(dependencies: dependencies)
+    defer { clerk.cleanupManagers() }
+    var originalClient = Client.mock
+    originalClient.id = "client-A"
+    try clerk.seedIdentity(deviceToken: "token-A", client: originalClient, serverDate: Date(timeIntervalSince1970: 200))
+    let oldGeneration = clerk.clientResponseGeneration
+    var peerClient = Client.mock
+    peerClient.id = "client-B"
+    let peerIdentity = ClerkIdentitySnapshot(
+      state: hasClient ? .present : .cleared, deviceToken: "token-B", client: hasClient ? peerClient : nil,
+      serverDate: Date(timeIntervalSince1970: 100)
+    )
+    var peerRevision: UUID?
+    storage.beforeDelete = { peerRevision = try dependencies.identityStore.save(peerIdentity).revision }
+
+    await #expect(throws: (any Error).self) {
+      try await Clerk.reconfigure(
+        publishableKey: testPublishableKey,
+        options: .init(keychainConfig: .init(service: "clerk.tests.rollback.destination.\(UUID())"))
+      )
+    }
+
+    let request = try await clerk.identityController.captureRequestIdentity()
+    let persisted = try #require(try dependencies.identityStore.load())
+    #expect(request.deviceToken == "token-B")
+    #expect(request.clientID == peerIdentity.client?.id)
+    #expect(clerk.client == persisted.identity.client)
+    #expect(clerk.lastClientServerFetchDate == peerIdentity.serverDate)
+    #expect(clerk.clientResponseGeneration != oldGeneration)
+    #expect(persisted.revision == peerRevision)
+    #expect(!clerk.identityController.reconcileWithStore())
+
+    clerk.applyResponseClient(originalClient, responseSequence: 100, serverDate: .distantFuture,
+                              clientResponseGeneration: oldGeneration)
+    #expect(clerk.client == persisted.identity.client)
+    #expect(clerk.lastClientServerFetchDate == peerIdentity.serverDate)
+  }
+
   @Test
   func keychainClearStartedDuringReconfigurationWaitsForInstalledRuntime() async throws {
     let clerk = Clerk.shared
@@ -327,7 +379,7 @@ struct ClerkReconfigureTests {
     try await clearTask.value
 
     #expect(clerk.identityController.currentDeviceToken == nil)
-    #expect(try clerk.dependencies.identityStore.load() == nil)
+    #expect(try clerk.dependencies.identityStore.load()?.identity == .signedOut)
   }
 
   @Test
@@ -785,9 +837,19 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
   private let delay: TimeInterval
   private let lock = NSLock()
   private var storage: [String: Data] = [:]
+  private var revisions: [String: UUID] = [:]
 
   init(delay: TimeInterval) {
     self.delay = delay
+  }
+
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    guard expectedRevision == revisions[key], expectedRevision != nil || storage[key] == nil else { return false }
+    storage[key] = data
+    revisions[key] = newRevision
+    return true
   }
 
   func set(_ data: Data, forKey key: String) throws {
@@ -816,6 +878,36 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
   }
 }
 
+private final class RollbackPeerUpdateKeychain: KeychainStorage, @unchecked Sendable {
+  private let backing = InMemoryKeychain()
+  var beforeDelete: (() throws -> Void)?
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try backing.data(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    if let beforeDelete {
+      self.beforeDelete = nil
+      try beforeDelete()
+      throw CancellationError()
+    }
+    try backing.deleteItem(forKey: key)
+  }
+
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
+}
+
 private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable {
   private enum DeleteError: Error {
     case failed
@@ -823,6 +915,16 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
 
   private let lock = NSLock()
   private var storage: [String: Data] = [:]
+  private var revisions: [String: UUID] = [:]
+
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    guard expectedRevision == revisions[key], expectedRevision != nil || storage[key] == nil else { return false }
+    storage[key] = data
+    revisions[key] = newRevision
+    return true
+  }
 
   func set(_ data: Data, forKey key: String) throws {
     lock.lock()

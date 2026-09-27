@@ -15,13 +15,14 @@ struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {
     let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 22)
+    #expect(allCases.count == 23)
 
     // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))
     #expect(allCases.contains(.cachedClientServerDate))
     #expect(allCases.contains(.cachedEnvironment))
     #expect(allCases.contains(.sharedSessionSyncAdopted))
+    #expect(allCases.contains(.appLocalStateAdopted))
     #expect(allCases.contains(.sharedSessionSyncAuthState))
     #expect(allCases.contains(.sharedSessionSyncAuthVersion))
     #expect(allCases.contains(.sharedSessionSyncEnvironmentVersion))
@@ -46,6 +47,7 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.cachedClientServerDate.rawValue == "cachedClientServerDate")
     #expect(ClerkKeychainKey.cachedEnvironment.rawValue == "cachedEnvironment")
     #expect(ClerkKeychainKey.sharedSessionSyncAdopted.rawValue == "clerkSharedSessionSyncAdoptedV2")
+    #expect(ClerkKeychainKey.appLocalStateAdopted.rawValue == "clerkAppLocalStateAdoptedV1")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthState.rawValue == "sharedSessionSyncAuthState")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue == "sharedSessionSyncAuthVersion")
     #expect(ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue == "sharedSessionSyncEnvironmentVersion")

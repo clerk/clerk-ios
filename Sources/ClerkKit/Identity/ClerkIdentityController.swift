@@ -26,13 +26,16 @@ final class ClerkIdentityController {
   struct ExternalTransition {
     let identity: ClerkIdentitySnapshot
     var fenceAllClientResponses = true
+    var watchClearGeneration: Int?
     var didApply: @MainActor () -> Void = {}
   }
 
   weak var clerk: Clerk?
 
   private(set) var currentDeviceToken: String?
-  private var storedRevision: UUID?
+  private var storedRecord: ClerkIdentityStore.Record?
+  private var clearPending = false
+  private var hydrationError: (any Error)?
   private var notifier: (any SharedSessionSyncNotifying)?
 
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
@@ -54,6 +57,11 @@ final class ClerkIdentityController {
     notifier != nil
   }
 
+  /// Unavailable credentials and unfinished clears must not be published as a known identity.
+  var canPublishIdentity: Bool {
+    hydrationError == nil && !clearPending
+  }
+
   private var store: ClerkIdentityStore? {
     clerk?.dependencies.identityStore
   }
@@ -64,30 +72,40 @@ final class ClerkIdentityController {
 extension ClerkIdentityController {
   func prepareForConfiguration() {
     stopSharing()
+    clearPending = false
+    hydrationError = nil
     currentDeviceToken = nil
-    storedRevision = nil
+    storedRecord = nil
   }
 
-  /// Loads the persisted identity during configuration without emitting changes.
+  /// Loads the complete persisted identity during configuration or hydration recovery.
   func hydrate() {
     guard let clerk, let store else { return }
     let record: ClerkIdentityStore.Record?
     do {
+      try store.prepareForUse()
+      try store.recoverPendingClear()
       record = try store.load()
+      try observeWatchClear(record)
+      clearPending = false
+      hydrationError = nil
     } catch ClerkIdentityStoreError.otherInstance {
       return
     } catch {
+      hydrationError = error
+      currentDeviceToken = nil
       ClerkLogger.logError(error, message: "Failed to load the persisted Clerk identity")
       return
     }
-    storedRevision = record?.revision
+    storedRecord = record
+    // Storage layout may have resolved only now, after a failed launch-time read.
+    defer { clerk.startSharedSessionSyncIfNeeded(dependencies: clerk.dependencies) }
     guard let identity = record?.identity else { return }
+    // A persisted record is one complete identity, including a nil Client. Keeping
+    // an existing Client here can pair a sibling's token with the previous login.
     currentDeviceToken = identity.deviceToken
-    guard clerk.client == nil else { return }
     lastServerDate = identity.serverDate
-    if identity.client != nil {
-      clerk.setClientFromIdentityController(identity.client)
-    }
+    clerk.setClientFromIdentityController(identity.client, authFlowUpdate: .authoritativeIdentityChanged)
   }
 
   /// Shares the identity with other apps in the access group.
@@ -96,6 +114,8 @@ extension ClerkIdentityController {
     notifier.setHandler { [weak self] in
       _ = self?.reconcileWithStore()
     }
+    // Migration and crash recovery may have written before notifications started.
+    notifier.post()
   }
 
   func stopSharing() {
@@ -115,6 +135,9 @@ extension ClerkIdentityController {
       lastAcceptedSequence: state.lastAppliedResponseSequence,
       lastAcceptedServerDate: state.lastServerDate
     )
+    // Rollback restores the runtime epoch, but the shared identity may have changed
+    // during cleanup. Responses prepared before reconfiguration must stay fenced.
+    fenceClientResponses()
   }
 
   func resetOrderingState() {
@@ -124,7 +147,7 @@ extension ClerkIdentityController {
   func resetRuntimeIdentity() {
     guard let clerk else { return }
     currentDeviceToken = nil
-    storedRevision = nil
+    storedRecord = nil
     lastServerDate = nil
     clerk.setClientFromIdentityController(nil)
   }
@@ -147,31 +170,36 @@ extension ClerkIdentityController {
   /// - Returns: `true` when the in-memory identity changed.
   @discardableResult
   func reconcileWithStore() -> Bool {
-    guard let store else { return false }
-    let record: ClerkIdentityStore.Record?
     do {
-      let revision = try store.revision()
-      guard revision != storedRevision else { return false }
-      do {
-        record = try store.load()
-      } catch ClerkIdentityStoreError.otherInstance {
-        // Another app sharing the group uses a different Clerk instance; leave this app's identity alone.
-        storedRevision = revision
-        return false
-      }
+      return try reconcile()
     } catch {
       ClerkLogger.logError(error, message: "Failed to read the shared Clerk identity")
       return false
     }
-    storedRevision = record?.revision
+  }
 
+  @discardableResult
+  private func reconcile() throws -> Bool {
+    try ensureHydrated()
+    guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
+    guard let store else { return false }
+    let record = try store.load()
+    guard record?.revision != storedRecord?.revision else { return false }
+    try observeWatchClear(record)
+    let epochChanged = record?.epoch != storedRecord?.epoch
+    storedRecord = record
     let identity = record?.identity ?? .signedOut
-    let tokenChanged = identity.deviceToken != currentDeviceToken
-    apply(identity, fenceResponses: tokenChanged, authFlowUpdate: .authoritativeIdentityChanged)
-    if !tokenChanged {
+    apply(identity, fenceResponses: epochChanged, authFlowUpdate: .authoritativeIdentityChanged)
+    if !epochChanged {
       responseOrderingGate.adoptExternalSnapshot(serverDate: identity.serverDate)
     }
     return true
+  }
+
+  private func ensureHydrated() throws {
+    guard hydrationError != nil else { return }
+    hydrate()
+    if let hydrationError { throw hydrationError }
   }
 
   func reloadPersistedState() async -> Bool {
@@ -184,8 +212,10 @@ extension ClerkIdentityController {
     startupClientRefreshTakeoverID: UUID? = nil
   ) async throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
+    try ensureHydrated()
+    guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
     if isSharingIdentity {
-      reconcileWithStore()
+      try reconcile()
     }
     clerk.startupClientRefreshTakeover.beginIfNeeded(
       id: startupClientRefreshTakeoverID,
@@ -225,17 +255,24 @@ extension ClerkIdentityController {
   func applyExternalTransition(
     _ prepare: () throws -> ExternalTransition?
   ) throws {
+    try ensureHydrated()
+    guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
     if isSharingIdentity {
-      reconcileWithStore()
+      try reconcile()
     }
     guard let transition = try prepare() else { return }
-    try commit(transition.identity, fenceResponses: transition.fenceAllClientResponses)
+    try commit(
+      transition.identity, fenceResponses: transition.fenceAllClientResponses,
+      watchClearGeneration: transition.watchClearGeneration
+    )
     transition.didApply()
   }
 
   func updateDeviceToken(to deviceToken: String) async throws -> DeviceTokenTransitionResult {
+    try ensureHydrated()
+    guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
     if isSharingIdentity {
-      reconcileWithStore()
+      try reconcile()
     }
     guard currentDeviceToken != deviceToken else { return .unchanged }
     try commit(
@@ -245,37 +282,60 @@ extension ClerkIdentityController {
     return .applied
   }
 
-  /// Removes the persisted identity and signs this app out. With shared-session sync,
+  /// Replaces the persisted identity with a credential-free clear record and signs this app out. With shared-session sync,
   /// this signs out every app sharing the identity.
   func clearIdentity() throws {
     guard let clerk else { return }
+    clearPending = true
     fenceClientResponses()
     currentDeviceToken = nil
     lastServerDate = nil
     clerk.setClientFromIdentityController(nil)
     clerk.emitInternalStateChange(.localStorageDidClear)
-    do {
-      try store?.delete()
-    } catch {
-      // Remember the record this clear could not delete, so reconciling does not mistake it
-      // for another app's write and sign the user back in.
-      storedRevision = try? store?.revision()
-      throw error
-    }
-    storedRevision = nil
+    let cleared = try store?.clear()
+    try observeWatchClear(cleared)
+    storedRecord = cleared
+    clearPending = false
+    clerk.emitInternalStateChange(.localStorageDidClear)
     notifier?.post()
   }
 
-  /// Persists `identity`, then applies it to memory.
-  ///
-  /// A write that would change the device token must succeed, because losing a new
-  /// token would sign the user out on the next launch. Other write failures are
-  /// logged and the identity is still applied, since the next response rewrites it.
+  private func observeWatchClear(_ record: ClerkIdentityStore.Record?) throws {
+    guard let clerk, let store, let record else { return }
+    do {
+      // Recover the generation from the same committed record as the identity,
+      // including after a crash or a failed write to the private Watch marker.
+      if let generation = record.watchClearGeneration {
+        try WatchSyncClearMarker.raise(to: generation, in: clerk.dependencies.watchSyncKeychain)
+      }
+      guard let epoch = record.clearEpoch ?? (record.identity.deviceToken == nil ? record.epoch : nil) else { return }
+      let key = "\(store.clearIntentKey).watchEpoch"
+      guard try clerk.dependencies.appLocalKeychain.string(forKey: key) != epoch.uuidString else { return }
+      if record.watchClearEpoch != epoch {
+        try WatchSyncClearMarker.record(in: clerk.dependencies.watchSyncKeychain)
+      }
+      try clerk.dependencies.appLocalKeychain.set(epoch.uuidString, forKey: key)
+    } catch {
+      // The shared clear may already be committed. Until the paired-device fence
+      // is durable, do not expose credentials or accept a stale Watch transition.
+      hydrationError = error
+      clearPending = true
+      currentDeviceToken = nil
+      fenceClientResponses()
+      clerk.setClientFromIdentityController(nil)
+      throw error
+    }
+  }
+
+  /// Persists the complete transition before applying it to memory. A conflict
+  /// belongs to the caller: never silently rebase a prepared identity.
   private func commit(
     _ identity: ClerkIdentitySnapshot,
     fenceResponses: Bool = false,
+    watchClearGeneration: Int? = nil,
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
+    try ensureHydrated()
     let tokenChanged = identity.deviceToken != currentDeviceToken
     var identity = identity
     // Persist the same server-date watermark memory keeps, so the next launch hydrates it.
@@ -287,17 +347,24 @@ extension ClerkIdentityController {
         serverDate: watermark
       )
     }
+    guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
+    var epochChanged = false
     // A Client without a device token only exists in memory; it cannot be persisted.
     if let store, identity.deviceToken != nil || identity.client == nil {
+      let record: ClerkIdentityStore.Record
       do {
-        storedRevision = try store.save(identity)?.revision
-        notifier?.post()
-      } catch {
-        guard !tokenChanged else { throw error }
-        ClerkLogger.logError(error, message: "Failed to persist the Clerk identity")
+        record = try store.save(identity, replacing: storedRecord, watchClearGeneration: watchClearGeneration)
+      } catch ClerkIdentityStoreError.writeConflict {
+        // Adopt the winner, but do not give this prepared transition a new revision.
+        try reconcile()
+        throw ClerkIdentityStoreError.writeConflict
       }
+      try observeWatchClear(record)
+      epochChanged = storedRecord?.epoch != record.epoch
+      storedRecord = record
     }
-    apply(identity, fenceResponses: fenceResponses || tokenChanged, authFlowUpdate: authFlowUpdate)
+    apply(identity, fenceResponses: fenceResponses || tokenChanged || epochChanged, authFlowUpdate: authFlowUpdate)
+    notifier?.post()
   }
 
   private func apply(
@@ -326,11 +393,16 @@ extension ClerkIdentityController {
 extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
-    if isSharingIdentity {
-      reconcileWithStore()
-    }
-
-    guard let identity = try context.resolvedIdentityPayload(
+    try ensureHydrated()
+    guard !clearPending else { throw ClerkIdentityStoreError.clearPending }
+    if isSharingIdentity { try reconcile() }
+    guard responseCanBeAccepted(
+      nil,
+      responseSequence: context.responseSequence,
+      serverDate: context.serverDate,
+      clientResponseGeneration: context.clientResponseGeneration,
+      checksOrdering: false
+    ), let identity = try context.resolvedIdentityPayload(
       currentDeviceToken: currentDeviceToken,
       currentClient: clerk.client,
       currentServerDate: lastServerDate
@@ -338,16 +410,34 @@ extension ClerkIdentityController {
       identity.client,
       responseSequence: context.responseSequence,
       serverDate: context.serverDate,
-      clientResponseGeneration: context.clientResponseGeneration
+      clientResponseGeneration: context.clientResponseGeneration,
+      isExplicitClear: context.update == .explicitClear
     ) else {
       resolveRejectedResponseAuthFlow(context.completedAuthFlow, ownerId: context.authFlowRegistrationId)
       return
     }
-
-    try commit(identity, authFlowUpdate: authFlowUpdate(
-      for: context.completedAuthFlow,
-      ownerId: context.authFlowRegistrationId
-    ))
+    let epoch = storedRecord?.epoch
+    do {
+      try commit(identity, authFlowUpdate: authFlowUpdate(
+        for: context.completedAuthFlow, ownerId: context.authFlowRegistrationId
+      ))
+    } catch ClerkIdentityStoreError.writeConflict {
+      // The server operation already ran. Recover with a read, never by making
+      // the caller repeat its mutation. A canonical read cannot recurse here.
+      if !context.isCanonicalClientRequest, storedRecord?.epoch == epoch {
+        let runtime = clerk.runtimeScope
+        do {
+          try await clerk.refreshClient(skipClientId: true)
+        } catch {
+          try Task.checkCancellation()
+          try runtime.validateStableRuntime()
+          ClerkLogger.logError(error, message: "Failed to refresh the Clerk client after a persistence conflict")
+        }
+        try runtime.validateStableRuntime()
+      }
+      resolveRejectedResponseAuthFlow(context.completedAuthFlow, ownerId: context.authFlowRegistrationId)
+      return
+    }
     responseOrderingGate.record(sequence: context.responseSequence)
     emitAcceptedAuthCompletion(context.completedAuthFlow, clerk: clerk)
   }
@@ -361,36 +451,41 @@ extension ClerkIdentityController {
     completedAuthFlow: TransferFlowResult? = nil,
     completedAuthFlowOwnerId: UUID? = nil
   ) {
-    guard responseCanBeAccepted(
-      incoming,
-      responseSequence: responseSequence,
-      serverDate: serverDate,
-      clientResponseGeneration: clientResponseGeneration
-    ) else {
-      resolveSupersededAuthFlowCompletion(completedAuthFlow, ownerId: completedAuthFlowOwnerId)
-      return
-    }
-
-    responseOrderingGate.advanceServerDateWatermark(to: serverDate)
-    let identity = ClerkIdentitySnapshot(
-      state: incoming == nil ? .cleared : .present,
-      deviceToken: currentDeviceToken,
-      client: incoming,
-      serverDate: lastServerDate
-    )
     do {
+      try ensureHydrated()
+      if isSharingIdentity { try reconcile() }
+      guard responseCanBeAccepted(
+        incoming,
+        responseSequence: responseSequence,
+        serverDate: serverDate,
+        clientResponseGeneration: clientResponseGeneration
+      ) else {
+        resolveSupersededAuthFlowCompletion(completedAuthFlow, ownerId: completedAuthFlowOwnerId)
+        return
+      }
+
+      let identity = ClerkIdentitySnapshot(
+        state: incoming == nil ? .cleared : .present,
+        deviceToken: currentDeviceToken,
+        client: incoming,
+        serverDate: serverDate
+      )
       try commit(identity, authFlowUpdate: authFlowUpdate(for: completedAuthFlow, ownerId: completedAuthFlowOwnerId))
+      responseOrderingGate.record(sequence: responseSequence)
+    } catch ClerkIdentityStoreError.writeConflict {
+      resolveSupersededAuthFlowCompletion(completedAuthFlow, ownerId: completedAuthFlowOwnerId)
     } catch {
       ClerkLogger.logError(error, message: "Failed to apply the Clerk client")
     }
-    responseOrderingGate.record(sequence: responseSequence)
   }
 
   private func responseCanBeAccepted(
     _ incoming: Client?,
     responseSequence: Int?,
     serverDate: Date?,
-    clientResponseGeneration: ClientResponseGeneration?
+    clientResponseGeneration: ClientResponseGeneration?,
+    checksOrdering: Bool = true,
+    isExplicitClear: Bool = false
   ) -> Bool {
     if let clientResponseGeneration, clientResponseGeneration != self.clientResponseGeneration {
       ClerkLogger.debug(
@@ -399,11 +494,13 @@ extension ClerkIdentityController {
       return false
     }
 
+    guard checksOrdering else { return true }
     guard responseOrderingGate.accepts(
       sequence: responseSequence,
       serverDate: serverDate,
       incomingUpdatedAt: incoming?.updatedAt,
-      currentUpdatedAt: clerk?.client?.updatedAt
+      currentUpdatedAt: clerk?.client?.updatedAt,
+      isExplicitClear: isExplicitClear
     ) else {
       ClerkLogger.debug(
         "Ignoring stale client response. Current sequence: \(String(describing: responseOrderingGate.lastAcceptedSequence)), incoming sequence: \(String(describing: responseSequence))"

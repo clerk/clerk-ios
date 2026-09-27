@@ -305,6 +305,11 @@ private final class FailableIdentityKeychain: @unchecked Sendable, KeychainStora
     set { lock.withLock { shouldFail = newValue } }
   }
 
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    guard !failsWrites else { throw Failure.write }
+    return try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
+
   func set(_ data: Data, forKey key: String) throws {
     guard !failsWrites else { throw Failure.write }
     try backing.set(data, forKey: key)

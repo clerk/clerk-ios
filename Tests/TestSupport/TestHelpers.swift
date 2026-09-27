@@ -191,3 +191,11 @@ extension URLRequest {
     return try? JSONDecoder.clerkDecoder.decode(JSON.self, from: requestBodyData)
   }
 }
+
+/// Fixture-only convenience; production transitions must supply their original snapshot.
+extension ClerkIdentityStore {
+  @discardableResult
+  func save(_ identity: ClerkIdentitySnapshot) throws -> Record {
+    try save(identity, replacing: load())
+  }
+}

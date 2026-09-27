@@ -19,6 +19,7 @@ package struct ClientServiceResponse {
   let update: ClientServiceUpdate
   let requestSequence: Int?
   let serverDate: Date?
+  let identityWasSynchronized: Bool
 
   var client: Client? {
     update.client
@@ -27,11 +28,13 @@ package struct ClientServiceResponse {
   init(
     update: ClientServiceUpdate,
     requestSequence: Int?,
-    serverDate: Date?
+    serverDate: Date?,
+    identityWasSynchronized: Bool = false
   ) {
     self.update = update
     self.requestSequence = requestSequence
     self.serverDate = serverDate
+    self.identityWasSynchronized = identityWasSynchronized
   }
 
   init(
@@ -94,7 +97,8 @@ final class ClientService: ClientServiceProtocol {
     return ClientServiceResponse(
       update: response.value.response.map(ClientServiceUpdate.client) ?? .preserve,
       requestSequence: response.requestSequence,
-      serverDate: response.serverDate
+      serverDate: response.serverDate,
+      identityWasSynchronized: true
     )
   }
 }

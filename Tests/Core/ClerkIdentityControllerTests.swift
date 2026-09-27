@@ -34,7 +34,7 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func hydrateLoadsThePersistedIdentityWithoutReplacingAFreshClient() throws {
+  func hydrateRestoresTheCompletePersistedIdentityOverAnUnattributedClient() throws {
     let (clerk, _) = makeClerk()
     try clerk.dependencies.identityStore.save(identity(token: "token", client: makeClient(id: "persisted"), date: 100))
 
@@ -47,7 +47,8 @@ struct ClerkIdentityControllerTests {
     freshClerk.client = makeClient(id: "fresh")
     freshClerk.identityController.hydrate()
     #expect(freshClerk.deviceToken == "token")
-    #expect(freshClerk.client?.id == "fresh")
+    #expect(freshClerk.client?.id == "persisted")
+    #expect(freshClerk.lastClientServerFetchDate == date(100))
   }
 
   @Test
@@ -91,7 +92,7 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func explicitClearDeletesTheRecord() async throws {
+  func explicitClearPersistsACredentialFreeTombstone() async throws {
     let (clerk, _) = makeClerk()
     try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "client"), serverDate: date(100))
 
@@ -101,7 +102,9 @@ struct ClerkIdentityControllerTests {
 
     #expect(clerk.deviceToken == nil)
     #expect(clerk.client == nil)
-    #expect(try clerk.dependencies.identityStore.load() == nil)
+    let tombstone = try #require(try clerk.dependencies.identityStore.load())
+    #expect(tombstone.identity.deviceToken == nil)
+    #expect(tombstone.identity.client == nil)
   }
 
   @Test
@@ -119,17 +122,18 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func failedWriteOfAClientForTheSameTokenStillUpdatesMemory() async throws {
+  func failedWriteOfAClientForTheSameTokenLeavesMemoryUnchanged() async throws {
     let keychain = FailingAfterFirstWriteKeychain()
     let (clerk, _) = makeClerk(identityKeychain: keychain)
     try clerk.seedIdentity(deviceToken: "token")
 
-    try await clerk.identityController.applyNetworkResponse(
-      context(.client(makeClient(id: "client")), token: .absent, requestToken: "token", clerk: clerk, date: 100)
-    )
-
+    await #expect(throws: SetFailingKeychain.Failure.set) {
+      try await clerk.identityController.applyNetworkResponse(
+        context(.client(makeClient(id: "client")), token: .absent, requestToken: "token", clerk: clerk, date: 100)
+      )
+    }
     #expect(clerk.deviceToken == "token")
-    #expect(clerk.client?.id == "client")
+    #expect(clerk.client == nil)
   }
 
   @Test
@@ -194,7 +198,7 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func clearIdentityDeletesTheRecordAndSignsOut() throws {
+  func clearIdentityPersistsATombstoneAndSignsOut() throws {
     let (clerk, _) = makeClerk()
     try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "client"), serverDate: date(100))
     let generation = clerk.clientResponseGeneration
@@ -205,7 +209,7 @@ struct ClerkIdentityControllerTests {
     #expect(clerk.client == nil)
     #expect(clerk.lastClientServerFetchDate == nil)
     #expect(clerk.clientResponseGeneration != generation)
-    #expect(try clerk.dependencies.identityStore.load() == nil)
+    #expect(try clerk.dependencies.identityStore.load()?.identity == .signedOut)
   }
 
   @Test
@@ -327,6 +331,12 @@ private final class FailingAfterFirstWriteKeychain: @unchecked Sendable, Keychai
   private let lock = NSLock()
   private var writes = 0
 
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    let shouldFail = lock.withLock { writes += 1; return writes > 1 }
+    if shouldFail { throw SetFailingKeychain.Failure.set }
+    return try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
+
   func set(_ data: Data, forKey key: String) throws {
     let shouldFail = lock.withLock {
       writes += 1
@@ -357,6 +367,11 @@ private final class SilentNotifier: SharedSessionSyncNotifying {
 
 private final class DeleteFailingIdentityKeychain: @unchecked Sendable, KeychainStorage {
   private let backing = InMemoryKeychain()
+
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    if expectedRevision != nil { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
+    return try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
 
   func set(_ data: Data, forKey key: String) throws {
     try backing.set(data, forKey: key)

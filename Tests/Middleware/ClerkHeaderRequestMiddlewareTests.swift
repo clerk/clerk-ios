@@ -335,6 +335,10 @@ private final class ReadCountingKeychain: @unchecked Sendable, KeychainStorage {
     lock.withLock { reads = 0 }
   }
 
+  func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {
+    try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
+  }
+
   func set(_ data: Data, forKey key: String) throws {
     try backing.set(data, forKey: key)
   }

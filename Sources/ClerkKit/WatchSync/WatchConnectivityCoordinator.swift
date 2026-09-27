@@ -49,11 +49,11 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   }
 
   func sync(from clerk: Clerk) {
-    guard isActive else { return }
+    guard isActive, clerk.identityController.canPublishIdentity else { return }
     do {
       try transport?.send(WatchSyncPayload(state: WatchSyncState(of: clerk), environment: clerk.environment))
     } catch {
-      ClerkLogger.logError(error, message: "Failed to read the Clerk clear generation, so auth state was not sent to the paired device")
+      ClerkLogger.logError(error, message: "Failed to prepare Clerk auth state for the paired device")
     }
   }
 
@@ -71,7 +71,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     let localSource: WatchSyncSource = source == .phone ? .watch : .phone
     do {
       try clerk.identityController.applyExternalTransition {
-        // Without the clear generation this device cannot order the states, so it rejects the payload.
         let local = try WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
           if local.supersedes(incoming, from: localSource) {
@@ -87,6 +86,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
             client: incoming.client,
             serverDate: incoming.serverDate
           ).validated(),
+          watchClearGeneration: incoming.clearGeneration,
           didApply: { [weak self, weak clerk] in
             guard let self, let clerk else { return }
             didAdopt(incoming, into: clerk)
@@ -122,17 +122,8 @@ extension WatchSyncState {
 
 extension WatchConnectivityCoordinator {
   private func didAdopt(_ incoming: WatchSyncState, into clerk: Clerk) {
-    recordClearGeneration(incoming.clearGeneration, in: clerk)
     if incoming.deviceToken != nil, incoming.client == nil {
       refreshClient(for: clerk)
-    }
-  }
-
-  private func recordClearGeneration(_ generation: Int, in clerk: Clerk) {
-    do {
-      try WatchSyncClearMarker.raise(to: generation, in: clerk.dependencies.watchSyncKeychain)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to record the paired device's Clerk clear")
     }
   }
 
