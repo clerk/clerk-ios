@@ -140,12 +140,12 @@ struct ClerkIdentityMigrationTests {
     try firstAttempt.migrateIfNeeded()
 
     #expect(try env.store.load()?.identity.deviceToken == "atomic-token")
-    #expect(try env.marker.string(forKey: "clerkIdentityMigrationV4.instance") == nil)
+    #expect(try env.marker.string(forKey: migration(env).markerKey) == nil)
     #expect(try atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
 
     try migration(env).migrateIfNeeded()
     #expect(try !atomic.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
-    #expect(try env.marker.string(forKey: "clerkIdentityMigrationV4.instance") == ClerkIdentityMigration.markerValue)
+    #expect(try env.marker.string(forKey: migration(env).markerKey) == ClerkIdentityMigration.markerValue)
   }
 
   @Test
@@ -159,7 +159,7 @@ struct ClerkIdentityMigrationTests {
 
     #expect(try env.store.load()?.identity.deviceToken == "atomic-token")
     #expect(try env.keychain(stableService).hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
-    #expect(try env.marker.string(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(fingerprint)") == nil)
+    #expect(try env.marker.string(forKey: migration.markerKey) == nil)
   }
 
   @Test
@@ -171,7 +171,7 @@ struct ClerkIdentityMigrationTests {
     try migration(env).migrateIfNeeded()
 
     #expect(try env.store.load() == nil)
-    #expect(try env.marker.string(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(fingerprint)") == ClerkIdentityMigration.markerValue)
+    #expect(try env.marker.string(forKey: migration(env).markerKey) == ClerkIdentityMigration.markerValue)
   }
 
   @Test
@@ -304,7 +304,7 @@ struct ClerkIdentityMigrationTests {
     #expect(throws: (any Error).self) { try firstAttempt.migrateIfNeeded() }
     #expect(try env.store.load() == nil)
     #expect(try env.keychain(stableService).hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
-    #expect(try env.marker.data(forKey: "clerkIdentityMigrationV4.instance") == nil)
+    #expect(try env.marker.data(forKey: migration(env).markerKey) == nil)
 
     try migration(env).migrateIfNeeded()
     #expect(try env.store.load()?.identity.deviceToken == "local-token")
@@ -346,7 +346,7 @@ struct ClerkIdentityMigrationTests {
 
     #expect(try env.store.load() == nil)
     #expect(try env.keychain(slotService, accessGroup).hasItem(forKey: first))
-    #expect(try env.marker.data(forKey: "clerkIdentityMigrationV4.instance") == nil)
+    #expect(try env.marker.data(forKey: migration(env).markerKey) == nil)
   }
 
   @discardableResult
@@ -410,7 +410,7 @@ struct ClerkIdentityMigrationTests {
 
     #expect(try env.store.load() == nil)
     #expect(try env.keychain(stableService).hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
-    #expect(try env.marker.data(forKey: "clerkIdentityMigrationV4.instance") == nil)
+    #expect(try env.marker.data(forKey: migration(env).markerKey) == nil)
   }
 
   @Test
@@ -454,7 +454,7 @@ struct ClerkIdentityMigrationTests {
 
     #expect(try env.store.load()?.identity.deviceToken == "local-token")
     #expect(try env.marker.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "local-token")
-    #expect(try env.marker.data(forKey: "clerkIdentityMigrationV4.instance") == nil)
+    #expect(try env.marker.data(forKey: migration.markerKey) == nil)
   }
 
   @Test

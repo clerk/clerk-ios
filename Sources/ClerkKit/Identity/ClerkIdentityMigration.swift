@@ -23,6 +23,10 @@ import Foundation
 struct ClerkIdentityMigration {
   static let markerValue = "4"
 
+  static func markerKey(instanceFingerprint: String, ownerIdentifier: String) -> String {
+    "\(ClerkKeychainKey.identityMigrated.rawValue).\(instanceFingerprint).\(SharedSessionNamespace.sha256(ownerIdentifier))"
+  }
+
   struct Destination: Codable {
     let service: String
     let accessGroup: String?
@@ -103,10 +107,15 @@ struct ClerkIdentityMigration {
   var finalizes = true
   var makeKeychain: @Sendable (_ service: String, _ accessGroup: String?) -> any KeychainStorage = Self.liveKeychain
 
+  /// An unscoped Keychain query can find a sibling's marker when its default group
+  /// is shared. Include the app in the account so only its own completion is used.
+  var markerKey: String {
+    Self.markerKey(instanceFingerprint: instanceFingerprint, ownerIdentifier: ownerIdentifier.nilIfEmpty ?? configuredService)
+  }
+
   func migrateIfNeeded() throws {
     try store.recoverPendingClear()
-    let marker = "\(ClerkKeychainKey.identityMigrated.rawValue).\(instanceFingerprint)"
-    let alreadyMigrated = try markerKeychain.string(forKey: marker) == Self.markerValue
+    let alreadyMigrated = try markerKeychain.string(forKey: markerKey) == Self.markerValue
 
     let clearIntent = alreadyMigrated ? nil : try loadClearIntent()
     // Journal the destination before copying. If the process exits after the copy,
@@ -139,7 +148,7 @@ struct ClerkIdentityMigration {
 
     guard !alreadyMigrated else { return }
     guard finalizes, removeEarlierStorage(clearIntent: clearIntent) else { return }
-    try markerKeychain.set(Self.markerValue, forKey: marker)
+    try markerKeychain.set(Self.markerValue, forKey: markerKey)
   }
 
   // MARK: - Sources
@@ -300,7 +309,7 @@ struct ClerkIdentityMigration {
     // Enabling sharing for the first time must include this app's existing local credentials.
     for (keychain, service) in localSources {
       guard try !sourceWasRetired(service),
-            try keychain.string(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(instanceFingerprint)") != Self.markerValue
+            try keychain.string(forKey: markerKey) != Self.markerValue
       else { continue }
       if let identity = try loadLegacyIdentity(from: keychain) { return identity }
     }

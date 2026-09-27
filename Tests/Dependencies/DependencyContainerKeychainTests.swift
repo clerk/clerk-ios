@@ -31,7 +31,7 @@ struct DependencyContainerKeychainTests {
         try? marker.deleteItem(forKey: key.rawValue)
       }
       try? initial.keychain.deleteItem(forKey: initial.identityStore.key)
-      try? initial.keychain.deleteItem(forKey: "\(ClerkKeychainKey.identityMigrated.rawValue).\(fingerprint)")
+      try? initial.keychain.deleteItem(forKey: ClerkIdentityMigration.markerKey(instanceFingerprint: fingerprint, ownerIdentifier: service))
       try? marker.deleteItem(forKey: "\(initial.identityStore.key).retiredSource.\(SharedSessionNamespace.sha256(service))")
       try? SystemKeychain(service: DependencyContainer.localIdentityService(configuredService: service, ownerIdentifier: service))
         .deleteItem(forKey: initial.identityStore.key)

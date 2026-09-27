@@ -714,7 +714,7 @@ struct KeychainPreparationRecoveryTests {
     }
 
     var migrationKey: String {
-      "\(ClerkKeychainKey.identityMigrated.rawValue).\(fingerprint)"
+      ClerkIdentityMigration.markerKey(instanceFingerprint: fingerprint, ownerIdentifier: service)
     }
 
     func storage(_ group: String?) -> RecoveryKeychain {

@@ -6,6 +6,34 @@ import Testing
 @MainActor
 struct IdentityStorageRoutingTests {
   @Test(arguments: [false, true])
+  func siblingMigrationCompletionMustNotSkipThisAppsLogin(atomicIdentity: Bool) throws {
+    let database = AccessGroupKeychainDatabase()
+    // App A completes migration without creating an identity. Its default group
+    // is shared, so App B can see the marker through an unscoped query.
+    let first = try app(database, service: "common-service", sharing: true, sharedGroupIsDefault: true)
+    try #require(try first.dependencies.identityStore.load() == nil)
+    let client = database.client(owner: "app.b", sharedGroupIsDefault: false)
+    let legacy = SystemKeychain(service: "common-service", accessGroup: "app.b", secItemClient: client)
+    try legacy.set("existing-login", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    if atomicIdentity {
+      let fingerprint = first.dependencies.identityStore.instanceFingerprint
+      let atomic = SystemKeychain(service: "app.b.clerk.identity.v2.\(fingerprint)", secItemClient: client)
+      try atomic.set(JSONEncoder.clerkEncoder.encode(ClerkIdentitySnapshot(
+        state: .present, deviceToken: "existing-login", client: .mock, serverDate: nil
+      )), forKey: "clerkSharedSessionLocalIdentityV2")
+    }
+
+    let sibling = try app(database, service: "common-service", sharing: true, owner: "app.b")
+
+    #expect(sibling.deviceToken == "existing-login")
+    #expect(sibling.client?.id == (atomicIdentity ? Client.mock.id : nil))
+    #expect(try first.dependencies.identityStore.load()?.identity.deviceToken == "existing-login")
+    // Later launches must still honor B's clear despite the retained legacy token.
+    try sibling.clearKeychainItems()
+    #expect(try app(database, service: "common-service", sharing: true, owner: "app.b").deviceToken == nil)
+  }
+
+  @Test(arguments: [false, true])
   func siblingObservationMustNotSuppressThisAppsWatchClear(restart: Bool) throws {
     let database = AccessGroupKeychainDatabase()
     func app(_ owner: String, sharedDefault: Bool) throws -> Clerk {
@@ -93,10 +121,10 @@ struct IdentityStorageRoutingTests {
   }
 
   private func app(_ database: AccessGroupKeychainDatabase, service: String, sharing: Bool,
-                   sharedGroupIsDefault: Bool = false) throws -> Clerk
+                   sharedGroupIsDefault: Bool = false, owner: String = "app.a") throws -> Clerk
   {
     let clerk = Clerk()
-    let client = database.client(owner: "app.a", sharedGroupIsDefault: sharedGroupIsDefault)
+    let client = database.client(owner: owner, sharedGroupIsDefault: sharedGroupIsDefault)
     clerk.dependencies = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(telemetryEnabled: false,
@@ -104,7 +132,7 @@ struct IdentityStorageRoutingTests {
                      sharedSessionSync: sharing ? .enabled : nil),
       runtimeScope: clerk.runtimeScope, migratesPersistentStateOverride: true,
       keychainFactory: { SystemKeychain(service: $0, accessGroup: $1, secItemClient: client) },
-      ownerIdentifierProvider: { "app.a" }
+      ownerIdentifierProvider: { owner }
     )
     clerk.identityController.hydrate()
     return clerk
