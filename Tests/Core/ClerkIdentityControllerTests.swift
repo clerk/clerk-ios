@@ -105,6 +105,24 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func launchBeforeFirstUnlockDoesNotReplaceTheSavedIdentity() async throws {
+    let keychain = LockableKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
+
+    // A background launch before the first unlock cannot read the Keychain.
+    keychain.isLocked = true
+    clerk.identityController.hydrate()
+    #expect(clerk.deviceToken == nil)
+
+    // Once unlocked, the next request uses the saved identity instead of starting a new Client.
+    keychain.isLocked = false
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == "saved-token")
+    #expect(clerk.client?.id == "saved")
+  }
+
+  @Test
   func failedWriteOfANewTokenLeavesMemoryUnchanged() async throws {
     let (clerk, _) = makeClerk(identityKeychain: SetFailingKeychain())
 
@@ -372,5 +390,41 @@ private final class DeleteFailingIdentityKeychain: @unchecked Sendable, Keychain
 
   func hasItem(forKey key: String) throws -> Bool {
     try backing.hasItem(forKey: key)
+  }
+}
+
+/// A Keychain that cannot be read or written while locked, as before the first unlock.
+private final class LockableKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+  private let lock = NSLock()
+  private var locked = false
+
+  var isLocked: Bool {
+    get { lock.withLock { locked } }
+    set { lock.withLock { locked = newValue } }
+  }
+
+  private func checkUnlocked() throws {
+    if isLocked { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try checkUnlocked()
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try checkUnlocked()
+    return try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try checkUnlocked()
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try checkUnlocked()
+    return try backing.hasItem(forKey: key)
   }
 }

@@ -33,6 +33,8 @@ final class ClerkIdentityController {
 
   private(set) var currentDeviceToken: String?
   private var storedRevision: UUID?
+  /// The launch-time read failed, for example before the first unlock, so the store is re-read before use.
+  private var hydrationFailed = false
   private var notifier: (any SharedSessionSyncNotifying)?
 
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
@@ -54,6 +56,12 @@ final class ClerkIdentityController {
     notifier != nil
   }
 
+  /// Whether to re-read the store before use: another app may have written it, or this app
+  /// could not read it at launch and must not act as signed out once it can.
+  var readsStoreBeforeUse: Bool {
+    isSharingIdentity || hydrationFailed
+  }
+
   private var store: ClerkIdentityStore? {
     clerk?.dependencies.identityStore
   }
@@ -66,6 +74,7 @@ extension ClerkIdentityController {
     stopSharing()
     currentDeviceToken = nil
     storedRevision = nil
+    hydrationFailed = false
   }
 
   /// Loads the persisted identity during configuration without emitting changes.
@@ -78,8 +87,10 @@ extension ClerkIdentityController {
       return
     } catch {
       ClerkLogger.logError(error, message: "Failed to load the persisted Clerk identity")
+      hydrationFailed = true
       return
     }
+    hydrationFailed = false
     storedRevision = record?.revision
     guard let identity = record?.identity else { return }
     currentDeviceToken = identity.deviceToken
@@ -125,6 +136,7 @@ extension ClerkIdentityController {
     guard let clerk else { return }
     currentDeviceToken = nil
     storedRevision = nil
+    hydrationFailed = false
     lastServerDate = nil
     clerk.setClientFromIdentityController(nil)
   }
@@ -151,18 +163,23 @@ extension ClerkIdentityController {
     let record: ClerkIdentityStore.Record?
     do {
       let revision = try store.revision()
-      guard revision != storedRevision else { return false }
+      guard revision != storedRevision else {
+        hydrationFailed = false
+        return false
+      }
       do {
         record = try store.load()
       } catch ClerkIdentityStoreError.otherInstance {
         // Another app sharing the group uses a different Clerk instance; leave this app's identity alone.
         storedRevision = revision
+        hydrationFailed = false
         return false
       }
     } catch {
       ClerkLogger.logError(error, message: "Failed to read the shared Clerk identity")
       return false
     }
+    hydrationFailed = false
     storedRevision = record?.revision
 
     let identity = record?.identity ?? .signedOut
@@ -184,7 +201,7 @@ extension ClerkIdentityController {
     startupClientRefreshTakeoverID: UUID? = nil
   ) async throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
-    if isSharingIdentity {
+    if readsStoreBeforeUse {
       reconcileWithStore()
     }
     clerk.startupClientRefreshTakeover.beginIfNeeded(
@@ -225,7 +242,7 @@ extension ClerkIdentityController {
   func applyExternalTransition(
     _ prepare: () throws -> ExternalTransition?
   ) throws {
-    if isSharingIdentity {
+    if readsStoreBeforeUse {
       reconcileWithStore()
     }
     guard let transition = try prepare() else { return }
@@ -234,7 +251,7 @@ extension ClerkIdentityController {
   }
 
   func updateDeviceToken(to deviceToken: String) async throws -> DeviceTokenTransitionResult {
-    if isSharingIdentity {
+    if readsStoreBeforeUse {
       reconcileWithStore()
     }
     guard currentDeviceToken != deviceToken else { return .unchanged }
@@ -326,7 +343,7 @@ extension ClerkIdentityController {
 extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
-    if isSharingIdentity {
+    if readsStoreBeforeUse {
       reconcileWithStore()
     }
 

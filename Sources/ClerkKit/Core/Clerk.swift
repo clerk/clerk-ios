@@ -727,7 +727,7 @@ extension Clerk: LifecycleEventHandling {
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
-    if identityController.isSharingIdentity {
+    if identityController.readsStoreBeforeUse {
       identityController.reconcileWithStore()
     }
     emitInternalStateChange(.applicationDidEnterForeground)
