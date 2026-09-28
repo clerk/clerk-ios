@@ -885,19 +885,11 @@ private func signedOut(_ id: String, updatedAt: TimeInterval = 1000) -> Client {
 }
 
 /// A Keychain that cannot be read, as before the first unlock, but records writes in `backing`.
-private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
+private final class ReadFailingKeychain: @unchecked Sendable, ForwardingTestKeychain {
   let backing = InMemoryKeychain()
-
-  func set(_ data: Data, forKey key: String) throws {
-    try backing.set(data, forKey: key)
-  }
 
   func data(forKey _: String) throws -> Data? {
     throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
   }
 
   func hasItem(forKey _: String) throws -> Bool {

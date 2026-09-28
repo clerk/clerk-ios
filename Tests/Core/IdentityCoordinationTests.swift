@@ -492,7 +492,7 @@ private final class RecoveryClientService {
 }
 
 /// Models another process writing precisely between the controller's read and conditional write.
-private final class InterleavingIdentityKeychain: KeychainStorage, @unchecked Sendable {
+private final class InterleavingIdentityKeychain: ForwardingTestKeychain, @unchecked Sendable {
   let backing = InMemoryKeychain()
   var beforeWrite: (() throws -> Void)?
   var readError: (any Error)?
@@ -506,21 +506,9 @@ private final class InterleavingIdentityKeychain: KeychainStorage, @unchecked Se
     return try backing.compareAndSwap(data, forKey: key, expectedRevision: expectedRevision, newRevision: newRevision)
   }
 
-  func set(_ data: Data, forKey key: String) throws {
-    try backing.set(data, forKey: key)
-  }
-
   func data(forKey key: String) throws -> Data? {
     if let readError { throw readError }
     return try backing.data(forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
   }
 }
 

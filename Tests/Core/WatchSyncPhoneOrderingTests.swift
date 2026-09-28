@@ -78,8 +78,8 @@ struct WatchSyncPhoneOrderingTests {
   }
 }
 
-private final class PhoneOrderingJournal: KeychainStorage, @unchecked Sendable {
-  private let backing = InMemoryKeychain()
+private final class PhoneOrderingJournal: ForwardingTestKeychain, @unchecked Sendable {
+  let backing = InMemoryKeychain()
   var failsRead = false
   var failsWrite = false
 
@@ -95,9 +95,5 @@ private final class PhoneOrderingJournal: KeychainStorage, @unchecked Sendable {
 
   func hasItem(forKey key: String) throws -> Bool {
     try data(forKey: key) != nil
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
   }
 }

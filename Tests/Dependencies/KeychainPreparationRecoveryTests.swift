@@ -9,9 +9,7 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func aGroupWriterWithoutTheSyncOptionRefreshesBeforeUsingTheIdentity() async throws {
     let fixture = try Fixture()
-    let app = Clerk()
-    app.dependencies = try fixture.container(clerk: app, sync: false)
-    app.identityController.hydrate()
+    let app = try fixture.launch(sync: false)
     try app.seedIdentity(deviceToken: "old-login", client: .mock)
     try #require(app.dependencies.identityIsInAccessGroup)
     #expect(app.dependencies.sharesIdentity)
@@ -30,24 +28,18 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func localClearRecoveryWatchReplayAndRejoiningPreserveTheirSeparateIdentities() async throws {
     let fixture = try Fixture()
-    func launch(sync: Bool, grouped: Bool = true) throws -> Clerk {
-      let clerk = Clerk()
-      clerk.dependencies = try fixture.container(clerk: clerk, sync: sync, hasAccessGroup: grouped)
-      clerk.identityController.hydrate()
-      return clerk
-    }
-    let shared = try launch(sync: true)
+    let shared = try fixture.launch(sync: true)
     try shared.seedIdentity(deviceToken: "group-login", client: .mock)
     let sharedRecord = try #require(try shared.dependencies.identityStore.load())
     let oldWatch = try WatchSyncPayload(state: WatchSyncState(of: shared), environment: nil)
-    let local = try launch(sync: false)
+    let local = try fixture.launch(sync: false)
     let localStorage = fixture.factory.storage(DependencyContainer.localIdentityService(
       configuredService: fixture.service, ownerIdentifier: fixture.service
     ), nil)
     localStorage.failingDataKey = local.dependencies.identityStore.key
     #expect(throws: (any Error).self) { try local.clearKeychainItems() }
     localStorage.failingDataKey = nil
-    let restarted = try launch(sync: false, grouped: false)
+    let restarted = try fixture.launch(sync: false, hasAccessGroup: false)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
     let watch = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
     watch.apply(oldWatch, from: .watch, to: restarted)
@@ -57,10 +49,10 @@ struct KeychainPreparationRecoveryTests {
     #expect(restarted.deviceToken == "local-login")
     #expect(try shared.dependencies.identityStore.load() == sharedRecord)
 
-    let rejoined = try launch(sync: true)
+    let rejoined = try fixture.launch(sync: true)
     #expect(rejoined.deviceToken == "group-login")
     try rejoined.clearKeychainItems()
-    let departed = try launch(sync: false, grouped: false)
+    let departed = try fixture.launch(sync: false, hasAccessGroup: false)
     watch.apply(oldWatch, from: .watch, to: departed)
     #expect(try await departed.identityController.captureRequestIdentity().deviceToken == nil)
     #expect(try shared.dependencies.identityStore.load()?.identity == .signedOut)
@@ -70,9 +62,7 @@ struct KeychainPreparationRecoveryTests {
   func unfinishedFallbackClearSurvivesChangingSync(initialSync: Bool, changesSync: Bool) async throws {
     let fixture = try Fixture()
     fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
-    let original = Clerk()
-    original.dependencies = try fixture.container(clerk: original, sync: initialSync)
-    original.identityController.hydrate()
+    let original = try fixture.launch(sync: initialSync)
     try original.seedIdentity(deviceToken: "forgotten-local-login", client: .mock)
     try #require(!original.dependencies.identityIsInAccessGroup)
     let originalStore = original.dependencies.identityStore
@@ -91,9 +81,7 @@ struct KeychainPreparationRecoveryTests {
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
     #expect(try !fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
     try restarted.seedIdentity(deviceToken: "new-local-login", client: .mock)
-    let nextLaunch = Clerk()
-    nextLaunch.dependencies = try fixture.container(clerk: nextLaunch, sync: nextSync)
-    nextLaunch.identityController.hydrate()
+    let nextLaunch = try fixture.launch(sync: nextSync)
     #expect(nextLaunch.deviceToken == "new-local-login")
   }
 
@@ -101,16 +89,12 @@ struct KeychainPreparationRecoveryTests {
   func fallbackLoginSurvivesRemovingTheUnavailableGroup(initialSync: Bool, removesGroup: Bool) async throws {
     let fixture = try Fixture()
     fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
-    let original = Clerk()
-    original.dependencies = try fixture.container(clerk: original, sync: initialSync)
-    original.identityController.hydrate()
+    let original = try fixture.launch(sync: initialSync)
     try original.seedIdentity(deviceToken: "fallback-login", client: .mock)
     try #require(!original.dependencies.identityIsInAccessGroup)
     let originalRecord = try #require(try original.dependencies.identityStore.load())
 
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: initialSync && !removesGroup, hasAccessGroup: !removesGroup)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: initialSync && !removesGroup, hasAccessGroup: !removesGroup)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == "fallback-login")
     #expect(restarted.client?.id == Client.mock.id)
     #expect(try restarted.dependencies.identityStore.load()?.epoch == originalRecord.epoch)
@@ -120,9 +104,7 @@ struct KeychainPreparationRecoveryTests {
   func fallbackScopeRecoveryWaitsForItsJournalBeforeExposingIdentity(removesGroup: Bool) async throws {
     let fixture = try Fixture()
     fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
-    let original = Clerk()
-    original.dependencies = try fixture.container(clerk: original, sync: true)
-    original.identityController.hydrate()
+    let original = try fixture.launch(sync: true)
     try original.seedIdentity(deviceToken: "forgotten-login", client: .mock)
     let fallback = fixture.factory.storage(DependencyContainer.localIdentityService(
       configuredService: fixture.service, ownerIdentifier: fixture.service
@@ -133,9 +115,7 @@ struct KeychainPreparationRecoveryTests {
     let clearKey = original.dependencies.identityStore.clearIntentKey
     fixture.marker.failingDataKey = clearKey
 
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: false, hasAccessGroup: !removesGroup)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: false, hasAccessGroup: !removesGroup)
     #expect(!restarted.identityController.canPublishIdentity)
     await #expect(throws: (any Error).self) { try await restarted.identityController.captureRequestIdentity() }
     fixture.marker.failingDataKey = nil
@@ -153,16 +133,12 @@ struct KeychainPreparationRecoveryTests {
     ), nil), instanceFingerprint: fixture.fingerprint)
     try fallback.save(.init(state: .present, deviceToken: "fallback-login", client: .mock, serverDate: nil))
     fixture.marker.writeError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: true)
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: true)
     #expect(!clerk.identityController.canPublishIdentity)
     await #expect(throws: (any Error).self) { try await clerk.identityController.captureRequestIdentity() }
     fixture.marker.writeError = nil
     #expect(try await clerk.identityController.captureRequestIdentity().deviceToken == "fallback-login")
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: false, hasAccessGroup: false)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: false, hasAccessGroup: false)
     #expect(restarted.deviceToken == "fallback-login")
   }
 
@@ -170,40 +146,30 @@ struct KeychainPreparationRecoveryTests {
   func correctedEntitlementThenRemovedGroupRetainsTheCurrentIdentity(groupEstablished: Bool) throws {
     let fixture = try Fixture()
     fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
-    let fallback = Clerk()
-    fallback.dependencies = try fixture.container(clerk: fallback, sync: true)
-    fallback.identityController.hydrate()
+    let fallback = try fixture.launch(sync: true)
     try fallback.seedIdentity(deviceToken: "fallback-login", client: .mock)
 
     fixture.storage(fixture.group).readError = nil
     if groupEstablished {
       try ClerkIdentityStore(keychain: fixture.storage(fixture.group), instanceFingerprint: fixture.fingerprint).save(.signedOut)
     }
-    let shared = Clerk()
-    shared.dependencies = try fixture.container(clerk: shared, sync: true)
-    shared.identityController.hydrate()
+    let shared = try fixture.launch(sync: true)
     #expect(shared.deviceToken == (groupEstablished ? nil : "fallback-login"))
     try shared.seedIdentity(deviceToken: "current-group-login", client: .mock)
     let current = try #require(try shared.dependencies.identityStore.load())
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false, hasAccessGroup: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false, hasAccessGroup: false)
     #expect(local.deviceToken == "current-group-login")
     #expect(try local.dependencies.identityStore.load()?.epoch == current.epoch)
     try local.clearKeychainItems()
     #expect(try shared.dependencies.identityStore.load() == current)
-    let rejoined = Clerk()
-    rejoined.dependencies = try fixture.container(clerk: rejoined, sync: true)
-    rejoined.identityController.hydrate()
+    let rejoined = try fixture.launch(sync: true)
     #expect(rejoined.deviceToken == "current-group-login")
   }
 
   @Test
   func changingGroupsDoesNotApplyThePreviousGroupsPendingClear() throws {
     let fixture = try Fixture()
-    let first = Clerk()
-    first.dependencies = try fixture.container(clerk: first, sync: true)
-    first.identityController.hydrate()
+    let first = try fixture.launch(sync: true)
     try first.seedIdentity(deviceToken: "first-group-login", client: .mock)
     fixture.storage(fixture.group).failingDataKey = first.dependencies.identityStore.key
     #expect(throws: (any Error).self) { try first.identityController.clearIdentity() }
@@ -211,14 +177,10 @@ struct KeychainPreparationRecoveryTests {
 
     let otherStore = ClerkIdentityStore(keychain: fixture.storage("TEAM.other"), instanceFingerprint: fixture.fingerprint)
     try otherStore.save(.init(state: .present, deviceToken: "other-group-login", client: .mock, serverDate: nil))
-    let other = Clerk()
-    other.dependencies = try fixture.container(clerk: other, sync: true, accessGroup: "TEAM.other")
-    other.identityController.hydrate()
+    let other = try fixture.launch(sync: true, accessGroup: "TEAM.other")
     #expect(other.deviceToken == "other-group-login")
     #expect(try fixture.marker.hasItem(forKey: first.dependencies.identityStore.clearIntentKey))
-    let returned = Clerk()
-    returned.dependencies = try fixture.container(clerk: returned, sync: true)
-    returned.identityController.hydrate()
+    let returned = try fixture.launch(sync: true)
     #expect(returned.deviceToken == nil)
     #expect(try otherStore.load()?.identity.deviceToken == "other-group-login")
   }
@@ -229,9 +191,7 @@ struct KeychainPreparationRecoveryTests {
     let original = Clerk()
     original.dependencies = try fixture.container(clerk: original, sync: false, hasAccessGroup: false)
     try original.seedIdentity(deviceToken: "old-login", client: .mock)
-    let grouped = Clerk()
-    grouped.dependencies = try fixture.container(clerk: grouped, sync: false)
-    grouped.identityController.hydrate()
+    let grouped = try fixture.launch(sync: false)
     try #require(grouped.deviceToken == "old-login")
     let key = "\(grouped.dependencies.identityStore.key).retiredSource.\(SharedSessionNamespace.sha256(fixture.service))"
     let data = try #require(try fixture.marker.data(forKey: key))
@@ -242,9 +202,7 @@ struct KeychainPreparationRecoveryTests {
     fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(
       temporaryFailure ? errSecInteractionNotAllowed : errSecMissingEntitlement
     )
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false, hasAccessGroup: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false, hasAccessGroup: false)
     if temporaryFailure {
       await #expect(throws: (any Error).self) { try await local.identityController.captureRequestIdentity() }
       fixture.storage(fixture.group).readError = nil
@@ -264,30 +222,24 @@ struct KeychainPreparationRecoveryTests {
   @Test(arguments: [false, true])
   func removingAnAccessGroupUsesTheCurrentIdentityInsteadOfItsRetiredSource(cleared: Bool) throws {
     let fixture = try Fixture()
-    func app(hasAccessGroup: Bool) throws -> Clerk {
-      let clerk = Clerk()
-      clerk.dependencies = try fixture.container(clerk: clerk, sync: false, hasAccessGroup: hasAccessGroup)
-      clerk.identityController.hydrate()
-      return clerk
-    }
-    let original = try app(hasAccessGroup: false)
+    let original = try fixture.launch(sync: false, hasAccessGroup: false)
     try original.seedIdentity(deviceToken: "original-login", client: .mock)
-    let grouped = try app(hasAccessGroup: true)
+    let grouped = try fixture.launch(sync: false, hasAccessGroup: true)
     try #require(grouped.deviceToken == "original-login")
     try grouped.seedIdentity(deviceToken: "current-login", client: .mock)
     if cleared { try grouped.clearKeychainItems() }
     let current = try #require(try grouped.dependencies.identityStore.load())
 
-    let local = try app(hasAccessGroup: false)
+    let local = try fixture.launch(sync: false, hasAccessGroup: false)
 
     #expect(local.deviceToken == (cleared ? nil : "current-login"))
     #expect(local.client?.id == (cleared ? nil : Client.mock.id))
     #expect(try local.dependencies.identityStore.load()?.epoch == current.epoch)
     try local.seedIdentity(deviceToken: "new-local-login", client: .mock)
-    #expect(try app(hasAccessGroup: false).deviceToken == "new-local-login")
+    #expect(try fixture.launch(sync: false, hasAccessGroup: false).deviceToken == "new-local-login")
     #expect(try grouped.dependencies.identityStore.load() == current)
     try local.clearKeychainItems()
-    #expect(try app(hasAccessGroup: false).deviceToken == nil)
+    #expect(try fixture.launch(sync: false, hasAccessGroup: false).deviceToken == nil)
     #expect(try grouped.dependencies.identityStore.load() == current)
   }
 
@@ -297,9 +249,7 @@ struct KeychainPreparationRecoveryTests {
     let original = Clerk()
     original.dependencies = try fixture.container(clerk: original, sync: false, hasAccessGroup: false)
     try original.seedIdentity(deviceToken: "old-login", client: .mock)
-    let grouped = Clerk()
-    grouped.dependencies = try fixture.container(clerk: grouped, sync: false)
-    grouped.identityController.hydrate()
+    let grouped = try fixture.launch(sync: false)
     try #require(grouped.deviceToken == "old-login")
     if groupUnavailable {
       fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
@@ -308,9 +258,7 @@ struct KeychainPreparationRecoveryTests {
       #expect(throws: (any Error).self) { try grouped.clearKeychainItems() }
       fixture.storage(fixture.group).writeError = nil
     }
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false, hasAccessGroup: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false, hasAccessGroup: false)
     #expect(local.deviceToken == nil)
     #expect(local.identityController.canPublishIdentity)
     #expect(try local.dependencies.identityStore.load()?.identity == .signedOut)
@@ -323,9 +271,7 @@ struct KeychainPreparationRecoveryTests {
   @Test(arguments: [false, true])
   func enablingSyncRecoversAnUnfinishedClearInTheSameSharedBackend(enablesSync: Bool) async throws {
     let fixture = try Fixture()
-    let original = Clerk()
-    original.dependencies = try fixture.container(clerk: original, sync: false)
-    original.identityController.hydrate()
+    let original = try fixture.launch(sync: false)
     try original.seedIdentity(deviceToken: "forgotten-group-token", client: .mock)
     try #require(original.dependencies.identityIsInAccessGroup)
     let originalStore = original.dependencies.identityStore
@@ -334,26 +280,20 @@ struct KeychainPreparationRecoveryTests {
     try #require(try fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
     fixture.storage(fixture.group).failingDataKey = nil
 
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: enablesSync)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: enablesSync)
     try #require(restarted.dependencies.identityIsInAccessGroup)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
     #expect(try restarted.dependencies.identityStore.load()?.identity == .signedOut)
     #expect(try !fixture.marker.hasItem(forKey: originalStore.clearIntentKey))
     try restarted.seedIdentity(deviceToken: "new-login", client: .mock)
-    let nextLaunch = Clerk()
-    nextLaunch.dependencies = try fixture.container(clerk: nextLaunch, sync: enablesSync)
-    nextLaunch.identityController.hydrate()
+    let nextLaunch = try fixture.launch(sync: enablesSync)
     #expect(nextLaunch.deviceToken == "new-login")
   }
 
   @Test
   func previousClearScopeMustBeReadableBeforeEnablingSyncPublishesIdentity() async throws {
     let fixture = try Fixture()
-    let original = Clerk()
-    original.dependencies = try fixture.container(clerk: original, sync: false)
-    original.identityController.hydrate()
+    let original = try fixture.launch(sync: false)
     try original.seedIdentity(deviceToken: "forgotten-group-token", client: .mock)
     let store = original.dependencies.identityStore
     fixture.storage(fixture.group).failingDataKey = store.key
@@ -361,9 +301,7 @@ struct KeychainPreparationRecoveryTests {
     fixture.storage(fixture.group).failingDataKey = nil
     fixture.marker.failingDataKey = store.clearIntentKey
 
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: true)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: true)
     #expect(!restarted.identityController.canPublishIdentity)
     await #expect(throws: (any Error).self) { try await restarted.identityController.captureRequestIdentity() }
     fixture.marker.failingDataKey = nil
@@ -375,14 +313,10 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func unfinishedLocalClearDoesNotClearTheGroupWhenRejoining() throws {
     let fixture = try Fixture()
-    let shared = Clerk()
-    shared.dependencies = try fixture.container(clerk: shared, sync: true)
-    shared.identityController.hydrate()
+    let shared = try fixture.launch(sync: true)
     try shared.seedIdentity(deviceToken: "shared-token", client: .mock)
     let sharedRecord = try #require(try shared.dependencies.identityStore.load())
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false)
     let localKeychain = fixture.factory.storage(DependencyContainer.localIdentityService(
       configuredService: fixture.service, ownerIdentifier: fixture.service
     ), nil)
@@ -390,9 +324,7 @@ struct KeychainPreparationRecoveryTests {
     #expect(throws: (any Error).self) { try local.identityController.clearIdentity() }
     localKeychain.failingDataKey = nil
 
-    let rejoined = Clerk()
-    rejoined.dependencies = try fixture.container(clerk: rejoined, sync: true)
-    rejoined.identityController.hydrate()
+    let rejoined = try fixture.launch(sync: true)
     #expect(rejoined.deviceToken == "shared-token")
     #expect(try shared.dependencies.identityStore.load() == sharedRecord)
   }
@@ -413,9 +345,7 @@ struct KeychainPreparationRecoveryTests {
     let original = try #require(try originalApp.dependencies.identityStore.load())
     #expect(try fixture.factory.storage(oldService, nil).string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
 
-    let shared = Clerk()
-    shared.dependencies = try fixture.container(clerk: shared, sync: true, owner: oldService)
-    shared.identityController.hydrate()
+    let shared = try fixture.launch(sync: true, owner: oldService)
     let migrated = try #require(try shared.dependencies.identityStore.load())
     #expect(migrated.identity == original.identity)
     #expect(migrated.epoch == original.epoch)
@@ -431,9 +361,7 @@ struct KeychainPreparationRecoveryTests {
     try previous.save(.init(state: .present, deviceToken: "old-token", client: .mock, serverDate: nil))
     let sharedStore = ClerkIdentityStore(keychain: fixture.storage(fixture.group), instanceFingerprint: fixture.fingerprint)
     let cleared = try sharedStore.clear()
-    let app = Clerk()
-    app.dependencies = try fixture.container(clerk: app, sync: true, owner: "previous.bundle.service")
-    app.identityController.hydrate()
+    let app = try fixture.launch(sync: true, owner: "previous.bundle.service")
     #expect(try app.dependencies.identityStore.load() == cleared)
     #expect(app.deviceToken == nil)
   }
@@ -454,9 +382,7 @@ struct KeychainPreparationRecoveryTests {
     keychain.failingDataKey = previous.key
     #expect(throws: (any Error).self) { try previous.clear() }
     keychain.failingDataKey = nil
-    let app = Clerk()
-    app.dependencies = try fixture.container(clerk: app, sync: true, owner: owner)
-    app.identityController.hydrate()
+    let app = try fixture.launch(sync: true, owner: owner)
     #expect(try app.dependencies.identityStore.load()?.identity == .signedOut)
     #expect(try previous.load()?.identity == .signedOut)
     #expect(try marker.data(forKey: previous.clearIntentKey) == nil)
@@ -488,9 +414,7 @@ struct KeychainPreparationRecoveryTests {
     try previous.set("existing-login", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try previous.set(JSONEncoder.clerkEncoder.encode(Client.mock), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try previous.set("100", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: sync, owner: "previous.bundle.service")
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: sync, owner: "previous.bundle.service")
 
     #expect(clerk.deviceToken == (sync ? "existing-login" : nil))
     #expect(clerk.client == nil)
@@ -499,9 +423,7 @@ struct KeychainPreparationRecoveryTests {
       #expect(try previous.hasItem(forKey: key.rawValue) == [.clerkDeviceToken, .cachedClient, .cachedClientServerDate].contains(key))
     }
     if sync { try clerk.identityController.clearIdentity() }
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: sync, owner: "previous.bundle.service")
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: sync, owner: "previous.bundle.service")
     #expect(restarted.deviceToken == nil)
   }
 
@@ -515,9 +437,7 @@ struct KeychainPreparationRecoveryTests {
     if hasGroupIdentity {
       try ClerkIdentityStore(keychain: fixture.storage(fixture.group), instanceFingerprint: fixture.fingerprint).save(.signedOut)
     }
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: true, owner: "previous.bundle.service")
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: true, owner: "previous.bundle.service")
 
     #expect(clerk.deviceToken == (hasGroupIdentity ? nil : "current-local-login"))
     #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "previous-login")
@@ -530,9 +450,7 @@ struct KeychainPreparationRecoveryTests {
     try previous.set("existing-login", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try fixture.storage(fixture.group).set("shared-legacy-login", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     previous.readError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: true, owner: "previous.bundle.service")
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: true, owner: "previous.bundle.service")
     await #expect(throws: (any Error).self) { try await clerk.identityController.captureRequestIdentity() }
     #expect(try fixture.storage(nil).string(forKey: fixture.migrationKey) == nil)
 
@@ -554,9 +472,7 @@ struct KeychainPreparationRecoveryTests {
     try Clerk.clearLocalClerkStorageStrictly(in: destination)
     try destination.finishReconfiguration()
 
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: true, owner: "previous.bundle.service")
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: true, owner: "previous.bundle.service")
     #expect(restarted.deviceToken == nil)
     #expect(try previous.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "old-login")
   }
@@ -565,9 +481,7 @@ struct KeychainPreparationRecoveryTests {
   func missingGroupEntitlementDoesNotBlockLocalRequestsAfterClearOrRestart(sync: Bool) async throws {
     let fixture = try Fixture()
     fixture.storage(fixture.group).readError = KeychainError.unexpectedStatus(errSecMissingEntitlement)
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: sync)
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: sync)
     try clerk.seedIdentity(deviceToken: "local-token", client: .mock)
     #expect(!clerk.options.watchConnectivityEnabled)
     #expect(try fixture.storage(nil).data(forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue) == nil)
@@ -577,9 +491,7 @@ struct KeychainPreparationRecoveryTests {
     #expect(try await clerk.identityController.captureRequestIdentity().deviceToken == nil)
     let generation = try WatchSyncClearMarker.generation(in: clerk.dependencies.watchSyncKeychain)
     #expect(generation > 0)
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: sync)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: sync)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
     #expect(try WatchSyncClearMarker.generation(in: restarted.dependencies.watchSyncKeychain) == generation)
     try restarted.seedIdentity(deviceToken: "new-login", client: .mock)
@@ -589,9 +501,7 @@ struct KeychainPreparationRecoveryTests {
   @Test(arguments: [false, true])
   func reconfigurationDoesNotPublishLocalLoginAndPreservesDestinationPeer(hasPeer: Bool) async throws {
     let fixture = try Fixture()
-    let source = Clerk()
-    source.dependencies = try fixture.container(clerk: source, sync: false, hasAccessGroup: false)
-    source.identityController.hydrate()
+    let source = try fixture.launch(sync: false, hasAccessGroup: false)
     try source.seedIdentity(deviceToken: "source-login", client: .mock)
     let sharedStore = ClerkIdentityStore(keychain: fixture.storage(fixture.group), instanceFingerprint: fixture.fingerprint)
     if hasPeer {
@@ -611,9 +521,7 @@ struct KeychainPreparationRecoveryTests {
     reconfigured.identityController.hydrate()
     #expect(try await reconfigured.identityController.captureRequestIdentity().deviceToken == (hasPeer ? "peer-login" : nil))
     if hasPeer { #expect(try sharedStore.load() == peerRecord) }
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: true)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: true)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == (hasPeer ? "peer-login" : nil))
   }
 
@@ -632,18 +540,14 @@ struct KeychainPreparationRecoveryTests {
 
     #expect(try !fixture.marker.hasItem(forKey: "clerkSharedSessionLocalIdentityV2"))
     #expect(try fixture.storage(nil).string(forKey: fixture.migrationKey) == ClerkIdentityMigration.markerValue)
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: sync, hasAccessGroup: sync)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: sync, hasAccessGroup: sync)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
   }
 
   @Test
   func reconfigurationDoesNotCopySharedLoginWhenDisablingSharing() async throws {
     let fixture = try Fixture()
-    let source = Clerk()
-    source.dependencies = try fixture.container(clerk: source, sync: true)
-    source.identityController.hydrate()
+    let source = try fixture.launch(sync: true)
     try source.seedIdentity(deviceToken: "shared-login", client: .mock)
     let original = try source.dependencies.identityStore.load()
     let destination = try fixture.container(clerk: source, sync: false, isReconfiguration: true)
@@ -654,18 +558,14 @@ struct KeychainPreparationRecoveryTests {
     try destination.finishReconfiguration()
 
     #expect(try source.dependencies.identityStore.load() == original)
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: false)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: false)
     #expect(try await restarted.identityController.captureRequestIdentity().deviceToken == nil)
   }
 
   @Test
   func freshSharedSetupCanEnumerateThroughTheMacOSWrapper() async throws {
     let fixture = try Fixture(wrapShared: true)
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: true)
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: true)
 
     #expect(try await clerk.identityController.captureRequestIdentity().deviceToken == nil)
     #expect(try fixture.storage(nil).string(forKey: fixture.migrationKey) == ClerkIdentityMigration.markerValue)
@@ -674,57 +574,39 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func disablingSharingKeepsTheLoginThenStaysIndependentAcrossRestarts() throws {
     let fixture = try Fixture()
-    let shared = Clerk()
-    shared.dependencies = try fixture.container(clerk: shared, sync: true)
-    shared.identityController.hydrate()
+    let shared = try fixture.launch(sync: true)
     try shared.seedIdentity(deviceToken: "shared-token", client: .mock)
     let original = try #require(try shared.dependencies.identityStore.load())
 
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false)
     #expect(local.deviceToken == "shared-token")
     #expect(local.client?.id == original.identity.client?.id)
     #expect(!local.dependencies.identityIsInAccessGroup)
     #expect(try shared.dependencies.identityStore.load() == original)
 
     try local.clearKeychainItems()
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: false)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: false)
     #expect(restarted.deviceToken == nil)
     #expect(try shared.dependencies.identityStore.load() == original)
 
     // Rejoining uses the group's current identity, then a second departure copies that state.
-    let rejoined = Clerk()
-    rejoined.dependencies = try fixture.container(clerk: rejoined, sync: true)
-    rejoined.identityController.hydrate()
+    let rejoined = try fixture.launch(sync: true)
     try rejoined.seedIdentity(deviceToken: "new-shared-token", client: .mock)
-    let secondDeparture = Clerk()
-    secondDeparture.dependencies = try fixture.container(clerk: secondDeparture, sync: false)
-    secondDeparture.identityController.hydrate()
+    let secondDeparture = try fixture.launch(sync: false)
     #expect(secondDeparture.deviceToken == "new-shared-token")
   }
 
   @Test
   func rejoiningPreservesASharedSignOutAndDepartingDoesNotRestoreTheOldLocalLogin() throws {
     let fixture = try Fixture()
-    let first = Clerk()
-    first.dependencies = try fixture.container(clerk: first, sync: true)
-    first.identityController.hydrate()
+    let first = try fixture.launch(sync: true)
     try first.seedIdentity(deviceToken: "old-token", client: .mock)
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    _ = try fixture.launch(sync: false)
     try first.dependencies.identityStore.clear()
 
-    let rejoined = Clerk()
-    rejoined.dependencies = try fixture.container(clerk: rejoined, sync: true)
-    rejoined.identityController.hydrate()
+    let rejoined = try fixture.launch(sync: true)
     #expect(rejoined.deviceToken == nil)
-    let departed = Clerk()
-    departed.dependencies = try fixture.container(clerk: departed, sync: false)
-    departed.identityController.hydrate()
+    let departed = try fixture.launch(sync: false)
     #expect(departed.deviceToken == nil)
     #expect(try departed.dependencies.identityStore.load()?.identity == .signedOut)
   }
@@ -732,15 +614,11 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func aFailedHandoffReadRetriesBeforeExposingAnEmptyLocalIdentity() async throws {
     let fixture = try Fixture()
-    let first = Clerk()
-    first.dependencies = try fixture.container(clerk: first, sync: true)
-    first.identityController.hydrate()
+    let first = try fixture.launch(sync: true)
     try first.seedIdentity(deviceToken: "shared-token", client: .mock)
     fixture.storage(fixture.group).failingDataKey = first.dependencies.identityStore.key
 
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false)
     await #expect(throws: (any Error).self) { try await local.identityController.captureRequestIdentity() }
 
     fixture.storage(fixture.group).failingDataKey = nil
@@ -751,14 +629,10 @@ struct KeychainPreparationRecoveryTests {
   func enablingSharingSeedsAnEmptyGroupFromTheExistingLocalIdentity() throws {
     let fixture = try Fixture()
     try fixture.marker.set("2", forKey: ClerkKeychainKey.sharedSessionSyncAdopted.rawValue)
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false)
     try local.seedIdentity(deviceToken: "local-token", client: .mock)
 
-    let shared = Clerk()
-    shared.dependencies = try fixture.container(clerk: shared, sync: true)
-    shared.identityController.hydrate()
+    let shared = try fixture.launch(sync: true)
     #expect(shared.deviceToken == "local-token")
     #expect(shared.client?.id == local.client?.id)
     #expect(shared.dependencies.identityIsInAccessGroup)
@@ -767,17 +641,13 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func departingCompletesAPendingSharedClearBeforeCopyingCredentials() throws {
     let fixture = try Fixture()
-    let first = Clerk()
-    first.dependencies = try fixture.container(clerk: first, sync: true)
-    first.identityController.hydrate()
+    let first = try fixture.launch(sync: true)
     try first.seedIdentity(deviceToken: "shared-token", client: .mock)
     fixture.storage(fixture.group).failingDataKey = first.dependencies.identityStore.key
     #expect(throws: (any Error).self) { try first.identityController.clearIdentity() }
     fixture.storage(fixture.group).failingDataKey = nil
 
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false)
     #expect(local.deviceToken == nil)
     #expect(try first.dependencies.identityStore.load()?.identity == .signedOut)
     #expect(try local.dependencies.identityStore.load()?.identity == .signedOut)
@@ -786,14 +656,10 @@ struct KeychainPreparationRecoveryTests {
   @Test
   func handoffMarkerFailureDoesNotReplayOverAnAcceptedLocalClear() async throws {
     let fixture = try Fixture()
-    let first = Clerk()
-    first.dependencies = try fixture.container(clerk: first, sync: true)
-    first.identityController.hydrate()
+    let first = try fixture.launch(sync: true)
     try first.seedIdentity(deviceToken: "shared-token", client: .mock)
     fixture.marker.writeError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
-    let local = Clerk()
-    local.dependencies = try fixture.container(clerk: local, sync: false)
-    local.identityController.hydrate()
+    let local = try fixture.launch(sync: false)
     await #expect(throws: (any Error).self) { try await local.identityController.captureRequestIdentity() }
 
     let localStore = ClerkIdentityStore(keychain: fixture.factory.storage(DependencyContainer.localIdentityService(
@@ -802,9 +668,7 @@ struct KeychainPreparationRecoveryTests {
     #expect(try localStore.load()?.identity.deviceToken == "shared-token")
     try localStore.clear()
     fixture.marker.writeError = nil
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: false)
-    restarted.identityController.hydrate()
+    let restarted = try fixture.launch(sync: false)
     #expect(restarted.deviceToken == nil)
     #expect(try first.dependencies.identityStore.load()?.identity.deviceToken == "shared-token")
   }
@@ -816,9 +680,7 @@ struct KeychainPreparationRecoveryTests {
     let store = ClerkIdentityStore(keychain: shared, instanceFingerprint: fixture.fingerprint)
     try store.save(.init(state: .present, deviceToken: "old-token", client: .mock, serverDate: nil))
     shared.readError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
-    let clerk = Clerk()
-    clerk.dependencies = try fixture.container(clerk: clerk, sync: true)
-    clerk.identityController.hydrate()
+    let clerk = try fixture.launch(sync: true)
 
     #expect(throws: (any Error).self) { try clerk.clearKeychainItems() }
     let journalKey = clerk.dependencies.identityStore.clearIntentKey
@@ -845,9 +707,7 @@ struct KeychainPreparationRecoveryTests {
     let store = ClerkIdentityStore(keychain: shared, instanceFingerprint: fixture.fingerprint)
     try store.save(.init(state: .present, deviceToken: "old-token", client: .mock, serverDate: nil))
     shared.readError = KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
-    let original = Clerk()
-    original.dependencies = try fixture.container(clerk: original, sync: true)
-    original.identityController.hydrate()
+    let original = try fixture.launch(sync: true)
     #expect(throws: (any Error).self) { try original.clearKeychainItems() }
     let journalKey = original.dependencies.identityStore.clearIntentKey
     shared.readError = nil
@@ -861,16 +721,12 @@ struct KeychainPreparationRecoveryTests {
       keychain: fixture.storage(changesGroup ? destinationGroup : nil), instanceFingerprint: fixture.fingerprint
     )
     try destinationStore.save(.init(state: .present, deviceToken: "destination-token", client: .mock, serverDate: nil))
-    let destination = Clerk()
-    destination.dependencies = try fixture.container(clerk: destination, sync: changesGroup, accessGroup: destinationGroup)
-    destination.identityController.hydrate()
+    let destination = try fixture.launch(sync: changesGroup, accessGroup: destinationGroup)
 
     #expect(destination.deviceToken == "destination-token")
     #expect(try fixture.marker.hasItem(forKey: journalKey))
 
-    let restarted = Clerk()
-    restarted.dependencies = try fixture.container(clerk: restarted, sync: true)
-    restarted.identityController.hydrate()
+    _ = try fixture.launch(sync: true)
     #expect(try store.load()?.identity == .signedOut)
     #expect(try !fixture.marker.hasItem(forKey: journalKey))
     #expect(try destinationStore.load()?.identity.deviceToken == "destination-token")
@@ -1035,6 +891,14 @@ struct KeychainPreparationRecoveryTests {
       factory.storage(service, group)
     }
 
+    func launch(sync: Bool, accessGroup: String? = nil, hasAccessGroup: Bool = true, owner: String? = nil) throws -> Clerk {
+      let clerk = Clerk()
+      clerk.dependencies = try container(clerk: clerk, sync: sync, accessGroup: accessGroup,
+                                         hasAccessGroup: hasAccessGroup, owner: owner)
+      clerk.identityController.hydrate()
+      return clerk
+    }
+
     func container(clerk: Clerk, sync: Bool, accessGroup: String? = nil,
                    hasAccessGroup: Bool = true, isReconfiguration: Bool = false, owner: String? = nil) throws -> DependencyContainer
     {
@@ -1071,7 +935,7 @@ private final class RecoveryKeychainFactory: @unchecked Sendable {
   }
 }
 
-private final class RecoveryKeychain: KeychainStorage, @unchecked Sendable {
+private final class RecoveryKeychain: ForwardingTestKeychain, @unchecked Sendable {
   let backing = InMemoryKeychain()
   var readError: (any Error)?
   var writeError: (any Error)?
@@ -1096,10 +960,6 @@ private final class RecoveryKeychain: KeychainStorage, @unchecked Sendable {
   func set(_ data: Data, forKey key: String) throws {
     if let writeError { throw writeError }
     try backing.set(data, forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
   }
 
   func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {

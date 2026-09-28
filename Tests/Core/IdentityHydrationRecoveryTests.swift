@@ -198,24 +198,12 @@ struct IdentityHydrationRecoveryTests {
   }
 }
 
-private final class HydrationKeychain: KeychainStorage, @unchecked Sendable {
+private final class HydrationKeychain: ForwardingTestKeychain, @unchecked Sendable {
   let backing = InMemoryKeychain()
   var isLocked = false
   func data(forKey key: String) throws -> Data? {
     if isLocked { throw KeychainError.unexpectedStatus(-25308) }
     return try backing.data(forKey: key)
-  }
-
-  func set(_ data: Data, forKey key: String) throws {
-    try backing.set(data, forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
   }
 
   func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {

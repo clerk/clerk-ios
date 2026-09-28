@@ -347,7 +347,7 @@ struct IdentityClearOrderingTests {
   }
 }
 
-private final class FailingConditionalKeychain: KeychainStorage, @unchecked Sendable {
+private final class FailingConditionalKeychain: ForwardingTestKeychain, @unchecked Sendable {
   let backing = InMemoryKeychain()
   var failWrites = false
   var failReads = false
@@ -365,14 +365,6 @@ private final class FailingConditionalKeychain: KeychainStorage, @unchecked Send
   func data(forKey key: String) throws -> Data? {
     if failReads { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
     return try backing.data(forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
   }
 
   func compareAndSwap(_ data: Data, forKey key: String, expectedRevision: UUID?, newRevision: UUID) throws -> Bool {

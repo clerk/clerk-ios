@@ -232,8 +232,8 @@ struct WatchSyncLegacyPublicationTests {
   }
 }
 
-private final class PublicationJournal: KeychainStorage, @unchecked Sendable {
-  private let backing = InMemoryKeychain()
+private final class PublicationJournal: ForwardingTestKeychain, @unchecked Sendable {
+  let backing = InMemoryKeychain()
   var failsRead = false
   var failsWrite = false
   var failsFloorWrite = false
@@ -250,9 +250,5 @@ private final class PublicationJournal: KeychainStorage, @unchecked Sendable {
 
   func hasItem(forKey key: String) throws -> Bool {
     try data(forKey: key) != nil
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
   }
 }
