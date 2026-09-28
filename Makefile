@@ -142,6 +142,7 @@ lint:
 	@echo "Running SwiftLint..."
 	@./scripts/install-swiftlint.sh > /dev/null
 	@"$(SWIFTLINT)"
+	@"$(SWIFTLINT)" lint --config .swiftlint-comments.yml --quiet
 
 # Run SwiftLint with auto-fix
 lint-fix:

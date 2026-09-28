@@ -1,0 +1,19 @@
+# Enforces the AGENTS.md comment rule across Sources and Tests.
+# Allowed: /// doc comments, // MARK:, tool directives, and file headers.
+
+only_rules:
+  - custom_rules
+
+included:
+  - Sources
+  - Tests
+
+custom_rules:
+  no_explanatory_comments:
+    name: "No Explanatory Comments"
+    regex: '(?m)(//(?!/)(?!\s*(MARK|swiftlint|swiftformat|sourcery)\b)(?! {2}\S)(?!$)|/\*(?![*!]))'
+    match_kinds:
+      - comment
+    excluded: 'Sources/ClerkKit/Utils/(JWTDecoder|JSON)\.swift'
+    message: "Don't write comments that explain code. Put intent in names, types, and tests. See AGENTS.md."
+    severity: error
