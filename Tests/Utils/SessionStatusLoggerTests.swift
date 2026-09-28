@@ -140,7 +140,6 @@ struct SessionStatusLoggerTests {
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
     let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    // nil and [] are considered equal in the comparison, so should not log
     #expect(shouldLog == false)
   }
 
@@ -154,7 +153,6 @@ struct SessionStatusLoggerTests {
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
     let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    // nil and [] are considered equal in the comparison, so should not log
     #expect(shouldLog == false)
   }
 

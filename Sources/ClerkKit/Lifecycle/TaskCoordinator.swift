@@ -25,7 +25,6 @@ final class TaskCoordinator {
   func track(_ task: Task<Void, Never>) {
     tasks.insert(task)
 
-    // Remove task when it completes
     Task {
       await task.value
       tasks.remove(task)

@@ -106,7 +106,6 @@ struct AuthStartView: View {
 
   func passkeyAutomaticModalIsEnabled(environment: Clerk.Environment) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    // Clerk's AutoFill setting controls the no-interaction modal, not iOS's text-field AutoFill request.
     return passkeySignInIsAvailable(environment: environment) &&
       environment.userSettings.passkeySettings?.allowAutofill == true
     #else
@@ -555,7 +554,6 @@ extension AuthStartView {
     fieldError = nil
 
     do {
-      // Store the identifier type for "last used" badge disambiguation
       storeIdentifierType()
 
       let signIn = try await clerk.auth.signIn(activeIdentifier)
@@ -639,8 +637,6 @@ extension AuthStartView {
       } else {
         ClerkLogger.error("Failed to authenticate with passkey", error: underlyingError)
       }
-      // Keep iOS text-field AutoFill armed after a modal error so users can
-      // pick another passkey without a second modal.
       return autofill ? .stopped : .continueWithAutofill
     }
   }
@@ -672,9 +668,6 @@ extension AuthStartView {
     }
 
     guard shouldStartAutoFillFallback, navigation.path.isEmpty else { return }
-    // Clerk's AutoFill setting gates the automatic modal above; this keeps
-    // iOS text-field AutoFill available when a visible identifier field can
-    // surface suggestions.
     await authenticateWithPasskey(
       signIn: signIn,
       autofill: true,

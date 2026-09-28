@@ -141,9 +141,7 @@ struct SessionAuthorizationIntegrationTests {
       }
       _ = try await Clerk.shared.auth.signInWithPassword(identifier: email, password: Self.testPassword)
       try await Clerk.shared.user?.delete()
-    } catch {
-      // Best-effort cleanup. Some failure paths may not produce a deletable account.
-    }
+    } catch {}
   }
 }
 

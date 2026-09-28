@@ -59,14 +59,12 @@ struct WrappingHStack: Layout {
       let requiredWidth = currentRowWidth + (currentRow.isEmpty ? 0 : spacing) + subviewWidth
 
       if requiredWidth <= availableWidth || currentRow.isEmpty {
-        // Add to current row
         if !currentRow.isEmpty {
           currentRowWidth += spacing
         }
         currentRow.append(SubviewData(subview: subview, size: subviewSize))
         currentRowWidth += subviewWidth
       } else {
-        // Start new row
         if !currentRow.isEmpty {
           rows.append(RowData(subviews: currentRow, width: currentRowWidth))
         }
@@ -75,7 +73,6 @@ struct WrappingHStack: Layout {
       }
     }
 
-    // Add the last row
     if !currentRow.isEmpty {
       rows.append(RowData(subviews: currentRow, width: currentRowWidth))
     }
@@ -86,14 +83,13 @@ struct WrappingHStack: Layout {
   private func placeRow(row: RowData, in bounds: CGRect, alignment: Alignment) {
     let rowHeight = row.height
 
-    // Calculate horizontal alignment
     let totalRowWidth = row.width
     let startX: CGFloat = switch alignment.horizontal {
     case .leading:
       bounds.minX
     case .trailing:
       bounds.maxX - totalRowWidth
-    default: // center
+    default:
       bounds.minX + (bounds.width - totalRowWidth) / 2
     }
 
@@ -103,13 +99,12 @@ struct WrappingHStack: Layout {
       let subview = subviewData.subview
       let size = subviewData.size
 
-      // Calculate vertical alignment
       let yPosition: CGFloat = switch alignment.vertical {
       case .top:
         bounds.minY
       case .bottom:
         bounds.minY + rowHeight - size.height
-      default: // center
+      default:
         bounds.minY + (rowHeight - size.height) / 2
       }
 

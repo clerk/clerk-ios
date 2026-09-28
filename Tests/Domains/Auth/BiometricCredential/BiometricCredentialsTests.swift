@@ -1547,7 +1547,6 @@ extension BiometricCredentialsTests {
   @Test(arguments: [Session.BiometricVerificationLevel.firstFactor, .secondFactor])
   func reverifyResolvesUserForSessionReturnedByBackend(level: Session.BiometricVerificationLevel) async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
-    // The session being reverified belongs to a different user than the active session.
     var client = Client.mock
     client.sessions = [.mock2, .mock]
     client.lastActiveSessionId = Session.mock2.id
@@ -1652,7 +1651,6 @@ extension BiometricCredentialsTests {
       }
     )
     Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
-    // A usable credential for the active user must not substitute for the missing owner.
     let setup = try makeBiometricCredentialsWithLocalCredential(
       keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
         Issue.record("Must not prompt without resolving the session's user.")

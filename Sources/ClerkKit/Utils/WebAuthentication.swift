@@ -175,8 +175,6 @@ final class WebAuthentication: NSObject {
 
   static func finishWithDeeplinkUrl(url: URL) {
     #if targetEnvironment(macCatalyst)
-    // mac catalyst web auth window doesn't close without
-    // this when the callback is intercepted as a universal link
     activeSession?.session.cancel()
     #endif
 

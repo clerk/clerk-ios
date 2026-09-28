@@ -223,7 +223,6 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Transfer is an internal parameter not exposed in public API, so we test the service directly
     _ = try await Clerk.shared.dependencies.signInService.create(params: .init(transfer: true))
     #expect(requestHandled.value)
   }
@@ -247,7 +246,6 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Empty create is not exposed in public API, so we test the service directly
     _ = try await Clerk.shared.dependencies.signInService.create(params: .init())
     #expect(requestHandled.value)
   }
@@ -391,7 +389,6 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Passkey prepare requires getting credential first, so we test the service directly for this unit test
     _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey)
@@ -476,8 +473,6 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // verifyCode() infers strategy from firstFactorVerification state, which is hard to control in unit tests
-    // For this test that specifically verifies phone_code parameters, we use the service directly
     _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .phoneCode, code: "654321")
@@ -506,7 +501,6 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Passkey attempt requires getting credential first, so we test the service directly for this unit test
     _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey, publicKeyCredential: "mock_credential")

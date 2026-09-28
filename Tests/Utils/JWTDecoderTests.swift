@@ -46,13 +46,11 @@ struct JWTDecoderTests {
 
   @Test
   func jWTDecodeErrorInvalidPartCount() {
-    // JWT with only 2 parts
     do {
       _ = try decode(jwt: "header.body")
       Issue.record("Expected invalidPartCount error")
     } catch let error as JWTDecodeError {
       if case .invalidPartCount = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -60,13 +58,11 @@ struct JWTDecoderTests {
       Issue.record("Wrong error type: \(error)")
     }
 
-    // JWT with 4 parts
     do {
       _ = try decode(jwt: "header.body.signature.extra")
       Issue.record("Expected invalidPartCount error")
     } catch let error as JWTDecodeError {
       if case .invalidPartCount = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -74,13 +70,11 @@ struct JWTDecoderTests {
       Issue.record("Wrong error type: \(error)")
     }
 
-    // JWT with no parts
     do {
       _ = try decode(jwt: "invalid")
       Issue.record("Expected invalidPartCount error")
     } catch let error as JWTDecodeError {
       if case .invalidPartCount = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -98,7 +92,6 @@ struct JWTDecoderTests {
       Issue.record("Expected invalidBase64URL error")
     } catch let error as JWTDecodeError {
       if case .invalidBase64URL = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -109,7 +102,6 @@ struct JWTDecoderTests {
 
   @Test
   func jWTDecodeErrorInvalidJSON() throws {
-    // Create invalid JSON in body
     let invalidBody = "not_valid_json"
     let bodyBase64 = try #require(invalidBody.data(using: .utf8)?.base64EncodedString()
       .replacingOccurrences(of: "+", with: "-")
@@ -129,7 +121,6 @@ struct JWTDecoderTests {
       Issue.record("Expected invalidJSON error")
     } catch let error as JWTDecodeError {
       if case .invalidJSON = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -163,7 +154,6 @@ struct JWTDecoderTests {
 
   @Test
   func jWTExpired() throws {
-    // Expired JWT (exp is in the past)
     let pastExp = Date().timeIntervalSince1970 - 1000
     let expiredBody: [String: Any] = ["exp": pastExp]
     let expiredJWT = createTestJWT(body: expiredBody)
@@ -171,7 +161,6 @@ struct JWTDecoderTests {
 
     #expect(expired.expired == true)
 
-    // Future exp (not expired)
     let futureExp = Date().timeIntervalSince1970 + 1000
     let validBody: [String: Any] = ["exp": futureExp]
     let validJWT = createTestJWT(body: validBody)
@@ -179,7 +168,6 @@ struct JWTDecoderTests {
 
     #expect(valid.expired == false)
 
-    // No exp claim (not expired)
     let noExpBody: [String: Any] = ["sub": "user123"]
     let noExpJWT = createTestJWT(body: noExpBody)
     let noExp = try decode(jwt: noExpJWT)
@@ -196,7 +184,6 @@ struct JWTDecoderTests {
     let claim = jwt.claim(name: "name")
     #expect(claim.string == "John Doe")
 
-    // Non-string claim
     let nonStringClaim = jwt.claim(name: "nonexistent")
     #expect(nonStringClaim.string == nil)
   }
@@ -213,7 +200,6 @@ struct JWTDecoderTests {
     let falseClaim = jwt.claim(name: "isDisabled")
     #expect(falseClaim.boolean == false)
 
-    // Non-boolean claim
     let nonBoolClaim = jwt.claim(name: "nonexistent")
     #expect(nonBoolClaim.boolean == nil)
   }
@@ -227,7 +213,6 @@ struct JWTDecoderTests {
     let priceClaim = jwt.claim(name: "price")
     #expect(priceClaim.double == 99.99)
 
-    // String that can be converted to double
     let priceStringClaim = jwt.claim(name: "priceString")
     #expect(priceStringClaim.double == 99.99)
   }
@@ -241,11 +226,9 @@ struct JWTDecoderTests {
     let ageClaim = jwt.claim(name: "age")
     #expect(ageClaim.integer == 30)
 
-    // String that can be converted to integer
     let ageStringClaim = jwt.claim(name: "ageString")
     #expect(ageStringClaim.integer == 30)
 
-    // Double that can be converted to integer
     let ageDoubleClaim = jwt.claim(name: "ageDouble")
     #expect(ageDoubleClaim.integer == 30)
   }
@@ -275,7 +258,6 @@ struct JWTDecoderTests {
     let rolesClaim = jwt.claim(name: "roles")
     #expect(rolesClaim.array == ["admin", "user"])
 
-    // Single string should be converted to array
     let singleRoleClaim = jwt.claim(name: "singleRole")
     #expect(singleRoleClaim.array == ["admin"])
   }

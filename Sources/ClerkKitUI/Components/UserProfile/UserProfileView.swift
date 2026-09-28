@@ -206,8 +206,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
           .environment(clerk)
       }
       .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
-        // The add-account sheet is modal over the host, so it dismisses itself
-        // rather than showing the host's back button.
         AuthView()
           .environment(\.clerkHostBackAction, nil)
           .environment(clerk)

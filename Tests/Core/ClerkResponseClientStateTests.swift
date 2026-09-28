@@ -389,7 +389,6 @@ struct ClerkResponseClientStateTests {
       to: clerk
     )
 
-    // Without server fetch dates, phone keeps its client (defers to server refresh)
     #expect(clerk.client?.id == phoneClient.id)
     #expect(clerk.client?.lastActiveSessionId == "session-phone")
   }
@@ -407,8 +406,6 @@ struct ClerkResponseClientStateTests {
       to: clerk
     )
 
-    // Even with a newer server fetch date, nil is not accepted from watch.
-    // Only the server can sign out the phone.
     #expect(clerk.client?.id == phoneClient.id)
   }
 

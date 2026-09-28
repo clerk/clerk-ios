@@ -36,7 +36,6 @@ extension View {
   @MainActor
   package func clerkPreview(isSignedIn: Bool = true) -> some View {
     if EnvironmentDetection.isRunningInPreviews {
-      // Configure Clerk.shared so views that access it directly don't fail
       let clerk = Clerk.preview { builder in
         builder.isSignedIn = isSignedIn
       }

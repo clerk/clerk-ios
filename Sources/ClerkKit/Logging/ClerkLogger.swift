@@ -207,13 +207,10 @@ package enum ClerkLogger {
     line: Int,
     configuration: Configuration? = nil
   ) {
-    // Errors always log regardless of level
     if !forceLog {
       let shouldLogTask = Task { @MainActor in
         ClerkLogger.shouldLog(level: level, configuration: configuration)
       }
-      // For non-async context, we'll log by default if we can't check
-      // This ensures errors always log, and other levels will be filtered properly in async contexts
       Task {
         guard await shouldLogTask.value else { return }
         let context = Context(
@@ -233,7 +230,6 @@ package enum ClerkLogger {
       return
     }
 
-    // For forceLog (errors), log immediately
     Task {
       let context = Context(
         file: file,
@@ -273,14 +269,12 @@ package enum ClerkLogger {
     if let error {
       logMessage += "\n   Error: \(error)"
 
-      // Include localized description if available
       if let localizedError = error as? LocalizedError,
          let description = localizedError.errorDescription
       {
         logMessage += "\n   Description: \(description)"
       }
 
-      // Include failure reason if available
       if let localizedError = error as? LocalizedError,
          let failureReason = localizedError.failureReason
       {
@@ -288,10 +282,8 @@ package enum ClerkLogger {
       }
     }
 
-    // Use unified logging for structured logs only (avoid duplicate console output)
     logger.log(level: level.osLogType, "\(logMessage)")
 
-    // Invoke delegate for errors only
     if level == .error {
       let logEntry = LogEntry(
         level: level,
@@ -310,7 +302,6 @@ package enum ClerkLogger {
         Clerk.installedLoggingConfiguration?.handler
       }
 
-      // Invoke handler asynchronously to avoid blocking
       if let handler {
         Task.detached {
           handler(logEntry)
@@ -328,7 +319,6 @@ package enum ClerkLogger {
     let configuredLevel = configuration?.logLevel
       ?? Clerk.installedLoggingConfiguration?.logLevel
       ?? .error
-    // Log if the message level is <= configured level (lower severity number = higher priority)
     return level <= configuredLevel
   }
 }

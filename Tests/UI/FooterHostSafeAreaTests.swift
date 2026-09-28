@@ -88,8 +88,6 @@ struct FooterHostSafeAreaTests {
     #expect(originalInset > 0)
     #expect(try #require(fixture.recorder.safeArea).additionalPadding == originalInset)
 
-    // A scene-less window does not consistently change its safe area when resized.
-    // Control that UIKit input while retaining the real observer and layout callbacks.
     fixture.container.reportedBottomInset = 0
     fixture.window.frame.size.width -= 80
     await fixture.layout()
@@ -168,7 +166,6 @@ struct FooterHostSafeAreaTests {
     let sheet = UIHostingController(rootView: FooterInsetProbe(recorder: recorder))
     sheet.modalPresentationStyle = .pageSheet
     fixture.parent.present(sheet, animated: false)
-    // The package test runner has no window scene to attach presentations automatically.
     sheet.view.frame = fixture.window.bounds.insetBy(dx: 60, dy: 150)
     fixture.window.addSubview(sheet.view)
     defer { sheet.view.removeFromSuperview() }

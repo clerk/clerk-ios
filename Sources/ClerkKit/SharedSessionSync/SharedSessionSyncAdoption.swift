@@ -102,10 +102,6 @@ struct SharedSessionSyncAdoption {
       return nil
     }
 
-    // Legacy token, Client, and date values were written as independent Keychain
-    // items, so no read protocol can prove that they belong to one revision. Keep
-    // only the credential needed for a canonical refresh and let that response
-    // establish the first atomic Client snapshot.
     return try SharedSessionLocalIdentity(
       state: .cleared,
       deviceToken: deviceToken,

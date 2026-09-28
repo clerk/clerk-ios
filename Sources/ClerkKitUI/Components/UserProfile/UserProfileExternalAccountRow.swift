@@ -163,10 +163,6 @@ extension UserProfileExternalAccountRow {
     let prompts = oauthConfig.prompts(for: provider)
 
     do {
-      // Use prepareReauthorization when additional scopes are needed, even if
-      // there is a verification error — reauthorization preserves the existing
-      // account while upserting scopes. Only create a fresh external account
-      // when there is a verification error and no scope reauthorization is required.
       let account: ExternalAccount = if !oauthConfig.requiresReauthorization(for: externalAccount),
                                         externalAccount.verification?.error != nil
       {

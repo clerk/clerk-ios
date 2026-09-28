@@ -123,7 +123,6 @@ final class MockDependencyContainer: Dependencies {
     magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
 
-    // Use custom services if provided, otherwise use mock services
     self.clientService = clientService ?? MockClientService()
     self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()

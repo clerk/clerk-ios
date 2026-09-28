@@ -45,31 +45,21 @@ struct AuthAndClientIntegrationTests {
     do {
       // MARK: - SignUp Flow
 
-      // Step 1: Create a SignUp with an email address and password
-      // Use a unique test email to avoid collisions across concurrent CI runs.
       let signUp = try await Clerk.shared.auth.signUp(emailAddress: testEmail, password: Self.testPassword)
       didCreateSignUp = true
 
-      // Step 2: Prepare verification (email_code)
-      // This will send a code to the email address
       let preparedSignUp = try await signUp.sendEmailCode()
 
-      // Step 3: Attempt verification with the test verification code
       try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
 
-      // Sign out so that SignIn can sign in with the new account
       try await Clerk.shared.auth.signOut()
 
       // MARK: - SignIn Flow
 
-      // Step 1: Create a SignIn with the same email used in SignUp
       let signIn = try await Clerk.shared.auth.signIn(testEmail)
 
-      // Step 2: Prepare first factor verification (email_code)
-      // This will send a code to the email address
       let preparedSignIn = try await signIn.sendEmailCode()
 
-      // Step 3: Attempt first factor with the test verification code
       try await preparedSignIn.verifyCode(Self.testVerificationCode)
     } catch {
       capturedError = error
@@ -103,8 +93,6 @@ struct AuthAndClientIntegrationTests {
 
       _ = try await Clerk.shared.auth.signInWithPassword(identifier: email, password: Self.testPassword)
       try await Clerk.shared.user?.delete()
-    } catch {
-      // Best-effort cleanup. Some failure paths may not produce a deletable account.
-    }
+    } catch {}
   }
 }

@@ -134,7 +134,7 @@ struct URLEncodedFormEncoderTests {
   @Test
   func dateEncodingISO8601() throws {
     let encoding = URLEncodedFormEncoder.DateEncoding.iso8601
-    let date = Date(timeIntervalSince1970: 1_609_459_200) // 2021-01-01 00:00:00 UTC
+    let date = Date(timeIntervalSince1970: 1_609_459_200)
     let result = try encoding.encode(date)
     #expect(result != nil)
     #expect(result?.contains("2021") == true)
@@ -307,7 +307,6 @@ struct URLEncodedFormEncoderTests {
     let value = TestStruct(items: ["a", "b", "c"])
     let result: String = try encoder.encode(value)
 
-    // URL encoding converts [ to %5B and ] to %5D
     #expect(result.contains("items%5B%5D=a") || result.contains("items[]=a"))
     #expect(result.contains("items%5B%5D=b") || result.contains("items[]=b"))
     #expect(result.contains("items%5B%5D=c") || result.contains("items[]=c"))
@@ -326,7 +325,6 @@ struct URLEncodedFormEncoderTests {
     let value = TestStruct(parent: Nested(value: "test"))
     let result: String = try encoder.encode(value)
 
-    // URL encoding converts [ to %5B and ] to %5D
     #expect(result.contains("parent%5Bvalue%5D=test") || result.contains("parent[value]=test"))
   }
 
@@ -417,7 +415,6 @@ struct URLEncodedFormEncoderTests {
 
   @Test
   func encodeErrorInvalidRootObject() throws {
-    // Encoding a single value (not a keyed object) should throw an error
     let encoder = URLEncodedFormEncoder()
 
     do {
@@ -425,7 +422,6 @@ struct URLEncodedFormEncoderTests {
       Issue.record("Expected invalidRootObject error")
     } catch let error as URLEncodedFormEncoder.Error {
       if case .invalidRootObject = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -446,10 +442,8 @@ struct URLEncodedFormEncoderTests {
     let value = TestStruct(z: "z", a: "a", m: "m")
     let result: String = try encoder.encode(value)
 
-    // Keys should be alphabetized
     let parts = result.split(separator: "&")
     #expect(parts.count == 3)
-    // First should be a=
     #expect(parts[0].hasPrefix("a="))
   }
 
@@ -542,11 +536,9 @@ struct URLEncodedFormEncoderTests {
 
     let protected = Protected(TestStruct(name: "John", age: 30))
 
-    // Read using dynamic member lookup
     #expect(protected.name == "John")
     #expect(protected.age == 30)
 
-    // Write using dynamic member lookup
     protected.name = "Jane"
     protected.age = 25
 
@@ -563,11 +555,9 @@ struct URLEncodedFormEncoderTests {
 
     let protected = Protected(TestStruct(name: "John", age: 30))
 
-    // Read using dynamic member lookup
     #expect(protected.name == "John")
     #expect(protected.age == 30)
 
-    // Can modify mutable properties
     protected.age = 25
     #expect(protected.age == 25)
   }
@@ -576,7 +566,6 @@ struct URLEncodedFormEncoderTests {
   func protectedThreadSafety() async {
     let protected = Protected(0)
 
-    // Concurrent writes
     await withTaskGroup(of: Void.self) { group in
       for i in 1 ... 100 {
         group.addTask {
@@ -587,7 +576,6 @@ struct URLEncodedFormEncoderTests {
       }
     }
 
-    // Verify final value (should be sum of 1 to 100 = 5050)
     let finalValue = protected.read { $0 }
     #expect(finalValue == 5050)
   }
@@ -597,7 +585,6 @@ struct URLEncodedFormEncoderTests {
     let protected = Protected(0)
 
     await withTaskGroup(of: Void.self) { group in
-      // Multiple writers
       for i in 1 ... 50 {
         group.addTask {
           protected.write { value in
@@ -606,7 +593,6 @@ struct URLEncodedFormEncoderTests {
         }
       }
 
-      // Multiple readers (should not cause crashes)
       for _ in 1 ... 50 {
         group.addTask {
           _ = protected.read { $0 }
@@ -614,7 +600,6 @@ struct URLEncodedFormEncoderTests {
       }
     }
 
-    // Verify final value
     let finalValue = protected.read { $0 }
     #expect(finalValue == (1 ... 50).reduce(0, +))
   }

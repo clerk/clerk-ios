@@ -13,7 +13,6 @@ struct OrganizationSettingsDecodingTests {
   /// Builds a full Environment JSON, optionally injecting a custom
   /// `organization_settings` value (pass `nil` to omit the key entirely).
   private func environmentJSON(organizationSettings: String? = nil) throws -> Data {
-    // Encode known-good mocks for the required sibling fields.
     let authConfig = try encoder.encode(Clerk.Environment.AuthConfig.mock)
     let userSettings = try encoder.encode(Clerk.Environment.UserSettings.mock)
     let displayConfig = try encoder.encode(Clerk.Environment.DisplayConfig.mock)

@@ -81,7 +81,6 @@ extension Clerk {
     _ token: AuthFlowPresentationToken
   ) -> Bool {
     guard session?.id == token.sessionId else { return false }
-    // Completing here would mark the flow complete before reconciliation can deliver it.
     return authFlowCoordinator.finishPresentation(token: token)
   }
 

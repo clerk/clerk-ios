@@ -53,8 +53,6 @@ struct SignInPasswordActionsView: View {
     }
 
     private func stack(width: CGFloat?, subviews: Subviews) -> some Layout {
-      // Measuring the styled buttons includes their padding and respects the current
-      // font and locale. The enclosing view owns their order around the divider.
       guard subviews.count == 3, let width, width.isFinite else {
         return HStackLayout(spacing: 16)
       }

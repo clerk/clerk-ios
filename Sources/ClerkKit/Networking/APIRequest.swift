@@ -33,9 +33,7 @@ struct EncodableDictionary: Encodable, @unchecked Sendable {
   }
 
   func encode(to encoder: Encoder) throws {
-    // Convert dictionary to JSON data using JSONSerialization
     let jsonData = try JSONSerialization.data(withJSONObject: dictionary, options: [])
-    // Decode it back as a generic JSON structure and encode it properly
     let json = try JSONDecoder().decode(JSON.self, from: jsonData)
     try json.encode(to: encoder)
   }

@@ -143,13 +143,11 @@ final class AuthState {
     LastUsedAuth.storeIdentifierType(identifierType, userDefaults: userDefaults)
   }
 
-  // Sign In Fields
   var signInPassword = ""
   var signInNewPassword = ""
   var signInConfirmNewPassword = ""
   var signInBackupCode = ""
 
-  // Sign Up Fields
   var signUpFirstName = ""
   var signUpLastName = ""
   var signUpPassword = ""

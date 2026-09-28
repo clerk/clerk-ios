@@ -204,7 +204,6 @@ struct UserButtonToolbarItem: ToolbarContent {
 
   var body: some ToolbarContent {
     #if os(iOS)
-    // Xcode 27.0 and 27.1 share a compiler version; gate the new SDK API separately.
     #if canImport(SwiftUI, _version: 8.0.85)
     if #available(iOS 27.1, *) {
       avatarToolbarItem.axisBehavior(.verticalPreferred)

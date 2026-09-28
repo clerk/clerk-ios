@@ -137,9 +137,7 @@ struct AuthTests {
 
     do {
       _ = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
-    }
+    } catch {}
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
@@ -163,9 +161,7 @@ struct AuthTests {
 
     do {
       _ = try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
-    }
+    } catch {}
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
@@ -327,9 +323,7 @@ struct AuthTests {
 
     do {
       _ = try await Clerk.shared.auth.signInWithPasskey()
-    } catch {
-      // Expected to fail in unit tests because no passkey challenge/credential is available.
-    }
+    } catch {}
 
     let createParams = try #require(signInParams.value)
     #expect(createParams.strategy == .passkey)
@@ -1290,9 +1284,7 @@ struct AuthTests {
         provider: .google,
         unsafeMetadata: metadata
       )
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
-    }
+    } catch {}
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
@@ -1321,9 +1313,7 @@ struct AuthTests {
         emailAddress: "user@enterprise.com",
         unsafeMetadata: metadata
       )
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
-    }
+    } catch {}
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)

@@ -18,7 +18,6 @@ extension WatchConnectivityCoordinator {
       do {
         try await clerk?.refreshClient()
       } catch is CancellationError {
-        // Managed cleanup cancels this task when Clerk reconfigures or resets.
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
       }

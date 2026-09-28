@@ -19,7 +19,7 @@ struct UserProfileAddEmailView: View {
   @FocusState private var isFocused: Bool
 
   enum Destination: Hashable, Identifiable {
-    case add // should never be added to the path
+    case add
     case verify(EmailAddress)
 
     var id: Self {
@@ -114,7 +114,7 @@ struct UserProfileAddEmailView: View {
             dismiss()
           }
         case .add:
-          EmptyView() // should never be hit, .add should never be added to path
+          EmptyView()
             .task { dismiss() }
         }
       }

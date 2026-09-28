@@ -11,11 +11,9 @@ struct ClerkRequestLoggingMiddleware: ClerkRequestMiddleware {
     let method = request.httpMethod ?? "GET"
     let url = request.url?.absoluteString ?? "<unknown url>"
 
-    // Log basic request info (method and URL only) at info level
     let basicMessage = "➡️ Request: \(method) \(url)"
     ClerkLogger.info(basicMessage)
 
-    // Log headers and body at verbose level
     if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
       let sanitized = headers
         .filter { key, _ in key.caseInsensitiveCompare("Authorization") != .orderedSame }
@@ -45,7 +43,6 @@ struct ClerkResponseLoggingMiddleware: ClerkResponseMiddleware {
     let url = response.url?.absoluteString ?? "<unknown url>"
     let status = response.statusCode
 
-    // Log basic response info at info level
     var basicMessage = "⬅️ Response: \(status) \(url)"
     if let method = request.httpMethod {
       basicMessage = "⬅️ Response: \(status) \(method) \(url)"
@@ -53,7 +50,6 @@ struct ClerkResponseLoggingMiddleware: ClerkResponseMiddleware {
 
     ClerkLogger.info(basicMessage)
 
-    // Log response body at verbose level
     if request.shouldLogClerkBodies,
        !data.isEmpty,
        let body = String(data: data, encoding: .utf8),

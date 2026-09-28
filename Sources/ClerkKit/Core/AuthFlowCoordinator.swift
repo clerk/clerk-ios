@@ -261,7 +261,6 @@ struct AuthFlowCoordinator {
       id: UUID(),
       kind: presentation
     )
-    // Enrollment is the first optional post-auth step; never insert it behind another screen.
     target.hasResolvedEnrollmentStep = true
     phase = .presenting(target: target, token: token)
     advanceRevision()

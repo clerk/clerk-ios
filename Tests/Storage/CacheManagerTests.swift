@@ -125,14 +125,12 @@ struct CacheManagerTests {
   func loadCachedClient() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
-    // Save a client to keychain
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was called to set client
     #expect(coordinator.clientSet.value == true)
   }
 
@@ -249,14 +247,12 @@ struct CacheManagerTests {
   func loadCachedEnvironment() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
-    // Save an environment to keychain
     let encoder = JSONEncoder.clerkEncoder
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was called to set environment
     #expect(coordinator.environmentSet.value == true)
   }
 
@@ -264,18 +260,15 @@ struct CacheManagerTests {
   func doesNotLoadClientWhenAlreadyExists() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
-    // Save a client to keychain
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
 
-    // Simulate existing client by setting one directly
     coordinator.setClientIfNeeded(Client.mock, serverFetchDate: nil)
-    coordinator.clientSet.setValue(false) // Reset to test that it's not set again
+    coordinator.clientSet.setValue(false)
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was NOT called to set client
     #expect(coordinator.clientSet.value == false)
   }
 
@@ -283,18 +276,15 @@ struct CacheManagerTests {
   func doesNotLoadEnvironmentWhenAlreadyExists() throws {
     let (keychain, coordinator, cacheManager) = createTestSetup()
 
-    // Save an environment to keychain
     let encoder = JSONEncoder.clerkEncoder
     let envData = try encoder.encode(Clerk.Environment.mock)
     try keychain.set(envData, forKey: "cachedEnvironment")
 
-    // Simulate existing environment by setting one directly
     coordinator.setEnvironmentIfNeeded(Clerk.Environment.mock)
-    coordinator.environmentSet.setValue(false) // Reset to test that it's not set again
+    coordinator.environmentSet.setValue(false)
 
     cacheManager.loadCachedData()
 
-    // Verify coordinator was NOT called to set environment
     #expect(coordinator.environmentSet.value == false)
   }
 
@@ -302,7 +292,6 @@ struct CacheManagerTests {
   func testDeleteClient() async throws {
     let (keychain, _, cacheManager) = createTestSetup()
 
-    // Save a client first
     let encoder = JSONEncoder.clerkEncoder
     let clientData = try encoder.encode(Client.mock)
     try keychain.set(clientData, forKey: "cachedClient")
@@ -338,7 +327,6 @@ struct CacheManagerTests {
   func handlesMissingCachedData() {
     let (_, coordinator, cacheManager) = createTestSetup()
 
-    // Should not crash when no cached data exists
     cacheManager.loadCachedData()
 
     #expect(coordinator.clientSet.value == false)

@@ -69,10 +69,10 @@ extension HTTPURLResponse {
 }
 
 enum HTTPStatusType {
-  case informational // 1xx
-  case success // 2xx
-  case redirection // 3xx
-  case clientError // 4xx
-  case serverError // 5xx
-  case unknown // Outside normal range
+  case informational
+  case success
+  case redirection
+  case clientError
+  case serverError
+  case unknown
 }

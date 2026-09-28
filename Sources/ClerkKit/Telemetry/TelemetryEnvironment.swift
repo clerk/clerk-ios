@@ -10,11 +10,9 @@ import Foundation
 /// This protocol intentionally contains no references to `Clerk` so that
 /// the telemetry system can be decoupled from the core SDK types.
 protocol TelemetryEnvironmentProviding: Sendable {
-  // Static SDK identity
   var sdkName: String { get }
   var sdkVersion: String { get }
 
-  // Dynamic environment signals
   func instanceTypeString() async -> String
   func isTelemetryEnabled() async -> Bool
   func publishableKey() async -> String?

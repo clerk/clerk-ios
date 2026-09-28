@@ -79,7 +79,6 @@ struct SignInSetNewPasswordView: View {
           .onFirstAppear {
             focusedField = .new
 
-            // Keep a local copy because sign-in identifier can be cleared after reset completion.
             identifier = initialIdentifier
           }
 

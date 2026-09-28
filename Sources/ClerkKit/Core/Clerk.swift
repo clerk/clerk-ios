@@ -62,7 +62,6 @@ public final class Clerk {
   public internal(set) var client: Client? {
     didSet {
       identityController.validateClientMutation()
-      // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
         auth.send(.sessionChanged(oldValue: oldValue?.currentSession, newValue: client?.currentSession))
       }
@@ -201,8 +200,6 @@ public final class Clerk {
 
   // MARK: - Lifecycle Managers
 
-  // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
-
   /// Manages caching of client and environment data.
   var cacheManager: CacheManager?
 
@@ -297,7 +294,6 @@ public final class Clerk {
   }
 
   package init() {
-    // Create temporary container - will be replaced during configure with proper values
     do {
       dependencies = try DependencyContainer(
         publishableKey: "",
@@ -305,7 +301,6 @@ public final class Clerk {
         runtimeScope: .init(epoch: .initial)
       )
     } catch {
-      // This should never happen, but handle it just in case
       assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
       if let fallbackDependencies = try? DependencyContainer(
         publishableKey: "",
@@ -353,14 +348,12 @@ extension Clerk {
     internalStateChanges.removeAllObservers()
     sharedSessionSyncCoordinator = nil
 
-    // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
     reconcileBiometricCredentialsForCurrentInstallation()
     let usesSharedSessionSync = options.sharedSessionSync != nil
 
-    // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
       sessionProvider: self,
       authEventsProvider: { [weak self] in
@@ -371,7 +364,6 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up cache manager and load cached data synchronously
     let cacheManager = CacheManager(
       coordinator: self,
       identityKeychain: dependencies.identityKeychain,
@@ -393,15 +385,12 @@ extension Clerk {
       dependencies: dependencies
     )
 
-    // Set up watch connectivity coordinator only after cache hydration.
-    // Restored cached state should not be versioned as a new local auth change.
     if options.watchConnectivityEnabled {
       let coordinator = WatchConnectivityCoordinator()
       watchConnectivityCoordinator = coordinator
       internalStateChanges.addObserver(coordinator)
     }
 
-    // Fire and forget: fetch fresh client and environment from API
     let retryPolicy = Self.startupRefreshRetryPolicy
     taskCoordinator?.task { @MainActor [weak self] in
       do {
@@ -549,10 +538,8 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) -> Clerk {
-    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
-        // Clean up old managers before resetting to prevent background tasks from interfering
         existing.cleanupManagers()
         _shared = nil
       } else {
@@ -638,12 +625,8 @@ extension Clerk {
     defer { endRuntimeReconfiguration() }
 
     if let existing = _shared {
-      // A public Keychain clear owns deletion of the current atomic identity.
-      // Let that transaction commit before reconfiguration invalidates the old
-      // runtime's identity queue or decides whether local state can be reused.
       try await existing.keychainClearTask?.value
       if existing.options.sharedSessionSync != nil {
-        // Fail before recovery or clearing can mutate identity if the current group is inaccessible.
         _ = try existing.dependencies.keychain.hasItem(
           forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
         )
@@ -858,8 +841,6 @@ extension Clerk: CacheCoordinator {
   }
 
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
-    // Only set if environment hasn't been loaded yet
-    // This prevents cached data from overwriting fresh data loaded from the API
     guard self.environment == nil else { return }
     self.environment = environment
   }
@@ -880,7 +861,6 @@ extension Clerk: LifecycleEventHandling {
     }
     #endif
 
-    // Refresh client and environment concurrently
     taskCoordinator?.task { [weak self] in
       guard let self else { return }
       do {
@@ -889,8 +869,6 @@ extension Clerk: LifecycleEventHandling {
         ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
       }
 
-      // Force an immediate token evaluation after foreground client refresh
-      // rather than waiting for the next polling interval.
       await sessionPollingManager?.refreshNowIfNeeded()
     }
 
@@ -1101,8 +1079,6 @@ extension Clerk {
     await sharedSessionSyncCoordinator?.shutdown(
       deleteOwnSlot: deleteSharedSessionOwnerSlot
     )
-    // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
-    // from enqueuing new writes during the drain.
     await taskCoordinator?.cancelAllAndWait()
     await watchConnectivityCoordinator?.waitForIdentityPublications()
 

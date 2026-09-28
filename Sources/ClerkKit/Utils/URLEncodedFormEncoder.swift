@@ -239,45 +239,26 @@ final class URLEncodedFormEncoder {
       guard !key.isEmpty else { return key }
 
       var words: [Range<String.Index>] = []
-      // The general idea of this algorithm is to split words on
-      // transition from lower to upper case, then on transition of >1
-      // upper case characters to lowercase
-      //
-      // myProperty -> my_property
-      // myURLProperty -> my_url_property
-      //
-      // It is assumed, per Swift naming conventions, that the first character of the key is lowercase.
       var wordStart = key.startIndex
       var searchRange = key.index(after: wordStart) ..< key.endIndex
 
-      // Find next uppercase character
       while let upperCaseRange = key.rangeOfCharacter(from: .uppercaseLetters, options: [], range: searchRange) {
         let untilUpperCase = wordStart ..< upperCaseRange.lowerBound
         words.append(untilUpperCase)
 
-        // Find next lowercase character
         searchRange = upperCaseRange.lowerBound ..< searchRange.upperBound
         guard let lowerCaseRange = key.rangeOfCharacter(from: .lowercaseLetters, options: [], range: searchRange) else {
-          // There are no more lower case letters. Just end here.
           wordStart = searchRange.lowerBound
           break
         }
 
-        // Is the next lowercase letter more than 1 after the uppercase?
-        // If so, we encountered a group of uppercase letters that we
-        // should treat as its own word
         let nextCharacterAfterCapital = key.index(after: upperCaseRange.lowerBound)
         if lowerCaseRange.lowerBound == nextCharacterAfterCapital {
-          // The next character after capital is a lower case character and therefore not a word boundary.
-          // Continue searching for the next upper case for the boundary.
           wordStart = upperCaseRange.lowerBound
         } else {
-          // There was a range of >1 capital letters. Turn those into a word, stopping at the capital before
-          // the lower case character.
           let beforeLowerIndex = key.index(before: lowerCaseRange.lowerBound)
           words.append(upperCaseRange.lowerBound ..< beforeLowerIndex)
 
-          // Next word starts at the capital before the lowercase we just found
           wordStart = beforeLowerIndex
         }
         searchRange = lowerCaseRange.upperBound ..< searchRange.upperBound
@@ -971,7 +952,6 @@ extension _URLEncodedFormEncoder.SingleValueContainer: SingleValueEncodingContai
 
       try encode(value, as: string)
     case let decimal as Decimal:
-      // Decimal's `Encodable` implementation returns an object, not a single value, so override it.
       try encode(value, as: String(describing: decimal))
     default:
       try attemptToEncode(value)
@@ -1182,7 +1162,7 @@ extension CharacterSet {
   /// query strings to include a URL. Therefore, all "reserved" characters with the exception of "?" and "/"
   /// should be percent-escaped in the query string.
   static let afURLQueryAllowed: CharacterSet = {
-    let generalDelimitersToEncode = ":#[]@" // does not include "?" or "/" due to RFC 3986 - Section 3.4
+    let generalDelimitersToEncode = ":#[]@"
     let subDelimitersToEncode = "!$&'()*+,;="
     let encodableDelimiters = CharacterSet(charactersIn: "\(generalDelimitersToEncode)\(subDelimitersToEncode)")
 

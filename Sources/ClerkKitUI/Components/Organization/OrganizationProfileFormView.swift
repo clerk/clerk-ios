@@ -583,9 +583,7 @@ extension OrganizationProfileFormView {
         guard !Task.isCancelled else { return }
         guard selectedImageData == nil else { return }
         selectedImageData = processImageData(data)
-      } catch {
-        // Logo fetch failure is non-critical; proceed without logo.
-      }
+      } catch {}
     }
   }
 

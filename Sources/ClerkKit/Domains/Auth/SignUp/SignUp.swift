@@ -274,7 +274,6 @@ extension SignUp {
       }
       return .signUp(updatedSignUp)
     } else {
-      // transfer flow
       let signUp = try await reload()
       let result = try await signUp.handleTransferFlow()
       switch result {

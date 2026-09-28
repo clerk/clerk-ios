@@ -13,7 +13,7 @@ import Foundation
 actor TelemetryEventThrottler {
   private let userDefaults: UserDefaults
   private let storageKey = "clerk_telemetry_throttler"
-  private let cacheTtl: TimeInterval = 24 * 60 * 60 // 24 hours
+  private let cacheTtl: TimeInterval = 24 * 60 * 60
   private var memoryCache: [String: TimeInterval]?
 
   init(userDefaults: UserDefaults = .standard) {
@@ -21,21 +21,17 @@ actor TelemetryEventThrottler {
   }
 
   func isEventThrottled(_ event: TelemetryEvent) async -> Bool {
-    // Lazily initialize in-memory cache from persistent storage
     if memoryCache == nil {
       memoryCache = loadCache()
-      // Clean up expired entries on first access
       cleanupExpiredEntries()
     }
 
     let now = Date().timeIntervalSince1970
     let key = generateKey(for: event)
 
-    // Work on the in-memory cache for consistency within this actor instance
     var cache = memoryCache ?? [:]
     let entry = cache[key]
 
-    // New entry → write and allow
     guard let lastSeen = entry else {
       cache[key] = now
       memoryCache = cache
@@ -43,15 +39,13 @@ actor TelemetryEventThrottler {
       return false
     }
 
-    // Invalidate if TTL expired
     if now - lastSeen > cacheTtl {
-      cache[key] = now // Record new timestamp
+      cache[key] = now
       memoryCache = cache
       saveCache(cache)
       return false
     }
 
-    // Otherwise, throttled
     return true
   }
 
@@ -63,12 +57,10 @@ actor TelemetryEventThrottler {
     let now = Date().timeIntervalSince1970
     let originalCount = cache.count
 
-    // Remove expired entries
     cache = cache.filter { _, timestamp in
       now - timestamp <= cacheTtl
     }
 
-    // Update cache if any entries were removed
     if cache.count < originalCount {
       memoryCache = cache
       saveCache(cache)

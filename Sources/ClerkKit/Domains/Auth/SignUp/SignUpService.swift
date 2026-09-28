@@ -10,7 +10,6 @@ protocol SignUpServiceProtocol: Sendable {
   /// Create
   @MainActor func create(params: SignUp.CreateParams) async throws -> SignUp
 
-  // Verification
   @MainActor func prepareVerification(signUpId: String, params: SignUp.PrepareVerificationParams) async throws -> SignUp
   @MainActor func attemptVerification(signUpId: String, params: SignUp.AttemptVerificationParams) async throws -> SignUp
 

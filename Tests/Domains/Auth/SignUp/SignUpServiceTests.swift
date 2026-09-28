@@ -176,7 +176,6 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    // Transfer is an internal parameter not exposed in public API, so we test the service directly
     _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(transfer: true))
     #expect(requestHandled.value)
   }

@@ -8,7 +8,6 @@ import Testing
 struct PrivacyManifestTests {
   @Test(arguments: ["ClerkKit", "ClerkKitUI"])
   func bundledManifestDeclaresUserDefaults(target: String) throws {
-    // SwiftPM places the SDK resource bundles alongside the test resource bundle.
     let bundleURL = Bundle.module.bundleURL
       .deletingLastPathComponent()
       .appendingPathComponent("Clerk_\(target).bundle")

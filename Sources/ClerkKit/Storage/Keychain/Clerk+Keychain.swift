@@ -515,7 +515,6 @@ extension Clerk {
         configuration: configuration
       )
     }
-    // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases where !preservedKeys.contains(key) {
       guard key != .biometricCredentials || !biometricCredentialDeletionFailed else {
         continue
@@ -524,7 +523,6 @@ extension Clerk {
       do {
         try keychain.deleteItem(forKey: key.rawValue)
       } catch {
-        // Log errors but continue deleting remaining items
         ClerkLogger.logError(
           error,
           message: "Failed to delete keychain item '\(key.rawValue)'. This is non-critical.",

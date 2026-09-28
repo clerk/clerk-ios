@@ -65,7 +65,6 @@ final class CodeLimiter {
   private func onTick() {
     tick &+= 1
 
-    // Stop the timer if all cooldowns have expired
     let hasActiveCooldown = lastCodeSentAt.values.contains { date in
       Date.now.timeIntervalSince(date) < Self.defaultCooldown
     }
@@ -99,7 +98,6 @@ final class CodeLimiter {
   ///   - cooldown: The cooldown period in seconds. Defaults to 30 seconds.
   /// - Returns: The remaining seconds until a new code can be sent, or 0 if ready.
   func remainingCooldown(for identifier: String, cooldown: TimeInterval = defaultCooldown) -> Int {
-    // Access tick to establish observation dependency for SwiftUI updates
     _ = tick
     guard let lastSent = lastCodeSentAt[identifier] else { return 0 }
     let elapsed = Date.now.timeIntervalSince(lastSent)

@@ -15,9 +15,6 @@ struct BillingTests {
 
   @Test
   func billingGetMethodsAreCallable() async throws {
-    // Omitted write APIs from clerk-js BillingNamespace / BillingPayerMethods:
-    // startCheckout, updateCheckout, initializePaymentMethod, addPaymentMethod,
-    // cancel, remove, makeDefault
     let service = MockBillingService()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),

@@ -37,9 +37,6 @@ struct LifecycleManagerTests {
     let manager = LifecycleManager(handler: handler)
 
     manager.startObserving()
-
-    // Manager should be initialized and ready
-    // (We can't easily test the notification observers without UIKit app context)
   }
 
   @Test
@@ -49,9 +46,6 @@ struct LifecycleManagerTests {
 
     manager.startObserving()
     manager.stopObserving()
-
-    // Should cleanly stop observing
-    // (We can't easily test the notification observers without UIKit app context)
   }
 
   @Test
@@ -60,7 +54,7 @@ struct LifecycleManagerTests {
     let manager = LifecycleManager(handler: handler)
 
     manager.startObserving()
-    manager.startObserving() // Should be safe to call multiple times
+    manager.startObserving()
     manager.startObserving()
 
     manager.stopObserving()
@@ -73,7 +67,7 @@ struct LifecycleManagerTests {
 
     manager.startObserving()
     manager.stopObserving()
-    manager.stopObserving() // Should be safe to call multiple times
+    manager.stopObserving()
     manager.stopObserving()
   }
 
@@ -84,10 +78,7 @@ struct LifecycleManagerTests {
     do {
       let manager = LifecycleManager(handler: handler)
       manager.startObserving()
-      // Manager goes out of scope, should stop observing
     }
-
-    // Manager should have cleaned up
   }
 }
 

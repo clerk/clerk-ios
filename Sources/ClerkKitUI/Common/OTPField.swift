@@ -210,7 +210,6 @@ struct OTPField: View {
     }
   }
   .padding()
-  //    .environment(\.dynamicTypeSize, .accessibility5)
 }
 
 #endif

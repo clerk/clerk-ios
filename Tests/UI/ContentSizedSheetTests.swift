@@ -30,8 +30,6 @@ struct ContentSizedSheetTests {
     #expect(detentHeight > contentHeight)
     #expect(detentHeight < fixture.size.height)
 
-    // Let UIKit update its bar for the fitted presentation, then ensure the
-    // measured height settles instead of growing on each layout pass.
     fixture.size.height = detentHeight
     await fixture.layout()
     let compactHeight = try fixture.detentHeight()
@@ -54,8 +52,6 @@ struct ContentSizedSheetTests {
     await fixture.layout()
 
     let presentation = try #require(fixture.parent.presentedViewController)
-    // The package runner does not have a scene-backed sheet presentation. Supply a
-    // known UIKit safe area rather than relying on its simulated home indicator.
     presentation.additionalSafeAreaInsets.bottom = 34
     await fixture.layout()
     let bottomInset = presentation.view.safeAreaInsets.bottom
@@ -66,14 +62,11 @@ struct ContentSizedSheetTests {
     let nativeChromeHeight = presentation.view.safeAreaLayoutGuide.layoutFrame.height - nativeViewportHeight
     #expect(nativeChromeHeight > 0)
 
-    // Check the SwiftUI measurement against UIKit's actual viewport, independently of
-    // the modifier. The custom detent must not include the bottom inset.
     let expectedHeight = (contentHeight + nativeChromeHeight).rounded(.up)
     let detentHeight = try fixture.detentHeight()
     #expect(abs(detentHeight - expectedHeight) <= 1,
             "Detent: \(detentHeight), expected: \(expectedHeight), content: \(contentHeight), chrome: \(nativeChromeHeight), presentation: \(presentation.view.bounds), safe area: \(presentation.view.safeAreaLayoutGuide.layoutFrame), scroll: \(scrollView.bounds), scroll insets: \(scrollView.adjustedContentInset)")
 
-    // UIKit adds the bottom safe area to a custom detent's physical presentation height.
     fixture.size.height = detentHeight + bottomInset
     await fixture.layout()
     #expect(presentation.view.safeAreaInsets.bottom == bottomInset)
@@ -98,8 +91,6 @@ struct ContentSizedSheetTests {
     let finalHeight = try fixture.detentHeight()
     #expect(finalHeight < grownHeight)
     #expect(try abs(#require(fixture.state.contentHeight) - initialContentHeight) <= 1)
-    // Native navigation chrome can settle to a different height after layout.
-    // Check its current height rather than assuming it remains unchanged.
     #expect(try abs(finalHeight - fixture.expectedDetentHeight()) <= 1)
   }
 
@@ -200,7 +191,6 @@ private final class ContentSizedSheetFixture {
       window.layoutIfNeeded()
       parent.view.layoutIfNeeded()
       if let presentation = parent.presentedViewController {
-        // The package runner has no window scene to attach presentations automatically.
         if presentation.view.superview !== window {
           window.addSubview(presentation.view)
         }

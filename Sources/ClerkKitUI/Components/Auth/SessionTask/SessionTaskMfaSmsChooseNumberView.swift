@@ -54,7 +54,6 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       if newPath.count > oldPath.count {
         didNavigateAway = true
       } else if newPath.count < oldPath.count, didNavigateAway {
-        // On macOS, onDisappear doesn't fire on back navigation so we reset here.
         didNavigateAway = false
         isSubmittingPhone = false
       }

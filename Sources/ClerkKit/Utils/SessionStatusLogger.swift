@@ -67,24 +67,20 @@ final class SessionStatusLogger {
       return false
     }
 
-    // Log if this is the first client or if there's no previous session
     guard let previousClient,
           let previousSession = previousClient.currentSession
     else {
       return true
     }
 
-    // Log if session ID changed
     if previousSession.id != session.id {
       return true
     }
 
-    // Log if session status changed
     if previousSession.status != session.status {
       return true
     }
 
-    // Log if session tasks changed
     if (previousSession.tasks ?? []) != (session.tasks ?? []) {
       return true
     }

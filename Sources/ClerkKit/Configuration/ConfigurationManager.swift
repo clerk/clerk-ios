@@ -36,16 +36,13 @@ final class ConfigurationManager {
   func configure(publishableKey: String, options: Clerk.Options) throws {
     let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    // Validate publishable key early for fail-fast behavior
     try validatePublishableKey(normalizedPublishableKey)
 
     state.publishableKey = normalizedPublishableKey
     state.options = options
 
-    // Extract frontend API URL from publishable key
     state.frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
 
-    // Set proxy URL from options
     state.proxyUrl = options.proxyUrl
     state.proxyConfiguration = ProxyConfiguration(url: state.proxyUrl)
 

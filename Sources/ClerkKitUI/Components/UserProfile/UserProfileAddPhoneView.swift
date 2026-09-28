@@ -19,7 +19,7 @@ struct UserProfileAddPhoneView: View {
   @FocusState private var isFocused: Bool
 
   enum Destination: Hashable, Identifiable {
-    case add // should never be added to the path
+    case add
     case verify(PhoneNumber)
 
     var id: Self {
@@ -117,7 +117,7 @@ struct UserProfileAddPhoneView: View {
             dismiss()
           }
         case .add:
-          EmptyView() // should never be hit, .add should never be added to path
+          EmptyView()
             .task { dismiss() }
         }
       }

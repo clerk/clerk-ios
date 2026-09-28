@@ -37,7 +37,6 @@ private var isRunningInCI: Bool {
 ///
 /// In CI, `.keys.json` is created from `CLERK_TEST_KEYS_JSON` GitHub Actions secret.
 func getIntegrationTestPublishableKey(keyName: String) -> String {
-  // Try to read from .keys.json file
   let keysFilePath = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     .appendingPathComponent(".keys.json")
 

@@ -268,17 +268,11 @@ final class CacheManager {
       guard let coordinator else { return }
 
       if let cachedClient = try loadClientFromKeychain(identityKeychain) {
-        // Only set cached client if we don't already have one
-        // This prevents overwriting fresh data during load()
         coordinator.setClientIfNeeded(cachedClient, serverFetchDate: serverFetchDate)
       } else if let serverFetchDate {
-        // No cached client but a server date exists (e.g. after sign-out).
-        // Restore the date so the device knows it was server-confirmed
-        // and doesn't accept stale watch payloads as seed data.
         coordinator.setServerFetchDateIfNeeded(serverFetchDate)
       }
     } catch {
-      // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(
         error,
         message: "Failed to load cached client from keychain. This is non-critical and initialization will continue."
@@ -296,12 +290,9 @@ final class CacheManager {
         return
       }
 
-      // Only set cached environment if we don't already have fresh data
-      // This prevents overwriting fresh data during load()
       guard let coordinator else { return }
       coordinator.setEnvironmentIfNeeded(cachedEnvironment)
     } catch {
-      // Log keychain errors but don't fail initialization - cached data is optional
       ClerkLogger.logError(
         error,
         message: "Failed to load cached environment from keychain. This is non-critical and initialization will continue."

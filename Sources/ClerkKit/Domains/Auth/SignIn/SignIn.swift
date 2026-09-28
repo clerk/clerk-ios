@@ -705,7 +705,6 @@ extension SignIn {
       }
       return .signIn(updatedSignIn)
     } else {
-      // transfer flow
       let signIn = try await reload()
       let result = try await signIn.handleTransferFlow(
         transferable: transferable,

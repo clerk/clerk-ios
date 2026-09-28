@@ -50,7 +50,6 @@ struct FooterTabViewTests {
     }
     let tabBar = try #require(descendants(of: window).compactMap { $0 as? UITabBar }.first)
     #expect(tabBar.bounds.height > bottomInset)
-    // Layer snapshots cannot render the glass material; mark the real tab bar's bounds instead.
     tabBar.backgroundColor = .lightGray
     assertSnapshot(
       of: host,

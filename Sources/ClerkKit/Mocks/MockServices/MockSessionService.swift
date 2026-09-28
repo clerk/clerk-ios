@@ -94,7 +94,6 @@ package final class MockSessionService: SessionServiceProtocol {
     if let handler = signOutHandler {
       try await handler(sessionId)
     }
-    // No-op by default - does not actually sign out
   }
 
   @MainActor

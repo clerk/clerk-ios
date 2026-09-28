@@ -23,13 +23,10 @@ final class SignInWithAppleHelper: NSObject {
   ///
   /// - Returns: A Base64 URL-safe encoded nonce string.
   private func generateNonce() -> String {
-    // Generate 32 bytes (256 bits) of cryptographically secure random data
     let data = Data((0 ..< 32).map { _ in UInt8.random(in: UInt8.min ... UInt8.max) })
 
-    // Hash the random data using SHA256
     let hashedData = SHA256.hash(data: data)
 
-    // Convert to Base64 URL-safe encoding (replacing + with -, / with _, and removing padding)
     let base64String = Data(hashedData).base64EncodedString()
     return
       base64String

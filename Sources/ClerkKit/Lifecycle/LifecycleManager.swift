@@ -56,7 +56,6 @@ final class LifecycleManager {
   /// This method sets up notification observers for foreground and background transitions.
   /// If observers are already active, existing tasks are cancelled before creating new ones.
   func startObserving() {
-    // Cancel existing tasks if they exist (switching instances)
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 

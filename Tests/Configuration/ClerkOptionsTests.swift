@@ -68,17 +68,10 @@ struct ClerkOptionsTests {
 
   @Test
   func proxyUrlConversionInvalidURL() {
-    // URL(string:) can be lenient, so use a string that definitely won't create a valid URL
-    // Using a string without a scheme should work
     let options = Clerk.Options(proxyUrl: "://invalid")
 
-    // URL(string:) with "://invalid" may still create a URL with nil scheme
-    // So we check if it's actually a valid proxy URL by checking scheme
     if let url = options.proxyUrl {
-      // If URL was created, it should have an invalid scheme
       #expect(url.scheme == nil || url.scheme == "")
-    } else {
-      // nil is also acceptable
     }
   }
 
@@ -107,12 +100,11 @@ struct ClerkOptionsTests {
 
   @Test
   func partialInitialization() {
-    // Test with only some parameters
     let options = Clerk.Options(logLevel: .debug)
 
     #expect(options.logLevel == .debug)
-    #expect(options.telemetryEnabled == true) // Default
-    #expect(options.proxyUrl == nil) // Default
+    #expect(options.telemetryEnabled == true)
+    #expect(options.proxyUrl == nil)
   }
 
   @Test
@@ -123,7 +115,6 @@ struct ClerkOptionsTests {
       proxyUrl: "https://proxy.example.com/__clerk"
     )
 
-    // Verify all properties are accessible
     _ = options.logLevel
     _ = options.telemetryEnabled
     _ = options.keychainConfig

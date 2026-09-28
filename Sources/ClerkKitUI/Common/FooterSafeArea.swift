@@ -7,7 +7,6 @@ struct FooterSafeArea {
   let hostInset: CGFloat
 
   var additionalPadding: CGFloat {
-    // A bar prevents background extension, so preserve that space inside the footer instead.
     hasBottomBar ? hostInset : max(0, hostInset - containerInset)
   }
 

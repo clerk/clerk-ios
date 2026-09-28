@@ -50,7 +50,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForServerError500() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     let response = try HTTPURLResponse(
@@ -72,7 +72,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableCodes = [408, 425, 429, 500, 502, 503, 504]
@@ -98,7 +98,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryForNonRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableCodes = [400, 401, 403, 404, 422]
@@ -124,7 +124,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryOnSecondAttempt() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     let response = try HTTPURLResponse(
       url: #require(request.url),
@@ -166,10 +166,8 @@ struct ClerkRateLimitRetryMiddlewareTests {
       attempts: 1
     )
 
-    // Should delay for approximately 2 seconds (2 billion nanoseconds)
     #expect(sleepDelay.value != nil)
     if let delay = sleepDelay.value {
-      // Allow some tolerance for timing variance
       #expect(delay >= 1_900_000_000, "Delay should be approximately 2 seconds")
       #expect(delay <= 2_200_000_000, "Delay should be approximately 2 seconds")
     }
@@ -184,7 +182,6 @@ struct ClerkRateLimitRetryMiddlewareTests {
     }
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
-    // Set reset time to 2 seconds in the future
     let resetTime = Date().timeIntervalSince1970 + 2.0
     let response = try HTTPURLResponse(
       url: #require(request.url),
@@ -200,12 +197,8 @@ struct ClerkRateLimitRetryMiddlewareTests {
       attempts: 1
     )
 
-    // Should delay for approximately 2 seconds (some time may have passed)
     #expect(sleepDelay.value != nil)
     if let delay = sleepDelay.value {
-      // Allow tolerance for timing variance - delay should be approximately 2 seconds
-      // (accounting for time that may have passed between setting resetTime and calculation)
-      // The delay is clamped between 0.1s and 5s, so we check it's in a reasonable range
       #expect(delay >= 1_500_000_000, "Delay should be approximately 2 seconds")
       #expect(delay <= 2_500_000_000, "Delay should be approximately 2 seconds")
     }
@@ -234,7 +227,6 @@ struct ClerkRateLimitRetryMiddlewareTests {
       attempts: 1
     )
 
-    // Should default to 0.5 seconds (500 million nanoseconds)
     #expect(sleepDelay.value != nil)
     if let delay = sleepDelay.value {
       #expect(delay == 500_000_000, "Default delay should be 0.5 seconds")
@@ -243,7 +235,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableErrors: [URLError.Code] = [
@@ -270,7 +262,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryForNonRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableErrors: [URLError.Code] = [

@@ -577,7 +577,6 @@ extension BiometricCredentials {
   private func removeOtherLocalCredentialsForCurrentApp(keeping biometricCredential: BiometricCredential) {
     let credentialsToReplace: [BiometricCredentialLocalRecord]
     do {
-      // The backend replaces active credentials by installation and app identifier, even across users.
       credentialsToReplace = try storedLocalCredentialsForCurrentApp().filter { $0.id != biometricCredential.id }
     } catch {
       ClerkLogger.warning(

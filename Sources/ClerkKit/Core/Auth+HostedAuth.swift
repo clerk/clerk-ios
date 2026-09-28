@@ -79,7 +79,6 @@ extension Auth {
     do {
       hostedAuth = try await hostedAuthService.create(params: createParams)
     } catch let error as ClerkAPIError where error.code == "signed_out" {
-      // Reconcile an abandoned handoff before retrying once with the same request inputs.
       try await clerk.refreshClient(skipClientId: true)
       hostedAuth = try await hostedAuthService.create(params: createParams)
     }
@@ -95,8 +94,6 @@ extension Auth {
     )
     let callback = try HostedAuthCallback(url: callbackUrl, redirect: redirect, state: state)
 
-    // A reconfiguration while the browser was open invalidates this flow; fail
-    // before the redeem request consumes the single-use rotating token nonce.
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
     guard clerk.clientResponseGeneration == browserStartClientResponseGeneration else {

@@ -49,8 +49,6 @@ struct AdaptiveToolbarTests {
     try fixture.activate(close)
     #expect(fixture.state.closeCount == 1)
 
-    // UIKit owns the native Back control. Verify its navigation transition preserves
-    // the SwiftUI path without depending on private toolbar view subclasses.
     #expect(navigation.popViewController(animated: false) != nil)
     await fixture.layout()
     #expect(fixture.state.path.isEmpty)
@@ -93,10 +91,6 @@ private final class AdaptiveToolbarFixture {
       (item.rightBarButtonItems ?? []) + item.trailingItemGroups.flatMap(\.barButtonItems)
     }
 
-    // SwiftUI's hosted toolbar views do not expose their accessibility labels through
-    // UIKit on every supported OS. Locate the controls by their toolbar positions;
-    // the tests verify their identities by dispatching their actual configured actions.
-    // UIKit can list the same item both individually and in a group.
     var seen = Set<ObjectIdentifier>()
     let items = candidates.filter { seen.insert(ObjectIdentifier($0)).inserted }
     try #require(items.count == 1, "Expected one \(side) toolbar button, found \(items.count)")
@@ -105,12 +99,10 @@ private final class AdaptiveToolbarFixture {
 
   func activate(_ item: UIBarButtonItem) throws {
     if let action = item.primaryAction {
-      // Dispatch the exact action configured by SwiftUI using UIControl's public action API.
       let control = UIControl()
       control.addAction(action, for: .primaryActionTriggered)
       control.sendActions(for: .primaryActionTriggered)
     } else if let action = item.action {
-      // The package test runner has no application action dispatcher.
       let target = try #require(item.target as? NSObject)
       try #require(target.responds(to: action))
       _ = target.perform(action, with: item)

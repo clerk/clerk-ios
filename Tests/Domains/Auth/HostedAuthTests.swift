@@ -346,9 +346,6 @@ struct HostedAuthFlowTests {
       #expect(params.codeChallenge == firstParams.codeChallenge)
       #expect(params.state == firstParams.state)
       #expect(params.mode == firstParams.mode)
-      // Assert ordering (reconcile before retry) via the refresh counter instead of
-      // Clerk.shared.client: parallel suites share the singleton and can rewrite it
-      // between the refresh and this closure.
       #expect(refreshCalls.value == 1)
       return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
     })

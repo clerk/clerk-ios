@@ -20,7 +20,6 @@ struct TaskCoordinatorTests {
     let taskCompleted = LockIsolated(false)
 
     let task = Task {
-      // No delay needed - just verify task completes
       taskCompleted.setValue(true)
     }
 

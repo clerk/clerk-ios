@@ -269,7 +269,6 @@ extension Session {
     level: BiometricVerificationLevel = .firstFactor,
     biometricCredentials: BiometricCredentials
   ) async throws -> SessionVerification {
-    // Reverification responses omit the user from their embedded session.
     let userID = user?.id ?? Clerk.shared.client?.sessions.first(where: { $0.id == id })?.user?.id
     guard status.allowsBiometricCredentialEnrollment, let userID else {
       throw ClerkClientError(message: "Biometric reverification requires an active or pending session with a user.")

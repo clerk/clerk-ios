@@ -17,7 +17,6 @@ struct ClerkKeychainKeyTests {
     let allCases = ClerkKeychainKey.allCases
     #expect(allCases.count == 19)
 
-    // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))
     #expect(allCases.contains(.cachedClientServerDate))
     #expect(allCases.contains(.cachedEnvironment))

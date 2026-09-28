@@ -33,13 +33,10 @@ extension Clerk {
 /// This function should be called at the start of each test suite or test to ensure proper isolation.
 @MainActor
 func configureClerkForTesting() {
-  // Configure Clerk with test publishable key
   Clerk.configure(publishableKey: testPublishableKey)
 
-  // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()
 
-  // Unit tests should not inherit startup refreshes or session polling from configure().
   Clerk.shared.cleanupManagers()
 }
 
@@ -49,8 +46,6 @@ func configureClerkForTesting() {
 func setupMockAPIClient() {
   let mockAPIClient = createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope)
 
-  // Replace the container with a mock container that uses the mock API client
-  // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: mockAPIClient,
     telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
@@ -132,7 +127,6 @@ extension URLRequest {
       return nil
     }
 
-    // Parse URL-encoded form data: "key1=value1&key2=value2"
     var bodyDict: [String: String] = [:]
     let pairs = bodyString.split(separator: "&")
     for pair in pairs {
@@ -140,7 +134,6 @@ extension URLRequest {
       if parts.count == 2 {
         let key = String(parts[0])
         let value = String(parts[1])
-        // URL-decode the value
         bodyDict[key] = value.removingPercentEncoding ?? value
       }
     }

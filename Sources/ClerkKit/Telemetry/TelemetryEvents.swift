@@ -7,7 +7,6 @@ import Foundation
 
 /// Helper builders for common telemetry events.
 package enum TelemetryEvents {
-  // Sampling rates matching JavaScript version
   private static let methodInvokedSamplingRate: Double = 0.1
   private static let viewDidAppearSamplingRate: Double = 0.1
 

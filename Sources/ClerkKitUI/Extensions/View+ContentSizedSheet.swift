@@ -10,7 +10,6 @@ private struct ContentSizedSheetModifier: ViewModifier {
 
   private var detents: Set<PresentationDetent> {
     guard let contentHeight, let additionalHeight else { return [.large] }
-    // The system adds the bottom safe area to a custom detent's presentation height.
     return [.height(max(1, (contentHeight + additionalHeight).rounded(.up)))]
   }
   #endif

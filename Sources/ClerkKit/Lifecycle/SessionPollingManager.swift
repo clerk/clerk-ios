@@ -120,11 +120,9 @@ final class SessionPollingManager {
   func calculateBackoffInterval() -> TimeInterval {
     guard consecutiveFailures > 0 else { return pollInterval }
 
-    // Exponential backoff: baseInterval * 2^failures
     let exponentialInterval = pollInterval * pow(2.0, Double(consecutiveFailures))
     let cappedInterval = min(exponentialInterval, maxPollInterval)
 
-    // Add jitter: ±20% randomness
     let jitter = cappedInterval * Double.random(in: -0.2 ... 0.2)
     return cappedInterval + jitter
   }
@@ -165,7 +163,6 @@ final class SessionPollingManager {
   func handleAuthEvent(_ event: AuthEvent) {
     switch event {
     case .tokenRefreshed:
-      // Clear backoff after any successful token refresh.
       consecutiveFailures = 0
     case .sessionChanged(let oldValue, let newValue):
       let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
@@ -176,7 +173,6 @@ final class SessionPollingManager {
         }
       }
     default:
-      // No polling changes for other auth events.
       break
     }
   }
@@ -201,7 +197,7 @@ final class SessionPollingManager {
   /// - Returns: `true` if the refresh succeeded or no active session exists, `false` if it failed.
   private func refreshTokenIfNeeded() async -> Bool {
     guard let session = sessionProvider.session else {
-      return true // No session = not a failure
+      return true
     }
 
     guard shouldRefresh(session: session) else {

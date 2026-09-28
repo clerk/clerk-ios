@@ -36,11 +36,6 @@ public enum OAuthProvider: CaseIterable, Codable, Sendable, Equatable, Identifia
   case vercel
   case custom(_ strategy: String)
 
-  // **
-  // When adding a new case, make sure to add it to the all cases array
-  // (.custom SHOULD NOT be included)
-  // **
-
   public static var allCases: [OAuthProvider] {
     [
       .facebook,

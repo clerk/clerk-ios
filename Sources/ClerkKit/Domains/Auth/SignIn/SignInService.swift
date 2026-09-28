@@ -10,11 +10,9 @@ protocol SignInServiceProtocol: Sendable {
   /// Create
   @MainActor func create(params: SignIn.CreateParams) async throws -> SignIn
 
-  // First factor
   @MainActor func prepareFirstFactor(signInId: String, params: SignIn.PrepareFirstFactorParams) async throws -> SignIn
   @MainActor func attemptFirstFactor(signInId: String, params: SignIn.AttemptFirstFactorParams) async throws -> SignIn
 
-  // Second factor
   @MainActor func prepareSecondFactor(signInId: String, params: SignIn.PrepareSecondFactorParams) async throws -> SignIn
   @MainActor func attemptSecondFactor(signInId: String, params: SignIn.AttemptSecondFactorParams) async throws -> SignIn
 
