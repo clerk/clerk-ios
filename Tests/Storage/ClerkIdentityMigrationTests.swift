@@ -106,6 +106,22 @@ struct ClerkIdentityMigrationTests {
   }
 
   @Test
+  func appThatAddsAnAccessGroupKeepsTheIdentityItStoredWithoutOne() throws {
+    let env = Environment()
+    let appLocal = InMemoryKeychain()
+    try appLocal.set("app-local-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    try appLocal.set(JSONEncoder.clerkEncoder.encode(Client.mock), forKey: ClerkKeychainKey.cachedClient.rawValue)
+    var migration = migration(env)
+    migration.appLocalLegacyKeychain = appLocal
+
+    try migration.migrateIfNeeded()
+
+    let identity = try #require(try env.store.load()?.identity)
+    #expect(identity.deviceToken == "app-local-token")
+    #expect(identity.client?.id == Client.mock.id)
+  }
+
+  @Test
   func appsThatAdoptedSyncIgnoreStaleSeparateItems() throws {
     let env = Environment()
     try env.legacy.set("stale-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)

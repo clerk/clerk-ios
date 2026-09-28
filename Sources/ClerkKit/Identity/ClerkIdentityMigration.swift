@@ -65,6 +65,10 @@ struct ClerkIdentityMigration {
   /// `false` while the app cannot reach its access group: the identity is copied to the fallback
   /// store, but earlier copies are kept so the migration runs again once the group is reachable.
   var finalizes = true
+  /// This app's own storage, read when the configured Keychain has an access group: an app that
+  /// adds a group, for example to turn on shared-session sync, kept its earlier items there.
+  /// It is only read, because deleting without a group would also match siblings' items.
+  var appLocalLegacyKeychain: (any KeychainStorage)?
   var makeKeychain: (_ service: String, _ accessGroup: String?) -> any KeychainStorage = Self.liveKeychain
 
   /// Records a clear, so a migration that has not finished cannot restore the cleared identity.
@@ -126,7 +130,13 @@ struct ClerkIdentityMigration {
   }
 
   private func loadLegacyIdentity() throws -> ClerkIdentitySnapshot? {
-    guard readsLegacyItems, let token = try legacyKeychain.string(
+    guard readsLegacyItems else { return nil }
+    return try loadLegacyIdentity(from: legacyKeychain)
+      ?? appLocalLegacyKeychain.flatMap { try loadLegacyIdentity(from: $0) }
+  }
+
+  private func loadLegacyIdentity(from legacyKeychain: any KeychainStorage) throws -> ClerkIdentitySnapshot? {
+    guard let token = try legacyKeychain.string(
       forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
     ).nilIfEmpty else {
       return nil

@@ -51,7 +51,7 @@ Reconfiguration clears Clerk storage for the source and destination configuratio
 
 ## Migration From Earlier Versions
 
-`ClerkIdentityMigration` runs once per app and moves an existing identity into the record, preferring the SDK 1.5 atomic record over the earlier separate token, Client, and date items. Apps that adopted shared-session sync in SDK 1.5 skip the separate items, which that adoption left stale.
+`ClerkIdentityMigration` runs once per app and moves an existing identity into the record, preferring the SDK 1.5 atomic record over the earlier separate token, Client, and date items. Apps that adopted shared-session sync in SDK 1.5 skip the separate items, which that adoption left stale. The separate items are read from the configured Keychain, then from the app's own storage, where an app that adds an access group to turn on sharing kept them.
 
 When another app already wrote the record, it is kept unless it is signed out and this app's identity is signed in. A clear made before the migration finished, including a shared-session clear interrupted in SDK 1.5, is honored by migrating nothing.
 

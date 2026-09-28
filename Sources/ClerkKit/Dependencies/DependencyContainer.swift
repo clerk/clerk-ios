@@ -284,7 +284,8 @@ final class DependencyContainer: Dependencies {
           ownerIdentifier: ownerIdentifier,
           instanceFingerprint: namespace.fingerprint,
           readsLegacyItems: !wasAdopted && !accessGroupIsUnreadable,
-          finalizes: !accessGroupIsUnreadable
+          finalizes: !accessGroupIsUnreadable,
+          appLocalLegacyKeychain: config.normalizedAccessGroup == nil ? nil : configuredAppLocal
         ).migrateIfNeeded()
       } catch {
         ClerkLogger.logError(error, message: "Failed to migrate Clerk Keychain storage from an earlier SDK version")
