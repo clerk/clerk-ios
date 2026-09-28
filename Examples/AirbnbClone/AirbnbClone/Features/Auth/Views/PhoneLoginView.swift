@@ -123,7 +123,6 @@ extension PhoneLoginView {
       defer { isLoading = false }
 
       do {
-        // Try sign up first
         try await clerk.auth.signUp(phoneNumber: e164PhoneNumber)
         router.authPath.append(
           AuthDestination.finishSigningUp(
@@ -132,7 +131,6 @@ extension PhoneLoginView {
           )
         )
       } catch {
-        // If sign up fails, try sign in
         do {
           try await clerk.auth.signInWithPhoneCode(phoneNumber: e164PhoneNumber)
           otpLoginMode.wrappedValue = .signIn(method: .phone)

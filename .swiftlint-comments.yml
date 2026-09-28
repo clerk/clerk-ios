@@ -1,4 +1,4 @@
-# Enforces the AGENTS.md comment rule across Sources and Tests.
+# Enforces the AGENTS.md comment rule across Sources, Tests, and Examples.
 # Allowed: /// doc comments, // MARK:, tool directives, and file headers.
 
 only_rules:
@@ -7,11 +7,12 @@ only_rules:
 included:
   - Sources
   - Tests
+  - Examples
 
 custom_rules:
   no_explanatory_comments:
     name: "No Explanatory Comments"
-    regex: '(?m)(//(?!/)(?!\s*(MARK|swiftlint|swiftformat|sourcery)\b)(?! {2}\S)(?!$)|/\*(?![*!]))'
+    regex: '(?m)(//(?!/)(?!\s*(MARK|swiftlint|swiftformat|sourcery|swift-tools-version)\b)(?! {2}\S)(?!$)|/\*(?![*!]))'
     match_kinds:
       - comment
     excluded: 'Sources/ClerkKit/Utils/(JWTDecoder|JSON)\.swift'

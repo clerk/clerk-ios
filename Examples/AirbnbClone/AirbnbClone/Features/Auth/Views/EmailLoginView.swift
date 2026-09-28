@@ -70,7 +70,6 @@ struct EmailLoginView: View {
       defer { isLoading = false }
 
       do {
-        // Try sign up first
         try await clerk.auth.signUp(emailAddress: email)
         router.authPath.append(
           AuthDestination.finishSigningUp(
@@ -79,7 +78,6 @@ struct EmailLoginView: View {
           )
         )
       } catch {
-        // If sign up fails, try sign in
         do {
           try await clerk.auth.signInWithEmailCode(emailAddress: email)
           otpLoginMode.wrappedValue = .signIn(method: .email)
