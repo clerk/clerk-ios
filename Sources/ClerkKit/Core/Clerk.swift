@@ -357,8 +357,6 @@ extension Clerk {
     self.cacheManager = cacheManager
     cacheManager.loadCachedData()
 
-    startSharedSessionSyncIfNeeded(dependencies: dependencies)
-
     // Set up watch connectivity coordinator only after cache hydration.
     if options.watchConnectivityEnabled {
       let coordinator = WatchConnectivityCoordinator()
@@ -385,19 +383,6 @@ extension Clerk {
     }
 
     startStartupClientRefreshIfNeeded()
-  }
-
-  private func startSharedSessionSyncIfNeeded(dependencies: any Dependencies) {
-    guard dependencies.identityIsInAccessGroup else { return }
-    identityController.startSharing(
-      notifier: SharedSessionSyncDarwinNotifier(
-        keychainConfig: options.keychainConfig,
-        instanceFingerprint: SharedSessionNamespace(
-          frontendApiUrl: frontendApiUrl,
-          publishableKey: publishableKey
-        ).fingerprint
-      )
-    )
   }
 
   func startStartupClientRefreshIfNeeded() {
@@ -495,7 +480,7 @@ extension Clerk {
       publishableKey: publishableKey,
       options: options,
       runtimeScope: clerk.runtimeScope,
-      migratesPersistentStateOverride: false,
+      probesAccessGroupOverride: false,
       keychainStorageOverride: keychainStorage
     )
     try clerk.performConfiguration(dependencies: dependencies)
@@ -723,9 +708,7 @@ extension Clerk: LifecycleEventHandling {
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
-    if identityController.readsStoreBeforeUse {
-      identityController.reconcileWithStore()
-    }
+    identityController.adoptStoredDeviceToken()
     emitInternalStateChange(.applicationDidEnterForeground)
 
     #if os(macOS)
@@ -935,7 +918,6 @@ extension Clerk {
 
   private func stopManagers() {
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
-    identityController.stopSharing()
     cancelStartupClientRefresh()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil

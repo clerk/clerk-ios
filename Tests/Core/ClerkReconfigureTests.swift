@@ -110,7 +110,7 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared === original)
     #expect(dependenciesUnchanged)
     #expect(Clerk.shared.identityController.currentDeviceToken == "old-device-token")
-    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.deviceToken == "old-device-token")
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.deviceToken == "old-device-token")
     #expect(Clerk.shared.client?.id == originalClient.id)
     #expect(Clerk.shared.session?.id == originalClient.currentSession?.id)
     #expect(Clerk.shared.environment == originalEnvironment)
@@ -222,7 +222,7 @@ struct ClerkReconfigureTests {
     )
     defer { reconfigured.cleanupManagers() }
 
-    #expect(try sourceDependencies.identityStore.load()?.identity.deviceToken == "shared-token")
+    #expect(try sourceDependencies.identityStore.load()?.deviceToken == "shared-token")
     #expect(reconfigured.client == nil)
     #expect(reconfigured.session == nil)
     #expect(reconfigured.environment == nil)
@@ -252,7 +252,7 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared === original)
     #expect(original.configurationEpoch == previousEpoch)
     #expect(original.dependencies === sourceDependencies)
-    #expect(try sourceDependencies.identityStore.load()?.identity.deviceToken == "source-token")
+    #expect(try sourceDependencies.identityStore.load()?.deviceToken == "source-token")
     #expect(original.client?.id == Client.mock.id)
   }
 

@@ -24,19 +24,14 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
-  func identityIsStoredInTheConfiguredKeychainForThisInstance() throws {
+  func identityIsStoredInTheConfiguredKeychain() throws {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service")),
       runtimeScope: ClerkRuntimeScope(epoch: .initial)
     )
-    let fingerprint = SharedSessionNamespace(
-      frontendApiUrl: container.configurationManager.frontendApiUrl,
-      publishableKey: testPublishableKey
-    ).fingerprint
 
     #expect(container.identityStore.keychain is SystemKeychain)
-    #expect(container.identityStore.instanceFingerprint == fingerprint)
     #expect(!container.identityIsInAccessGroup)
   }
 
@@ -62,27 +57,13 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
-  func injectedKeychainCannotBeUsedWithStorageMigration() {
-    #expect(throws: ClerkClientError.self) {
-      try DependencyContainer(
-        publishableKey: testPublishableKey,
-        options: .init(),
-        runtimeScope: ClerkRuntimeScope(epoch: .initial),
-        migratesPersistentStateOverride: true,
-        keychainStorageOverride: InMemoryKeychain()
-      )
-    }
-  }
-
-  @Test
-  @MainActor
   func injectedKeychainHoldsEveryStore() throws {
     let keychain = InMemoryKeychain()
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(),
       runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      migratesPersistentStateOverride: false,
+      probesAccessGroupOverride: false,
       keychainStorageOverride: keychain
     )
 

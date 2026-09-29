@@ -71,6 +71,7 @@ final class MockDependencyContainer: Dependencies {
     keychain: (any KeychainStorage)? = nil,
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
+    clientKeychain: (any KeychainStorage)? = nil,
     identityIsInAccessGroup: Bool = false,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
@@ -96,10 +97,7 @@ final class MockDependencyContainer: Dependencies {
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
     self.appLocalKeychain = resolvedAppLocalKeychain
-    identityStore = ClerkIdentityStore(
-      keychain: identityKeychain ?? resolvedKeychain,
-      instanceFingerprint: ""
-    )
+    identityStore = ClerkIdentityStore(keychain: identityKeychain ?? resolvedKeychain, clientKeychain: clientKeychain)
     self.identityIsInAccessGroup = identityIsInAccessGroup
     self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
     self.biometricCredentialStore =

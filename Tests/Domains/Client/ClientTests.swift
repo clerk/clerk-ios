@@ -64,7 +64,7 @@ struct ClientTests {
 
     let client = try await Clerk.shared.refreshClient()
 
-    let stored = try #require(try Clerk.shared.dependencies.identityStore.load()?.identity)
+    let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(client?.id == Client.mock.id)
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(stored.state == .present)
@@ -164,7 +164,7 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
-    let stored = try #require(try Clerk.shared.dependencies.identityStore.load()?.identity)
+    let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))
@@ -202,7 +202,7 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
-    let stored = try #require(try Clerk.shared.dependencies.identityStore.load()?.identity)
+    let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))

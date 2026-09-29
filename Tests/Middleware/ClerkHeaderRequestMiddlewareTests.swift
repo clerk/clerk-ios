@@ -28,6 +28,7 @@ struct ClerkHeaderRequestMiddlewareTests {
       keychain: keychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
+    Clerk.shared.identityController.resetRuntimeIdentity()
 
     return keychain
   }

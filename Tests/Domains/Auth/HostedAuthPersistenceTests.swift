@@ -20,7 +20,7 @@ extension HostedAuthFlowTests {
     )
     let keychain = FailableIdentityKeychain()
     let sessionService = MockSessionService(setActive: { sessionId, _ in
-      let persisted = try Clerk.shared.dependencies.identityStore.load()?.identity
+      let persisted = try Clerk.shared.dependencies.identityStore.load()
       persistedBeforeActivation.setValue(
         persisted?.deviceToken == "redeemed-token"
           && persisted?.client?.id == redeemedClient.id
@@ -39,7 +39,7 @@ extension HostedAuthFlowTests {
 
     #expect(persistedBeforeActivation.value)
     #expect(session.id == Session.mock2.id)
-    let persisted = try #require(try Clerk.shared.dependencies.identityStore.load()?.identity)
+    let persisted = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(persisted.deviceToken == "redeemed-token")
     #expect(persisted.client?.id == redeemedClient.id)
   }
@@ -68,7 +68,7 @@ extension HostedAuthFlowTests {
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client?.id == initialClient.id)
     #expect(Clerk.shared.identityController.currentDeviceToken == "initial-token")
-    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.deviceToken == "initial-token")
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.deviceToken == "initial-token")
   }
 
   @Test
@@ -95,7 +95,7 @@ extension HostedAuthFlowTests {
 
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client?.id == initialClient.id)
-    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.client?.id == initialClient.id)
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.client?.id == initialClient.id)
   }
 
   @Test
@@ -140,7 +140,7 @@ extension HostedAuthFlowTests {
     #expect(!redeemCalled.value)
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client?.id == initialClient.id)
-    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.client?.id == initialClient.id)
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.client?.id == initialClient.id)
   }
 
   @Test
@@ -186,7 +186,7 @@ extension HostedAuthFlowTests {
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.identityController.currentDeviceToken == "other-app-token")
     #expect(Clerk.shared.client?.id == otherAppClient.id)
-    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.client?.id == otherAppClient.id)
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.client?.id == otherAppClient.id)
   }
 }
 
@@ -213,9 +213,6 @@ private func configureHostedAuthPersistenceTest(
   try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: Clerk.Options())
   clerk.dependencies = dependencies
   try clerk.seedIdentity(deviceToken: "initial-token", client: initialClient, serverDate: Date(timeIntervalSince1970: 100))
-  if identityIsInAccessGroup {
-    clerk.identityController.startSharing(notifier: SilentNotifier())
-  }
 }
 
 @MainActor
@@ -322,10 +319,4 @@ private final class FailableIdentityKeychain: @unchecked Sendable, KeychainStora
   func hasItem(forKey key: String) throws -> Bool {
     try backing.hasItem(forKey: key)
   }
-}
-
-@MainActor
-private final class SilentNotifier: SharedSessionSyncNotifying {
-  func setHandler(_: @escaping @MainActor () -> Void) {}
-  func post() {}
 }

@@ -78,7 +78,7 @@ struct ClerkTests {
       publishableKey: testPublishableKey,
       options: .init(),
       runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      migratesPersistentStateOverride: false,
+      probesAccessGroupOverride: false,
       keychainStorageOverride: keychain
     ).identityStore.save(ClerkIdentitySnapshot(
       state: .present,
@@ -126,7 +126,7 @@ struct ClerkTests {
 
   @Test
   func awaitedClearReportsIdentityDeletionFailureButStillSignsOut() async throws {
-    let identityKeychain = DeleteFailingKeychain(failingKey: "clerkIdentityV3")
+    let identityKeychain = DeleteFailingKeychain(failingKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: InMemoryKeychain(),
@@ -162,7 +162,7 @@ struct ClerkTests {
     try Clerk.clearLocalClerkStorageStrictly(in: shared)
     try Clerk.clearLocalClerkStorageStrictly(in: local)
 
-    #expect(try shared.identityStore.load()?.identity.deviceToken == "shared-token")
+    #expect(try shared.identityStore.load()?.deviceToken == "shared-token")
     #expect(try local.identityStore.load() == nil)
     #expect(try WatchSyncClearMarker.generation(in: shared.watchSyncKeychain) == 1)
   }
@@ -180,31 +180,7 @@ struct ClerkTests {
 
     try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
 
-    #expect(try dependencies.identityStore.load()?.identity.deviceToken == "group-token")
-  }
-
-  @Test
-  func clearsLeaveTheGroupIdentityOfAppsWithSyncOn() throws {
-    let groupKeychain = InMemoryKeychain()
-    let identityKeychain = InMemoryKeychain()
-    let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: groupKeychain,
-      appLocalKeychain: InMemoryKeychain(),
-      identityKeychain: identityKeychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-    let siblingIdentity = Data("sibling identity".utf8)
-    try groupKeychain.set(siblingIdentity, forKey: ClerkKeychainKey.identity.rawValue)
-    Clerk.shared.dependencies = dependencies
-    try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock)
-
-    Clerk.clearAllKeychainItems()
-    #expect(try identityKeychain.hasItem(forKey: ClerkKeychainKey.identity.rawValue) == false)
-    #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
-
-    try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
-    #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
+    #expect(try dependencies.identityStore.load()?.deviceToken == "group-token")
   }
 
   @Test
@@ -240,7 +216,7 @@ struct ClerkTests {
     )
 
     #expect(clerk.client?.id == "phone-client")
-    #expect(try clerk.dependencies.identityStore.load()?.identity.client?.id == "phone-client")
+    #expect(try clerk.dependencies.identityStore.load()?.client?.id == "phone-client")
   }
 
   @Test

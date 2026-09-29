@@ -21,8 +21,6 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for cached environment data.
   case cachedEnvironment
 
-  case identity = "clerkIdentityV3"
-
   /// Key for the last explicit sibling-app auth sync state.
   case sharedSessionSyncAuthState
 

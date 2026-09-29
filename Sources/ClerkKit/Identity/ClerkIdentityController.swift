@@ -24,9 +24,7 @@ final class ClerkIdentityController {
   weak var clerk: Clerk?
 
   private(set) var currentDeviceToken: String?
-  private var storedRevision: UUID?
   private var hydrationFailed = false
-  private var notifier: (any SharedSessionSyncNotifying)?
 
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
   private var responseOrderingGate = ClientResponseOrderingGate()
@@ -43,14 +41,6 @@ final class ClerkIdentityController {
     clerk?.client
   }
 
-  var isSharingIdentity: Bool {
-    notifier != nil
-  }
-
-  var readsStoreBeforeUse: Bool {
-    isSharingIdentity || hydrationFailed
-  }
-
   private var store: ClerkIdentityStore? {
     clerk?.dependencies.identityStore
   }
@@ -58,45 +48,28 @@ final class ClerkIdentityController {
 
 extension ClerkIdentityController {
   func prepareForConfiguration() {
-    stopSharing()
     currentDeviceToken = nil
-    storedRevision = nil
     hydrationFailed = false
   }
 
   func hydrate() {
     guard let clerk, let store else { return }
-    let record: ClerkIdentityStore.Record?
+    let identity: ClerkIdentitySnapshot?
     do {
-      record = try store.load()
-    } catch ClerkIdentityStoreError.otherInstance {
-      return
+      identity = try store.load()
     } catch {
       ClerkLogger.logError(error, message: "Failed to load the persisted Clerk identity")
       hydrationFailed = true
       return
     }
     hydrationFailed = false
-    storedRevision = record?.revision
-    guard let identity = record?.identity else { return }
+    guard let identity else { return }
     currentDeviceToken = identity.deviceToken
     guard clerk.client == nil else { return }
     lastServerDate = identity.serverDate
     if identity.client != nil {
       clerk.setClientFromIdentityController(identity.client)
     }
-  }
-
-  func startSharing(notifier: any SharedSessionSyncNotifying) {
-    self.notifier = notifier
-    notifier.setHandler { [weak self] in
-      _ = self?.reconcileWithStore()
-    }
-  }
-
-  func stopSharing() {
-    notifier?.setHandler {}
-    notifier = nil
   }
 
   func captureRollbackState() -> RollbackState {
@@ -120,7 +93,6 @@ extension ClerkIdentityController {
   func resetRuntimeIdentity() {
     guard let clerk else { return }
     currentDeviceToken = nil
-    storedRevision = nil
     hydrationFailed = false
     lastServerDate = nil
     clerk.setClientFromIdentityController(nil)
@@ -132,57 +104,34 @@ extension ClerkIdentityController {
   }
 
   func persistedClientID() -> String? {
-    try? store?.load()?.identity.client?.id
+    try? store?.load()?.client?.id
   }
 }
 
 extension ClerkIdentityController {
   @discardableResult
-  func reconcileWithStore() -> Bool {
-    guard let store else { return false }
-    let record: ClerkIdentityStore.Record?
+  func adoptStoredDeviceToken() -> Bool {
+    // Another app changes the token only through a shared access group.
+    guard let store, clerk?.dependencies.identityIsInAccessGroup == true || hydrationFailed else { return false }
+    let identity: ClerkIdentitySnapshot?
     do {
-      let revision = try store.revision()
-      guard revision != storedRevision else {
-        hydrationFailed = false
-        return false
-      }
-      do {
-        record = try store.load()
-      } catch ClerkIdentityStoreError.otherInstance {
-        storedRevision = revision
-        hydrationFailed = false
-        return false
-      }
+      let storedToken = try store.deviceToken()
+      hydrationFailed = false
+      guard storedToken != currentDeviceToken else { return false }
+      identity = try store.load()
     } catch {
-      ClerkLogger.logError(error, message: "Failed to read the shared Clerk identity")
+      ClerkLogger.logError(error, message: "Failed to read the stored Clerk identity")
       return false
     }
-    hydrationFailed = false
-    storedRevision = record?.revision
-
-    let identity = record?.identity ?? .signedOut
-    let tokenChanged = identity.deviceToken != currentDeviceToken
-    apply(identity, fenceResponses: tokenChanged, authFlowUpdate: .authoritativeIdentityChanged)
-    if !tokenChanged {
-      responseOrderingGate.adoptExternalSnapshot(serverDate: identity.serverDate)
-    }
+    apply(identity ?? .signedOut, fenceResponses: true, authFlowUpdate: .authoritativeIdentityChanged)
     return true
-  }
-
-  func reloadPersistedState() async -> Bool {
-    guard let clerk else { return false }
-    let identityChanged = reconcileWithStore()
-    return reloadPersistedEnvironment(in: clerk) || identityChanged
   }
 
   func captureRequestIdentity(
     startupClientRefreshTakeoverID: UUID? = nil
   ) async throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
-    if readsStoreBeforeUse {
-      reconcileWithStore()
-    }
+    adoptStoredDeviceToken()
     clerk.startupClientRefreshTakeover.beginIfNeeded(
       id: startupClientRefreshTakeoverID,
       deviceToken: currentDeviceToken
@@ -194,41 +143,20 @@ extension ClerkIdentityController {
       authFlowRegistrationId: AuthFlowRequestScope.ownerId
     )
   }
-
-  private func reloadPersistedEnvironment(in clerk: Clerk) -> Bool {
-    do {
-      guard let data = try clerk.dependencies.appLocalKeychain.data(
-        forKey: ClerkKeychainKey.cachedEnvironment.rawValue
-      ) else {
-        return false
-      }
-      let environment = try JSONDecoder.clerkDecoder.decode(Clerk.Environment.self, from: data)
-      guard environment != clerk.environment else { return false }
-      clerk.environment = environment
-      return true
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to reload the cached Clerk environment")
-      return false
-    }
-  }
 }
 
 extension ClerkIdentityController {
   func applyExternalTransition(
     _ prepare: () throws -> ExternalTransition?
   ) throws {
-    if readsStoreBeforeUse {
-      reconcileWithStore()
-    }
+    adoptStoredDeviceToken()
     guard let transition = try prepare() else { return }
     try commit(transition.identity, fenceResponses: transition.fenceAllClientResponses)
     transition.didApply()
   }
 
   func updateDeviceToken(to deviceToken: String) async throws -> DeviceTokenTransitionResult {
-    if readsStoreBeforeUse {
-      reconcileWithStore()
-    }
+    adoptStoredDeviceToken()
     guard currentDeviceToken != deviceToken else { return .unchanged }
     try commit(
       ClerkIdentitySnapshot(state: .cleared, deviceToken: deviceToken, client: nil, serverDate: nil),
@@ -244,14 +172,7 @@ extension ClerkIdentityController {
     lastServerDate = nil
     clerk.setClientFromIdentityController(nil)
     clerk.emitInternalStateChange(.localStorageDidClear)
-    do {
-      try store?.delete()
-    } catch {
-      storedRevision = try? store?.revision()
-      throw error
-    }
-    storedRevision = nil
-    notifier?.post()
+    try store?.delete()
   }
 
   private func commit(
@@ -270,12 +191,13 @@ extension ClerkIdentityController {
       )
     }
     if let store, identity.deviceToken != nil || identity.client == nil {
+      if tokenChanged {
+        try store.saveDeviceToken(identity.deviceToken)
+      }
       do {
-        storedRevision = try store.save(identity)?.revision
-        notifier?.post()
+        try store.saveClient(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)
       } catch {
-        guard !tokenChanged else { throw error }
-        ClerkLogger.logError(error, message: "Failed to persist the Clerk identity")
+        ClerkLogger.logError(error, message: "Failed to cache the Clerk client")
       }
     }
     apply(identity, fenceResponses: fenceResponses || tokenChanged, authFlowUpdate: authFlowUpdate)
@@ -305,9 +227,7 @@ extension ClerkIdentityController {
 extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
-    if readsStoreBeforeUse {
-      reconcileWithStore()
-    }
+    adoptStoredDeviceToken()
 
     guard let identity = try context.resolvedIdentityPayload(
       currentDeviceToken: currentDeviceToken,

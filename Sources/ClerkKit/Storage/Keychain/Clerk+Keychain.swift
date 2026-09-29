@@ -18,7 +18,7 @@ extension Clerk {
 
   static let preservedKeychainKeys: Set<ClerkKeychainKey> = [.watchSyncClearGeneration]
 
-  private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.identity])
+  private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.clerkDeviceToken, .cachedClient])
 
   /// Clears Clerk authentication and private cached data from Keychain.
   ///
@@ -94,7 +94,9 @@ extension Clerk {
     let configuration = ClerkLogger.Configuration(options: dependencies.configurationManager.options)
     let keepsIdentity = dependencies.identityIsInAccessGroup
     var failures = clearIdentityAndMarkClear(in: dependencies, configuration: configuration) {
-      if !keepsIdentity {
+      if keepsIdentity {
+        try dependencies.identityStore.saveClient(nil, serverDate: nil, for: nil)
+      } else {
         try dependencies.identityStore.delete()
       }
     }
@@ -154,7 +156,7 @@ extension Clerk {
     do {
       try removeIdentity()
     } catch {
-      failures.append(dependencies.identityStore.key)
+      failures.append(ClerkKeychainKey.clerkDeviceToken.rawValue)
       ClerkLogger.logError(error, message: "Failed to delete the Clerk identity", configuration: configuration)
     }
     return failures

@@ -70,7 +70,7 @@ final class DependencyContainer: Dependencies {
     publishableKey: String,
     options: Clerk.Options,
     runtimeScope: ClerkRuntimeScope,
-    migratesPersistentStateOverride: Bool? = nil,
+    probesAccessGroupOverride: Bool? = nil,
     keychainStorageOverride: (any KeychainStorage)? = nil,
     ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
@@ -100,12 +100,10 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    let keychainStorages = try Self.makeKeychainStorages(
+    let keychainStorages = Self.makeKeychainStorages(
       options: options,
-      frontendApiUrl: configurationManager.frontendApiUrl,
-      publishableKey: configurationManager.publishableKey,
       ownerIdentifier: ownerIdentifierProvider()?.trimmingCharacters(in: .whitespacesAndNewlines),
-      migratesPersistentState: migratesPersistentStateOverride
+      probesAccessGroup: probesAccessGroupOverride
         ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests),
       keychainStorageOverride: keychainStorageOverride
     )
@@ -162,71 +160,49 @@ final class DependencyContainer: Dependencies {
 
   private static func makeKeychainStorages(
     options: Clerk.Options,
-    frontendApiUrl: String,
-    publishableKey: String,
     ownerIdentifier: String?,
-    migratesPersistentState: Bool,
+    probesAccessGroup: Bool,
     keychainStorageOverride: (any KeychainStorage)?
-  ) throws -> KeychainStorages {
-    let fingerprint = SharedSessionNamespace(frontendApiUrl: frontendApiUrl, publishableKey: publishableKey).fingerprint
+  ) -> KeychainStorages {
     if let keychainStorageOverride {
-      guard !migratesPersistentState else {
-        throw ClerkClientError(
-          message: "Injected Keychain storage cannot be used with storage migration.",
-          localizationBundle: .module
-        )
-      }
       return KeychainStorages(
         shared: keychainStorageOverride,
         appLocal: keychainStorageOverride,
-        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride, instanceFingerprint: fingerprint),
+        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride),
         identityIsInAccessGroup: false
       )
     }
 
     let config = options.keychainConfig
     let configured = makeKeychainStorage(config: config)
-    let storages: KeychainStorages
-    let legacyKeychain: any KeychainStorage
-    if config.normalizedAccessGroup != nil {
-      // Queries without an access group span every group the app belongs to, so private state
-      // needs a service of its own to stay out of the shared group.
-      let allGroups = makeKeychainStorage(service: config.service, accessGroup: nil)
-      let privateKeychain = makeKeychainStorage(
-        service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app",
-        accessGroup: nil
-      )
-      let isInGroup = !migratesPersistentState || canAccessAccessGroup(configured)
-      storages = KeychainStorages(
-        shared: configured,
-        appLocal: MigratingKeychainStorage(primary: privateKeychain, fallback: allGroups),
-        identityStore: ClerkIdentityStore(keychain: isInGroup ? configured : allGroups, instanceFingerprint: fingerprint),
-        identityIsInAccessGroup: isInGroup
-      )
-      legacyKeychain = allGroups
-    } else {
-      storages = KeychainStorages(
+    guard config.normalizedAccessGroup != nil else {
+      return KeychainStorages(
         shared: configured,
         appLocal: configured,
-        identityStore: ClerkIdentityStore(keychain: configured, instanceFingerprint: fingerprint),
+        identityStore: ClerkIdentityStore(keychain: configured),
         identityIsInAccessGroup: false
       )
-      legacyKeychain = configured
     }
 
-    if migratesPersistentState {
-      do {
-        try ClerkIdentityMigration(store: storages.identityStore, legacyKeychain: legacyKeychain).migrateIfNeeded()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to migrate Clerk Keychain storage from an earlier SDK version")
-      }
-    }
-    return storages
+    // Queries without an access group span every group the app belongs to, so private state
+    // needs a service of its own to stay out of the shared group.
+    let allGroups = makeKeychainStorage(service: config.service, accessGroup: nil)
+    let appLocal = MigratingKeychainStorage(
+      primary: makeKeychainStorage(service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app", accessGroup: nil),
+      fallback: allGroups
+    )
+    let isInGroup = !probesAccessGroup || canAccessAccessGroup(configured)
+    return KeychainStorages(
+      shared: configured,
+      appLocal: appLocal,
+      identityStore: ClerkIdentityStore(keychain: isInGroup ? configured : allGroups, clientKeychain: appLocal),
+      identityIsInAccessGroup: isInGroup
+    )
   }
 
   private static func canAccessAccessGroup(_ keychain: any KeychainStorage) -> Bool {
     do {
-      _ = try keychain.hasItem(forKey: ClerkKeychainKey.identity.rawValue)
+      _ = try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
       return true
     } catch let error as KeychainError where error.isMissingEntitlement {
       ClerkLogger.error(

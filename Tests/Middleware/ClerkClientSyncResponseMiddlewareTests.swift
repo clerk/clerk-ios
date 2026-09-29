@@ -431,7 +431,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: data, for: request)
 
-    let stored = try #require(try clerk.dependencies.identityStore.load()?.identity)
+    let stored = try #require(try clerk.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
     #expect(clerk.client?.id == expectedClient.id)
@@ -460,7 +460,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: Data(#"{"response":null,"client":null}"#.utf8), for: request)
 
-    let stored = try #require(try clerk.dependencies.identityStore.load()?.identity)
+    let stored = try #require(try clerk.dependencies.identityStore.load())
     #expect(stored.state == .present)
     #expect(stored.deviceToken == "token")
     #expect(stored.client?.id == Client.mock.id)

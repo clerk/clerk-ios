@@ -5,7 +5,7 @@
 
 import Foundation
 
-enum ClerkIdentityState: String, Codable {
+enum ClerkIdentityState {
   case present
   case cleared
 }
@@ -20,7 +20,7 @@ enum ClerkIdentitySnapshotError: Error, Equatable {
 ///
 /// The device token, Client, and ordering date always move through the SDK as
 /// one value so identity producers cannot persist or expose mismatched halves.
-struct ClerkIdentitySnapshot: Codable, Equatable {
+struct ClerkIdentitySnapshot: Equatable {
   let state: ClerkIdentityState
   let deviceToken: String?
   let client: Client?
@@ -48,24 +48,6 @@ struct ClerkIdentitySnapshot: Codable, Equatable {
 }
 
 extension ClerkIdentitySnapshot {
-  init(from decoder: any Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    let deviceToken = try container.decodeIfPresent(String.self, forKey: .deviceToken)
-    let client: Client?
-    do {
-      client = try container.decodeIfPresent(Client.self, forKey: .client)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to decode the persisted Clerk client; keeping the device token")
-      client = nil
-    }
-    try self.init(
-      state: client == nil ? .cleared : container.decode(ClerkIdentityState.self, forKey: .state),
-      deviceToken: deviceToken,
-      client: client,
-      serverDate: container.decodeIfPresent(Date.self, forKey: .serverDate)
-    )
-  }
-
   static let signedOut = ClerkIdentitySnapshot(state: .cleared, deviceToken: nil, client: nil, serverDate: nil)
 }
 

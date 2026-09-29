@@ -210,7 +210,7 @@ struct HostedAuthFlowTests {
     #expect(session.id == Session.mock2.id)
     #expect(Clerk.shared.client == activatedClient)
     #expect(Clerk.shared.identityController.currentDeviceToken == "hosted_auth_test_device_token")
-    #expect(try Clerk.shared.dependencies.identityStore.load()?.identity.deviceToken == "hosted_auth_test_device_token")
+    #expect(try Clerk.shared.dependencies.identityStore.load()?.deviceToken == "hosted_auth_test_device_token")
     #expect(Clerk.shared.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
     #expect(createParams.value?.redirectUrl == "myapp:///hosted-auth-callback")
     #expect(createParams.value?.mode == .signUp)

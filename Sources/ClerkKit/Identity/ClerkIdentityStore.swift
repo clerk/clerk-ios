@@ -3,89 +3,75 @@
 //  Clerk
 //
 
-import CryptoKit
 import Foundation
 
-struct SharedSessionNamespace: Equatable {
-  static let protocolIdentifier = "clerk.shared-session-sync.v2"
-
-  let fingerprint: String
-
-  init(frontendApiUrl: String, publishableKey: String) {
-    var normalizedFrontendApiUrl = frontendApiUrl.trimmingCharacters(in: .whitespacesAndNewlines)
-    while normalizedFrontendApiUrl.hasSuffix("/") {
-      normalizedFrontendApiUrl.removeLast()
-    }
-    let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
-    let seed = "\(Self.protocolIdentifier)\u{1F}\(normalizedFrontendApiUrl)\u{1F}\(normalizedPublishableKey)"
-    fingerprint = Self.sha256(seed)
-  }
-
-  static func sha256(_ value: String) -> String {
-    SHA256.hash(data: Data(value.utf8))
-      .map { String(format: "%02x", $0) }
-      .joined()
-  }
-}
-
-enum ClerkIdentityStoreError: Error, Equatable {
-  case unsupportedSchemaVersion(Int)
-  case otherInstance
-}
-
+/// Persists the device token in the configured Keychain, where every app sharing its access group
+/// reads and writes it, and caches this app's Client next to the token it belongs to.
 struct ClerkIdentityStore {
-  struct Record: Codable, Equatable {
-    static let schemaVersion = 1
-
-    let schemaVersion: Int
-    let revision: UUID
-    let instanceFingerprint: String
-    let identity: ClerkIdentitySnapshot
+  private struct CachedClient: Codable {
+    let deviceToken: String
+    let client: Client
+    let serverDate: Date?
   }
 
   let keychain: any KeychainStorage
-  let instanceFingerprint: String
-  let key = ClerkKeychainKey.identity.rawValue
+  let clientKeychain: any KeychainStorage
 
-  func load() throws -> Record? {
-    guard let data = try keychain.data(forKey: key) else { return nil }
-    let record = try JSONDecoder.clerkDecoder.decode(Record.self, from: data)
-    guard record.schemaVersion == Record.schemaVersion else {
-      throw ClerkIdentityStoreError.unsupportedSchemaVersion(record.schemaVersion)
-    }
-    guard record.instanceFingerprint == instanceFingerprint else {
-      throw ClerkIdentityStoreError.otherInstance
-    }
-    _ = try record.identity.validated()
-    return record
+  init(keychain: any KeychainStorage, clientKeychain: (any KeychainStorage)? = nil) {
+    self.keychain = keychain
+    self.clientKeychain = clientKeychain ?? keychain
   }
 
-  func revision() throws -> UUID? {
-    struct Header: Decodable {
-      let revision: UUID
-    }
-    guard let data = try keychain.data(forKey: key) else { return nil }
-    return try JSONDecoder.clerkDecoder.decode(Header.self, from: data).revision
+  func deviceToken() throws -> String? {
+    try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue).nilIfEmpty
   }
 
-  @discardableResult
-  func save(_ identity: ClerkIdentitySnapshot) throws -> Record? {
-    let identity = try identity.validated()
-    guard identity.deviceToken != nil else {
-      try delete()
-      return nil
+  func load() throws -> ClerkIdentitySnapshot? {
+    guard let token = try deviceToken() else { return nil }
+    let cached = try clientKeychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue).flatMap { data in
+      if let cached = try? JSONDecoder.clerkDecoder.decode(CachedClient.self, from: data) {
+        return cached.deviceToken == token ? cached : nil
+      }
+      // Earlier SDK versions cached the Client alone, always together with the token.
+      return (try? JSONDecoder.clerkDecoder.decode(Client.self, from: data)).map {
+        CachedClient(deviceToken: token, client: $0, serverDate: nil)
+      }
     }
-    let record = Record(
-      schemaVersion: Record.schemaVersion,
-      revision: UUID(),
-      instanceFingerprint: instanceFingerprint,
-      identity: identity
+    return ClerkIdentitySnapshot(
+      state: cached == nil ? .cleared : .present,
+      deviceToken: token,
+      client: cached?.client,
+      serverDate: cached?.serverDate
     )
-    try keychain.set(JSONEncoder.clerkEncoder.encode(record), forKey: key)
-    return record
+  }
+
+  func save(_ identity: ClerkIdentitySnapshot) throws {
+    let identity = try identity.validated()
+    try saveDeviceToken(identity.deviceToken)
+    try saveClient(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)
+  }
+
+  func saveDeviceToken(_ token: String?) throws {
+    if let token {
+      try keychain.set(token, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    } else {
+      try keychain.deleteItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    }
+  }
+
+  func saveClient(_ client: Client?, serverDate: Date?, for token: String?) throws {
+    guard let client, let token else {
+      try clientKeychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
+      return
+    }
+    try clientKeychain.set(
+      JSONEncoder.clerkEncoder.encode(CachedClient(deviceToken: token, client: client, serverDate: serverDate)),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
   }
 
   func delete() throws {
-    try keychain.deleteItem(forKey: key)
+    try saveDeviceToken(nil)
+    try saveClient(nil, serverDate: nil, for: nil)
   }
 }

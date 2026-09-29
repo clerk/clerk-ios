@@ -15,7 +15,7 @@ struct ClerkIdentityControllerTests {
     let (clerk, _) = makeClerk()
     var persistedWhenClientChanged: ClerkIdentitySnapshot?
     let observer = ClientChangeObserver {
-      persistedWhenClientChanged = try? clerk.dependencies.identityStore.load()?.identity
+      persistedWhenClientChanged = try? clerk.dependencies.identityStore.load()
     }
     clerk.internalStateChanges.addObserver(observer)
 
@@ -23,7 +23,7 @@ struct ClerkIdentityControllerTests {
       context(.client(makeClient(id: "client")), token: .set("token"), requestToken: nil, clerk: clerk, date: 100)
     )
 
-    let persisted = try #require(try clerk.dependencies.identityStore.load()?.identity)
+    let persisted = try #require(try clerk.dependencies.identityStore.load())
     #expect(persisted.deviceToken == "token")
     #expect(persisted.client?.id == "client")
     #expect(persisted.serverDate == date(100))
@@ -87,7 +87,7 @@ struct ClerkIdentityControllerTests {
     ))
 
     #expect(clerk.client?.id == "new")
-    #expect(try clerk.dependencies.identityStore.load()?.identity.deviceToken == "new-token")
+    #expect(try clerk.dependencies.identityStore.load()?.deviceToken == "new-token")
   }
 
   @Test
@@ -159,7 +159,7 @@ struct ClerkIdentityControllerTests {
 
     #expect(clerk.client?.id == "undated")
     #expect(clerk.lastClientServerFetchDate == date(200))
-    #expect(try clerk.dependencies.identityStore.load()?.identity.serverDate == date(200))
+    #expect(try clerk.dependencies.identityStore.load()?.serverDate == date(200))
   }
 
   @Test
@@ -172,7 +172,7 @@ struct ClerkIdentityControllerTests {
     #expect(result == .applied)
     #expect(clerk.deviceToken == "new-token")
     #expect(clerk.client == nil)
-    let persisted = try #require(try clerk.dependencies.identityStore.load()?.identity)
+    let persisted = try #require(try clerk.dependencies.identityStore.load())
     #expect(persisted.deviceToken == "new-token")
     #expect(persisted.client == nil)
     #expect(try await clerk.identityController.updateDeviceToken(to: "new-token") == .unchanged)
@@ -186,7 +186,7 @@ struct ClerkIdentityControllerTests {
     try clerk.identityController.applyExternalTransition {
       ClerkIdentityController.ExternalTransition(
         identity: identity(token: "token", client: makeClient(id: "client"), date: 100),
-        didApply: { persistedInCompletion = try? clerk.dependencies.identityStore.load()?.identity }
+        didApply: { persistedInCompletion = try? clerk.dependencies.identityStore.load() }
       )
     }
 
@@ -196,17 +196,15 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func reloadAppliesAnotherProcessesWriteAndTheCachedEnvironment() async throws {
-    let (clerk, keychain) = makeClerk()
+  func adoptsATokenAnotherAppStoredInTheAccessGroup() throws {
+    let (clerk, _) = makeClerk(identityIsInAccessGroup: true)
     try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "current"), serverDate: date(100))
-    try clerk.dependencies.identityStore.save(identity(token: "token", client: makeClient(id: "written"), date: 200))
-    try keychain.set(JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
+    try clerk.dependencies.identityStore.saveDeviceToken("other-token")
 
-    #expect(await clerk.reloadFromSharedStorage())
-    #expect(clerk.client?.id == "written")
-    #expect(clerk.lastClientServerFetchDate == date(200))
-    #expect(clerk.environment == .mock)
-    #expect(await !clerk.reloadFromSharedStorage())
+    #expect(clerk.identityController.adoptStoredDeviceToken())
+    #expect(clerk.deviceToken == "other-token")
+    #expect(clerk.client == nil)
+    #expect(!clerk.identityController.adoptStoredDeviceToken())
   }
 
   @Test
@@ -253,32 +251,18 @@ struct ClerkIdentityControllerTests {
     #expect(sawCompletion)
   }
 
-  @Test
-  func failedClearWithSyncDoesNotSignBackIn() throws {
-    let keychain = DeleteFailingIdentityKeychain()
-    let (clerk, _) = makeClerk(identityKeychain: keychain)
-    try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "client"))
-    clerk.identityController.startSharing(notifier: SilentNotifier())
-
-    #expect(throws: (any Error).self) {
-      try clerk.identityController.clearIdentity()
-    }
-
-    #expect(!clerk.identityController.reconcileWithStore())
-    #expect(clerk.deviceToken == nil)
-    #expect(clerk.client == nil)
-  }
-
   private func makeClerk(
     keychain: InMemoryKeychain? = nil,
-    identityKeychain: (any KeychainStorage)? = nil
+    identityKeychain: (any KeychainStorage)? = nil,
+    identityIsInAccessGroup: Bool = false
   ) -> (Clerk, InMemoryKeychain) {
     let clerk = Clerk()
     let keychain = keychain ?? InMemoryKeychain()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: keychain,
-      identityKeychain: identityKeychain
+      identityKeychain: identityKeychain,
+      identityIsInAccessGroup: identityIsInAccessGroup
     )
     return (clerk, keychain)
   }
@@ -356,32 +340,6 @@ private final class FailingAfterFirstWriteKeychain: @unchecked Sendable, Keychai
 
   func deleteItem(forKey key: String) throws {
     try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
-  }
-}
-
-@MainActor
-private final class SilentNotifier: SharedSessionSyncNotifying {
-  func setHandler(_: @escaping @MainActor () -> Void) {}
-  func post() {}
-}
-
-private final class DeleteFailingIdentityKeychain: @unchecked Sendable, KeychainStorage {
-  private let backing = InMemoryKeychain()
-
-  func set(_ data: Data, forKey key: String) throws {
-    try backing.set(data, forKey: key)
-  }
-
-  func data(forKey key: String) throws -> Data? {
-    try backing.data(forKey: key)
-  }
-
-  func deleteItem(forKey _: String) throws {
-    throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed)
   }
 
   func hasItem(forKey key: String) throws -> Bool {

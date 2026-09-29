@@ -40,16 +40,6 @@ extension Clerk {
       }
     }
 
-    /// No longer has any effect: apps and extensions share a session by configuring the same
-    /// ``KeychainConfig/service`` and ``KeychainConfig/accessGroup``.
-    public struct SharedSessionSyncConfig: Sendable, Equatable {
-      /// No longer has any effect.
-      @available(*, deprecated, message: "Sessions are shared through keychainConfig.accessGroup; remove this option.")
-      public static let enabled = Self()
-
-      private init() {}
-    }
-
     /// Configuration object that customizes redirect behavior for OAuth flows and deep linking.
     public struct RedirectConfig: Sendable {
       /// The URL that OAuth providers should redirect to after authentication. Defaults to "{bundleIdentifier}://callback".
@@ -111,9 +101,6 @@ extension Clerk {
     /// Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     public let watchConnectivityEnabled: Bool
 
-    /// No longer has any effect: apps and extensions share a session through ``KeychainConfig/accessGroup``.
-    public let sharedSessionSync: SharedSessionSyncConfig?
-
     /// A closure that receives callbacks when Clerk logs errors.
     ///
     /// Set this property to forward Clerk errors to your own logging system.
@@ -155,7 +142,6 @@ extension Clerk {
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
     ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
-    ///   - sharedSessionSync: No longer has any effect. Share a session by configuring the same Keychain service and access group.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     ///   - middleware: Middleware configuration for requests and responses. Defaults to an empty configuration.
     public init(
@@ -165,7 +151,6 @@ extension Clerk {
       proxyUrl: String? = nil,
       redirectConfig: RedirectConfig = .init(),
       watchConnectivityEnabled: Bool = false,
-      sharedSessionSync: SharedSessionSyncConfig? = nil,
       loggerHandler: (@Sendable (LogEntry) -> Void)? = nil,
       middleware: MiddlewareConfig = .init()
     ) {
@@ -175,7 +160,6 @@ extension Clerk {
       self.proxyUrl = proxyUrl.flatMap { URL(string: $0) }
       self.redirectConfig = redirectConfig
       self.watchConnectivityEnabled = watchConnectivityEnabled
-      self.sharedSessionSync = sharedSessionSync
       self.loggerHandler = loggerHandler
       self.middleware = middleware
     }
