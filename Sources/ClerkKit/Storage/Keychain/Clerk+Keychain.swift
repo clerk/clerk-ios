@@ -31,8 +31,8 @@ extension Clerk {
   /// - Cached environment data
   /// - App Attest key ID
   ///
-  /// It also signs out the in-memory client. With shared-session sync, the identity is
-  /// shared, so this signs out every app sharing it.
+  /// It also signs out the in-memory client. When the identity is in a Keychain access
+  /// group, it is shared, so this signs out every app sharing it.
   ///
   /// Clerk keeps non-secret markers that record where this app's private state lives, that
   /// its storage was migrated, and how many clears it has seen. They contain no token or Client.

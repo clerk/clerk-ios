@@ -507,9 +507,9 @@ extension Clerk {
   ///
   /// This method validates the new configuration, clears local Clerk state, and then
   /// installs the new configuration on the existing shared instance. Any user currently
-  /// signed in should be expected to sign in again after reconfiguration. An identity shared
-  /// with other apps through shared-session sync is left for those apps, and a destination
-  /// configuration with shared-session sync uses the identity other apps already share.
+  /// signed in should be expected to sign in again after reconfiguration. An identity stored
+  /// in a Keychain access group is left for the other apps in the group, and a destination
+  /// configuration that uses the group adopts the identity those apps already share.
   ///
   /// If Clerk has not been configured yet, this method creates and installs the shared
   /// instance without going through the fallback ``Clerk/shared`` getter.
