@@ -7,7 +7,6 @@
 
 import Foundation
 
-/// Coordinates WatchConnectivity as a transport for Clerk auth state.
 @MainActor
 final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private struct IdentityCandidate {

@@ -16,7 +16,6 @@ import WatchConnectivity
 /// they change or when the app enters the foreground. It uses WCSession's updateApplicationContext
 /// for reliable delivery even when the watch app is not running.
 final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
-  /// The WCSession instance used for communication.
   private let session: WCSession
 
   private let payloadHandler: @MainActor (WatchSyncPayload) -> Void
@@ -33,7 +32,6 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
   @MainActor
   private var pendingPayload: WatchSyncPayload?
 
-  /// Creates a new Watch Connectivity manager.
   init(
     payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
     activationHandler: @escaping @MainActor () -> Void
@@ -49,7 +47,6 @@ final class WatchConnectivityManager: NSObject, WatchConnectivitySyncing {
     }
   }
 
-  /// Sends Clerk's reduced watch-sync payload to the watch app.
   @MainActor
   func sync(_ payload: WatchSyncPayload) {
     guard !isProcessingSync else { return }

@@ -12,7 +12,6 @@ struct ConfigurationManagerTests {
   // Helper to create a valid test publishable key
   // Format: pk_test_{base64_encoded_url_with_$}
   func createTestPublishableKey(for url: String) -> String {
-    // Add $ at the end and encode to base64URL
     let urlWithDollar = url + "$"
     let data = urlWithDollar.data(using: .utf8)!
     let base64 = data.base64EncodedString()
@@ -69,7 +68,6 @@ struct ConfigurationManagerTests {
       Issue.record("Expected missingPublishableKey error")
     } catch let error as ClerkInitializationError {
       if case .missingPublishableKey = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -88,7 +86,6 @@ struct ConfigurationManagerTests {
       Issue.record("Expected missingPublishableKey error")
     } catch let error as ClerkInitializationError {
       if case .missingPublishableKey = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -107,7 +104,6 @@ struct ConfigurationManagerTests {
       Issue.record("Expected invalidPublishableKeyFormat error")
     } catch let error as ClerkInitializationError {
       if case .invalidPublishableKeyFormat = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -126,7 +122,6 @@ struct ConfigurationManagerTests {
       Issue.record("Expected invalidPublishableKeyFormat error")
     } catch let error as ClerkInitializationError {
       if case .invalidPublishableKeyFormat = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -145,7 +140,6 @@ struct ConfigurationManagerTests {
       Issue.record("Expected invalidPublishableKeyFormat error")
     } catch let error as ClerkInitializationError {
       if case .invalidPublishableKeyFormat = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -258,7 +252,6 @@ struct ConfigurationManagerTests {
 
     try manager.configure(publishableKey: testKey, options: options)
 
-    // Test all property accessors
     #expect(!manager.publishableKey.isEmpty)
     #expect(!manager.frontendApiUrl.isEmpty)
     #expect(manager.options.logLevel == .error)

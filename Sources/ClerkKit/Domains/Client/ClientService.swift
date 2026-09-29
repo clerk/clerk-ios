@@ -69,7 +69,6 @@ final class ClientService: ClientServiceProtocol {
     self.apiClient = apiClient
   }
 
-  /// Fetches only the client payload, discarding response ordering metadata.
   @MainActor
   func get() async throws -> Client? {
     try await getResponse().client

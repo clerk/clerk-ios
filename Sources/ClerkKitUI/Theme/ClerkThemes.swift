@@ -38,7 +38,6 @@ extension EnvironmentValues {
   }
 }
 
-/// Create a custom environment key
 private struct ClerkThemeEnvironmentKey: @preconcurrency EnvironmentKey {
   @MainActor static var defaultValue: ClerkTheme = .default
 }

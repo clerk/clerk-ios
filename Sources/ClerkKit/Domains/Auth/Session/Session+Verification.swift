@@ -336,7 +336,6 @@ extension Session {
     }
   }
 
-  /// Prepares the first factor of an in-session reverification flow.
   @discardableResult @MainActor
   func prepareFirstFactorVerification(
     strategy: FactorStrategy,
@@ -357,7 +356,6 @@ extension Session {
     )
   }
 
-  /// Attempts the first factor of an in-session reverification flow.
   @discardableResult @MainActor
   func attemptFirstFactorVerification(
     strategy: FactorStrategy,
@@ -376,7 +374,6 @@ extension Session {
     )
   }
 
-  /// Prepares the second factor of an in-session reverification flow.
   @discardableResult @MainActor
   func prepareSecondFactorVerification(
     strategy: FactorStrategy,
@@ -388,7 +385,6 @@ extension Session {
     )
   }
 
-  /// Attempts the second factor of an in-session reverification flow.
   @discardableResult @MainActor
   func attemptSecondFactorVerification(
     strategy: FactorStrategy,

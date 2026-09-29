@@ -60,7 +60,6 @@ struct ExternalAuthUtilsTests {
 
   @Test
   func nonceFromCallbackUrlWithFragment() throws {
-    // Query params should still work even with fragment
     let urlString = "https://example.com/callback?rotating_token_nonce=test123#fragment"
     let url = try #require(URL(string: urlString))
 

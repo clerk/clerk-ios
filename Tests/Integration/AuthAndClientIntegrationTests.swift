@@ -22,16 +22,12 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct AuthAndClientIntegrationTests {
-  /// Shared test password used across SignUp and SignIn tests.
   private static let testPassword = "Clerk_iOS_Test_2025_XyZ9#mK2$pL7"
 
-  /// Test verification code used for email code verification in SignUp and SignIn tests.
   private static let testVerificationCode = "424242"
 
   // MARK: - Auth Tests
 
-  /// Tests the complete SignUp and SignIn flows: create -> prepare -> attempt
-  /// Verifies that SignUp and SignIn objects are successfully decoded from the API.
   @Test
   func signUpAndSignIn() async throws {
     let keyName = "with-email-codes"
@@ -50,26 +46,18 @@ struct AuthAndClientIntegrationTests {
       let signUp = try await Clerk.shared.auth.signUp(emailAddress: testEmail, password: Self.testPassword)
       didCreateSignUp = true
 
-      // Step 2: Prepare verification (email_code)
-      // This will send a code to the email address
       let preparedSignUp = try await signUp.sendEmailCode()
 
-      // Step 3: Attempt verification with the test verification code
       try await preparedSignUp.verifyEmailCode(Self.testVerificationCode)
 
-      // Sign out so that SignIn can sign in with the new account
       try await Clerk.shared.auth.signOut()
 
       // MARK: - SignIn Flow
 
-      // Step 1: Create a SignIn with the same email used in SignUp
       let signIn = try await Clerk.shared.auth.signIn(testEmail)
 
-      // Step 2: Prepare first factor verification (email_code)
-      // This will send a code to the email address
       let preparedSignIn = try await signIn.sendEmailCode()
 
-      // Step 3: Attempt first factor with the test verification code
       try await preparedSignIn.verifyCode(Self.testVerificationCode)
     } catch {
       capturedError = error

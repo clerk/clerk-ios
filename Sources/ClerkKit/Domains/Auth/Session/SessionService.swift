@@ -24,8 +24,6 @@ package struct SessionTokenRequestParams: Encodable, Equatable {
 protocol SessionServiceProtocol: Sendable {
   @MainActor func revoke(sessionId: String) async throws -> Session
 
-  /// Signs out the active user.
-  /// - Parameter sessionId: Optional session ID to sign out from a specific session.
   @MainActor func signOut(sessionId: String?) async throws
 
   /// Sets the active session and optionally the active organization.
@@ -34,42 +32,32 @@ protocol SessionServiceProtocol: Sendable {
   ///   - organizationId: Optional organization ID to set as active in the session. If nil, removes the active organization.
   @MainActor func setActive(sessionId: String, organizationId: String?) async throws
 
-  /// Creates a session token for the given session and optional template.
-  /// - Parameters:
-  ///   - sessionId: The session ID to generate a token for.
-  ///   - template: Optional JWT template name.
-  ///   - params: Parameters used when generating the default session token.
   @MainActor func fetchToken(
     sessionId: String,
     template: String?,
     params: SessionTokenRequestParams?
   ) async throws -> TokenResource?
 
-  /// Starts an in-session reverification (step-up) flow.
   @MainActor func startVerification(
     sessionId: String,
     params: Session.StartVerificationParams
   ) async throws -> SessionVerification
 
-  /// Prepares the first factor of an in-session reverification flow.
   @MainActor func prepareFirstFactorVerification(
     sessionId: String,
     params: Session.PrepareFirstFactorVerificationParams
   ) async throws -> SessionVerification
 
-  /// Attempts the first factor of an in-session reverification flow.
   @MainActor func attemptFirstFactorVerification(
     sessionId: String,
     params: Session.AttemptFirstFactorVerificationParams
   ) async throws -> SessionVerification
 
-  /// Prepares the second factor of an in-session reverification flow.
   @MainActor func prepareSecondFactorVerification(
     sessionId: String,
     params: Session.PrepareSecondFactorVerificationParams
   ) async throws -> SessionVerification
 
-  /// Attempts the second factor of an in-session reverification flow.
   @MainActor func attemptSecondFactorVerification(
     sessionId: String,
     params: Session.AttemptSecondFactorVerificationParams

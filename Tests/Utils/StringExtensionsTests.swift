@@ -12,21 +12,17 @@ struct StringExtensionsTests {
 
   @Test
   func testIsEmptyTrimmed() {
-    // Empty string
     #expect("".isEmptyTrimmed == true)
 
-    // Whitespace-only strings
     #expect("   ".isEmptyTrimmed == true)
     #expect("\n\n".isEmptyTrimmed == true)
     #expect("\t\t".isEmptyTrimmed == true)
     #expect(" \n\t ".isEmptyTrimmed == true)
 
-    // Strings with leading/trailing whitespace
     #expect("  hello  ".isEmptyTrimmed == false)
     #expect("\nhello\n".isEmptyTrimmed == false)
     #expect("\thello\t".isEmptyTrimmed == false)
 
-    // Normal strings
     #expect("hello".isEmptyTrimmed == false)
     #expect("hello world".isEmptyTrimmed == false)
   }
@@ -44,7 +40,6 @@ struct StringExtensionsTests {
     #expect(result.contains("\u{2011}"))
     #expect(!result.contains("-"))
 
-    // Verify specific characters
     let parts = result.components(separatedBy: "\u{00A0}")
     #expect(parts.count == 2)
     #expect(parts[0].contains("\u{2011}"))
@@ -52,20 +47,16 @@ struct StringExtensionsTests {
 
   @Test
   func testCapitalizedSentence() {
-    // First letter capitalized, rest lowercase
     #expect("hello".capitalizedSentence == "Hello")
     #expect("HELLO".capitalizedSentence == "Hello")
     #expect("HeLLo".capitalizedSentence == "Hello")
     #expect("hELLO".capitalizedSentence == "Hello")
 
-    // Single character
     #expect("a".capitalizedSentence == "A")
     #expect("A".capitalizedSentence == "A")
 
-    // Empty string
     #expect("".capitalizedSentence == "")
 
-    // Numbers and special characters
     #expect("123hello".capitalizedSentence == "123hello")
     #expect("hello123".capitalizedSentence == "Hello123")
   }
@@ -96,30 +87,24 @@ struct StringExtensionsTests {
 
   @Test
   func testBase64URLFromBase64String() {
-    // Test with base64 that contains + and /
     let base64 = "SGVsbG8+V29ybGQ/"
     let base64URL = base64.base64URLFromBase64String()
 
-    // Should replace + with -
     #expect(!base64URL.contains("+"))
     #expect(base64URL.contains("-"))
 
-    // Should replace / with _
     #expect(!base64URL.contains("/"))
     #expect(base64URL.contains("_"))
 
-    // Should remove padding =
     let base64WithPadding = "SGVsbG8gV29ybGQ="
     let base64URLWithPadding = base64WithPadding.base64URLFromBase64String()
     #expect(!base64URLWithPadding.contains("="))
 
-    // Verify conversion
     #expect(base64URL == "SGVsbG8-V29ybGQ_")
   }
 
   @Test
   func testDataFromBase64URL() {
-    // Valid Base64URL string
     let base64URL = "SGVsbG8gV29ybGQ"
     let data = base64URL.dataFromBase64URL()
 
@@ -129,12 +114,10 @@ struct StringExtensionsTests {
       #expect(string == "Hello World")
     }
 
-    // Base64URL with padding (should be handled)
     let base64URLWithPadding = "SGVsbG8="
     let dataWithPadding = base64URLWithPadding.dataFromBase64URL()
     #expect(dataWithPadding != nil)
 
-    // Invalid Base64URL
     let invalid = "!!!"
     let invalidData = invalid.dataFromBase64URL()
     #expect(invalidData == nil)
@@ -142,14 +125,12 @@ struct StringExtensionsTests {
 
   @Test
   func testBase64String() {
-    // Valid Base64URL that decodes to a string
     let base64URL = "SGVsbG8gV29ybGQ"
     let base64String = base64URL.base64String()
 
     #expect(base64String != nil)
     #expect(base64String == "Hello World")
 
-    // Invalid Base64URL
     let invalid = "!!!"
     let invalidString = invalid.base64String()
     #expect(invalidString == nil)

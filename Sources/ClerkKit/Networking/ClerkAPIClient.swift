@@ -1,6 +1,5 @@
 import Foundation
 
-/// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
   private struct ClerkRequestContext: Equatable {
     let checkpoint: ClerkRequestCheckpoint

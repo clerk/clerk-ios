@@ -15,7 +15,6 @@ import WatchConnectivity
 /// This receiver listens for updates from the iOS app and stores them in the watch app's keychain.
 /// For Client, it implements conflict resolution using timestamps (iOS takes priority).
 final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
-  /// The WCSession instance used for communication.
   private let session: WCSession
 
   private let payloadHandler: @MainActor (WatchSyncPayload) -> Void
@@ -25,7 +24,6 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
   @MainActor
   private var isProcessingSync = false
 
-  /// Creates a new Watch Sync Receiver.
   init(
     payloadHandler: @escaping @MainActor (WatchSyncPayload) -> Void,
     activationHandler: @escaping @MainActor () -> Void
@@ -48,7 +46,6 @@ final class WatchSyncReceiver: NSObject, WatchConnectivitySyncing {
     payloadHandler(payload)
   }
 
-  /// Sends Clerk's reduced watch-sync payload to the iOS app.
   @MainActor
   package func sync(_ payload: WatchSyncPayload) {
     guard !isProcessingSync else { return }

@@ -131,7 +131,6 @@ struct ClerkReconfigureTests {
       Issue.record("Expected reconfigure to throw for an invalid publishable key")
     } catch let error as ClerkInitializationError {
       if case .invalidPublishableKeyFormat = error {
-        // Expected.
       } else {
         Issue.record("Expected invalidPublishableKeyFormat, got \(error)")
       }
@@ -446,7 +445,6 @@ struct ClerkReconfigureTests {
       )
       Issue.record("Expected recovery preflight to fail")
     } catch FailingReconfigurationRecoveryTargets.Failure.unavailable {
-      // Expected.
     } catch {
       Issue.record("Expected recovery target failure, got \(error)")
     }
@@ -647,7 +645,6 @@ struct ClerkReconfigureTests {
       _ = try await staleSession.getToken()
       Issue.record("Expected token reads during reconfiguration to be cancelled")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }
@@ -776,7 +773,6 @@ struct ClerkReconfigureTests {
       _ = try await oldRequest.value
       Issue.record("Expected old in-flight request to be cancelled after reconfigure")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }
@@ -817,7 +813,6 @@ struct ClerkReconfigureTests {
       _ = try await refreshTask.value
       Issue.record("Expected stale refreshClient result to be cancelled after reconfigure")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }
@@ -852,7 +847,6 @@ struct ClerkReconfigureTests {
       _ = try await refreshTask.value
       Issue.record("Expected stale refreshEnvironment result to be cancelled after reconfigure")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }

@@ -94,7 +94,6 @@ struct ClerkTests {
 
   @Test
   func clearAllKeychainItemsDeletesStoredDataAndPreservesAdoptionMarker() async throws {
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
@@ -102,7 +101,6 @@ struct ClerkTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
 
-    // Add test data for all keychain keys
     try keychain.set(#require("test-client-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
     try keychain.set(#require("test-date-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("test-environment-data".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
@@ -123,12 +121,10 @@ struct ClerkTests {
     try keychain.set("test-pending-flow", forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
     try keychain.set(Data("[]".utf8), forKey: ClerkKeychainKey.biometricCredentials.rawValue)
 
-    // Verify all keys exist before clearing
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == true)
     }
 
-    // Clear all keychain items
     Clerk.clearAllKeychainItems()
 
     // The adoption marker remains so disabling sync never falls back to legacy shared state.
@@ -1049,7 +1045,6 @@ struct ClerkTests {
 
   @Test
   func clearAllKeychainItemsHandlesMissingKeysGracefully() throws {
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
@@ -1057,14 +1052,11 @@ struct ClerkTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
 
-    // Add only some keys (not all)
     try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
 
-    // Clear all keychain items (should not throw even though some keys don't exist)
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted (including ones that didn't exist)
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == false)
     }
@@ -1098,7 +1090,6 @@ struct ClerkTests {
 
   @Test
   func clearAllKeychainItemsDoesNotThrow() throws {
-    // Set up with InMemoryKeychain for testing
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: Clerk.shared.dependencies.apiClient,
@@ -1106,13 +1097,10 @@ struct ClerkTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
 
-    // Add some test data
     try keychain.set("test-data", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-    // Function should not throw even if there are errors
     Clerk.clearAllKeychainItems()
 
-    // Verify key was deleted
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
   }
 
@@ -1307,60 +1295,48 @@ struct ClerkTests {
 
   @Test
   func isLoadedReturnsFalseWhenBothNil() {
-    // Clear both client and environment
     Clerk.shared.client = nil
     Clerk.shared.environment = nil
 
-    // isLoaded should return false when both are nil
     #expect(Clerk.shared.isLoaded == false)
   }
 
   @Test
   func isLoadedReturnsFalseWhenOnlyEnvironmentSet() {
-    // Set only environment
     Clerk.shared.environment = Clerk.Environment.mock
     Clerk.shared.client = nil
 
-    // isLoaded should return false when client is nil
     #expect(Clerk.shared.isLoaded == false)
   }
 
   @Test
   func isLoadedReturnsFalseWhenOnlyClientSet() {
-    // Set only client
     Clerk.shared.client = Client.mock
     Clerk.shared.environment = nil
 
-    // isLoaded should return false when environment is nil
     #expect(Clerk.shared.isLoaded == false)
   }
 
   @Test
   func isLoadedReturnsTrueWhenBothSet() {
-    // Set both client and environment
     Clerk.shared.client = Client.mock
     Clerk.shared.environment = Clerk.Environment.mock
 
-    // isLoaded should return true when both are set
     #expect(Clerk.shared.isLoaded == true)
   }
 
   @Test
   func isLoadedBecomesTrue() {
-    // Clear both client and environment first
     Clerk.shared.client = nil
     Clerk.shared.environment = nil
     #expect(Clerk.shared.isLoaded == false)
 
-    // Set client - should still be false since environment is nil
     Clerk.shared.client = Client.mock
     #expect(Clerk.shared.isLoaded == false)
 
-    // Set environment - now both are set so should be true
     Clerk.shared.environment = Clerk.Environment.mock
     #expect(Clerk.shared.isLoaded == true)
 
-    // Clear client - should become false again
     Clerk.shared.client = nil
     #expect(Clerk.shared.isLoaded == false)
   }

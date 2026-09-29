@@ -150,17 +150,17 @@ public struct Auth {
     try await signInService.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))
   }
 
-  // Signs in with OAuth using the specified provider.
-  //
-  // - Parameters:
-  //   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
-  //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-  //   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
-  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  // - Throws: An error if the OAuth flow fails.
   #if !os(tvOS) && !os(watchOS)
+  /// Signs in with OAuth using the specified provider.
+  ///
+  /// - Parameters:
+  ///   - provider: The OAuth provider to use (e.g., `.google`, `.apple`).
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the OAuth flow fails.
   @discardableResult
   public func signInWithOAuth(
     provider: OAuthProvider,
@@ -181,17 +181,17 @@ public struct Auth {
   }
   #endif
 
-  // Signs in with an ID token from a provider (e.g., Sign in with Apple).
-  //
-  // - Parameters:
-  //   - idToken: The ID token from the provider.
-  //   - provider: The ID token provider (e.g., `.apple`).
-  //   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
-  //     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
-  //   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
-  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  /// Signs in with an ID token from a provider (e.g., Sign in with Apple).
+  ///
+  /// - Parameters:
+  ///   - idToken: The ID token from the provider.
+  ///   - provider: The ID token provider (e.g., `.apple`).
+  ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
+  ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
+  ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the authentication fails.
   @discardableResult
   public func signInWithIdToken(
     _ idToken: String,
@@ -498,17 +498,17 @@ public struct Auth {
   }
   #endif
 
-  // Signs up with an ID token from a provider (e.g., Sign in with Apple).
-  //
-  // - Parameters:
-  //   - idToken: The ID token from the provider.
-  //   - provider: The ID token provider (e.g., `.apple`).
-  //   - firstName: The user's first name (optional).
-  //   - lastName: The user's last name (optional).
-  //   - unsafeMetadata: Custom metadata to attach to the user (optional).
-  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  // - Throws: An error if the authentication fails.
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  /// Signs up with an ID token from a provider (e.g., Sign in with Apple).
+  ///
+  /// - Parameters:
+  ///   - idToken: The ID token from the provider.
+  ///   - provider: The ID token provider (e.g., `.apple`).
+  ///   - firstName: The user's first name (optional).
+  ///   - lastName: The user's last name (optional).
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the authentication fails.
   @discardableResult
   public func signUpWithIdToken(
     _ idToken: String,
@@ -528,15 +528,15 @@ public struct Auth {
   }
   #endif
 
-  // Signs up with Enterprise SSO using an email address.
-  //
-  // - Parameters:
-  //   - emailAddress: The user's enterprise email address.
-  //   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
-  //   - unsafeMetadata: Custom metadata to attach to the user (optional).
-  // - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
-  // - Throws: An error if the Enterprise SSO flow fails.
   #if !os(tvOS) && !os(watchOS)
+  /// Signs up with Enterprise SSO using an email address.
+  ///
+  /// - Parameters:
+  ///   - emailAddress: The user's enterprise email address.
+  ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
+  ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
+  /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  /// - Throws: An error if the Enterprise SSO flow fails.
   @discardableResult
   public func signUpWithEnterpriseSSO(
     emailAddress: String,
