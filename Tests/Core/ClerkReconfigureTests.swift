@@ -152,7 +152,7 @@ struct ClerkReconfigureTests {
     #expect(reconfigured.environment == nil)
     #expect(reconfigured.sessionsByUserId.isEmpty)
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try oldKeychain.hasItem(forKey: "clerkIdentityV3") == false)
+    #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try targetKeychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
     #expect(await SessionTokensCache.shared.getToken(cacheKey: "session-token") == nil)
   }
@@ -187,7 +187,7 @@ struct ClerkReconfigureTests {
 
     #expect(reconfigured.client == nil)
     #expect(reconfigured.environment == nil)
-    #expect(try keychain.hasItem(forKey: "clerkIdentityV3") == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
   }
