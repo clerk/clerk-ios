@@ -67,7 +67,6 @@ private struct HostBackToolbarModifier: ViewModifier {
 }
 
 extension View {
-  /// Shows the host's back button on an embedded component's root screen.
   func hostBackToolbar() -> some View {
     modifier(HostBackToolbarModifier())
   }

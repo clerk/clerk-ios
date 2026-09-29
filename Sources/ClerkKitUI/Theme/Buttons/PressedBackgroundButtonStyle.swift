@@ -23,9 +23,7 @@ extension ButtonStyle where Self == PressedBackgroundButtonStyle {
 }
 
 #Preview {
-  Button {
-    //
-  } label: {
+  Button {} label: {
     Text("Continue", bundle: .module)
   }
   .buttonStyle(.pressedBackground)

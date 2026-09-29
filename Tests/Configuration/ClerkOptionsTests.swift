@@ -104,12 +104,11 @@ struct ClerkOptionsTests {
 
   @Test
   func partialInitialization() {
-    // Test with only some parameters
     let options = Clerk.Options(logLevel: .debug)
 
     #expect(options.logLevel == .debug)
-    #expect(options.telemetryEnabled == true) // Default
-    #expect(options.proxyUrl == nil) // Default
+    #expect(options.telemetryEnabled == true)
+    #expect(options.proxyUrl == nil)
   }
 
   @Test

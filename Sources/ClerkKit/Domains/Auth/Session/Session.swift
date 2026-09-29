@@ -251,7 +251,6 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
 public struct SessionActivity: Codable, Equatable, Sendable {
-  /// A unique identifier for the session activity record.
   let id: String
 
   /// The name of the browser from which this session activity occurred.

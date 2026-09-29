@@ -16,7 +16,6 @@ public protocol ClerkResponseMiddleware: Sendable {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws
 }
 
-/// Allows middleware to influence retry decisions.
 protocol NetworkRetryMiddleware: Sendable {
   func shouldRetry(
     request: URLRequest,
@@ -26,7 +25,6 @@ protocol NetworkRetryMiddleware: Sendable {
   ) async throws -> Bool
 }
 
-/// Describes the order of execution for networking middleware.
 struct NetworkingPipeline {
   private let requestMiddleware: [any ClerkRequestMiddleware]
   private let customRequestMiddleware: [any ClerkRequestMiddleware]

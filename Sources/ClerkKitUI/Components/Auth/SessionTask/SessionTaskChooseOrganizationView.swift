@@ -7,8 +7,6 @@
 import ClerkKit
 import SwiftUI
 
-/// A view shown when a session requires the user to choose or create an organization
-/// before the session can become active.
 struct SessionTaskChooseOrganizationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme

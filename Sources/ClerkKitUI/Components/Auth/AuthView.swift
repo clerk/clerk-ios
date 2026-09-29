@@ -70,31 +70,23 @@ public struct AuthView: View {
   @Environment(Clerk.self) var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) var dismiss
-  /// Navigation state for the auth flow.
   @State var navigation = AuthNavigation()
 
-  /// Form field state for auth views.
   @State var authState: AuthState
 
-  /// Configuration values for the auth flow.
   private let config: AuthConfig
 
-  /// Called when this authentication flow completes successfully.
   let onAuthComplete: @MainActor () -> Void
 
-  /// Error to present to the user.
   @State private var error: Error?
 
-  /// Keeps this auth flow registered for the view's lifetime.
   @State var authFlowRegistration: AuthFlowRegistration?
 
   /// Prevents an explicitly finished flow from reacquiring coordinator ownership.
   @State var authFlowRegistrationIsTerminated = false
 
-  /// The conflicting owner already reported for this view.
   @State var reportedConflictingAuthFlowOwnerId: UUID?
 
-  /// Rate limiter for verification codes.
   @State private var codeLimiter = CodeLimiter()
 
   /// The authentication mode that determines which flows are available to the user.

@@ -9,37 +9,25 @@ import ClerkKit
 import Foundation
 import SwiftUI
 
-/// Holds form field values for the authentication flow.
-///
-/// This class stores user input for auth start, sign-in, and sign-up forms.
 @MainActor
 @Observable
 final class AuthState {
-  /// The authentication mode (signIn, signUp, or signInOrUp).
   let mode: AuthView.Mode
 
-  /// Whether identifier values are persisted to `UserDefaults` between sessions.
   private(set) var persistsIdentifiers: Bool = true
 
-  /// Whether the configure method received an initial identifier value.
   private(set) var hasInitialIdentifier: Bool = false
 
-  /// Whether the non-phone auth-start identifier field was populated from configuration.
   private(set) var authStartIdentifierWasPrefilled: Bool = false
 
-  /// Whether the phone auth-start identifier field was populated from configuration.
   private(set) var authStartPhoneNumberWasPrefilled: Bool = false
 
-  /// Whether the configure method received an initial first name value.
   private(set) var hasInitialFirstName: Bool = false
 
-  /// Whether the configure method received an initial last name value.
   private(set) var hasInitialLastName: Bool = false
 
-  /// Whether configured initial values should be shown as read-only fields.
   private(set) var prefilledFieldsAreLocked = false
 
-  /// Unsafe metadata to attach if the current UI flow creates a sign-up.
   private(set) var unsafeMetadata: JSON?
 
   private var environmentRefreshCheckpoint: Clerk.EnvironmentRefreshCheckpoint?
@@ -69,7 +57,6 @@ final class AuthState {
     }
   }
 
-  /// Auth Start Fields
   var authStartIdentifier = "" {
     didSet {
       if persistsIdentifiers {
@@ -94,7 +81,6 @@ final class AuthState {
     }
   }
 
-  /// Applies auth flow configuration values.
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
     let initialIdentifier = config.initialIdentifier
@@ -143,13 +129,11 @@ final class AuthState {
     LastUsedAuth.storeIdentifierType(identifierType, userDefaults: userDefaults)
   }
 
-  // Sign In Fields
   var signInPassword = ""
   var signInNewPassword = ""
   var signInConfirmNewPassword = ""
   var signInBackupCode = ""
 
-  // Sign Up Fields
   var signUpFirstName = ""
   var signUpLastName = ""
   var signUpPassword = ""

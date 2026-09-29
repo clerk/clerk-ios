@@ -9,22 +9,13 @@ import ClerkKit
 import Foundation
 import SwiftUI
 
-/// Manages navigation state for the authentication flow.
-///
-/// This class handles navigation path management and routing based on SignIn/SignUp status.
-/// It is injected into child views via the environment.
 @MainActor
 @Observable
 final class AuthNavigation {
-  /// The navigation path for the auth flow.
   var path: [AuthView.Destination] = []
 
-  /// Creates a new AuthNavigation instance.
   init() {}
 
-  /// Updates the navigation path based on the current sign-in status.
-  ///
-  /// - Parameter signIn: The current SignIn object.
   @MainActor
   func setToStepForStatus(signIn: SignIn) {
     switch signIn.status {
@@ -61,9 +52,6 @@ final class AuthNavigation {
     }
   }
 
-  /// Updates the navigation path based on the current sign-up status.
-  ///
-  /// - Parameter signUp: The current SignUp object.
   @MainActor
   func setToStepForStatus(signUp: SignUp) {
     switch signUp.status {

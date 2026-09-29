@@ -5,7 +5,6 @@
 
 import Foundation
 
-/// Handles retry/backoff decisions for rate limit and transient networking errors.
 struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
   private let sleep: @Sendable (UInt64) async -> Void
 

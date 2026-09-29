@@ -11,7 +11,6 @@ extension EmailAddress {
     /// User will receive a one-time authentication code via email.
     case emailCode
 
-    /// Converts the strategy into the required request body for the verification process.
     var requestBody: RequestBody {
       switch self {
       case .emailCode:
@@ -19,9 +18,7 @@ extension EmailAddress {
       }
     }
 
-    /// Represents the body of the request used to prepare the email address verification.
     struct RequestBody: Encodable {
-      /// The verification strategy.
       let strategy: String
     }
   }

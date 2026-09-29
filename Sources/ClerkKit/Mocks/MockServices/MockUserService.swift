@@ -7,50 +7,33 @@
 
 import Foundation
 
-/// Mock implementation of `UserServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockUserService: UserServiceProtocol {
-  /// Custom handler for the `getSessions(user:)` method.
   package nonisolated(unsafe) var getSessionsHandler: ((User) async throws -> [Session])?
 
-  /// Custom handler for the `reload()` method.
   package nonisolated(unsafe) var reloadHandler: (() async throws -> User)?
 
-  /// Custom handler for the `update(params:)` method.
   package nonisolated(unsafe) var updateHandler: ((User.UpdateParams) async throws -> User)?
 
-  /// Custom handler for the `updateMetadata(params:)` method.
   package nonisolated(unsafe) var updateMetadataHandler: ((User.UpdateMetadataParams) async throws -> User)?
 
-  /// Custom handler for the `createBackupCodes()` method.
   package nonisolated(unsafe) var createBackupCodesHandler: (() async throws -> BackupCodeResource)?
 
-  /// Custom handler for the `createEmailAddress(emailAddress:)` method.
   package nonisolated(unsafe) var createEmailAddressHandler: ((String) async throws -> EmailAddress)?
 
-  /// Custom handler for the `createPhoneNumber(phoneNumber:)` method.
   package nonisolated(unsafe) var createPhoneNumberHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)` method.
   package nonisolated(unsafe) var createExternalAccountHandler: ((OAuthProvider, String?, [String], [OIDCPrompt]) async throws -> ExternalAccount)?
 
-  /// Custom handler for the `createExternalAccountToken(provider:idToken:)` method.
   package nonisolated(unsafe) var createExternalAccountTokenHandler: ((IDTokenProvider, String) async throws -> ExternalAccount)?
 
   #if canImport(AuthenticationServices) && !os(watchOS)
-  /// Custom handler for the `createPasskey()` method.
   package nonisolated(unsafe) var createPasskeyHandler: (() async throws -> Passkey)?
   #endif
 
-  /// Custom handler for the `createTotp()` method.
   package nonisolated(unsafe) var createTotpHandler: (() async throws -> TOTPResource)?
 
-  /// Custom handler for the `verifyTotp(code:)` method.
   package nonisolated(unsafe) var verifyTotpHandler: ((String) async throws -> TOTPResource)?
 
-  /// Custom handler for the `disableTotp()` method.
   package nonisolated(unsafe) var disableTotpHandler: (() async throws -> DeletedObject)?
 
   /// Custom handler for the `getOrganizationInvitations(offset:pageSize:status:)` method.
@@ -60,10 +43,8 @@ package final class MockUserService: UserServiceProtocol {
   /// `["pending", "accepted"]` to mirror filtered invitation requests.
   package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)?
 
-  /// Custom handler for the `getOrganizationMemberships(offset:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
-  /// Custom handler for the `leaveOrganization(organizationId:)` method.
   package nonisolated(unsafe) var leaveOrganizationHandler: ((String) async throws -> DeletedObject)?
 
   /// Custom handler for the `getOrganizationSuggestions(offset:pageSize:status:)` method.
@@ -73,69 +54,16 @@ package final class MockUserService: UserServiceProtocol {
   /// `["pending", "accepted"]` to mirror filtered suggestion requests.
   package nonisolated(unsafe) var getOrganizationSuggestionsHandler: ((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)?
 
-  /// Custom handler for the `getOrganizationCreationDefaults()` method.
   package nonisolated(unsafe) var getOrganizationCreationDefaultsHandler: (() async throws -> OrganizationCreationDefaults)?
 
-  /// Custom handler for the `updatePassword(params:)` method.
   package nonisolated(unsafe) var updatePasswordHandler: ((User.UpdatePasswordParams) async throws -> User)?
 
-  /// Custom handler for the `setProfileImage(imageData:)` method.
   package nonisolated(unsafe) var setProfileImageHandler: ((Data) async throws -> ImageResource)?
 
-  /// Custom handler for the `deleteProfileImage()` method.
   package nonisolated(unsafe) var deleteProfileImageHandler: (() async throws -> DeletedObject)?
 
-  /// Custom handler for the `delete()` method.
   package nonisolated(unsafe) var deleteHandler: (() async throws -> DeletedObject)?
 
-  /// Creates a new mock user service with named closure parameters matching protocol method names.
-  ///
-  /// This initializer allows you to configure specific methods inline.
-  /// Methods not configured will return default mock values.
-  ///
-  /// - Parameters:
-  ///   - getSessions: Optional implementation of the `getSessions(user:)` method.
-  ///   - reload: Optional implementation of the `reload()` method.
-  ///   - update: Optional implementation of the `update(params:)` method.
-  ///   - updateMetadata: Optional implementation of the `updateMetadata(params:)` method.
-  ///   - createBackupCodes: Optional implementation of the `createBackupCodes()` method.
-  ///   - createEmailAddress: Optional implementation of the `createEmailAddress(emailAddress:)` method.
-  ///   - createPhoneNumber: Optional implementation of the `createPhoneNumber(phoneNumber:)` method.
-  ///   - createExternalAccount: Optional implementation of the `createExternalAccount(provider:redirectUrl:additionalScopes:oidcPrompts:)` method.
-  ///   - createExternalAccountToken: Optional implementation of the `createExternalAccountToken(provider:idToken:)` method.
-  ///   - createPasskey: Optional implementation of the `createPasskey()` method (iOS only).
-  ///   - createTotp: Optional implementation of the `createTotp()` method.
-  ///   - verifyTotp: Optional implementation of the `verifyTotp(code:)` method.
-  ///   - disableTotp: Optional implementation of the `disableTotp()` method.
-  ///   - getOrganizationInvitations: Optional implementation of the `getOrganizationInvitations(offset:pageSize:status:)` method
-  ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>)`.
-  ///     The third argument accepts multiple invitation statuses; pass `[]` to simulate an unfiltered request
-  ///     or provide values such as `["pending", "accepted"]` when a test needs filtered invitations.
-  ///   - getOrganizationMemberships: Optional implementation of the `getOrganizationMemberships(offset:pageSize:)` method.
-  ///   - leaveOrganization: Optional implementation of the `leaveOrganization(organizationId:)` method.
-  ///   - getOrganizationSuggestions: Optional implementation of the `getOrganizationSuggestions(offset:pageSize:status:)` method
-  ///     with signature `((Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>)`.
-  ///     The third argument accepts multiple suggestion statuses; pass `[]` to simulate an unfiltered request
-  ///     or provide values such as `["pending", "accepted"]` when a test needs filtered suggestions.
-  ///   - getOrganizationCreationDefaults: Optional implementation of the `getOrganizationCreationDefaults()` method.
-  ///   - updatePassword: Optional implementation of the `updatePassword(params:)` method.
-  ///   - setProfileImage: Optional implementation of the `setProfileImage(imageData:)` method.
-  ///   - deleteProfileImage: Optional implementation of the `deleteProfileImage()` method.
-  ///   - delete: Optional implementation of the `delete()` method.
-  ///
-  /// Example:
-  /// ```swift
-  /// let service = MockUserService(
-  ///   getSessions: { user in
-  ///     try? await Task.sleep(for: .seconds(1))
-  ///     return [Session.mock, Session.mock2]
-  ///   },
-  ///   reload: {
-  ///     try? await Task.sleep(for: .milliseconds(500))
-  ///     return User.mock
-  ///   }
-  /// )
-  /// ```
   package init(
     getSessions: ((User) async throws -> [Session])? = nil,
     reload: (() async throws -> User)? = nil,
@@ -183,9 +111,6 @@ package final class MockUserService: UserServiceProtocol {
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
-  /// Sets the `createPasskey` handler for this mock service.
-  ///
-  /// - Parameter createPasskey: The implementation of the `createPasskey()` method.
   package func setCreatePasskey(_ createPasskey: @escaping () async throws -> Passkey) {
     createPasskeyHandler = createPasskey
   }

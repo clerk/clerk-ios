@@ -7,46 +7,30 @@
 
 import Foundation
 
-/// Tracks when verification codes were last sent to prevent excessive requests.
-///
-/// This class is used by both auth and user profile flows to manage code rate limiting.
-/// It is injected into child views via the environment and drives countdown UI via observation.
 @MainActor
 @Observable
 final class CodeLimiter {
-  /// The default cooldown period between code requests (in seconds).
   static let defaultCooldown: TimeInterval = 30
 
-  /// Tracks when the last code was sent for each identifier.
   private(set) var lastCodeSentAt: [String: Date] = [:]
 
   /// A tick counter that increments every second while any cooldown is active.
   /// Views that access `remainingCooldown(for:)` will re-render when this changes.
   private(set) var tick: UInt = 0
 
-  /// The timer that drives the tick updates.
   private var timer: Timer?
 
-  /// Creates a new CodeLimiter instance.
   init() {}
 
-  /// Checks if this is the first code request for the given identifier.
-  ///
-  /// - Parameter identifier: The identifier to check.
-  /// - Returns: `true` if no code has been sent yet for this identifier.
   func isFirstRequest(for identifier: String) -> Bool {
     lastCodeSentAt[identifier] == nil
   }
 
-  /// Records that a code was sent for the given identifier and starts the countdown timer.
-  ///
-  /// - Parameter identifier: The identifier that received the code.
   func recordCodeSent(for identifier: String) {
     lastCodeSentAt[identifier] = .now
     startTimerIfNeeded()
   }
 
-  /// Starts the countdown timer if not already running.
   private func startTimerIfNeeded() {
     guard timer == nil else { return }
     timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
@@ -61,11 +45,9 @@ final class CodeLimiter {
     RunLoop.current.add(timer!, forMode: .common)
   }
 
-  /// Called every second by the timer.
   private func onTick() {
     tick &+= 1
 
-    // Stop the timer if all cooldowns have expired
     let hasActiveCooldown = lastCodeSentAt.values.contains { date in
       Date.now.timeIntervalSince(date) < Self.defaultCooldown
     }
@@ -74,7 +56,6 @@ final class CodeLimiter {
     }
   }
 
-  /// Stops the countdown timer.
   private func stopTimer() {
     timer?.invalidate()
     timer = nil
@@ -107,12 +88,6 @@ final class CodeLimiter {
     return max(0, Int(ceil(remaining)))
   }
 
-  /// Checks if a new code can be sent for the given identifier.
-  ///
-  /// - Parameters:
-  ///   - identifier: The identifier to check.
-  ///   - cooldown: The cooldown period in seconds. Defaults to 30 seconds.
-  /// - Returns: `true` if enough time has passed since the last code was sent.
   func canSendCode(for identifier: String, cooldown: TimeInterval = defaultCooldown) -> Bool {
     remainingCooldown(for: identifier, cooldown: cooldown) == 0
   }

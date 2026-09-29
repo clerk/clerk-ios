@@ -5,10 +5,6 @@
 
 import Foundation
 
-/// Container that holds all dependencies for the Clerk SDK.
-///
-/// This class manages the lifecycle of all dependencies and provides them
-/// through the `Dependencies` protocol for dependency injection.
 final class DependencyContainer: Dependencies {
   private struct KeychainStorages {
     let shared: any KeychainStorage
@@ -74,8 +70,6 @@ final class DependencyContainer: Dependencies {
     keychainStorageOverride: (any KeychainStorage)? = nil,
     ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
-    // Phase 1: Core infrastructure (no dependencies)
-    // Create and configure ConfigurationManager first (needed to determine baseURL)
     configurationManager = ConfigurationManager()
 
     // Only configure if publishableKey is not empty (temporary containers use empty key)
@@ -86,14 +80,12 @@ final class DependencyContainer: Dependencies {
 
     sessionStatusLogger = SessionStatusLogger()
 
-    // Determine baseURL from configured manager (use default if not configured)
     // Note: frontendApiUrl is always extracted from the publishable key, even when using a proxy,
     // because it's needed for passkey authentication which requires the original Clerk domain
     // (not the proxy domain) as the relying party identifier.
     let baseURL: URL = if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
       configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
     } else {
-      // Temporary container fallback
       URL(string: "https://clerk.clerk.dev")!
     }
 
@@ -116,7 +108,6 @@ final class DependencyContainer: Dependencies {
 
     magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
 
-    // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
     apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
       configuration.pipeline = pipeline
@@ -130,13 +121,11 @@ final class DependencyContainer: Dependencies {
       ]
     }
 
-    // Phase 3: Telemetry collector (depends on options)
     telemetryCollector = Self.createTelemetryCollector(
       publishableKey: configurationManager.publishableKey,
       options: options
     )
 
-    // Phase 4: Services (depend on apiClient and other dependencies)
     clientService = ClientService(apiClient: apiClient)
     hostedAuthService = HostedAuthService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
@@ -268,7 +257,6 @@ final class DependencyContainer: Dependencies {
       disableThrottling: false
     )
 
-    // Determine instance type from publishable key
     let instanceType: InstanceEnvironmentType = publishableKey.starts(with: "pk_live_") ? .production : .development
 
     return TelemetryCollector(

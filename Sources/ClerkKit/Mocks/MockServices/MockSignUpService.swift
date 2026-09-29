@@ -7,24 +7,15 @@
 
 import Foundation
 
-/// Mock implementation of `SignUpServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockSignUpService: SignUpServiceProtocol {
-  /// Custom handler for the `create(params:)` method.
   nonisolated(unsafe) var createHandler: ((SignUp.CreateParams) async throws -> SignUp)?
 
-  /// Custom handler for the `prepareVerification(signUpId:params:)` method.
   nonisolated(unsafe) var prepareVerificationHandler: ((String, SignUp.PrepareVerificationParams) async throws -> SignUp)?
 
-  /// Custom handler for the `attemptVerification(signUpId:params:)` method.
   nonisolated(unsafe) var attemptVerificationHandler: ((String, SignUp.AttemptVerificationParams) async throws -> SignUp)?
 
-  /// Custom handler for the `update(signUpId:params:)` method.
   nonisolated(unsafe) var updateHandler: ((String, SignUp.UpdateParams) async throws -> SignUp)?
 
-  /// Custom handler for the `get(signUpId:params:)` method.
   nonisolated(unsafe) var getHandler: ((String, SignUp.GetParams) async throws -> SignUp)?
 
   init(

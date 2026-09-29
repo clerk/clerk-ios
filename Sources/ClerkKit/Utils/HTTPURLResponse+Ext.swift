@@ -6,32 +6,26 @@
 import Foundation
 
 extension HTTPURLResponse {
-  /// Returns true if the response represents an error (status code >= 400)
   var isError: Bool {
     statusCode >= 400
   }
 
-  /// Returns true if the response represents a client error (4xx)
   var isClientError: Bool {
     statusCode >= 400 && statusCode < 500
   }
 
-  /// Returns true if the response represents a server error (5xx)
   var isServerError: Bool {
     statusCode >= 500
   }
 
-  /// Returns true if the response represents a successful response (2xx)
   var isSuccess: Bool {
     statusCode >= 200 && statusCode < 300
   }
 
-  /// Returns true if the response represents a redirection (3xx)
   var isRedirection: Bool {
     statusCode >= 300 && statusCode < 400
   }
 
-  /// Returns a categorized status type
   var statusType: HTTPStatusType {
     switch statusCode {
     case 100 ..< 200:
@@ -49,7 +43,6 @@ extension HTTPURLResponse {
     }
   }
 
-  /// Returns a human-readable description of the status code category
   var statusDescription: String {
     switch statusType {
     case .informational:
@@ -69,10 +62,10 @@ extension HTTPURLResponse {
 }
 
 enum HTTPStatusType {
-  case informational // 1xx
-  case success // 2xx
-  case redirection // 3xx
-  case clientError // 4xx
-  case serverError // 5xx
-  case unknown // Outside normal range
+  case informational
+  case success
+  case redirection
+  case clientError
+  case serverError
+  case unknown
 }

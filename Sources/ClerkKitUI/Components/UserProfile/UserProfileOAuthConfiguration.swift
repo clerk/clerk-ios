@@ -16,7 +16,6 @@ public struct OAuthProviderConfig: Sendable, Hashable {
   }
 }
 
-/// OAuth configuration for built-in connected account flows in ``UserProfileView``.
 struct UserProfileOAuthConfiguration: Equatable {
   let configs: [OAuthProviderConfig]
 

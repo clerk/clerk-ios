@@ -10,30 +10,18 @@ protocol NetworkRequester: Sendable {
   func data(for request: URLRequest) async throws -> (Data, URLResponse)
 }
 
-extension URLSession: NetworkRequester {
-  // URLSession already conforms to this signature
-}
+extension URLSession: NetworkRequester {}
 
-/// Protocol defining the telemetry collector interface for dependency injection.
 package protocol TelemetryCollectorProtocol: Sendable {
-  /// Record an event to be sampled, throttled, buffered and sent.
-  ///
-  /// - Parameter raw: The raw event description to record.
   func record(_ raw: TelemetryEventRaw) async
 
-  /// Flush buffered events to the telemetry endpoint.
   func flush() async
 }
 
-/// A no-op implementation of TelemetryCollectorProtocol used as a default.
 package actor NoOpTelemetryCollector: TelemetryCollectorProtocol {
-  package func record(_: TelemetryEventRaw) async {
-    // No-op: do nothing
-  }
+  package func record(_: TelemetryEventRaw) async {}
 
-  package func flush() async {
-    // No-op: do nothing
-  }
+  package func flush() async {}
 }
 
 /// A development-only telemetry collector for the Clerk iOS SDK.
@@ -78,12 +66,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
 
   // MARK: Init
 
-  /// Creates a new telemetry collector.
-  ///
-  /// - Parameters:
-  ///   - options: Configuration options controlling sampling, buffering and metadata.
-  ///   - networkRequester: Network requester for making HTTP requests. Defaults to URLSession.shared.
-  ///   - environment: Provider for environment values used in telemetry. Defaults to `ClerkTelemetryEnvironment()`.
   init(
     options: TelemetryCollectorOptions = .init(),
     networkRequester: NetworkRequester = URLSession.shared,
@@ -110,11 +92,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     flushTask?.cancel()
   }
 
-  /// Record an event to be sampled, throttled, buffered and sent.
-  ///
-  /// - Parameter raw: The raw event description to record.
   package func record(_ raw: TelemetryEventRaw) async {
-    // Start periodic flushing lazily on first event
     if !isPeriodicFlushingStarted {
       isPeriodicFlushingStarted = true
       startPeriodicFlushing()
@@ -150,7 +128,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   }
 
   private func shouldBeSampled(_ prepared: TelemetryEvent, eventSamplingRate: Double?) async -> RecordResult {
-    // When throttling is disabled, record all events (bypass sampling and throttling)
     if config.disableThrottling {
       return RecordResult(shouldRecord: true, reason: "throttling disabled")
     }
@@ -175,7 +152,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     return RecordResult(shouldRecord: true, reason: "accepted")
   }
 
-  /// Initializes and starts the periodic flushing system
   private func startPeriodicFlushing() {
     flushTimer = Task { [weak self] in
       guard let self else { return }
@@ -198,7 +174,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   private func scheduleFlushIfNeeded() async {
     let isBufferFull = buffer.count >= config.maxBufferSize
     if isBufferFull {
-      // Cancel any pending flush and schedule an immediate background flush
       flushTask?.cancel()
       flushTask = Task { [weak self] in
         guard let self else { return }
@@ -209,7 +184,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     // This allows proper batching of events
   }
 
-  /// Flush buffered events to the telemetry endpoint.
   package func flush() async {
     let eventsToSend = buffer
     buffer.removeAll(keepingCapacity: true)
@@ -227,7 +201,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     do {
       _ = try await config.networkRequester.data(for: request)
     } catch {
-      // Log telemetry flush errors when log level is debug or verbose
       let shouldLog = await Task { @MainActor in
         let configuredLevel = Clerk.shared.options.logLevel
         return configuredLevel <= .debug
@@ -244,12 +217,9 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     flushTask = nil
   }
 
-  /// Logs telemetry events and skip reasons when log level is debug or verbose
   private func logEventIfDebug(name: String, _ payload: Any) async {
-    // Check if we should log based on the configured log level
     let shouldLog = await Task { @MainActor in
       let configuredLevel = Clerk.shared.options.logLevel
-      // Log telemetry at debug level or higher (debug, verbose)
       return configuredLevel <= .debug
     }.value
 
@@ -257,7 +227,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     ClerkLogger.debug("[telemetry] \(name): \(payload)")
   }
 
-  /// Enrich the raw event with SDK metadata and instance information.
   private func preparePayload(event: String, payload: [String: JSON]) async -> TelemetryEvent {
     let instanceTypeString = await environment.instanceTypeString()
     let publishableKey = await environment.publishableKey()
