@@ -10,19 +10,10 @@ package enum WatchSyncSource: Equatable {
   case watch
 }
 
-/// One device's complete Clerk auth state, as exchanged between phone and watch.
-///
-/// The device token names a server-side Client, so two devices holding the same
-/// token share one Client and only need to agree on the newest snapshot of it.
 package struct WatchSyncState: Equatable {
   let deviceToken: String?
   let client: Client?
-  /// `Date` header of the response that produced `client`.
   let serverDate: Date?
-  /// How many clears this state has seen, merged by maximum across both devices. A state from
-  /// before a clear has a lower generation than any state after it, whatever the device and
-  /// server clocks say. Payloads from earlier SDKs carry none and count as generation 0, so
-  /// they can never undo a clear.
   let clearGeneration: Int
 
   init(deviceToken: String?, client: Client?, serverDate: Date?, clearGeneration: Int = 0) {
@@ -40,15 +31,11 @@ package struct WatchSyncState: Equatable {
     client?.sessions.isEmpty == false
   }
 
-  /// Whether `self`, received from `source`, should replace `local`.
   func supersedes(_ local: WatchSyncState, from source: WatchSyncSource) -> Bool {
-    // A state from a newer clear generation replaces anything older, so a clear on either device clears both.
     if clearGeneration != local.clearGeneration {
       return clearGeneration > local.clearGeneration
     }
 
-    // Same Client: both devices share one server-side Client, so the newer snapshot wins.
-    // Signing in or out rotates the device token but keeps the Client.
     if deviceToken == local.deviceToken || (client != nil && client?.id == local.client?.id) {
       guard let client else { return false }
       guard let localClient = local.client else { return true }
@@ -56,15 +43,12 @@ package struct WatchSyncState: Equatable {
       guard let localDate = local.serverDate else { return true }
       if serverDate != localDate { return serverDate > localDate }
       if client.updatedAt != localClient.updatedAt { return client.updatedAt > localClient.updatedAt }
-      // Equally new snapshots under different tokens: the phone's token wins, so the devices converge.
       return deviceToken != local.deviceToken && source == .phone
     }
 
-    // Different tokens and Clients. A clear always advances the generation, so a
-    // tokenless state from the same generation is a device that has not fetched a token yet.
     if isCleared { return false }
-    if local.isCleared { return true } // Seed a device that has no token.
-    if hasSession != local.hasSession { return hasSession } // A signed-in Client beats a signed-out one.
+    if local.isCleared { return true }
+    if hasSession != local.hasSession { return hasSession }
     return source == .phone
   }
 }
@@ -90,7 +74,6 @@ package struct WatchSyncPayload: Equatable {
 
   private static let schemaVersion = 2
 
-  /// `nil` when the payload carries no usable auth state.
   let state: WatchSyncState?
   let environment: Clerk.Environment?
 
@@ -111,8 +94,6 @@ package struct WatchSyncPayload: Equatable {
     }
     let isCurrentSchema = context[Key.schema] as? Int == Self.schemaVersion
 
-    // A complete state needs a decodable client paired with its token. Payloads from
-    // earlier SDKs only describe a state when they include a token.
     if (clientData != nil && client == nil)
       || (client != nil && deviceToken == nil)
       || (!isCurrentSchema && deviceToken == nil)
@@ -144,8 +125,6 @@ package struct WatchSyncPayload: Equatable {
     return context
   }
 
-  /// Describes `state` for an SDK 1.5 peer, versioned by send time so each payload is newer than
-  /// the last one it accepted.
   private static func addLegacyKeys(for state: WatchSyncState, to context: inout [String: Any]) {
     let version = Int(Date().timeIntervalSince1970 * 1000)
     if state.deviceToken != nil {
@@ -156,7 +135,6 @@ package struct WatchSyncPayload: Equatable {
         context[LegacyKey.authVersion] = version
       }
     } else if state.clearGeneration > 0 {
-      // Only a clear; a device that has not fetched a token yet must not sign out its peer.
       context[LegacyKey.deviceTokenState] = "cleared"
       context[LegacyKey.deviceTokenVersion] = version
       context[LegacyKey.authState] = "cleared"

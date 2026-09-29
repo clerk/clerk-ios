@@ -5,7 +5,6 @@
 
 import Foundation
 
-/// Moves ``WatchSyncPayload`` values between the phone and watch apps.
 @MainActor
 protocol WatchSyncTransport: AnyObject {
   func send(_ payload: WatchSyncPayload)
@@ -99,7 +98,6 @@ extension WatchConnectivityTransport: WCSessionDelegate {
     }
 
     #if os(watchOS)
-    // The watch may have missed the phone's latest context while it wasn't running.
     let received = WatchSyncPayload(applicationContext: session.receivedApplicationContext)
     #else
     let received: WatchSyncPayload? = nil

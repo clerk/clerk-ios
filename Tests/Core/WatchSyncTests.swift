@@ -11,8 +11,6 @@ final class RecordingWatchSyncTransport: WatchSyncTransport {
   }
 }
 
-// MARK: - Payload
-
 struct WatchSyncPayloadTests {
   @Test
   func completeStateRoundTrips() throws {
@@ -53,7 +51,6 @@ struct WatchSyncPayloadTests {
     #expect(clearedContext["watchSyncDeviceTokenState"] as? String == "cleared")
     #expect(clearedContext["watchSyncAuthState"] as? String == "cleared")
 
-    // A device that has not fetched a token yet must not sign out an SDK 1.5 peer.
     let freshContext = WatchSyncPayload(
       state: WatchSyncState(deviceToken: nil, client: nil, serverDate: nil),
       environment: nil
@@ -130,8 +127,6 @@ struct WatchSyncPayloadTests {
   }
 }
 
-// MARK: - Merge rule
-
 struct WatchSyncStateMergeTests {
   @Test(arguments: [WatchSyncSource.phone, .watch])
   func sameTokenNewerSnapshotWinsFromEitherDevice(source: WatchSyncSource) {
@@ -193,7 +188,6 @@ struct WatchSyncStateMergeTests {
   @Test(arguments: [WatchSyncSource.phone, .watch])
   func stateFromBeforeAClearLosesWhateverItsServerDate(source: WatchSyncSource) {
     let local = WatchSyncState(deviceToken: nil, client: nil, serverDate: nil, clearGeneration: 1)
-    // The server's clock is ahead of the device that cleared, so its date looks newer than the clear.
     let stale = WatchSyncState(deviceToken: "old-token", client: signedIn("old"), serverDate: .distantFuture)
     let afterClear = WatchSyncState(deviceToken: "new-token", client: signedOut("new"), serverDate: date(50), clearGeneration: 1)
 
@@ -246,8 +240,6 @@ struct WatchSyncStateMergeTests {
   }
 }
 
-// MARK: - Coordinator
-
 @MainActor
 @Suite(.serialized)
 struct WatchConnectivityCoordinatorTests {
@@ -283,7 +275,6 @@ struct WatchConnectivityCoordinatorTests {
     let (clerk, _) = try makeClerk(token: "token", client: signedIn("client"), serverDate: date(100))
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
 
-    // Signing out on the watch ends the session on the Client both devices share.
     coordinator.apply(payload(token: "token", client: signedOut("client"), serverDate: date(200)), from: .watch, to: clerk)
 
     #expect(clerk.identityController.currentDeviceToken == "token")
@@ -363,7 +354,6 @@ struct WatchConnectivityCoordinatorTests {
 
   @Test
   func unreadableClearGenerationFailsClosed() throws {
-    // For example, a background launch before the first unlock after a reboot.
     let keychain = ReadFailingKeychain()
     try keychain.backing.set("4", forKey: ClerkKeychainKey.watchSyncClearGeneration.rawValue)
 
@@ -495,8 +485,6 @@ struct WatchConnectivityCoordinatorTests {
   }
 }
 
-// MARK: - Fixtures
-
 private func date(_ seconds: TimeInterval) -> Date {
   Date(timeIntervalSince1970: seconds)
 }
@@ -515,7 +503,6 @@ private func signedOut(_ id: String, updatedAt: TimeInterval = 1000) -> Client {
   return client
 }
 
-/// A Keychain that cannot be read, as before the first unlock, but records writes in `backing`.
 private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
   let backing = InMemoryKeychain()
 
