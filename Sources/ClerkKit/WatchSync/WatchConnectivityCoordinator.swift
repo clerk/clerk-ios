@@ -35,7 +35,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   }
 
   func apply(_ incoming: WatchSyncChange, to clerk: Clerk) {
-    guard isActive, incoming.changedAt > (lastChange(in: clerk)?.changedAt ?? .distantPast) else { return }
+    let previous = lastChange(in: clerk)
+    guard isActive, incoming.changedAt > (previous?.changedAt ?? .distantPast) else { return }
     save(incoming, in: clerk)
     do {
       if let token = incoming.deviceToken {
@@ -45,6 +46,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
         try clerk.identityController.adoptDeviceToken(nil)
       }
     } catch {
+      save(previous, in: clerk)
       ClerkLogger.logError(error, message: "Failed to apply the paired device's sign-in state")
     }
   }
@@ -90,12 +92,14 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     }
   }
 
-  private func save(_ change: WatchSyncChange, in clerk: Clerk) {
+  private func save(_ change: WatchSyncChange?, in clerk: Clerk) {
+    let key = ClerkKeychainKey.watchSyncLastChange.rawValue
     do {
-      try clerk.dependencies.watchSyncKeychain.set(
-        JSONEncoder.clerkEncoder.encode(change),
-        forKey: ClerkKeychainKey.watchSyncLastChange.rawValue
-      )
+      if let change {
+        try clerk.dependencies.watchSyncKeychain.set(JSONEncoder.clerkEncoder.encode(change), forKey: key)
+      } else {
+        try clerk.dependencies.watchSyncKeychain.deleteItem(forKey: key)
+      }
     } catch {
       ClerkLogger.logError(error, message: "Failed to save the last Watch sync change")
     }

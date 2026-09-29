@@ -138,6 +138,27 @@ struct WatchConnectivityCoordinatorTests {
     #expect(clerk.deviceToken == nil)
   }
 
+  @Test
+  func changeThatFailsToApplyIsNotRecorded() throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    let keychain = InMemoryKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      keychain: keychain,
+      identityKeychain: SetFailingKeychain(),
+      clientService: MockClientService(get: { throw CancellationError() })
+    )
+    try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
+    clerk.dependencies = dependencies
+    let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+
+    coordinator.apply(WatchSyncChange(deviceToken: "paired-token", changedAt: .now), to: clerk)
+
+    #expect(clerk.deviceToken == nil)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.watchSyncLastChange.rawValue) == false)
+  }
+
   private func makeClerk(
     token: String? = nil,
     client: Client? = nil,

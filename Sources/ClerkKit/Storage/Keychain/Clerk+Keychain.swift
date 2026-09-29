@@ -30,8 +30,8 @@ extension Clerk {
   /// It also signs out the in-memory client. When the identity is in a Keychain access
   /// group, it is shared, so this signs out every app sharing it.
   ///
-  /// Clerk keeps a count of clears, which contains no token or Client, so Watch sync can
-  /// reject state from before this clear.
+  /// Clerk keeps the last Watch sync change, so a sign-in from before this clear can't
+  /// restore the session.
   ///
   /// This method is useful for:
   /// - Debugging and testing
