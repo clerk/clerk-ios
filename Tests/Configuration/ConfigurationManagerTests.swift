@@ -9,6 +9,7 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ConfigurationManagerTests {
+  /// Creates a valid test publishable key in the format `pk_test_{base64_encoded_url_with_$}`.
   func createTestPublishableKey(for url: String) -> String {
     let urlWithDollar = url + "$"
     let data = urlWithDollar.data(using: .utf8)!
