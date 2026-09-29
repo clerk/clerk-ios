@@ -17,9 +17,7 @@ final class MockDependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
-  let identityMigrationMarkerKeychain: any KeychainStorage
   let identityIsInAccessGroup: Bool
-  let sharesIdentity: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
@@ -73,9 +71,7 @@ final class MockDependencyContainer: Dependencies {
     keychain: (any KeychainStorage)? = nil,
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
-    sharesIdentity: Bool = false,
-    identityIsInAccessGroup: Bool? = nil,
-    identityWriter: String? = nil,
+    identityIsInAccessGroup: Bool = false,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
@@ -100,14 +96,11 @@ final class MockDependencyContainer: Dependencies {
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
     self.appLocalKeychain = resolvedAppLocalKeychain
-    identityMigrationMarkerKeychain = resolvedAppLocalKeychain
     identityStore = ClerkIdentityStore(
       keychain: identityKeychain ?? resolvedKeychain,
-      instanceFingerprint: "",
-      writer: identityWriter
+      instanceFingerprint: ""
     )
-    self.sharesIdentity = sharesIdentity
-    self.identityIsInAccessGroup = identityIsInAccessGroup ?? sharesIdentity
+    self.identityIsInAccessGroup = identityIsInAccessGroup
     self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
     self.biometricCredentialStore =
       biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)

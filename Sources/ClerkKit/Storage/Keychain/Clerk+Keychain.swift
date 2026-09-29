@@ -16,11 +16,7 @@ extension Clerk {
     }
   }
 
-  static let preservedKeychainKeys: Set<ClerkKeychainKey> = [
-    .sharedSessionSyncAdopted,
-    .identityMigrated,
-    .watchSyncClearGeneration,
-  ]
+  static let preservedKeychainKeys: Set<ClerkKeychainKey> = [.watchSyncClearGeneration]
 
   private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.identity])
 
@@ -34,8 +30,8 @@ extension Clerk {
   /// It also signs out the in-memory client. When the identity is in a Keychain access
   /// group, it is shared, so this signs out every app sharing it.
   ///
-  /// Clerk keeps non-secret markers that record where this app's private state lives, that
-  /// its storage was migrated, and how many clears it has seen. They contain no token or Client.
+  /// Clerk keeps a count of clears, which contains no token or Client, so Watch sync can
+  /// reject state from before this clear.
   ///
   /// This method is useful for:
   /// - Debugging and testing
@@ -156,28 +152,12 @@ extension Clerk {
       ClerkLogger.logError(error, message: "Failed to record the Watch clear", configuration: configuration)
     }
     do {
-      try ClerkIdentityMigration.recordClear(in: dependencies.identityMigrationMarkerKeychain)
-    } catch {
-      failures.append(ClerkKeychainKey.identityMigrated.rawValue)
-      ClerkLogger.logError(error, message: "Failed to record the clear for the identity migration", configuration: configuration)
-    }
-    do {
       try removeIdentity()
-      try deleteGroupIdentityLastWrittenHere(in: dependencies)
     } catch {
       failures.append(dependencies.identityStore.key)
       ClerkLogger.logError(error, message: "Failed to delete the Clerk identity", configuration: configuration)
     }
     return failures
-  }
-
-  @MainActor
-  private static func deleteGroupIdentityLastWrittenHere(in dependencies: any Dependencies) throws {
-    let identityStore = dependencies.identityStore
-    guard !dependencies.identityIsInAccessGroup, let writer = identityStore.writer else { return }
-    let groupStore = ClerkIdentityStore(keychain: dependencies.keychain, instanceFingerprint: identityStore.instanceFingerprint)
-    guard (try? groupStore.load())?.writer == writer else { return }
-    try groupStore.delete()
   }
 
   @MainActor

@@ -40,13 +40,11 @@ struct ClerkIdentityStore {
     let schemaVersion: Int
     let revision: UUID
     let instanceFingerprint: String
-    var writer: String?
     let identity: ClerkIdentitySnapshot
   }
 
   let keychain: any KeychainStorage
   let instanceFingerprint: String
-  var writer: String?
   let key = ClerkKeychainKey.identity.rawValue
 
   func load() throws -> Record? {
@@ -81,7 +79,6 @@ struct ClerkIdentityStore {
       schemaVersion: Record.schemaVersion,
       revision: UUID(),
       instanceFingerprint: instanceFingerprint,
-      writer: writer,
       identity: identity
     )
     try keychain.set(JSONEncoder.clerkEncoder.encode(record), forKey: key)

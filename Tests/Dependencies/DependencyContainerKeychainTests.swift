@@ -10,34 +10,6 @@ import Testing
 struct DependencyContainerKeychainTests {
   @Test
   @MainActor
-  func sharedSessionSyncFailsClosedWithoutAccessGroup() {
-    #expect(throws: ClerkClientError.self) {
-      try DependencyContainer(
-        publishableKey: testPublishableKey,
-        options: .init(sharedSessionSync: .enabled),
-        runtimeScope: ClerkRuntimeScope(epoch: .initial)
-      )
-    }
-  }
-
-  @Test
-  @MainActor
-  func sharedSessionSyncFailsClosedWithoutOwnerIdentifier() {
-    #expect(throws: ClerkClientError.self) {
-      try DependencyContainer(
-        publishableKey: testPublishableKey,
-        options: .init(
-          keychainConfig: .init(service: "service", accessGroup: "group.example"),
-          sharedSessionSync: .enabled
-        ),
-        runtimeScope: ClerkRuntimeScope(epoch: .initial),
-        ownerIdentifierProvider: { nil }
-      )
-    }
-  }
-
-  @Test
-  @MainActor
   func keychainStorageWithoutAccessGroupUsesSystemKeychain() throws {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
@@ -66,53 +38,38 @@ struct DependencyContainerKeychainTests {
     #expect(container.identityStore.keychain is SystemKeychain)
     #expect(container.identityStore.instanceFingerprint == fingerprint)
     #expect(!container.identityIsInAccessGroup)
-    #expect(!container.sharesIdentity)
   }
 
   @Test
   @MainActor
-  func sharedSessionSyncSharesTheIdentity() throws {
-    let container = try DependencyContainer(
-      publishableKey: testPublishableKey,
-      options: .init(
-        keychainConfig: .init(service: "service", accessGroup: "group.example"),
-        sharedSessionSync: .enabled
-      ),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      ownerIdentifierProvider: { "com.example.app" }
-    )
-
-    #expect(container.sharesIdentity)
-  }
-
-  @Test
-  @MainActor
-  func anAppThatWritesTheGroupRecordSharesItWithoutTheSyncOption() throws {
+  func anAccessGroupSharesTheIdentityAndKeepsPrivateStatePerApp() throws {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service", accessGroup: "group.example")),
       runtimeScope: ClerkRuntimeScope(epoch: .initial),
-      ownerIdentifierProvider: { "com.example.extension" }
+      ownerIdentifierProvider: { "com.example.app" }
     )
 
     #expect(container.identityIsInAccessGroup)
-    #expect(container.sharesIdentity)
+    let privateStorage = try #require(container.appLocalKeychain as? MigratingKeychainStorage)
+    let primary = try #require(privateStorage.primary as? SystemKeychain)
+    #expect(primary.service == "com.example.app.clerk.app")
+    #expect(primary.accessGroup == nil)
+    let fallback = try #require(privateStorage.fallback as? SystemKeychain)
+    #expect(fallback.service == "service")
+    #expect(fallback.accessGroup == nil)
   }
 
   @Test
   @MainActor
-  func injectedKeychainCannotBeUsedWithSharedSessionSync() {
+  func injectedKeychainCannotBeUsedWithStorageMigration() {
     #expect(throws: ClerkClientError.self) {
       try DependencyContainer(
         publishableKey: testPublishableKey,
-        options: .init(
-          keychainConfig: .init(service: "service", accessGroup: "group.example"),
-          sharedSessionSync: .enabled
-        ),
+        options: .init(),
         runtimeScope: ClerkRuntimeScope(epoch: .initial),
-        migratesPersistentStateOverride: false,
-        keychainStorageOverride: InMemoryKeychain(),
-        ownerIdentifierProvider: { "com.example.app" }
+        migratesPersistentStateOverride: true,
+        keychainStorageOverride: InMemoryKeychain()
       )
     }
   }

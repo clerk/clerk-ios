@@ -182,7 +182,7 @@ struct SharedSessionSyncTests {
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       appLocalKeychain: InMemoryKeychain(),
       identityKeychain: keychain,
-      sharesIdentity: true
+      identityIsInAccessGroup: true
     )
     clerk.identityController.hydrate()
     clerk.identityController.startSharing(notifier: hub.makeNotifier())

@@ -200,7 +200,7 @@ struct ClerkReconfigureTests {
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       keychain: sharedKeychain,
       appLocalKeychain: InMemoryKeychain(),
-      sharesIdentity: true,
+      identityIsInAccessGroup: true,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
     try clerk.performConfiguration(dependencies: sourceDependencies)

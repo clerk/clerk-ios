@@ -14,20 +14,7 @@ final class DependencyContainer: Dependencies {
     let shared: any KeychainStorage
     let appLocal: any KeychainStorage
     let identityStore: ClerkIdentityStore
-    let identityMigrationMarker: any KeychainStorage
     let identityIsInAccessGroup: Bool
-    let sharesIdentity: Bool
-
-    static func injected(_ keychain: any KeychainStorage, instanceFingerprint: String) -> KeychainStorages {
-      KeychainStorages(
-        shared: keychain,
-        appLocal: keychain,
-        identityStore: ClerkIdentityStore(keychain: keychain, instanceFingerprint: instanceFingerprint),
-        identityMigrationMarker: keychain,
-        identityIsInAccessGroup: false,
-        sharesIdentity: false
-      )
-    }
   }
 
   // MARK: - Core Dependencies
@@ -36,9 +23,7 @@ final class DependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
-  let identityMigrationMarkerKeychain: any KeychainStorage
   let identityIsInAccessGroup: Bool
-  let sharesIdentity: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
@@ -127,9 +112,7 @@ final class DependencyContainer: Dependencies {
     keychain = keychainStorages.shared
     appLocalKeychain = keychainStorages.appLocal
     identityStore = keychainStorages.identityStore
-    identityMigrationMarkerKeychain = keychainStorages.identityMigrationMarker
     identityIsInAccessGroup = keychainStorages.identityIsInAccessGroup
-    sharesIdentity = keychainStorages.sharesIdentity
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
     biometricCredentialStore = BiometricCredentialLocalStore(keychain: appLocalKeychain)
 
@@ -185,127 +168,75 @@ final class DependencyContainer: Dependencies {
     migratesPersistentState: Bool,
     keychainStorageOverride: (any KeychainStorage)?
   ) throws -> KeychainStorages {
-    let namespace = SharedSessionNamespace(frontendApiUrl: frontendApiUrl, publishableKey: publishableKey)
-    let syncEnabled = options.sharedSessionSync != nil
-
+    let fingerprint = SharedSessionNamespace(frontendApiUrl: frontendApiUrl, publishableKey: publishableKey).fingerprint
     if let keychainStorageOverride {
-      guard !syncEnabled, !migratesPersistentState else {
+      guard !migratesPersistentState else {
         throw ClerkClientError(
-          message: "Injected Keychain storage cannot be used with shared-session sync or storage migration.",
+          message: "Injected Keychain storage cannot be used with storage migration.",
           localizationBundle: .module
         )
       }
-      return .injected(keychainStorageOverride, instanceFingerprint: namespace.fingerprint)
+      return KeychainStorages(
+        shared: keychainStorageOverride,
+        appLocal: keychainStorageOverride,
+        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride, instanceFingerprint: fingerprint),
+        identityIsInAccessGroup: false
+      )
     }
 
     let config = options.keychainConfig
-    let shared = makeKeychainStorage(config: config)
-    if syncEnabled, config.normalizedAccessGroup == nil {
-      throw ClerkClientError(
-        message: "Shared session sync requires a nonempty Keychain access group.",
-        localizationBundle: .module
+    let configured = makeKeychainStorage(config: config)
+    let storages: KeychainStorages
+    let legacyKeychain: any KeychainStorage
+    if config.normalizedAccessGroup != nil {
+      // Queries without an access group span every group the app belongs to, so private state
+      // needs a service of its own to stay out of the shared group.
+      let allGroups = makeKeychainStorage(service: config.service, accessGroup: nil)
+      let privateKeychain = makeKeychainStorage(
+        service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app",
+        accessGroup: nil
       )
-    }
-    if syncEnabled, ownerIdentifier?.isEmpty != false {
-      throw ClerkClientError(
-        message: "Shared session sync requires a nonempty application bundle identifier.",
-        localizationBundle: .module
+      let isInGroup = !migratesPersistentState || canAccessAccessGroup(configured)
+      storages = KeychainStorages(
+        shared: configured,
+        appLocal: MigratingKeychainStorage(primary: privateKeychain, fallback: allGroups),
+        identityStore: ClerkIdentityStore(keychain: isInGroup ? configured : allGroups, instanceFingerprint: fingerprint),
+        identityIsInAccessGroup: isInGroup
       )
-    }
-
-    let configuredAppLocal: any KeychainStorage = if config.normalizedAccessGroup != nil {
-      makeKeychainStorage(service: config.service, accessGroup: nil)
+      legacyKeychain = allGroups
     } else {
-      shared
-    }
-    let adoptionMarkerKeychain = makeKeychainStorage(
-      service: stableIdentityService(
-        configuredService: config.service,
-        instanceFingerprint: namespace.fingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      accessGroup: nil
-    )
-
-    let wasAdopted = migratesPersistentState
-      && (try? AppLocalStateAdoption.isAdopted(in: adoptionMarkerKeychain)) == true
-
-    var identityKeychain = syncEnabled || !wasAdopted ? shared : configuredAppLocal
-    var identityIsInAccessGroup = config.normalizedAccessGroup != nil && (syncEnabled || !wasAdopted)
-    var accessGroupIsUnreadable = false
-    if identityIsInAccessGroup, migratesPersistentState {
-      do {
-        _ = try shared.hasItem(forKey: ClerkKeychainKey.identity.rawValue)
-      } catch let error as KeychainError where error.isMissingEntitlement {
-        ClerkLogger.error(
-          "Clerk cannot access the configured Keychain access group, so authentication stays local to this app and shared-session sync is off. Add the access group to this app's Keychain Sharing entitlement, then relaunch."
-        )
-        identityKeychain = configuredAppLocal
-        identityIsInAccessGroup = false
-        accessGroupIsUnreadable = true
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to read the configured Keychain access group")
-        accessGroupIsUnreadable = true
-      }
-    }
-    let identityStore = ClerkIdentityStore(
-      keychain: identityKeychain,
-      instanceFingerprint: namespace.fingerprint,
-      writer: ownerIdentifier.nilIfEmpty
-    )
-
-    if migratesPersistentState, syncEnabled, !wasAdopted, !accessGroupIsUnreadable {
-      do {
-        try AppLocalStateAdoption(
-          markerKeychain: adoptionMarkerKeychain,
-          appLocal: configuredAppLocal,
-          shared: shared
-        ).adoptIfNeeded()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to move Clerk's private state out of the shared Keychain group")
-      }
+      storages = KeychainStorages(
+        shared: configured,
+        appLocal: configured,
+        identityStore: ClerkIdentityStore(keychain: configured, instanceFingerprint: fingerprint),
+        identityIsInAccessGroup: false
+      )
+      legacyKeychain = configured
     }
 
     if migratesPersistentState {
       do {
-        try ClerkIdentityMigration(
-          store: identityStore,
-          legacyKeychain: shared,
-          markerKeychain: configuredAppLocal,
-          configuredService: config.service,
-          accessGroup: config.normalizedAccessGroup,
-          ownerIdentifier: ownerIdentifier,
-          instanceFingerprint: namespace.fingerprint,
-          readsLegacyItems: !wasAdopted && !accessGroupIsUnreadable,
-          finalizes: !accessGroupIsUnreadable,
-          appLocalLegacyKeychain: config.normalizedAccessGroup == nil ? nil : configuredAppLocal
-        ).migrateIfNeeded()
+        try ClerkIdentityMigration(store: storages.identityStore, legacyKeychain: legacyKeychain).migrateIfNeeded()
       } catch {
         ClerkLogger.logError(error, message: "Failed to migrate Clerk Keychain storage from an earlier SDK version")
       }
     }
-
-    return KeychainStorages(
-      shared: shared,
-      appLocal: syncEnabled || wasAdopted ? configuredAppLocal : shared,
-      identityStore: identityStore,
-      identityMigrationMarker: configuredAppLocal,
-      identityIsInAccessGroup: identityIsInAccessGroup,
-      sharesIdentity: identityIsInAccessGroup
-    )
+    return storages
   }
 
-  static func stableIdentityService(
-    configuredService: String,
-    instanceFingerprint: String,
-    ownerIdentifier: String?
-  ) -> String {
-    let owner = if let ownerIdentifier, !ownerIdentifier.isEmpty {
-      ownerIdentifier
-    } else {
-      configuredService
+  private static func canAccessAccessGroup(_ keychain: any KeychainStorage) -> Bool {
+    do {
+      _ = try keychain.hasItem(forKey: ClerkKeychainKey.identity.rawValue)
+      return true
+    } catch let error as KeychainError where error.isMissingEntitlement {
+      ClerkLogger.error(
+        "Clerk cannot access the configured Keychain access group, so authentication stays local to this app. Add the access group to this app's Keychain Sharing entitlement, then relaunch."
+      )
+      return false
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to read the configured Keychain access group")
+      return true
     }
-    return "\(owner).clerk.identity.v2.\(instanceFingerprint)"
   }
 
   private static func makeKeychainStorage(

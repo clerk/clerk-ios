@@ -24,11 +24,7 @@ protocol Dependencies: AnyObject {
 
   var identityStore: ClerkIdentityStore { get }
 
-  var identityMigrationMarkerKeychain: any KeychainStorage { get }
-
   var identityIsInAccessGroup: Bool { get }
-
-  var sharesIdentity: Bool { get }
 
   /// Manager for local biometric-credential private keys.
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }

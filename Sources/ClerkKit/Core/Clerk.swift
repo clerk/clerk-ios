@@ -388,7 +388,7 @@ extension Clerk {
   }
 
   private func startSharedSessionSyncIfNeeded(dependencies: any Dependencies) {
-    guard dependencies.sharesIdentity else { return }
+    guard dependencies.identityIsInAccessGroup else { return }
     identityController.startSharing(
       notifier: SharedSessionSyncDarwinNotifier(
         keychainConfig: options.keychainConfig,

@@ -171,7 +171,7 @@ extension HostedAuthFlowTests {
     )
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
-      sharesIdentity: true,
+      identityIsInAccessGroup: true,
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
     )
@@ -195,7 +195,7 @@ private let initialClient = makeHostedAuthPersistenceClient(id: "initial-client"
 @MainActor
 private func configureHostedAuthPersistenceTest(
   keychain: FailableIdentityKeychain,
-  sharesIdentity: Bool = false,
+  identityIsInAccessGroup: Bool = false,
   hostedAuthService: some HostedAuthServiceProtocol,
   sessionService: some SessionServiceProtocol
 ) throws {
@@ -206,14 +206,14 @@ private func configureHostedAuthPersistenceTest(
     apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
     keychain: InMemoryKeychain(),
     identityKeychain: keychain,
-    sharesIdentity: sharesIdentity,
+    identityIsInAccessGroup: identityIsInAccessGroup,
     hostedAuthService: hostedAuthService,
     sessionService: sessionService
   )
   try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: Clerk.Options())
   clerk.dependencies = dependencies
   try clerk.seedIdentity(deviceToken: "initial-token", client: initialClient, serverDate: Date(timeIntervalSince1970: 100))
-  if sharesIdentity {
+  if identityIsInAccessGroup {
     clerk.identityController.startSharing(notifier: SilentNotifier())
   }
 }

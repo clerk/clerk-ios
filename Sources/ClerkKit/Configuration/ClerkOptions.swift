@@ -13,13 +13,15 @@ extension Clerk {
       /// Name of the service under which to save items. Defaults to the bundle identifier.
       public let service: String
 
-      /// Access group for sharing Keychain items.
+      /// Keychain access group that stores the session. Apps and extensions that use the same service
+      /// and access group share one session. Other Clerk data stays private to each app.
       public let accessGroup: String?
 
       /// Initializes a ``KeychainConfig`` instance.
       /// - Parameters:
       ///   - service: Name of the service under which to save items. Defaults to the bundle identifier.
-      ///   - accessGroup: Access group for sharing Keychain items.
+      ///   - accessGroup: Keychain access group that stores the session, shared by every app and extension
+      ///     that uses the same service and access group.
       public init(
         service: String = Bundle.main.bundleIdentifier ?? "",
         accessGroup: String? = nil
@@ -38,12 +40,11 @@ extension Clerk {
       }
     }
 
-    /// Configuration object that enables Clerk auth state synchronization between sibling apps.
-    ///
-    /// Participating apps must also configure ``KeychainConfig`` with the same Keychain
-    /// service and access group so Clerk auth state is readable across those apps.
+    /// No longer has any effect: apps and extensions share a session by configuring the same
+    /// ``KeychainConfig/service`` and ``KeychainConfig/accessGroup``.
     public struct SharedSessionSyncConfig: Sendable, Equatable {
-      /// Enables synchronization of persisted Clerk auth state through the shared Keychain.
+      /// No longer has any effect.
+      @available(*, deprecated, message: "Sessions are shared through keychainConfig.accessGroup; remove this option.")
       public static let enabled = Self()
 
       private init() {}
@@ -110,7 +111,7 @@ extension Clerk {
     /// Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
     public let watchConnectivityEnabled: Bool
 
-    /// Configuration for synchronizing persisted auth state between sibling apps. Defaults to nil.
+    /// No longer has any effect: apps and extensions share a session through ``KeychainConfig/accessGroup``.
     public let sharedSessionSync: SharedSessionSyncConfig?
 
     /// A closure that receives callbacks when Clerk logs errors.
@@ -154,7 +155,7 @@ extension Clerk {
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
     ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
-    ///   - sharedSessionSync: Configuration for synchronizing persisted auth state between sibling apps. Defaults to nil.
+    ///   - sharedSessionSync: No longer has any effect. Share a session by configuring the same Keychain service and access group.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     ///   - middleware: Middleware configuration for requests and responses. Defaults to an empty configuration.
     public init(

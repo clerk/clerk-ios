@@ -122,7 +122,6 @@ struct ClerkTests {
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
     #expect(try WatchSyncClearMarker.generation(in: keychain) == 5)
-    #expect(try keychain.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.clearedMarkerValue)
   }
 
   @Test
@@ -154,7 +153,7 @@ struct ClerkTests {
       apiClient: Clerk.shared.dependencies.apiClient,
       keychain: sharedKeychain,
       appLocalKeychain: InMemoryKeychain(),
-      sharesIdentity: true
+      identityIsInAccessGroup: true
     )
     try shared.identityStore.save(ClerkIdentitySnapshot(state: .cleared, deviceToken: "shared-token", client: nil, serverDate: nil))
     let local = MockDependencyContainer(apiClient: Clerk.shared.dependencies.apiClient)
@@ -206,33 +205,6 @@ struct ClerkTests {
 
     try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
     #expect(try groupKeychain.data(forKey: ClerkKeychainKey.identity.rawValue) == siblingIdentity)
-  }
-
-  @Test
-  func clearDeletesTheGroupIdentityThisAppLastWroteBeforeTurningSyncOff() throws {
-    let groupKeychain = InMemoryKeychain()
-    let dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: groupKeychain,
-      appLocalKeychain: InMemoryKeychain(),
-      identityKeychain: InMemoryKeychain(),
-      identityWriter: "com.example.app",
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-    let groupStore = ClerkIdentityStore(keychain: groupKeychain, instanceFingerprint: "")
-    Clerk.shared.dependencies = dependencies
-
-    var ownStore = groupStore
-    ownStore.writer = "com.example.app"
-    try ownStore.save(ClerkIdentitySnapshot(state: .present, deviceToken: "own-token", client: .mock, serverDate: nil))
-    Clerk.clearAllKeychainItems()
-    #expect(try groupStore.load() == nil)
-
-    var siblingStore = groupStore
-    siblingStore.writer = "com.example.sibling"
-    try siblingStore.save(ClerkIdentitySnapshot(state: .present, deviceToken: "sibling-token", client: .mock, serverDate: nil))
-    Clerk.clearAllKeychainItems()
-    #expect(try groupStore.load()?.identity.deviceToken == "sibling-token")
   }
 
   @Test
@@ -289,7 +261,7 @@ struct ClerkTests {
     Clerk.clearAllKeychainItems()
 
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == [.watchSyncClearGeneration, .identityMigrated].contains(key))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
     }
   }
 
