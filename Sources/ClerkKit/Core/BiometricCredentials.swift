@@ -239,7 +239,6 @@ public struct BiometricCredentials {
     }
   }
 
-  /// Signs a server challenge using the selected credential's existing local key.
   func sign(
     challenge: BiometricCredentialChallenge,
     credential: BiometricCredentialLocalRecord,

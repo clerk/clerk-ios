@@ -1,6 +1,5 @@
 import Foundation
 
-/// Supported HTTP verbs for Clerk network requests.
 enum HTTPMethod: String {
   case get = "GET"
   case post = "POST"
@@ -24,7 +23,6 @@ struct AnyEncodable: Encodable, @unchecked Sendable {
   }
 }
 
-/// Encodable dictionary wrapper that allows `[String: Any]` to be encoded.
 struct EncodableDictionary: Encodable, @unchecked Sendable {
   let dictionary: [String: Any]
 
@@ -33,15 +31,12 @@ struct EncodableDictionary: Encodable, @unchecked Sendable {
   }
 
   func encode(to encoder: Encoder) throws {
-    // Convert dictionary to JSON data using JSONSerialization
     let jsonData = try JSONSerialization.data(withJSONObject: dictionary, options: [])
-    // Decode it back as a generic JSON structure and encode it properly
     let json = try JSONDecoder().decode(JSON.self, from: jsonData)
     try json.encode(to: encoder)
   }
 }
 
-/// Represents a request body, either unused, raw data, or an encodable payload.
 enum RequestBody: @unchecked Sendable {
   case data(Data)
   case encodable(AnyEncodable)
@@ -56,10 +51,8 @@ enum RequestBody: @unchecked Sendable {
   }
 }
 
-/// Canonical empty payload used for requests where no response body is anticipated.
 struct EmptyResponse: Codable {}
 
-/// Describes a single API request with a strongly typed response.
 struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
@@ -180,7 +173,6 @@ enum RequestError: Error {
   case invalidURL(path: String)
 }
 
-/// Wraps a decoded response value from the API client.
 struct APIResponse<Value: Sendable> {
   let value: Value
   let requestSequence: Int?

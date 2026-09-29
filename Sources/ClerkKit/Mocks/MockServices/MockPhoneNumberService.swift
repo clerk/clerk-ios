@@ -7,27 +7,17 @@
 
 import Foundation
 
-/// Mock implementation of `PhoneNumberServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockPhoneNumberService: PhoneNumberServiceProtocol {
-  /// Custom handler for the `create(phoneNumber:)` method.
   package nonisolated(unsafe) var createHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `delete(phoneNumberId:)` method.
   package nonisolated(unsafe) var deleteHandler: ((String) async throws -> DeletedObject)?
 
-  /// Custom handler for the `prepareVerification(phoneNumberId:)` method.
   package nonisolated(unsafe) var prepareVerificationHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `attemptVerification(phoneNumberId:code:)` method.
   package nonisolated(unsafe) var attemptVerificationHandler: ((String, String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `makeDefaultSecondFactor(phoneNumberId:)` method.
   package nonisolated(unsafe) var makeDefaultSecondFactorHandler: ((String) async throws -> PhoneNumber)?
 
-  /// Custom handler for the `setReservedForSecondFactor(phoneNumberId:reserved:)` method.
   package nonisolated(unsafe) var setReservedForSecondFactorHandler: ((String, Bool) async throws -> PhoneNumber)?
 
   package init(

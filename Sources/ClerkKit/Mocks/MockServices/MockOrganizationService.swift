@@ -7,93 +7,61 @@
 
 import Foundation
 
-/// Mock implementation of `OrganizationServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockOrganizationService: OrganizationServiceProtocol {
-  /// Custom handler for the `createOrganization(name:slug:)` method.
   package nonisolated(unsafe) var createOrganizationHandler: ((String, String?) async throws -> Organization)?
 
-  /// Custom handler for the `getOrganization(organizationId:)` method.
   package nonisolated(unsafe) var getOrganizationHandler: ((String) async throws -> Organization)?
 
-  /// Custom handler for the `updateOrganization(organizationId:name:slug:)` method.
   package nonisolated(unsafe) var updateOrganizationHandler: ((String, String, String?) async throws -> Organization)?
 
-  /// Custom handler for the `destroyOrganization(organizationId:)` method.
   package nonisolated(unsafe) var destroyOrganizationHandler: ((String) async throws -> DeletedObject)?
 
-  /// Custom handler for the `setOrganizationLogo(organizationId:imageData:)` method.
   package nonisolated(unsafe) var setOrganizationLogoHandler: ((String, Data) async throws -> Organization)?
 
-  /// Custom handler for the `deleteOrganizationLogo(organizationId:)` method.
   package nonisolated(unsafe) var deleteOrganizationLogoHandler: ((String) async throws -> DeletedObject)?
 
-  /// Custom handler for the `getOrganizationRoles(organizationId:initialPage:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationRolesHandler: ((String, Int, Int) async throws -> ClerkPaginatedResponse<RoleResource>)?
 
-  /// Custom handler for the `getOrganizationMemberships(organizationId:query:role:initialPage:pageSize:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipsHandler: ((String, String?, [String]?, Int, Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>)?
 
-  /// Custom handler for the `addOrganizationMember(organizationId:userId:role:)` method.
   package nonisolated(unsafe) var addOrganizationMemberHandler: ((String, String, String) async throws -> OrganizationMembership)?
 
-  /// Custom handler for the `updateOrganizationMember(organizationId:userId:role:)` method.
   package nonisolated(unsafe) var updateOrganizationMemberHandler: ((String, String, String) async throws -> OrganizationMembership)?
 
-  /// Custom handler for the `removeOrganizationMember(organizationId:userId:)` method.
   package nonisolated(unsafe) var removeOrganizationMemberHandler: ((String, String) async throws -> OrganizationMembership)?
 
-  /// Custom handler for the `getOrganizationInvitations(organizationId:initialPage:pageSize:status:)` method.
   package nonisolated(unsafe) var getOrganizationInvitationsHandler: ((String, Int, Int, [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation>)?
 
-  /// Custom handler for the `inviteOrganizationMember(organizationId:emailAddress:role:)` method.
   package nonisolated(unsafe) var inviteOrganizationMemberHandler: ((String, String, String) async throws -> OrganizationInvitation)?
 
-  /// Custom handler for the `inviteOrganizationMembers(organizationId:emailAddresses:role:)` method.
   package nonisolated(unsafe) var inviteOrganizationMembersHandler: ((String, [String], String) async throws -> [OrganizationInvitation])?
 
-  /// Custom handler for the `createOrganizationDomain(organizationId:domainName:)` method.
   package nonisolated(unsafe) var createOrganizationDomainHandler: ((String, String) async throws -> OrganizationDomain)?
 
-  /// Custom handler for the `getOrganizationDomains(organizationId:initialPage:pageSize:enrollmentMode:)` method.
   package nonisolated(unsafe) var getOrganizationDomainsHandler: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationDomain>)?
 
-  /// Custom handler for the `getOrganizationDomain(organizationId:domainId:)` method.
   package nonisolated(unsafe) var getOrganizationDomainHandler: ((String, String) async throws -> OrganizationDomain)?
 
-  /// Custom handler for the `getOrganizationMembershipRequests(organizationId:initialPage:pageSize:status:)` method.
   package nonisolated(unsafe) var getOrganizationMembershipRequestsHandler: ((String, Int, Int, String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>)?
 
-  /// Custom handler for the `deleteOrganizationDomain(organizationId:domainId:)` method.
   package nonisolated(unsafe) var deleteOrganizationDomainHandler: ((String, String) async throws -> DeletedObject)?
 
-  /// Custom handler for the `prepareOrganizationDomainAffiliationVerification(organizationId:domainId:affiliationEmailAddress:)` method.
   package nonisolated(unsafe) var prepareOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
 
-  /// Custom handler for the `attemptOrganizationDomainAffiliationVerification(organizationId:domainId:code:)` method.
   package nonisolated(unsafe) var attemptOrganizationDomainAffiliationVerificationHandler: ((String, String, String) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
 
-  /// Custom handler for the `updateOrganizationDomainEnrollmentMode(organizationId:domainId:enrollmentMode:deletePending:)` method.
   package nonisolated(unsafe) var updateOrganizationDomainEnrollmentModeHandler: ((String, String, String, Bool?) async throws -> OrganizationDomain)? // swiftlint:disable:this identifier_name
 
-  /// Custom handler for the `revokeOrganizationInvitation(organizationId:invitationId:)` method.
   package nonisolated(unsafe) var revokeOrganizationInvitationHandler: ((String, String) async throws -> OrganizationInvitation)?
 
-  /// Custom handler for the `destroyOrganizationMembership(organizationId:userId:)` method.
   package nonisolated(unsafe) var destroyOrganizationMembershipHandler: ((String, String) async throws -> OrganizationMembership)?
 
-  /// Custom handler for the `acceptUserOrganizationInvitation(invitationId:)` method.
   package nonisolated(unsafe) var acceptUserOrganizationInvitationHandler: ((String) async throws -> UserOrganizationInvitation)?
 
-  /// Custom handler for the `acceptOrganizationSuggestion(suggestionId:)` method.
   package nonisolated(unsafe) var acceptOrganizationSuggestionHandler: ((String) async throws -> OrganizationSuggestion)?
 
-  /// Custom handler for the `acceptOrganizationMembershipRequest(organizationId:requestId:)` method.
   package nonisolated(unsafe) var acceptOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)? // swiftlint:disable:this identifier_name
 
-  /// Custom handler for the `rejectOrganizationMembershipRequest(organizationId:requestId:)` method.
   package nonisolated(unsafe) var rejectOrganizationMembershipRequestHandler: ((String, String) async throws -> OrganizationMembershipRequest)? // swiftlint:disable:this identifier_name
 
   package init(

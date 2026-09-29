@@ -598,11 +598,6 @@ extension SignIn {
 extension SignIn {
   // MARK: - Internal Helpers
 
-  /// Reloads the current sign-in state from the server.
-  ///
-  /// - Parameter rotatingTokenNonce: Optional rotating token nonce for reloading.
-  /// - Returns: An updated `SignIn` object with the latest state.
-  /// - Throws: An error if reloading fails.
   @discardableResult
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
@@ -610,13 +605,6 @@ extension SignIn {
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Gets the credential for passkey authentication.
-  ///
-  /// - Parameters:
-  ///   - autofill: Whether to use autofill-assisted flow (default is `false`).
-  ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
-  /// - Returns: A JSON-encoded string containing the passkey credential.
-  /// - Throws: An error if getting the credential fails.
   @MainActor
   func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
     let verification =
@@ -691,7 +679,6 @@ extension SignIn {
   }
   #endif
 
-  /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
   func handleRedirectCallbackUrl(
     _ url: URL,
@@ -705,7 +692,6 @@ extension SignIn {
       }
       return .signIn(updatedSignIn)
     } else {
-      // transfer flow
       let signIn = try await reload()
       let result = try await signIn.handleTransferFlow(
         transferable: transferable,
@@ -727,7 +713,6 @@ extension SignIn {
     }
   }
 
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
   func handleTransferFlow(
     transferable: Bool = true,
@@ -745,7 +730,6 @@ extension SignIn {
     }
   }
 
-  /// Helper to determine if the SignIn needs to be transferred to a SignUp
   var needsTransferToSignUp: Bool {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
   }
@@ -756,21 +740,18 @@ extension SignIn {
     return needsSecondFactor && supportsPasskey
   }
 
-  /// The first factor matching the specified strategy string.
   package func identifyingFirstFactor(for strategy: String) -> Factor? {
     supportedFirstFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }
 
-  /// The first factor matching the specified strategy string and identifier.
   package func identifyingFirstFactor(for strategy: String, matching identifier: String) -> Factor? {
     supportedFirstFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }
 
-  /// The second factor matching the specified strategy string.
   func identifyingSecondFactor(for strategy: String) -> Factor? {
     supportedSecondFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier

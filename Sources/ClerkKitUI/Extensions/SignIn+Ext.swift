@@ -63,7 +63,6 @@ extension SignIn {
   }
 
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
-    // Remove the current factor, reset factors, oauth factors, enterprise SSO factors, saml factors, passkey factors
     let firstFactors = supportedFirstFactors?.filter { factor in
       if case .oauth = factor.strategy { return false }
       return factor != currentFactor && factor.isResetFactor == false && factor.strategy != .enterpriseSSO && factor.strategy != .saml

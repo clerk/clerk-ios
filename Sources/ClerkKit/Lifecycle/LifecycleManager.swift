@@ -15,19 +15,9 @@ import UIKit
 import AppKit
 #endif
 
-/// Protocol defining callbacks for app lifecycle events.
-///
-/// Implementations of this protocol can respond to foreground and background transitions
-/// to perform necessary actions like refreshing data or cleaning up resources.
 protocol LifecycleEventHandling: Sendable {
-  /// Called when the app is about to enter the foreground.
-  ///
-  /// Use this to resume background tasks, refresh data, or restart polling.
   @MainActor func onWillEnterForeground() async
 
-  /// Called when the app has entered the background.
-  ///
-  /// Use this to pause background tasks, flush telemetry, or save state.
   @MainActor func onDidEnterBackground() async
 }
 
@@ -37,28 +27,17 @@ protocol LifecycleEventHandling: Sendable {
 /// Call `stopObserving()` before releasing the manager to ensure proper cleanup.
 @MainActor
 final class LifecycleManager {
-  /// Task that observes foreground notifications.
   private var willEnterForegroundTask: Task<Void, Error>?
 
-  /// Task that observes background notifications.
   private var didEnterBackgroundTask: Task<Void, Error>?
 
-  /// The handler that responds to lifecycle events.
   private let handler: any LifecycleEventHandling
 
-  /// Creates a new lifecycle manager with the provided event handler.
-  ///
-  /// - Parameter handler: The object that will handle lifecycle events.
   init(handler: any LifecycleEventHandling) {
     self.handler = handler
   }
 
-  /// Starts observing app lifecycle notifications.
-  ///
-  /// This method sets up notification observers for foreground and background transitions.
-  /// If observers are already active, existing tasks are cancelled before creating new ones.
   func startObserving() {
-    // Cancel existing tasks if they exist (switching instances)
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 
@@ -79,9 +58,6 @@ final class LifecycleManager {
     }
   }
 
-  /// Stops observing app lifecycle notifications and cancels all active tasks.
-  ///
-  /// This is called by `Clerk.cleanupManagers()` during reconfiguration or test cleanup.
   func stopObserving() {
     willEnterForegroundTask?.cancel()
     willEnterForegroundTask = nil

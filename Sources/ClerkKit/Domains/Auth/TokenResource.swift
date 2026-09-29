@@ -17,9 +17,6 @@ public struct TokenResource: Codable, Equatable, Sendable {
 }
 
 extension TokenResource {
-  /// Attempts to decode the JWT into a `DecodedJWT` object.
-  ///
-  /// - Returns: A `DecodedJWT` object if decoding is successful; otherwise `nil`.
   var decodedJWT: DecodedJWT? {
     do {
       return try DecodedJWT(jwt: jwt)
@@ -29,12 +26,10 @@ extension TokenResource {
     }
   }
 
-  /// Session token `fea` claim used by ``Session/has(_:)`` and ``Session/checkAuthorization(_:)``.
   var featuresClaim: String {
     decodedJWT?.claim(name: "fea").string ?? ""
   }
 
-  /// Session token `pla` claim used by ``Session/has(_:)`` and ``Session/checkAuthorization(_:)``.
   var plansClaim: String {
     decodedJWT?.claim(name: "pla").string ?? ""
   }

@@ -7,30 +7,19 @@
 
 import Foundation
 
-/// Mock implementation of `SignInServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockSignInService: SignInServiceProtocol {
-  /// Custom handler for the `create(params:)` method.
   nonisolated(unsafe) var createHandler: ((SignIn.CreateParams) async throws -> SignIn)?
 
-  /// Custom handler for the `prepareFirstFactor(signInId:params:)` method.
   nonisolated(unsafe) var prepareFirstFactorHandler: ((String, SignIn.PrepareFirstFactorParams) async throws -> SignIn)?
 
-  /// Custom handler for the `attemptFirstFactor(signInId:params:)` method.
   nonisolated(unsafe) var attemptFirstFactorHandler: ((String, SignIn.AttemptFirstFactorParams) async throws -> SignIn)?
 
-  /// Custom handler for the `prepareSecondFactor(signInId:params:)` method.
   nonisolated(unsafe) var prepareSecondFactorHandler: ((String, SignIn.PrepareSecondFactorParams) async throws -> SignIn)?
 
-  /// Custom handler for the `attemptSecondFactor(signInId:params:)` method.
   nonisolated(unsafe) var attemptSecondFactorHandler: ((String, SignIn.AttemptSecondFactorParams) async throws -> SignIn)?
 
-  /// Custom handler for the `resetPassword(signInId:params:)` method.
   nonisolated(unsafe) var resetPasswordHandler: ((String, SignIn.ResetPasswordParams) async throws -> SignIn)?
 
-  /// Custom handler for the `get(signInId:params:)` method.
   nonisolated(unsafe) var getHandler: ((String, SignIn.GetParams) async throws -> SignIn)?
 
   init(

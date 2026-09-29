@@ -12,7 +12,6 @@ protocol CacheCoordinator: AnyObject, Sendable {
   @MainActor func setEnvironmentIfNeeded(_ environment: Clerk.Environment)
 }
 
-///
 @MainActor
 final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?

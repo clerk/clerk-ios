@@ -9,7 +9,6 @@
 import Foundation
 import Testing
 
-/// Tests for ClerkHeaderRequestMiddleware header injection.
 @MainActor
 @Suite(.serialized)
 struct ClerkHeaderRequestMiddlewareTests {
@@ -84,7 +83,6 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func addsClientIdHeaderWhenAvailable() async throws {
-    // Set a mock client
     Clerk.shared.client = .mock
 
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
@@ -206,7 +204,6 @@ struct ClerkHeaderRequestMiddlewareTests {
 
   @Test
   func doesNotAddClientIdHeaderWhenClientMissing() async throws {
-    // Ensure no client is set
     Clerk.shared.client = nil
 
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)

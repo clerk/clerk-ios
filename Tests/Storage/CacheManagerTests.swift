@@ -9,7 +9,6 @@
 import Foundation
 import Testing
 
-/// Mock coordinator for testing CacheManager behavior.
 @MainActor
 final class MockCacheCoordinator: CacheCoordinator {
   private(set) var environment: Clerk.Environment?

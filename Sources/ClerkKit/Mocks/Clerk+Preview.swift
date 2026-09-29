@@ -103,28 +103,23 @@ extension Clerk {
   public static func preview(
     preview: ((PreviewBuilder) -> Void)? = nil
   ) -> Clerk {
-    // Check if running in SwiftUI preview
     guard EnvironmentDetection.isRunningInPreviews else {
       return Clerk.shared
     }
 
-    // Configure Clerk.shared if not already configured
     let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
     // Create a minimal API client (won't be used if services are mocked)
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
 
-    // Create preview builder and apply closure
     let previewBuilder = PreviewBuilder()
     preview?(previewBuilder)
 
-    // Determine environment and client
     let loadedEnvironment = loadEnvironmentFromBundle()
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    // Configure services to return builder values if no custom handler set
     if previewBuilder.services.clientService.getHandler == nil {
       previewBuilder.services.clientService.getHandler = { mockClient }
     }
@@ -132,13 +127,11 @@ extension Clerk {
       previewBuilder.services.environmentService.getHandler = { mockEnvironment }
     }
 
-    // Create mock dependency container using services from builder
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
       services: previewBuilder.services
     )
 
-    // Replace dependencies with mock services
     clerk.dependencies = container
     clerk.setClientFromIdentityController(mockClient)
     clerk.environment = mockEnvironment
@@ -146,7 +139,6 @@ extension Clerk {
     return clerk
   }
 
-  /// Loads the Clerk environment from ClerkEnvironment.json in the main bundle.
   @MainActor
   private static func loadEnvironmentFromBundle() -> Clerk.Environment? {
     guard let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
@@ -157,14 +149,11 @@ extension Clerk {
     return loadedEnvironment
   }
 
-  /// Creates a mock dependency container with all mock services configured.
   @MainActor
   private static func createMockDependencyContainer(
     apiClient: APIClient,
     services: MockServicesBuilder
   ) -> MockDependencyContainer {
-    // Use the services from the builder directly - this allows users to customize
-    // individual service behaviors (like adding delays for loading states).
     MockDependencyContainer(
       apiClient: apiClient,
       clientService: services.clientService,

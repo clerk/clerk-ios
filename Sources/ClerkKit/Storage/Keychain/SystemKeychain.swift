@@ -1,7 +1,6 @@
 import Foundation
 import Security
 
-/// A concrete keychain storage backed by the system Keychain services.
 struct SystemKeychain: KeychainStorage {
   enum Accessibility {
     case afterFirstUnlockThisDeviceOnly

@@ -7,21 +7,16 @@ import AuthenticationServices
 import Foundation
 
 protocol SignInServiceProtocol: Sendable {
-  /// Create
   @MainActor func create(params: SignIn.CreateParams) async throws -> SignIn
 
-  // First factor
   @MainActor func prepareFirstFactor(signInId: String, params: SignIn.PrepareFirstFactorParams) async throws -> SignIn
   @MainActor func attemptFirstFactor(signInId: String, params: SignIn.AttemptFirstFactorParams) async throws -> SignIn
 
-  // Second factor
   @MainActor func prepareSecondFactor(signInId: String, params: SignIn.PrepareSecondFactorParams) async throws -> SignIn
   @MainActor func attemptSecondFactor(signInId: String, params: SignIn.AttemptSecondFactorParams) async throws -> SignIn
 
-  /// Password reset
   @MainActor func resetPassword(signInId: String, params: SignIn.ResetPasswordParams) async throws -> SignIn
 
-  /// Get/reload
   @MainActor func get(signInId: String, params: SignIn.GetParams) async throws -> SignIn
 }
 

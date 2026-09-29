@@ -251,7 +251,6 @@ extension SignUp {
     verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
   }
 
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
   func handleTransferFlow() async throws -> TransferFlowResult {
     if needsTransferToSignIn == true {
@@ -274,7 +273,6 @@ extension SignUp {
       }
       return .signUp(updatedSignUp)
     } else {
-      // transfer flow
       let signUp = try await reload()
       let result = try await signUp.handleTransferFlow()
       switch result {
@@ -293,7 +291,6 @@ extension SignUp {
     }
   }
 
-  /// Returns the current sign up.
   @discardableResult @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
     try await signUpService.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))

@@ -98,7 +98,6 @@ struct ClerkReconfigureTests {
       Issue.record("Expected reconfigure to throw for an invalid publishable key")
     } catch let error as ClerkInitializationError {
       if case .invalidPublishableKeyFormat = error {
-        // Expected.
       } else {
         Issue.record("Expected invalidPublishableKeyFormat, got \(error)")
       }
@@ -152,7 +151,7 @@ struct ClerkReconfigureTests {
     #expect(reconfigured.environment == nil)
     #expect(reconfigured.sessionsByUserId.isEmpty)
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try oldKeychain.hasItem(forKey: "clerkIdentityV3") == false)
+    #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try targetKeychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
     #expect(await SessionTokensCache.shared.getToken(cacheKey: "session-token") == nil)
   }
@@ -187,7 +186,7 @@ struct ClerkReconfigureTests {
 
     #expect(reconfigured.client == nil)
     #expect(reconfigured.environment == nil)
-    #expect(try keychain.hasItem(forKey: "clerkIdentityV3") == false)
+    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
   }
@@ -530,7 +529,6 @@ struct ClerkReconfigureTests {
       _ = try await oldRequest.value
       Issue.record("Expected old in-flight request to be cancelled after reconfigure")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }
@@ -571,7 +569,6 @@ struct ClerkReconfigureTests {
       _ = try await refreshTask.value
       Issue.record("Expected stale refreshClient result to be cancelled after reconfigure")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }
@@ -606,7 +603,6 @@ struct ClerkReconfigureTests {
       _ = try await refreshTask.value
       Issue.record("Expected stale refreshEnvironment result to be cancelled after reconfigure")
     } catch is CancellationError {
-      // Expected.
     } catch {
       Issue.record("Expected CancellationError, got \(error)")
     }

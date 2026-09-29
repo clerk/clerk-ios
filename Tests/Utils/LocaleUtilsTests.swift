@@ -12,7 +12,6 @@ struct LocaleUtilsTests {
   func testUserLocale() {
     let locale = LocaleUtils.userLocale()
 
-    // Should return a non-empty string
     #expect(!locale.isEmpty)
 
     // Should be a valid BCP-47 language tag format (contains at least a language code)
@@ -20,7 +19,6 @@ struct LocaleUtilsTests {
     #expect(parts.count >= 1)
     #expect(parts[0].count >= 2) // Language code should be at least 2 characters
 
-    // Should not contain spaces
     #expect(!locale.contains(" "))
   }
 

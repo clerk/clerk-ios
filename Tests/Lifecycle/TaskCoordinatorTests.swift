@@ -10,7 +10,6 @@ import ConcurrencyExtras
 import Foundation
 import Testing
 
-/// Tests for TaskCoordinator task tracking and cancellation.
 @MainActor
 @Suite(.serialized)
 struct TaskCoordinatorTests {
@@ -20,7 +19,6 @@ struct TaskCoordinatorTests {
     let taskCompleted = LockIsolated(false)
 
     let task = Task {
-      // No delay needed - just verify task completes
       taskCompleted.setValue(true)
     }
 
