@@ -132,8 +132,6 @@ struct ClerkTests {
     // Clear all keychain items
     Clerk.clearAllKeychainItems()
 
-    // The adoption marker remains so disabling sync never falls back to legacy shared state,
-    // and the Watch clear time remains so paired-device state from before the clear is rejected.
     for key in ClerkKeychainKey.allCases {
       #expect(
         try keychain.hasItem(forKey: key.rawValue)
@@ -1051,7 +1049,6 @@ struct ClerkTests {
     // Clear all keychain items (should not throw even though some keys don't exist)
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted (including ones that didn't exist), except the new Watch clear time.
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
     }

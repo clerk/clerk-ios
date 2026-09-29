@@ -7,11 +7,6 @@
 
 import Foundation
 
-/// Keeps the phone and watch on the same Clerk auth state.
-///
-/// Each side sends its complete ``WatchSyncState`` whenever it changes. The receiver
-/// adopts it when ``WatchSyncState/supersedes(_:from:)`` says it should, and otherwise
-/// replies with its own state when that state would win on the other side.
 @MainActor
 final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var transport: (any WatchSyncTransport)?
@@ -20,7 +15,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var transitionTasks: [UUID: Task<Void, Never>] = [:]
   private var refreshTask: Task<Void, Never>?
 
-  /// - Parameter transport: Overrides the platform WatchConnectivity transport.
   init(transport: (any WatchSyncTransport)? = nil) {
     self.transport = transport ?? makePlatformWatchSyncTransport(
       onReceive: { [weak self] payload, source in
@@ -55,7 +49,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   func apply(_ payload: WatchSyncPayload, from source: WatchSyncSource, to clerk: Clerk) {
     guard isActive else { return }
 
-    // The phone fetches its own environment, so only the phone's is worth adopting.
     if source == .phone, let environment = payload.environment, environment != clerk.environment {
       isApplyingRemoteEnvironment = true
       clerk.environment = environment
@@ -68,7 +61,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     do {
       let task = try clerk.identityController.submitExternalTransition { [weak self, weak clerk] in
         guard let self, let clerk, isActive else { return nil }
-        // Without the clear generation this device cannot order the states, so it rejects the payload.
         let local = try WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
           if local.supersedes(incoming, from: localSource) {
@@ -112,9 +104,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 }
 
 extension WatchSyncState {
-  /// The state this device reports to its counterpart.
-  ///
-  /// - Throws: When the clear generation cannot be read.
   @MainActor
   init(of clerk: Clerk) throws {
     let deviceToken = clerk.deviceToken
@@ -149,7 +138,6 @@ extension WatchConnectivityCoordinator {
       do {
         try await clerk?.refreshClient()
       } catch is CancellationError {
-        // Managed cleanup cancels this task when Clerk reconfigures or resets.
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh client after watch sync")
       }
@@ -166,7 +154,6 @@ extension WatchConnectivityCoordinator {
       do {
         try await task.value
       } catch is CancellationError {
-        // Superseded or invalidated by a newer identity operation.
       } catch {
         ClerkLogger.logError(error, message: "Failed to apply Clerk auth state from the paired device")
       }
@@ -175,14 +162,9 @@ extension WatchConnectivityCoordinator {
   }
 }
 
-/// Persists the clear generation: how many clears this device and its counterpart have seen.
-/// Paired-device state from before a clear carries a lower generation, so it cannot bring the
-/// old identity back.
 enum WatchSyncClearMarker {
   private static let key = ClerkKeychainKey.watchSyncClearGeneration.rawValue
 
-  /// - Throws: When the Keychain cannot be read, such as before the first unlock. Assuming 0 would
-  ///   let a clear record a lower generation than the paired device's pre-clear state.
   static func generation(in keychain: any KeychainStorage) throws -> Int {
     if let value = try keychain.string(forKey: key) {
       return Int(value) ?? 0
@@ -198,12 +180,10 @@ enum WatchSyncClearMarker {
     return generation
   }
 
-  /// Records a clear on this device.
   static func record(in keychain: any KeychainStorage) throws {
     try keychain.set(String(generation(in: keychain) + 1), forKey: key)
   }
 
-  /// Adopts a clear generation seen on the paired device.
   static func raise(to generation: Int, in keychain: any KeychainStorage) throws {
     guard try generation > self.generation(in: keychain) else { return }
     try keychain.set(String(generation), forKey: key)
