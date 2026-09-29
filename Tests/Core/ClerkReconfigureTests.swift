@@ -406,10 +406,8 @@ struct ClerkReconfigureTests {
   @Test
   func tokenReadsAreCancelledWhileReconfigureIsInProgress() async throws {
     let cachedJWT = try unexpiredJWT()
-    let oldKeychain = SlowKeychain(delay: 0.5)
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     try Clerk.shared.performConfiguration(dependencies: dependencies)
@@ -420,22 +418,12 @@ struct ClerkReconfigureTests {
       cacheKey: staleSession.tokenCacheKey(template: nil)
     )
 
-    let reconfigureTask = Task { @MainActor in
-      try await Clerk.reconfigure(publishableKey: publishableKey(for: "token-read-window.clerk.example.com"))
-    }
-    try await Task.sleep(for: .milliseconds(20))
+    try Clerk.beginRuntimeReconfiguration()
+    defer { Clerk.endRuntimeReconfiguration() }
 
-    do {
+    await #expect(throws: CancellationError.self) {
       _ = try await staleSession.getToken()
-      Issue.record("Expected token reads during reconfiguration to be cancelled")
-    } catch is CancellationError {
-      // Expected.
-    } catch {
-      Issue.record("Expected CancellationError, got \(error)")
     }
-
-    let reconfigured = try await reconfigureTask.value
-    reconfigured.cleanupManagers()
   }
 
   @Test
