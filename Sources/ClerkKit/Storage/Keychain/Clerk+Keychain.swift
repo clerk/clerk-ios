@@ -10,7 +10,7 @@ import Foundation
 extension Clerk {
   private enum KeychainClearOperation: Equatable {
     case persistOwnerSlotWithdrawalIntent
-    case preserveWatchClearWatermark
+    case recordWatchClear
     case deleteAtomicIdentity
     case withdrawSharedSessionOwnerSlot
     case clearOwnerSlotWithdrawalIntent
@@ -23,8 +23,8 @@ extension Clerk {
       switch self {
       case .persistOwnerSlotWithdrawalIntent:
         "persist owner-slot withdrawal intent"
-      case .preserveWatchClearWatermark:
-        "preserve Watch clear watermark"
+      case .recordWatchClear:
+        "record Watch clear time"
       case .deleteAtomicIdentity:
         "delete atomic identity"
       case .withdrawSharedSessionOwnerSlot:
@@ -122,9 +122,8 @@ extension Clerk {
   /// - App Attest key ID
   ///
   /// Clerk retains the non-secret shared-session adoption marker so disabling sync cannot
-  /// resurrect legacy shared credentials. After atomic shared-session adoption, Clerk also
-  /// retains Watch ordering metadata containing only transition state, versions, and
-  /// fingerprints so a stale Watch payload cannot restore cleared authentication. While an
+  /// resurrect legacy shared credentials. Clerk also retains a Watch clear generation, a
+  /// counter that lets Watch sync reject state from before this clear. While an
   /// owner slot is being withdrawn, Clerk retains a durable recovery intent so an interrupted
   /// clear is completed before the next configuration hydrates identity. These coordination
   /// records do not contain a reusable device token, Client, or Environment.
@@ -236,18 +235,14 @@ extension Clerk {
     let cacheManager = clerk.cacheManager
     cacheManager?.freezePersistence()
     let identityClear = clerk.identityController.beginStorageClear()
-    let usesAtomicLocalIdentity = identityClear.usesAtomicLocalPersistence
     var initialFailedOperations: [KeychainClearOperation] = []
-    if usesAtomicLocalIdentity {
-      attemptKeychainClear(
-        .preserveWatchClearWatermark,
-        recording: &initialFailedOperations,
-        logMessage: "Failed to preserve the Watch clear watermark",
-        configuration: loggingConfiguration
-      ) {
-        _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
-          .saveClearTombstone()
-      }
+    attemptKeychainClear(
+      .recordWatchClear,
+      recording: &initialFailedOperations,
+      logMessage: "Failed to record the Watch clear time",
+      configuration: loggingConfiguration
+    ) {
+      try WatchSyncClearMarker.record(in: dependencies.watchSyncKeychain)
     }
     clerk.identityController.applyStorageClearToMemory(identityClear)
     if let atomicIdentityStore = dependencies.atomicIdentityStore {
@@ -262,10 +257,7 @@ extension Clerk {
         )
       }
     }
-    var preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted]
-    if usesAtomicLocalIdentity {
-      preservedKeys.insert(.watchSyncMetadata)
-    }
+    let preservedKeys: Set<ClerkKeychainKey> = [.sharedSessionSyncAdopted, .watchSyncClearGeneration]
     clearAllKeychainItems(
       in: dependencies.appLocalKeychain,
       preserving: preservedKeys,
@@ -632,11 +624,10 @@ extension Clerk {
     let loggingConfiguration = ClerkLogger.Configuration(
       options: dependencies.configurationManager.options
     )
-    _ = try WatchSyncMetadataStore(keychain: dependencies.watchSyncKeychain)
-      .saveClearTombstone()
+    try WatchSyncClearMarker.record(in: dependencies.watchSyncKeychain)
     let preservedKeys: Set<ClerkKeychainKey> = [
       .sharedSessionSyncAdopted,
-      .watchSyncMetadata,
+      .watchSyncClearGeneration,
     ]
     if deleteSharedSessionOwnerSlot {
       try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(in: dependencies)
