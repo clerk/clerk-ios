@@ -2367,14 +2367,10 @@ struct SharedSessionSyncTests {
     let node = try makeNode(owner: "app.phone", backend: backend)
     let watchCoordinator = WatchConnectivityCoordinator()
     let payload = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "watch-token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "watch-token",
         client: makeClient(id: "watch-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 100),
-        version: WatchSyncVersion(rawValue: 1)
+        serverDate: Date(timeIntervalSince1970: 100)
       ),
       environment: nil
     )
@@ -2399,21 +2395,17 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func failedSharedWatchPublicationDiscardsPendingWatchMetadata() async throws {
+  func failedSharedWatchPublicationLeavesIdentityUnchanged() async throws {
     configureClerkForTesting()
     let backend = TestSlotBackend()
     backend.failSavesForOwners = ["app.phone"]
     let node = try makeNode(owner: "app.phone", backend: backend)
     let watchCoordinator = WatchConnectivityCoordinator()
     let payload = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "watch-token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "watch-token",
         client: makeClient(id: "watch-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 100),
-        version: WatchSyncVersion(rawValue: 1)
+        serverDate: Date(timeIntervalSince1970: 100)
       ),
       environment: nil
     )
@@ -2421,17 +2413,9 @@ struct SharedSessionSyncTests {
     watchCoordinator.apply(payload, from: .phone, to: node.clerk)
     await watchCoordinator.waitForIdentityPublications()
 
-    let metadata = try WatchSyncMetadataStore(
-      keychain: node.clerk.dependencies.watchSyncKeychain
-    ).load()
     #expect(node.clerk.client == nil)
+    #expect(node.clerk.deviceToken == nil)
     #expect(backend.allSlots().isEmpty)
-    #expect(!metadata.hasPendingIdentityMetadata)
-    _ = try WatchSyncPayload(
-      clerk: node.clerk,
-      metadata: metadata,
-      authGeneration: .initial
-    )
   }
 
   @Test
@@ -2441,26 +2425,18 @@ struct SharedSessionSyncTests {
     let node = try makeNode(owner: "app.phone", backend: backend)
     let watchCoordinator = WatchConnectivityCoordinator()
     let first = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "first-token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "first-token",
         client: makeClient(id: "first-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 100),
-        version: WatchSyncVersion(rawValue: 1)
+        serverDate: Date(timeIntervalSince1970: 100)
       ),
       environment: nil
     )
     let second = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "second-token",
-        version: WatchSyncVersion(rawValue: 2)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "second-token",
         client: makeClient(id: "second-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 200),
-        version: WatchSyncVersion(rawValue: 2)
+        serverDate: Date(timeIntervalSince1970: 200)
       ),
       environment: nil
     )
@@ -2485,26 +2461,18 @@ struct SharedSessionSyncTests {
     let node = try makeNode(owner: "app.phone", backend: backend)
     let watchCoordinator = WatchConnectivityCoordinator()
     let first = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "first-token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "first-token",
         client: makeClient(id: "first-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 100),
-        version: WatchSyncVersion(rawValue: 1)
+        serverDate: Date(timeIntervalSince1970: 100)
       ),
       environment: nil
     )
     let replacement = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "replacement-token",
-        version: WatchSyncVersion(rawValue: 2)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "replacement-token",
         client: makeClient(id: "replacement-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 200),
-        version: WatchSyncVersion(rawValue: 2)
+        serverDate: Date(timeIntervalSince1970: 200)
       ),
       environment: nil
     )
@@ -2514,16 +2482,12 @@ struct SharedSessionSyncTests {
     try watchCoordinator.handle(.localStorageDidClear, from: node.clerk)
     Clerk.clearAllKeychainItems(in: node.clerk.dependencies.appLocalKeychain)
     watchCoordinator.apply(replacement, from: .phone, to: node.clerk)
-    #expect(watchCoordinator.activeIdentityPublicationCount == 1)
 
     backend.saveDelay = 0.1
     backend.resumeSuspendedSave(failing: false)
     try await waitUntil { node.clerk.client?.id == "first-client" }
-
-    #expect(watchCoordinator.activeIdentityPublicationCount == 1)
-    try await waitUntil { node.clerk.client?.id == "replacement-client" }
     await watchCoordinator.waitForIdentityPublications()
-    #expect(watchCoordinator.activeIdentityPublicationCount == 0)
+    #expect(node.clerk.client?.id == "replacement-client")
   }
 
   @Test
@@ -2542,14 +2506,10 @@ struct SharedSessionSyncTests {
     try await waitUntil { backend.isSaveSuspended }
 
     let payload = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "watch-token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .snapshot(
+      state: WatchSyncState(
+        deviceToken: "watch-token",
         client: makeClient(id: "watch-client"),
-        serverFetchDate: Date(timeIntervalSince1970: 200),
-        version: WatchSyncVersion(rawValue: 1)
+        serverDate: Date(timeIntervalSince1970: 200)
       ),
       environment: nil
     )
@@ -2570,7 +2530,8 @@ struct SharedSessionSyncTests {
     let backend = TestSlotBackend()
     backend.suspendNextSave()
     let node = try makeNode(owner: "app.phone", backend: backend)
-    let watchCoordinator = WatchConnectivityCoordinator()
+    let transport = RecordingWatchSyncTransport()
+    let watchCoordinator = WatchConnectivityCoordinator(transport: transport)
     node.clerk.internalStateChanges.addObserver(watchCoordinator)
     let earlierPublication = Task { @MainActor in
       try await node.coordinator.publishLocalIdentity(
@@ -2584,15 +2545,14 @@ struct SharedSessionSyncTests {
 
     watchCoordinator.apply(
       WatchSyncPayload(
-        deviceTokenUpdate: .tokenSet(token: "stale-token", version: .initial),
-        clientUpdate: .snapshot(
+        state: WatchSyncState(
+          deviceToken: "stale-token",
           client: makeClient(id: "stale-watch-client"),
-          serverFetchDate: Date(timeIntervalSince1970: 50),
-          version: .initial
+          serverDate: Date(timeIntervalSince1970: 50)
         ),
         environment: nil
       ),
-      from: .phone,
+      from: .watch,
       to: node.clerk
     )
     backend.resumeSuspendedSave(failing: false)
@@ -2600,17 +2560,10 @@ struct SharedSessionSyncTests {
     _ = try await earlierPublication.value
     await watchCoordinator.waitForIdentityPublications()
 
-    let metadata = try WatchSyncMetadataStore(
-      keychain: node.clerk.dependencies.watchSyncKeychain
-    ).load()
+    let sent = try #require(transport.sent.last?.state)
     #expect(node.clerk.client?.id == "earlier-client")
-    #expect(metadata.deviceTokenVersion == 1)
-    #expect(metadata.authVersion == 1)
-    #expect(metadata.deviceTokenFingerprint == WatchConnectivityCoordinator.deviceTokenFingerprint("earlier-token"))
-    #expect(try metadata.authFingerprint == (WatchConnectivityCoordinator.authFingerprint(
-      client: node.clerk.client,
-      serverDate: node.clerk.lastClientServerFetchDate
-    )))
+    #expect(sent.deviceToken == "earlier-token")
+    #expect(sent.client?.id == "earlier-client")
   }
 
   @Test
@@ -2625,13 +2578,10 @@ struct SharedSessionSyncTests {
     )
     let watchCoordinator = WatchConnectivityCoordinator()
     let payload = WatchSyncPayload(
-      deviceTokenUpdate: .tokenSet(
-        token: "token",
-        version: WatchSyncVersion(rawValue: 1)
-      ),
-      clientUpdate: .cleared(
-        serverFetchDate: Date(timeIntervalSince1970: 200),
-        version: WatchSyncVersion(rawValue: 1)
+      state: WatchSyncState(
+        deviceToken: "token",
+        client: makeClient(id: "phone-client"),
+        serverDate: Date(timeIntervalSince1970: 200)
       ),
       environment: nil
     )
@@ -2652,8 +2602,8 @@ struct SharedSessionSyncTests {
 
     let event = try #require(backend.allSlots().first?.event)
     #expect(event.generation == 2)
-    #expect(event.client == nil)
-    #expect(node.clerk.client == nil)
+    #expect(event.client?.id == "phone-client")
+    #expect(node.clerk.client?.id == "phone-client")
     #expect(node.notifier.postCount == 2)
   }
 
@@ -3128,7 +3078,7 @@ struct SharedSessionSyncTests {
   }
 
   @Test
-  func watchMetadataIsNotPromotedWhenPeerEventWinsPublication() async throws {
+  func peerEventWinsOverConcurrentWatchPublication() async throws {
     let backend = TestSlotBackend()
     let node = try makeNode(owner: "app.a", backend: backend)
     let peer = try makeNode(owner: "app.b", backend: backend)
@@ -3137,14 +3087,10 @@ struct SharedSessionSyncTests {
 
     watchCoordinator.apply(
       WatchSyncPayload(
-        deviceTokenUpdate: .tokenSet(
-          token: "watch-token",
-          version: WatchSyncVersion(rawValue: 1)
-        ),
-        clientUpdate: .snapshot(
+        state: WatchSyncState(
+          deviceToken: "watch-token",
           client: makeClient(id: "watch-client"),
-          serverFetchDate: Date(timeIntervalSince1970: 100),
-          version: WatchSyncVersion(rawValue: 1)
+          serverDate: Date(timeIntervalSince1970: 100)
         ),
         environment: nil
       ),
@@ -3163,13 +3109,7 @@ struct SharedSessionSyncTests {
     backend.resumeSuspendedSave(failing: false)
     await watchCoordinator.waitForIdentityPublications()
 
-    let metadata = try WatchSyncMetadataStore(
-      keychain: node.clerk.dependencies.watchSyncKeychain
-    ).load()
     #expect(node.clerk.client?.id == "peer-client")
-    #expect(metadata.authVersion == nil)
-    #expect(metadata.deviceTokenVersion == nil)
-    #expect(!metadata.hasPendingIdentityMetadata)
   }
 
   @Test
