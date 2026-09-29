@@ -16,7 +16,7 @@ extension Clerk {
     }
   }
 
-  static let preservedKeychainKeys: Set<ClerkKeychainKey> = [.watchSyncClearGeneration]
+  static let preservedKeychainKeys: Set<ClerkKeychainKey> = [.watchSyncLastChange]
 
   private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.clerkDeviceToken, .cachedClient])
 
@@ -71,7 +71,7 @@ extension Clerk {
   @MainActor
   func clearKeychainItems() throws {
     let configuration = ClerkLogger.Configuration(options: options)
-    var failures = Self.clearIdentityAndMarkClear(in: dependencies, configuration: configuration) {
+    var failures = Self.clearIdentity(configuration: configuration) {
       try identityController.clearIdentity()
     }
     failures += Self.clearAllKeychainItemsCollectingFailures(
@@ -93,7 +93,7 @@ extension Clerk {
   static func clearLocalClerkStorageStrictly(in dependencies: any Dependencies) throws {
     let configuration = ClerkLogger.Configuration(options: dependencies.configurationManager.options)
     let keepsIdentity = dependencies.identityIsInAccessGroup
-    var failures = clearIdentityAndMarkClear(in: dependencies, configuration: configuration) {
+    var failures = clearIdentity(configuration: configuration) {
       if keepsIdentity {
         try dependencies.identityStore.saveClient(nil, serverDate: nil, for: nil)
       } else {
@@ -141,25 +141,17 @@ extension Clerk {
   }
 
   @MainActor
-  private static func clearIdentityAndMarkClear(
-    in dependencies: any Dependencies,
+  private static func clearIdentity(
     configuration: ClerkLogger.Configuration,
-    removeIdentity: () throws -> Void
+    _ removeIdentity: () throws -> Void
   ) -> [String] {
-    var failures: [String] = []
-    do {
-      try WatchSyncClearMarker.record(in: dependencies.watchSyncKeychain)
-    } catch {
-      failures.append(ClerkKeychainKey.watchSyncClearGeneration.rawValue)
-      ClerkLogger.logError(error, message: "Failed to record the Watch clear", configuration: configuration)
-    }
     do {
       try removeIdentity()
+      return []
     } catch {
-      failures.append(ClerkKeychainKey.clerkDeviceToken.rawValue)
       ClerkLogger.logError(error, message: "Failed to delete the Clerk identity", configuration: configuration)
+      return [ClerkKeychainKey.clerkDeviceToken.rawValue]
     }
-    return failures
   }
 
   @MainActor

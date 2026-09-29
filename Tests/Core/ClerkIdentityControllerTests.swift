@@ -179,20 +179,15 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func externalTransitionPersistsBeforeRunningCompletion() throws {
+  func adoptingAPairedDeviceTokenPersistsItWithoutAClient() throws {
     let (clerk, _) = makeClerk()
-    var persistedInCompletion: ClerkIdentitySnapshot?
+    try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "client"), serverDate: date(100))
 
-    try clerk.identityController.applyExternalTransition {
-      ClerkIdentityController.ExternalTransition(
-        identity: identity(token: "token", client: makeClient(id: "client"), date: 100),
-        didApply: { persistedInCompletion = try? clerk.dependencies.identityStore.load() }
-      )
-    }
+    try clerk.identityController.adoptDeviceToken("watch-token")
 
-    #expect(persistedInCompletion?.client?.id == "client")
-    #expect(clerk.client?.id == "client")
-    #expect(clerk.deviceToken == "token")
+    #expect(clerk.deviceToken == "watch-token")
+    #expect(clerk.client == nil)
+    #expect(try clerk.dependencies.identityStore.load()?.deviceToken == "watch-token")
   }
 
   @Test

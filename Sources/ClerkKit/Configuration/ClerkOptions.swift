@@ -98,7 +98,7 @@ extension Clerk {
     /// Configuration for OAuth redirect URLs and callback handling.
     public let redirectConfig: RedirectConfig
 
-    /// Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
+    /// Keeps the iOS app and its watchOS companion signed in as the same user: a sign-in, sign-out or clear on either reaches the other. Defaults to false.
     public let watchConnectivityEnabled: Bool
 
     /// A closure that receives callbacks when Clerk logs errors.
@@ -141,7 +141,7 @@ extension Clerk {
     ///   - keychainConfig: Configuration for keychain storage behavior.
     ///   - proxyUrl: Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy—must be a full URL (e.g. https://proxy.example.com/__clerk). Defaults to nil.
     ///   - redirectConfig: Configuration for OAuth redirect URLs and callback handling.
-    ///   - watchConnectivityEnabled: Enable Watch Connectivity to sync authentication state (deviceToken, Client, Environment) to companion watchOS app. Defaults to false.
+    ///   - watchConnectivityEnabled: Keeps the iOS app and its watchOS companion signed in as the same user. Defaults to false.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     ///   - middleware: Middleware configuration for requests and responses. Defaults to an empty configuration.
     public init(

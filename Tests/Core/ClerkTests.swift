@@ -110,7 +110,7 @@ struct ClerkTests {
     )
     try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
     for key in ClerkKeychainKey.allCases {
-      try keychain.set(key == .watchSyncClearGeneration ? "4" : "value", forKey: key.rawValue)
+      try keychain.set("value", forKey: key.rawValue)
     }
 
     Clerk.clearAllKeychainItems()
@@ -121,7 +121,6 @@ struct ClerkTests {
     #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
-    #expect(try WatchSyncClearMarker.generation(in: keychain) == 5)
   }
 
   @Test
@@ -164,7 +163,6 @@ struct ClerkTests {
 
     #expect(try shared.identityStore.load()?.deviceToken == "shared-token")
     #expect(try local.identityStore.load() == nil)
-    #expect(try WatchSyncClearMarker.generation(in: shared.watchSyncKeychain) == 1)
   }
 
   @Test
@@ -184,7 +182,7 @@ struct ClerkTests {
   }
 
   @Test
-  func watchTransitionFencesOlderNetworkResponses() async throws {
+  func watchTokenFencesResponsesForTheOldToken() async throws {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
@@ -192,21 +190,13 @@ struct ClerkTests {
     )
     try clerk.seedIdentity(deviceToken: "token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
     let capturedGeneration = clerk.clientResponseGeneration
-    var phoneClient = Client.mock
-    phoneClient.id = "phone-client"
 
-    WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport()).apply(
-      WatchSyncPayload(
-        state: WatchSyncState(deviceToken: "token", client: phoneClient, serverDate: Date(timeIntervalSince1970: 200)),
-        environment: nil
-      ),
-      from: .phone,
-      to: clerk
-    )
+    WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
+      .apply(WatchSyncChange(deviceToken: "watch-token", changedAt: .now), to: clerk)
     try await clerk.identityController.applyNetworkResponse(
       ClientSyncResponseContext(
         update: .client(.mock),
-        deviceTokenUpdate: .set("token"),
+        deviceTokenUpdate: .absent,
         requestDeviceToken: "token",
         serverDate: Date(timeIntervalSince1970: 300),
         isCanonicalClientRequest: true,
@@ -215,8 +205,8 @@ struct ClerkTests {
       )
     )
 
-    #expect(clerk.client?.id == "phone-client")
-    #expect(try clerk.dependencies.identityStore.load()?.client?.id == "phone-client")
+    #expect(clerk.identityController.currentDeviceToken == "watch-token")
+    #expect(clerk.client == nil)
   }
 
   @Test
@@ -237,7 +227,7 @@ struct ClerkTests {
     Clerk.clearAllKeychainItems()
 
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncClearGeneration))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == false)
     }
   }
 

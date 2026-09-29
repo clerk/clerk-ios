@@ -15,12 +15,6 @@ final class ClerkIdentityController {
     let lastServerDate: Date?
   }
 
-  struct ExternalTransition {
-    let identity: ClerkIdentitySnapshot
-    var fenceAllClientResponses = true
-    var didApply: @MainActor () -> Void = {}
-  }
-
   weak var clerk: Clerk?
 
   private(set) var currentDeviceToken: String?
@@ -146,13 +140,14 @@ extension ClerkIdentityController {
 }
 
 extension ClerkIdentityController {
-  func applyExternalTransition(
-    _ prepare: () throws -> ExternalTransition?
-  ) throws {
+  /// Adopts the paired device's token, or signs out when it is `nil`. The Client is fetched separately.
+  func adoptDeviceToken(_ deviceToken: String?) throws {
     adoptStoredDeviceToken()
-    guard let transition = try prepare() else { return }
-    try commit(transition.identity, fenceResponses: transition.fenceAllClientResponses)
-    transition.didApply()
+    guard deviceToken != currentDeviceToken else { return }
+    try commit(
+      ClerkIdentitySnapshot(state: .cleared, deviceToken: deviceToken, client: nil, serverDate: nil),
+      fenceResponses: true
+    )
   }
 
   func updateDeviceToken(to deviceToken: String) async throws -> DeviceTokenTransitionResult {

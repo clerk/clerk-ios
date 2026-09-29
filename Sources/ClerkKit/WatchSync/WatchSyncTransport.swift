@@ -7,12 +7,12 @@ import Foundation
 
 @MainActor
 protocol WatchSyncTransport: AnyObject {
-  func send(_ payload: WatchSyncPayload)
+  func send(_ change: WatchSyncChange)
 }
 
 @MainActor
 func makePlatformWatchSyncTransport(
-  onReceive: @escaping @MainActor (WatchSyncPayload, WatchSyncSource) -> Void,
+  onReceive: @escaping @MainActor (WatchSyncChange) -> Void,
   onActivate: @escaping @MainActor () -> Void
 ) -> (any WatchSyncTransport)? {
   #if os(iOS) || os(watchOS)
@@ -25,24 +25,18 @@ func makePlatformWatchSyncTransport(
 #if os(iOS) || os(watchOS)
 import WatchConnectivity
 
-/// Sends the latest payload with `updateApplicationContext`, which keeps only the most
+/// Sends the latest change with `updateApplicationContext`, which keeps only the most
 /// recent value and delivers it even when the counterpart app is not running.
 final class WatchConnectivityTransport: NSObject, WatchSyncTransport {
   private let session = WCSession.default
-  private let onReceive: @MainActor (WatchSyncPayload, WatchSyncSource) -> Void
+  private let onReceive: @MainActor (WatchSyncChange) -> Void
   private let onActivate: @MainActor () -> Void
 
   @MainActor private var isActivated = false
-  @MainActor private var pendingPayload: WatchSyncPayload?
-
-  #if os(iOS)
-  private nonisolated static let peer = WatchSyncSource.watch
-  #else
-  private nonisolated static let peer = WatchSyncSource.phone
-  #endif
+  @MainActor private var pendingChange: WatchSyncChange?
 
   init(
-    onReceive: @escaping @MainActor (WatchSyncPayload, WatchSyncSource) -> Void,
+    onReceive: @escaping @MainActor (WatchSyncChange) -> Void,
     onActivate: @escaping @MainActor () -> Void
   ) {
     self.onReceive = onReceive
@@ -56,24 +50,24 @@ final class WatchConnectivityTransport: NSObject, WatchSyncTransport {
   }
 
   @MainActor
-  func send(_ payload: WatchSyncPayload) {
-    pendingPayload = payload
-    sendPendingPayloadIfPossible()
+  func send(_ change: WatchSyncChange) {
+    pendingChange = change
+    sendPendingChangeIfPossible()
   }
 
   @MainActor
-  private func sendPendingPayloadIfPossible() {
-    guard isActivated, let payload = pendingPayload else { return }
+  private func sendPendingChangeIfPossible() {
+    guard isActivated, let change = pendingChange else { return }
     #if os(iOS)
     guard session.isPaired, session.isWatchAppInstalled else { return }
     #endif
 
     do {
-      try session.updateApplicationContext(payload.applicationContext)
-      pendingPayload = nil
+      try session.updateApplicationContext(change.applicationContext)
+      pendingChange = nil
     } catch {
       guard !Self.isExpectedUnavailability(error) else { return }
-      ClerkLogger.logError(error, message: "Failed to sync Clerk auth state to the paired device")
+      ClerkLogger.logError(error, message: "Failed to send the sign-in state to the paired device")
     }
   }
 
@@ -97,28 +91,23 @@ extension WatchConnectivityTransport: WCSessionDelegate {
       return
     }
 
-    #if os(watchOS)
-    let received = WatchSyncPayload(applicationContext: session.receivedApplicationContext)
-    #else
-    let received: WatchSyncPayload? = nil
-    #endif
-
+    let received = WatchSyncChange(applicationContext: session.receivedApplicationContext)
     Task { @MainActor [weak self] in
       guard let self else { return }
       isActivated = activationState == .activated
       guard isActivated else { return }
       if let received {
-        onReceive(received, Self.peer)
+        onReceive(received)
       }
       onActivate()
-      sendPendingPayloadIfPossible()
+      sendPendingChangeIfPossible()
     }
   }
 
   nonisolated func session(_: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-    guard let payload = WatchSyncPayload(applicationContext: applicationContext) else { return }
+    guard let change = WatchSyncChange(applicationContext: applicationContext) else { return }
     Task { @MainActor [weak self] in
-      self?.onReceive(payload, Self.peer)
+      self?.onReceive(change)
     }
   }
 
@@ -136,7 +125,7 @@ extension WatchConnectivityTransport: WCSessionDelegate {
   nonisolated func sessionWatchStateDidChange(_: WCSession) {
     Task { @MainActor [weak self] in
       self?.onActivate()
-      self?.sendPendingPayloadIfPossible()
+      self?.sendPendingChangeIfPossible()
     }
   }
   #endif

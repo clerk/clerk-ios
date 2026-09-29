@@ -30,13 +30,7 @@ enum ClerkKeychainKey: String, CaseIterable {
   /// Key for detecting explicit sibling-app environment sync events.
   case sharedSessionSyncEnvironmentVersion
 
-  case watchSyncClearGeneration = "clerkWatchSyncClearGeneration"
-
-  case watchSyncAuthState
-
-  case watchSyncMetadata = "clerkWatchSyncMetadataV2"
-
-  case watchSyncAuthVersion
+  case watchSyncLastChange = "clerkWatchSyncLastChange"
 
   /// Key for device authentication token received from the server.
   case clerkDeviceToken
@@ -46,12 +40,6 @@ enum ClerkKeychainKey: String, CaseIterable {
 
   /// Key for detecting explicit sibling-app device-token sync events.
   case sharedSessionSyncDeviceTokenVersion
-
-  case watchSyncDeviceTokenState
-
-  case watchSyncDeviceTokenVersion
-
-  case watchSyncDeviceTokenSynced = "clerkDeviceTokenSynced"
 
   /// Key for App Attest key ID.
   case attestKeyId = "AttestKeyId"

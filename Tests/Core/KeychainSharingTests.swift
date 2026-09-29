@@ -77,14 +77,7 @@ struct KeychainSharingTests {
     let second = makeApp()
     let watch = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
 
-    watch.apply(
-      WatchSyncPayload(
-        state: WatchSyncState(deviceToken: "watch-token", client: signedIn("watch"), serverDate: date(100)),
-        environment: nil
-      ),
-      from: .phone,
-      to: first.clerk
-    )
+    watch.apply(WatchSyncChange(deviceToken: "watch-token", changedAt: .now), to: first.clerk)
     _ = try await second.clerk.identityController.captureRequestIdentity()
 
     #expect(second.clerk.deviceToken == "watch-token")
