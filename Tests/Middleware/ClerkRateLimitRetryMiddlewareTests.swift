@@ -10,7 +10,6 @@ import ConcurrencyExtras
 import Foundation
 import Testing
 
-/// Tests for ClerkRateLimitRetryMiddleware retry logic and delay calculations.
 @MainActor
 @Suite(.serialized)
 struct ClerkRateLimitRetryMiddlewareTests {
@@ -50,7 +49,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForServerError500() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     let response = try HTTPURLResponse(
@@ -72,7 +71,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableCodes = [408, 425, 429, 500, 502, 503, 504]
@@ -98,7 +97,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryForNonRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableCodes = [400, 401, 403, 404, 422]
@@ -124,7 +123,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryOnSecondAttempt() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     let response = try HTTPURLResponse(
       url: #require(request.url),
@@ -184,7 +183,6 @@ struct ClerkRateLimitRetryMiddlewareTests {
     }
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
-    // Set reset time to 2 seconds in the future
     let resetTime = Date().timeIntervalSince1970 + 2.0
     let response = try HTTPURLResponse(
       url: #require(request.url),
@@ -243,7 +241,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableErrors: [URLError.Code] = [
@@ -270,7 +268,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryForNonRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableErrors: [URLError.Code] = [

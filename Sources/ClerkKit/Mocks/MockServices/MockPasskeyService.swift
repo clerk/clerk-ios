@@ -8,21 +8,13 @@
 import AuthenticationServices
 import Foundation
 
-/// Mock implementation of `PasskeyServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockPasskeyService: PasskeyServiceProtocol {
-  /// Custom handler for the `create()` method.
   package nonisolated(unsafe) var createHandler: (() async throws -> Passkey)?
 
-  /// Custom handler for the `update(passkeyId:name:)` method.
   package nonisolated(unsafe) var updateHandler: ((String, String) async throws -> Passkey)?
 
-  /// Custom handler for the `attemptVerification(passkeyId:credential:)` method.
   package nonisolated(unsafe) var attemptVerificationHandler: ((String, String) async throws -> Passkey)?
 
-  /// Custom handler for the `delete(passkeyId:)` method.
   package nonisolated(unsafe) var deleteHandler: ((String) async throws -> DeletedObject)?
 
   package init(

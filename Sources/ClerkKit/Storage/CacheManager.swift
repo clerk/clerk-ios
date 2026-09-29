@@ -125,12 +125,7 @@ private actor CachePersistenceWorker {
   }
 }
 
-/// Protocol defining callbacks for cache loading operations.
-///
-/// This allows the cache manager to interact with Clerk instance properties
-/// without directly coupling to the Clerk class.
 protocol CacheCoordinator: AnyObject, Sendable {
-  /// Applies a complete atomic app-local identity during cache hydration.
   @MainActor func hydrateIdentityIfNeeded(_ identity: ClerkIdentitySnapshot)
 
   /// Sets the client and its server fetch date if no client is currently set.
@@ -156,20 +151,14 @@ extension CacheCoordinator {
   @MainActor func hydrateIdentityIfNeeded(_: ClerkIdentitySnapshot) {}
 }
 
-/// Manages caching of Clerk client and environment data to keychain.
-///
-/// This class handles loading and saving cached data, coordinating with the Clerk instance
-/// to ensure cached data doesn't overwrite fresh data loaded from the API.
 @MainActor
 final class CacheManager {
   private let persistenceWorker: CachePersistenceWorker
   private let persistenceState = CachePersistenceState()
   private var pendingPersistenceTask: Task<Void, Never>?
 
-  /// The coordinator that manages the actual property updates.
   private weak var coordinator: (any CacheCoordinator)?
 
-  /// The keychain storage for persisting cached data.
   private let identityKeychain: any KeychainStorage
   private let environmentKeychain: any KeychainStorage
   private let provisionalClientKeychains: [any KeychainStorage]
@@ -309,34 +298,24 @@ final class CacheManager {
     }
   }
 
-  /// Saves client data to keychain.
-  ///
-  /// - Parameters:
-  ///   - client: The client to save.
-  ///   - serverFetchDate: The server timestamp from the response that produced this client.
   func saveClient(_ client: Client, serverFetchDate: Date?) {
     enqueuePersistence { worker in
       await worker.saveClient(client, serverFetchDate: serverFetchDate)
     }
   }
 
-  /// Persists the server fetch date without re-saving the client.
   func saveServerFetchDate(_ date: Date) {
     enqueuePersistence { worker in
       await worker.saveServerFetchDate(date)
     }
   }
 
-  /// Saves environment data to keychain.
-  ///
-  /// - Parameter environment: The environment to save.
   func saveEnvironment(_ environment: Clerk.Environment) {
     enqueuePersistence { worker in
       await worker.saveEnvironment(environment)
     }
   }
 
-  /// Deletes cached client data from keychain.
   func deleteClient(serverFetchDate: Date? = nil) {
     enqueuePersistence { worker in
       await worker.deleteClient(serverFetchDate: serverFetchDate)
@@ -373,7 +352,6 @@ final class CacheManager {
 
   // MARK: - Private Keychain Operations
 
-  /// Loads a valid device token from keychain.
   private func loadDeviceTokenFromKeychain(_ keychain: any KeychainStorage) throws -> String? {
     guard let token = try keychain.string(
       forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
@@ -385,7 +363,6 @@ final class CacheManager {
     return token
   }
 
-  /// Loads client data from keychain.
   private func loadClientFromKeychain(_ keychain: any KeychainStorage) throws -> Client? {
     guard let clientData = try keychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue) else {
       return nil
@@ -394,7 +371,6 @@ final class CacheManager {
     return try decoder.decode(Client.self, from: clientData)
   }
 
-  /// Loads the server fetch date persisted alongside the cached client.
   private func loadClientServerFetchDateFromKeychain(_ keychain: any KeychainStorage) throws -> Date? {
     guard let dateString = try keychain.string(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue),
           let timeInterval = TimeInterval(dateString)
@@ -404,7 +380,6 @@ final class CacheManager {
     return Date(timeIntervalSince1970: timeInterval)
   }
 
-  /// Loads environment data from keychain.
   private func loadEnvironmentFromKeychain() throws -> Clerk.Environment? {
     guard let environmentData = try environmentKeychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) else {
       return nil

@@ -5,7 +5,6 @@
 
 import Foundation
 
-/// Local metadata that links a Clerk biometric credential to its on-device private key.
 package struct BiometricCredentialLocalRecord: Codable, Equatable, Identifiable {
   package let id: String
   package let localKeyId: String

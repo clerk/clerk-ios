@@ -417,7 +417,6 @@ struct URLEncodedFormEncoderTests {
 
   @Test
   func encodeErrorInvalidRootObject() throws {
-    // Encoding a single value (not a keyed object) should throw an error
     let encoder = URLEncodedFormEncoder()
 
     do {
@@ -425,7 +424,6 @@ struct URLEncodedFormEncoderTests {
       Issue.record("Expected invalidRootObject error")
     } catch let error as URLEncodedFormEncoder.Error {
       if case .invalidRootObject = error {
-        // Expected error
       } else {
         Issue.record("Wrong error type")
       }
@@ -446,10 +444,8 @@ struct URLEncodedFormEncoderTests {
     let value = TestStruct(z: "z", a: "a", m: "m")
     let result: String = try encoder.encode(value)
 
-    // Keys should be alphabetized
     let parts = result.split(separator: "&")
     #expect(parts.count == 3)
-    // First should be a=
     #expect(parts[0].hasPrefix("a="))
   }
 
@@ -542,11 +538,9 @@ struct URLEncodedFormEncoderTests {
 
     let protected = Protected(TestStruct(name: "John", age: 30))
 
-    // Read using dynamic member lookup
     #expect(protected.name == "John")
     #expect(protected.age == 30)
 
-    // Write using dynamic member lookup
     protected.name = "Jane"
     protected.age = 25
 
@@ -563,11 +557,9 @@ struct URLEncodedFormEncoderTests {
 
     let protected = Protected(TestStruct(name: "John", age: 30))
 
-    // Read using dynamic member lookup
     #expect(protected.name == "John")
     #expect(protected.age == 30)
 
-    // Can modify mutable properties
     protected.age = 25
     #expect(protected.age == 25)
   }
@@ -576,7 +568,6 @@ struct URLEncodedFormEncoderTests {
   func protectedThreadSafety() async {
     let protected = Protected(0)
 
-    // Concurrent writes
     await withTaskGroup(of: Void.self) { group in
       for i in 1 ... 100 {
         group.addTask {
@@ -597,7 +588,6 @@ struct URLEncodedFormEncoderTests {
     let protected = Protected(0)
 
     await withTaskGroup(of: Void.self) { group in
-      // Multiple writers
       for i in 1 ... 50 {
         group.addTask {
           protected.write { value in
@@ -614,7 +604,6 @@ struct URLEncodedFormEncoderTests {
       }
     }
 
-    // Verify final value
     let finalValue = protected.read { $0 }
     #expect(finalValue == (1 ... 50).reduce(0, +))
   }

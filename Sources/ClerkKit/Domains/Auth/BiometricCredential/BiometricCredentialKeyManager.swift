@@ -428,7 +428,6 @@ final class BiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol
   }
 }
 
-/// A locally generated private key and its backend-facing public key material.
 package struct BiometricCredentialLocalKey: Equatable {
   package let localKeyId: String
   package let publicKeyJWK: String
@@ -448,7 +447,6 @@ package struct BiometricCredentialLocalKey: Equatable {
   }
 }
 
-/// A signed biometric-credential challenge payload ready to send to Clerk.
 package struct BiometricCredentialKeySignature: Equatable {
   package let clientData: String
   package let signature: String

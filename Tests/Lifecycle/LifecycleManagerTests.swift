@@ -12,7 +12,6 @@ import Foundation
 import Testing
 import UIKit
 
-/// Mock lifecycle event handler for testing.
 @MainActor
 final class MockLifecycleHandler: LifecycleEventHandling {
   nonisolated(unsafe) var foregroundCallCount = LockIsolated(0)
@@ -27,7 +26,6 @@ final class MockLifecycleHandler: LifecycleEventHandling {
   }
 }
 
-/// Tests for LifecycleManager notification handling.
 @MainActor
 @Suite(.serialized)
 struct LifecycleManagerTests {

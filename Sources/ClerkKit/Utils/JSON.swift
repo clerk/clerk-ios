@@ -240,24 +240,20 @@ extension JSON {
   ///     2. Add keys from `new` not present in `old` (“create” case).
   ///     3. For keys present in both `old` and `new`, apply merge recursively to their values (“update” case).
   public func merging(with new: JSON) -> JSON {
-    // If old or new are anything but an object, return new.
     guard case let .object(lhs) = self, case let .object(rhs) = new else {
       return new
     }
 
     var merged: [String: JSON] = [:]
 
-    // Add keys from old not present in new (“no change” case).
     for (key, val) in lhs where rhs[key] == nil {
       merged[key] = val
     }
 
-    // Add keys from new not present in old (“create” case).
     for (key, val) in rhs where lhs[key] == nil {
       merged[key] = val
     }
 
-    // For keys present in both old and new, apply merge recursively to their values.
     for key in lhs.keys where rhs[key] != nil {
       merged[key] = lhs[key]?.merging(with: rhs[key]!)
     }
@@ -350,17 +346,14 @@ extension JSON {
   }
 
   public func queryKeyPath(_ path: some Collection<String>) -> JSON? {
-    // Only object values may be subscripted
     guard case let .object(object) = self else {
       return nil
     }
 
-    // Is the path non-empty?
     guard let head = path.first else {
       return nil
     }
 
-    // Do we have a value at the required key?
     guard let value = object[head] else {
       return nil
     }

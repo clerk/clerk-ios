@@ -507,7 +507,6 @@ extension Clerk {
         configuration: configuration
       )
     }
-    // Iterate over all keychain keys and delete each one
     for key in ClerkKeychainKey.allCases where !preservedKeys.contains(key) {
       guard key != .biometricCredentials || !biometricCredentialDeletionFailed else {
         continue

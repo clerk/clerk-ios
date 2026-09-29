@@ -206,7 +206,6 @@ struct SessionUtilsTests {
     let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
-    // When session status changes, the current session should be considered changed.
     let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
     #expect(changed == true)
   }

@@ -129,8 +129,8 @@ struct JSONUtilitiesTests {
     #expect(json[0]?.stringValue == "a")
     #expect(json[1]?.stringValue == "b")
     #expect(json[2]?.stringValue == "c")
-    #expect(json[3] == nil) // Out of bounds
-    #expect(json[-1] == nil) // Invalid index
+    #expect(json[3] == nil)
+    #expect(json[-1] == nil)
   }
 
   @Test
@@ -178,9 +178,9 @@ struct JSONUtilitiesTests {
 
     let merged = old.merging(with: new)
 
-    #expect(merged["a"]?.stringValue == "new") // Updated
-    #expect(merged["b"]?.stringValue == "unchanged") // Preserved
-    #expect(merged["c"]?.stringValue == "added") // Added
+    #expect(merged["a"]?.stringValue == "new")
+    #expect(merged["b"]?.stringValue == "unchanged")
+    #expect(merged["c"]?.stringValue == "added")
   }
 
   @Test
@@ -200,7 +200,7 @@ struct JSONUtilitiesTests {
     let new: JSON = "new"
 
     let merged = old.merging(with: new)
-    #expect(merged.stringValue == "new") // Returns new when not objects
+    #expect(merged.stringValue == "new")
   }
 
   @Test
@@ -356,16 +356,12 @@ struct JSONUtilitiesTests {
   func testClerkDecoder() {
     let decoder = JSONDecoder.clerkDecoder
 
-    // Verify snake_case conversion strategy
     if case .convertFromSnakeCase = decoder.keyDecodingStrategy {
-      // Correct strategy
     } else {
       Issue.record("Expected convertFromSnakeCase strategy")
     }
 
-    // Verify date decoding strategy
     if case .millisecondsSince1970 = decoder.dateDecodingStrategy {
-      // Correct strategy
     } else {
       Issue.record("Expected millisecondsSince1970 strategy")
     }
@@ -415,16 +411,12 @@ struct JSONUtilitiesTests {
   func testClerkEncoder() {
     let encoder = JSONEncoder.clerkEncoder
 
-    // Verify snake_case conversion strategy
     if case .convertToSnakeCase = encoder.keyEncodingStrategy {
-      // Correct strategy
     } else {
       Issue.record("Expected convertToSnakeCase strategy")
     }
 
-    // Verify date encoding strategy
     if case .millisecondsSince1970 = encoder.dateEncodingStrategy {
-      // Correct strategy
     } else {
       Issue.record("Expected millisecondsSince1970 strategy")
     }

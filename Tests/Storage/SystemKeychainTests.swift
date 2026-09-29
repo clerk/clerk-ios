@@ -76,7 +76,6 @@ struct SystemKeychainTests {
   func deleteNonExistentKeyDoesNotThrow() throws {
     let keychain = InMemoryKeychain()
 
-    // Should not throw when deleting non-existent key
     try keychain.deleteItem(forKey: "non-existent-key")
   }
 
@@ -88,7 +87,6 @@ struct SystemKeychainTests {
     let testData = "test-value".data(using: .utf8)!
     try keychain1.set(testData, forKey: "shared-key")
 
-    // Key should not be visible in different instance
     let data = try keychain2.data(forKey: "shared-key")
     #expect(data == nil)
   }

@@ -24,10 +24,8 @@ public final class Clerk {
     return instance
   }
 
-  /// Private shared instance that is set during configuration.
   private static var _shared: Clerk?
 
-  /// The installed logging configuration, when Clerk has completed configuration.
   static var installedLoggingConfiguration: ClerkLogger.Configuration? {
     _shared.map { ClerkLogger.Configuration(options: $0.options) }
   }
@@ -62,7 +60,6 @@ public final class Clerk {
   public internal(set) var client: Client? {
     didSet {
       identityController.validateClientMutation()
-      // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
         auth.send(.sessionChanged(oldValue: oldValue?.currentSession, newValue: client?.currentSession))
       }
@@ -142,7 +139,6 @@ public final class Clerk {
     identityController.clientResponseGeneration
   }
 
-  /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
   /// Configure-time client refresh, canceled when tokenless client creation starts.
@@ -156,7 +152,6 @@ public final class Clerk {
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
   private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
 
-  /// Thread-safe runtime state used by SDK-owned dependencies to detect stale work.
   let runtimeState = ClerkRuntimeState()
 
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
@@ -191,56 +186,41 @@ public final class Clerk {
     dependencies.configurationManager.options
   }
 
-  /// Coordinates task lifecycle and cleanup.
   private var taskCoordinator: TaskCoordinator? = TaskCoordinator()
 
-  /// Frontend API URL.
   var frontendApiUrl: String {
     dependencies.configurationManager.frontendApiUrl
   }
 
   // MARK: - Lifecycle Managers
 
-  // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
-
-  /// Manages caching of client and environment data.
   var cacheManager: CacheManager?
 
-  /// Manages periodic polling of session tokens to keep them refreshed.
   private var sessionPollingManager: SessionPollingManager?
 
-  /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
 
-  /// Coordinates shared persisted auth state between sibling apps.
   var sharedSessionSyncCoordinator: SharedSessionSyncCoordinator?
 
-  /// Owns complete authentication identity transitions and persistence routing.
   @ObservationIgnored
   lazy var identityController = ClerkIdentityController(clerk: self)
 
-  /// Coordinates authentication state exchanged with a paired Apple Watch.
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
 
   /// Coalesces overlapping public Keychain clears so persistence remains frozen
   /// until the single clear transaction has completed.
   var keychainClearTask: Task<Void, Error>?
 
-  /// Dispatches Clerk state changes to optional internal observers.
   var internalStateChanges = ClerkInternalStateChangeEmitter()
 
-  /// Dependency container holding all SDK dependencies.
   var dependencies: any Dependencies
 
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
-  /// Coalesces duplicate URL handling tasks triggered by multiple UI surfaces.
   private let urlHandlingCoordinator = URLHandlingCoordinator()
-  /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
   package private(set) var callbackContinuation: TransferFlowResult?
 
-  /// Coordinates the active authentication view's transient post-authentication work.
   var authFlowCoordinator = AuthFlowCoordinator()
 
   /// The main entry point for all authentication operations.
@@ -291,13 +271,11 @@ public final class Clerk {
     )
   }
 
-  /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
     dependencies.configurationManager.proxyConfiguration
   }
 
   package init() {
-    // Create temporary container - will be replaced during configure with proper values
     do {
       dependencies = try DependencyContainer(
         publishableKey: "",
@@ -305,7 +283,6 @@ public final class Clerk {
         runtimeScope: .init(epoch: .initial)
       )
     } catch {
-      // This should never happen, but handle it just in case
       assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
       if let fallbackDependencies = try? DependencyContainer(
         publishableKey: "",
@@ -321,7 +298,6 @@ public final class Clerk {
 }
 
 extension Clerk {
-  /// Internal helper method that performs the actual configuration work.
   @MainActor
   func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
     let dependencies = try DependencyContainer(
@@ -333,7 +309,6 @@ extension Clerk {
     installConfiguration(dependencies: dependencies)
   }
 
-  /// Internal helper method that installs a prebuilt dependency container and starts managers.
   @MainActor
   func performConfiguration(dependencies: any Dependencies) throws {
     try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
@@ -353,14 +328,12 @@ extension Clerk {
     internalStateChanges.removeAllObservers()
     sharedSessionSyncCoordinator = nil
 
-    // Initialize task coordinator
     taskCoordinator = TaskCoordinator()
 
     self.dependencies = dependencies
     reconcileBiometricCredentialsForCurrentInstallation()
     let usesSharedSessionSync = options.sharedSessionSync != nil
 
-    // Set up session polling and lifecycle management
     sessionPollingManager = SessionPollingManager(
       sessionProvider: self,
       authEventsProvider: { [weak self] in
@@ -371,7 +344,6 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Set up cache manager and load cached data synchronously
     let cacheManager = CacheManager(
       coordinator: self,
       identityKeychain: dependencies.identityKeychain,
@@ -401,7 +373,6 @@ extension Clerk {
       internalStateChanges.addObserver(coordinator)
     }
 
-    // Fire and forget: fetch fresh client and environment from API
     let retryPolicy = Self.startupRefreshRetryPolicy
     taskCoordinator?.task { @MainActor [weak self] in
       do {
@@ -868,7 +839,6 @@ extension Clerk: CacheCoordinator {
 extension Clerk: SessionProviding {}
 
 extension Clerk: LifecycleEventHandling {
-  /// Handles the app entering the foreground by resuming session polling and refreshing data.
   func onWillEnterForeground() async {
     sessionPollingManager?.startPolling()
 
@@ -880,7 +850,6 @@ extension Clerk: LifecycleEventHandling {
     }
     #endif
 
-    // Refresh client and environment concurrently
     taskCoordinator?.task { [weak self] in
       guard let self else { return }
       do {
@@ -904,7 +873,6 @@ extension Clerk: LifecycleEventHandling {
     }
   }
 
-  /// Handles the app entering the background by stopping session polling and flushing telemetry.
   func onDidEnterBackground() async {
     sessionPollingManager?.stopPolling()
 

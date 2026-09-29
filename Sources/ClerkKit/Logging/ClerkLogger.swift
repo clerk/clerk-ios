@@ -87,7 +87,6 @@ public enum LogLevel: String, CaseIterable, Comparable, Sendable {
   }
 }
 
-/// A unified logging system for the Clerk SDK that respects log level configuration.
 package enum ClerkLogger {
   package struct Configuration {
     let logLevel: LogLevel
@@ -106,7 +105,6 @@ package enum ClerkLogger {
     let configuration: Configuration?
   }
 
-  /// The unified logging instance for Clerk
   private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
 
   /// Log an error message (always logs regardless of debug mode)
@@ -126,12 +124,6 @@ package enum ClerkLogger {
     logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
   }
 
-  /// Log a warning message (only logs when log level is set to warning or lower)
-  /// - Parameters:
-  ///   - message: The warning message to log
-  ///   - file: The file where the log is called (automatically filled)
-  ///   - function: The function where the log is called (automatically filled)
-  ///   - line: The line number where the log is called (automatically filled)
   static func warning(
     _ message: String,
     file: String = #file,
@@ -158,12 +150,6 @@ package enum ClerkLogger {
     logSync(level: .info, message: message, forceLog: force, file: file, function: function, line: line)
   }
 
-  /// Log a debug message (only logs when log level is set to debug or lower)
-  /// - Parameters:
-  ///   - message: The debug message to log
-  ///   - file: The file where the log is called (automatically filled)
-  ///   - function: The function where the log is called (automatically filled)
-  ///   - line: The line number where the log is called (automatically filled)
   static func debug(
     _ message: String,
     file: String = #file,
@@ -173,12 +159,6 @@ package enum ClerkLogger {
     logSync(level: .debug, message: message, file: file, function: function, line: line)
   }
 
-  /// Log a verbose message (only logs when log level is set to verbose)
-  /// - Parameters:
-  ///   - message: The verbose message to log
-  ///   - file: The file where the log is called (automatically filled)
-  ///   - function: The function where the log is called (automatically filled)
-  ///   - line: The line number where the log is called (automatically filled)
   static func verbose(
     _ message: String,
     file: String = #file,
@@ -188,15 +168,6 @@ package enum ClerkLogger {
     logSync(level: .verbose, message: message, file: file, function: function, line: line)
   }
 
-  /// Synchronous logging function that checks log level asynchronously
-  /// - Parameters:
-  ///   - level: The log level
-  ///   - message: The message to log
-  ///   - error: Optional error object
-  ///   - forceLog: Force logging regardless of log level (used for errors)
-  ///   - file: The source file
-  ///   - function: The source function
-  ///   - line: The source line number
   private static func logSync(
     level: LogLevel,
     message: String,
@@ -207,7 +178,6 @@ package enum ClerkLogger {
     line: Int,
     configuration: Configuration? = nil
   ) {
-    // Errors always log regardless of level
     if !forceLog {
       let shouldLogTask = Task { @MainActor in
         ClerkLogger.shouldLog(level: level, configuration: configuration)
@@ -233,7 +203,6 @@ package enum ClerkLogger {
       return
     }
 
-    // For forceLog (errors), log immediately
     Task {
       let context = Context(
         file: file,
@@ -251,7 +220,6 @@ package enum ClerkLogger {
     }
   }
 
-  /// Performs the actual logging
   @MainActor
   private static func performLog(
     level: LogLevel,
@@ -273,14 +241,12 @@ package enum ClerkLogger {
     if let error {
       logMessage += "\n   Error: \(error)"
 
-      // Include localized description if available
       if let localizedError = error as? LocalizedError,
          let description = localizedError.errorDescription
       {
         logMessage += "\n   Description: \(description)"
       }
 
-      // Include failure reason if available
       if let localizedError = error as? LocalizedError,
          let failureReason = localizedError.failureReason
       {
@@ -291,7 +257,6 @@ package enum ClerkLogger {
     // Use unified logging for structured logs only (avoid duplicate console output)
     logger.log(level: level.osLogType, "\(logMessage)")
 
-    // Invoke delegate for errors only
     if level == .error {
       let logEntry = LogEntry(
         level: level,
@@ -319,7 +284,6 @@ package enum ClerkLogger {
     }
   }
 
-  /// Determines if a message at the given level should be logged based on the configured log level
   @MainActor
   static func shouldLog(
     level: LogLevel,
@@ -328,7 +292,6 @@ package enum ClerkLogger {
     let configuredLevel = configuration?.logLevel
       ?? Clerk.installedLoggingConfiguration?.logLevel
       ?? .error
-    // Log if the message level is <= configured level (lower severity number = higher priority)
     return level <= configuredLevel
   }
 }
@@ -336,13 +299,6 @@ package enum ClerkLogger {
 // MARK: - Convenience Extensions
 
 extension ClerkLogger {
-  /// Log an error with automatic error extraction
-  /// - Parameters:
-  ///   - error: The error to log
-  ///   - message: Optional custom message (defaults to "An error occurred")
-  ///   - file: The file where the log is called (automatically filled)
-  ///   - function: The function where the log is called (automatically filled)
-  ///   - line: The line number where the log is called (automatically filled)
   package static func logError(
     _ error: Error,
     message: String = "An error occurred",
@@ -363,14 +319,6 @@ extension ClerkLogger {
     )
   }
 
-  /// Log a network request error with additional context
-  /// - Parameters:
-  ///   - error: The network error
-  ///   - endpoint: The API endpoint that failed
-  ///   - statusCode: HTTP status code if available
-  ///   - file: The file where the log is called (automatically filled)
-  ///   - function: The function where the log is called (automatically filled)
-  ///   - line: The line number where the log is called (automatically filled)
   package static func logNetworkError(
     _ error: Error,
     endpoint: String,
