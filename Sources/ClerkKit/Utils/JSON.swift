@@ -22,8 +22,6 @@
 
 // https://github.com/iwill/generic-json-swift
 
-// swiftlint:disable all
-
 import Foundation
 
 // MARK: - JSON
@@ -104,7 +102,8 @@ extension JSON: CustomDebugStringConvertible {
     default:
       let encoder = JSONEncoder()
       encoder.outputFormatting = [.prettyPrinted]
-      return try! String(data: encoder.encode(self), encoding: .utf8)!
+      guard let data = try? encoder.encode(self) else { return "" }
+      return String(bytes: data, encoding: .utf8) ?? ""
     }
   }
 }
@@ -126,7 +125,7 @@ extension JSON {
     switch value {
     case _ as NSNull:
       self = .null
-    case let opt as Optional<Any> where opt == nil:
+    case let opt as Any? where opt == nil:
       self = .null
     case let num as NSNumber:
       if num.isBool {
@@ -178,8 +177,8 @@ extension JSON: ExpressibleByArrayLiteral {
 extension JSON: ExpressibleByDictionaryLiteral {
   public init(dictionaryLiteral elements: (String, JSON)...) {
     var object: [String: JSON] = [:]
-    for (k, v) in elements {
-      object[k] = v
+    for (key, value) in elements {
+      object[key] = value
     }
     self = .object(object)
   }
@@ -363,5 +362,3 @@ extension JSON {
     return tail.isEmpty ? value : value.queryKeyPath(tail)
   }
 }
-
-// swiftlint:enable all
