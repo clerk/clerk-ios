@@ -81,6 +81,9 @@ struct StringExtensionsTests {
     #expect("".isEmailAddress == false)
     #expect("user@example..com".isEmailAddress == false)
     #expect("user@.example.com".isEmailAddress == false)
+    #expect("user@-example.com".isEmailAddress == false)
+    #expect("user@example-.com".isEmailAddress == false)
+    #expect("user@sub-domain.example.com".isEmailAddress == true)
   }
 
   // MARK: - String+Base64.swift Tests
