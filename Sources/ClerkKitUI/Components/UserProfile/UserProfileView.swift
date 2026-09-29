@@ -601,7 +601,6 @@ extension UserProfileView {
     do {
       try await user.getSessions()
     } catch {
-      // A session removed on another device fails here after the Client refresh switched sessions.
       guard !error.isCancellationError, clerk.session?.id == sessionId else { return }
 
       self.error = error
