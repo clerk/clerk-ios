@@ -14,7 +14,7 @@ final class RecordingWatchSyncTransport: WatchSyncTransport {
 struct WatchSyncChangeTests {
   @Test
   func roundTripsThroughTheApplicationContext() {
-    let signedIn = WatchSyncChange(deviceToken: "token", changedAt: date(100))
+    let signedIn = WatchSyncChange(deviceToken: "token", clientId: "client", changedAt: date(100))
     let signedOut = WatchSyncChange(deviceToken: nil, changedAt: date(200))
 
     #expect(WatchSyncChange(applicationContext: signedIn.applicationContext) == signedIn)
@@ -74,6 +74,36 @@ struct WatchConnectivityCoordinatorTests {
     try coordinator.handle(.identityDidChange, from: clerk)
 
     #expect(transport.sent.map(\.deviceToken) == ["token", nil])
+  }
+
+  @Test
+  func signingOutSendsTheSignOutWhenTheTokenRotates() throws {
+    let (clerk, _) = try makeClerk(token: "token", client: signedIn("client"))
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    try clerk.identityController.adoptDeviceToken("rotated-token")
+    clerk.applyResponseClient(signedOut("client"))
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    #expect(transport.sent.map(\.deviceToken) == ["token", nil])
+  }
+
+  @Test
+  func staleTokenDoesNotSignOutThePairedDevice() throws {
+    let (clerk, _) = try makeClerk(token: "token", client: signedIn("client"))
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    try coordinator.handle(.identityDidChange, from: clerk)
+
+    try clerk.identityController.adoptDeviceToken("new-client-token")
+    clerk.applyResponseClient(signedOut("new-client"))
+    try coordinator.handle(.identityDidChange, from: clerk)
+    coordinator.apply(WatchSyncChange(deviceToken: "rotated-token", clientId: "client", changedAt: .now), to: clerk)
+
+    #expect(transport.sent.map(\.deviceToken) == ["token"])
+    #expect(clerk.deviceToken == "rotated-token")
   }
 
   @Test

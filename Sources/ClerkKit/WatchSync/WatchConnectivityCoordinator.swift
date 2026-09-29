@@ -59,12 +59,16 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   private func recordLocalChange(in clerk: Clerk) {
     guard isActive, let current = signedInToken(of: clerk) else { return }
-    if let last = lastChange(in: clerk) {
-      guard last.deviceToken != current else { return }
-    } else {
-      guard current != nil else { return }
-    }
-    let change = WatchSyncChange(deviceToken: current, changedAt: Date())
+    let last = lastChange(in: clerk)
+    guard current != last?.deviceToken else { return }
+    // A sign-out is the signed-in Client losing its sessions, or a clear. Landing on a different
+    // Client means the paired device rotated the token, and its newer change is on the way.
+    guard current != nil || clerk.deviceToken == nil || clerk.client?.id == last?.clientId else { return }
+    let change = WatchSyncChange(
+      deviceToken: current,
+      clientId: current == nil ? nil : clerk.client?.id,
+      changedAt: Date()
+    )
     save(change, in: clerk)
     transport?.send(change)
   }
