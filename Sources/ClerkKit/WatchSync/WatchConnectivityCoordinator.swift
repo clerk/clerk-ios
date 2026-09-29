@@ -27,7 +27,9 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
     switch change {
-    case .clientDidChange, .deviceTokenDidChange, .identityDidChange, .localStorageDidClear:
+    case .clientDidChange(let previous, let current):
+      recordLocalChange(in: clerk, clientChanged: previous != current)
+    case .deviceTokenDidChange, .identityDidChange, .localStorageDidClear:
       recordLocalChange(in: clerk)
     case .environmentDidChange, .applicationDidEnterForeground:
       break
@@ -57,13 +59,18 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     refreshTask = nil
   }
 
-  private func recordLocalChange(in clerk: Clerk) {
+  private func recordLocalChange(in clerk: Clerk, clientChanged: Bool = false) {
     guard isActive, let current = signedInToken(of: clerk) else { return }
     let last = lastChange(in: clerk)
-    guard current != last?.deviceToken else { return }
-    // A sign-out is the signed-in Client losing its sessions, or a clear. Landing on a different
-    // Client means the paired device rotated the token, and its newer change is on the way.
-    guard current != nil || clerk.deviceToken == nil || clerk.client?.id == last?.clientId else { return }
+    if current == last?.deviceToken {
+      // A newer change with the same token asks the paired device to refresh its Client. A Client
+      // refreshed for the paired device isn't sent back.
+      guard current != nil, clientChanged, refreshTask == nil else { return }
+    } else {
+      // A sign-out is the signed-in Client losing its sessions, or a clear. Landing on a different
+      // Client means the paired device rotated the token, and its newer change is on the way.
+      guard current != nil || clerk.deviceToken == nil || clerk.client?.id == last?.clientId else { return }
+    }
     let change = WatchSyncChange(
       deviceToken: current,
       clientId: current == nil ? nil : clerk.client?.id,

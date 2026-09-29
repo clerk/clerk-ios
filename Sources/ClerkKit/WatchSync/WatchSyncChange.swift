@@ -5,8 +5,9 @@
 
 import Foundation
 
-/// A sign-in or sign-out on the phone or the watch: the device token and its Client while signed
-/// in, or `nil` once signed out, and when that happened. The latest change wins on both devices.
+/// A change on the phone or the watch: the device token and its Client while signed in, or `nil`
+/// once signed out, and when that happened. The latest change wins on both devices, which then
+/// refresh their Client.
 struct WatchSyncChange: Codable, Equatable {
   private enum Key {
     static let deviceToken = "clerkWatchSyncDeviceToken"

@@ -107,6 +107,38 @@ struct WatchConnectivityCoordinatorTests {
   }
 
   @Test
+  func clientChangeWhileSignedInIsSent() throws {
+    let client = signedIn("client")
+    let (clerk, _) = try makeClerk(token: "token", client: client)
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    try coordinator.handle(.identityDidChange, from: clerk)
+    var renamed = client
+    renamed.updatedAt = .now
+
+    try coordinator.handle(.clientDidChange(previous: client, current: client), from: clerk)
+    try coordinator.handle(.clientDidChange(previous: client, current: renamed), from: clerk)
+
+    #expect(transport.sent.map(\.deviceToken) == ["token", "token"])
+    #expect(transport.sent[1].changedAt > transport.sent[0].changedAt)
+  }
+
+  @Test
+  func clientRefreshedForThePairedDeviceIsNotSentBack() throws {
+    let client = signedIn("client")
+    let (clerk, _) = try makeClerk(token: "token", client: client)
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    var refreshed = client
+    refreshed.updatedAt = .now
+
+    coordinator.apply(WatchSyncChange(deviceToken: "token", clientId: "client", changedAt: .now), to: clerk)
+    try coordinator.handle(.clientDidChange(previous: client, current: refreshed), from: clerk)
+
+    #expect(transport.sent.isEmpty)
+  }
+
+  @Test
   func newerSignInFromThePairedDeviceIsAdopted() throws {
     let (clerk, _) = try makeClerk()
     let coordinator = WatchConnectivityCoordinator(transport: RecordingWatchSyncTransport())
