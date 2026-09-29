@@ -16,18 +16,12 @@ extension Clerk {
     }
   }
 
-  /// Non-secret markers kept across clears: where this app's private state lives, that its
-  /// identity was already migrated, and how many clears it has seen (so Watch state from before
-  /// the clear is rejected).
   static let preservedKeychainKeys: Set<ClerkKeychainKey> = [
     .sharedSessionSyncAdopted,
     .identityMigrated,
     .watchSyncClearGeneration,
   ]
 
-  /// Keys the app clears leave for their identity step. The identity store removes the identity where
-  /// it lives; a record elsewhere, such as in the access group of an app with sync off, belongs to
-  /// other apps.
   private static let keysPreservedAlongsideIdentity = preservedKeychainKeys.union([.identity])
 
   /// Clears Clerk authentication and private cached data from Keychain.
@@ -99,9 +93,6 @@ extension Clerk {
     }
   }
 
-  /// Clears Clerk data before installing a new configuration, logging with that configuration's options.
-  ///
-  /// An identity stored in an access group belongs to every app and extension in the group, so it is left for them.
   @MainActor
   static func clearLocalClerkStorageStrictly(in dependencies: any Dependencies) throws {
     let configuration = ClerkLogger.Configuration(options: dependencies.configurationManager.options)
@@ -126,7 +117,6 @@ extension Clerk {
     }
   }
 
-  /// Deletes every Clerk Keychain item in `keychain` except `preservedKeys`, logging failures.
   @MainActor
   static func clearAllKeychainItems(
     in keychain: any KeychainStorage,
@@ -135,7 +125,6 @@ extension Clerk {
     _ = clearAllKeychainItemsCollectingFailures(in: keychain, preserving: preservedKeys)
   }
 
-  /// Deletes every Clerk Keychain item in `keychain` except `preservedKeys`.
   @MainActor
   static func clearAllKeychainItemsStrictly(
     in keychain: any KeychainStorage,
@@ -153,8 +142,6 @@ extension Clerk {
     )
   }
 
-  /// Records the clear for Watch sync and for an unfinished identity migration, then removes the
-  /// identity. Returns the items that failed.
   @MainActor
   private static func clearIdentityAndMarkClear(
     in dependencies: any Dependencies,
@@ -184,15 +171,11 @@ extension Clerk {
     return failures
   }
 
-  /// Deletes this app's own record from the access group when its identity now lives elsewhere, as
-  /// after turning off sync that was adopted in SDK 1.5. A sibling app that shares the record
-  /// rewrites it on every response, so a record whose last writer is this app is no longer in use.
   @MainActor
   private static func deleteGroupIdentityLastWrittenHere(in dependencies: any Dependencies) throws {
     let identityStore = dependencies.identityStore
     guard !dependencies.identityIsInAccessGroup, let writer = identityStore.writer else { return }
     let groupStore = ClerkIdentityStore(keychain: dependencies.keychain, instanceFingerprint: identityStore.instanceFingerprint)
-    // An unreadable group, such as one missing from the entitlement, holds nothing to delete.
     guard (try? groupStore.load())?.writer == writer else { return }
     try groupStore.delete()
   }

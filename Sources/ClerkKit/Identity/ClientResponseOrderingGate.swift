@@ -8,8 +8,6 @@ import Foundation
 struct ClientResponseOrderingGate {
   private(set) var lastAcceptedSequence: Int?
   var lastAcceptedServerDate: Date?
-  /// Server date of a snapshot adopted from another app. Responses the server produced
-  /// earlier than that snapshot cannot replace it.
   private var externalSnapshotDate: Date?
 
   init(

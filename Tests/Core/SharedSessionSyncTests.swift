@@ -7,7 +7,6 @@
 import Foundation
 import Testing
 
-/// Two in-process "apps" that share one identity record, with a hub standing in for Darwin notifications.
 @MainActor
 @Suite(.serialized)
 struct SharedSessionSyncTests {
@@ -176,8 +175,6 @@ struct SharedSessionSyncTests {
     ))
   }
 
-  // MARK: - Helpers
-
   private func makeApp(hub: NotificationHub, keychain: InMemoryKeychain? = nil) -> App {
     let keychain = keychain ?? hub.keychain
     let clerk = Clerk()
@@ -222,10 +219,8 @@ private struct App {
   }
 }
 
-/// Delivers each post synchronously to every other notifier, like a Darwin notification.
 @MainActor
 private final class NotificationHub {
-  /// The access-group Keychain every app in the test shares.
   let keychain = InMemoryKeychain()
   private var notifiers: [HubNotifier] = []
   private(set) var postCount = 0

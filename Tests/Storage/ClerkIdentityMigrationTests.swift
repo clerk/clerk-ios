@@ -54,7 +54,6 @@ struct ClerkIdentityMigrationTests {
     #expect(try env.store.load()?.identity.deviceToken == "atomic-token")
     #expect(try env.keychain(stableService).hasItem(forKey: "clerkSharedSessionLocalIdentityV2") == false)
     #expect(try env.keychain(slotService, accessGroup).hasItem(forKey: slotAccount) == false)
-    // Separate items in an access group stay for sibling apps on an earlier SDK.
     #expect(try env.legacy.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue))
   }
 
@@ -178,7 +177,6 @@ struct ClerkIdentityMigrationTests {
     try unfinished.migrateIfNeeded()
     #expect(try env.store.load()?.identity.deviceToken == "atomic-token")
 
-    // The app clears while the access group is unreachable, then relaunches with it reachable.
     try ClerkIdentityMigration.recordClear(in: env.marker)
     try env.store.delete()
     try migration(env).migrateIfNeeded()
@@ -187,7 +185,6 @@ struct ClerkIdentityMigrationTests {
     #expect(try env.keychain(stableService).hasItem(forKey: "clerkSharedSessionLocalIdentityV2") == false)
     #expect(try env.marker.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.markerValue)
 
-    // A finished migration stays finished.
     try ClerkIdentityMigration.recordClear(in: env.marker)
     #expect(try env.marker.string(forKey: ClerkKeychainKey.identityMigrated.rawValue) == ClerkIdentityMigration.markerValue)
   }
@@ -218,8 +215,6 @@ struct ClerkIdentityMigrationTests {
     #expect(try appLocal.string(forKey: ClerkKeychainKey.attestKeyId.rawValue) == "attest-key")
     #expect(try AppLocalStateAdoption.isAdopted(in: marker))
   }
-
-  // MARK: - Helpers
 
   private var stableService: String {
     "\(owner).clerk.identity.v2.\(fingerprint)"
@@ -266,7 +261,6 @@ struct ClerkIdentityMigrationTests {
     return migration
   }
 
-  /// Keychains keyed by service and access group, like the system Keychain.
   private final class Environment: @unchecked Sendable {
     let accessGroup: String?
     let legacy = InMemoryKeychain()

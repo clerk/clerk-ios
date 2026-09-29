@@ -48,9 +48,6 @@ struct ClerkIdentitySnapshot: Codable, Equatable {
 }
 
 extension ClerkIdentitySnapshot {
-  /// Keeps the device token when the Client cannot be decoded, for example after a newer
-  /// SDK in another app wrote a Client shape this version does not understand. Losing the
-  /// token would sign the user out; the next refresh restores the Client.
   init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     let deviceToken = try container.decodeIfPresent(String.self, forKey: .deviceToken)

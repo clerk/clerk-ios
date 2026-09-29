@@ -18,7 +18,6 @@ final class DependencyContainer: Dependencies {
     let identityIsInAccessGroup: Bool
     let sharesIdentity: Bool
 
-    /// Every store in one injected Keychain.
     static func injected(_ keychain: any KeychainStorage, instanceFingerprint: String) -> KeychainStorages {
       KeychainStorages(
         shared: keychain,
@@ -228,13 +227,9 @@ final class DependencyContainer: Dependencies {
       accessGroup: nil
     )
 
-    // Apps that adopted shared-session sync in SDK 1.5 keep private state, and their identity
-    // when sync is off, in app-local storage.
     let wasAdopted = migratesPersistentState
       && (try? AppLocalStateAdoption.isAdopted(in: adoptionMarkerKeychain)) == true
 
-    // The identity lives in the configured Keychain, which is shared when it has an access group.
-    // If this app lacks the group entitlement, fall back to app-local storage without sharing.
     var identityKeychain = syncEnabled || !wasAdopted ? shared : configuredAppLocal
     var identityIsInAccessGroup = config.normalizedAccessGroup != nil && (syncEnabled || !wasAdopted)
     var accessGroupIsUnreadable = false
@@ -249,8 +244,6 @@ final class DependencyContainer: Dependencies {
         identityIsInAccessGroup = false
         accessGroupIsUnreadable = true
       } catch {
-        // For example, a background launch before first unlock. Keep the configured layout and
-        // let the migration finish on a later launch.
         ClerkLogger.logError(error, message: "Failed to read the configured Keychain access group")
         accessGroupIsUnreadable = true
       }
@@ -298,7 +291,6 @@ final class DependencyContainer: Dependencies {
       identityStore: identityStore,
       identityMigrationMarker: configuredAppLocal,
       identityIsInAccessGroup: identityIsInAccessGroup,
-      // Every app that writes the group record must re-read it, or it can write back a cleared identity.
       sharesIdentity: identityIsInAccessGroup
     )
   }

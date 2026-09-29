@@ -7,15 +7,12 @@
 
 import Foundation
 
-/// Receives cached values while Clerk configures.
 protocol CacheCoordinator: AnyObject, Sendable {
   /// Sets the environment if the current environment is empty.
   @MainActor func setEnvironmentIfNeeded(_ environment: Clerk.Environment)
 }
 
-/// Caches the Clerk environment in the Keychain so it is available offline at launch.
 ///
-/// The device token and Client are persisted by ``ClerkIdentityStore``.
 @MainActor
 final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?
@@ -27,7 +24,6 @@ final class CacheManager {
     self.keychain = keychain
   }
 
-  /// Loads the cached environment unless fresh data has already been loaded.
   func loadCachedData() {
     do {
       guard let data = try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) else {

@@ -5,12 +5,6 @@
 
 import Foundation
 
-/// Moves app-private state out of the shared access group the first time an app enables
-/// shared-session sync, so sibling apps never read each other's environment, App Attest
-/// key, or pending magic link.
-///
-/// The marker is kept after sync is disabled, so the app keeps reading its private state
-/// from the same place.
 struct AppLocalStateAdoption {
   static let markerValue = "2"
 

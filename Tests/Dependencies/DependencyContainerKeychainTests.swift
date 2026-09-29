@@ -88,8 +88,6 @@ struct DependencyContainerKeychainTests {
   @Test
   @MainActor
   func anAppThatWritesTheGroupRecordSharesItWithoutTheSyncOption() throws {
-    // An extension that shares the access group without the option still writes the record, so it
-    // must also re-read it, or it could write back an identity another app cleared.
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service", accessGroup: "group.example")),

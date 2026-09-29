@@ -285,9 +285,7 @@ struct ClerkReconfigureTests {
         options: Clerk.Options(keychainConfig: .init(service: targetService))
       )
       Issue.record("Expected reconfigure to throw when old keychain clearing fails")
-    } catch {
-      // Expected.
-    }
+    } catch {}
 
     let dependenciesUnchanged = Clerk.shared.dependencies === previousDependencies
     #expect(Clerk.shared === original)

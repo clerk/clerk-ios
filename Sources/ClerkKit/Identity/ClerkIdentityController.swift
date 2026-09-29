@@ -7,15 +7,7 @@
 
 import Foundation
 
-/// Owns Clerk's in-memory identity and its single persisted record.
 ///
-/// Every identity change goes through ``commit(_:fenceResponses:authFlowUpdate:)``,
-/// which writes the device token, Client, and server date to ``ClerkIdentityStore``
-/// together before updating memory.
-///
-/// With shared-session sync, other apps write the same record. Before using or
-/// replacing the identity, the controller re-reads the record and adopts it if its
-/// revision changed, and after writing it notifies the other apps.
 @MainActor
 final class ClerkIdentityController {
   struct RollbackState {
@@ -33,7 +25,6 @@ final class ClerkIdentityController {
 
   private(set) var currentDeviceToken: String?
   private var storedRevision: UUID?
-  /// The launch-time read failed, for example before the first unlock, so the store is re-read before use.
   private var hydrationFailed = false
   private var notifier: (any SharedSessionSyncNotifying)?
 
@@ -56,8 +47,6 @@ final class ClerkIdentityController {
     notifier != nil
   }
 
-  /// Whether to re-read the store before use: another app may have written it, or this app
-  /// could not read it at launch and must not act as signed out once it can.
   var readsStoreBeforeUse: Bool {
     isSharingIdentity || hydrationFailed
   }
@@ -67,8 +56,6 @@ final class ClerkIdentityController {
   }
 }
 
-// MARK: - Lifecycle
-
 extension ClerkIdentityController {
   func prepareForConfiguration() {
     stopSharing()
@@ -77,7 +64,6 @@ extension ClerkIdentityController {
     hydrationFailed = false
   }
 
-  /// Loads the persisted identity during configuration without emitting changes.
   func hydrate() {
     guard let clerk, let store else { return }
     let record: ClerkIdentityStore.Record?
@@ -101,7 +87,6 @@ extension ClerkIdentityController {
     }
   }
 
-  /// Shares the identity with other apps in the access group.
   func startSharing(notifier: any SharedSessionSyncNotifying) {
     self.notifier = notifier
     notifier.setHandler { [weak self] in
@@ -151,12 +136,7 @@ extension ClerkIdentityController {
   }
 }
 
-// MARK: - Reading and Reloading
-
 extension ClerkIdentityController {
-  /// Adopts the persisted identity if another process wrote it since this app last read or wrote it.
-  ///
-  /// - Returns: `true` when the in-memory identity changed.
   @discardableResult
   func reconcileWithStore() -> Bool {
     guard let store else { return false }
@@ -170,7 +150,6 @@ extension ClerkIdentityController {
       do {
         record = try store.load()
       } catch ClerkIdentityStoreError.otherInstance {
-        // Another app sharing the group uses a different Clerk instance; leave this app's identity alone.
         storedRevision = revision
         hydrationFailed = false
         return false
@@ -234,11 +213,7 @@ extension ClerkIdentityController {
   }
 }
 
-// MARK: - Identity Changes
-
 extension ClerkIdentityController {
-  /// Applies a complete identity decided by another component, such as Watch sync.
-  /// `prepare` sees the latest shared identity and may decline by returning `nil`.
   func applyExternalTransition(
     _ prepare: () throws -> ExternalTransition?
   ) throws {
@@ -262,8 +237,6 @@ extension ClerkIdentityController {
     return .applied
   }
 
-  /// Removes the persisted identity and signs this app out. With shared-session sync,
-  /// this signs out every app sharing the identity.
   func clearIdentity() throws {
     guard let clerk else { return }
     fenceClientResponses()
@@ -274,8 +247,6 @@ extension ClerkIdentityController {
     do {
       try store?.delete()
     } catch {
-      // Remember the record this clear could not delete, so reconciling does not mistake it
-      // for another app's write and sign the user back in.
       storedRevision = try? store?.revision()
       throw error
     }
@@ -283,11 +254,6 @@ extension ClerkIdentityController {
     notifier?.post()
   }
 
-  /// Persists `identity`, then applies it to memory.
-  ///
-  /// A write that would change the device token must succeed, because losing a new
-  /// token would sign the user out on the next launch. Other write failures are
-  /// logged and the identity is still applied, since the next response rewrites it.
   private func commit(
     _ identity: ClerkIdentitySnapshot,
     fenceResponses: Bool = false,
@@ -295,7 +261,6 @@ extension ClerkIdentityController {
   ) throws {
     let tokenChanged = identity.deviceToken != currentDeviceToken
     var identity = identity
-    // Persist the same server-date watermark memory keeps, so the next launch hydrates it.
     if !tokenChanged, let watermark = lastServerDate, identity.serverDate.map({ $0 < watermark }) ?? true {
       identity = ClerkIdentitySnapshot(
         state: identity.state,
@@ -304,7 +269,6 @@ extension ClerkIdentityController {
         serverDate: watermark
       )
     }
-    // A Client without a device token only exists in memory; it cannot be persisted.
     if let store, identity.deviceToken != nil || identity.client == nil {
       do {
         storedRevision = try store.save(identity)?.revision
@@ -338,8 +302,6 @@ extension ClerkIdentityController {
   }
 }
 
-// MARK: - Network Responses
-
 extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
     guard let clerk else { throw CancellationError() }
@@ -369,7 +331,6 @@ extension ClerkIdentityController {
     emitAcceptedAuthCompletion(context.completedAuthFlow, clerk: clerk)
   }
 
-  /// Applies a Client decoded outside the response middleware, keeping the current device token.
   func applyResponseClient(
     _ incoming: Client?,
     responseSequence: Int? = nil,

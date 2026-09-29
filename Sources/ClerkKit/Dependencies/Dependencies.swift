@@ -22,16 +22,12 @@ protocol Dependencies: AnyObject {
   /// Keychain storage scoped to this app rather than the configured shared access group.
   var appLocalKeychain: any KeychainStorage { get }
 
-  /// The single persisted record holding the device token and Client.
   var identityStore: ClerkIdentityStore { get }
 
-  /// App-local Keychain holding the marker that records this app's identity migration.
   var identityMigrationMarkerKeychain: any KeychainStorage { get }
 
-  /// Whether ``identityStore`` is in the configured access group, where other apps and extensions can read it.
   var identityIsInAccessGroup: Bool { get }
 
-  /// Whether other apps share ``identityStore`` and should be kept in sync with it.
   var sharesIdentity: Bool { get }
 
   /// Manager for local biometric-credential private keys.

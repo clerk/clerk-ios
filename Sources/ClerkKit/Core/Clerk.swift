@@ -208,7 +208,6 @@ public final class Clerk {
   /// Manages app lifecycle notifications and coordinates foreground/background transitions.
   private var lifecycleManager: LifecycleManager?
 
-  /// Owns the authentication identity and its persistence.
   @ObservationIgnored
   lazy var identityController = ClerkIdentityController(clerk: self)
 
@@ -353,7 +352,6 @@ extension Clerk {
     sessionPollingManager?.startPolling()
     lifecycleManager?.startObserving()
 
-    // Load the persisted identity and cached environment synchronously
     identityController.hydrate()
     let cacheManager = CacheManager(coordinator: self, keychain: dependencies.appLocalKeychain)
     self.cacheManager = cacheManager
@@ -539,8 +537,6 @@ extension Clerk {
     defer { endRuntimeReconfiguration() }
 
     if let existing = _shared {
-      // Fail before any destructive write if the current Keychain is unreachable,
-      // for example because the app lost its access-group entitlement.
       _ = try existing.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
       let nextEpoch = existing.nextConfigurationEpoch
@@ -930,7 +926,6 @@ extension Clerk {
     teardownManagers()
   }
 
-  /// Stops managers and waits for SDK-owned tasks, so none can write state for the old configuration.
   private func cleanupManagersAndWait() async {
     stopManagers()
     await taskCoordinator?.cancelAllAndWait()

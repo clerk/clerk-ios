@@ -5,26 +5,10 @@
 
 import Foundation
 
-/// Moves an existing identity into ``ClerkIdentityStore`` once per app, then removes
-/// the storage used by earlier SDK versions.
-///
-/// Sources, in order of preference:
-/// 1. The atomic app-local record written by shared-session sync in SDK 1.5.
-/// 2. The separate device-token, Client, and server-date items written before that.
-///
-/// A clear recorded before the migration finished, including a shared-session clear
-/// interrupted in SDK 1.5, is honored by not migrating any identity. When another app in the access group already wrote the shared record,
-/// that record is kept unless it is signed out and this app's identity is signed in.
-///
-/// The migration is marked done only after every earlier copy was deleted, so a failed
-/// deletion is retried on the next launch.
 struct ClerkIdentityMigration {
   static let markerValue = "3"
-  /// Recorded by a clear before the migration finished, so the next run removes earlier copies
-  /// without bringing the cleared identity back.
   static let clearedMarkerValue = "cleared"
 
-  /// Earlier-layout identity items in the configured Keychain.
   static let legacyIdentityKeys: [ClerkKeychainKey] = [
     .clerkDeviceToken,
     .cachedClient,
@@ -51,27 +35,18 @@ struct ClerkIdentityMigration {
   }
 
   let store: ClerkIdentityStore
-  /// The configured Keychain, which held the earlier separate identity items.
   let legacyKeychain: any KeychainStorage
-  /// App-local Keychain that records this app's migration.
   let markerKeychain: any KeychainStorage
   let configuredService: String
   let accessGroup: String?
   let ownerIdentifier: String?
   let instanceFingerprint: String
-  /// Apps that adopted shared-session sync in SDK 1.5 left stale separate items behind, so only
-  /// apps that never adopted it read them.
   var readsLegacyItems = true
-  /// `false` while the app cannot reach its access group: the identity is copied to the fallback
-  /// store, but earlier copies are kept so the migration runs again once the group is reachable.
   var finalizes = true
-  /// This app's own storage, read when the configured Keychain has an access group: an app that
-  /// adds a group, for example to turn on shared-session sync, kept its earlier items there.
   /// It is only read, because deleting without a group would also match siblings' items.
   var appLocalLegacyKeychain: (any KeychainStorage)?
   var makeKeychain: (_ service: String, _ accessGroup: String?) -> any KeychainStorage = Self.liveKeychain
 
-  /// Records a clear, so a migration that has not finished cannot restore the cleared identity.
   static func recordClear(in markerKeychain: any KeychainStorage) throws {
     let marker = ClerkKeychainKey.identityMigrated.rawValue
     guard try markerKeychain.string(forKey: marker) != markerValue else { return }
@@ -100,8 +75,6 @@ struct ClerkIdentityMigration {
     guard finalizes, removeEarlierStorage(clearIntent: clearIntent) else { return }
     try markerKeychain.set(Self.markerValue, forKey: marker)
   }
-
-  // MARK: - Sources
 
   private var stableIdentityService: String {
     let owner = ownerIdentifier.nilIfEmpty ?? configuredService
@@ -155,12 +128,8 @@ struct ClerkIdentityMigration {
     ).validated()
   }
 
-  // MARK: - Cleanup
-
   /// Deletes every earlier copy of the identity. Separate items in an access group are left
   /// for sibling apps still on an earlier SDK, which read them; a clear removes them.
-  ///
-  /// - Returns: `true` when every deletion succeeded.
   private func removeEarlierStorage(clearIntent: ClearIntent?) -> Bool {
     var deletions: [(any KeychainStorage, String)] = accessGroup == nil
       ? Self.legacyIdentityKeys.map { (legacyKeychain, $0.rawValue) }

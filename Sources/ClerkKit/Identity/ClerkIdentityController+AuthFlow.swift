@@ -5,7 +5,6 @@
 
 import Foundation
 
-/// Reports sign-in and sign-up completions carried by identity changes.
 extension ClerkIdentityController {
   func authFlowUpdate(
     for completedAuthFlow: TransferFlowResult?,
@@ -26,7 +25,6 @@ extension ClerkIdentityController {
     }
   }
 
-  /// A rejected response still completes its flow when a newer response already made its session current.
   func resolveRejectedResponseAuthFlow(_ completedAuthFlow: TransferFlowResult?, ownerId: UUID?) {
     guard let clerk,
           resolveSupersededAuthFlowCompletion(completedAuthFlow, ownerId: ownerId) == .accepted
@@ -36,7 +34,6 @@ extension ClerkIdentityController {
     emitAcceptedAuthCompletion(completedAuthFlow, clerk: clerk)
   }
 
-  /// Resolves a flow whose response was not applied, and reports whether its session is current anyway.
   @discardableResult
   func resolveSupersededAuthFlowCompletion(
     _ completedAuthFlow: TransferFlowResult?,

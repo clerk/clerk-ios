@@ -14,7 +14,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var isApplyingRemoteEnvironment = false
   private var refreshTask: Task<Void, Never>?
 
-  /// - Parameter transport: Overrides the platform WatchConnectivity transport.
   init(transport: (any WatchSyncTransport)? = nil) {
     self.transport = transport ?? makePlatformWatchSyncTransport(
       onReceive: { [weak self] payload, source in
@@ -59,7 +58,6 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     let localSource: WatchSyncSource = source == .phone ? .watch : .phone
     do {
       try clerk.identityController.applyExternalTransition {
-        // Without the clear generation this device cannot order the states, so it rejects the payload.
         let local = try WatchSyncState(of: clerk)
         guard incoming.supersedes(local, from: source) else {
           if local.supersedes(incoming, from: localSource) {

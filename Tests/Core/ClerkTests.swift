@@ -186,8 +186,6 @@ struct ClerkTests {
 
   @Test
   func clearsLeaveTheGroupIdentityOfAppsWithSyncOn() throws {
-    // An app that adopted sync in SDK 1.5 and turned it off keeps its identity app-local, while
-    // sibling apps with sync on keep theirs in the access group.
     let groupKeychain = InMemoryKeychain()
     let identityKeychain = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
@@ -290,7 +288,6 @@ struct ClerkTests {
     // Clear all keychain items (should not throw even though some keys don't exist)
     Clerk.clearAllKeychainItems()
 
-    // Verify all keys are deleted (including ones that didn't exist), except the markers the clear records.
     for key in ClerkKeychainKey.allCases {
       #expect(try keychain.hasItem(forKey: key.rawValue) == [.watchSyncClearGeneration, .identityMigrated].contains(key))
     }

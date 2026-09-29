@@ -110,12 +110,10 @@ struct ClerkIdentityControllerTests {
     let (clerk, _) = makeClerk(identityKeychain: keychain)
     try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
 
-    // A background launch before the first unlock cannot read the Keychain.
     keychain.isLocked = true
     clerk.identityController.hydrate()
     #expect(clerk.deviceToken == nil)
 
-    // Once unlocked, the next request uses the saved identity instead of starting a new Client.
     keychain.isLocked = false
     let request = try await clerk.identityController.captureRequestIdentity()
     #expect(request.deviceToken == "saved-token")
@@ -271,8 +269,6 @@ struct ClerkIdentityControllerTests {
     #expect(clerk.client == nil)
   }
 
-  // MARK: - Helpers
-
   private func makeClerk(
     keychain: InMemoryKeychain? = nil,
     identityKeychain: (any KeychainStorage)? = nil
@@ -393,7 +389,6 @@ private final class DeleteFailingIdentityKeychain: @unchecked Sendable, Keychain
   }
 }
 
-/// A Keychain that cannot be read or written while locked, as before the first unlock.
 private final class LockableKeychain: @unchecked Sendable, KeychainStorage {
   private let backing = InMemoryKeychain()
   private let lock = NSLock()
