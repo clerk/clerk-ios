@@ -138,7 +138,7 @@ struct AuthTests {
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signInWithOAuth(provider: .google)
     }
-    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    #expect(error?.messageLocalizationValue == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
@@ -163,7 +163,7 @@ struct AuthTests {
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
     }
-    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    #expect(error?.messageLocalizationValue == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
@@ -326,7 +326,7 @@ struct AuthTests {
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signInWithPasskey()
     }
-    #expect(error?.message == "Unable to get the challenge for the passkey.")
+    #expect(error?.messageLocalizationValue == "Unable to get the challenge for the passkey.")
 
     let createParams = try #require(signInParams.value)
     #expect(createParams.strategy == .passkey)
@@ -1288,7 +1288,7 @@ struct AuthTests {
         unsafeMetadata: metadata
       )
     }
-    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    #expect(error?.messageLocalizationValue == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
@@ -1318,7 +1318,7 @@ struct AuthTests {
         unsafeMetadata: metadata
       )
     }
-    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
+    #expect(error?.messageLocalizationValue == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
