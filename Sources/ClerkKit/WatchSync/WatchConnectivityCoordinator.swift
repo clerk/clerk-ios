@@ -7,7 +7,6 @@
 
 import Foundation
 
-/// Keeps the phone and watch signed in as the same user by exchanging ``WatchSyncChange``s.
 @MainActor
 final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   private var transport: (any WatchSyncTransport)?
@@ -44,8 +43,8 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
       if let token = incoming.deviceToken {
         try clerk.identityController.adoptDeviceToken(token)
         refreshClient(for: clerk)
-      } else if signedInToken(of: clerk) != .some(nil) {
-        try clerk.identityController.adoptDeviceToken(nil)
+      } else if signInState(of: clerk) != .signedOut {
+        try clerk.identityController.clearDeviceToken()
       }
     } catch {
       save(previous, in: clerk)
@@ -60,7 +59,9 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   }
 
   private func recordLocalChange(in clerk: Clerk, clientChanged: Bool = false) {
-    guard isActive, let current = signedInToken(of: clerk) else { return }
+    let state = signInState(of: clerk)
+    guard isActive, state != .loading else { return }
+    let current = state.deviceToken
     let last = lastChange(in: clerk)
     let tokenChanged = current != last?.deviceToken
     let isRefreshForPairedDevice = !tokenChanged && refreshTask != nil
@@ -82,12 +83,10 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
     transport?.send(change)
   }
 
-  /// The device token while signed in, `.some(nil)` while signed out, and `nil` while the Client
-  /// for a token is still being fetched.
-  private func signedInToken(of clerk: Clerk) -> String?? {
-    guard let token = clerk.deviceToken else { return .some(nil) }
-    guard let client = clerk.client else { return nil }
-    return .some(client.sessions.isEmpty ? nil : token)
+  private func signInState(of clerk: Clerk) -> SignInState {
+    guard let token = clerk.deviceToken else { return .signedOut }
+    guard let client = clerk.client else { return .loading }
+    return client.sessions.isEmpty ? .signedOut : .signedIn(deviceToken: token)
   }
 
   private func lastChange(in clerk: Clerk) -> WatchSyncChange? {
@@ -128,5 +127,15 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   private func refreshDidFinish() {
     refreshTask = nil
+  }
+}
+
+private enum SignInState: Equatable {
+  case loading
+  case signedOut
+  case signedIn(deviceToken: String)
+
+  var deviceToken: String? {
+    if case .signedIn(let deviceToken) = self { deviceToken } else { nil }
   }
 }

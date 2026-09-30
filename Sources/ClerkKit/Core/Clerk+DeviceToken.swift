@@ -53,7 +53,7 @@ extension Clerk {
       throw DeviceTokenError.emptyToken
     }
 
-    let result = try await identityController.updateDeviceToken(to: normalizedToken)
+    let result = try identityController.adoptDeviceToken(normalizedToken)
     guard result != .rejected else {
       throw DeviceTokenError.updateRejected
     }

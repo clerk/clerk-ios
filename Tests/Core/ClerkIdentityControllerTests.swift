@@ -163,11 +163,11 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func updateDeviceTokenPersistsTokenWithoutClient() async throws {
+  func adoptDeviceTokenPersistsTokenWithoutClient() throws {
     let (clerk, _) = makeClerk()
     try clerk.seedIdentity(deviceToken: "old-token", client: makeClient(id: "client"), serverDate: date(100))
 
-    let result = try await clerk.identityController.updateDeviceToken(to: "new-token")
+    let result = try clerk.identityController.adoptDeviceToken("new-token")
 
     #expect(result == .applied)
     #expect(clerk.deviceToken == "new-token")
@@ -175,19 +175,7 @@ struct ClerkIdentityControllerTests {
     let persisted = try #require(try clerk.dependencies.identityStore.load())
     #expect(persisted.deviceToken == "new-token")
     #expect(persisted.client == nil)
-    #expect(try await clerk.identityController.updateDeviceToken(to: "new-token") == .unchanged)
-  }
-
-  @Test
-  func adoptingAPairedDeviceTokenPersistsItWithoutAClient() throws {
-    let (clerk, _) = makeClerk()
-    try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "client"), serverDate: date(100))
-
-    try clerk.identityController.adoptDeviceToken("watch-token")
-
-    #expect(clerk.deviceToken == "watch-token")
-    #expect(clerk.client == nil)
-    #expect(try clerk.dependencies.identityStore.load()?.deviceToken == "watch-token")
+    #expect(try clerk.identityController.adoptDeviceToken("new-token") == .unchanged)
   }
 
   @Test

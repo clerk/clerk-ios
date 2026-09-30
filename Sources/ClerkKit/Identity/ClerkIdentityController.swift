@@ -137,17 +137,8 @@ extension ClerkIdentityController {
 }
 
 extension ClerkIdentityController {
-  /// Adopts the paired device's token, or signs out when it is `nil`. The Client is fetched separately.
-  func adoptDeviceToken(_ deviceToken: String?) throws {
-    adoptStoredDeviceToken()
-    guard deviceToken != currentDeviceToken else { return }
-    try commit(
-      ClerkIdentitySnapshot(state: .cleared, deviceToken: deviceToken, client: nil, serverDate: nil),
-      fenceResponses: true
-    )
-  }
-
-  func updateDeviceToken(to deviceToken: String) async throws -> DeviceTokenTransitionResult {
+  @discardableResult
+  func adoptDeviceToken(_ deviceToken: String) throws -> DeviceTokenTransitionResult {
     adoptStoredDeviceToken()
     guard currentDeviceToken != deviceToken else { return .unchanged }
     try commit(
@@ -155,6 +146,12 @@ extension ClerkIdentityController {
       fenceResponses: true
     )
     return .applied
+  }
+
+  func clearDeviceToken() throws {
+    adoptStoredDeviceToken()
+    guard currentDeviceToken != nil else { return }
+    try commit(.signedOut, fenceResponses: true)
   }
 
   func clearIdentity() throws {
