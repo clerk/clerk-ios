@@ -33,26 +33,30 @@ final class LifecycleManager {
 
   private let handler: any LifecycleEventHandling
 
-  init(handler: any LifecycleEventHandling) {
+  private let notificationCenter: NotificationCenter
+
+  init(handler: any LifecycleEventHandling, notificationCenter: NotificationCenter = .default) {
     self.handler = handler
+    self.notificationCenter = notificationCenter
   }
 
   func startObserving() {
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 
+    let willEnterForeground = notificationCenter.notifications(named: Self.willEnterForegroundNotification)
+    let didEnterBackground = notificationCenter.notifications(named: Self.didEnterBackgroundNotification)
+
     willEnterForegroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(
-        named: Self.willEnterForegroundNotification
-      ).map({ _ in () }) {
+      for await _ in willEnterForeground.map({ _ in () }) {
+        guard !Task.isCancelled else { break }
         await handler.onWillEnterForeground()
       }
     }
 
     didEnterBackgroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(
-        named: Self.didEnterBackgroundNotification
-      ).map({ _ in () }) {
+      for await _ in didEnterBackground.map({ _ in () }) {
+        guard !Task.isCancelled else { break }
         await handler.onDidEnterBackground()
       }
     }
@@ -68,7 +72,7 @@ final class LifecycleManager {
 }
 
 extension LifecycleManager {
-  private static var willEnterForegroundNotification: Notification.Name {
+  static var willEnterForegroundNotification: Notification.Name {
     #if os(macOS)
     NSApplication.didBecomeActiveNotification
     #elseif os(watchOS)
@@ -78,7 +82,7 @@ extension LifecycleManager {
     #endif
   }
 
-  private static var didEnterBackgroundNotification: Notification.Name {
+  static var didEnterBackgroundNotification: Notification.Name {
     #if os(macOS)
     NSApplication.didResignActiveNotification
     #elseif os(watchOS)

@@ -23,7 +23,7 @@ final class SessionPollingManager {
 
   static let defaultMaxPollInterval: TimeInterval = 60.0
 
-  private var pollingTask: Task<Void, Error>?
+  private(set) var pollingTask: Task<Void, Error>?
 
   private var authEventTask: Task<Void, Never>?
 
@@ -38,7 +38,7 @@ final class SessionPollingManager {
   let maxPollInterval: TimeInterval
 
   private(set) var consecutiveFailures: Int = 0
-  private var isPollingActive: Bool {
+  var isPollingActive: Bool {
     pollingTask != nil && pollingTask?.isCancelled == false
   }
 

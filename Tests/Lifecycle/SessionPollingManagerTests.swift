@@ -9,9 +9,11 @@ import Testing
 @MainActor
 final class MockSessionProvider: SessionProviding {
   var sessionToReturn: Session?
+  private(set) var sessionReadCount = 0
 
   var session: Session? {
-    sessionToReturn
+    sessionReadCount += 1
+    return sessionToReturn
   }
 
   init(session: Session? = nil) {
@@ -39,44 +41,44 @@ private func createSession(
 @Suite(.serialized)
 struct SessionPollingManagerTests {
   @Test
-  func stopPollingMultipleTimes() {
+  func stopPollingMultipleTimes() async throws {
     let provider = MockSessionProvider()
-    let manager = SessionPollingManager(
-      sessionProvider: provider,
-      pollInterval: 0.1,
-      pollTolerance: 0.01
-    )
+    let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
 
     manager.startPolling()
+    #expect(manager.isPollingActive)
+    try await waitUntil { provider.sessionReadCount == 1 }
 
-    // Stop polling should work without error
     manager.stopPolling()
+    #expect(!manager.isPollingActive)
 
-    // Calling stopPolling multiple times should be safe
     manager.stopPolling()
     manager.stopPolling()
+    #expect(!manager.isPollingActive)
 
-    // Verify manager is still in valid state (can start again)
     manager.startPolling()
+    #expect(manager.isPollingActive)
+    try await waitUntil { provider.sessionReadCount == 2 }
+
     manager.stopPolling()
   }
 
   @Test
-  func startPollingMultipleTimes() {
+  func startPollingMultipleTimes() throws {
     let provider = MockSessionProvider()
-    let manager = SessionPollingManager(
-      sessionProvider: provider,
-      pollInterval: 0.1,
-      pollTolerance: 0.01
-    )
+    let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
 
-    // Start polling multiple times - should not crash
     manager.startPolling()
+    let firstTask = try #require(manager.pollingTask)
     manager.startPolling()
     manager.startPolling()
 
-    // Should be able to stop after multiple starts
+    #expect(manager.pollingTask == firstTask)
+    #expect(manager.isPollingActive)
+
     manager.stopPolling()
+    #expect(manager.pollingTask == nil)
+    #expect(firstTask.isCancelled)
   }
 
   @Test
@@ -248,6 +250,15 @@ struct SessionPollingManagerTests {
 
     await manager.refreshNowIfNeeded()
     #expect(manager.consecutiveFailures == 0)
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for session poll.")
   }
 }
 
