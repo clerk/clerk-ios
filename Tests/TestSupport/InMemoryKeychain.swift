@@ -31,6 +31,12 @@ final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
     defer { lock.unlock() }
     return items[key] != nil
   }
+
+  var isEmpty: Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return items.isEmpty
+  }
 }
 
 final class SetFailingKeychain: @unchecked Sendable, KeychainStorage {

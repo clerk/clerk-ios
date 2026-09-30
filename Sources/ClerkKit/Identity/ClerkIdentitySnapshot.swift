@@ -5,7 +5,7 @@
 
 import Foundation
 
-enum ClerkIdentityState: String, Codable {
+enum ClerkIdentityState {
   case present
   case cleared
 }
@@ -20,7 +20,7 @@ enum ClerkIdentitySnapshotError: Error, Equatable {
 ///
 /// The device token, Client, and ordering date always move through the SDK as
 /// one value so identity producers cannot persist or expose mismatched halves.
-struct ClerkIdentitySnapshot: Codable, Equatable {
+struct ClerkIdentitySnapshot: Equatable {
   let state: ClerkIdentityState
   let deviceToken: String?
   let client: Client?
@@ -47,8 +47,11 @@ struct ClerkIdentitySnapshot: Codable, Equatable {
   }
 }
 
+extension ClerkIdentitySnapshot {
+  static let signedOut = ClerkIdentitySnapshot(state: .cleared, deviceToken: nil, client: nil, serverDate: nil)
+}
+
 struct ClerkIdentityRequestSnapshot {
-  let baseGeneration: UInt64
   let deviceToken: String?
   let clientID: String?
   let clientResponseGeneration: ClientResponseGeneration

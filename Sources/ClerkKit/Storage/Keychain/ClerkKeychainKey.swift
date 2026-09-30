@@ -18,8 +18,6 @@ enum ClerkKeychainKey: String, CaseIterable {
 
   case cachedEnvironment
 
-  case sharedSessionSyncAdopted = "clerkSharedSessionSyncAdoptedV2"
-
   case sharedSessionSyncAuthState
 
   case sharedSessionSyncAuthVersion

@@ -128,7 +128,6 @@ struct ClientSyncResponseContext {
   let update: ClientResponseUpdate
   let deviceTokenUpdate: ClerkDeviceTokenResponseUpdate
   let requestDeviceToken: String?
-  let baseGeneration: UInt64?
   let serverDate: Date?
   let isCanonicalClientRequest: Bool
   let clientResponseGeneration: ClientResponseGeneration?
@@ -140,7 +139,6 @@ struct ClientSyncResponseContext {
     update: ClientResponseUpdate,
     deviceTokenUpdate: ClerkDeviceTokenResponseUpdate,
     requestDeviceToken: String?,
-    baseGeneration: UInt64?,
     serverDate: Date?,
     isCanonicalClientRequest: Bool,
     clientResponseGeneration: ClientResponseGeneration?,
@@ -151,7 +149,6 @@ struct ClientSyncResponseContext {
     self.update = update
     self.deviceTokenUpdate = deviceTokenUpdate
     self.requestDeviceToken = requestDeviceToken
-    self.baseGeneration = baseGeneration
     self.serverDate = serverDate
     self.isCanonicalClientRequest = isCanonicalClientRequest
     self.clientResponseGeneration = clientResponseGeneration
@@ -239,7 +236,6 @@ struct ClientSyncResponseMetadata {
       update: update,
       deviceTokenUpdate: deviceTokenUpdate,
       requestDeviceToken: checkpoint.requestDeviceToken,
-      baseGeneration: checkpoint.sharedSessionBaseGeneration,
       serverDate: serverDate,
       isCanonicalClientRequest: checkpoint.isCanonicalClientRequest,
       clientResponseGeneration: checkpoint.clientResponseGeneration,

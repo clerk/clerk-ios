@@ -15,25 +15,9 @@ protocol Dependencies: AnyObject {
   /// Keychain storage scoped to this app rather than the configured shared access group.
   var appLocalKeychain: any KeychainStorage { get }
 
-  /// Stable app-local storage for the atomic token and client identity.
-  var identityKeychain: any KeychainStorage { get }
+  var identityStore: ClerkIdentityStore { get }
 
-  /// The previous bundle-identifier app-local cache used only during adoption.
-  var legacyAppLocalKeychain: (any KeychainStorage)? { get }
-
-  var atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? { get }
-
-  /// Serialized off-main access to the atomic app-local identity storage.
-  var atomicIdentityIO: SharedSessionLocalIdentityIO? { get }
-
-  var sharedSessionOwnerIdentifier: String? { get }
-
-  /// Bundle-local journal and exact Keychain targets used to finish interrupted identity clears.
-  var sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? { get }
-
-  /// Whether this configuration just adopted legacy shared-session state and may
-  /// use the legacy Client as provisional launch UI.
-  var shouldHydrateProvisionalLegacyClient: Bool { get }
+  var identityIsInAccessGroup: Bool { get }
 
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }
 

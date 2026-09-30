@@ -141,7 +141,6 @@ extension HTTPURLResponse {
 struct ClerkRequestCheckpoint: Equatable {
   let requestSequence: Int?
   let clientResponseGeneration: ClientResponseGeneration?
-  let sharedSessionBaseGeneration: UInt64?
   let isCanonicalClientRequest: Bool
   let requestDeviceToken: String?
   let authFlowRegistrationId: UUID?
@@ -149,14 +148,12 @@ struct ClerkRequestCheckpoint: Equatable {
   init(
     requestSequence: Int?,
     clientResponseGeneration: ClientResponseGeneration?,
-    sharedSessionBaseGeneration: UInt64?,
     isCanonicalClientRequest: Bool,
     requestDeviceToken: String?,
     authFlowRegistrationId: UUID? = nil
   ) {
     self.requestSequence = requestSequence
     self.clientResponseGeneration = clientResponseGeneration
-    self.sharedSessionBaseGeneration = sharedSessionBaseGeneration
     self.isCanonicalClientRequest = isCanonicalClientRequest
     self.requestDeviceToken = requestDeviceToken
     self.authFlowRegistrationId = authFlowRegistrationId
@@ -166,7 +163,6 @@ struct ClerkRequestCheckpoint: Equatable {
     self.init(
       requestSequence: request.clerkRequestSequence,
       clientResponseGeneration: request.clerkClientResponseGeneration,
-      sharedSessionBaseGeneration: request.clerkSharedSessionBaseGeneration,
       isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
       requestDeviceToken: request.clerkRequestDeviceToken,
       authFlowRegistrationId: request.clerkAuthFlowRegistrationId
@@ -182,7 +178,6 @@ extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkStartupClientRefreshTakeoverIDKey = "com.clerk.startup-client-refresh-takeover-id"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
-  private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
   private static let clerkAuthFlowRegistrationIdKey = "com.clerk.auth-flow-registration-id"
@@ -211,13 +206,6 @@ extension URLRequest {
     ClientResponseGeneration(
       propertyListValue: URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self)
     )
-  }
-
-  var clerkSharedSessionBaseGeneration: UInt64? {
-    (URLProtocol.property(
-      forKey: Self.clerkSharedSessionBaseGenerationKey,
-      in: self
-    ) as? NSNumber)?.uint64Value
   }
 
   var clerkIsCanonicalClientRequest: Bool {
@@ -280,13 +268,6 @@ extension URLRequest {
     )
   }
 
-  mutating func setClerkSharedSessionBaseGeneration(_ generation: UInt64) {
-    setClerkProperty(
-      NSNumber(value: generation),
-      key: Self.clerkSharedSessionBaseGenerationKey
-    )
-  }
-
   mutating func setClerkCanonicalClientRequest(_ isCanonical: Bool) {
     setClerkProperty(
       NSNumber(value: isCanonical),
@@ -308,10 +289,6 @@ extension URLRequest {
       (
         value: checkpoint.clientResponseGeneration?.propertyListValue,
         key: Self.clerkClientResponseGenerationKey
-      ),
-      (
-        value: checkpoint.sharedSessionBaseGeneration.map { NSNumber(value: $0) },
-        key: Self.clerkSharedSessionBaseGenerationKey
       ),
       (
         value: NSNumber(value: checkpoint.isCanonicalClientRequest),

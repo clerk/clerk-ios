@@ -14,12 +14,11 @@ struct ClerkKeychainKeyTests {
   @Test
   func allCasesContainsExpectedKeys() {
     let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 20)
+    #expect(allCases.count == 19)
 
     #expect(allCases.contains(.cachedClient))
     #expect(allCases.contains(.cachedClientServerDate))
     #expect(allCases.contains(.cachedEnvironment))
-    #expect(allCases.contains(.sharedSessionSyncAdopted))
     #expect(allCases.contains(.sharedSessionSyncAuthState))
     #expect(allCases.contains(.sharedSessionSyncAuthVersion))
     #expect(allCases.contains(.sharedSessionSyncEnvironmentVersion))
@@ -43,7 +42,6 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.cachedClient.rawValue == "cachedClient")
     #expect(ClerkKeychainKey.cachedClientServerDate.rawValue == "cachedClientServerDate")
     #expect(ClerkKeychainKey.cachedEnvironment.rawValue == "cachedEnvironment")
-    #expect(ClerkKeychainKey.sharedSessionSyncAdopted.rawValue == "clerkSharedSessionSyncAdoptedV2")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthState.rawValue == "sharedSessionSyncAuthState")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue == "sharedSessionSyncAuthVersion")
     #expect(ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue == "sharedSessionSyncEnvironmentVersion")

@@ -13,8 +13,8 @@ struct SystemKeychain: KeychainStorage {
     }
   }
 
-  private let service: String
-  private let accessGroup: String?
+  let service: String
+  let accessGroup: String?
   private let accessibility: Accessibility
   private let useDataProtectionKeychain: Bool
   private let secItemClient: SecItemClient
