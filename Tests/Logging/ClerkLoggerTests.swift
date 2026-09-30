@@ -18,16 +18,14 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithDefaultForce_RespectsLogLevel() async throws {
+  func info_WithDefaultForce_RespectsLogLevel() async {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
     let lines = captureLogLines()
     defer { restoreLogSink() }
 
-    ClerkLogger.info("default-force info")
-    ClerkLogger.logNetworkError(URLError(.badURL), endpoint: "sentinel")
+    await ClerkLogger.info("default-force info").value
 
-    _ = try await waitForLine(containing: "sentinel", in: lines)
-    #expect(!lines.value.contains { $0.text.contains("default-force info") })
+    #expect(lines.lines(containing: "default-force info").isEmpty)
   }
 
   @Test
@@ -36,25 +34,23 @@ struct ClerkLoggerTests {
     let lines = captureLogLines()
     defer { restoreLogSink() }
 
-    ClerkLogger.info("forced info", force: true)
+    await ClerkLogger.info("forced info", force: true).value
 
-    let line = try await waitForLine(containing: "forced info", in: lines)
+    let line = try #require(lines.lines(containing: "forced info").only)
     #expect(line.level == .info)
     #expect(line.text.contains("[INFO]"))
     #expect(line.text.hasSuffix("- 🚨 forced info"))
   }
 
   @Test
-  func info_WithForceFalse_RespectsLogLevel() async throws {
+  func info_WithForceFalse_RespectsLogLevel() async {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
     let lines = captureLogLines()
     defer { restoreLogSink() }
 
-    ClerkLogger.info("unforced info", force: false)
-    ClerkLogger.logNetworkError(URLError(.badURL), endpoint: "sentinel")
+    await ClerkLogger.info("unforced info", force: false).value
 
-    _ = try await waitForLine(containing: "sentinel", in: lines)
-    #expect(!lines.value.contains { $0.text.contains("unforced info") })
+    #expect(lines.lines(containing: "unforced info").isEmpty)
   }
 
   @Test
@@ -63,16 +59,16 @@ struct ClerkLoggerTests {
     let lines = captureLogLines()
     defer { restoreLogSink() }
 
-    ClerkLogger.info("info at info level")
+    await ClerkLogger.info("info at info level").value
 
-    let line = try await waitForLine(containing: "info at info level", in: lines)
+    let line = try #require(lines.lines(containing: "info at info level").only)
     #expect(line.level == .info)
     #expect(line.text.hasSuffix("- info at info level"))
     #expect(!line.text.contains("🚨"))
   }
 
   @Test
-  func info_WithForceTrue_DoesNotTriggerErrorCallback() async throws {
+  func info_WithForceTrue_DoesNotTriggerErrorCallback() async {
     let entries = LockIsolated<[LogEntry]>([])
     let options = Clerk.Options(
       logLevel: .error,
@@ -84,15 +80,12 @@ struct ClerkLoggerTests {
     let lines = captureLogLines()
     defer { restoreLogSink() }
 
-    ClerkLogger.info("forced info", force: true)
-    _ = try await waitForLine(containing: "forced info", in: lines)
-    ClerkLogger.error("sentinel error")
+    await ClerkLogger.info("forced info", force: true).value
+    #expect(lines.lines(containing: "forced info").count == 1)
+    #expect(entries.value.isEmpty)
 
-    let deadline = ContinuousClock.now + .seconds(1)
-    while !entries.value.contains(where: { $0.message == "sentinel error" }), ContinuousClock.now < deadline {
-      await Task.yield()
-    }
-    #expect(entries.value.map(\.message) == ["sentinel error"])
+    await ClerkLogger.error("error after info").value
+    #expect(entries.value.map(\.message) == ["error after info"])
   }
 
   @Test
@@ -101,9 +94,9 @@ struct ClerkLoggerTests {
     let lines = captureLogLines()
     defer { restoreLogSink() }
 
-    ClerkLogger.error("error message", error: URLError(.badURL))
+    await ClerkLogger.error("error message", error: URLError(.badURL)).value
 
-    let line = try await waitForLine(containing: "error message", in: lines)
+    let line = try #require(lines.lines(containing: "error message").only)
     #expect(line.level == .error)
     #expect(line.text.contains("[ERROR]"))
     #expect(line.text.contains("- 🚨 error message\n   Error: "))
@@ -148,6 +141,18 @@ struct ClerkLoggerTests {
   }
 }
 
+extension Array {
+  fileprivate var only: Element? {
+    count == 1 ? first : nil
+  }
+}
+
+extension LockIsolated<[EmittedLogLine]> {
+  fileprivate func lines(containing needle: String) -> [EmittedLogLine] {
+    value.filter { $0.text.contains(needle) }
+  }
+}
+
 private struct EmittedLogLine {
   let level: LogLevel
   let text: String
@@ -169,18 +174,6 @@ private func restoreLogSink() {
 
 @MainActor
 private let originalLogSink = ClerkLogger.sink
-
-@MainActor
-private func waitForLine(
-  containing needle: String,
-  in lines: LockIsolated<[EmittedLogLine]>
-) async throws -> EmittedLogLine {
-  let deadline = ContinuousClock.now + .seconds(1)
-  while !lines.value.contains(where: { $0.text.contains(needle) }), ContinuousClock.now < deadline {
-    await Task.yield()
-  }
-  return try #require(lines.value.first { $0.text.contains(needle) })
-}
 
 private final class PreInstallationDeleteFailingKeychain: @unchecked Sendable,
   KeychainStorage

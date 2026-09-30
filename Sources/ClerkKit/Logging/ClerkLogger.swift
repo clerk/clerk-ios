@@ -120,13 +120,14 @@ package enum ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
+  @discardableResult
   package static func error(
     _ message: String,
     error: Error? = nil,
     file: String = #file,
     function: String = #function,
     line: Int = #line
-  ) {
+  ) -> Task<Void, Never> {
     logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
   }
 
@@ -146,13 +147,14 @@ package enum ClerkLogger {
   ///   - file: The file where the log is called (automatically filled)
   ///   - function: The function where the log is called (automatically filled)
   ///   - line: The line number where the log is called (automatically filled)
+  @discardableResult
   package static func info(
     _ message: String,
     force: Bool = false,
     file: String = #file,
     function: String = #function,
     line: Int = #line
-  ) {
+  ) -> Task<Void, Never> {
     logSync(level: .info, message: message, forceLog: force, file: file, function: function, line: line)
   }
 
@@ -174,6 +176,7 @@ package enum ClerkLogger {
     logSync(level: .verbose, message: message, file: file, function: function, line: line)
   }
 
+  @discardableResult
   private static func logSync(
     level: LogLevel,
     message: String,
@@ -183,14 +186,14 @@ package enum ClerkLogger {
     function: String,
     line: Int,
     configuration: Configuration? = nil
-  ) {
+  ) -> Task<Void, Never> {
     if !forceLog {
       let shouldLogTask = Task { @MainActor in
         ClerkLogger.shouldLog(level: level, configuration: configuration)
       }
       // For non-async context, we'll log by default if we can't check
       // This ensures errors always log, and other levels will be filtered properly in async contexts
-      Task {
+      return Task {
         guard await shouldLogTask.value else { return }
         let context = Context(
           file: file,
@@ -204,12 +207,11 @@ package enum ClerkLogger {
           error: error,
           forceLog: false,
           context: context
-        )
+        )?.value
       }
-      return
     }
 
-    Task {
+    return Task {
       let context = Context(
         file: file,
         function: function,
@@ -222,7 +224,7 @@ package enum ClerkLogger {
         error: error,
         forceLog: true,
         context: context
-      )
+      )?.value
     }
   }
 
@@ -233,7 +235,7 @@ package enum ClerkLogger {
     error: Error?,
     forceLog: Bool,
     context: Context
-  ) {
+  ) -> Task<Void, Never>? {
     let file = context.file
     let function = context.function
     let line = context.line
@@ -283,11 +285,12 @@ package enum ClerkLogger {
 
       // Invoke handler asynchronously to avoid blocking
       if let handler {
-        Task.detached {
+        return Task.detached {
           handler(logEntry)
         }
       }
     }
+    return nil
   }
 
   @MainActor
@@ -325,6 +328,7 @@ extension ClerkLogger {
     )
   }
 
+  @discardableResult
   package static func logNetworkError(
     _ error: Error,
     endpoint: String,
@@ -332,12 +336,12 @@ extension ClerkLogger {
     file: String = #file,
     function: String = #function,
     line: Int = #line
-  ) {
+  ) -> Task<Void, Never> {
     var message = "Network request failed for endpoint: \(endpoint)"
     if let statusCode {
       message += " (Status: \(statusCode))"
     }
-    logSync(level: .error, message: message, error: error, forceLog: false, file: file, function: function, line: line)
+    return logSync(level: .error, message: message, error: error, forceLog: false, file: file, function: function, line: line)
   }
 }
 
