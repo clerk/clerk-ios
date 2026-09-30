@@ -38,7 +38,7 @@ final class SessionPollingManager {
   let maxPollInterval: TimeInterval
 
   private(set) var consecutiveFailures: Int = 0
-  private var isPollingActive: Bool {
+  var isPollingActive: Bool {
     pollingTask != nil && pollingTask?.isCancelled == false
   }
 
