@@ -1,4 +1,5 @@
 @_spi(FrameworkIntegration) @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -83,14 +84,62 @@ struct KeychainSharingTests {
     #expect(second.clerk.deviceToken == "watch-token")
   }
 
-  private func makeApp() -> App {
+  @Test
+  func clientChangeInOneAppRefreshesTheOthersWithoutEchoing() async throws {
+    let name = "com.clerk.tests.shared-identity.\(UUID().uuidString)"
+    let firstRefreshes = LockIsolated(0)
+    let secondRefreshes = LockIsolated(0)
+    let first = makeApp(refreshes: firstRefreshes)
+    let second = makeApp(refreshes: secondRefreshes, refreshedClient: signedIn("renamed"))
+    try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
+    let firstNotifier = SharedIdentityNotifier(name: name, clerk: first.clerk)
+    let secondNotifier = SharedIdentityNotifier(name: name, clerk: second.clerk)
+    first.clerk.internalStateChanges.addObserver(firstNotifier)
+    second.clerk.internalStateChanges.addObserver(secondNotifier)
+    defer {
+      firstNotifier.stop()
+      secondNotifier.stop()
+    }
+
+    first.clerk.applyResponseClient(signedIn("renamed"))
+    for _ in 0 ..< 100 where second.clerk.client?.id != "renamed" {
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    try await Task.sleep(for: .milliseconds(200))
+
+    #expect(secondRefreshes.value == 1)
+    #expect(second.clerk.deviceToken == "token")
+    #expect(second.clerk.client?.id == "renamed")
+    #expect(firstRefreshes.value == 0)
+  }
+
+  @Test
+  func appDoesNotRefreshForItsOwnChange() async throws {
+    let name = "com.clerk.tests.shared-identity.\(UUID().uuidString)"
+    let refreshes = LockIsolated(0)
+    let app = makeApp(refreshes: refreshes)
+    try await app.respond(.client(signedIn("client")), token: .set("token"), date: 100)
+    let notifier = SharedIdentityNotifier(name: name, clerk: app.clerk)
+    defer { notifier.stop() }
+
+    try notifier.handle(.clientDidChange(previous: nil, current: signedIn("client")), from: app.clerk)
+    try await Task.sleep(for: .milliseconds(200))
+
+    #expect(refreshes.value == 0)
+  }
+
+  private func makeApp(refreshes: LockIsolated<Int>? = nil, refreshedClient: Client? = nil) -> App {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
       appLocalKeychain: InMemoryKeychain(),
       identityKeychain: sharedKeychain,
       clientKeychain: InMemoryKeychain(),
-      identityIsInAccessGroup: true
+      identityIsInAccessGroup: true,
+      clientService: MockClientService(get: {
+        refreshes?.withValue { $0 += 1 }
+        return refreshedClient
+      })
     )
     clerk.identityController.hydrate()
     return App(clerk: clerk)

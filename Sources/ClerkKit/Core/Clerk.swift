@@ -200,6 +200,7 @@ public final class Clerk {
   lazy var identityController = ClerkIdentityController(clerk: self)
 
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  private var sharedIdentityNotifier: SharedIdentityNotifier?
 
   var internalStateChanges = ClerkInternalStateChangeEmitter()
 
@@ -304,12 +305,23 @@ extension Clerk {
   }
 
   @MainActor
+  private func installSharedIdentityNotifier(dependencies: any Dependencies) {
+    let keychainConfig = dependencies.configurationManager.options.keychainConfig
+    guard dependencies.identityIsInAccessGroup, let accessGroup = keychainConfig.normalizedAccessGroup else { return }
+    let notifier = SharedIdentityNotifier(name: "\(accessGroup).clerk.\(keychainConfig.service)", clerk: self)
+    sharedIdentityNotifier = notifier
+    internalStateChanges.addObserver(notifier)
+  }
+
+  @MainActor
   private func installConfiguration(dependencies: any Dependencies) {
     cancelStartupClientRefresh()
     identityController.prepareForConfiguration()
     taskCoordinator?.cancelAll()
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     watchConnectivityCoordinator = nil
+    sharedIdentityNotifier?.stop()
+    sharedIdentityNotifier = nil
     internalStateChanges.removeAllObservers()
 
     taskCoordinator = TaskCoordinator()
@@ -338,6 +350,7 @@ extension Clerk {
       watchConnectivityCoordinator = coordinator
       internalStateChanges.addObserver(coordinator)
     }
+    installSharedIdentityNotifier(dependencies: dependencies)
 
     let retryPolicy = Self.startupRefreshRetryPolicy
     taskCoordinator?.task { @MainActor [weak self] in
@@ -889,6 +902,7 @@ extension Clerk {
 
   private func stopManagers() {
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
+    sharedIdentityNotifier?.stop()
     cancelStartupClientRefresh()
     invalidAuthRefreshTask?.cancel()
     invalidAuthRefreshTask = nil
@@ -925,6 +939,7 @@ extension Clerk {
     lifecycleManager = nil
     internalStateChanges.removeAllObservers()
     watchConnectivityCoordinator = nil
+    sharedIdentityNotifier = nil
     taskCoordinator?.cancelAll()
     taskCoordinator = nil
   }

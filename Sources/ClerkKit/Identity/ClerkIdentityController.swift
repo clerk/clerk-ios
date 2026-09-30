@@ -3,8 +3,6 @@
 //  Clerk
 //
 
-// swiftlint:disable file_length
-
 import Foundation
 
 @MainActor
