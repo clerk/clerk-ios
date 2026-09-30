@@ -350,6 +350,18 @@ struct JSONUtilitiesTests {
     #expect(JSON.null == JSON.null)
   }
 
+  @Test
+  func jSONDebugDescriptionOfContainers() {
+    #expect(JSON.array([.number(1), .string("a")]).debugDescription.contains("\"a\""))
+    #expect(JSON.object(["key": .bool(true)]).debugDescription.contains("\"key\" : true"))
+  }
+
+  @Test
+  func jSONDebugDescriptionWithNonFiniteNumberDoesNotCrash() {
+    #expect(JSON.array([.number(.infinity)]).debugDescription == "")
+    #expect(JSON.object(["value": .number(.nan)]).debugDescription == "")
+  }
+
   // MARK: - JSONDecoder Extension
 
   @Test

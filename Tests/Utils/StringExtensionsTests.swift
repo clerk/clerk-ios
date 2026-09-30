@@ -79,8 +79,11 @@ struct StringExtensionsTests {
     #expect("user @example.com".isEmailAddress == false)
     #expect("user@exam ple.com".isEmailAddress == false)
     #expect("".isEmailAddress == false)
-    // Note: The regex may accept double dots, so we'll skip this test
-    // #expect("user@example..com".isEmailAddress == false)
+    #expect("user@example..com".isEmailAddress == false)
+    #expect("user@.example.com".isEmailAddress == false)
+    #expect("user@-example.com".isEmailAddress == false)
+    #expect("user@example-.com".isEmailAddress == false)
+    #expect("user@sub-domain.example.com".isEmailAddress == true)
   }
 
   // MARK: - String+Base64.swift Tests
