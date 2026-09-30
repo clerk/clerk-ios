@@ -23,7 +23,7 @@ final class SessionPollingManager {
 
   static let defaultMaxPollInterval: TimeInterval = 60.0
 
-  private var pollingTask: Task<Void, Error>?
+  private(set) var pollingTask: Task<Void, Error>?
 
   private var authEventTask: Task<Void, Never>?
 

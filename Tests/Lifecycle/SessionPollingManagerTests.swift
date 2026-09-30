@@ -64,23 +64,21 @@ struct SessionPollingManagerTests {
   }
 
   @Test
-  func startPollingMultipleTimes() async throws {
+  func startPollingMultipleTimes() throws {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
 
     manager.startPolling()
+    let firstTask = try #require(manager.pollingTask)
     manager.startPolling()
     manager.startPolling()
+
+    #expect(manager.pollingTask == firstTask)
     #expect(manager.isPollingActive)
 
-    try await waitUntil { provider.sessionReadCount >= 1 }
-    for _ in 0 ..< 20 {
-      await Task.yield()
-    }
-    #expect(provider.sessionReadCount == 1)
-
     manager.stopPolling()
-    #expect(!manager.isPollingActive)
+    #expect(manager.pollingTask == nil)
+    #expect(firstTask.isCancelled)
   }
 
   @Test
