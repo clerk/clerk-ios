@@ -135,11 +135,10 @@ struct AuthTests {
 
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
-    do {
-      _ = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
+    let error = await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.signInWithOAuth(provider: .google)
     }
+    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
@@ -161,11 +160,10 @@ struct AuthTests {
 
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
-    do {
-      _ = try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
+    let error = await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
     }
+    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
@@ -325,11 +323,10 @@ struct AuthTests {
 
     configureDependencies(signInService: signInService)
 
-    do {
-      _ = try await Clerk.shared.auth.signInWithPasskey()
-    } catch {
-      // Expected to fail in unit tests because no passkey challenge/credential is available.
+    let error = await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.signInWithPasskey()
     }
+    #expect(error?.message == "Unable to get the challenge for the passkey.")
 
     let createParams = try #require(signInParams.value)
     #expect(createParams.strategy == .passkey)
@@ -1285,14 +1282,13 @@ struct AuthTests {
 
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
-    do {
-      _ = try await Clerk.shared.auth.signUpWithOAuth(
+    let error = await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.signUpWithOAuth(
         provider: .google,
         unsafeMetadata: metadata
       )
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
     }
+    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
@@ -1316,14 +1312,13 @@ struct AuthTests {
 
     configureDependencies(signInService: signInService, signUpService: signUpService)
 
-    do {
-      _ = try await Clerk.shared.auth.signUpWithEnterpriseSSO(
+    let error = await #expect(throws: ClerkClientError.self) {
+      try await Clerk.shared.auth.signUpWithEnterpriseSSO(
         emailAddress: "user@enterprise.com",
         unsafeMetadata: metadata
       )
-    } catch {
-      // Expected to fail in unit tests due to missing external verification data.
     }
+    #expect(error?.message == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
