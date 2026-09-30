@@ -22,14 +22,12 @@ struct VersionTests {
   }
 
   @Test
-  func testDeviceID() {
-    // Device ID may be nil on watchOS/macOS or when unavailable
-    // On iOS it returns a UUID string or nil
-    if let id = DeviceHelper.deviceID {
-      // Should be a UUID format
-      let isUUID = id.contains("-") && id.count == 36
-      #expect(isUUID, "Device ID should be a valid UUID when available")
-    }
-    // It's acceptable for deviceID to be nil on unsupported platforms
+  func testDeviceID() throws {
+    #if os(watchOS) || os(macOS)
+    #expect(DeviceHelper.deviceID == nil)
+    #else
+    let id = try #require(DeviceHelper.deviceID)
+    #expect(UUID(uuidString: id) != nil)
+    #endif
   }
 }

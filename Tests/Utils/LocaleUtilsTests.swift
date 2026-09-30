@@ -9,30 +9,16 @@ import Testing
 @Suite(.serialized)
 struct LocaleUtilsTests {
   @Test
-  func testUserLocale() {
-    let locale = LocaleUtils.userLocale()
+  func testUserLocale() throws {
+    let preferredLanguage = try #require(Locale.preferredLanguages.first)
 
-    #expect(!locale.isEmpty)
-
-    // Should be a valid BCP-47 language tag format (contains at least a language code)
-    let parts = locale.split(separator: "-")
-    #expect(parts.count >= 1)
-    #expect(parts[0].count >= 2) // Language code should be at least 2 characters
-
-    #expect(!locale.contains(" "))
+    #expect(LocaleUtils.userLocale() == preferredLanguage)
   }
 
   @Test
   func userLocaleFormat() {
     let locale = LocaleUtils.userLocale()
 
-    // Should be in format like "en" or "en-US" or "en_US" (though BCP-47 uses hyphens)
-    // Typically BCP-47 uses hyphens, but we'll just verify it's not empty
-    // and has a reasonable structure
-    #expect(locale.count >= 2)
-
-    // First part should be alphabetic (language code)
-    let firstPart = locale.split(separator: "-").first ?? ""
-    #expect(firstPart.allSatisfy { $0.isLetter })
+    #expect(locale.wholeMatch(of: /[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*/) != nil)
   }
 }
