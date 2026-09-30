@@ -36,13 +36,17 @@ struct CheckAuthorizationParams: Equatable {
 /// Matches clerk-js `ReverificationConfig`: presets `strict_mfa`, `strict`, `moderate`, `lax`, or a
 /// custom `{ level, afterMinutes }` object.
 public enum ReverificationConfig: Sendable, Equatable {
-  /// Multi-factor verification within the last 10 minutes.
+  /// Multi-factor verification within the last 10 minutes. Falls back to first-factor verification
+  /// when the user has no second factor enrolled.
   case strictMfa
-  /// Second-factor verification within the last 10 minutes.
+  /// Second-factor verification within the last 10 minutes. Falls back to first-factor verification
+  /// when the user has no second factor enrolled.
   case strict
-  /// Second-factor verification within the last hour.
+  /// Second-factor verification within the last hour. Falls back to first-factor verification when
+  /// the user has no second factor enrolled.
   case moderate
-  /// Second-factor verification within the last day.
+  /// Second-factor verification within the last day. Falls back to first-factor verification when
+  /// the user has no second factor enrolled.
   case lax
   /// Verification at `level` within the last `afterMinutes` minutes.
   case custom(level: SessionVerification.Level, afterMinutes: Int)
