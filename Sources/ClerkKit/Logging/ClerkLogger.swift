@@ -107,6 +107,12 @@ package enum ClerkLogger {
 
   private static let logger = Logger(subsystem: "com.clerk.sdk", category: "Clerk")
 
+  /// Receives each formatted log line. Tests replace it to observe what gets emitted.
+  @MainActor
+  static var sink: (LogLevel, String) -> Void = { level, message in
+    logger.log(level: level.osLogType, "\(message)")
+  }
+
   /// Log an error message (always logs regardless of debug mode)
   /// - Parameters:
   ///   - message: The error message to log
@@ -255,7 +261,7 @@ package enum ClerkLogger {
     }
 
     // Use unified logging for structured logs only (avoid duplicate console output)
-    logger.log(level: level.osLogType, "\(logMessage)")
+    sink(level, logMessage)
 
     if level == .error {
       let logEntry = LogEntry(
