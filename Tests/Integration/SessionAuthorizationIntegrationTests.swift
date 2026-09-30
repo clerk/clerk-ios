@@ -50,22 +50,22 @@ struct SessionAuthorizationIntegrationTests {
       print("LIVE_HAS planSlugs=\(plans.data.map(\.slug))")
 
       for plan in plans.data {
-        let hasPlan = session.has(plan: plan.slug)
+        let hasPlan = session.checkAuthorization(plan: plan.slug)
         let subscribed = subscribedSlugs.contains(plan.slug)
         print("LIVE_HAS plan=\(plan.slug) has=\(hasPlan) subscribed=\(subscribed)")
         if subscribed {
           #expect(hasPlan)
         }
         for feature in plan.features {
-          let hasFeature = session.has(feature: feature.slug)
+          let hasFeature = session.checkAuthorization(feature: feature.slug)
           print("LIVE_HAS feature=\(feature.slug) has=\(hasFeature) plan=\(plan.slug)")
         }
       }
 
-      #expect(session.has(plan: "missing-plan-slug-for-live") == false)
-      #expect(session.has(feature: "lol:dashboard") == false)
+      #expect(session.checkAuthorization(plan: "missing-plan-slug-for-live") == false)
+      #expect(session.checkAuthorization(feature: "lol:dashboard") == false)
 
-      let noOrgFeature = session.has(feature: "o:feature_one")
+      let noOrgFeature = session.checkAuthorization(feature: "o:feature_one")
       print("LIVE_HAS noActiveOrg o:feature_one=\(noOrgFeature)")
       #expect(noOrgFeature == false)
 
@@ -73,7 +73,7 @@ struct SessionAuthorizationIntegrationTests {
       guard let refreshed = Clerk.shared.session else {
         throw IntegrationSessionAuthorizationError.missingSession("after getToken")
       }
-      let hasFreeAfterRefresh = refreshed.has(plan: "free_user")
+      let hasFreeAfterRefresh = refreshed.checkAuthorization(plan: "free_user")
       print("LIVE_HAS afterGetToken plan=free_user has=\(hasFreeAfterRefresh)")
       #expect(hasFreeAfterRefresh)
 
@@ -92,10 +92,10 @@ struct SessionAuthorizationIntegrationTests {
         throw IntegrationSessionAuthorizationError.missingSession("after setActive")
       }
 
-      let hasAdmin = orgSession.has(role: "org:admin")
-      let hasMembershipRead = orgSession.has(permission: "org:sys_memberships:read")
+      let hasAdmin = orgSession.checkAuthorization(role: "org:admin")
+      let hasMembershipRead = orgSession.checkAuthorization(permission: "org:sys_memberships:read")
       let orgFeatureSlug = freeOrgFeatures.first ?? "feature_one"
-      let hasOrgFeature = orgSession.has(.init(feature: "o:\(orgFeatureSlug)"))
+      let hasOrgFeature = orgSession.checkAuthorization(.init(feature: "o:\(orgFeatureSlug)"))
       print("LIVE_HAS orgRole admin=\(hasAdmin)")
       print("LIVE_HAS orgPermission membershipsRead=\(hasMembershipRead)")
       print("LIVE_HAS orgFeature o:\(orgFeatureSlug)=\(hasOrgFeature)")

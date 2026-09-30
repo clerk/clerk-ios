@@ -4,7 +4,7 @@ import Testing
 
 struct SessionAuthorizationTests {
   @Test
-  func labeledOverloadsMatchTheCombinedEvaluator() {
+  func checkAuthorizationOverloadsMatchTheCombinedEvaluator() {
     let session = makeSession(
       orgId: "org_123",
       orgRole: "org:admin",
@@ -13,16 +13,16 @@ struct SessionAuthorizationTests {
       plans: "u:plus"
     )
 
-    #expect(session.has(plan: "plus"))
-    #expect(!session.has(plan: "missing"))
-    #expect(session.has(feature: "org:reservations"))
-    #expect(session.has(role: "org:admin"))
-    #expect(session.has(permission: "org:sys_memberships:read"))
-    #expect(!session.has(permission: "org:sys_profile:delete"))
-    #expect(session.has(plan: "plus") == session.has(CheckAuthorizationParams(plan: "plus")))
+    #expect(session.checkAuthorization(plan: "plus"))
+    #expect(!session.checkAuthorization(plan: "missing"))
+    #expect(session.checkAuthorization(feature: "org:reservations"))
+    #expect(session.checkAuthorization(role: "org:admin"))
+    #expect(session.checkAuthorization(permission: "org:sys_memberships:read"))
+    #expect(!session.checkAuthorization(permission: "org:sys_profile:delete"))
+    #expect(session.checkAuthorization(plan: "plus") == session.checkAuthorization(CheckAuthorizationParams(plan: "plus")))
     #expect(
-      session.has(role: "org:admin", reverification: .strict)
-        == session.has(CheckAuthorizationParams(role: "org:admin", reverification: .strict))
+      session.checkAuthorization(role: "org:admin", reverification: .strict)
+        == session.checkAuthorization(CheckAuthorizationParams(role: "org:admin", reverification: .strict))
     )
   }
 
@@ -70,14 +70,14 @@ struct SessionAuthorizationTests {
       features: "o:reservations,u:dashboard"
     )
 
-    #expect(session.has(.init(feature: "o:reservations")))
-    #expect(session.has(.init(feature: "org:reservations")))
-    #expect(session.has(.init(feature: "organization:reservations")))
-    #expect(session.has(.init(feature: "reservations")))
-    #expect(session.has(.init(feature: "u:dashboard")))
-    #expect(session.has(.init(feature: "user:dashboard")))
-    #expect(session.has(.init(feature: "dashboard")))
-    #expect(!session.has(.init(feature: "lol:dashboard")))
+    #expect(session.checkAuthorization(.init(feature: "o:reservations")))
+    #expect(session.checkAuthorization(.init(feature: "org:reservations")))
+    #expect(session.checkAuthorization(.init(feature: "organization:reservations")))
+    #expect(session.checkAuthorization(.init(feature: "reservations")))
+    #expect(session.checkAuthorization(.init(feature: "u:dashboard")))
+    #expect(session.checkAuthorization(.init(feature: "user:dashboard")))
+    #expect(session.checkAuthorization(.init(feature: "dashboard")))
+    #expect(!session.checkAuthorization(.init(feature: "lol:dashboard")))
   }
 
   @Test
@@ -89,14 +89,14 @@ struct SessionAuthorizationTests {
       features: "o:premium",
       plans: "plus"
     )
-    #expect(!session.has(.init()))
+    #expect(!session.checkAuthorization(.init()))
   }
 
   @Test
   func failsPermissionAndRoleWhenOrgContextIsMissing() {
     let session = makeSession(orgId: nil, features: "", plans: "")
-    #expect(!session.has(.init(permission: "org:sys_profile:delete", reverification: .strict)))
-    #expect(!session.has(.init(role: "org:admin", reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(permission: "org:sys_profile:delete", reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(role: "org:admin", reverification: .strict)))
   }
 
   @Test
@@ -107,13 +107,13 @@ struct SessionAuthorizationTests {
       orgPermissions: ["org:sys_profile:delete"],
       factorVerificationAge: nil
     )
-    #expect(!session.has(.init(permission: "org:sys_profile:delete", reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(permission: "org:sys_profile:delete", reverification: .strict)))
   }
 
   @Test
   func failsWhenFactorVerificationAgePayloadIsMalformed() {
     let session = makeSession(factorVerificationAge: [0])
-    #expect(!session.has(.init(reverification: .strictMfa)))
+    #expect(!session.checkAuthorization(.init(reverification: .strictMfa)))
   }
 
   @Test
@@ -124,8 +124,8 @@ struct SessionAuthorizationTests {
       orgPermissions: ["org:sys_memberships:read"],
       features: "o:reservations"
     )
-    #expect(!session.has(.init(permission: "org:sys_profile:delete", feature: "org:reservations")))
-    #expect(session.has(.init(permission: "org:sys_memberships:read", feature: "org:reservations")))
+    #expect(!session.checkAuthorization(.init(permission: "org:sys_profile:delete", feature: "org:reservations")))
+    #expect(session.checkAuthorization(.init(permission: "org:sys_memberships:read", feature: "org:reservations")))
   }
 
   @Test
@@ -135,9 +135,9 @@ struct SessionAuthorizationTests {
       orgRole: "org:admin",
       orgPermissions: ["org:sys_memberships:read"]
     )
-    #expect(!session.has(.init(role: "org:admin", permission: "org:sys_profile:delete")))
-    #expect(session.has(.init(role: "org:admin", permission: "org:sys_memberships:read")))
-    #expect(!session.has(.init(role: "org:member", permission: "org:sys_memberships:read")))
+    #expect(!session.checkAuthorization(.init(role: "org:admin", permission: "org:sys_profile:delete")))
+    #expect(session.checkAuthorization(.init(role: "org:admin", permission: "org:sys_memberships:read")))
+    #expect(!session.checkAuthorization(.init(role: "org:member", permission: "org:sys_memberships:read")))
   }
 
   @Test
@@ -149,15 +149,15 @@ struct SessionAuthorizationTests {
       features: "o:reservations",
       plans: "u:plus"
     )
-    #expect(session.has(.init(feature: "org:reservations", plan: "u:plus")))
-    #expect(!session.has(.init(feature: "org:reservations", plan: "u:free")))
-    #expect(!session.has(.init(feature: "org:missing", plan: "u:plus")))
+    #expect(session.checkAuthorization(.init(feature: "org:reservations", plan: "u:plus")))
+    #expect(!session.checkAuthorization(.init(feature: "org:reservations", plan: "u:free")))
+    #expect(!session.checkAuthorization(.init(feature: "org:missing", plan: "u:plus")))
   }
 
   @Test
   func failsFeatureCheckWhenFeaturesClaimIsMissingOrEmpty() {
     let session = makeSession(orgId: "org_123", orgRole: "org:admin", orgPermissions: ["org:read"], features: "")
-    #expect(!session.has(.init(feature: "org:premium")))
+    #expect(!session.checkAuthorization(.init(feature: "org:premium")))
   }
 
   @Test
@@ -166,8 +166,8 @@ struct SessionAuthorizationTests {
     session.user = user(id: "user_123", orgId: "org_123", role: "org:admin", permissions: ["org:read"])
     session.lastActiveOrganizationId = "org_123"
     session.lastActiveToken = nil
-    #expect(!session.has(.init(feature: "reservations")))
-    #expect(!session.has(.init(plan: "plus")))
+    #expect(!session.checkAuthorization(.init(feature: "reservations")))
+    #expect(!session.checkAuthorization(.init(plan: "plus")))
   }
 
   @Test
@@ -179,9 +179,9 @@ struct SessionAuthorizationTests {
       features: "o:reservations",
       plans: "u:plus"
     )
-    #expect(!session.has(.init(role: "org:admin", feature: "org:missing")))
-    #expect(!session.has(.init(role: "org:admin", plan: "u:free")))
-    #expect(session.has(.init(role: "org:admin", feature: "org:reservations")))
+    #expect(!session.checkAuthorization(.init(role: "org:admin", feature: "org:missing")))
+    #expect(!session.checkAuthorization(.init(role: "org:admin", plan: "u:free")))
+    #expect(session.checkAuthorization(.init(role: "org:admin", feature: "org:reservations")))
   }
 
   @Test
@@ -192,7 +192,7 @@ struct SessionAuthorizationTests {
       orgPermissions: ["org:sys_profile:delete"],
       features: ""
     )
-    #expect(!session.has(.init(feature: "org:premium", reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(feature: "org:premium", reverification: .strict)))
   }
 
   @Test
@@ -202,7 +202,7 @@ struct SessionAuthorizationTests {
       orgRole: "org:admin",
       orgPermissions: ["org:sys_memberships:read"]
     )
-    #expect(session.has(.init(permission: "org:sys_memberships:read", reverification: .strict)))
+    #expect(session.checkAuthorization(.init(permission: "org:sys_memberships:read", reverification: .strict)))
   }
 
   @Test
@@ -214,7 +214,7 @@ struct SessionAuthorizationTests {
       features: "o:reservations"
     )
     #expect(
-      session.has(
+      session.checkAuthorization(
         .init(
           permission: "org:sys_memberships:read",
           feature: "org:reservations",
@@ -232,7 +232,7 @@ struct SessionAuthorizationTests {
       orgPermissions: ["org:sys_memberships:read"],
       factorVerificationAge: [0, -1]
     )
-    #expect(session.has(.init(permission: "org:sys_memberships:read", reverification: .strictMfa)))
+    #expect(session.checkAuthorization(.init(permission: "org:sys_memberships:read", reverification: .strictMfa)))
   }
 
   @Test
@@ -243,7 +243,7 @@ struct SessionAuthorizationTests {
       orgPermissions: ["org:sys_memberships:read"],
       factorVerificationAge: [-1, -1]
     )
-    #expect(!session.has(.init(permission: "org:sys_memberships:read", reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(permission: "org:sys_memberships:read", reverification: .strict)))
   }
 
   @Test
@@ -253,18 +253,18 @@ struct SessionAuthorizationTests {
       orgRole: "org:admin",
       orgPermissions: ["org:sys_profile:delete"]
     )
-    #expect(!session.has(.init(reverification: .custom(level: .multiFactor, afterMinutes: 0))))
-    #expect(!session.has(.init(reverification: .custom(level: .multiFactor, afterMinutes: -1))))
-    #expect(!session.has(.init(reverification: .custom(level: .unknown("nope"), afterMinutes: 10))))
+    #expect(!session.checkAuthorization(.init(reverification: .custom(level: .multiFactor, afterMinutes: 0))))
+    #expect(!session.checkAuthorization(.init(reverification: .custom(level: .multiFactor, afterMinutes: -1))))
+    #expect(!session.checkAuthorization(.init(reverification: .custom(level: .unknown("nope"), afterMinutes: 10))))
   }
 
   @Test
   func failsClosedWithoutUserId() {
     var session = makeSession(features: "u:dashboard", plans: "u:plus")
     session.user = nil
-    #expect(!session.has(.init(feature: "dashboard")))
-    #expect(!session.has(.init(plan: "plus")))
-    #expect(!session.has(.init(reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(feature: "dashboard")))
+    #expect(!session.checkAuthorization(.init(plan: "plus")))
+    #expect(!session.checkAuthorization(.init(reverification: .strict)))
   }
 
   @Test
@@ -284,24 +284,24 @@ struct SessionAuthorizationTests {
   @Test
   func unscopedFeatureMatchesMergedUserAndOrgIds() {
     let session = makeSession(orgId: "org_123", orgRole: "org:admin", features: "o:reservations,u:dashboard")
-    #expect(session.has(.init(feature: "reservations")))
-    #expect(session.has(.init(feature: "dashboard")))
-    #expect(!session.has(.init(feature: "missing")))
+    #expect(session.checkAuthorization(.init(feature: "reservations")))
+    #expect(session.checkAuthorization(.init(feature: "dashboard")))
+    #expect(!session.checkAuthorization(.init(feature: "missing")))
   }
 
   @Test
   func orgScopedFeatureFailsWithoutActiveOrgClaim() {
     let session = makeSession(orgId: nil, features: "u:dashboard")
-    #expect(!session.has(.init(feature: "o:dashboard")))
-    #expect(session.has(.init(feature: "u:dashboard")))
+    #expect(!session.checkAuthorization(.init(feature: "o:dashboard")))
+    #expect(session.checkAuthorization(.init(feature: "u:dashboard")))
   }
 
   @Test
   func roleCheckPrefixesOrg() {
     let session = makeSession(orgId: "org_123", orgRole: "admin", orgPermissions: ["org:sys_memberships:read"])
-    #expect(session.has(.init(role: "org:admin")))
-    #expect(session.has(.init(role: "admin")))
-    #expect(!session.has(.init(role: "org:member")))
+    #expect(session.checkAuthorization(.init(role: "org:admin")))
+    #expect(session.checkAuthorization(.init(role: "admin")))
+    #expect(!session.checkAuthorization(.init(role: "org:member")))
   }
 
   @Test
@@ -312,10 +312,10 @@ struct SessionAuthorizationTests {
       features: "o:sso,u:dashboard",
       plans: "u:pro"
     )
-    #expect(session.has(.init(feature: "sso")))
-    #expect(session.has(.init(plan: "pro")))
-    #expect(!session.has(.init(feature: "missing")))
-    #expect(!session.has(.init(plan: "free")))
+    #expect(session.checkAuthorization(.init(feature: "sso")))
+    #expect(session.checkAuthorization(.init(plan: "pro")))
+    #expect(!session.checkAuthorization(.init(feature: "missing")))
+    #expect(!session.checkAuthorization(.init(plan: "free")))
   }
 
   @Test
@@ -328,13 +328,13 @@ struct SessionAuthorizationTests {
       plans: "u:plus"
     )
     let params = CheckAuthorizationParams(plan: "plus")
-    _ = session.has(params)
+    _ = session.checkAuthorization(params)
 
     var samples: [Double] = []
     samples.reserveCapacity(1000)
     for _ in 0 ..< 1000 {
       let start = CFAbsoluteTimeGetCurrent()
-      _ = session.has(params)
+      _ = session.checkAuthorization(params)
       samples.append((CFAbsoluteTimeGetCurrent() - start) * 1000)
     }
     samples.sort()
@@ -354,8 +354,8 @@ struct SessionAuthorizationTests {
       jwt: jwtWithClaims(sid: session.id, orgId: "org_a", fea: "o:feature_a")
     )
 
-    #expect(!session.has(.init(feature: "o:feature_a")))
-    #expect(!session.has(.init(feature: "o:feature_b")))
+    #expect(!session.checkAuthorization(.init(feature: "o:feature_a")))
+    #expect(!session.checkAuthorization(.init(feature: "o:feature_b")))
   }
 
   @Test
@@ -374,7 +374,7 @@ struct SessionAuthorizationTests {
       )
     )
 
-    #expect(!session.has(.init(reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(reverification: .strict)))
   }
 
   @Test
@@ -394,7 +394,7 @@ struct SessionAuthorizationTests {
       )
     )
 
-    #expect(!session.has(.init(reverification: .strict)))
+    #expect(!session.checkAuthorization(.init(reverification: .strict)))
   }
 }
 
@@ -470,7 +470,7 @@ private func jwtWithClaims(
 
 @MainActor
 @Suite(.serialized)
-struct ClerkHasTests {
+struct AuthHasTests {
   init() {
     configureClerkForTesting()
   }
@@ -480,10 +480,10 @@ struct ClerkHasTests {
     Clerk.shared.client = nil
     defer { Clerk.shared.client = .mock }
 
-    #expect(!Clerk.shared.has(role: "org:admin"))
-    #expect(!Clerk.shared.has(permission: "org:sys_memberships:read"))
-    #expect(!Clerk.shared.has(feature: "reservations"))
-    #expect(!Clerk.shared.has(plan: "plus"))
-    #expect(!Clerk.shared.has(reverification: .lax))
+    #expect(!Clerk.shared.auth.has(role: "org:admin"))
+    #expect(!Clerk.shared.auth.has(permission: "org:sys_memberships:read"))
+    #expect(!Clerk.shared.auth.has(feature: "reservations"))
+    #expect(!Clerk.shared.auth.has(plan: "plus"))
+    #expect(!Clerk.shared.auth.has(reverification: .lax))
   }
 }

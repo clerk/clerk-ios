@@ -1,10 +1,10 @@
 //
-//  Session+Has.swift
+//  Session+CheckAuthorization.swift
 //
 
 import Foundation
 
-/// The conditions evaluated by ``Session/has(role:reverification:)`` and its overloads.
+/// The conditions evaluated by ``Session/checkAuthorization(role:reverification:)`` and its overloads.
 ///
 /// Matches clerk-js `CheckAuthorizationParams`. The public overloads accept one of role,
 /// permission, feature, or plan, each optionally combined with reverification. The evaluator still
@@ -31,7 +31,7 @@ struct CheckAuthorizationParams: Equatable {
   }
 }
 
-/// Reverification requirement for ``Session/has(reverification:)``.
+/// Reverification requirement for ``Session/checkAuthorization(reverification:)``.
 ///
 /// Matches clerk-js `ReverificationConfig`: presets `strict_mfa`, `strict`, `moderate`, `lax`, or a
 /// custom `{ level, afterMinutes }` object.
@@ -57,16 +57,16 @@ extension Session {
   /// within `reverification`.
   ///
   /// Returns `false` when there is no user or no Active Organization.
-  public func has(role: String, reverification: ReverificationConfig? = nil) -> Bool {
-    has(CheckAuthorizationParams(role: role, reverification: reverification))
+  public func checkAuthorization(role: String, reverification: ReverificationConfig? = nil) -> Bool {
+    checkAuthorization(CheckAuthorizationParams(role: role, reverification: reverification))
   }
 
   /// Returns whether the user has `permission` in the Active Organization, and optionally
   /// reverified within `reverification`.
   ///
   /// Returns `false` when there is no user or no Active Organization.
-  public func has(permission: String, reverification: ReverificationConfig? = nil) -> Bool {
-    has(CheckAuthorizationParams(permission: permission, reverification: reverification))
+  public func checkAuthorization(permission: String, reverification: ReverificationConfig? = nil) -> Bool {
+    checkAuthorization(CheckAuthorizationParams(permission: permission, reverification: reverification))
   }
 
   /// Returns whether the user or Active Organization has the Billing `feature`, and optionally
@@ -74,8 +74,8 @@ extension Session {
   ///
   /// Prefix the slug with `user:` or `org:` to check one payer only. Reads the session token's
   /// `fea` claim, so a Subscription change is reflected after the token refreshes.
-  public func has(feature: String, reverification: ReverificationConfig? = nil) -> Bool {
-    has(CheckAuthorizationParams(feature: feature, reverification: reverification))
+  public func checkAuthorization(feature: String, reverification: ReverificationConfig? = nil) -> Bool {
+    checkAuthorization(CheckAuthorizationParams(feature: feature, reverification: reverification))
   }
 
   /// Returns whether the user or Active Organization is subscribed to the Billing `plan`, and
@@ -83,48 +83,48 @@ extension Session {
   ///
   /// Prefix the slug with `user:` or `org:` to check one payer only. Reads the session token's
   /// `pla` claim, so a Subscription change is reflected after the token refreshes.
-  public func has(plan: String, reverification: ReverificationConfig? = nil) -> Bool {
-    has(CheckAuthorizationParams(plan: plan, reverification: reverification))
+  public func checkAuthorization(plan: String, reverification: ReverificationConfig? = nil) -> Bool {
+    checkAuthorization(CheckAuthorizationParams(plan: plan, reverification: reverification))
   }
 
   /// Returns whether the user reverified within `reverification`.
-  public func has(reverification: ReverificationConfig) -> Bool {
-    has(CheckAuthorizationParams(reverification: reverification))
+  public func checkAuthorization(reverification: ReverificationConfig) -> Bool {
+    checkAuthorization(CheckAuthorizationParams(reverification: reverification))
   }
 
-  func has(_ params: CheckAuthorizationParams) -> Bool {
+  func checkAuthorization(_ params: CheckAuthorizationParams) -> Bool {
     SessionAuthorization.evaluate(session: self, params: params)
   }
 }
 
-extension Clerk {
+extension Auth {
   /// Returns whether the signed-in user has `role` in the Active Organization. Returns `false` when
-  /// no user is signed in. See ``Session/has(role:reverification:)``.
+  /// no user is signed in. See ``Session/checkAuthorization(role:reverification:)``.
   public func has(role: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.has(role: role, reverification: reverification) ?? false
+    Clerk.shared.session?.checkAuthorization(role: role, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user has `permission` in the Active Organization. Returns `false`
-  /// when no user is signed in. See ``Session/has(permission:reverification:)``.
+  /// when no user is signed in. See ``Session/checkAuthorization(permission:reverification:)``.
   public func has(permission: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.has(permission: permission, reverification: reverification) ?? false
+    Clerk.shared.session?.checkAuthorization(permission: permission, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user or Active Organization has the Billing `feature`. Returns
-  /// `false` when no user is signed in. See ``Session/has(feature:reverification:)``.
+  /// `false` when no user is signed in. See ``Session/checkAuthorization(feature:reverification:)``.
   public func has(feature: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.has(feature: feature, reverification: reverification) ?? false
+    Clerk.shared.session?.checkAuthorization(feature: feature, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user or Active Organization is subscribed to the Billing `plan`.
-  /// Returns `false` when no user is signed in. See ``Session/has(plan:reverification:)``.
+  /// Returns `false` when no user is signed in. See ``Session/checkAuthorization(plan:reverification:)``.
   public func has(plan: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.has(plan: plan, reverification: reverification) ?? false
+    Clerk.shared.session?.checkAuthorization(plan: plan, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user reverified within `reverification`. Returns `false` when no
-  /// user is signed in. See ``Session/has(reverification:)``.
+  /// user is signed in. See ``Session/checkAuthorization(reverification:)``.
   public func has(reverification: ReverificationConfig) -> Bool {
-    session?.has(reverification: reverification) ?? false
+    Clerk.shared.session?.checkAuthorization(reverification: reverification) ?? false
   }
 }
