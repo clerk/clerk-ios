@@ -4,7 +4,7 @@ import Testing
 
 struct SessionAuthorizationTests {
   @Test
-  func checkAuthorizationAndHasShareOneImplementation() {
+  func labeledOverloadsMatchTheCombinedEvaluator() {
     let session = makeSession(
       orgId: "org_123",
       orgRole: "org:admin",
@@ -13,11 +13,17 @@ struct SessionAuthorizationTests {
       plans: "u:plus"
     )
 
-    let params = CheckAuthorizationParams(plan: "plus")
-    #expect(session.has(params) == session.checkAuthorization(params))
-    #expect(session.has(params) == true)
-    #expect(session.has(.init(plan: "missing")) == session.checkAuthorization(.init(plan: "missing")))
-    #expect(session.has(.init(plan: "missing")) == false)
+    #expect(session.has(plan: "plus"))
+    #expect(!session.has(plan: "missing"))
+    #expect(session.has(feature: "org:reservations"))
+    #expect(session.has(role: "org:admin"))
+    #expect(session.has(permission: "org:sys_memberships:read"))
+    #expect(!session.has(permission: "org:sys_profile:delete"))
+    #expect(session.has(plan: "plus") == session.has(CheckAuthorizationParams(plan: "plus")))
+    #expect(
+      session.has(role: "org:admin", reverification: .strict)
+        == session.has(CheckAuthorizationParams(role: "org:admin", reverification: .strict))
+    )
   }
 
   @Test
@@ -460,4 +466,24 @@ private func jwtWithClaims(
     claims["iat"] = issuedAt
   }
   return try! testJWT(claims: claims)
+}
+
+@MainActor
+@Suite(.serialized)
+struct ClerkHasTests {
+  init() {
+    configureClerkForTesting()
+  }
+
+  @Test
+  func returnsFalseWithoutASession() {
+    Clerk.shared.client = nil
+    defer { Clerk.shared.client = .mock }
+
+    #expect(!Clerk.shared.has(role: "org:admin"))
+    #expect(!Clerk.shared.has(permission: "org:sys_memberships:read"))
+    #expect(!Clerk.shared.has(feature: "reservations"))
+    #expect(!Clerk.shared.has(plan: "plus"))
+    #expect(!Clerk.shared.has(reverification: .lax))
+  }
 }

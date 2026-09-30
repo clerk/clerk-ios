@@ -4,63 +4,6 @@
 
 import Foundation
 
-/// Parameters for ``Session/checkAuthorization(_:)`` and ``Session/has(_:)``.
-///
-/// Matches clerk-js `CheckAuthorizationParams`. The public TypeScript type treats role, permission,
-/// feature, and plan as mutually exclusive. The runtime combiner still ANDs every dimension that is
-/// present, including feature + plan.
-public struct CheckAuthorizationParams: Sendable, Equatable {
-  public var role: String?
-  public var permission: String?
-  public var feature: String?
-  public var plan: String?
-  public var reverification: ReverificationConfig?
-
-  public init(
-    role: String? = nil,
-    permission: String? = nil,
-    feature: String? = nil,
-    plan: String? = nil,
-    reverification: ReverificationConfig? = nil
-  ) {
-    self.role = role
-    self.permission = permission
-    self.feature = feature
-    self.plan = plan
-    self.reverification = reverification
-  }
-}
-
-/// Reverification requirement for ``Session/checkAuthorization(_:)``.
-///
-/// Matches clerk-js `ReverificationConfig`: presets `strict_mfa`, `strict`, `moderate`, `lax`, or a
-/// custom `{ level, afterMinutes }` object.
-public enum ReverificationConfig: Sendable, Equatable {
-  case strictMfa
-  case strict
-  case moderate
-  case lax
-  case custom(level: SessionVerification.Level, afterMinutes: Int)
-}
-
-extension Session {
-  /// Checks whether this session is authorized for the requested role, permission, feature, plan,
-  /// and/or reverification.
-  ///
-  /// Returns `false` when the user is missing or any requested dimension fails. Org role and
-  /// permission come from the active organization membership. Feature and plan come from a token
-  /// whose session and organization match this session. Reverification uses that token's `fva`
-  /// claim when present.
-  public func checkAuthorization(_ params: CheckAuthorizationParams) -> Bool {
-    SessionAuthorization.evaluate(session: self, params: params)
-  }
-
-  /// Alias for ``checkAuthorization(_:)``. Matches the `useAuth().has` / `auth().has` name.
-  public func has(_ params: CheckAuthorizationParams) -> Bool {
-    checkAuthorization(params)
-  }
-}
-
 enum SessionAuthorization {
   private enum CheckResult {
     case pass
