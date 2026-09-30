@@ -34,7 +34,6 @@ struct LifecycleManagerTests {
     let manager = LifecycleManager(handler: handler, notificationCenter: center)
 
     manager.startObserving()
-    await settle()
 
     center.post(name: LifecycleManager.willEnterForegroundNotification, object: nil)
     try await waitUntil { handler.foregroundCallCount.value == 1 }
@@ -54,12 +53,10 @@ struct LifecycleManagerTests {
     let manager = LifecycleManager(handler: handler, notificationCenter: center)
 
     manager.startObserving()
-    await settle()
     center.post(name: LifecycleManager.willEnterForegroundNotification, object: nil)
     try await waitUntil { handler.foregroundCallCount.value == 1 }
 
     manager.stopObserving()
-    await settle()
 
     postLifecycleNotifications(center)
     await settle()
@@ -77,7 +74,6 @@ struct LifecycleManagerTests {
     manager.startObserving()
     manager.startObserving()
     manager.startObserving()
-    await settle()
 
     postLifecycleNotifications(center)
     try await waitUntil {
@@ -101,7 +97,6 @@ struct LifecycleManagerTests {
     manager.stopObserving()
     manager.stopObserving()
     manager.stopObserving()
-    await settle()
 
     postLifecycleNotifications(center)
     await settle()
@@ -109,7 +104,6 @@ struct LifecycleManagerTests {
     #expect(handler.backgroundCallCount.value == 0)
 
     manager.startObserving()
-    await settle()
     postLifecycleNotifications(center)
     try await waitUntil {
       handler.foregroundCallCount.value == 1 && handler.backgroundCallCount.value == 1
@@ -123,7 +117,7 @@ struct LifecycleManagerTests {
     center.post(name: LifecycleManager.didEnterBackgroundNotification, object: nil)
   }
 
-  /// Gives the observer tasks a chance to subscribe or deliver queued notifications.
+  /// Lets any pending observer work run so a delivery that shouldn't happen has the chance to.
   private func settle() async {
     for _ in 0 ..< 20 {
       await Task.yield()

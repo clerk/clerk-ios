@@ -44,18 +44,19 @@ final class LifecycleManager {
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 
+    let willEnterForeground = notificationCenter.notifications(named: Self.willEnterForegroundNotification)
+    let didEnterBackground = notificationCenter.notifications(named: Self.didEnterBackgroundNotification)
+
     willEnterForegroundTask = Task {
-      for await _ in notificationCenter.notifications(
-        named: Self.willEnterForegroundNotification
-      ).map({ _ in () }) {
+      for await _ in willEnterForeground.map({ _ in () }) {
+        guard !Task.isCancelled else { break }
         await handler.onWillEnterForeground()
       }
     }
 
     didEnterBackgroundTask = Task {
-      for await _ in notificationCenter.notifications(
-        named: Self.didEnterBackgroundNotification
-      ).map({ _ in () }) {
+      for await _ in didEnterBackground.map({ _ in () }) {
+        guard !Task.isCancelled else { break }
         await handler.onDidEnterBackground()
       }
     }
