@@ -7,7 +7,9 @@
 
 import Foundation
 
-#if canImport(UIKit) && !os(watchOS)
+#if os(watchOS)
+import WatchKit
+#elseif canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
 import AppKit
@@ -39,10 +41,6 @@ final class LifecycleManager {
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 
-    #if os(watchOS)
-    return
-    #else
-
     willEnterForegroundTask = Task {
       for await _ in NotificationCenter.default.notifications(
         named: Self.willEnterForegroundNotification
@@ -58,8 +56,6 @@ final class LifecycleManager {
         await handler.onDidEnterBackground()
       }
     }
-
-    #endif
   }
 
   func stopObserving() {
@@ -71,11 +67,12 @@ final class LifecycleManager {
   }
 }
 
-#if !os(watchOS)
 extension LifecycleManager {
   private static var willEnterForegroundNotification: Notification.Name {
     #if os(macOS)
     NSApplication.didBecomeActiveNotification
+    #elseif os(watchOS)
+    WKApplication.willEnterForegroundNotification
     #else
     UIApplication.willEnterForegroundNotification
     #endif
@@ -84,9 +81,10 @@ extension LifecycleManager {
   private static var didEnterBackgroundNotification: Notification.Name {
     #if os(macOS)
     NSApplication.didResignActiveNotification
+    #elseif os(watchOS)
+    WKApplication.didEnterBackgroundNotification
     #else
     UIApplication.didEnterBackgroundNotification
     #endif
   }
 }
-#endif

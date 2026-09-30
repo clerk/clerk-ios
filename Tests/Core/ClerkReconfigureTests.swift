@@ -483,32 +483,20 @@ struct ClerkReconfigureTests {
 
   @Test
   func concurrentReconfigureThrowsWhileFirstReconfigureIsInProgress() async throws {
-    let slowKeychain = SlowKeychain(delay: 0.2)
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      keychain: slowKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     try Clerk.shared.performConfiguration(dependencies: dependencies)
-    Clerk.shared.client = .mock
 
-    let firstReconfigure = Task { @MainActor in
-      try await Clerk.reconfigure(publishableKey: publishableKey(for: "first-target.clerk.example.com"))
-    }
-    try await Task.sleep(for: .milliseconds(20))
+    try Clerk.beginRuntimeReconfiguration()
+    defer { Clerk.endRuntimeReconfiguration() }
 
-    do {
+    await #expect {
       _ = try await Clerk.reconfigure(publishableKey: publishableKey(for: "second-target.clerk.example.com"))
-      Issue.record("Expected overlapping reconfigure to throw")
-    } catch let error as ClerkClientError {
-      #expect(error.message?.contains("already reconfiguring") == true)
-    } catch {
-      Issue.record("Expected ClerkClientError, got \(error)")
+    } throws: { error in
+      (error as? ClerkClientError)?.message?.contains("already reconfiguring") == true
     }
-
-    let reconfigured = try await firstReconfigure.value
-    defer { reconfigured.cleanupManagers() }
-    #expect(reconfigured.publishableKey == publishableKey(for: "first-target.clerk.example.com"))
   }
 
   @Test

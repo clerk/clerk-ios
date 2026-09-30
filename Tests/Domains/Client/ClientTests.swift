@@ -347,7 +347,7 @@ private final class DeviceTokenChangingClientService: ClientServiceProtocol {
 
   @MainActor
   func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
-    _ = try await Clerk.shared.identityController.updateDeviceToken(to: "changed-token")
+    try Clerk.shared.identityController.adoptDeviceToken("changed-token")
     return response
   }
 }

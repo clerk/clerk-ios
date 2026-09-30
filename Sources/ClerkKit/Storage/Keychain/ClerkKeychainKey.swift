@@ -24,25 +24,13 @@ enum ClerkKeychainKey: String, CaseIterable {
 
   case sharedSessionSyncEnvironmentVersion
 
-  case watchSyncClearGeneration = "clerkWatchSyncClearGeneration"
-
-  case watchSyncAuthState
-
-  case watchSyncMetadata = "clerkWatchSyncMetadataV2"
-
-  case watchSyncAuthVersion
+  case watchSyncLastChange = "clerkWatchSyncLastChange"
 
   case clerkDeviceToken
 
   case sharedSessionSyncDeviceTokenState
 
   case sharedSessionSyncDeviceTokenVersion
-
-  case watchSyncDeviceTokenState
-
-  case watchSyncDeviceTokenVersion
-
-  case watchSyncDeviceTokenSynced = "clerkDeviceTokenSynced"
 
   case attestKeyId = "AttestKeyId"
 

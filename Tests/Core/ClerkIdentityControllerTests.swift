@@ -163,11 +163,11 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
-  func updateDeviceTokenPersistsTokenWithoutClient() async throws {
+  func adoptDeviceTokenPersistsTokenWithoutClient() throws {
     let (clerk, _) = makeClerk()
     try clerk.seedIdentity(deviceToken: "old-token", client: makeClient(id: "client"), serverDate: date(100))
 
-    let result = try await clerk.identityController.updateDeviceToken(to: "new-token")
+    let result = try clerk.identityController.adoptDeviceToken("new-token")
 
     #expect(result == .applied)
     #expect(clerk.deviceToken == "new-token")
@@ -175,24 +175,7 @@ struct ClerkIdentityControllerTests {
     let persisted = try #require(try clerk.dependencies.identityStore.load())
     #expect(persisted.deviceToken == "new-token")
     #expect(persisted.client == nil)
-    #expect(try await clerk.identityController.updateDeviceToken(to: "new-token") == .unchanged)
-  }
-
-  @Test
-  func externalTransitionPersistsBeforeRunningCompletion() throws {
-    let (clerk, _) = makeClerk()
-    var persistedInCompletion: ClerkIdentitySnapshot?
-
-    try clerk.identityController.applyExternalTransition {
-      ClerkIdentityController.ExternalTransition(
-        identity: identity(token: "token", client: makeClient(id: "client"), date: 100),
-        didApply: { persistedInCompletion = try? clerk.dependencies.identityStore.load() }
-      )
-    }
-
-    #expect(persistedInCompletion?.client?.id == "client")
-    #expect(clerk.client?.id == "client")
-    #expect(clerk.deviceToken == "token")
+    #expect(try clerk.identityController.adoptDeviceToken("new-token") == .unchanged)
   }
 
   @Test
