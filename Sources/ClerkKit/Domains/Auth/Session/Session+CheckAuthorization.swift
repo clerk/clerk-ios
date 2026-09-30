@@ -4,11 +4,6 @@
 
 import Foundation
 
-/// The conditions evaluated by ``Session/checkAuthorization(role:reverification:)`` and its overloads.
-///
-/// Matches clerk-js `CheckAuthorizationParams`. The public overloads accept one of role,
-/// permission, feature, or plan, each optionally combined with reverification. The evaluator still
-/// ANDs every dimension that is present.
 struct CheckAuthorizationParams: Equatable {
   var role: String?
   var permission: String?
@@ -31,10 +26,8 @@ struct CheckAuthorizationParams: Equatable {
   }
 }
 
-/// Reverification requirement for ``Session/checkAuthorization(reverification:)``.
-///
-/// Matches clerk-js `ReverificationConfig`: presets `strict_mfa`, `strict`, `moderate`, `lax`, or a
-/// custom `{ level, afterMinutes }` object.
+/// How recently the user must have verified their identity. Use a preset, or ``custom(level:afterMinutes:)``
+/// for a specific level and time window.
 public enum ReverificationConfig: Sendable, Equatable {
   /// Multi-factor verification within the last 10 minutes. Falls back to first-factor verification
   /// when the user has no second factor enrolled.
