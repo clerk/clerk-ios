@@ -470,7 +470,7 @@ private func jwtWithClaims(
 
 @MainActor
 @Suite(.serialized)
-struct AuthHasTests {
+struct ClerkHasTests {
   init() {
     configureClerkForTesting()
   }
@@ -480,10 +480,10 @@ struct AuthHasTests {
     Clerk.shared.client = nil
     defer { Clerk.shared.client = .mock }
 
-    #expect(!Clerk.shared.auth.has(role: "org:admin"))
-    #expect(!Clerk.shared.auth.has(permission: "org:sys_memberships:read"))
-    #expect(!Clerk.shared.auth.has(feature: "reservations"))
-    #expect(!Clerk.shared.auth.has(plan: "plus"))
-    #expect(!Clerk.shared.auth.has(reverification: .lax))
+    #expect(!Clerk.shared.has(role: "org:admin"))
+    #expect(!Clerk.shared.has(permission: "org:sys_memberships:read"))
+    #expect(!Clerk.shared.has(feature: "reservations"))
+    #expect(!Clerk.shared.has(plan: "plus"))
+    #expect(!Clerk.shared.has(reverification: .lax))
   }
 }
