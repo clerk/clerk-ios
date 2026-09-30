@@ -164,8 +164,8 @@ struct StringExtensionsTests {
       #expect(arrayResult.arrayValue?.count == 3)
     }
 
-    // Note: Single numeric/boolean values may not parse correctly
-    // The toJSON() method expects a JSON object or array
+    #expect("42".toJSON() == .null)
+
     let objectJSON = "{\"number\":42}"
     let objectResult = objectJSON.toJSON()
     #expect(objectResult != nil)
@@ -175,13 +175,9 @@ struct StringExtensionsTests {
 
     // Invalid JSON strings
     let invalidJSON = "{invalid}"
-    let invalidResult = invalidJSON.toJSON()
-    // May return null JSON instead of nil
-    #expect(invalidResult == nil || invalidResult?.isNull == true)
+    #expect(invalidJSON.toJSON() == .null)
 
     let emptyString = ""
-    let emptyResult = emptyString.toJSON()
-    // May return null JSON instead of nil
-    #expect(emptyResult == nil || emptyResult?.isNull == true)
+    #expect(emptyString.toJSON() == .null)
   }
 }
