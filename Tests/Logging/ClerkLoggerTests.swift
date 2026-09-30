@@ -20,8 +20,8 @@ struct ClerkLoggerTests {
   @Test
   func info_WithDefaultForce_RespectsLogLevel() async {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
-    let lines = captureLogLines()
-    defer { restoreLogSink() }
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
     await ClerkLogger.info("default-force info").value
 
@@ -31,8 +31,8 @@ struct ClerkLoggerTests {
   @Test
   func info_WithForceTrue_AlwaysLogs() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
-    let lines = captureLogLines()
-    defer { restoreLogSink() }
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
     await ClerkLogger.info("forced info", force: true).value
 
@@ -45,8 +45,8 @@ struct ClerkLoggerTests {
   @Test
   func info_WithForceFalse_RespectsLogLevel() async {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
-    let lines = captureLogLines()
-    defer { restoreLogSink() }
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
     await ClerkLogger.info("unforced info", force: false).value
 
@@ -56,8 +56,8 @@ struct ClerkLoggerTests {
   @Test
   func info_WithInfoLogLevel_LogsWithoutForce() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .info))
-    let lines = captureLogLines()
-    defer { restoreLogSink() }
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
     await ClerkLogger.info("info at info level").value
 
@@ -77,8 +77,8 @@ struct ClerkLoggerTests {
       }
     )
     Clerk.configure(publishableKey: testPublishableKey, options: options)
-    let lines = captureLogLines()
-    defer { restoreLogSink() }
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
     await ClerkLogger.info("forced info", force: true).value
     #expect(lines.lines(containing: "forced info").count == 1)
@@ -91,8 +91,8 @@ struct ClerkLoggerTests {
   @Test
   func error_AlwaysLogsRegardlessOfLogLevel() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
-    let lines = captureLogLines()
-    defer { restoreLogSink() }
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
     await ClerkLogger.error("error message", error: URLError(.badURL)).value
 
@@ -159,21 +159,14 @@ private struct EmittedLogLine {
 }
 
 @MainActor
-private func captureLogLines() -> LockIsolated<[EmittedLogLine]> {
+private func captureLogLines() -> (LockIsolated<[EmittedLogLine]>, @MainActor () -> Void) {
+  let original = ClerkLogger.sink
   let lines = LockIsolated<[EmittedLogLine]>([])
   ClerkLogger.sink = { level, text in
     lines.withValue { $0.append(EmittedLogLine(level: level, text: text)) }
   }
-  return lines
+  return (lines, { ClerkLogger.sink = original })
 }
-
-@MainActor
-private func restoreLogSink() {
-  ClerkLogger.sink = originalLogSink
-}
-
-@MainActor
-private let originalLogSink = ClerkLogger.sink
 
 private final class PreInstallationDeleteFailingKeychain: @unchecked Sendable,
   KeychainStorage
