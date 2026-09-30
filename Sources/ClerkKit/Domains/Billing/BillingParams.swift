@@ -103,9 +103,13 @@ package struct GetCreditBalanceParams: Equatable {
 
 package struct GetCreditHistoryParams: Equatable {
   package var orgId: String?
+  package var page: Int
+  package var pageSize: Int
 
-  package init(orgId: String? = nil) {
+  package init(orgId: String? = nil, page: Int = 1, pageSize: Int = 20) {
     self.orgId = orgId
+    self.page = page
+    self.pageSize = pageSize
   }
 }
 

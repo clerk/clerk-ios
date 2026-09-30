@@ -1,7 +1,3 @@
-//
-//  Session+CheckAuthorization.swift
-//
-
 import Foundation
 
 struct CheckAuthorizationParams: Equatable {
@@ -26,8 +22,7 @@ struct CheckAuthorizationParams: Equatable {
   }
 }
 
-/// How recently the user must have verified their identity. Use a preset, or ``custom(level:afterMinutes:)``
-/// for a specific level and time window.
+/// How recently the user must have verified their identity.
 public enum ReverificationConfig: Sendable, Equatable {
   /// Multi-factor verification within the last 10 minutes. Falls back to first-factor verification
   /// when the user has no second factor enrolled.
@@ -65,8 +60,8 @@ extension Session {
   /// Returns whether the user or Active Organization has the Billing `feature`, and optionally
   /// reverified within `reverification`.
   ///
-  /// Prefix the slug with `user:` or `org:` to check one payer only. Reads the session token's
-  /// `fea` claim, so a Subscription change is reflected after the token refreshes.
+  /// Prefix the slug with `user:` or `org:` to check one payer only. A Subscription change is
+  /// reflected after the session token refreshes.
   public func checkAuthorization(feature: String, reverification: ReverificationConfig? = nil) -> Bool {
     checkAuthorization(CheckAuthorizationParams(feature: feature, reverification: reverification))
   }
@@ -74,8 +69,8 @@ extension Session {
   /// Returns whether the user or Active Organization is subscribed to the Billing `plan`, and
   /// optionally reverified within `reverification`.
   ///
-  /// Prefix the slug with `user:` or `org:` to check one payer only. Reads the session token's
-  /// `pla` claim, so a Subscription change is reflected after the token refreshes.
+  /// Prefix the slug with `user:` or `org:` to check one payer only. A Subscription change is
+  /// reflected after the session token refreshes.
   public func checkAuthorization(plan: String, reverification: ReverificationConfig? = nil) -> Bool {
     checkAuthorization(CheckAuthorizationParams(plan: plan, reverification: reverification))
   }

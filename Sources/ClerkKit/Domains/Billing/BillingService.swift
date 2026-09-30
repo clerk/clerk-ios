@@ -128,7 +128,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingCreditLedger>>>(
       path: Self.path("/credits/history", orgId: params.orgId),
       method: .get,
-      query: sessionQuery()
+      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response

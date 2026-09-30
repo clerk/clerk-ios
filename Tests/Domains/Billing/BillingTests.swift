@@ -173,7 +173,7 @@ struct BillingTests {
   }
 
   @Test
-  func getCreditHistoryOmitsPagination() async throws {
+  func getCreditHistorySendsPagination() async throws {
     let requestHandled = LockIsolated(false)
     var mock = try Mock(
       url: URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/credits/history")!,
@@ -186,14 +186,14 @@ struct BillingTests {
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.url?.queryParam(named: "limit") == nil)
-      #expect(request.url?.queryParam(named: "offset") == nil)
+      #expect(request.url?.queryParam(named: "limit") == "5")
+      #expect(request.url?.queryParam(named: "offset") == "10")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.billing.getCreditHistory()
+    _ = try await Clerk.shared.billing.getCreditHistory(page: 3, pageSize: 5)
     #expect(requestHandled.value)
   }
 

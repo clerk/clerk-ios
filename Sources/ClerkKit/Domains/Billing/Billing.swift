@@ -9,8 +9,7 @@ import Foundation
 ///
 /// Access it through ``Clerk/billing``. Methods that read a payer's data take an optional `orgId`:
 /// omit it for the signed-in user, or pass an Organization ID to read that Organization's data,
-/// which requires the `org:sys_billing:read` Permission. Payment methods are read from
-/// ``User/getPaymentMethods(page:pageSize:)`` and ``Organization/getPaymentMethods(page:pageSize:)``.
+/// which requires the `org:sys_billing:read` Permission.
 ///
 /// This is a beta API and may change.
 @MainActor
@@ -97,8 +96,19 @@ public struct Billing {
     try await billingService.getCreditBalance(params: GetCreditBalanceParams(orgId: orgId))
   }
 
-  /// Gets every credit ledger entry of the signed-in user, or of the Organization with `orgId`.
-  public func getCreditHistory(orgId: String? = nil) async throws -> ClerkPaginatedResponse<BillingCreditLedger> {
-    try await billingService.getCreditHistory(params: GetCreditHistoryParams(orgId: orgId))
+  /// Lists the credit ledger entries of the signed-in user, or of the Organization with `orgId`.
+  ///
+  /// - Parameters:
+  ///   - orgId: The Organization to read. Omit for the signed-in user.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of entries to return per page. Defaults to `20`.
+  public func getCreditHistory(
+    orgId: String? = nil,
+    page: Int = 1,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<BillingCreditLedger> {
+    try await billingService.getCreditHistory(
+      params: GetCreditHistoryParams(orgId: orgId, page: page, pageSize: pageSize)
+    )
   }
 }
