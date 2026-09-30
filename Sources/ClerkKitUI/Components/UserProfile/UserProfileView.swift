@@ -597,10 +597,11 @@ extension UserProfileView {
 
   fileprivate func getSessionsOnAllDevices() async {
     guard let user = clerk.user else { return }
+    let sessionId = clerk.session?.id
     do {
       try await user.getSessions()
     } catch {
-      guard !error.isCancellationError else { return }
+      guard !error.isCancellationError, clerk.session?.id == sessionId else { return }
 
       self.error = error
       ClerkLogger.error("Failed to get sessions on all devices", error: error)
