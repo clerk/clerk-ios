@@ -1130,11 +1130,8 @@ struct SessionServiceAndTokenFetcherTests {
     let replacementId = try #require(registeredReplacement?.id)
 
     await firstGate.resume()
-    do {
-      _ = try await first.value
-      Issue.record("Expected reset to cancel token request A.")
-    } catch is CancellationError {
-      // Expected.
+    await #expect(throws: CancellationError.self) {
+      try await first.value
     }
 
     let remainingTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
