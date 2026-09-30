@@ -515,9 +515,14 @@ extension User {
     try await userService.getSessions(user: self)
   }
 
-  @discardableResult @MainActor
-  public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: params, orgId: nil)
+  /// Lists the user's saved payment methods.
+  ///
+  /// - Parameters:
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of payment methods to return per page. Defaults to `20`.
+  @MainActor
+  public func getPaymentMethods(page: Int = 1, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
+    try await billingService.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: nil)
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.

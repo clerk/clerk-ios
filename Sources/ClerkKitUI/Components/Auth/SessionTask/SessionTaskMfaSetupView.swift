@@ -7,10 +7,6 @@
 import ClerkKit
 import SwiftUI
 
-/// A full-screen MFA enrollment flow shown when a session requires forced MFA setup.
-///
-/// This view is presented after sign-in/sign-up completes when the backend requires
-/// the user to enroll in at least one MFA method before the session can become active.
 struct SessionTaskMfaSetupView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme

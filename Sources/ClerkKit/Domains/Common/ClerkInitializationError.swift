@@ -7,42 +7,23 @@
 
 import Foundation
 
-/// Errors that can occur during Clerk initialization and configuration.
 enum ClerkInitializationError: Error, LocalizedError, ClerkError {
-  /// The publishable key is missing or empty.
   case missingPublishableKey
 
-  /// The publishable key format is invalid.
-  ///
-  /// - Parameter key: The invalid key that was provided.
   case invalidPublishableKeyFormat(key: String)
 
-  /// Failed to load client data from the API.
-  ///
-  /// - Parameter underlyingError: The underlying error that caused the failure.
   case clientLoadFailed(underlyingError: Error)
 
-  /// Failed to load environment configuration from the API.
-  ///
-  /// - Parameter underlyingError: The underlying error that caused the failure.
   case environmentLoadFailed(underlyingError: Error)
 
-  /// Failed to initialize the API client.
-  ///
-  /// - Parameter reason: A description of why initialization failed.
   case apiClientInitializationFailed(reason: String)
 
-  /// An unexpected error occurred during initialization.
-  ///
-  /// - Parameter underlyingError: The underlying error that caused the failure.
   case initializationFailed(underlyingError: Error)
 
-  /// A human-readable error message describing what went wrong.
   var message: String? {
     errorDescription
   }
 
-  /// The underlying error that caused this initialization error, if any.
   var underlyingError: Error? {
     switch self {
     case let .clientLoadFailed(error),
@@ -54,7 +35,6 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
     }
   }
 
-  /// Additional context about the error, such as the invalid key or failure reason.
   var context: [String: String]? {
     switch self {
     case let .invalidPublishableKeyFormat(key):
@@ -89,7 +69,6 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
     }
   }
 
-  /// A more detailed error message for debugging.
   var failureReason: String? {
     switch self {
     case .missingPublishableKey:

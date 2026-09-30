@@ -7,37 +7,24 @@
 
 import Foundation
 
-/// Mock implementation of `SessionServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockSessionService: SessionServiceProtocol {
-  /// Custom handler for the `revoke(sessionId:)` method.
   package nonisolated(unsafe) var revokeHandler: ((String) async throws -> Session)?
 
-  /// Custom handler for the `signOut(sessionId:)` method.
   package nonisolated(unsafe) var signOutHandler: ((String?) async throws -> Void)?
 
-  /// Custom handler for the `setActive(sessionId:organizationId:)` method.
   package nonisolated(unsafe) var setActiveHandler: ((String, String?) async throws -> Void)?
 
-  /// Custom handler for the `fetchToken(sessionId:template:params:)` method.
   package nonisolated(unsafe) var fetchTokenHandler:
     ((String, String?, SessionTokenRequestParams?) async throws -> TokenResource?)?
 
-  /// Custom handler for the `startVerification(sessionId:params:)` method.
   nonisolated(unsafe) var startVerificationHandler: ((String, Session.StartVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for the `prepareFirstFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var prepareFirstFactorVerificationHandler: ((String, Session.PrepareFirstFactorVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for the `attemptFirstFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var attemptFirstFactorVerificationHandler: ((String, Session.AttemptFirstFactorVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for the `prepareSecondFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var prepareSecondFactorVerificationHandler: ((String, Session.PrepareSecondFactorVerificationParams) async throws -> SessionVerification)?
 
-  /// Custom handler for the `attemptSecondFactorVerification(sessionId:params:)` method.
   nonisolated(unsafe) var attemptSecondFactorVerificationHandler: ((String, Session.AttemptSecondFactorVerificationParams) async throws -> SessionVerification)?
 
   package convenience init(
@@ -94,7 +81,6 @@ package final class MockSessionService: SessionServiceProtocol {
     if let handler = signOutHandler {
       try await handler(sessionId)
     }
-    // No-op by default - does not actually sign out
   }
 
   @MainActor

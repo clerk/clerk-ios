@@ -201,9 +201,6 @@ actor SessionTokenFetcher {
     return try result.get()
   }
 
-  /**
-   Internal function to get the session token. Checks the cache first.
-   */
   @discardableResult @MainActor
   func fetchToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
     let cacheGeneration = await SessionTokensCache.shared.generation(
@@ -301,9 +298,6 @@ actor SessionTokensCache {
   private var cache: [String: TokenResource] = [:]
   private var generations: [String: UInt64] = [:]
 
-  /// Returns a session token from the cache.
-  /// - Parameter cacheKey: Cache key for a session's organization or token template.
-  /// - Returns: ``TokenResource``
   func getToken(cacheKey: String) -> TokenResource? {
     cache[cacheKey]
   }
@@ -333,7 +327,6 @@ actor SessionTokensCache {
     cache[cacheKey] = canonicalToken
   }
 
-  /// Atomically keeps the freshest token for a cache key.
   @discardableResult
   func storeIfFresher(
     _ token: TokenResource,
@@ -375,10 +368,6 @@ actor SessionTokensCache {
     )
   }
 
-  /// Inserts a session token into the cache.
-  /// - Parameters:
-  ///   - token: ``TokenResource``
-  ///   - cacheKey: Cache key for a session's organization or token template.
   func insertToken(_ token: TokenResource, cacheKey: String) {
     cache[cacheKey] = token
   }

@@ -25,7 +25,6 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl == nil)
     #expect(options.keychainConfig.service == Bundle.main.bundleIdentifier ?? "")
     #expect(options.keychainConfig.accessGroup == nil)
-    #expect(options.sharedSessionSync == nil)
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
     #expect(options.middleware.request.isEmpty == true)
@@ -42,8 +41,7 @@ struct ClerkOptionsTests {
       telemetryEnabled: false,
       keychainConfig: keychainConfig,
       proxyUrl: "https://proxy.example.com/__clerk",
-      redirectConfig: redirectConfig,
-      sharedSessionSync: .enabled
+      redirectConfig: redirectConfig
     )
 
     #expect(options.logLevel == .debug)
@@ -53,7 +51,6 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl?.absoluteString == "https://proxy.example.com/__clerk")
     #expect(options.redirectConfig.redirectUrl == "test://redirect")
     #expect(options.redirectConfig.callbackUrlScheme == "test")
-    #expect(options.sharedSessionSync == .enabled)
   }
 
   @Test
@@ -107,12 +104,11 @@ struct ClerkOptionsTests {
 
   @Test
   func partialInitialization() {
-    // Test with only some parameters
     let options = Clerk.Options(logLevel: .debug)
 
     #expect(options.logLevel == .debug)
-    #expect(options.telemetryEnabled == true) // Default
-    #expect(options.proxyUrl == nil) // Default
+    #expect(options.telemetryEnabled == true)
+    #expect(options.proxyUrl == nil)
   }
 
   @Test

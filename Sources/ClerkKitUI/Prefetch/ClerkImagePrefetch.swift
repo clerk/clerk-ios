@@ -27,12 +27,10 @@ extension Clerk {
 
     var urls = Set<URL>()
 
-    // App brand logo
     if let logoUrl = URL(string: environment.displayConfig.logoImageUrl) {
       urls.insert(logoUrl)
     }
 
-    // OAuth provider logos (all enabled providers)
     for provider in environment.allSocialProviders {
       urls.formUnion(provider.iconImageUrlsForPrefetch)
     }

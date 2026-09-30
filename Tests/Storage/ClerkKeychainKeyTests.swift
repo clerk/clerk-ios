@@ -9,7 +9,6 @@
 import Foundation
 import Testing
 
-/// Tests for ClerkKeychainKey enum.
 @Suite(.serialized)
 struct ClerkKeychainKeyTests {
   @Test
@@ -17,14 +16,13 @@ struct ClerkKeychainKeyTests {
     let allCases = ClerkKeychainKey.allCases
     #expect(allCases.count == 19)
 
-    // Verify all expected keys are present
     #expect(allCases.contains(.cachedClient))
     #expect(allCases.contains(.cachedClientServerDate))
     #expect(allCases.contains(.cachedEnvironment))
-    #expect(allCases.contains(.sharedSessionSyncAdopted))
     #expect(allCases.contains(.sharedSessionSyncAuthState))
     #expect(allCases.contains(.sharedSessionSyncAuthVersion))
     #expect(allCases.contains(.sharedSessionSyncEnvironmentVersion))
+    #expect(allCases.contains(.watchSyncClearGeneration))
     #expect(allCases.contains(.watchSyncAuthState))
     #expect(allCases.contains(.watchSyncMetadata))
     #expect(allCases.contains(.watchSyncAuthVersion))
@@ -44,10 +42,10 @@ struct ClerkKeychainKeyTests {
     #expect(ClerkKeychainKey.cachedClient.rawValue == "cachedClient")
     #expect(ClerkKeychainKey.cachedClientServerDate.rawValue == "cachedClientServerDate")
     #expect(ClerkKeychainKey.cachedEnvironment.rawValue == "cachedEnvironment")
-    #expect(ClerkKeychainKey.sharedSessionSyncAdopted.rawValue == "clerkSharedSessionSyncAdoptedV2")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthState.rawValue == "sharedSessionSyncAuthState")
     #expect(ClerkKeychainKey.sharedSessionSyncAuthVersion.rawValue == "sharedSessionSyncAuthVersion")
     #expect(ClerkKeychainKey.sharedSessionSyncEnvironmentVersion.rawValue == "sharedSessionSyncEnvironmentVersion")
+    #expect(ClerkKeychainKey.watchSyncClearGeneration.rawValue == "clerkWatchSyncClearGeneration")
     #expect(ClerkKeychainKey.watchSyncAuthState.rawValue == "watchSyncAuthState")
     #expect(ClerkKeychainKey.watchSyncMetadata.rawValue == "clerkWatchSyncMetadataV2")
     #expect(ClerkKeychainKey.watchSyncAuthVersion.rawValue == "watchSyncAuthVersion")

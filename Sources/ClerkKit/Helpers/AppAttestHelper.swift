@@ -7,24 +7,19 @@ import CryptoKit
 import DeviceCheck
 import Foundation
 
-/// A helper struct for handling Apple's DeviceCheck App Attest API.
 enum AppAttestHelper {
-  /// The key used to store the attestation key ID in the keychain.
   private static let keychainKey = ClerkKeychainKey.attestKeyId.rawValue
 
-  /// The API client for making network requests.
   @MainActor
   private static var apiClient: APIClient {
     Clerk.shared.dependencies.apiClient
   }
 
-  /// The keychain storage for secure data persistence.
   @MainActor
   private static var keychain: any KeychainStorage {
     Clerk.shared.dependencies.appLocalKeychain
   }
 
-  /// Errors that can occur during the attestation process.
   enum AttestationError: Error {
     case unsupportedDevice
     case unableToGetChallengeFromServer
@@ -50,9 +45,6 @@ enum AppAttestHelper {
     return challenge
   }
 
-  /// Performs device attestation using Apple's DeviceCheck framework.
-  /// - Returns: The generated key ID.
-  /// - Throws: An error if attestation fails.
   @discardableResult
   @MainActor
   static func performDeviceAttestation() async throws -> String {
@@ -75,12 +67,6 @@ enum AppAttestHelper {
     return keyId
   }
 
-  /// Verifies the attestation key with the server.
-  /// - Parameters:
-  ///   - keyId: The key ID generated during attestation.
-  ///   - challenge: The challenge string used for attestation.
-  ///   - attestation: The attestation data.
-  /// - Throws: An error if verification fails.
   @MainActor
   private static func verify(keyId: String, challenge: String, attestation: Data) async throws {
     let body = [
@@ -99,10 +85,6 @@ enum AppAttestHelper {
     try await apiClient.send(request)
   }
 
-  /// Creates an assertion using the attestation key.
-  /// - Parameter payload: The data payload to be signed.
-  /// - Returns: A base64-encoded assertion string.
-  /// - Throws: An error if assertion generation fails.
   @MainActor
   private static func createAssertion(payload: Data) async throws -> String {
     let keyId: String = if let existingKeyId = Self.keyId {
@@ -116,8 +98,6 @@ enum AppAttestHelper {
     return assertion.base64EncodedString()
   }
 
-  /// Performs assertion verification with the server.
-  /// - Throws: An error if the assertion verification fails.
   @MainActor
   static func performAssertion() async throws {
     guard DCAppAttestService.shared.isSupported else {
@@ -125,7 +105,7 @@ enum AppAttestHelper {
     }
 
     let challenge = try await getChallenge()
-    guard let clientId = await Clerk.shared.identityController.persistedClientID() else {
+    guard let clientId = Clerk.shared.identityController.persistedClientID() else {
       throw ClerkClientError(message: "Client ID is unavailable.", localizationBundle: .module)
     }
     let payload = try JSONEncoder().encode(["client_id": clientId, "challenge": challenge])
@@ -148,7 +128,6 @@ enum AppAttestHelper {
     try await apiClient.send(request)
   }
 
-  /// Checks whether a key ID is stored in the configured keychain.
   @MainActor
   static var hasKeyId: Bool {
     do {
@@ -158,14 +137,11 @@ enum AppAttestHelper {
     }
   }
 
-  /// Retrieves the stored attestation key ID from the keychain.
   @MainActor
   private static var keyId: String? {
     try? keychain.string(forKey: keychainKey)
   }
 
-  /// Removes the stored attestation key ID from the keychain.
-  /// - Throws: An error if key deletion fails.
   @MainActor
   static func removeKeyId() throws {
     try keychain.deleteItem(forKey: keychainKey)

@@ -461,9 +461,14 @@ extension Organization {
     )
   }
 
+  /// Lists the Organization's saved payment methods. Requires the `org:sys_billing:read` Permission.
+  ///
+  /// - Parameters:
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of payment methods to return per page. Defaults to `20`.
   @MainActor
-  public func getPaymentMethods(params: GetPaymentMethodsParams? = nil) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: params, orgId: id)
+  public func getPaymentMethods(page: Int = 1, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
+    try await billingService.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: id)
   }
 }
 

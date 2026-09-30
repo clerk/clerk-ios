@@ -9,6 +9,17 @@ let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
 extension Clerk {
   @MainActor
+  func seedIdentity(deviceToken: String?, client: Client? = nil, serverDate: Date? = nil) throws {
+    try dependencies.identityStore.save(ClerkIdentitySnapshot(
+      state: client == nil ? .cleared : .present,
+      deviceToken: deviceToken,
+      client: client,
+      serverDate: serverDate
+    ))
+    identityController.hydrate()
+  }
+
+  @MainActor
   func applyResponseClient(
     _ incoming: Client?,
     responseSequence: Int? = nil,
@@ -16,7 +27,7 @@ extension Clerk {
     clientResponseGeneration: ClientResponseGeneration? = nil,
     completedAuthFlow: TransferFlowResult? = nil
   ) {
-    identityController.applyLegacyResponseClient(
+    identityController.applyResponseClient(
       incoming,
       responseSequence: responseSequence,
       serverDate: serverDate,
@@ -33,10 +44,8 @@ extension Clerk {
 /// This function should be called at the start of each test suite or test to ensure proper isolation.
 @MainActor
 func configureClerkForTesting() {
-  // Configure Clerk with test publishable key
   Clerk.configure(publishableKey: testPublishableKey)
 
-  // Replace the container with a mock container that uses MockingURLProtocol
   setupMockAPIClient()
 
   // Unit tests should not inherit startup refreshes or session polling from configure().
@@ -71,7 +80,6 @@ func setupMockAPIClient() {
   )
 }
 
-/// Creates a mock API client configured to use MockingURLProtocol for testing.
 @MainActor
 func createMockAPIClient(
   baseURL: URL = mockBaseUrl,
@@ -93,7 +101,6 @@ func createMockAPIClient(
 }
 
 extension URLRequest {
-  /// Returns request body data from `httpBody` or `httpBodyStream`.
   private var requestBodyData: Data? {
     if let body = httpBody {
       return body
@@ -132,7 +139,6 @@ extension URLRequest {
       return nil
     }
 
-    // Parse URL-encoded form data: "key1=value1&key2=value2"
     var bodyDict: [String: String] = [:]
     let pairs = bodyString.split(separator: "&")
     for pair in pairs {
@@ -140,7 +146,6 @@ extension URLRequest {
       if parts.count == 2 {
         let key = String(parts[0])
         let value = String(parts[1])
-        // URL-decode the value
         bodyDict[key] = value.removingPercentEncoding ?? value
       }
     }
@@ -173,7 +178,6 @@ extension URLRequest {
     return bodyDict.isEmpty ? nil : bodyDict
   }
 
-  /// Decodes request body as `JSON`.
   var jsonBody: JSON? {
     guard let requestBodyData else { return nil }
     return try? JSONDecoder.clerkDecoder.decode(JSON.self, from: requestBodyData)

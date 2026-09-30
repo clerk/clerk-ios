@@ -51,35 +51,26 @@ struct ClientTests {
   }
 
   @Test
-  func refreshClientPreservesAdoptedAtomicIdentityWhenCanonicalResponseRequestsPreserve() async throws {
+  func refreshClientPreservesPersistedIdentityWhenCanonicalResponseRequestsPreserve() async throws {
     configureClerkForTesting()
     let keychain = InMemoryKeychain()
-    let identityStore = SharedSessionLocalIdentityStore(keychain: keychain)
-    let previous = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: "current-token",
-      client: Client.mock,
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-    try identityStore.save(previous)
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      atomicIdentityStore: identityStore,
       clientService: MockClientService(get: { nil })
     )
     Clerk.shared.client = nil
-    Clerk.shared.hydrateIdentityIfNeeded(previous)
+    try Clerk.shared.seedIdentity(deviceToken: "current-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
 
     let client = try await Clerk.shared.refreshClient()
 
-    let stored = try #require(try identityStore.load())
+    let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(client?.id == Client.mock.id)
     #expect(Clerk.shared.client?.id == Client.mock.id)
-    #expect(stored.state == previous.state)
-    #expect(stored.deviceToken == previous.deviceToken)
-    #expect(stored.client?.id == previous.client?.id)
-    #expect(stored.serverDate == previous.serverDate)
+    #expect(stored.state == .present)
+    #expect(stored.deviceToken == "current-token")
+    #expect(stored.client?.id == Client.mock.id)
+    #expect(stored.serverDate == Date(timeIntervalSince1970: 100))
   }
 
   @Test
@@ -148,9 +139,6 @@ struct ClientTests {
     Clerk.shared.cleanupManagers()
 
     let keychain = InMemoryKeychain()
-    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
 
     let expectedClient = Client(
@@ -168,7 +156,7 @@ struct ClientTests {
       keychain: keychain,
       clientService: service
     )
-    Clerk.shared.client = Client.mock
+    try Clerk.shared.seedIdentity(deviceToken: "old-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
 
     let client = try await Clerk.shared.updateDeviceToken(" new-token\n")
 
@@ -176,8 +164,9 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
+    let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
+    #expect(stored.deviceToken == "new-token")
+    #expect(stored.client?.id == expectedClient.id)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))
   }
 
@@ -187,9 +176,6 @@ struct ClientTests {
     Clerk.shared.cleanupManagers()
 
     let keychain = InMemoryKeychain()
-    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set(#require("cached-client".data(using: .utf8)), forKey: ClerkKeychainKey.cachedClient.rawValue)
-    try keychain.set("cached-date", forKey: ClerkKeychainKey.cachedClientServerDate.rawValue)
     try keychain.set(#require("cached-environment".data(using: .utf8)), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
 
     let expectedClient = Client(
@@ -207,7 +193,7 @@ struct ClientTests {
       keychain: keychain,
       clientService: service
     )
-    Clerk.shared.client = Client.mock
+    try Clerk.shared.seedIdentity(deviceToken: "old-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
     Clerk.shared.internalStateChanges.addObserver(ThrowingInternalStateChangeObserver())
 
     let client = try await Clerk.shared.updateDeviceToken(" new-token\n")
@@ -216,8 +202,9 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(service.skipClientIdValues == [true])
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedClientServerDate.rawValue) == false)
+    let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
+    #expect(stored.deviceToken == "new-token")
+    #expect(stored.client?.id == expectedClient.id)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue))
   }
 
@@ -227,7 +214,6 @@ struct ClientTests {
     Clerk.shared.cleanupManagers()
 
     let keychain = InMemoryKeychain()
-    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let oldClient = Client.mock
     let refreshedClient = Client(
       id: "refreshed-client",
@@ -246,7 +232,7 @@ struct ClientTests {
         )
       )
     )
-    Clerk.shared.client = oldClient
+    try Clerk.shared.seedIdentity(deviceToken: "old-token", client: oldClient)
     let observer = CoherentIdentityRecordingObserver()
     Clerk.shared.internalStateChanges.addObserver(observer)
 
@@ -300,79 +286,16 @@ struct ClientTests {
   }
 
   @Test
-  func setDeviceTokenReplacesMatchingLegacyTokenWithoutRefreshing() async throws {
+  func setDeviceTokenReplacesMatchingTokenKeepingTheClientWithoutRefreshing() async throws {
     let refreshed = LockIsolated(false)
-    let (clerk, keychain) = makeLegacyClerk(storedToken: "old-token", refreshed: refreshed)
-    clerk.client = Client.mock
+    let clerk = try makeDeviceTokenClerk(storedToken: "old-token", refreshed: refreshed)
     let previousGeneration = clerk.clientResponseGeneration
 
     let didSet = try await clerk.setDeviceToken(" new-token\n", expected: "old-token")
 
+    let stored = try #require(try clerk.dependencies.identityStore.load())
     #expect(didSet)
     #expect(clerk.deviceToken == "new-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
-    #expect(clerk.client?.id == Client.mock.id)
-    #expect(clerk.clientResponseGeneration != previousGeneration)
-    #expect(refreshed.value == false)
-  }
-
-  @Test
-  func setDeviceTokenLeavesLegacyTokenUnchangedWhenExpectedTokenIsStale() async throws {
-    let refreshed = LockIsolated(false)
-    let (clerk, keychain) = makeLegacyClerk(storedToken: "current-token", refreshed: refreshed)
-    clerk.client = Client.mock
-    let previousGeneration = clerk.clientResponseGeneration
-
-    let didSet = try await clerk.setDeviceToken("new-token", expected: "stale-token")
-
-    #expect(didSet == false)
-    #expect(clerk.deviceToken == "current-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "current-token")
-    #expect(clerk.client?.id == Client.mock.id)
-    #expect(clerk.clientResponseGeneration == previousGeneration)
-    #expect(refreshed.value == false)
-  }
-
-  @Test
-  func setDeviceTokenWithNilExpectedOnlyStoresWhenNoTokenExists() async throws {
-    let refreshed = LockIsolated(false)
-    let (clerk, keychain) = makeLegacyClerk(storedToken: nil, refreshed: refreshed)
-
-    #expect(try await clerk.setDeviceToken("first-token", expected: nil))
-    #expect(try await clerk.setDeviceToken("second-token", expected: nil) == false)
-
-    #expect(clerk.deviceToken == "first-token")
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "first-token")
-    #expect(refreshed.value == false)
-  }
-
-  @Test
-  func setDeviceTokenClearsLegacyTokenAndClient() async throws {
-    let refreshed = LockIsolated(false)
-    let (clerk, keychain) = makeLegacyClerk(storedToken: "old-token", refreshed: refreshed)
-    clerk.client = Client.mock
-
-    let didSet = try await clerk.setDeviceToken(nil, expected: "old-token")
-
-    #expect(didSet)
-    #expect(clerk.deviceToken == nil)
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-    #expect(clerk.client == nil)
-    #expect(refreshed.value == false)
-  }
-
-  @Test
-  func setDeviceTokenReplacesMatchingAtomicTokenWithoutRefreshing() async throws {
-    let refreshed = LockIsolated(false)
-    let (clerk, store) = try makeAtomicClerk(storedToken: "old-token", refreshed: refreshed)
-    let previousGeneration = clerk.clientResponseGeneration
-
-    let didSet = try await clerk.setDeviceToken("new-token", expected: "old-token")
-
-    let stored = try #require(try store.load())
-    #expect(didSet)
-    #expect(clerk.deviceToken == "new-token")
-    #expect(stored.state == .present)
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == Client.mock.id)
     #expect(clerk.client?.id == Client.mock.id)
@@ -381,91 +304,86 @@ struct ClientTests {
   }
 
   @Test
-  func setDeviceTokenLeavesAtomicTokenUnchangedWhenExpectedTokenIsStale() async throws {
+  func setDeviceTokenLeavesTheTokenUnchangedWhenExpectedTokenIsStale() async throws {
     let refreshed = LockIsolated(false)
-    let (clerk, store) = try makeAtomicClerk(storedToken: "current-token", refreshed: refreshed)
+    let clerk = try makeDeviceTokenClerk(storedToken: "current-token", refreshed: refreshed)
+    let previousGeneration = clerk.clientResponseGeneration
 
     let didSet = try await clerk.setDeviceToken("new-token", expected: "stale-token")
 
     #expect(didSet == false)
     #expect(clerk.deviceToken == "current-token")
-    #expect(try store.load()?.deviceToken == "current-token")
+    #expect(try clerk.dependencies.identityStore.load()?.deviceToken == "current-token")
     #expect(clerk.client?.id == Client.mock.id)
+    #expect(clerk.clientResponseGeneration == previousGeneration)
     #expect(refreshed.value == false)
   }
 
   @Test
-  func setDeviceTokenClearsAtomicTokenAndClient() async throws {
+  func setDeviceTokenWithNilExpectedOnlyStoresWhenNoTokenExists() async throws {
     let refreshed = LockIsolated(false)
-    let (clerk, store) = try makeAtomicClerk(storedToken: "old-token", refreshed: refreshed)
+    let clerk = try makeDeviceTokenClerk(storedToken: nil, refreshed: refreshed)
+
+    #expect(try await clerk.setDeviceToken("first-token", expected: nil))
+    #expect(try await clerk.setDeviceToken("second-token", expected: nil) == false)
+
+    #expect(clerk.deviceToken == "first-token")
+    #expect(try clerk.dependencies.identityStore.deviceToken() == "first-token")
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenReportsSuccessWhenTheTokenAlreadyMatches() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: "token", refreshed: refreshed)
+    let previousGeneration = clerk.clientResponseGeneration
+
+    #expect(try await clerk.setDeviceToken("token", expected: "token"))
+    #expect(clerk.clientResponseGeneration == previousGeneration)
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenClearsTheTokenAndClient() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: "old-token", refreshed: refreshed)
 
     let didSet = try await clerk.setDeviceToken(nil, expected: "old-token")
 
-    let stored = try #require(try store.load())
     #expect(didSet)
     #expect(clerk.deviceToken == nil)
-    #expect(stored.state == .cleared)
-    #expect(stored.deviceToken == nil)
-    #expect(stored.client == nil)
+    #expect(try clerk.dependencies.identityStore.deviceToken() == nil)
     #expect(clerk.client == nil)
     #expect(refreshed.value == false)
   }
 
   @Test
   func setDeviceTokenRejectsBlankToken() async throws {
-    let (clerk, keychain) = makeLegacyClerk(storedToken: "old-token", refreshed: LockIsolated(false))
+    let clerk = try makeDeviceTokenClerk(storedToken: "old-token", refreshed: LockIsolated(false))
 
     await #expect(throws: Clerk.DeviceTokenError.emptyToken) {
       try await clerk.setDeviceToken("   ", expected: "old-token")
     }
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "old-token")
+    #expect(try clerk.dependencies.identityStore.deviceToken() == "old-token")
   }
 
-  private func makeLegacyClerk(
+  private func makeDeviceTokenClerk(
     storedToken: String?,
     refreshed: LockIsolated<Bool>
-  ) -> (Clerk, InMemoryKeychain) {
+  ) throws -> Clerk {
     let clerk = Clerk()
-    let keychain = InMemoryKeychain()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: InMemoryKeychain(),
+      clientService: MockClientService(get: {
+        refreshed.setValue(true)
+        return nil
+      })
+    )
     if let storedToken {
-      try? keychain.set(storedToken, forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      try clerk.seedIdentity(deviceToken: storedToken, client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
     }
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      clientService: MockClientService(get: {
-        refreshed.setValue(true)
-        return nil
-      })
-    )
-    return (clerk, keychain)
-  }
-
-  private func makeAtomicClerk(
-    storedToken: String,
-    refreshed: LockIsolated<Bool>
-  ) throws -> (Clerk, SharedSessionLocalIdentityStore) {
-    let clerk = Clerk()
-    let keychain = InMemoryKeychain()
-    let store = SharedSessionLocalIdentityStore(keychain: keychain)
-    let identity = SharedSessionLocalIdentity(
-      state: .present,
-      deviceToken: storedToken,
-      client: Client.mock,
-      serverDate: Date(timeIntervalSince1970: 100)
-    )
-    try store.save(identity)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: keychain,
-      atomicIdentityStore: store,
-      clientService: MockClientService(get: {
-        refreshed.setValue(true)
-        return nil
-      })
-    )
-    clerk.hydrateIdentityIfNeeded(identity)
-    return (clerk, store)
+    return clerk
   }
 }
 
@@ -480,9 +398,7 @@ private final class CoherentIdentityRecordingObserver: ClerkInternalStateChangeO
 
   func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
     switch change {
-    case .clientDidChange:
-      guard !clerk.identityController.isApplyingIdentityTransition else { return }
-    case .deviceTokenDidChange, .identityDidChange:
+    case .clientDidChange, .deviceTokenDidChange, .identityDidChange:
       break
     case .environmentDidChange, .localStorageDidClear, .applicationDidEnterForeground:
       return
@@ -532,7 +448,7 @@ private final class DeviceTokenChangingClientService: ClientServiceProtocol {
 
   @MainActor
   func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
-    Clerk.shared.identityController.clearCachedClientStateAfterDeviceTokenChange()
+    _ = try await Clerk.shared.identityController.updateDeviceToken(to: "changed-token")
     return response
   }
 }

@@ -286,16 +286,11 @@ extension SessionServiceAndTokenFetcherTests {
 
   @Test
   func setActiveInvalidatesTemplateTokenBeforePublishingSessionChange() async throws {
-    let identityKeychain = Clerk.shared.dependencies.identityKeychain
-    let deviceTokenKey = ClerkKeychainKey.clerkDeviceToken.rawValue
-    let previousDeviceToken = try identityKeychain.string(forKey: deviceTokenKey)
-    try identityKeychain.set("set-active-ordering-token", forKey: deviceTokenKey)
+    let previousDeviceToken = Clerk.shared.identityController.currentDeviceToken
+    let clientBeforeSeeding = Clerk.shared.client
+    try Clerk.shared.seedIdentity(deviceToken: "set-active-ordering-token", client: clientBeforeSeeding)
     defer {
-      if let previousDeviceToken {
-        try? identityKeychain.set(previousDeviceToken, forKey: deviceTokenKey)
-      } else {
-        try? identityKeychain.deleteItem(forKey: deviceTokenKey)
-      }
+      try? Clerk.shared.seedIdentity(deviceToken: previousDeviceToken, client: clientBeforeSeeding)
     }
 
     var previousSession = Session.mock

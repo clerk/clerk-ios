@@ -11,14 +11,11 @@ import Testing
 struct VersionTests {
   @Test
   func clerkVersion() {
-    // Version should be a non-empty string
     #expect(!Clerk.sdkVersion.isEmpty)
 
-    // Version should follow semantic versioning format (x.y.z)
     let parts = Clerk.sdkVersion.split(separator: ".")
-    #expect(parts.count >= 2) // At least major.minor
+    #expect(parts.count >= 2)
 
-    // Each part should be numeric
     for part in parts {
       #expect(part.allSatisfy { $0.isNumber })
     }

@@ -5,18 +5,12 @@
 
 import Foundation
 
-/// Container that holds all dependencies for the Clerk SDK.
-///
-/// This class manages the lifecycle of all dependencies and provides them
-/// through the `Dependencies` protocol for dependency injection.
 final class DependencyContainer: Dependencies {
   private struct KeychainStorages {
     let shared: any KeychainStorage
     let appLocal: any KeychainStorage
-    let identity: any KeychainStorage
-    let legacyAppLocal: (any KeychainStorage)?
-    let localIdentityStore: (any SharedSessionLocalIdentityStoring)?
-    let shouldHydrateProvisionalLegacyClient: Bool
+    let identityStore: ClerkIdentityStore
+    let identityIsInAccessGroup: Bool
   }
 
   // MARK: - Core Dependencies
@@ -24,14 +18,8 @@ final class DependencyContainer: Dependencies {
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
-  let identityKeychain: any KeychainStorage
-  let legacyAppLocalKeychain: (any KeychainStorage)?
-  let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
-  let atomicIdentityIO: SharedSessionLocalIdentityIO?
-  let sharedSessionOwnerIdentifier: String?
-  let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
-  let shouldHydrateProvisionalLegacyClient: Bool
-  private let persistentAdoptionEnabled: Bool
+  let identityStore: ClerkIdentityStore
+  let identityIsInAccessGroup: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
@@ -78,13 +66,10 @@ final class DependencyContainer: Dependencies {
     publishableKey: String,
     options: Clerk.Options,
     runtimeScope: ClerkRuntimeScope,
-    deferSharedSessionAdoption: Bool = false,
-    persistentAdoptionEnabledOverride: Bool? = nil,
+    probesAccessGroupOverride: Bool? = nil,
     keychainStorageOverride: (any KeychainStorage)? = nil,
     ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
-    // Phase 1: Core infrastructure (no dependencies)
-    // Create and configure ConfigurationManager first (needed to determine baseURL)
     configurationManager = ConfigurationManager()
 
     // Only configure if publishableKey is not empty (temporary containers use empty key)
@@ -95,65 +80,34 @@ final class DependencyContainer: Dependencies {
 
     sessionStatusLogger = SessionStatusLogger()
 
-    // Determine baseURL from configured manager (use default if not configured)
     // Note: frontendApiUrl is always extracted from the publishable key, even when using a proxy,
     // because it's needed for passkey authentication which requires the original Clerk domain
     // (not the proxy domain) as the relying party identifier.
     let baseURL: URL = if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
       configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
     } else {
-      // Temporary container fallback
       URL(string: "https://clerk.clerk.dev")!
     }
 
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    sharedSessionOwnerIdentifier = ownerIdentifierProvider()?
-      .trimmingCharacters(in: .whitespacesAndNewlines)
-    persistentAdoptionEnabled = persistentAdoptionEnabledOverride
-      ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests)
-    sharedSessionOwnerSlotClearRecovery = if persistentAdoptionEnabled {
-      Self.makeOwnerSlotClearRecovery(
-        configuration: configurationManager,
-        ownerIdentifier: sharedSessionOwnerIdentifier
-      )
-    } else {
-      nil
-    }
-    if persistentAdoptionEnabled, !publishableKey.isEmpty {
-      do {
-        try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
-          in: sharedSessionOwnerSlotClearRecovery
-        )
-      } catch let error as KeychainError where error.isMissingEntitlement {
-        // Recovery remains journaled and is retried after the entitlement is fixed.
-      }
-    }
-    let keychainStorages = try Self.makeKeychainStorages(
+    let keychainStorages = Self.makeKeychainStorages(
       options: options,
-      frontendApiUrl: configurationManager.frontendApiUrl,
-      publishableKey: configurationManager.publishableKey,
-      ownerIdentifier: sharedSessionOwnerIdentifier,
-      usePersistentAdoptionState: persistentAdoptionEnabled,
-      performPersistentAdoption: !deferSharedSessionAdoption,
+      ownerIdentifier: ownerIdentifierProvider()?.trimmingCharacters(in: .whitespacesAndNewlines),
+      probesAccessGroup: probesAccessGroupOverride
+        ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests),
       keychainStorageOverride: keychainStorageOverride
     )
     keychain = keychainStorages.shared
     appLocalKeychain = keychainStorages.appLocal
-    identityKeychain = keychainStorages.identity
-    legacyAppLocalKeychain = keychainStorages.legacyAppLocal
-    atomicIdentityStore = keychainStorages.localIdentityStore
-    shouldHydrateProvisionalLegacyClient = keychainStorages.shouldHydrateProvisionalLegacyClient
-    atomicIdentityIO = keychainStorages.localIdentityStore.map {
-      SharedSessionLocalIdentityIO(store: $0)
-    }
+    identityStore = keychainStorages.identityStore
+    identityIsInAccessGroup = keychainStorages.identityIsInAccessGroup
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
     biometricCredentialStore = BiometricCredentialLocalStore(keychain: appLocalKeychain)
 
     magicLinkStore = MagicLinkStore(keychain: appLocalKeychain)
 
-    // Phase 2: API client (depends on networkingPipeline)
     let pipeline = networkingPipeline
     apiClient = APIClient(baseURL: baseURL, runtimeScope: runtimeScope) { @Sendable configuration in
       configuration.pipeline = pipeline
@@ -167,13 +121,11 @@ final class DependencyContainer: Dependencies {
       ]
     }
 
-    // Phase 3: Telemetry collector (depends on options)
     telemetryCollector = Self.createTelemetryCollector(
       publishableKey: configurationManager.publishableKey,
       options: options
     )
 
-    // Phase 4: Services (depend on apiClient and other dependencies)
     clientService = ClientService(apiClient: apiClient)
     hostedAuthService = HostedAuthService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
@@ -197,162 +149,59 @@ final class DependencyContainer: Dependencies {
 
   private static func makeKeychainStorages(
     options: Clerk.Options,
-    frontendApiUrl: String,
-    publishableKey: String,
     ownerIdentifier: String?,
-    usePersistentAdoptionState: Bool,
-    performPersistentAdoption: Bool,
+    probesAccessGroup: Bool,
     keychainStorageOverride: (any KeychainStorage)?
-  ) throws -> KeychainStorages {
+  ) -> KeychainStorages {
     if let keychainStorageOverride {
-      guard options.sharedSessionSync == nil,
-            !usePersistentAdoptionState
-      else {
-        throw ClerkClientError(
-          message: "Injected Keychain storage cannot be used with persistent shared-session adoption.",
-          localizationBundle: .module
-        )
-      }
-
       return KeychainStorages(
         shared: keychainStorageOverride,
         appLocal: keychainStorageOverride,
-        identity: keychainStorageOverride,
-        legacyAppLocal: nil,
-        localIdentityStore: nil,
-        shouldHydrateProvisionalLegacyClient: false
+        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride),
+        identityIsInAccessGroup: false
       )
     }
 
     let config = options.keychainConfig
-    let shared = makeKeychainStorage(config: config)
-    let syncEnabled = options.sharedSessionSync != nil
-    if syncEnabled, config.normalizedAccessGroup == nil {
-      throw ClerkClientError(
-        message: "Shared session sync requires a nonempty Keychain access group.",
-        localizationBundle: .module
-      )
-    }
-    if syncEnabled, ownerIdentifier?.isEmpty != false {
-      throw ClerkClientError(
-        message: "Shared session sync requires a nonempty application bundle identifier.",
-        localizationBundle: .module
-      )
-    }
-
-    let configuredAppLocal: any KeychainStorage = if config.normalizedAccessGroup != nil {
-      makeKeychainStorage(service: config.service, accessGroup: nil)
-    } else {
-      shared
-    }
-    let previousAppLocal = makePreviousAppLocalKeychain(
-      configuredService: config.service,
-      bundleIdentifier: ownerIdentifier,
-      configuredAppLocal: configuredAppLocal
-    )
-    let namespace = SharedSessionNamespace(
-      frontendApiUrl: frontendApiUrl,
-      publishableKey: publishableKey
-    )
-    let stableIdentity = makeKeychainStorage(
-      service: stableIdentityService(
-        configuredService: config.service,
-        instanceFingerprint: namespace.fingerprint,
-        ownerIdentifier: ownerIdentifier
-      ),
-      accessGroup: nil
-    )
-
-    if syncEnabled {
-      var shouldHydrateProvisionalLegacyClient = false
-      if usePersistentAdoptionState, performPersistentAdoption {
-        let wasAdopted = try SharedSessionSyncAdoption.isAdopted(in: stableIdentity)
-        let adoption = SharedSessionSyncAdoption(
-          destinationIdentity: stableIdentity,
-          destinationPrivate: configuredAppLocal,
-          configuredAppLocalIdentity: configuredAppLocal,
-          previousAppLocalIdentity: previousAppLocal,
-          legacyShared: shared
-        )
-        if try adoption.migrateToleratingMissingSharedEntitlement() {
-          shouldHydrateProvisionalLegacyClient = !wasAdopted
-        }
-      }
+    let configured = makeKeychainStorage(config: config)
+    guard config.normalizedAccessGroup != nil else {
       return KeychainStorages(
-        shared: shared,
-        appLocal: configuredAppLocal,
-        identity: stableIdentity,
-        legacyAppLocal: previousAppLocal,
-        localIdentityStore: SharedSessionLocalIdentityStore(keychain: stableIdentity),
-        shouldHydrateProvisionalLegacyClient: shouldHydrateProvisionalLegacyClient
+        shared: configured,
+        appLocal: configured,
+        identityStore: ClerkIdentityStore(keychain: configured),
+        identityIsInAccessGroup: false
       )
     }
 
-    let wasAdopted = usePersistentAdoptionState
-      ? try SharedSessionSyncAdoption.isAdopted(in: stableIdentity)
-      : false
-    let adoptedIdentityStore = wasAdopted
-      ? SharedSessionLocalIdentityStore(keychain: stableIdentity)
-      : nil
+    // Queries without an access group span every group the app belongs to, so private state
+    // needs a service of its own to stay out of the shared group.
+    let allGroups = makeKeychainStorage(service: config.service, accessGroup: nil)
+    let appLocal = MigratingKeychainStorage(
+      primary: makeKeychainStorage(service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app", accessGroup: nil),
+      fallback: allGroups
+    )
+    let isInGroup = !probesAccessGroup || canAccessAccessGroup(configured)
     return KeychainStorages(
-      shared: shared,
-      appLocal: wasAdopted ? configuredAppLocal : shared,
-      identity: wasAdopted ? stableIdentity : shared,
-      legacyAppLocal: previousAppLocal,
-      localIdentityStore: adoptedIdentityStore,
-      shouldHydrateProvisionalLegacyClient: false
+      shared: configured,
+      appLocal: appLocal,
+      identityStore: ClerkIdentityStore(keychain: isInGroup ? configured : allGroups, clientKeychain: appLocal),
+      identityIsInAccessGroup: isInGroup
     )
   }
 
-  /// Removes an interrupted shared-session publication before installing a non-shared runtime.
-  @MainActor
-  func discardPendingPublicationWhenSharedSyncDisabled() throws {
-    guard configurationManager.options.sharedSessionSync == nil else { return }
-    try atomicIdentityStore?.clearPendingPublication()
-  }
-
-  @MainActor
-  func markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded() throws {
-    guard persistentAdoptionEnabled,
-          configurationManager.options.sharedSessionSync != nil
-    else {
-      return
+  private static func canAccessAccessGroup(_ keychain: any KeychainStorage) -> Bool {
+    do {
+      _ = try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+      return true
+    } catch let error as KeychainError where error.isMissingEntitlement {
+      ClerkLogger.error(
+        "Clerk cannot access the configured Keychain access group, so authentication stays local to this app. Add the access group to this app's Keychain Sharing entitlement, then relaunch."
+      )
+      return false
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to read the configured Keychain access group")
+      return true
     }
-
-    try SharedSessionSyncAdoption(
-      destinationIdentity: identityKeychain,
-      destinationPrivate: appLocalKeychain,
-      configuredAppLocalIdentity: appLocalKeychain,
-      previousAppLocalIdentity: legacyAppLocalKeychain,
-      legacyShared: keychain
-    ).markAdoptedWithoutMigratingCredentials()
-  }
-
-  private static func makePreviousAppLocalKeychain(
-    configuredService: String,
-    bundleIdentifier: String?,
-    configuredAppLocal: any KeychainStorage
-  ) -> (any KeychainStorage)? {
-    guard let bundleIdentifier, !bundleIdentifier.isEmpty else {
-      return nil
-    }
-    guard bundleIdentifier != configuredService else {
-      return configuredAppLocal
-    }
-    return makeKeychainStorage(service: bundleIdentifier, accessGroup: nil)
-  }
-
-  static func stableIdentityService(
-    configuredService: String,
-    instanceFingerprint: String,
-    ownerIdentifier: String?
-  ) -> String {
-    let owner = if let ownerIdentifier, !ownerIdentifier.isEmpty {
-      ownerIdentifier
-    } else {
-      configuredService
-    }
-    return "\(owner).clerk.identity.v2.\(instanceFingerprint)"
   }
 
   private static func makeKeychainStorage(
@@ -408,7 +257,6 @@ final class DependencyContainer: Dependencies {
       disableThrottling: false
     )
 
-    // Determine instance type from publishable key
     let instanceType: InstanceEnvironmentType = publishableKey.starts(with: "pk_live_") ? .production : .development
 
     return TelemetryCollector(
@@ -419,49 +267,6 @@ final class DependencyContainer: Dependencies {
         instanceType: instanceType,
         telemetryEnabled: options.telemetryEnabled
       )
-    )
-  }
-}
-
-extension DependencyContainer {
-  @MainActor
-  static func makeOwnerSlotClearRecovery(
-    configuration: ConfigurationManager,
-    ownerIdentifier: String?
-  ) -> SharedSessionOwnerSlotClearRecovery.Context? {
-    let namespace = SharedSessionNamespace(
-      frontendApiUrl: configuration.frontendApiUrl,
-      publishableKey: configuration.publishableKey
-    )
-    let intent: SharedSessionOwnerSlotClearRecovery.Intent? = if configuration.options.sharedSessionSync != nil,
-                                                                 let ownerIdentifier,
-                                                                 !ownerIdentifier.isEmpty,
-                                                                 let accessGroup = configuration.options.keychainConfig.normalizedAccessGroup
-    {
-      SharedSessionOwnerSlotClearRecovery.Intent(
-        localIdentityService: stableIdentityService(
-          configuredService: configuration.options.keychainConfig.service,
-          instanceFingerprint: namespace.fingerprint,
-          ownerIdentifier: ownerIdentifier
-        ),
-        slotService: SharedSessionOwnerSlotStore.service(
-          configuredService: configuration.options.keychainConfig.service,
-          instanceFingerprint: namespace.fingerprint
-        ),
-        slotAccessGroup: accessGroup,
-        slotAccount: SharedSessionOwnerSlotStore.account(
-          instanceFingerprint: namespace.fingerprint,
-          ownerIdentifier: ownerIdentifier
-        ),
-        instanceFingerprint: namespace.fingerprint,
-        ownerIdentifier: ownerIdentifier
-      )
-    } else {
-      nil
-    }
-    return SharedSessionOwnerSlotClearRecovery.liveContext(
-      ownerIdentifier: ownerIdentifier,
-      currentIntent: intent
     )
   }
 }

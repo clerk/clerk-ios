@@ -108,7 +108,6 @@ struct ProxyConfigurationTests {
     let url = try #require(URL(string: "https://proxy.example.com/__clerk"))
     let config = try #require(ProxyConfiguration(url: url))
 
-    // Path already starts with proxy segments
     let result = config.prefixedPath(for: "/__clerk/v1/client")
     #expect(result == "/__clerk/v1/client")
   }
@@ -154,7 +153,6 @@ struct ProxyConfigurationTests {
     let url = try #require(URL(string: "https://proxy.example.com/__clerk/v1"))
     let config = try #require(ProxyConfiguration(url: url))
 
-    // Path doesn't start with all proxy segments
     let result = config.prefixedPath(for: "/v1/client")
     #expect(result == "/__clerk/v1/v1/client")
   }

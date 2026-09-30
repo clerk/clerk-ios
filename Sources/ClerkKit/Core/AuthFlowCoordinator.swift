@@ -116,7 +116,6 @@ struct AuthFlowCoordinator {
     let sessionId: String
     var origin: TargetOrigin
 
-    /// Whether this work has already presented or moved past enrollment.
     var hasResolvedEnrollmentStep = false
 
     var completion: TransferFlowResult? {

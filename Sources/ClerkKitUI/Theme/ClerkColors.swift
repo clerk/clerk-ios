@@ -150,7 +150,6 @@ extension ClerkTheme {
       self.secondaryButtonForeground = secondaryButtonForeground ?? foreground
       self.shadow = shadow
 
-      // Derived tokens
       primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
       self.border = border.opacity(0.06)
       buttonBorder = border.opacity(0.08)

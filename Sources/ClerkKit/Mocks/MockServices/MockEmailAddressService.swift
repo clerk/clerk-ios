@@ -7,21 +7,13 @@
 
 import Foundation
 
-/// Mock implementation of `EmailAddressServiceProtocol` for testing and previews.
-///
-/// Allows customizing the behavior of service methods through handler closures.
-/// All methods return default mock values if handlers are not provided.
 package final class MockEmailAddressService: EmailAddressServiceProtocol {
-  /// Custom handler for the `create(email:)` method.
   package nonisolated(unsafe) var createHandler: ((String) async throws -> EmailAddress)?
 
-  /// Custom handler for the `prepareVerification(emailAddressId:strategy:)` method.
   package nonisolated(unsafe) var prepareVerificationHandler: ((String, EmailAddress.PrepareStrategy) async throws -> EmailAddress)?
 
-  /// Custom handler for the `attemptVerification(emailAddressId:strategy:)` method.
   package nonisolated(unsafe) var attemptVerificationHandler: ((String, EmailAddress.AttemptStrategy) async throws -> EmailAddress)?
 
-  /// Custom handler for the `destroy(emailAddressId:)` method.
   package nonisolated(unsafe) var destroyHandler: ((String) async throws -> DeletedObject)?
 
   package init(

@@ -85,7 +85,6 @@ struct ClerkLoggerTests {
 
   @Test
   func info_WithForceTrue_DoesNotTriggerErrorCallback() {
-    // Use LockIsolated for thread-safe mutation in async context
     let errorCallbackInvoked = LockIsolated(false)
 
     let errorHandler: @Sendable (LogEntry) -> Void = { _ in
@@ -99,7 +98,6 @@ struct ClerkLoggerTests {
     )
     Clerk.configure(publishableKey: testPublishableKey, options: options)
 
-    // Call info() with force: true
     ClerkLogger.info("Test message", force: true)
 
     // The error callback should NOT be invoked for info logs, even with force: true
@@ -146,8 +144,8 @@ struct ClerkLoggerTests {
       options: options
     )
 
-    await #expect(throws: ClerkClientError.self) {
-      try await Clerk.clearLocalClerkStorageStrictly(in: dependencies)
+    #expect(throws: ClerkClientError.self) {
+      try Clerk.clearLocalClerkStorageStrictly(in: dependencies)
     }
 
     let deadline = ContinuousClock.now + .seconds(1)

@@ -1,7 +1,6 @@
 import Foundation
 import Security
 
-/// Errors that can occur when interacting with the keychain.
 enum KeychainError: Error, LocalizedError {
   case unexpectedStatus(OSStatus)
   case invalidStringEncoding
@@ -38,7 +37,6 @@ enum KeychainError: Error, LocalizedError {
   }
 }
 
-/// Lightweight interface describing the operations the Clerk SDK needs from a keychain.
 protocol KeychainStorage: Sendable {
   func set(_ data: Data, forKey key: String) throws
   func data(forKey key: String) throws -> Data?

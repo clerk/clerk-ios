@@ -7,22 +7,12 @@
 
 import Foundation
 
-/// A dependency container for tests and previews that allows injecting custom mock services.
-///
-/// This container allows replacing service implementations with mocks for
-/// testing UI behavior in SwiftUI previews or unit testing without making real API calls.
-/// It can be used in both test code (via `@testable import ClerkKit`) and preview code.
 final class MockDependencyContainer: Dependencies {
   let networkingPipeline: NetworkingPipeline
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
-  let identityKeychain: any KeychainStorage
-  let legacyAppLocalKeychain: (any KeychainStorage)?
-  let atomicIdentityStore: (any SharedSessionLocalIdentityStoring)?
-  let atomicIdentityIO: SharedSessionLocalIdentityIO?
-  let sharedSessionOwnerIdentifier: String?
-  let sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context?
-  let shouldHydrateProvisionalLegacyClient: Bool
+  let identityStore: ClerkIdentityStore
+  let identityIsInAccessGroup: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
@@ -48,39 +38,13 @@ final class MockDependencyContainer: Dependencies {
   let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
 
-  /// Creates a dependency container with the provided API client and optional custom services.
-  ///
-  /// - Parameters:
-  ///   - apiClient: The API client to use (typically a mock for tests/previews).
-  ///   - keychain: Optional keychain storage (defaults to InMemoryKeychain).
-  ///   - biometricCredentialKeyManager: Optional biometric-credential key manager (defaults to MockBiometricCredentialKeyManager).
-  ///   - biometricCredentialStore: Optional biometric credential store.
-  ///   - telemetryCollector: Optional telemetry collector (defaults to NoOpTelemetryCollector).
-  ///   - clientService: Optional custom client service (defaults to MockClientService with Client.mock).
-  ///   - hostedAuthService: Optional custom hosted authentication service (defaults to MockHostedAuthService).
-  ///   - userService: Optional custom user service (defaults to MockUserService).
-  ///   - signInService: Optional custom sign-in service (defaults to MockSignInService).
-  ///   - signUpService: Optional custom sign-up service (defaults to MockSignUpService).
-  ///   - sessionService: Optional custom session service (defaults to MockSessionService).
-  ///   - magicLinkService: Optional custom magic-link service (defaults to MockMagicLinkService).
-  ///   - passkeyService: Optional custom passkey service (defaults to MockPasskeyService).
-  ///   - biometricCredentialService: Optional custom biometric-credential service (defaults to MockBiometricCredentialService).
-  ///   - organizationService: Optional custom organization service (defaults to MockOrganizationService).
-  ///   - billingService: Optional custom billing service (defaults to MockBillingService).
-  ///   - environmentService: Optional custom environment service (defaults to MockEnvironmentService with Clerk.Environment.mock).
-  ///   - emailAddressService: Optional custom email address service (defaults to MockEmailAddressService).
-  ///   - phoneNumberService: Optional custom phone number service (defaults to MockPhoneNumberService).
-  ///   - externalAccountService: Optional custom external account service (defaults to MockExternalAccountService).
   init(
     apiClient: APIClient,
     keychain: (any KeychainStorage)? = nil,
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
-    legacyAppLocalKeychain: (any KeychainStorage)? = nil,
-    atomicIdentityStore: (any SharedSessionLocalIdentityStoring)? = nil,
-    sharedSessionOwnerIdentifier: String? = Bundle.main.bundleIdentifier,
-    sharedSessionOwnerSlotClearRecovery: SharedSessionOwnerSlotClearRecovery.Context? = nil,
-    shouldHydrateProvisionalLegacyClient: Bool = false,
+    clientKeychain: (any KeychainStorage)? = nil,
+    identityIsInAccessGroup: Bool = false,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
@@ -105,15 +69,8 @@ final class MockDependencyContainer: Dependencies {
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
     self.appLocalKeychain = resolvedAppLocalKeychain
-    self.identityKeychain = identityKeychain ?? self.appLocalKeychain
-    self.legacyAppLocalKeychain = legacyAppLocalKeychain
-    self.atomicIdentityStore = atomicIdentityStore
-    atomicIdentityIO = atomicIdentityStore.map {
-      SharedSessionLocalIdentityIO(store: $0)
-    }
-    self.sharedSessionOwnerIdentifier = sharedSessionOwnerIdentifier
-    self.sharedSessionOwnerSlotClearRecovery = sharedSessionOwnerSlotClearRecovery
-    self.shouldHydrateProvisionalLegacyClient = shouldHydrateProvisionalLegacyClient
+    identityStore = ClerkIdentityStore(keychain: identityKeychain ?? resolvedKeychain, clientKeychain: clientKeychain)
+    self.identityIsInAccessGroup = identityIsInAccessGroup
     self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
     self.biometricCredentialStore =
       biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)
@@ -123,7 +80,6 @@ final class MockDependencyContainer: Dependencies {
     magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
 
-    // Use custom services if provided, otherwise use mock services
     self.clientService = clientService ?? MockClientService()
     self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()

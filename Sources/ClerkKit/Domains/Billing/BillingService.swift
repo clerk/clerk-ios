@@ -8,14 +8,14 @@ import Foundation
 protocol BillingServiceProtocol: Sendable {
   @MainActor func getPaymentAttempts(params: GetPaymentAttemptsParams) async throws -> ClerkPaginatedResponse<BillingPayment>
   @MainActor func getPaymentAttempt(params: GetPaymentAttemptParams) async throws -> BillingPayment
-  @MainActor func getPlans(params: GetPlansParams?) async throws -> ClerkPaginatedResponse<BillingPlan>
+  @MainActor func getPlans(params: GetPlansParams) async throws -> ClerkPaginatedResponse<BillingPlan>
   @MainActor func getPlan(params: GetPlanParams) async throws -> BillingPlan
   @MainActor func getSubscription(params: GetSubscriptionParams) async throws -> BillingSubscription
   @MainActor func getStatements(params: GetStatementsParams) async throws -> ClerkPaginatedResponse<BillingStatement>
   @MainActor func getStatement(params: GetStatementParams) async throws -> BillingStatement
   @MainActor func getCreditBalance(params: GetCreditBalanceParams) async throws -> BillingCreditBalance
   @MainActor func getCreditHistory(params: GetCreditHistoryParams) async throws -> ClerkPaginatedResponse<BillingCreditLedger>
-  @MainActor func getPaymentMethods(params: GetPaymentMethodsParams?, orgId: String?) async throws -> ClerkPaginatedResponse<BillingPaymentMethod>
+  @MainActor func getPaymentMethods(params: GetPaymentMethodsParams, orgId: String?) async throws -> ClerkPaginatedResponse<BillingPaymentMethod>
 }
 
 final class BillingService: BillingServiceProtocol {
@@ -30,7 +30,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClerkPaginatedResponse<BillingPayment>>(
       path: Self.path("/payment_attempts", orgId: params.orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(initialPage: params.initialPage, pageSize: params.pageSize)
+      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value
@@ -48,16 +48,16 @@ final class BillingService: BillingServiceProtocol {
   }
 
   @MainActor
-  func getPlans(params: GetPlansParams?) async throws -> ClerkPaginatedResponse<BillingPlan> {
+  func getPlans(params: GetPlansParams) async throws -> ClerkPaginatedResponse<BillingPlan> {
     var query = sessionQuery()
-    query.append(("payer_type", value: params?.for == .organization ? "org" : "user"))
-    if let orgId = params?.orgId {
+    query.append(("payer_type", value: params.for == .organization ? "org" : "user"))
+    if let orgId = params.orgId {
       query.append(("org_id", value: orgId))
     }
-    if let minSeats = params?.minSeats {
+    if let minSeats = params.minSeats {
       query.append(("min_seats", value: String(minSeats)))
     }
-    query += paginationQuery(initialPage: params?.initialPage, pageSize: params?.pageSize)
+    query += paginationQuery(page: params.page, pageSize: params.pageSize)
 
     let request = Request<ClerkPaginatedResponse<BillingPlan>>(
       path: "/v1/billing/plans",
@@ -95,7 +95,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingStatement>>>(
       path: Self.path("/statements", orgId: params.orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(initialPage: params.initialPage, pageSize: params.pageSize)
+      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response
@@ -128,18 +128,18 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingCreditLedger>>>(
       path: Self.path("/credits/history", orgId: params.orgId),
       method: .get,
-      query: sessionQuery()
+      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response
   }
 
   @MainActor
-  func getPaymentMethods(params: GetPaymentMethodsParams?, orgId: String?) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
+  func getPaymentMethods(params: GetPaymentMethodsParams, orgId: String?) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingPaymentMethod>>>(
       path: Self.path("/payment_methods", orgId: orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(initialPage: params?.initialPage, pageSize: params?.pageSize)
+      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response
@@ -159,12 +159,10 @@ final class BillingService: BillingServiceProtocol {
     [("_clerk_session_id", value: Clerk.shared.session?.id)]
   }
 
-  private func paginationQuery(initialPage: Int?, pageSize: Int?) -> [(String, String?)] {
-    let resolvedPageSize = pageSize ?? 10
-    let resolvedInitialPage = initialPage ?? 1
-    return [
-      ("limit", value: String(resolvedPageSize)),
-      ("offset", value: String((resolvedInitialPage - 1) * resolvedPageSize)),
+  private func paginationQuery(page: Int, pageSize: Int) -> [(String, String?)] {
+    [
+      ("limit", value: String(pageSize)),
+      ("offset", value: String(max(page - 1, 0) * pageSize)),
     ]
   }
 }
