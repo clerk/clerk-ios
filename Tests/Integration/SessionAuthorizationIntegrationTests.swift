@@ -8,10 +8,6 @@ import Foundation
 import Testing
 
 /// Live `has()` coverage against the with-billing instance.
-///
-/// Lane 4 (`o:<slug>`) asserts true only when `free_org` has a feature. Until that
-/// plan carries a feature, the test still signs in, creates an org, and prints
-/// `LIVE_HAS orgFeature` so the restamp can see the miss.
 @MainActor
 @Suite(.serialized)
 struct SessionAuthorizationIntegrationTests {
@@ -94,13 +90,17 @@ struct SessionAuthorizationIntegrationTests {
 
       let hasAdmin = orgSession.checkAuthorization(role: "org:admin")
       let hasMembershipRead = orgSession.checkAuthorization(permission: "org:sys_memberships:read")
-      let orgFeatureSlug = freeOrgFeatures.first ?? "feature_one"
-      let hasOrgFeature = orgSession.checkAuthorization(.init(feature: "o:\(orgFeatureSlug)"))
       print("LIVE_HAS orgRole admin=\(hasAdmin)")
       print("LIVE_HAS orgPermission membershipsRead=\(hasMembershipRead)")
-      print("LIVE_HAS orgFeature o:\(orgFeatureSlug)=\(hasOrgFeature)")
-      if !freeOrgFeatures.isEmpty {
+
+      if let orgFeatureSlug = freeOrgFeatures.first {
+        let hasOrgFeature = orgSession.checkAuthorization(.init(feature: "o:\(orgFeatureSlug)"))
+        print("LIVE_HAS orgFeature o:\(orgFeatureSlug)=\(hasOrgFeature)")
         #expect(hasOrgFeature)
+      } else {
+        withKnownIssue("free_org on the with-billing instance has no features, so a new org has no o: feature to check") {
+          Issue.record("free_org has no features")
+        }
       }
 
       try await org.destroy()
