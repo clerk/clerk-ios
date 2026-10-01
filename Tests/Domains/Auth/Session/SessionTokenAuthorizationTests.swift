@@ -56,6 +56,22 @@ struct SessionTokenAuthorizationTests {
     #expect(clerk.has(feature: "widgets"))
   }
 
+  @Test
+  func emptyOrganizationIdKeepsTheCurrentToken() async throws {
+    let now = Int(Date.now.timeIntervalSince1970)
+    var session = Session.mock
+    let cached = try token(issuedAt: now, allowed: true)
+    session.lastActiveToken = cached
+    let fetches = LockIsolated(0)
+    let clerk = try await configure(session: session, response: nil, onFetch: { _ in fetches.withValue { $0 += 1 } })
+    var incoming = try #require(clerk.client)
+    incoming.sessions[0].lastActiveOrganizationId = ""
+    clerk.applyResponseClient(incoming)
+
+    #expect(try await clerk.auth.getToken() == cached.jwt)
+    #expect(fetches.value == 0)
+  }
+
   enum RejectedToken: CaseIterable {
     case template, anotherSession, anotherOrganization, missingSessionId, malformed
   }

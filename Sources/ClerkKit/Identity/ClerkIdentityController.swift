@@ -170,14 +170,15 @@ extension ClerkIdentityController {
     try store?.delete()
   }
 
-  func commit(
+  private func commit(
     _ identity: ClerkIdentitySnapshot,
     fenceResponses: Bool = false,
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
     prepareSessionTokensForIdentityChange(to: identity)
     let tokenChanged = identity.deviceToken != currentDeviceToken
-    var identity = reconcilingSessionTokens(in: identity)
+    let reconciled = reconcilingSessionTokens(in: identity)
+    var identity = reconciled.identity
     if !tokenChanged, let watermark = lastServerDate, identity.serverDate.map({ $0 < watermark }) ?? true {
       identity = ClerkIdentitySnapshot(
         state: identity.state,
@@ -196,6 +197,7 @@ extension ClerkIdentityController {
         ClerkLogger.logError(error, message: "Failed to cache the Clerk client")
       }
     }
+    invalidatedSessionTokens.subtract(reconciled.reusableSessionIds)
     apply(identity, fenceResponses: fenceResponses || tokenChanged, authFlowUpdate: authFlowUpdate)
   }
 

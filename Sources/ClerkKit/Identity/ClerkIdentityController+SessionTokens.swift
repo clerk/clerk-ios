@@ -53,7 +53,6 @@ extension ClerkIdentityController {
   }
 
   func currentSession(for request: SessionTokenRequest) -> Session? {
-    adoptStoredDeviceToken()
     guard request.isCurrentActiveSession, isCurrent(request.tokenGeneration),
           request.clientResponseGeneration == clientResponseGeneration,
           let client = clerk?.client, client.id == request.clientId
@@ -75,7 +74,7 @@ extension ClerkIdentityController {
   /// Default tokens live only in client.sessions. A fresh response wins a timestamp tie;
   /// a retained Session is never used to replace the current token.
   @discardableResult
-  func updateSessionToken(_ token: TokenResource, for request: SessionTokenRequest) throws -> TokenResource? {
+  func updateSessionToken(_ token: TokenResource, for request: SessionTokenRequest) -> TokenResource? {
     guard let session = currentSession(for: request), tokenMatchesSession(token, session: session),
           let clerk, var client = clerk.client,
           let index = client.sessions.firstIndex(where: { $0.id == session.id })
@@ -88,12 +87,25 @@ extension ClerkIdentityController {
     let didChange = freshest != session.lastActiveToken
     if didChange {
       client.sessions[index].lastActiveToken = freshest
-      try commit(ClerkIdentitySnapshot(state: .present, deviceToken: currentDeviceToken, client: client, serverDate: lastServerDate))
+      applySessionTokenUpdate(client)
     }
     if didChange || (!wasReusable && freshest == token) {
       clerk.auth.send(.tokenRefreshed(token: freshest.jwt))
     }
     return freshest
+  }
+
+  /// A refreshed token is not an identity change, so it skips `commit` and the change notifications
+  /// that make other apps and a paired watch refresh their clients.
+  private func applySessionTokenUpdate(_ client: Client) {
+    if let store = clerk?.dependencies.identityStore, let currentDeviceToken {
+      do {
+        try store.saveClient(client, serverDate: lastServerDate, for: currentDeviceToken)
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to cache the refreshed session token")
+      }
+    }
+    clerk?.setClientFromIdentityController(client)
   }
 
   private func tokenMatchesSession(_ token: TokenResource, session: Session) -> Bool {
@@ -111,8 +123,11 @@ extension ClerkIdentityController {
   }
 
   /// Client responses and token responses apply the same freshness rule to the same stored token.
-  func reconcilingSessionTokens(in identity: ClerkIdentitySnapshot) -> ClerkIdentitySnapshot {
-    guard var incoming = identity.client else { return identity }
+  func reconcilingSessionTokens(
+    in identity: ClerkIdentitySnapshot
+  ) -> (identity: ClerkIdentitySnapshot, reusableSessionIds: Set<String>) {
+    guard var incoming = identity.client else { return (identity, []) }
+    var reusableSessionIds: Set<String> = []
     let current = identity.deviceToken == currentDeviceToken && clerk?.client?.id == incoming.id ? clerk?.client : nil
     for index in incoming.sessions.indices where incoming.sessions[index].status == .active {
       let session = incoming.sessions[index]
@@ -123,10 +138,13 @@ extension ClerkIdentityController {
       // Repeating an invalidated snapshot does not make it reusable. A different accepted
       // server token does, including a new token issued within the same second.
       if accepted == token, accepted != previous?.lastActiveToken {
-        invalidatedSessionTokens.remove(session.id)
+        reusableSessionIds.insert(session.id)
       }
     }
-    return ClerkIdentitySnapshot(state: identity.state, deviceToken: identity.deviceToken, client: incoming, serverDate: identity.serverDate)
+    return (
+      ClerkIdentitySnapshot(state: identity.state, deviceToken: identity.deviceToken, client: incoming, serverDate: identity.serverDate),
+      reusableSessionIds
+    )
   }
 
   /// Fence token requests when ownership changes, including switching away and back to an org.
@@ -136,7 +154,9 @@ extension ClerkIdentityController {
     } else {
       for previous in clerk?.client?.activeSessions ?? [] {
         let incoming = identity.client?.activeSessions.first { $0.id == previous.id }
-        if incoming == nil || incoming?.lastActiveOrganizationId != previous.lastActiveOrganizationId
+        if incoming == nil
+          || TokenFreshness.normalizedOrganizationId(incoming?.lastActiveOrganizationId)
+          != TokenFreshness.normalizedOrganizationId(previous.lastActiveOrganizationId)
           || (previous.lastActiveToken != nil && incoming?.lastActiveToken == nil)
         {
           invalidateSessionTokens(sessionId: previous.id)

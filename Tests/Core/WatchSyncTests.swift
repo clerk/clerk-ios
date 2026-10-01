@@ -124,6 +124,21 @@ struct WatchConnectivityCoordinatorTests {
   }
 
   @Test
+  func sessionTokenRefreshIsNotSent() throws {
+    let client = signedIn("client")
+    let (clerk, _) = try makeClerk(token: "token", client: client)
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+    try coordinator.handle(.identityDidChange, from: clerk)
+    var refreshed = client
+    refreshed.sessions[0].lastActiveToken = TokenResource(jwt: "refreshed.jwt")
+
+    try coordinator.handle(.clientDidChange(previous: client, current: refreshed), from: clerk)
+
+    #expect(transport.sent.map(\.deviceToken) == ["token"])
+  }
+
+  @Test
   func clientRefreshedForThePairedDeviceIsNotSentBack() throws {
     let client = signedIn("client")
     let (clerk, _) = try makeClerk(token: "token", client: client)

@@ -530,7 +530,7 @@ struct SessionServiceAndTokenFetcherTests {
     let request = controller.makeSessionTokenRequest(for: session)
     controller.invalidateSessionTokens(sessionId: session.id)
     let late = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
-    #expect(try controller.updateSessionToken(late, for: request) == nil)
+    #expect(controller.updateSessionToken(late, for: request) == nil)
     #expect(!controller.canReuseSessionToken(sessionId: session.id))
     #expect(Clerk.shared.session?.lastActiveToken == nil)
   }
@@ -543,7 +543,7 @@ struct SessionServiceAndTokenFetcherTests {
     let request = controller.makeSessionTokenRequest(for: session)
     controller.invalidateAllSessionTokens()
     let late = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
-    #expect(try controller.updateSessionToken(late, for: request) == nil)
+    #expect(controller.updateSessionToken(late, for: request) == nil)
     #expect(!controller.canReuseSessionToken(sessionId: session.id))
     #expect(Clerk.shared.session?.lastActiveToken == nil)
   }

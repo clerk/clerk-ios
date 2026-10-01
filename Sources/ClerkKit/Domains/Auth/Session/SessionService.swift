@@ -130,8 +130,8 @@ final class SessionService: SessionServiceProtocol {
       }
 
     try runtime.validateStableRuntime()
-    Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
     let clerk = try runtime.requireCurrentClerk()
+    clerk.identityController.invalidateSessionTokens(sessionId: sessionId)
     try await clerk.identityController.applyNetworkResponse(
       clientSyncMetadata.context(update: clientUpdate)
     )

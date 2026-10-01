@@ -114,6 +114,35 @@ struct KeychainSharingTests {
   }
 
   @Test
+  func tokenRefreshInOneAppDoesNotRefreshTheOthers() async throws {
+    let name = "com.clerk.tests.shared-identity.\(UUID().uuidString)"
+    let secondRefreshes = LockIsolated(0)
+    let first = makeApp()
+    let second = makeApp(refreshes: secondRefreshes)
+    try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
+    let firstNotifier = SharedIdentityNotifier(name: name, clerk: first.clerk)
+    let secondNotifier = SharedIdentityNotifier(name: name, clerk: second.clerk)
+    first.clerk.internalStateChanges.addObserver(firstNotifier)
+    second.clerk.internalStateChanges.addObserver(secondNotifier)
+    defer {
+      firstNotifier.stop()
+      secondNotifier.stop()
+    }
+    let session = try #require(first.clerk.session)
+    let now = Int(Date.now.timeIntervalSince1970)
+    let refreshed = try TokenResource(jwt: testJWT(claims: ["sid": session.id, "iat": now, "exp": now + 60]))
+    let controller = first.clerk.identityController
+
+    let accepted = controller.updateSessionToken(refreshed, for: controller.makeSessionTokenRequest(for: session))
+    try await Task.sleep(for: .milliseconds(200))
+
+    #expect(accepted == refreshed)
+    #expect(first.clerk.session?.lastActiveToken == refreshed)
+    #expect(try first.store.load()?.client?.currentSession?.lastActiveToken == refreshed)
+    #expect(secondRefreshes.value == 0)
+  }
+
+  @Test
   func appDoesNotRefreshForItsOwnChange() async throws {
     let name = "com.clerk.tests.shared-identity.\(UUID().uuidString)"
     let refreshes = LockIsolated(0)

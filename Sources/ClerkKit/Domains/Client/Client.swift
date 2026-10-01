@@ -52,3 +52,14 @@ public struct Client: Codable, Sendable, Equatable {
     self.updatedAt = updatedAt
   }
 }
+
+extension Client {
+  /// Lets identity sync ignore session token refreshes, which every app and device makes on its own.
+  var withoutSessionTokens: Client {
+    var client = self
+    for index in client.sessions.indices {
+      client.sessions[index].lastActiveToken = nil
+    }
+    return client
+  }
+}

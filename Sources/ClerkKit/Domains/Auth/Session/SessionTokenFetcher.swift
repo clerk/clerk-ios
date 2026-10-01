@@ -173,6 +173,7 @@ actor SessionTokenFetcher {
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
     guard let token else { return nil }
+    controller.adoptStoredDeviceToken()
     if options.template != nil {
       if controller.currentSession(for: context) != nil {
         let stored = SessionTemplateTokensCache.shared.storeIfFresher(token, cacheKey: cacheKey)
@@ -181,7 +182,7 @@ actor SessionTokenFetcher {
         }
         return stored.canonicalToken
       }
-    } else if let accepted = try controller.updateSessionToken(token, for: context) {
+    } else if let accepted = controller.updateSessionToken(token, for: context) {
       return accepted
     }
     return token

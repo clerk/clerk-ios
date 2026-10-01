@@ -27,7 +27,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
   func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
     switch change {
     case .clientDidChange(let previous, let current):
-      recordLocalChange(in: clerk, clientChanged: previous != current)
+      recordLocalChange(in: clerk, clientChanged: previous?.withoutSessionTokens != current?.withoutSessionTokens)
     case .deviceTokenDidChange, .identityDidChange, .localStorageDidClear:
       recordLocalChange(in: clerk)
     case .environmentDidChange, .applicationDidEnterForeground:
