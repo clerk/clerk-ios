@@ -524,6 +524,10 @@ extension Clerk {
         throw error
       }
 
+      // The outgoing collector is released once the new container is installed, so send its partial batch now.
+      let outgoingTelemetry = existing.dependencies.telemetryCollector
+      Task { await outgoingTelemetry.flush() }
+
       await existing.resetRuntimeStateForReconfiguration()
       existing.installConfiguration(dependencies: newDependencies)
       return existing
