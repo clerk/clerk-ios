@@ -39,7 +39,7 @@ final class SharedIdentityNotifier: ClerkInternalStateChangeObserver {
   func handle(_ change: ClerkInternalStateChange, from _: Clerk) throws {
     switch change {
     case .clientDidChange(let previous, let current):
-      guard previous?.withoutSessionTokens != current?.withoutSessionTokens else { return }
+      guard Client.differsIgnoringSessionTokens(previous, current) else { return }
       notifyOtherApps()
     case .identityDidChange, .localStorageDidClear:
       notifyOtherApps()

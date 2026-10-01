@@ -87,7 +87,7 @@ extension ClerkIdentityController {
     let didChange = freshest != session.lastActiveToken
     if didChange {
       client.sessions[index].lastActiveToken = freshest
-      applySessionTokenUpdate(client)
+      applyClientWithoutIdentityChange(client)
     }
     if didChange || (!wasReusable && freshest == token) {
       clerk.auth.send(.tokenRefreshed(token: freshest.jwt))
@@ -95,9 +95,7 @@ extension ClerkIdentityController {
     return freshest
   }
 
-  /// A refreshed token is not an identity change, so it skips `commit` and the change notifications
-  /// that make other apps and a paired watch refresh their clients.
-  private func applySessionTokenUpdate(_ client: Client) {
+  private func applyClientWithoutIdentityChange(_ client: Client) {
     if let store = clerk?.dependencies.identityStore, let currentDeviceToken {
       do {
         try store.saveClient(client, serverDate: lastServerDate, for: currentDeviceToken)
