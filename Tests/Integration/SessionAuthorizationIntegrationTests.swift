@@ -93,11 +93,14 @@ struct SessionAuthorizationIntegrationTests {
       print("LIVE_HAS orgRole admin=\(hasAdmin)")
       print("LIVE_HAS orgPermission membershipsRead=\(hasMembershipRead)")
 
-      withKnownIssue("free_org on the with-billing instance has no features, so a new org has no o: feature to check") {
-        let orgFeatureSlug = try #require(freeOrgFeatures.first)
+      if let orgFeatureSlug = freeOrgFeatures.first {
         let hasOrgFeature = orgSession.checkAuthorization(.init(feature: "o:\(orgFeatureSlug)"))
         print("LIVE_HAS orgFeature o:\(orgFeatureSlug)=\(hasOrgFeature)")
         #expect(hasOrgFeature)
+      } else {
+        withKnownIssue("free_org on the with-billing instance has no features, so a new org has no o: feature to check") {
+          Issue.record("free_org has no features")
+        }
       }
 
       try await org.destroy()
