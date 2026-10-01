@@ -5825,6 +5825,107 @@
         }
       }
     },
+    "Unable to sign in with Apple. Make sure you're signed in to your Apple Account in Settings, then try again." : {
+      "comment" : "Error message when Apple sign-in fails with an unknown authorization error, most often because no Apple Account is signed in on the device.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تعذّر تسجيل الدخول باستخدام Apple. تأكّد من أنك سجّلت الدخول إلى حساب Apple في الإعدادات، ثم حاول مرة أخرى."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anmeldung mit Apple nicht möglich. Stelle sicher, dass du in den Einstellungen mit deinem Apple Account angemeldet bist, und versuche es dann erneut."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Δεν ήταν δυνατή η σύνδεση με Apple. Βεβαιωθείτε ότι έχετε συνδεθεί στο Apple Account σας στις Ρυθμίσεις και δοκιμάστε ξανά."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo iniciar sesión con Apple. Asegúrate de haber iniciado sesión con tu cuenta de Apple en Ajustes y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de se connecter avec Apple. Vérifiez que vous êtes connecté à votre compte Apple dans Réglages, puis réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple से साइन इन नहीं किया जा सका। पक्का करें कि आपने सेटिंग्ज़ में अपने Apple खाते में साइन इन किया है, फिर दोबारा कोशिश करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile accedere con Apple. Assicurati di aver effettuato l’accesso al tuo Account Apple in Impostazioni, quindi riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appleでサインインできませんでした。設定でApple Accountにサインインしていることを確認してから、もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple로 로그인할 수 없습니다. 설정에서 Apple 계정에 로그인되어 있는지 확인한 다음 다시 시도하세요."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nie można zalogować się przez Apple. Upewnij się, że w Ustawieniach jesteś zalogowany na swoje konto Apple, a następnie spróbuj ponownie."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível fazer login com a Apple. Verifique se você está conectado à sua Conta Apple nos Ajustes e tente novamente."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nu s-a putut face conectarea cu Apple. Asigură-te că ești conectat la contul tău Apple în Configurări, apoi încearcă din nou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось войти через Apple. Убедитесь, что вы вошли в свою учетную запись Apple в Настройках, и повторите попытку."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple ile giriş yapılamadı. Ayarlar’da Apple Hesabınızla giriş yaptığınızdan emin olun ve ardından tekrar deneyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не вдалося увійти через Apple. Переконайтеся, що ви увійшли у свій обліковий запис Apple у Параметрах, і спробуйте ще раз."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法通过 Apple 登录。请确保已在“设置”中登录您的 Apple 账户，然后重试。"
+          }
+        }
+      }
+    },
     "Unable to start web authentication session." : {
       "localizations" : {
         "ar" : {
