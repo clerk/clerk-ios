@@ -91,7 +91,7 @@ final class SessionService: SessionServiceProtocol {
       )
 
       try await apiClient.send(request)
-      await SessionTokensCache.shared.removeTokens(sessionId: sessionId)
+      Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
     } else {
       let request = Request<EmptyResponse>(
         path: "/v1/client/sessions",
@@ -99,7 +99,7 @@ final class SessionService: SessionServiceProtocol {
       )
 
       try await apiClient.send(request)
-      await SessionTokensCache.shared.clear()
+      Clerk.shared.identityController.invalidateAllSessionTokens()
     }
   }
 
@@ -130,8 +130,8 @@ final class SessionService: SessionServiceProtocol {
       }
 
     try runtime.validateStableRuntime()
-    await SessionTokensCache.shared.removeTokens(sessionId: sessionId)
     let clerk = try runtime.requireCurrentClerk()
+    clerk.identityController.invalidateSessionTokens(sessionId: sessionId)
     try await clerk.identityController.applyNetworkResponse(
       clientSyncMetadata.context(update: clientUpdate)
     )

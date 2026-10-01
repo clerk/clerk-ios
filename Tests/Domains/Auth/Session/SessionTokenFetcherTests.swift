@@ -24,7 +24,7 @@ struct SessionServiceAndTokenFetcherTests {
   func fetchTokenUsesSessionServiceFetchToken(
     scenario: FetchTokenScenario
   ) async throws {
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
     let session = Session.mock
     let captured = LockIsolated<(
       sessionId: String,
@@ -60,8 +60,9 @@ struct SessionServiceAndTokenFetcherTests {
 
   @Test
   func fetchTokenCachesFetchedToken() async throws {
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
     let session = Session.mock
+    configureCurrentState(session: session, sessionMinterEnabled: false)
     let template = UUID().uuidString
     let tokenResource = TokenResource(jwt: "jwt_123")
     let service = MockSessionService(fetchToken: { _, _, _ in
@@ -78,7 +79,7 @@ struct SessionServiceAndTokenFetcherTests {
       options: .init(template: template, skipCache: true)
     )
 
-    let cachedToken = await SessionTokensCache.shared.getToken(
+    let cachedToken = SessionTemplateTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: template)
     )
     #expect(cachedToken == tokenResource)
@@ -87,7 +88,7 @@ struct SessionServiceAndTokenFetcherTests {
   @Test
   func templateTokenCacheIsPartitionedByActiveOrganization() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let template = "firebase"
     var previousSession = Session.mock
@@ -99,7 +100,7 @@ struct SessionServiceAndTokenFetcherTests {
       issuedAt: 100,
       signature: "previous"
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       previousToken,
       cacheKey: previousSession.tokenCacheKey(template: template)
     )
@@ -135,23 +136,23 @@ struct SessionServiceAndTokenFetcherTests {
       previousSession.tokenCacheKey(template: template)
         != updatedSession.tokenCacheKey(template: template)
     )
-    #expect(await SessionTokensCache.shared.getToken(
+    #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: previousSession.tokenCacheKey(template: template)
     ) == previousToken)
-    #expect(await SessionTokensCache.shared.getToken(
+    #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: updatedSession.tokenCacheKey(template: template)
     ) == updatedToken)
   }
 
-  @Test
-  func invalidationPreventsInFlightResponseFromRestoringCachedToken() async throws {
+  @Test(arguments: [nil, "firebase"] as [String?])
+  func invalidationPreventsInFlightResponseFromRestoringToken(template: String?) async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
-    let response = TokenResource(jwt: "late.jwt.response")
+    let response = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
     configureCurrentState(session: session, sessionMinterEnabled: false)
-    let generationBeforeRequest = await SessionTokensCache.shared.generation(
+    let generationBeforeRequest = Clerk.shared.identityController.sessionTokenGeneration(
       sessionId: session.id
     )
 
@@ -168,7 +169,7 @@ struct SessionServiceAndTokenFetcherTests {
     let request = Task {
       try await SessionTokenFetcher.shared.getToken(
         session,
-        options: .init(skipCache: true)
+        options: .init(template: template, skipCache: true)
       )
     }
     defer {
@@ -182,26 +183,25 @@ struct SessionServiceAndTokenFetcherTests {
       await SessionTokenFetcher.shared.forcedTokenTasks.isEmpty == false
     }
     let registeredTask = await SessionTokenFetcher.shared.forcedTokenTasks.values.first
-    let registeredGeneration = try #require(registeredTask?.cacheGeneration)
+    let registeredGeneration = try #require(registeredTask?.tokenGeneration)
     #expect(registeredGeneration == generationBeforeRequest)
 
-    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+    Clerk.shared.identityController.invalidateSessionTokens(sessionId: session.id)
     await requestGate.resume()
 
     #expect(try await request.value == response)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
-    ) == nil)
+    #expect(Clerk.shared.session?.lastActiveToken == nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(cacheKey: session.tokenCacheKey(template: template)) == nil)
   }
 
-  @Test
-  func invalidatedInFlightTaskIsCancelledAndReplaced() async throws {
+  @Test(arguments: [false, true])
+  func invalidatedInFlightTaskIsCancelledAndReplaced(fenceClientResponses: Bool) async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
     let staleResponse = TokenResource(jwt: "stale.jwt.response")
-    let freshResponse = TokenResource(jwt: "fresh.jwt.response")
+    let freshResponse = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 200, issuedAt: 200)
     configureCurrentState(session: session, sessionMinterEnabled: false)
 
     let firstCallStarted = AsyncStream<Void>.makeStream(
@@ -258,8 +258,12 @@ struct SessionServiceAndTokenFetcherTests {
     let originalTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
     let originalTaskId = try #require(originalTask?.id)
 
-    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
-    let currentGeneration = await SessionTokensCache.shared.generation(
+    if fenceClientResponses {
+      Clerk.shared.identityController.fenceClientResponses()
+    } else {
+      Clerk.shared.identityController.invalidateSessionTokens(sessionId: session.id)
+    }
+    let currentGeneration = Clerk.shared.identityController.sessionTokenGeneration(
       sessionId: session.id
     )
 
@@ -277,7 +281,7 @@ struct SessionServiceAndTokenFetcherTests {
 
     let replacementTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
     #expect(replacementTask?.id != originalTaskId)
-    #expect(replacementTask?.cacheGeneration == currentGeneration)
+    #expect(replacementTask?.tokenGeneration == currentGeneration)
 
     await firstGate.resume()
     await #expect(throws: CancellationError.self) {
@@ -287,13 +291,13 @@ struct SessionServiceAndTokenFetcherTests {
     await secondGate.resume()
     #expect(try await second.value == freshResponse)
     #expect(callCount.value == 2)
-    #expect(await SessionTokensCache.shared.getToken(cacheKey: cacheKey) == freshResponse)
+    #expect(Clerk.shared.session?.lastActiveToken == freshResponse)
   }
 
   @Test
   func retainedSessionDoesNotRehydrateInvalidatedSnapshot() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     var session = Session.mock
     let snapshotToken = try token(
@@ -313,7 +317,7 @@ struct SessionServiceAndTokenFetcherTests {
     session.lastActiveToken = snapshotToken
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
-    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
+    Clerk.shared.identityController.invalidateSessionTokens(sessionId: session.id)
     var signedOutClient = Client.mock
     signedOutClient.sessions = []
     signedOutClient.lastActiveSessionId = nil
@@ -336,15 +340,13 @@ struct SessionServiceAndTokenFetcherTests {
     #expect(result == serverToken)
     #expect(callCount.value == 1)
     #expect(capturedParams.value?.token == nil)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
-    ) == serverToken)
+    #expect(Clerk.shared.session == nil)
   }
 
   @Test
   func nonActiveSessionDoesNotReturnExistingCachedToken() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
     let cachedToken = try token(
@@ -363,11 +365,10 @@ struct SessionServiceAndTokenFetcherTests {
     )
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
-    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
-    await SessionTokensCache.shared.insertToken(
-      cachedToken,
-      cacheKey: session.tokenCacheKey(template: nil)
-    )
+    Clerk.shared.identityController.invalidateSessionTokens(sessionId: session.id)
+    var current = session
+    current.lastActiveToken = cachedToken
+    configureCurrentState(session: current, sessionMinterEnabled: true)
     var signedOutClient = Client.mock
     signedOutClient.sessions = []
     signedOutClient.lastActiveSessionId = nil
@@ -395,7 +396,7 @@ struct SessionServiceAndTokenFetcherTests {
   @Test
   func concurrentNonActiveSessionFetchesShareRequest() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
     let serverToken = try token(
@@ -473,121 +474,91 @@ struct SessionServiceAndTokenFetcherTests {
   }
 
   @Test
-  func transitionedActiveSessionCanHydrateCanonicalSnapshot() async throws {
-    await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
-
+  func invalidatedActiveSnapshotRequiresRefresh() async throws {
     var session = Session.mock
-    let snapshotToken = try token(
-      sessionId: session.id,
-      organizationId: nil,
-      originIssuedAt: 200,
-      issuedAt: 200,
-      signature: "transitioned"
-    )
-    session.lastActiveToken = snapshotToken
+    session.lastActiveToken = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
     configureCurrentState(session: session, sessionMinterEnabled: true)
-    await SessionTokensCache.shared.removeTokens(sessionId: session.id)
-
+    Clerk.shared.identityController.invalidateSessionTokens(sessionId: session.id)
+    let refreshed = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 200, issuedAt: 200)
     let callCount = LockIsolated(0)
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: MockSessionService(fetchToken: { _, _, params in
+      #expect(params?.forceOrigin == "true")
       callCount.withValue { $0 += 1 }
-      return TokenResource(jwt: "unexpected.server.response")
-    })
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
-    )
-
-    let result = try await SessionTokenFetcher.shared.getToken(session)
-
-    #expect(result == snapshotToken)
-    #expect(callCount.value == 0)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
-    ) == snapshotToken)
+      return refreshed
+    }))
+    #expect(try await SessionTokenFetcher.shared.getToken(session) == refreshed)
+    #expect(try await SessionTokenFetcher.shared.getToken(session) == refreshed)
+    #expect(callCount.value == 1)
+    #expect(Clerk.shared.session?.lastActiveToken == refreshed)
   }
 
   @Test
-  func removeTokensClearsAllTokensForOnlyThatSession() async {
-    let cache = SessionTokensCache()
+  func removeTokensClearsAllTokensForOnlyThatSession() {
+    let cache = SessionTemplateTokensCache()
     var session = Session.mock
     session.id = "sess_target"
     var otherSession = Session.mock
     otherSession.id = "sess_target2"
 
-    await cache.insertToken(
+    cache.insertToken(
       .init(jwt: "default.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil)
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )
-    await cache.insertToken(
+    cache.insertToken(
       .init(jwt: "template.jwt"),
       cacheKey: session.tokenCacheKey(template: "firebase")
     )
-    await cache.insertToken(
+    cache.insertToken(
       .init(jwt: "other.jwt"),
-      cacheKey: otherSession.tokenCacheKey(template: nil)
+      cacheKey: otherSession.tokenCacheKey(template: "secondary")
     )
 
-    await cache.removeTokens(sessionId: session.id)
+    cache.removeTokens(sessionId: session.id)
 
-    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
-    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: "firebase")) == nil)
-    #expect(await cache.getToken(
-      cacheKey: otherSession.tokenCacheKey(template: nil)
+    #expect(cache.getToken(cacheKey: session.tokenCacheKey(template: "secondary")) == nil)
+    #expect(cache.getToken(cacheKey: session.tokenCacheKey(template: "firebase")) == nil)
+    #expect(cache.getToken(
+      cacheKey: otherSession.tokenCacheKey(template: "secondary")
     )?.jwt == "other.jwt")
   }
 
   @Test
-  func removeTokensRejectsWritesFromAnEarlierGeneration() async {
-    let cache = SessionTokensCache()
+  func invalidationRejectsDefaultTokenFromAnEarlierGeneration() throws {
     let session = Session.mock
-    let generation = await cache.generation(sessionId: session.id)
-
-    await cache.removeTokens(sessionId: session.id)
-    let storeResult = await cache.storeIfFresher(
-      .init(jwt: "late.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil),
-      generation: generation
-    )
-    await cache.hydrate(
-      .init(jwt: "late.snapshot.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil),
-      generation: generation
-    )
-
-    #expect(storeResult?.canonicalToken == nil)
-    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+    let controller = Clerk.shared.identityController
+    let request = controller.makeSessionTokenRequest(for: session)
+    controller.invalidateSessionTokens(sessionId: session.id)
+    let late = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
+    #expect(controller.updateSessionToken(late, for: request) == nil)
+    #expect(!controller.canReuseSessionToken(sessionId: session.id))
+    #expect(Clerk.shared.session?.lastActiveToken == nil)
   }
 
   @Test
-  func clearRejectsWritesFromAnEarlierGeneration() async {
-    let cache = SessionTokensCache()
+  func clearRejectsDefaultTokenFromAnEarlierGeneration() throws {
     let session = Session.mock
-    let generation = await cache.generation(sessionId: session.id)
-
-    await cache.clear()
-    let storeResult = await cache.storeIfFresher(
-      .init(jwt: "late.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil),
-      generation: generation
-    )
-
-    #expect(storeResult?.canonicalToken == nil)
-    #expect(await cache.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+    let controller = Clerk.shared.identityController
+    let request = controller.makeSessionTokenRequest(for: session)
+    controller.invalidateAllSessionTokens()
+    let late = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
+    #expect(controller.updateSessionToken(late, for: request) == nil)
+    #expect(!controller.canReuseSessionToken(sessionId: session.id))
+    #expect(Clerk.shared.session?.lastActiveToken == nil)
   }
 
   @Test
-  func storingSameJWTDoesNotReportCanonicalTokenChange() async {
-    await SessionTokensCache.shared.clear()
+  func storingSameJWTDoesNotReportCanonicalTokenChange() {
+    SessionTemplateTokensCache.shared.clear()
     let cacheKey = UUID().uuidString
     let tokenResource = TokenResource(jwt: "jwt_123")
 
-    let initialStore = await SessionTokensCache.shared.storeIfFresher(
+    let initialStore = SessionTemplateTokensCache.shared.storeIfFresher(
       tokenResource,
       cacheKey: cacheKey
     )
-    let duplicateStore = await SessionTokensCache.shared.storeIfFresher(
+    let duplicateStore = SessionTemplateTokensCache.shared.storeIfFresher(
       tokenResource,
       cacheKey: cacheKey
     )
@@ -597,8 +568,8 @@ struct SessionServiceAndTokenFetcherTests {
   }
 
   @Test
-  func malformedIncomingTokenDoesNotReplaceCanonicalToken() async throws {
-    await SessionTokensCache.shared.clear()
+  func malformedIncomingTokenDoesNotReplaceCanonicalToken() throws {
+    SessionTemplateTokensCache.shared.clear()
     let cacheKey = UUID().uuidString
     let canonicalToken = try token(
       sessionId: "sess_test",
@@ -607,16 +578,16 @@ struct SessionServiceAndTokenFetcherTests {
       issuedAt: 100
     )
     let malformedToken = TokenResource(jwt: "malformed")
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       canonicalToken,
       cacheKey: cacheKey
     )
 
-    let storeResult = await SessionTokensCache.shared.storeIfFresher(
+    let storeResult = SessionTemplateTokensCache.shared.storeIfFresher(
       malformedToken,
       cacheKey: cacheKey
     )
-    let cachedToken = await SessionTokensCache.shared.getToken(cacheKey: cacheKey)
+    let cachedToken = SessionTemplateTokensCache.shared.getToken(cacheKey: cacheKey)
 
     #expect(storeResult.canonicalToken == canonicalToken)
     #expect(storeResult.didChangeCanonicalToken == false)
@@ -624,9 +595,9 @@ struct SessionServiceAndTokenFetcherTests {
   }
 
   @Test
-  func hydrationDoesNotReplaceCanonicalTokenOnTimestampTie() async throws {
+  func retainedSessionDoesNotReplaceCurrentTokenOnTimestampTie() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     var session = Session.mock
     let snapshotToken = try token(
@@ -661,9 +632,7 @@ struct SessionServiceAndTokenFetcherTests {
       options: .init(skipCache: true)
     )
     let ordinaryToken = try await SessionTokenFetcher.shared.getToken(session)
-    let cachedToken = await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
-    )
+    let cachedToken = Clerk.shared.session?.lastActiveToken
 
     #expect(forcedToken == mintedToken)
     #expect(ordinaryToken == mintedToken)
@@ -672,37 +641,22 @@ struct SessionServiceAndTokenFetcherTests {
   }
 
   @Test
-  func hydrationAcceptsStrictlyFresherSessionSnapshot() async throws {
-    await SessionTokensCache.shared.clear()
-
-    let session = Session.mock
-    let cacheKey = session.tokenCacheKey(template: nil)
-    let cachedToken = try token(
-      sessionId: session.id,
-      organizationId: nil,
-      originIssuedAt: 100,
-      issuedAt: 100,
-      signature: "cached"
-    )
-    let snapshotToken = try token(
-      sessionId: session.id,
-      organizationId: nil,
-      originIssuedAt: 200,
-      issuedAt: 200,
-      signature: "snapshot"
-    )
-    await SessionTokensCache.shared.insertToken(cachedToken, cacheKey: cacheKey)
-
-    await SessionTokensCache.shared.hydrate(snapshotToken, cacheKey: cacheKey)
-
-    let canonicalToken = await SessionTokensCache.shared.getToken(cacheKey: cacheKey)
-    #expect(canonicalToken == snapshotToken)
+  func getTokenReadsAcceptedClientTokenThroughRetainedSession() async throws {
+    var retained = Session.mock
+    retained.lastActiveToken = try token(sessionId: retained.id, organizationId: nil, originIssuedAt: 100, issuedAt: 100)
+    configureCurrentState(session: retained, sessionMinterEnabled: true)
+    let newest = try token(sessionId: retained.id, organizationId: nil, originIssuedAt: 200, issuedAt: 200)
+    var client = try #require(Clerk.shared.client)
+    client.sessions[0].lastActiveToken = newest
+    Clerk.shared.applyResponseClient(client)
+    #expect(try await retained.getToken() == newest.jwt)
+    #expect(Clerk.shared.session?.lastActiveToken == newest)
   }
 
   @Test
-  func hydrationPreservesFresherExpiredTokenForNextMint() async throws {
+  func minterUsesCurrentExpiredTokenDespiteRetainedOlderSnapshot() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     var session = Session.mock
     let snapshotToken = try token(
@@ -723,10 +677,9 @@ struct SessionServiceAndTokenFetcherTests {
     )
     session.lastActiveToken = snapshotToken
     configureCurrentState(session: session, sessionMinterEnabled: true)
-    await SessionTokensCache.shared.insertToken(
-      cachedToken,
-      cacheKey: session.tokenCacheKey(template: nil)
-    )
+    var current = session
+    current.lastActiveToken = cachedToken
+    configureCurrentState(session: current, sessionMinterEnabled: true)
 
     let captured = LockIsolated<SessionTokenRequestParams?>(nil)
     let service = MockSessionService(fetchToken: { _, _, params in
@@ -752,7 +705,7 @@ struct SessionServiceAndTokenFetcherTests {
 
   @Test
   func sessionMinterUsesLatestSessionTokenAndForcesOrigin() async throws {
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
     let staleSession = Session.mock
     var currentSession = staleSession
     currentSession.lastActiveOrganizationId = "org_test"
@@ -794,7 +747,7 @@ struct SessionServiceAndTokenFetcherTests {
 
   @Test
   func sessionMinterOmitsPreviousTokenOnFirstMint() async throws {
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
     let session = Session.mock
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
@@ -817,7 +770,7 @@ struct SessionServiceAndTokenFetcherTests {
 
   @Test
   func disabledSessionMinterDoesNotPassTokenOrForceOrigin() async throws {
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
     var session = Session.mock
     session.lastActiveOrganizationId = "org_test"
     session.lastActiveToken = try token(
@@ -852,7 +805,7 @@ struct SessionServiceAndTokenFetcherTests {
   @Test
   func concurrentForcedRefreshesCannotRollBackCanonicalToken() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     var session = Session.mock
     session.lastActiveToken = try token(
@@ -926,12 +879,10 @@ struct SessionServiceAndTokenFetcherTests {
     let secondResult = try await second.value
     await firstCallGate.resume()
     let firstResult = try await first.value
-    let cachedToken = await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
-    )
+    let cachedToken = Clerk.shared.session?.lastActiveToken
 
     #expect(callCount.value == 2)
-    #expect(firstResult == staleResponse)
+    #expect(firstResult == freshResponse)
     #expect(secondResult == freshResponse)
     #expect(cachedToken == freshResponse)
   }
@@ -939,7 +890,7 @@ struct SessionServiceAndTokenFetcherTests {
   @Test
   func resetCancelsConcurrentForcedRefreshes() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
     configureCurrentState(session: session, sessionMinterEnabled: false)
@@ -1006,7 +957,7 @@ struct SessionServiceAndTokenFetcherTests {
   @Test
   func cancellingCallerCancelsForcedRefresh() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
     configureCurrentState(session: session, sessionMinterEnabled: false)
@@ -1054,7 +1005,7 @@ struct SessionServiceAndTokenFetcherTests {
   @Test
   func completedRequestDoesNotClearReplacementTaskAfterReset() async throws {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
 
     let session = Session.mock
     let firstResponse = TokenResource(jwt: "first.jwt.value")

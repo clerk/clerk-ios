@@ -556,7 +556,7 @@ extension Clerk {
 
     await shared.cleanupManagersAndWait()
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    shared.identityController.invalidateAllSessionTokens()
     _shared = nil
   }
 
@@ -663,7 +663,7 @@ extension Clerk {
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    identityController.invalidateAllSessionTokens()
 
     resetAuthFlowForReconfiguration()
     identityController.resetRuntimeIdentity()

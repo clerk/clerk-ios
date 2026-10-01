@@ -149,6 +149,28 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func failedWriteOfANewTokenKeepsSessionTokensInvalidated() async throws {
+    let (clerk, _) = makeClerk(identityKeychain: FailingAfterFirstWriteKeychain())
+    try clerk.seedIdentity(deviceToken: "token")
+    try await clerk.identityController.applyNetworkResponse(
+      context(.client(makeClient(id: "client")), token: .absent, requestToken: "token", clerk: clerk, date: 100)
+    )
+    let sessionId = try #require(clerk.session?.id)
+    clerk.identityController.invalidateSessionTokens(sessionId: sessionId)
+    var incoming = makeClient(id: "client")
+    incoming.sessions[0].lastActiveToken = try TokenResource(jwt: testJWT(claims: ["sid": sessionId, "iat": 200]))
+
+    await #expect(throws: SetFailingKeychain.Failure.set) {
+      try await clerk.identityController.applyNetworkResponse(
+        context(.client(incoming), token: .set("rotated"), requestToken: "token", clerk: clerk, date: 200)
+      )
+    }
+
+    #expect(clerk.deviceToken == "token")
+    #expect(!clerk.identityController.canReuseSessionToken(sessionId: sessionId))
+  }
+
+  @Test
   func undatedResponsePreservesServerDateWatermark() async throws {
     let (clerk, _) = makeClerk()
     try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "current"), serverDate: date(200))

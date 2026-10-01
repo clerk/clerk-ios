@@ -160,7 +160,7 @@ struct ClerkReconfigureTests {
     Clerk.shared.client = .mock
     Clerk.shared.environment = .mock
     Clerk.shared.sessionsByUserId = [User.mock.id: [.mock]]
-    await SessionTokensCache.shared.insertToken(.init(jwt: "jwt_123"), cacheKey: "session-token")
+    SessionTemplateTokensCache.shared.insertToken(.init(jwt: "jwt_123"), cacheKey: "session-token")
 
     let options = Clerk.Options(keychainConfig: .init(service: targetService))
     let reconfigured = try await Clerk.reconfigure(
@@ -175,7 +175,7 @@ struct ClerkReconfigureTests {
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.cachedClient.rawValue) == false)
     #expect(try oldKeychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
     #expect(try targetKeychain.hasItem(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == false)
-    #expect(await SessionTokensCache.shared.getToken(cacheKey: "session-token") == nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(cacheKey: "session-token") == nil)
   }
 
   @Test
@@ -391,9 +391,9 @@ struct ClerkReconfigureTests {
     )
     try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: cachedJWT),
-      cacheKey: Session.mock.tokenCacheKey(template: nil)
+      cacheKey: Session.mock.tokenCacheKey(template: "secondary")
     )
 
     let observedToken = LockIsolated<String?>(nil)
@@ -406,7 +406,7 @@ struct ClerkReconfigureTests {
         }
 
         if let oldValue {
-          let token = await SessionTokensCache.shared.getToken(cacheKey: oldValue.tokenCacheKey(template: nil))?.jwt
+          let token = SessionTemplateTokensCache.shared.getToken(cacheKey: oldValue.tokenCacheKey(template: "secondary"))?.jwt
           observedToken.setValue(token)
         }
         observedEventProcessed.setValue(true)
@@ -434,9 +434,9 @@ struct ClerkReconfigureTests {
     try Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     let staleSession = try #require(Clerk.shared.session)
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: cachedJWT),
-      cacheKey: staleSession.tokenCacheKey(template: nil)
+      cacheKey: staleSession.tokenCacheKey(template: "secondary")
     )
 
     try Clerk.beginRuntimeReconfiguration()

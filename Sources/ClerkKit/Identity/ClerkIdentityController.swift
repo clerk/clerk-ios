@@ -17,6 +17,10 @@ final class ClerkIdentityController {
   private(set) var currentDeviceToken: String?
   private var hydrationFailed = false
 
+  var sessionTokenGenerations: [String: UInt64] = [:]
+  var sessionTokenEpoch: UInt64 = 0
+  var invalidatedSessionTokens: Set<String> = []
+
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
   private var responseOrderingGate = ClientResponseOrderingGate()
   var lastServerDate: Date? {
@@ -114,6 +118,7 @@ extension ClerkIdentityController {
       ClerkLogger.logError(error, message: "Failed to read the stored Clerk identity")
       return false
     }
+    prepareSessionTokensForIdentityChange(to: identity ?? .signedOut)
     apply(identity ?? .signedOut, fenceResponses: true, authFlowUpdate: .authoritativeIdentityChanged)
     return true
   }
@@ -156,6 +161,7 @@ extension ClerkIdentityController {
 
   func clearIdentity() throws {
     guard let clerk else { return }
+    invalidateAllSessionTokens()
     fenceClientResponses()
     currentDeviceToken = nil
     lastServerDate = nil
@@ -169,8 +175,10 @@ extension ClerkIdentityController {
     fenceResponses: Bool = false,
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
+    prepareSessionTokensForIdentityChange(to: identity)
     let tokenChanged = identity.deviceToken != currentDeviceToken
-    var identity = identity
+    let reconciled = reconcilingSessionTokens(in: identity)
+    var identity = reconciled.identity
     if !tokenChanged, let watermark = lastServerDate, identity.serverDate.map({ $0 < watermark }) ?? true {
       identity = ClerkIdentitySnapshot(
         state: identity.state,
@@ -189,6 +197,7 @@ extension ClerkIdentityController {
         ClerkLogger.logError(error, message: "Failed to cache the Clerk client")
       }
     }
+    invalidatedSessionTokens.subtract(reconciled.reusableSessionIds)
     apply(identity, fenceResponses: fenceResponses || tokenChanged, authFlowUpdate: authFlowUpdate)
   }
 
