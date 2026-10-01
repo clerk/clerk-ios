@@ -328,7 +328,7 @@ extension Session {
         )
       }
       if verified.status == .complete {
-        await SessionTokensCache.shared.removeTokens(sessionId: id)
+        Clerk.shared.identityController.invalidateSessionTokens(sessionId: id)
       }
       return verified
     } catch {

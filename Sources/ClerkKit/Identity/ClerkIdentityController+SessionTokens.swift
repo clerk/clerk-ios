@@ -1,0 +1,147 @@
+import Foundation
+
+extension ClerkIdentityController {
+  struct SessionTokenGeneration: Equatable {
+    let sessionId: String
+    let value: UInt64
+    let epoch: UInt64
+  }
+
+  struct SessionTokenRequest {
+    let session: Session
+    let clientId: String?
+    let clientResponseGeneration: ClientResponseGeneration
+    let tokenGeneration: SessionTokenGeneration
+    let isCurrentActiveSession: Bool
+  }
+
+  func sessionTokenGeneration(sessionId: String) -> SessionTokenGeneration {
+    SessionTokenGeneration(sessionId: sessionId, value: sessionTokenGenerations[sessionId] ?? 0, epoch: sessionTokenEpoch)
+  }
+
+  func isCurrent(_ generation: SessionTokenGeneration) -> Bool {
+    generation == sessionTokenGeneration(sessionId: generation.sessionId)
+  }
+
+  func invalidateSessionTokens(sessionId: String) {
+    sessionTokenGenerations[sessionId] = (sessionTokenGenerations[sessionId] ?? 0) &+ 1
+    invalidatedSessionTokens.insert(sessionId)
+    SessionTemplateTokensCache.shared.removeTokens(sessionId: sessionId)
+  }
+
+  func invalidateAllSessionTokens() {
+    sessionTokenEpoch &+= 1
+    sessionTokenGenerations.removeAll()
+    invalidatedSessionTokens.formUnion(clerk?.client?.sessions.map(\.id) ?? [])
+    SessionTemplateTokensCache.shared.clear()
+  }
+
+  func canReuseSessionToken(sessionId: String) -> Bool {
+    !invalidatedSessionTokens.contains(sessionId)
+  }
+
+  func makeSessionTokenRequest(for session: Session) -> SessionTokenRequest {
+    adoptStoredDeviceToken()
+    let current = clerk?.client?.activeSessions.first { $0.id == session.id }
+    return SessionTokenRequest(
+      session: current ?? session,
+      clientId: clerk?.client?.id,
+      clientResponseGeneration: clientResponseGeneration,
+      tokenGeneration: sessionTokenGeneration(sessionId: session.id),
+      isCurrentActiveSession: current != nil
+    )
+  }
+
+  func currentSession(for request: SessionTokenRequest) -> Session? {
+    adoptStoredDeviceToken()
+    guard request.isCurrentActiveSession, isCurrent(request.tokenGeneration),
+          request.clientResponseGeneration == clientResponseGeneration,
+          let client = clerk?.client, client.id == request.clientId
+    else { return nil }
+    return client.activeSessions.first {
+      $0.id == request.session.id
+        && TokenFreshness.normalizedOrganizationId($0.lastActiveOrganizationId)
+        == TokenFreshness.normalizedOrganizationId(request.session.lastActiveOrganizationId)
+    }
+  }
+
+  func currentSessionToken(for request: SessionTokenRequest) -> TokenResource? {
+    guard let session = currentSession(for: request),
+          let token = session.lastActiveToken, tokenMatchesSession(token, session: session)
+    else { return nil }
+    return token
+  }
+
+  /// Default tokens live only in client.sessions. A fresh response wins a timestamp tie;
+  /// a retained Session is never used to replace the current token.
+  @discardableResult
+  func updateSessionToken(_ token: TokenResource, for request: SessionTokenRequest) throws -> TokenResource? {
+    guard let session = currentSession(for: request), tokenMatchesSession(token, session: session),
+          let clerk, var client = clerk.client,
+          let index = client.sessions.firstIndex(where: { $0.id == session.id })
+    else { return nil }
+    let freshest = acceptedSessionToken(token, previous: session, incomingSession: session)
+    let wasReusable = canReuseSessionToken(sessionId: session.id)
+    if freshest == token {
+      invalidatedSessionTokens.remove(session.id)
+    }
+    let didChange = freshest != session.lastActiveToken
+    if didChange {
+      client.sessions[index].lastActiveToken = freshest
+      try commit(ClerkIdentitySnapshot(state: .present, deviceToken: currentDeviceToken, client: client, serverDate: lastServerDate))
+    }
+    if didChange || (!wasReusable && freshest == token) {
+      clerk.auth.send(.tokenRefreshed(token: freshest.jwt))
+    }
+    return freshest
+  }
+
+  private func tokenMatchesSession(_ token: TokenResource, session: Session) -> Bool {
+    guard let jwt = try? DecodedJWT(jwt: token.jwt), jwt.sessionId == session.id else { return false }
+    return TokenFreshness.normalizedOrganizationId(jwt.organizationId)
+      == TokenFreshness.normalizedOrganizationId(session.lastActiveOrganizationId)
+  }
+
+  /// On equal timestamps, the last accepted server response wins.
+  private func acceptedSessionToken(_ token: TokenResource, previous: Session?, incomingSession: Session) -> TokenResource {
+    let existing = previous?.lastActiveToken.flatMap {
+      tokenMatchesSession($0, session: incomingSession) ? $0 : nil
+    }
+    return TokenFreshness.pickFreshest(existing: existing, incoming: token)
+  }
+
+  /// Client responses and token responses apply the same freshness rule to the same stored token.
+  func reconcilingSessionTokens(in identity: ClerkIdentitySnapshot) -> ClerkIdentitySnapshot {
+    guard var incoming = identity.client else { return identity }
+    let current = identity.deviceToken == currentDeviceToken && clerk?.client?.id == incoming.id ? clerk?.client : nil
+    for index in incoming.sessions.indices where incoming.sessions[index].status == .active {
+      let session = incoming.sessions[index]
+      let previous = current?.activeSessions.first { $0.id == session.id }
+      guard let token = session.lastActiveToken, tokenMatchesSession(token, session: session) else { continue }
+      let accepted = acceptedSessionToken(token, previous: previous, incomingSession: session)
+      incoming.sessions[index].lastActiveToken = accepted
+      // Repeating an invalidated snapshot does not make it reusable. A different accepted
+      // server token does, including a new token issued within the same second.
+      if accepted == token, accepted != previous?.lastActiveToken {
+        invalidatedSessionTokens.remove(session.id)
+      }
+    }
+    return ClerkIdentitySnapshot(state: identity.state, deviceToken: identity.deviceToken, client: incoming, serverDate: identity.serverDate)
+  }
+
+  /// Fence token requests when ownership changes, including switching away and back to an org.
+  func prepareSessionTokensForIdentityChange(to identity: ClerkIdentitySnapshot) {
+    if identity.deviceToken != currentDeviceToken || identity.client?.id != clerk?.client?.id {
+      invalidateAllSessionTokens()
+    } else {
+      for previous in clerk?.client?.activeSessions ?? [] {
+        let incoming = identity.client?.activeSessions.first { $0.id == previous.id }
+        if incoming == nil || incoming?.lastActiveOrganizationId != previous.lastActiveOrganizationId
+          || (previous.lastActiveToken != nil && incoming?.lastActiveToken == nil)
+        {
+          invalidateSessionTokens(sessionId: previous.id)
+        }
+      }
+    }
+  }
+}
