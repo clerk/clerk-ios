@@ -229,7 +229,7 @@ struct BiometricCredentialKeyManagerTests {
 
   @MainActor
   @Test
-  func mockKeyManagerSignsClientData() throws {
+  func mockKeyManagerSignsClientData() async throws {
     let manager = MockBiometricCredentialKeyManager(sign: { clientData, localKeyId, localizedReason in
       #expect(clientData == "{\"challenge_id\":\"tdch_123\"}")
       #expect(localKeyId == "tdlk_123")
@@ -237,7 +237,7 @@ struct BiometricCredentialKeyManagerTests {
       return BiometricCredentialKeySignature(clientData: clientData, signature: "signature")
     })
 
-    let signature = try manager.sign(
+    let signature = try await manager.sign(
       clientData: "{\"challenge_id\":\"tdch_123\"}",
       localKeyId: "tdlk_123",
       localizedReason: "Use biometrics"
@@ -250,13 +250,13 @@ struct BiometricCredentialKeyManagerTests {
 
   @MainActor
   @Test
-  func mockKeyManagerSurfacesMissingKey() throws {
+  func mockKeyManagerSurfacesMissingKey() async throws {
     let manager = MockBiometricCredentialKeyManager(sign: { _, _, _ in
       throw BiometricCredentialKeyManagerError.keyNotFound
     })
 
     do {
-      _ = try manager.sign(clientData: "{}", localKeyId: "tdlk_missing")
+      _ = try await manager.sign(clientData: "{}", localKeyId: "tdlk_missing")
       Issue.record("Expected missing key error.")
     } catch let error as BiometricCredentialKeyManagerError {
       #expect(error == .keyNotFound)

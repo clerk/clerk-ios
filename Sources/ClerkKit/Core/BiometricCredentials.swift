@@ -131,7 +131,7 @@ public struct BiometricCredentials {
           publicKeyJWK: localKey.publicKeyJWK
         )
       )
-      let signature = try keyManager.sign(
+      let signature = try await keyManager.sign(
         clientData: challenge.clientData,
         localKeyId: localKey.localKeyId,
         localizedReason: reason ?? "Use biometrics to enroll this device."
@@ -243,14 +243,14 @@ public struct BiometricCredentials {
     challenge: BiometricCredentialChallenge,
     credential: BiometricCredentialLocalRecord,
     reason: String?
-  ) throws -> BiometricCredentialKeySignature {
+  ) async throws -> BiometricCredentialKeySignature {
     guard challenge.biometricCredentialId == credential.id else {
       throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
     }
     guard challenge.expiresAt > Date() else {
       throw ClerkClientError(message: "Biometric reverification challenge has expired.")
     }
-    return try keyManager.sign(
+    return try await keyManager.sign(
       clientData: challenge.clientData,
       localKeyId: credential.localKeyId,
       localizedReason: reason
@@ -293,7 +293,7 @@ public struct BiometricCredentials {
     }
 
     let challenge = try biometricCredentialChallenge(from: signIn)
-    let signature = try keyManager.sign(
+    let signature = try await keyManager.sign(
       clientData: challenge.clientData,
       localKeyId: localCredential.localKeyId,
       localizedReason: reason ?? "Use biometrics to sign in."
