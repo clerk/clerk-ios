@@ -9,7 +9,7 @@ import Foundation
 
 extension ClerkTheme {
   /// Design tokens that control layout and shape across ClerkKitUI views.
-  public struct Design {
+  public struct Design: Sendable {
     /// The default corner radius applied to ClerkKitUI surfaces.
     public var borderRadius: CGFloat
 
@@ -24,7 +24,7 @@ extension ClerkTheme {
 
 extension ClerkTheme.Design {
   /// The default set of design tokens used by ClerkKitUI.
-  public nonisolated static var `default`: Self {
+  public static var `default`: Self {
     .init(
       borderRadius: 6.0
     )

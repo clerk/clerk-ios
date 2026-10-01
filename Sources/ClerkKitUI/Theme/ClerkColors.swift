@@ -11,13 +11,17 @@ extension ClerkTheme {
   /// A palette of semantic colors used by ClerkKitUI.
   ///
   /// Many additional tokens (such as borders and state variants) are derived
-  /// from the base colors you provide here.
-  public struct Colors {
+  /// from the base colors you provide here. A derived token follows its base
+  /// color until you set it explicitly.
+  public struct Colors: Sendable {
     /// The primary color used throughout the views.
     public var primary: Color
 
     /// The selected tint color for switch-style toggles.
-    public var switchTint: Color
+    public var switchTint: Color {
+      get { switchTintOverride ?? primary }
+      set { switchTintOverride = newValue }
+    }
 
     /// The background color for containers.
     public var background: Color
@@ -59,7 +63,10 @@ extension ClerkTheme {
     public var secondaryButtonBackground: Color
 
     /// The color used for text and tintable icons on secondary buttons.
-    public var secondaryButtonForeground: Color
+    public var secondaryButtonForeground: Color {
+      get { secondaryButtonForegroundOverride ?? foreground }
+      set { secondaryButtonForegroundOverride = newValue }
+    }
 
     /// The base shadow color used in the views.
     public var shadow: Color
@@ -67,46 +74,106 @@ extension ClerkTheme {
     // MARK: - Generated Colors
 
     /// A pressed-state variant of `primary`.
-    public var primaryPressed: Color
+    public var primaryPressed: Color {
+      get { primaryPressedOverride ?? (primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)) }
+      set { primaryPressedOverride = newValue }
+    }
 
     /// The base border color used in the views.
-    public var border: Color
+    public var border: Color {
+      get { borderOverride ?? baseBorder.opacity(0.06) }
+      set { borderOverride = newValue }
+    }
 
     /// A slightly stronger border color for buttons.
-    public var buttonBorder: Color
+    public var buttonBorder: Color {
+      get { buttonBorderOverride ?? baseBorder.opacity(0.08) }
+      set { buttonBorderOverride = newValue }
+    }
 
     /// The default border color for input fields.
-    public var inputBorder: Color
+    public var inputBorder: Color {
+      get { inputBorderOverride ?? baseBorder.opacity(0.11) }
+      set { inputBorderOverride = newValue }
+    }
 
     /// The focused border color for input fields.
-    public var inputBorderFocused: Color
+    public var inputBorderFocused: Color {
+      get { inputBorderFocusedOverride ?? ring.opacity(0.28) }
+      set { inputBorderFocusedOverride = newValue }
+    }
 
     /// The default error border color for input fields.
-    public var dangerInputBorder: Color
+    public var dangerInputBorder: Color {
+      get { dangerInputBorderOverride ?? danger.opacity(0.53) }
+      set { dangerInputBorderOverride = newValue }
+    }
 
     /// The focused error border color for input fields.
-    public var dangerInputBorderFocused: Color
+    public var dangerInputBorderFocused: Color {
+      get { dangerInputBorderFocusedOverride ?? danger.opacity(0.15) }
+      set { dangerInputBorderFocusedOverride = newValue }
+    }
 
     /// A translucent background color for overlays.
-    public var backgroundTransparent: Color
+    public var backgroundTransparent: Color {
+      get { backgroundTransparentOverride ?? background.opacity(0.5) }
+      set { backgroundTransparentOverride = newValue }
+    }
 
     /// A success background tint.
-    public var backgroundSuccess: Color
+    public var backgroundSuccess: Color {
+      get { backgroundSuccessOverride ?? success.opacity(0.12) }
+      set { backgroundSuccessOverride = newValue }
+    }
 
     /// A success border tint.
-    public var borderSuccess: Color
+    public var borderSuccess: Color {
+      get { borderSuccessOverride ?? success.opacity(0.77) }
+      set { borderSuccessOverride = newValue }
+    }
 
     /// An error background tint.
-    public var backgroundDanger: Color
+    public var backgroundDanger: Color {
+      get { backgroundDangerOverride ?? danger.opacity(0.12) }
+      set { backgroundDangerOverride = newValue }
+    }
 
     /// An error border tint.
-    public var borderDanger: Color
+    public var borderDanger: Color {
+      get { borderDangerOverride ?? danger.opacity(0.77) }
+      set { borderDangerOverride = newValue }
+    }
 
     /// A warning background tint.
-    public var backgroundWarning: Color
+    public var backgroundWarning: Color {
+      get { backgroundWarningOverride ?? warning.opacity(0.12) }
+      set { backgroundWarningOverride = newValue }
+    }
 
     /// A warning border tint.
-    public var borderWarning: Color
+    public var borderWarning: Color {
+      get { borderWarningOverride ?? warning.opacity(0.77) }
+      set { borderWarningOverride = newValue }
+    }
+
+    private var baseBorder: Color
+    private var switchTintOverride: Color?
+    private var secondaryButtonForegroundOverride: Color?
+    private var primaryPressedOverride: Color?
+    private var borderOverride: Color?
+    private var buttonBorderOverride: Color?
+    private var inputBorderOverride: Color?
+    private var inputBorderFocusedOverride: Color?
+    private var dangerInputBorderOverride: Color?
+    private var dangerInputBorderFocusedOverride: Color?
+    private var backgroundTransparentOverride: Color?
+    private var backgroundSuccessOverride: Color?
+    private var borderSuccessOverride: Color?
+    private var backgroundDangerOverride: Color?
+    private var borderDangerOverride: Color?
+    private var backgroundWarningOverride: Color?
+    private var borderWarningOverride: Color?
 
     /// Creates a semantic color palette and derives ClerkKitUI state colors.
     ///
@@ -133,7 +200,7 @@ extension ClerkTheme {
       border: Color = Self.defaultBorderColor
     ) {
       self.primary = primary
-      self.switchTint = switchTint ?? primary
+      switchTintOverride = switchTint
       self.background = background
       self.input = input
       self.danger = danger
@@ -147,23 +214,9 @@ extension ClerkTheme {
       self.ring = ring
       self.muted = muted
       self.secondaryButtonBackground = secondaryButtonBackground
-      self.secondaryButtonForeground = secondaryButtonForeground ?? foreground
+      secondaryButtonForegroundOverride = secondaryButtonForeground
       self.shadow = shadow
-
-      primaryPressed = primary.isDark ? primary.lighten(by: 0.06) : primary.darken(by: 0.06)
-      self.border = border.opacity(0.06)
-      buttonBorder = border.opacity(0.08)
-      inputBorder = border.opacity(0.11)
-      inputBorderFocused = ring.opacity(0.28)
-      dangerInputBorder = danger.opacity(0.53)
-      dangerInputBorderFocused = danger.opacity(0.15)
-      backgroundTransparent = background.opacity(0.5)
-      backgroundSuccess = success.opacity(0.12)
-      borderSuccess = success.opacity(0.77)
-      backgroundDanger = danger.opacity(0.12)
-      borderDanger = danger.opacity(0.77)
-      backgroundWarning = warning.opacity(0.12)
-      borderWarning = warning.opacity(0.77)
+      baseBorder = border
     }
   }
 }
@@ -187,7 +240,7 @@ extension ClerkTheme.Colors {
   public static let defaultBorderColor = Color(.neutral)
 
   /// The default ClerkKitUI semantic color palette.
-  public nonisolated static var `default`: Self {
+  public static var `default`: Self {
     .init(
       primary: defaultPrimaryColor,
       background: defaultBackgroundColor,
