@@ -21,13 +21,18 @@ extension BiometricCredentialKeyManagerProtocol {
   }
 
   @MainActor
-  func sign(clientData: String, localKeyId: String) throws -> BiometricCredentialKeySignature {
-    try sign(clientData: clientData, localKeyId: localKeyId, localizedReason: nil)
+  func sign(clientData: String, localKeyId: String) async throws -> BiometricCredentialKeySignature {
+    try await sign(clientData: clientData, localKeyId: localKeyId, localizedReason: nil)
   }
 }
 
 final class BiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol {
   private static let applicationTagPrefix = "dev.clerk.trusted_device"
+  private let signChallenge: @Sendable (String, String, String?) throws -> BiometricCredentialKeySignature
+
+  init(signChallenge: (@Sendable (String, String, String?) throws -> BiometricCredentialKeySignature)? = nil) {
+    self.signChallenge = signChallenge ?? Self.signWithSecurity
+  }
 
   @MainActor
   func isSupported(policy: BiometricCredentialPolicy) -> Bool {
@@ -85,29 +90,18 @@ final class BiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol
     clientData: String,
     localKeyId: String,
     localizedReason: String? = nil
-  ) throws -> BiometricCredentialKeySignature {
-    let privateKey = try privateKey(localKeyId: localKeyId, localizedReason: localizedReason)
-    let algorithm = SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256
-    guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm) else {
-      throw BiometricCredentialKeyManagerError.unsupportedAlgorithm
+  ) async throws -> BiometricCredentialKeySignature {
+    // Security can wait for biometric authorization. Keep that wait off both the
+    // main actor and Swift's cooperative executor, and await its original result.
+    try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.global(qos: .userInitiated).async {
+        do {
+          try continuation.resume(returning: self.signChallenge(clientData, localKeyId, localizedReason))
+        } catch {
+          continuation.resume(throwing: error)
+        }
+      }
     }
-
-    var error: Unmanaged<CFError>?
-    guard let signature = SecKeyCreateSignature(
-      privateKey,
-      algorithm,
-      Data(clientData.utf8) as CFData,
-      &error
-    ) as Data? else {
-      throw BiometricCredentialKeyManagerError.signingFailed(Self.errorMessage(from: error))
-    }
-
-    let rawSignature = try Self.rawES256Signature(fromDEREncoded: signature)
-
-    return BiometricCredentialKeySignature(
-      clientData: clientData,
-      signature: Self.base64URLEncodedString(rawSignature)
-    )
   }
 
   @MainActor
@@ -137,7 +131,7 @@ final class BiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol
     }
   }
 
-  private func privateKey(localKeyId: String, localizedReason: String?) throws -> SecKey {
+  private static func privateKey(localKeyId: String, localizedReason: String?) throws -> SecKey {
     var query = Self.privateKeyQuery(localKeyId: localKeyId)
     query[kSecReturnRef as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -428,6 +422,37 @@ final class BiometricCredentialKeyManager: BiometricCredentialKeyManagerProtocol
   }
 }
 
+extension BiometricCredentialKeyManager {
+  private static func signWithSecurity(
+    clientData: String,
+    localKeyId: String,
+    localizedReason: String?
+  ) throws -> BiometricCredentialKeySignature {
+    let privateKey = try privateKey(localKeyId: localKeyId, localizedReason: localizedReason)
+    let algorithm = SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256
+    guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm) else {
+      throw BiometricCredentialKeyManagerError.unsupportedAlgorithm
+    }
+
+    var error: Unmanaged<CFError>?
+    guard let signature = SecKeyCreateSignature(
+      privateKey,
+      algorithm,
+      Data(clientData.utf8) as CFData,
+      &error
+    ) as Data? else {
+      throw BiometricCredentialKeyManagerError.signingFailed(Self.errorMessage(from: error))
+    }
+
+    let rawSignature = try Self.rawES256Signature(fromDEREncoded: signature)
+
+    return BiometricCredentialKeySignature(
+      clientData: clientData,
+      signature: Self.base64URLEncodedString(rawSignature)
+    )
+  }
+}
+
 package struct BiometricCredentialLocalKey: Equatable {
   package let localKeyId: String
   package let publicKeyJWK: String
@@ -512,7 +537,7 @@ package protocol BiometricCredentialKeyManagerProtocol: Sendable {
     clientData: String,
     localKeyId: String,
     localizedReason: String?
-  ) throws -> BiometricCredentialKeySignature
+  ) async throws -> BiometricCredentialKeySignature
   @MainActor func hasKey(localKeyId: String) throws -> Bool
   @MainActor func deleteKey(localKeyId: String) throws
 }

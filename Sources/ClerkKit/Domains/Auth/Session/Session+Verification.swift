@@ -298,7 +298,7 @@ extension Session {
         throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
       }
       try _Concurrency.Task.checkCancellation()
-      let signature = try biometricCredentials.sign(
+      let signature = try await biometricCredentials.sign(
         challenge: challenge,
         credential: localCredential,
         reason: reason ?? "Use biometrics to verify your identity."
