@@ -418,6 +418,7 @@ extension Clerk {
   ) -> Clerk {
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
+        // Clean up old managers before resetting to prevent background tasks from interfering
         existing.cleanupManagers()
         _shared = nil
       } else {
