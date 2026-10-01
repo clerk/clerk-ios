@@ -4,6 +4,7 @@
 //
 
 @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -12,6 +13,15 @@ struct TelemetryCollectorTests {
   private struct NetworkStub: NetworkRequester {
     func data(for _: URLRequest) async throws -> (Data, URLResponse) {
       (Data(), URLResponse())
+    }
+  }
+
+  private final class RecordingNetwork: NetworkRequester {
+    let requests = LockIsolated<[URLRequest]>([])
+
+    func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+      requests.withValue { $0.append(request) }
+      return (Data(), URLResponse())
     }
   }
 
@@ -75,5 +85,28 @@ struct TelemetryCollectorTests {
     }
 
     #expect(released == nil)
+  }
+
+  @Test
+  @MainActor
+  func periodicFlushSendsAPartialBatch() async throws {
+    configureClerkForTesting()
+    let network = RecordingNetwork()
+    let collector = TelemetryCollector(
+      options: .init(flushInterval: 1, disableThrottling: true),
+      networkRequester: network,
+      environment: Environment(instanceType: "development")
+    )
+
+    await collector.record(TelemetryEventRaw(event: "TEST_EVENT", payload: [:]))
+
+    let deadline = ContinuousClock.now + .seconds(5)
+    while network.requests.value.isEmpty, ContinuousClock.now < deadline {
+      try await Task.sleep(for: .milliseconds(50))
+    }
+
+    let body = try #require(network.requests.value.first?.httpBody)
+    #expect(String(decoding: body, as: UTF8.self).contains("TEST_EVENT"))
+    withExtendedLifetime(collector) {}
   }
 }

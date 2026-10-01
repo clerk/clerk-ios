@@ -53,6 +53,28 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigureFlushesTheOutgoingTelemetryCollector() async throws {
+    let outgoingTelemetry = TelemetryFlushSpy()
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      telemetryCollector: outgoingTelemetry
+    )
+
+    let reconfigured = try await Clerk.reconfigure(
+      publishableKey: publishableKey(for: "telemetry-flush.clerk.example.com"),
+      options: .init(telemetryEnabled: false)
+    )
+    defer { reconfigured.cleanupManagers() }
+
+    let deadline = ContinuousClock.now + .seconds(2)
+    while await outgoingTelemetry.flushCount == 0, ContinuousClock.now < deadline {
+      try await Task.sleep(for: .milliseconds(20))
+    }
+
+    #expect(await outgoingTelemetry.flushCount == 1)
+  }
+
+  @Test
   func reconfigurePreservesRegisteredAuthFlow() async throws {
     Clerk.shared.client = nil
     var registration = Clerk.shared.registerAuthFlow()
@@ -783,6 +805,16 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     return storage[key] != nil
+  }
+}
+
+private actor TelemetryFlushSpy: TelemetryCollectorProtocol {
+  private(set) var flushCount = 0
+
+  func record(_: TelemetryEventRaw) async {}
+
+  func flush() async {
+    flushCount += 1
   }
 }
 
