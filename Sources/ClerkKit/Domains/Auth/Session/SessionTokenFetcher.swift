@@ -16,14 +16,16 @@ private struct SessionTokenFetchContext {
 @MainActor
 private func makeSessionTokenFetchContext(
   session: Session,
-  template: String?
-) -> SessionTokenFetchContext {
-  let currentSession = Clerk.shared.client?.activeSessions.first { $0.id == session.id }
+  template: String?,
+  runtime: ClerkRuntimeScope
+) throws -> SessionTokenFetchContext {
+  let clerk = try runtime.requireCurrentClerk()
+  let currentSession = clerk.client?.activeSessions.first { $0.id == session.id }
   let resolvedSession = currentSession ?? session
   return SessionTokenFetchContext(
     session: resolvedSession,
     cacheKey: resolvedSession.tokenCacheKey(template: template),
-    sessionMinterEnabled: Clerk.shared.environment?.authConfig.sessionMinter == true,
+    sessionMinterEnabled: clerk.environment?.authConfig.sessionMinter == true,
     sessionSnapshotToken: currentSession?.lastActiveToken,
     isCurrentActiveSession: currentSession != nil
   )
@@ -116,7 +118,7 @@ actor SessionTokenFetcher {
       sessionId: session.id
     )
     let runtime = try await Clerk.requireStableRuntime()
-    let context = await makeSessionTokenFetchContext(session: session, template: options.template)
+    let context = try await makeSessionTokenFetchContext(session: session, template: options.template, runtime: runtime)
 
     if options.skipCache {
       return try await getForcedToken(
@@ -207,7 +209,7 @@ actor SessionTokenFetcher {
       sessionId: session.id
     )
     let runtime = try Clerk.requireStableRuntime()
-    let context = makeSessionTokenFetchContext(session: session, template: options.template)
+    let context = try makeSessionTokenFetchContext(session: session, template: options.template, runtime: runtime)
     return try await fetchToken(
       context,
       options: options,
@@ -254,7 +256,7 @@ actor SessionTokenFetcher {
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
 
-    let token = try await Clerk.shared.dependencies.sessionService.fetchToken(
+    let token = try await runtime.requireCurrentClerk().dependencies.sessionService.fetchToken(
       sessionId: context.session.id,
       template: options.template,
       params: requestParams
@@ -274,7 +276,7 @@ actor SessionTokenFetcher {
       try Task.checkCancellation()
       try runtime.validateStableRuntime()
       if storeResult?.didChangeCanonicalToken == true {
-        Clerk.shared.auth.send(.tokenRefreshed(token: token.jwt))
+        try runtime.requireCurrentClerk().auth.send(.tokenRefreshed(token: token.jwt))
       }
     }
 
