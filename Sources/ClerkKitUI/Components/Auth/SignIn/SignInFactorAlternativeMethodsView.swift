@@ -170,7 +170,7 @@ extension SignInFactorAlternativeMethodsView {
 
       let result: TransferFlowResult =
         if provider == .apple {
-          try await signIn.authenticateWithApple(
+          try await clerk.auth.signInWithApple(
             transferable: authState.transferable,
             unsafeMetadata: authState.unsafeMetadata
           )
