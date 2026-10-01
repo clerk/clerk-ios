@@ -228,30 +228,19 @@ struct ClerkTests {
     }
   }
 
+  #if os(macOS)
   @Test
-  func clearAllKeychainItemsWorksWhenClerkNotConfigured() throws {
-    // Note: This test verifies that clearAllKeychainItems can be called even when Clerk is configured.
-    // When Clerk is not configured, clearAllKeychainItems creates a temporary SystemKeychain instance.
-    // Since we can't easily test the unconfigured state without accessing private properties,
-    // we verify that the function works correctly when Clerk is configured (which is the common case).
-    // The unconfigured case is tested implicitly through code coverage.
-
-    let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+  func clearAllKeychainItemsTrapsWhenClerkNotConfigured() async throws {
+    let result = try #require(
+      await #expect(processExitsWith: .failure, observing: [\.standardErrorContent]) {
+        await MainActor.run {
+          Clerk.clearAllKeychainItems()
+        }
+      }
     )
-
-    // Add test data
-    try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-
-    // Function should work correctly
-    Clerk.clearAllKeychainItems()
-
-    // Verify key was deleted
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
+    #expect(String(decoding: result.standardErrorContent, as: UTF8.self).contains("Clerk has not been configured"))
   }
+  #endif
 
   @Test
   func clearAllKeychainItemsDoesNotThrow() throws {
