@@ -1,7 +1,5 @@
 import Foundation
 
-/// Coordinates token requests. Default tokens belong to the current client sessions;
-/// only named template tokens have a separate cache.
 actor SessionTokenFetcher {
   static let shared = SessionTokenFetcher()
 
@@ -189,7 +187,6 @@ actor SessionTokenFetcher {
   }
 }
 
-/// Named JWT templates are distinct from the default token stored in each current Session.
 @MainActor
 final class SessionTemplateTokensCache {
   static let shared = SessionTemplateTokensCache()

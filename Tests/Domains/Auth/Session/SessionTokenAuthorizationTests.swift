@@ -338,18 +338,17 @@ struct SessionTokenAuthorizationTests {
   @Test(arguments: [false, true])
   func sameTimestampRefreshReplacesAcceptedClientToken(previouslyAllowed: Bool) async throws {
     let now = Int(Date.now.timeIntervalSince1970)
-    var session = Session.mock
-    session.lastActiveToken = try token(issuedAt: now - 60)
+    var retainedSession = Session.mock
+    retainedSession.lastActiveToken = try token(issuedAt: now - 60)
     let refreshed = try token(issuedAt: now, allowed: !previouslyAllowed)
-    let clerk = try await configure(session: session, response: refreshed)
+    let clerk = try await configure(session: retainedSession, response: refreshed)
     var incoming = try #require(clerk.client)
     incoming.sessions[0].lastActiveToken = try token(issuedAt: now, allowed: previouslyAllowed)
     clerk.applyResponseClient(incoming)
     #expect(clerk.has(feature: "widgets") == previouslyAllowed)
 
     #expect(try await clerk.auth.getToken(.init(skipCache: true)) == refreshed.jwt)
-    // The caller may retain the session snapshot from before either server response.
-    #expect(try await session.getToken() == refreshed.jwt)
+    #expect(try await retainedSession.getToken() == refreshed.jwt)
     #expect(clerk.session?.lastActiveToken == refreshed)
     #expect(clerk.has(feature: "widgets") == !previouslyAllowed)
     #expect(clerk.has(plan: "gold") == !previouslyAllowed)

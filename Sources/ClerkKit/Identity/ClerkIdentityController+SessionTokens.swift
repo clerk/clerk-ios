@@ -71,8 +71,6 @@ extension ClerkIdentityController {
     return token
   }
 
-  /// Default tokens live only in client.sessions. A fresh response wins a timestamp tie;
-  /// a retained Session is never used to replace the current token.
   @discardableResult
   func updateSessionToken(_ token: TokenResource, for request: SessionTokenRequest) -> TokenResource? {
     guard let session = currentSession(for: request), tokenMatchesSession(token, session: session),
@@ -112,15 +110,13 @@ extension ClerkIdentityController {
       == TokenFreshness.normalizedOrganizationId(session.lastActiveOrganizationId)
   }
 
-  /// On equal timestamps, the last accepted server response wins.
   private func acceptedSessionToken(_ token: TokenResource, previous: Session?, incomingSession: Session) -> TokenResource {
     let existing = previous?.lastActiveToken.flatMap {
       tokenMatchesSession($0, session: incomingSession) ? $0 : nil
     }
-    return TokenFreshness.pickFreshest(existing: existing, incoming: token)
+    return TokenFreshness.pickFreshest(existing: existing, incoming: token, tieBreaker: .incoming)
   }
 
-  /// Client responses and token responses apply the same freshness rule to the same stored token.
   func reconcilingSessionTokens(
     in identity: ClerkIdentitySnapshot
   ) -> (identity: ClerkIdentitySnapshot, reusableSessionIds: Set<String>) {
@@ -133,9 +129,7 @@ extension ClerkIdentityController {
       guard let token = session.lastActiveToken, tokenMatchesSession(token, session: session) else { continue }
       let accepted = acceptedSessionToken(token, previous: previous, incomingSession: session)
       incoming.sessions[index].lastActiveToken = accepted
-      // Repeating an invalidated snapshot does not make it reusable. A different accepted
-      // server token does, including a new token issued within the same second.
-      if accepted == token, accepted != previous?.lastActiveToken {
+      if isNewlyAcceptedServerToken(accepted, incoming: token, previous: previous?.lastActiveToken) {
         reusableSessionIds.insert(session.id)
       }
     }
@@ -145,21 +139,31 @@ extension ClerkIdentityController {
     )
   }
 
-  /// Fence token requests when ownership changes, including switching away and back to an org.
   func prepareSessionTokensForIdentityChange(to identity: ClerkIdentitySnapshot) {
     if identity.deviceToken != currentDeviceToken || identity.client?.id != clerk?.client?.id {
       invalidateAllSessionTokens()
     } else {
       for previous in clerk?.client?.activeSessions ?? [] {
         let incoming = identity.client?.activeSessions.first { $0.id == previous.id }
-        if incoming == nil
-          || TokenFreshness.normalizedOrganizationId(incoming?.lastActiveOrganizationId)
-          != TokenFreshness.normalizedOrganizationId(previous.lastActiveOrganizationId)
-          || (previous.lastActiveToken != nil && incoming?.lastActiveToken == nil)
-        {
+        if tokenOwnershipChanged(from: previous, to: incoming) {
           invalidateSessionTokens(sessionId: previous.id)
         }
       }
     }
+  }
+
+  private func isNewlyAcceptedServerToken(
+    _ accepted: TokenResource,
+    incoming: TokenResource,
+    previous: TokenResource?
+  ) -> Bool {
+    accepted == incoming && accepted != previous
+  }
+
+  private func tokenOwnershipChanged(from previous: Session, to incoming: Session?) -> Bool {
+    guard let incoming else { return true }
+    return TokenFreshness.normalizedOrganizationId(incoming.lastActiveOrganizationId)
+      != TokenFreshness.normalizedOrganizationId(previous.lastActiveOrganizationId)
+      || (previous.lastActiveToken != nil && incoming.lastActiveToken == nil)
   }
 }
