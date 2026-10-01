@@ -24,8 +24,12 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
   ) async throws -> Bool {
     guard attempts == 1 else { return false }
 
+    // A 5xx, timeout, or dropped connection can arrive after the server already
+    // processed the request, so only safe methods retry on those signals.
+    let isSafeMethod = Self.safeMethods.contains(request.httpMethod ?? "GET")
+
     if let response,
-       shouldRetry(statusCode: response.statusCode)
+       shouldRetry(statusCode: response.statusCode, isSafeMethod: isSafeMethod)
     {
       let delay = retryDelay(for: response)
       await sleep(delay)
@@ -38,7 +42,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
     }
 
     if let urlError = error as? URLError {
-      if shouldRetry(urlError: urlError) {
+      if shouldRetry(urlError: urlError, isSafeMethod: isSafeMethod) {
         let delay = defaultBackoffDelay()
         await sleep(delay)
         await logRetry(
@@ -55,24 +59,29 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
 
   // MARK: - Helpers
 
-  private func shouldRetry(statusCode: Int) -> Bool {
+  private static let safeMethods: Set<String> = ["GET", "HEAD"]
+
+  private func shouldRetry(statusCode: Int, isSafeMethod: Bool) -> Bool {
     switch statusCode {
-    case 408, 425, 429, 500, 502, 503, 504:
+    case 408, 425, 429:
       true
+    case 500, 502, 503, 504:
+      isSafeMethod
     default:
       false
     }
   }
 
-  private func shouldRetry(urlError: URLError) -> Bool {
+  private func shouldRetry(urlError: URLError, isSafeMethod: Bool) -> Bool {
     switch urlError.code {
-    case .timedOut,
-         .cannotFindHost,
+    case .cannotFindHost,
          .cannotConnectToHost,
-         .networkConnectionLost,
          .dnsLookupFailed,
          .notConnectedToInternet:
       true
+    case .timedOut,
+         .networkConnectionLost:
+      isSafeMethod
     default:
       false
     }
