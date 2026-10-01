@@ -93,11 +93,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   }
 
   package func record(_ raw: TelemetryEventRaw) async {
-    if !isPeriodicFlushingStarted {
-      isPeriodicFlushingStarted = true
-      startPeriodicFlushing()
-    }
-
     let prepared = await preparePayload(event: raw.event, payload: raw.payload)
     let recordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
 
@@ -109,6 +104,12 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     }
 
     if !recordResult.shouldRecord { return }
+
+    if !isPeriodicFlushingStarted {
+      isPeriodicFlushingStarted = true
+      startPeriodicFlushing()
+    }
+
     buffer.append(prepared)
     await scheduleFlushIfNeeded()
   }
@@ -153,11 +154,13 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
   }
 
   private func startPeriodicFlushing() {
+    let flushInterval = config.flushInterval
     flushTimer = Task { [weak self] in
-      guard let self else { return }
-
       while !Task.isCancelled {
-        try? await Task.sleep(for: .seconds(config.flushInterval))
+        try? await Task.sleep(for: .seconds(flushInterval))
+
+        // Rebind per tick so a sleeping loop doesn't keep a replaced collector alive.
+        guard let self else { return }
 
         let hasEvents = await hasBufferedEvents()
         if hasEvents {
