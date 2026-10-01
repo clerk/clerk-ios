@@ -416,10 +416,8 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) -> Clerk {
-    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
-        // Clean up old managers before resetting to prevent background tasks from interfering
         existing.cleanupManagers()
         _shared = nil
       } else {
@@ -441,7 +439,6 @@ extension Clerk {
     return clerk
   }
 
-  /// Configures the shared instance with isolated persistence for SDK tests.
   @MainActor
   @discardableResult
   static func configureForTesting(
@@ -545,7 +542,7 @@ extension Clerk {
   }
 
   @MainActor
-  package static func resetSharedInstanceForTesting() async {
+  static func resetSharedInstanceForTesting() async {
     guard EnvironmentDetection.isRunningInTests else {
       return
     }
