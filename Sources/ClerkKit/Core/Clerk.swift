@@ -511,7 +511,7 @@ extension Clerk {
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState, clerkProvider: { existing })
       )
       let rollbackState = existing.captureReconfigurationRollbackState()
 
