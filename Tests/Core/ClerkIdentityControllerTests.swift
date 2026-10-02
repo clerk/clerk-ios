@@ -17,7 +17,7 @@ struct ClerkIdentityControllerTests {
     let observer = ClientChangeObserver {
       persistedWhenClientChanged = try? clerk.dependencies.identityStore.load()
     }
-    clerk.internalStateChanges.addObserver(observer)
+    clerk.runtime.internalStateChanges.addObserver(observer)
 
     try await clerk.identityController.applyNetworkResponse(
       context(.client(makeClient(id: "client")), token: .set("token"), requestToken: nil, clerk: clerk, date: 100)

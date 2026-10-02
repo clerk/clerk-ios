@@ -253,7 +253,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let clerk = Clerk.mockSignedOut
     let registration = try #require(clerk.registerAuthFlow())
     let observer = AuthFlowGateRecordingObserver()
-    clerk.internalStateChanges.addObserver(observer)
+    clerk.runtime.internalStateChanges.addObserver(observer)
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let data = try JSONEncoder.clerkEncoder.encode(ClientEnvelope(
       response: SignInResponsePayload(
