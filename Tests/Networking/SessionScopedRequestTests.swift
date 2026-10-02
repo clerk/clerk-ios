@@ -102,7 +102,7 @@ struct SessionScopedRequestTests {
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.url?.query?.contains("_clerk_session_id") == false)
+      #expect(request.url?.query?.contains("_clerk_session_id") != true)
       requestHandled.setValue(true)
     }
     mock.register()
