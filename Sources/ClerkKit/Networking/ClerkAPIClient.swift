@@ -5,11 +5,13 @@ actor APIClient {
     let checkpoint: ClerkRequestCheckpoint
     let authorization: String?
     let clientID: String?
+    let sessionID: String?
 
     init(request: URLRequest) {
       checkpoint = request.clerkRequestCheckpoint
       authorization = request.value(forHTTPHeaderField: "Authorization")
       clientID = request.value(forHTTPHeaderField: "x-clerk-client-id")
+      sessionID = request.url?.queryParam(named: "_clerk_session_id")
     }
 
     func apply(to request: inout URLRequest) {
