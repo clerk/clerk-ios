@@ -8,6 +8,8 @@ import Foundation
 protocol Dependencies: AnyObject {
   var apiClient: APIClient { get }
 
+  var transport: any APITransport { get }
+
   var networkingPipeline: NetworkingPipeline { get }
 
   var keychain: any KeychainStorage { get }
