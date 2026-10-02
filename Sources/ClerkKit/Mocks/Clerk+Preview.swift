@@ -43,6 +43,8 @@ public final class PreviewBuilder {
 
   package var services: MockServicesBuilder = .init()
 
+  package var transport = FakeTransport()
+
   /// Creates a new preview builder.
   public init() {}
 }
@@ -129,6 +131,7 @@ extension Clerk {
 
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
+      transport: previewBuilder.transport,
       services: previewBuilder.services
     )
 
@@ -152,10 +155,12 @@ extension Clerk {
   @MainActor
   private static func createMockDependencyContainer(
     apiClient: APIClient,
+    transport: FakeTransport,
     services: MockServicesBuilder
   ) -> MockDependencyContainer {
     MockDependencyContainer(
       apiClient: apiClient,
+      transport: transport,
       clientService: services.clientService,
       userService: services.userService,
       signInService: services.signInService,

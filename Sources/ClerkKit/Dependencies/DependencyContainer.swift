@@ -24,6 +24,7 @@ final class DependencyContainer: Dependencies {
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
+  let transport: any APITransport
   let telemetryCollector: any TelemetryCollectorProtocol
 
   // MARK: - Services
@@ -120,6 +121,7 @@ final class DependencyContainer: Dependencies {
         "x-mobile": Self.mobileHeaderValue,
       ]
     }
+    transport = apiClient
 
     telemetryCollector = Self.createTelemetryCollector(
       publishableKey: configurationManager.publishableKey,
