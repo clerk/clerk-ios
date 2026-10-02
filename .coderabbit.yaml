@@ -1,0 +1,4 @@
+# Preserve organization settings while keeping CI separate from approving reviews.
+inheritance: true
+reviews:
+  request_changes_workflow: false
