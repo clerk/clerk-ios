@@ -360,7 +360,7 @@ struct ClerkAPIClientTests {
         return recoveredClient
       })
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     defer {
       startupGate.resume()
       clerk.cleanupManagers()
@@ -418,7 +418,7 @@ struct ClerkAPIClientTests {
         return startupClient
       })
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     defer {
       startupGate.resume()
       clerk.cleanupManagers()

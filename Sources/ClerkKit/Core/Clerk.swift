@@ -35,7 +35,6 @@ public final class Clerk {
 
   private struct ReconfigurationRollbackState {
     let configurationEpoch: ClerkConfigurationEpoch
-    let dependencies: any Dependencies
     let identity: ClerkIdentityController.RollbackState
   }
 
@@ -260,22 +259,32 @@ public final class Clerk {
 extension Clerk {
   @MainActor
   func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
+    let runtime = try makeRuntime(publishableKey: publishableKey, options: options, runtimeScope: runtimeScope)
+    self.runtime.stop()
+    install(runtime)
+  }
+
+  @MainActor
+  func performConfiguration(dependencies: any Dependencies) {
+    runtime.stop()
+    install(ClerkRuntime(clerk: self, dependencies: dependencies))
+  }
+
+  private func makeRuntime(
+    publishableKey: String,
+    options: Clerk.Options,
+    runtimeScope: ClerkRuntimeScope
+  ) throws -> ClerkRuntime {
     let dependencies = try DependencyContainer(
       publishableKey: publishableKey,
       options: options,
       runtimeScope: runtimeScope
     )
-    installConfiguration(dependencies: dependencies)
+    return ClerkRuntime(clerk: self, dependencies: dependencies)
   }
 
-  @MainActor
-  func performConfiguration(dependencies: any Dependencies) throws {
-    installConfiguration(dependencies: dependencies)
-  }
-
-  @MainActor
-  private func installConfiguration(dependencies: any Dependencies) {
-    runtime.dependencies = dependencies
+  private func install(_ runtime: ClerkRuntime) {
+    self.runtime = runtime
     runtime.start()
   }
 
@@ -341,7 +350,7 @@ extension Clerk {
       probesAccessGroupOverride: false,
       keychainStorageOverride: keychainStorage
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     _shared = clerk
     return clerk
   }
@@ -383,38 +392,34 @@ extension Clerk {
       _ = try existing.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
       let nextEpoch = existing.nextConfigurationEpoch
-      let newDependencies = try DependencyContainer(
+      let next = try existing.makeRuntime(
         publishableKey: publishableKey,
         options: options,
         runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState, clerkProvider: { existing })
       )
+      let outgoing = existing.runtime
       let rollbackState = existing.captureReconfigurationRollbackState()
 
       existing.setConfigurationEpoch(to: nextEpoch)
       await existing.cleanupManagersAndWait()
 
       do {
-        try clearLocalClerkStorageStrictly(in: rollbackState.dependencies)
-        try clearLocalClerkStorageStrictly(in: newDependencies)
+        try clearLocalClerkStorageStrictly(in: outgoing.dependencies)
+        try clearLocalClerkStorageStrictly(in: next.dependencies)
       } catch {
         existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
       }
 
       await existing.resetRuntimeStateForReconfiguration()
-      existing.installConfiguration(dependencies: newDependencies)
+      existing.install(next)
       return existing
     }
 
     let clerk = Clerk()
-    let newDependencies = try DependencyContainer(
-      publishableKey: publishableKey,
-      options: options,
-      runtimeScope: clerk.runtimeScope
-    )
-
-    try clearLocalClerkStorageStrictly(in: newDependencies)
-    clerk.installConfiguration(dependencies: newDependencies)
+    let runtime = try clerk.makeRuntime(publishableKey: publishableKey, options: options, runtimeScope: clerk.runtimeScope)
+    try clearLocalClerkStorageStrictly(in: runtime.dependencies)
+    clerk.install(runtime)
     _shared = clerk
     return clerk
   }
@@ -618,7 +623,6 @@ extension Clerk {
   private func captureReconfigurationRollbackState() -> ReconfigurationRollbackState {
     ReconfigurationRollbackState(
       configurationEpoch: configurationEpoch,
-      dependencies: dependencies,
       identity: identityController.captureRollbackState()
     )
   }
@@ -628,7 +632,7 @@ extension Clerk {
   ) {
     setConfigurationEpoch(to: state.configurationEpoch)
     identityController.restoreRollbackState(state.identity)
-    installConfiguration(dependencies: state.dependencies)
+    runtime.start()
   }
 
   func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) -> Bool {

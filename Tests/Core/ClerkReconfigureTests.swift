@@ -224,7 +224,7 @@ struct ClerkReconfigureTests {
       identityIsInAccessGroup: true,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    try clerk.performConfiguration(dependencies: sourceDependencies)
+    clerk.performConfiguration(dependencies: sourceDependencies)
     try clerk.seedIdentity(deviceToken: "shared-token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
     clerk.environment = .mock
     clerk.sessionsByUserId = [User.mock.id: [.mock]]
@@ -262,7 +262,7 @@ struct ClerkReconfigureTests {
       identityKeychain: identityKeychain,
       telemetryCollector: original.dependencies.telemetryCollector
     )
-    try original.performConfiguration(dependencies: sourceDependencies)
+    original.performConfiguration(dependencies: sourceDependencies)
     try original.seedIdentity(deviceToken: "source-token", client: .mock)
     defer { original.cleanupManagers() }
 
@@ -287,7 +287,7 @@ struct ClerkReconfigureTests {
       keychain: throwingKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try original.performConfiguration(dependencies: previousDependencies)
+    original.performConfiguration(dependencies: previousDependencies)
     original.client = .mock
     original.environment = .mock
     defer { original.cleanupManagers() }
@@ -325,7 +325,7 @@ struct ClerkReconfigureTests {
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     try clerk.seedIdentity(deviceToken: "device-token")
     defer { clerk.cleanupManagers() }
 
@@ -357,7 +357,7 @@ struct ClerkReconfigureTests {
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
 
     let targetService = "com.clerk.tests.pending-cache-drain.\(UUID().uuidString)"
@@ -389,7 +389,7 @@ struct ClerkReconfigureTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
       sessionService: sessionService
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: cachedJWT),
@@ -431,7 +431,7 @@ struct ClerkReconfigureTests {
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     let staleSession = try #require(Clerk.shared.session)
     SessionTemplateTokensCache.shared.insertToken(
@@ -509,7 +509,7 @@ struct ClerkReconfigureTests {
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
 
     try Clerk.beginRuntimeReconfiguration()
     defer { Clerk.endRuntimeReconfiguration() }
