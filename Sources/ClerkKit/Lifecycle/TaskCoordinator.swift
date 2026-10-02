@@ -8,9 +8,6 @@
 import Foundation
 
 /// Manages and coordinates tasks for cleanup and cancellation.
-///
-/// This class provides a centralized way to track and cancel tasks.
-/// Call `cancelAll()` before releasing the coordinator to ensure proper cleanup.
 @MainActor
 final class TaskCoordinator {
   private struct TrackedTask {
@@ -29,9 +26,9 @@ final class TaskCoordinator {
       wait: { _ = await task.result }
     )
 
-    Task {
+    Task { [weak self] in
       _ = await task.result
-      tasks[id] = nil
+      self?.tasks[id] = nil
     }
   }
 
@@ -63,6 +60,12 @@ final class TaskCoordinator {
 
     for task in trackedTasks {
       await task.wait()
+    }
+  }
+
+  deinit {
+    for task in tasks.values {
+      task.cancel()
     }
   }
 }
