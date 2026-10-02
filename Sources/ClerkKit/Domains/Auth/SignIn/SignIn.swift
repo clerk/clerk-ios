@@ -82,12 +82,16 @@ public struct SignIn: Codable, Sendable, Equatable {
 extension SignIn {
   @MainActor
   private var signInService: any SignInServiceProtocol {
-    Clerk.shared.dependencies.signInService
+    get throws {
+      try Clerk.currentDependencies.signInService
+    }
   }
 
   @MainActor
   private var magicLinkStore: MagicLinkStore {
-    Clerk.shared.dependencies.magicLinkStore
+    get throws {
+      try Clerk.currentDependencies.magicLinkStore
+    }
   }
 
   // MARK: - First Factor Verification
@@ -719,7 +723,7 @@ extension SignIn {
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     if needsTransferToSignUp == true, transferable {
-      let signUpService: any SignUpServiceProtocol = Clerk.shared.dependencies.signUpService
+      let signUpService: any SignUpServiceProtocol = try Clerk.currentDependencies.signUpService
       let signUp = try await signUpService.create(params: .init(
         unsafeMetadata: unsafeMetadata,
         transfer: true

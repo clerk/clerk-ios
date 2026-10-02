@@ -51,7 +51,9 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 extension EmailAddress {
   @MainActor
   private var emailAddressService: any EmailAddressServiceProtocol {
-    Clerk.shared.dependencies.emailAddressService
+    get throws {
+      try Clerk.currentDependencies.emailAddressService
+    }
   }
 
   /// Sends a verification code to this email address.

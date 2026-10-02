@@ -38,18 +38,24 @@ final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
   @MainActor
   private var emailAddressService: any EmailAddressServiceProtocol {
-    Clerk.shared.dependencies.emailAddressService
+    get throws {
+      try Clerk.currentDependencies.emailAddressService
+    }
   }
 
   @MainActor
   private var phoneNumberService: any PhoneNumberServiceProtocol {
-    Clerk.shared.dependencies.phoneNumberService
+    get throws {
+      try Clerk.currentDependencies.phoneNumberService
+    }
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
   private var passkeyService: any PasskeyServiceProtocol {
-    Clerk.shared.dependencies.passkeyService
+    get throws {
+      try Clerk.currentDependencies.passkeyService
+    }
   }
   #endif
 
