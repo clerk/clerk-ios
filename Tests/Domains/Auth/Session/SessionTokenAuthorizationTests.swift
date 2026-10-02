@@ -1,4 +1,4 @@
-@testable import ClerkKit
+@_spi(FrameworkIntegration) @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Observation
@@ -42,14 +42,18 @@ struct SessionTokenAuthorizationTests {
     #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 100))
   }
 
-  @Test
-  func currentSessionTokenIsReusedWithoutAnotherRequest() async throws {
+  @Test(arguments: [false, true])
+  func currentSessionTokenIsReusedWithoutAnotherRequest(rotateDeviceToken: Bool) async throws {
     let now = Int(Date.now.timeIntervalSince1970)
     var session = Session.mock
     session.lastActiveToken = try token(issuedAt: now - 60)
     let cached = try token(issuedAt: now, allowed: true)
     session.lastActiveToken = cached
     let clerk = try await configure(session: session, response: nil)
+
+    if rotateDeviceToken {
+      #expect(try await clerk.setDeviceToken("rotated-device-token", expected: "test-device-token"))
+    }
 
     #expect(try await clerk.auth.getToken() == cached.jwt)
     #expect(clerk.session?.lastActiveToken == cached)
@@ -200,6 +204,39 @@ struct SessionTokenAuthorizationTests {
     #expect(params.value?.forceOrigin == (minterEnabled ? "true" : nil))
     #expect(clerk.has(feature: "widgets"))
     #expect(retained.lastActiveToken != clerk.session?.lastActiveToken)
+  }
+
+  @Test(arguments: [false, true], [false, true])
+  func deviceTokenRotationDoesNotUndoInvalidation(minterEnabled: Bool, invalidateAll: Bool) async throws {
+    let now = Int(Date.now.timeIntervalSince1970)
+    var session = Session.mock
+    session.lastActiveToken = try token(issuedAt: now - 1)
+    let refreshed = try token(issuedAt: now, allowed: true)
+    let count = LockIsolated(0)
+    let params = LockIsolated<SessionTokenRequestParams?>(nil)
+    let clerk = try await configure(session: session, response: refreshed, onFetch: {
+      count.withValue { $0 += 1 }
+      params.setValue($0)
+    })
+    var environment = Clerk.Environment.mock
+    environment.authConfig.sessionMinter = minterEnabled
+    clerk.environment = environment
+    if invalidateAll {
+      clerk.identityController.invalidateAllSessionTokens()
+    } else {
+      clerk.identityController.invalidateSessionTokens(sessionId: session.id)
+    }
+
+    #expect(try await clerk.setDeviceToken("rotated-device-token", expected: "test-device-token"))
+    #expect(clerk.session?.lastActiveToken == session.lastActiveToken)
+    #expect(!clerk.identityController.canReuseSessionToken(sessionId: session.id))
+
+    #expect(try await clerk.auth.getToken() == refreshed.jwt)
+    #expect(try await clerk.auth.getToken() == refreshed.jwt)
+    #expect(count.value == 1)
+    #expect(params.value?.token == (minterEnabled ? session.lastActiveToken?.jwt : nil))
+    #expect(params.value?.forceOrigin == (minterEnabled ? "true" : nil))
+    #expect(clerk.has(reverification: .strict))
   }
 
   @Test
