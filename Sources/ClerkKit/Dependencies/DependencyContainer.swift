@@ -41,7 +41,6 @@ final class DependencyContainer: Dependencies {
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
   let environmentService: EnvironmentServiceProtocol
-  let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
@@ -140,7 +139,6 @@ final class DependencyContainer: Dependencies {
     organizationService = OrganizationService(apiClient: apiClient)
     billingService = BillingService(apiClient: apiClient)
     environmentService = EnvironmentService(apiClient: apiClient)
-    emailAddressService = EmailAddressService(apiClient: apiClient)
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)
   }
