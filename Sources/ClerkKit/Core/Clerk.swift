@@ -135,10 +135,13 @@ public final class Clerk {
     identityController.clientResponseGeneration
   }
 
+  @ObservationIgnored
   private var invalidAuthRefreshTask: Task<Void, Never>?
 
   /// Configure-time client refresh, canceled when tokenless client creation starts.
+  @ObservationIgnored
   private var startupClientRefreshTask: Task<Void, Never>?
+  @ObservationIgnored
   private var startupClientRefreshID: UUID?
 
   @ObservationIgnored
@@ -146,6 +149,7 @@ public final class Clerk {
 
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
+  @ObservationIgnored
   private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
 
   let runtimeState = ClerkRuntimeState()
@@ -170,7 +174,9 @@ public final class Clerk {
   }
 
   private var environmentRefreshRevision = 0
+  @ObservationIgnored
   private var environmentRefreshTask: Task<Environment, Error>?
+  @ObservationIgnored
   private var environmentRefreshTaskID: UUID?
 
   package var environmentRefreshCheckpoint: EnvironmentRefreshCheckpoint {
@@ -182,6 +188,7 @@ public final class Clerk {
     dependencies.configurationManager.options
   }
 
+  @ObservationIgnored
   private var taskCoordinator: TaskCoordinator? = TaskCoordinator()
 
   var frontendApiUrl: String {
@@ -190,20 +197,27 @@ public final class Clerk {
 
   // MARK: - Lifecycle Managers
 
+  @ObservationIgnored
   var cacheManager: CacheManager?
 
+  @ObservationIgnored
   private var sessionPollingManager: SessionPollingManager?
 
+  @ObservationIgnored
   private var lifecycleManager: LifecycleManager?
 
   @ObservationIgnored
   lazy var identityController = ClerkIdentityController(clerk: self)
 
+  @ObservationIgnored
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  @ObservationIgnored
   private var sharedIdentityNotifier: SharedIdentityNotifier?
 
+  @ObservationIgnored
   var internalStateChanges = ClerkInternalStateChangeEmitter()
 
+  @ObservationIgnored
   var dependencies: any Dependencies
 
   /// The event emitter for auth events.
