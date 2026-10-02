@@ -1,0 +1,4 @@
+# Preserve the organization settings while enabling formal review decisions.
+inheritance: true
+reviews:
+  request_changes_workflow: true

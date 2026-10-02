@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { findPullRequests, hasCleanReview, requestKind, resolveRequest } = require('./pr-ci.cjs');
+const { findPullRequests, requestKind, resolveRequest } = require('./pr-ci.cjs');
 
 const SHA = 'a67281b99b151e4aadf15fd568242624e42ee9da';
 const OLD_SHA = 'a546d827532ed391fc2dbdf4a9649a11f2719cf6';
@@ -9,19 +9,6 @@ const RABBIT = { id: 136622811, login: 'coderabbitai[bot]', type: 'Bot' };
 const ACTIONS = { id: 41898282, login: 'github-actions[bot]', type: 'Bot' };
 const MEMBER = { id: 123, login: 'member', type: 'User' };
 const INSTRUCTIONS = '<!-- clerk-ios-manual-ci -->\n- [ ] Run CI';
-// The clean summary and commit-range format observed on PR #610 after its fixes.
-const cleanBody = (sha = SHA) => `<!-- This is an auto-generated comment: summarize by coderabbit.ai -->
-<!-- recent_review_start -->
-
-No actionable comments were generated in the recent review. 🎉
-
-<details>
-<summary>ℹ️ Recent review info</summary>
-
-Reviewing files that changed from the base of the PR and between ${OLD_SHA} and ${sha}.
-
-</details>
-<!-- recent_review_end -->`;
 
 function harness() {
   const state = {
@@ -32,8 +19,8 @@ function harness() {
     },
     comments: [
       { id: 1, user: ACTIONS, body: INSTRUCTIONS },
-      { id: 2, user: RABBIT, body: cleanBody() },
     ],
+    reviews: [{ id: 30, user: RABBIT, state: 'APPROVED', commit_id: SHA, submitted_at: '2026-10-01T19:25:00Z', body: '' }],
     statuses: [{ id: 10, context: 'CodeRabbit', creator: RABBIT, state: 'success', description: 'Review completed' }],
     checks: new Map([[SHA, [{ id: 20, head_sha: SHA, app: { slug: 'github-actions' }, status: 'queued' }]]]),
     commits: [{ sha: SHA }],
@@ -44,10 +31,14 @@ function harness() {
   };
   const context = {
     repo: { owner: 'clerk', repo: 'clerk-ios' }, serverUrl: 'https://github.com', runId: 42,
-    eventName: 'issue_comment',
+    eventName: 'workflow_run',
     payload: {
-      action: 'edited', issue: { number: 610, pull_request: {} },
-      comment: structuredClone(state.comments[1]), sender: RABBIT,
+      action: 'completed',
+      workflow_run: {
+        name: 'CodeRabbit Approval', path: '.github/workflows/coderabbit-approval.yml',
+        event: 'pull_request_review', conclusion: 'success', head_sha: SHA,
+        pull_requests: [{ number: 610 }],
+      },
     },
   };
   const github = {
@@ -59,6 +50,7 @@ function harness() {
           return { data: structuredClone(state.pr) };
         },
         listCommits: async () => ({ data: state.commits }),
+        listReviews: async () => ({ data: state.reviews }),
       },
       repos: {
         getCollaboratorPermissionLevel: async () => ({ data: state.permission }),
@@ -121,14 +113,28 @@ function harness() {
     context.eventName = 'status';
     context.payload = { sender: RABBIT, context: 'CodeRabbit', state: 'success', description: 'Review completed', sha: state.pr.head.sha };
   };
-  const checkbox = () => {
-    context.payload.sender = MEMBER;
-    context.payload.comment = { ...state.comments[0], body: INSTRUCTIONS.replace('[ ]', '[x]') };
+  const approvalEvent = () => {
+    context.eventName = 'workflow_run';
+    context.payload = {
+      action: 'completed',
+      workflow_run: {
+        name: 'CodeRabbit Approval', path: '.github/workflows/coderabbit-approval.yml',
+        event: 'pull_request_review', conclusion: 'success', head_sha: state.pr.head.sha,
+        pull_requests: [{ number: 610 }],
+      },
+    };
   };
-  return { state, context, github, evaluate, command, statusEvent, checkbox };
+  const checkbox = () => {
+    context.eventName = 'issue_comment';
+    context.payload = {
+      action: 'edited', issue: { number: 610, pull_request: {} }, sender: MEMBER,
+      comment: { ...state.comments[0], body: INSTRUCTIONS.replace('[ ]', '[x]') },
+    };
+  };
+  return { state, context, github, evaluate, command, statusEvent, approvalEvent, checkbox };
 }
 
-test('first completed clean review starts the existing queued check at the reviewed SHA', async () => {
+test('first approval with a completed review and no CodeRabbit comments starts CI at the reviewed SHA', async () => {
   const h = harness();
   const result = await h.evaluate();
   assert.equal(result.should_run, 'true');
@@ -138,18 +144,18 @@ test('first completed clean review starts the existing queued check at the revie
   assert.match(h.state.writes[0].body, /clerk-ios-pr-ci-started/);
 });
 
-test('a green review with findings waits until a later commit has a clean review', async () => {
+test('a green review with requested changes waits until a later commit is approved', async () => {
   const h = harness();
   h.state.pr.head.sha = OLD_SHA;
-  h.state.comments[1].body = cleanBody(OLD_SHA).replace('No actionable comments were generated in the recent review. 🎉', '**Actionable comments posted: 1**');
+  Object.assign(h.state.reviews[0], { state: 'CHANGES_REQUESTED', commit_id: OLD_SHA });
   assert.equal((await h.evaluate()).should_run, 'false');
   assert.equal(h.state.writes.length, 0);
   h.state.pr.head.sha = SHA;
-  h.state.comments[1].body = cleanBody();
+  h.state.reviews.push({ ...h.state.reviews[0], id: 31, state: 'APPROVED', commit_id: SHA });
   assert.equal((await h.evaluate()).should_run, 'true');
 });
 
-test('summary first, completed status later starts exactly once', async () => {
+test('approval first, completed status later starts exactly once', async () => {
   const h = harness();
   h.state.statuses[0].state = 'pending';
   assert.equal((await h.evaluate()).should_run, 'false');
@@ -160,15 +166,15 @@ test('summary first, completed status later starts exactly once', async () => {
   assert.equal(h.state.writes.filter(write => write.kind === 'check').length, 1);
 });
 
-test('completed status first, clean summary later also starts once', async () => {
+test('completed status first, approval later also starts once', async () => {
   const h = harness();
-  h.state.comments[1].body = 'Review in progress';
+  const approval = h.state.reviews.pop();
   h.statusEvent();
   assert.equal((await h.evaluate()).should_run, 'false');
-  h.state.comments[1].body = cleanBody();
-  h.context.eventName = 'issue_comment';
-  h.context.payload = { action: 'edited', issue: { number: 610, pull_request: {} }, comment: h.state.comments[1], sender: RABBIT };
+  h.state.reviews.push(approval);
+  h.approvalEvent();
   assert.equal((await h.evaluate()).should_run, 'true');
+  assert.equal((await h.evaluate()).should_run, 'false');
 });
 
 for (const [name, change] of [
@@ -178,15 +184,21 @@ for (const [name, change] of [
   ['draft PR', h => { h.state.pr.draft = true; }],
   ['closed PR', h => { h.state.pr.state = 'closed'; }],
   ['deleted head repository', h => { h.state.pr.head.repo = null; }],
-  ['stale review summary', h => { h.state.comments[1].body = cleanBody(OLD_SHA); }],
+  ['approval for an older commit', h => { h.state.reviews[0].commit_id = OLD_SHA; }],
+  ['missing approval', h => { h.state.reviews = []; }],
+  ['dismissed approval', h => { h.state.reviews[0].state = 'DISMISSED'; }],
+  ['comment-only review', h => { h.state.reviews[0].state = 'COMMENTED'; }],
+  ['pending review', h => { h.state.reviews[0].state = 'PENDING'; }],
+  ['newer request for changes', h => { h.state.reviews.push({ ...h.state.reviews[0], id: 31, state: 'CHANGES_REQUESTED' }); }],
+  ['newer dismissed approval', h => { h.state.reviews.push({ ...h.state.reviews[0], id: 31, state: 'DISMISSED' }); }],
   ['stale status event', h => { h.statusEvent(); h.context.payload.sha = OLD_SHA; }],
   ['skipped review with green status', h => { h.state.statuses[0].description = 'Review skipped'; }],
   ['failed review', h => { h.state.statuses[0].state = 'failure'; }],
-  ['unknown summary format', h => { h.state.comments[1].body = 'No findings'; }],
+  ['approval override without a completed review', h => { h.state.statuses = []; }],
   ['newer pending review of the same SHA', h => { h.state.statuses.push({ ...h.state.statuses[0], id: 11, state: 'pending' }); }],
   ['spoofed CodeRabbit status', h => { h.state.statuses[0].creator = MEMBER; }],
-  ['spoofed CodeRabbit summary', h => { h.state.comments[1].user = MEMBER; }],
-  ['human edit of CodeRabbit comment', h => { h.context.payload.sender = MEMBER; }],
+  ['human approval', h => { h.state.reviews[0].user = MEMBER; }],
+  ['spoofed CodeRabbit identity', h => { h.state.reviews[0].user = { ...RABBIT, id: 999 }; }],
   ['head changes during resolution', h => { h.state.onRecheck = () => { h.state.pr.head.sha = NEXT_SHA; }; }],
 ]) {
   test(`${name} never launches automatic CI`, async () => {
@@ -206,7 +218,7 @@ test('fork authored by a Clerk member uses the fork repository and exact reviewe
   assert.equal(result.should_run, 'true');
 });
 
-test('marking a reviewed draft ready evaluates the existing clean review', async () => {
+test('marking a reviewed draft ready evaluates the existing approval', async () => {
   const h = harness();
   h.context.eventName = 'pull_request_target';
   h.context.payload = { action: 'ready_for_review', pull_request: h.state.pr, sender: MEMBER };
@@ -214,13 +226,13 @@ test('marking a reviewed draft ready evaluates the existing clean review', async
   assert.equal((await h.evaluate()).should_run, 'true');
 });
 
-test('a later clean commit stays manual after the first kickoff, even after force-push', async () => {
+test('a later approved commit stays manual after the first kickoff, even after force-push', async () => {
   const h = harness();
   assert.equal((await h.evaluate()).should_run, 'true');
   h.state.pr.head.sha = NEXT_SHA;
   h.state.commits = [{ sha: NEXT_SHA }];
   h.state.checks.clear();
-  h.state.comments[1].body = cleanBody(NEXT_SHA);
+  h.state.reviews.push({ ...h.state.reviews[0], id: 31, commit_id: NEXT_SHA });
   h.statusEvent();
   assert.equal((await h.evaluate()).should_run, 'false');
   h.command('MEMBER');
@@ -322,15 +334,76 @@ test('status routing supports multiple PRs but excludes closed, stale, and other
 
 test('non-PR comments and arbitrary events are ignored', () => {
   const h = harness();
+  h.command('MEMBER');
   h.context.payload.issue = { number: 610 };
   assert.equal(requestKind(h.context), null);
   h.context.eventName = 'push';
   assert.equal(requestKind(h.context), null);
 });
 
-test('clean text outside the review section or ambiguous sections are not sufficient', () => {
-  assert.equal(hasCleanReview(cleanBody(), SHA), true);
-  assert.equal(hasCleanReview(cleanBody().replace('recent_review_start', 'walkthrough_start'), SHA), false);
-  assert.equal(hasCleanReview(cleanBody() + cleanBody(), SHA), false);
-  assert.equal(hasCleanReview(cleanBody(OLD_SHA), SHA), false);
+test('withdrawn findings can qualify on the same commit without a clean summary (PR #607)', async () => {
+  const h = harness();
+  h.state.reviews.unshift({ ...h.state.reviews[0], id: 29, state: 'CHANGES_REQUESTED', body: 'Actionable comments posted: 1' });
+  h.state.reviews.push({ ...h.state.reviews[0], id: 32, state: 'COMMENTED', body: 'I withdraw this finding.' });
+  assert.equal((await h.evaluate()).should_run, 'true');
+});
+
+test('approval bodies and summary wording do not affect the decision', async () => {
+  const h = harness();
+  h.state.reviews[0].body = 'An entirely new approval message';
+  h.state.comments.push({ id: 2, user: RABBIT, body: 'New summary format' });
+  assert.equal((await h.evaluate()).should_run, 'true');
+});
+
+test('clean summary and completed status without formal approval do not start CI', async () => {
+  const h = harness();
+  h.state.reviews = [];
+  h.state.comments.push({ id: 2, user: RABBIT, body: 'No actionable comments were generated in the recent review. 🎉' });
+  h.statusEvent();
+  assert.equal((await h.evaluate()).should_run, 'false');
+  h.context.eventName = 'issue_comment';
+  h.context.payload = { action: 'edited', issue: { number: 610, pull_request: {} }, comment: h.state.comments[1], sender: RABBIT };
+  assert.equal(requestKind(h.context), null);
+  assert.equal(h.state.writes.length, 0);
+});
+
+test('review decision order uses submission time, not review creation order', async () => {
+  const h = harness();
+  // An older pending review can be submitted after a newer review was approved.
+  h.state.reviews.push({ ...h.state.reviews[0], id: 29, state: 'CHANGES_REQUESTED', submitted_at: '2026-10-01T19:26:00Z' });
+  assert.equal((await h.evaluate()).should_run, 'false');
+});
+
+test('approval relay routes PR metadata and falls back to commit associations for forks', async () => {
+  const h = harness();
+  h.context.payload.workflow_run.head_sha = OLD_SHA; // GITHUB_SHA may be a merge commit.
+  assert.deepEqual(await findPullRequests(h), [610]);
+  h.context.payload.workflow_run.pull_requests = [];
+  h.context.payload.workflow_run.head_sha = SHA;
+  h.state.pr.head.repo.full_name = 'member/clerk-ios';
+  assert.deepEqual(await findPullRequests(h), [610]);
+  assert.equal((await h.evaluate()).should_run, 'true');
+});
+
+for (const [name, change] of [
+  ['different workflow', run => { run.name = 'Build'; }],
+  ['different workflow path', run => { run.path = '.github/workflows/untrusted.yml'; }],
+  ['non-review event', run => { run.event = 'push'; }],
+  ['failed relay', run => { run.conclusion = 'failure'; }],
+  ['cancelled relay', run => { run.conclusion = 'cancelled'; }],
+]) {
+  test(`${name} cannot wake the automatic gate`, async () => {
+    const h = harness();
+    change(h.context.payload.workflow_run);
+    assert.deepEqual(await findPullRequests(h), []);
+    assert.equal((await h.evaluate()).should_run, 'false');
+    assert.equal(h.state.writes.length, 0);
+  });
+}
+
+test('approval lookup failures never launch CI', async () => {
+  const h = harness();
+  h.github.rest.pulls.listReviews = async () => { throw new Error('403'); };
+  await assert.rejects(h.evaluate(), /403/);
+  assert.equal(h.state.writes.length, 0);
 });

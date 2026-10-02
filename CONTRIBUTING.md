@@ -124,9 +124,16 @@ SwiftLint checks for:
 ### Pull request CI
 
 For non-draft PRs authored by Clerk organization members, CI starts once after
-CodeRabbit completes a review of the current commit and explicitly reports **no
-actionable comments**. A green “Review completed” status alone is not sufficient.
-Earlier reviews with findings do not prevent a later clean review from starting CI.
+CodeRabbit completes a review of the current commit and submits an **approval** for
+that commit. A green “Review completed” status alone is not sufficient. A clean
+first review qualifies, as does a later approval after findings are fixed or withdrawn.
+
+The repository's `.coderabbit.yaml` enables CodeRabbit's request-changes/approval
+workflow and inherits the organization's other review settings. CodeRabbit waits
+for its required threads to be resolved and blocking pre-merge checks to pass before
+automatically approving. Warning-only checks, such as docstring coverage, do not block
+approval. The CI gate independently requires a completed review even if approval was
+requested with a CodeRabbit override command.
 
 After the first CI kickoff, new commits and retries require a Clerk member to comment
 `/run ci`, or a Clerk member with write access to check **Run CI** in the instructions
@@ -134,12 +141,15 @@ comment. A manual kickoff before CodeRabbit finishes also counts as the first ru
 External contributions and draft PRs use these manual controls.
 
 Automatic and manual runs use the same checks, pinned to the requested commit. If
-CodeRabbit skips a review, is unavailable, or changes its output to an unrecognized
-format, use the manual controls. The first kickoff is recorded in a separate bot
+CodeRabbit skips a review, is unavailable, or does not approve, use the manual
+controls. The first kickoff is recorded in a separate bot
 comment so pushes, force-pushes, and reopening the PR do not reset it.
 
-The CI gate runs trusted scripts from the default branch, so workflow changes become
-active after they land there. Run its regression tests locally with Node.js 22 or later:
+The approval event first runs a workflow without repository permissions, then wakes
+the CI gate through `workflow_run`. The gate reads approvals directly from GitHub
+and runs trusted scripts from the default branch, including for member-authored
+forks. Workflow changes become active after they land on the default branch.
+Run its regression tests locally with Node.js 22 or later:
 
 ```sh
 node --test .github/scripts/pr-ci.test.cjs

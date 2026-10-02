@@ -6,6 +6,11 @@ on:
       - created
       - edited
   status:
+  workflow_run:
+    workflows:
+      - CodeRabbit Approval
+    types:
+      - completed
   pull_request_target:
     types:
       - ready_for_review
@@ -16,12 +21,15 @@ permissions:
 jobs:
   find-pull-requests:
     name: Find CI requests
-    # CodeRabbit writes its summary and status separately; either can arrive last.
+    # CodeRabbit submits its approval and status separately; either can arrive last.
     # No pull request code runs in this privileged routing job.
     if: >-
-      github.event_name != 'status' ||
-      (github.event.context == 'CodeRabbit' && github.event.state == 'success' &&
-       github.event.description == 'Review completed' && github.event.sender.id == 136622811)
+      (github.event_name != 'status' ||
+       (github.event.context == 'CodeRabbit' && github.event.state == 'success' &&
+        github.event.description == 'Review completed' && github.event.sender.id == 136622811)) &&
+      (github.event_name != 'workflow_run' ||
+       (github.event.workflow_run.event == 'pull_request_review' &&
+        github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -50,7 +58,7 @@ jobs:
     if: needs.find-pull-requests.outputs.pull_requests != '[]'
     strategy:
       fail-fast: false
-      # A status can belong to multiple PRs sharing the same commit. Let the
+      # An event can belong to multiple PRs sharing the same commit. Let the
       # first finish claiming/running CI before the next reuses that history.
       max-parallel: 1
       matrix:
