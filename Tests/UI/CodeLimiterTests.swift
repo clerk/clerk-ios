@@ -13,7 +13,15 @@ struct CodeLimiterTests {
     limiter.recordCodeSent(for: "identifier", cooldown: 5)
 
     #expect(limiter.remainingCooldown(for: "identifier") > 0)
-    #expect(try await publishesUpdate { limiter.remainingCooldown(for: "identifier") })
+    let update = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+    defer { update.continuation.finish() }
+    _ = withObservationTracking {
+      limiter.remainingCooldown(for: "identifier")
+    } onChange: {
+      update.continuation.yield()
+    }
+    var updateIterator = update.stream.makeAsyncIterator()
+    try #require(await updateIterator.next() != nil)
 
     while limiter.remainingCooldown(for: "identifier") > 0 {
       try await Task.sleep(for: .milliseconds(100))
