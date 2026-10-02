@@ -22,9 +22,6 @@ protocol LifecycleEventHandling: Sendable {
 }
 
 /// Manages app lifecycle notifications and coordinates foreground/background transitions.
-///
-/// This class handles the registration and cleanup of notification observers for app lifecycle events.
-/// Call `stopObserving()` before releasing the manager to ensure proper cleanup.
 @MainActor
 final class LifecycleManager {
   private var willEnterForegroundTask: Task<Void, Error>?
@@ -47,14 +44,14 @@ final class LifecycleManager {
     let willEnterForeground = notificationCenter.notifications(named: Self.willEnterForegroundNotification)
     let didEnterBackground = notificationCenter.notifications(named: Self.didEnterBackgroundNotification)
 
-    willEnterForegroundTask = Task {
+    willEnterForegroundTask = Task { [handler] in
       for await _ in willEnterForeground.map({ _ in () }) {
         guard !Task.isCancelled else { break }
         await handler.onWillEnterForeground()
       }
     }
 
-    didEnterBackgroundTask = Task {
+    didEnterBackgroundTask = Task { [handler] in
       for await _ in didEnterBackground.map({ _ in () }) {
         guard !Task.isCancelled else { break }
         await handler.onDidEnterBackground()
@@ -68,6 +65,11 @@ final class LifecycleManager {
 
     didEnterBackgroundTask?.cancel()
     didEnterBackgroundTask = nil
+  }
+
+  deinit {
+    willEnterForegroundTask?.cancel()
+    didEnterBackgroundTask?.cancel()
   }
 }
 

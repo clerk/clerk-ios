@@ -12,9 +12,6 @@ protocol SessionProviding: Sendable {
 }
 
 /// Manages periodic polling of session tokens to keep them refreshed.
-///
-/// This class handles the background task that periodically refreshes session tokens
-/// to ensure they remain valid. Call `stopPolling()` before releasing the manager.
 @MainActor
 final class SessionPollingManager {
   static let defaultPollInterval: TimeInterval = 5.0
