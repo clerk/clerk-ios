@@ -12,7 +12,6 @@ struct UserProfileMfaRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.locale) private var locale
-  @Environment(UserProfileSheetNavigation.self) private var navigation
 
   @State private var isConfirmingRemoval = false
   @State private var removeResource: RemoveResource?
@@ -158,10 +157,9 @@ struct UserProfileMfaRow: View {
         }
       }
     )
-    .sheet(item: $backupCodes) { backupCodes in
+    .clerkSheet(item: $backupCodes) { backupCodes in
       NavigationStack {
         BackupCodesView(backupCodes: backupCodes.codes)
-          .environment(navigation)
       }
     }
   }

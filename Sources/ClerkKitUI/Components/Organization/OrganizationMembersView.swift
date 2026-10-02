@@ -103,7 +103,7 @@ struct OrganizationMembersView: View {
         }
       }
     }
-    .sheet(isPresented: $inviteMembersIsPresented) {
+    .clerkSheet(isPresented: $inviteMembersIsPresented) {
       NavigationStack {
         OrganizationInviteMembersView { completion in
           if completion == .sentInvitations, let organization {
@@ -112,7 +112,6 @@ struct OrganizationMembersView: View {
           inviteMembersIsPresented = false
         }
       }
-      .environment(clerk)
     }
     .clerkErrorPresenting($dataSource.error)
     .task(id: organization?.id) {

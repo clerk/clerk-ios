@@ -12,7 +12,6 @@ struct UserProfileEmailRow: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.locale) private var locale
-  @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
   @State private var isLoading = false
@@ -111,10 +110,8 @@ struct UserProfileEmailRow: View {
         .foregroundStyle(theme.colors.border)
     }
     .clerkErrorPresenting($error)
-    .sheet(item: $addEmailAddressDestination) {
+    .clerkSheet(item: $addEmailAddressDestination) {
       UserProfileAddEmailView(desintation: $0)
-        .environment(clerk)
-        .environment(codeLimiter)
     }
     .onChange(of: removeResource) {
       if $1 != nil { isConfirmingRemoval = true }
