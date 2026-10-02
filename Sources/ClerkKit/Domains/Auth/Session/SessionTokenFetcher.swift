@@ -28,7 +28,11 @@ actor SessionTokenFetcher {
     forcedTokenTasks.removeAll()
   }
 
-  func getToken(_ session: Session, options: Session.GetTokenOptions = .init()) async throws -> TokenResource? {
+  func getToken(
+    _ session: Session,
+    options: Session.GetTokenOptions = .init(),
+    onInFlightTaskShared: (@Sendable (UUID) -> Void)? = nil
+  ) async throws -> TokenResource? {
     let runtime = try await Clerk.requireStableRuntime()
     let context = try await runtime.requireCurrentClerk().identityController.makeSessionTokenRequest(for: session)
     let tokenGeneration = context.tokenGeneration
@@ -48,6 +52,8 @@ actor SessionTokenFetcher {
          inProgressTask.clientResponseGeneration == context.clientResponseGeneration,
          inProgressTask.isCurrentActiveSession == context.isCurrentActiveSession
       {
+        // Lets concurrency tests observe reuse before the shared request is released.
+        onInFlightTaskShared?(inProgressTask.id)
         let result = await inProgressTask.task.result
         try runtime.validateStableRuntime()
         return try result.get()
