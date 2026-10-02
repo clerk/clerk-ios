@@ -43,7 +43,7 @@ public final class PreviewBuilder {
 
   package var services: MockServicesBuilder = .init()
 
-  package var transport = FakeTransport()
+  package var transport = FakeTransport.previewDefaults()
 
   /// Creates a new preview builder.
   public init() {}
