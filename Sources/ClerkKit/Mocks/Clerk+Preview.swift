@@ -128,6 +128,12 @@ extension Clerk {
     if previewBuilder.services.environmentService.getHandler == nil {
       previewBuilder.services.environmentService.getHandler = { mockEnvironment }
     }
+    if previewBuilder.services.userService.createEmailAddressHandler == nil {
+      let transport = previewBuilder.transport
+      previewBuilder.services.userService.createEmailAddressHandler = { emailAddress in
+        try await transport.send(EmailAddressAPI.create(email: emailAddress)).value.response
+      }
+    }
 
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
