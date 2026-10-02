@@ -1732,11 +1732,12 @@ extension BiometricCredentialsTests {
         return .init(clientData: data, signature: "signed-challenge")
       })
     )
-    await SessionTokensCache.shared.insertToken(.init(jwt: "stale.jwt"), cacheKey: session.tokenCacheKey(template: nil))
+    SessionTemplateTokensCache.shared.insertToken(.init(jwt: "stale.jwt"), cacheKey: session.tokenCacheKey(template: "secondary"))
     let result = try await session.verifyWithBiometrics(reason: "Confirm payment", level: level, biometricCredentials: setup.biometricCredentials)
     #expect(result.status == .complete)
     #expect(calls.value == ["prepare", "sign", "attempt"])
-    #expect(await SessionTokensCache.shared.getToken(cacheKey: session.tokenCacheKey(template: nil)) == nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(cacheKey: session.tokenCacheKey(template: "secondary")) == nil)
+    #expect(!Clerk.shared.identityController.canReuseSessionToken(sessionId: session.id))
   }
 
   @Test

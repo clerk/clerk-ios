@@ -290,4 +290,133 @@ struct ClerkRateLimitRetryMiddlewareTests {
       #expect(shouldRetry == false, "URLError \(errorCode.rawValue) should not trigger retry")
     }
   }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodDoesNotRetryServerErrors(method: String) async throws {
+    let sleepCalled = LockIsolated(false)
+    let middleware = ClerkRateLimitRetryMiddleware { _ in sleepCalled.setValue(true) }
+    let request = try makeRequest(method: method)
+
+    for statusCode in [500, 502, 503, 504] {
+      let response = try HTTPURLResponse(
+        url: #require(request.url),
+        statusCode: statusCode,
+        httpVersion: nil,
+        headerFields: nil
+      )
+
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: response,
+        error: NSError(domain: "test", code: 0),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == false, "\(method) with status \(statusCode) should not retry")
+    }
+
+    #expect(sleepCalled.value == false)
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodDoesNotRetryErrorsThatCanFollowServerProcessing(method: String) async throws {
+    let sleepCalled = LockIsolated(false)
+    let middleware = ClerkRateLimitRetryMiddleware { _ in sleepCalled.setValue(true) }
+    let request = try makeRequest(method: method)
+
+    for errorCode in [URLError.Code.timedOut, .networkConnectionLost] {
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: nil,
+        error: URLError(errorCode),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == false, "\(method) with URLError \(errorCode.rawValue) should not retry")
+    }
+
+    #expect(sleepCalled.value == false)
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodRetriesStatusCodesTheServerDidNotProcess(method: String) async throws {
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
+    let request = try makeRequest(method: method)
+
+    for statusCode in [408, 425, 429] {
+      let response = try HTTPURLResponse(
+        url: #require(request.url),
+        statusCode: statusCode,
+        httpVersion: nil,
+        headerFields: nil
+      )
+
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: response,
+        error: NSError(domain: "test", code: 0),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == true, "\(method) with status \(statusCode) should retry")
+    }
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodRetriesConnectPhaseErrors(method: String) async throws {
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
+    let request = try makeRequest(method: method)
+
+    let connectPhaseErrors: [URLError.Code] = [
+      .cannotFindHost,
+      .cannotConnectToHost,
+      .dnsLookupFailed,
+      .notConnectedToInternet,
+    ]
+
+    for errorCode in connectPhaseErrors {
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: nil,
+        error: URLError(errorCode),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == true, "\(method) with URLError \(errorCode.rawValue) should retry")
+    }
+  }
+
+  @Test
+  func headRetriesServerErrorAndTimeout() async throws {
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
+    let request = try makeRequest(method: "HEAD")
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
+      statusCode: 500,
+      httpVersion: nil,
+      headerFields: nil
+    )
+
+    let retriesServerError = try await middleware.shouldRetry(
+      request: request,
+      response: response,
+      error: NSError(domain: "test", code: 0),
+      attempts: 1
+    )
+    let retriesTimeout = try await middleware.shouldRetry(
+      request: request,
+      response: nil,
+      error: URLError(.timedOut),
+      attempts: 1
+    )
+
+    #expect(retriesServerError == true)
+    #expect(retriesTimeout == true)
+  }
+
+  private func makeRequest(method: String) throws -> URLRequest {
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    request.httpMethod = method
+    return request
+  }
 }

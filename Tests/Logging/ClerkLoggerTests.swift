@@ -18,108 +18,88 @@ struct ClerkLoggerTests {
   }
 
   @Test
-  func info_WithDefaultForce_RespectsLogLevel() {
-    // Configure with error log level (default)
-    let options = Clerk.Options(logLevel: .error)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+  func info_WithDefaultForce_RespectsLogLevel() async {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
-    // info() with default force: false should not log when log level is .error
-    // We can't easily test console output, but we can verify shouldLog returns false
-    let shouldLog = ClerkLogger.shouldLog(level: .info)
-    #expect(shouldLog == false)
+    await ClerkLogger.info("default-force info").value
+
+    #expect(lines.lines(containing: "default-force info").isEmpty)
   }
 
   @Test
-  func info_WithForceTrue_AlwaysLogs() {
-    // Configure with error log level
-    let options = Clerk.Options(logLevel: .error)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+  func info_WithForceTrue_AlwaysLogs() async throws {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
-    // Even with .error log level, force: true should bypass the check
-    // We verify this by calling info() with force: true - it should not check shouldLog
-    // Since we can't easily test console output, we verify the behavior indirectly
-    // by ensuring the method completes without throwing and doesn't check log level
+    await ClerkLogger.info("forced info", force: true).value
 
-    // This test verifies that force: true bypasses the log level check
-    // The actual logging happens asynchronously, so we just verify the call succeeds
-    ClerkLogger.info("Test message", force: true)
-
-    // If we get here without error, the force parameter worked
-    // (without force, it would check log level and potentially skip logging)
+    let line = try #require(lines.lines(containing: "forced info").only)
+    #expect(line.level == .info)
+    #expect(line.text.contains("[INFO]"))
+    #expect(line.text.hasSuffix("- 🚨 forced info"))
   }
 
   @Test
-  func info_WithForceFalse_RespectsLogLevel() {
-    // Configure with error log level
-    let options = Clerk.Options(logLevel: .error)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+  func info_WithForceFalse_RespectsLogLevel() async {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
-    // info() with force: false should respect log level
-    let shouldLog = ClerkLogger.shouldLog(level: .info)
-    #expect(shouldLog == false)
+    await ClerkLogger.info("unforced info", force: false).value
 
-    // Calling info() with force: false should check log level
-    ClerkLogger.info("Test message", force: false)
-    // The log level check happens asynchronously, so this test verifies
-    // that the method accepts force: false parameter
+    #expect(lines.lines(containing: "unforced info").isEmpty)
   }
 
   @Test
-  func info_WithInfoLogLevel_LogsWithoutForce() {
-    // Note: Clerk.configure() can only be called once per test run
-    // So we test with the default configuration from configureClerkForTesting()
-    // which uses testPublishableKey. We verify the current log level behavior.
+  func info_WithInfoLogLevel_LogsWithoutForce() async throws {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .info))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
-    // The default log level is .error, so info should not log
-    let shouldLogWithError = ClerkLogger.shouldLog(level: .info)
-    #expect(shouldLogWithError == false)
+    await ClerkLogger.info("info at info level").value
 
-    // But if we manually check with .info level configured, it should work
-    // Since we can't reconfigure, we verify the logic: .info <= .info should be true
-    // This test verifies the shouldLog logic works correctly
-    let infoLevel: LogLevel = .info
-    let configuredInfoLevel: LogLevel = .info
-    let shouldLogWithInfo = infoLevel <= configuredInfoLevel
-    #expect(shouldLogWithInfo == true)
+    let line = try #require(lines.lines(containing: "info at info level").only)
+    #expect(line.level == .info)
+    #expect(line.text.hasSuffix("- info at info level"))
+    #expect(!line.text.contains("🚨"))
   }
 
   @Test
-  func info_WithForceTrue_DoesNotTriggerErrorCallback() {
-    let errorCallbackInvoked = LockIsolated(false)
-
-    let errorHandler: @Sendable (LogEntry) -> Void = { _ in
-      errorCallbackInvoked.setValue(true)
-    }
-
-    // Reconfigure Clerk with our test handler (tests allow reconfiguration)
+  func info_WithForceTrue_DoesNotTriggerErrorCallback() async {
+    let entries = LockIsolated<[LogEntry]>([])
     let options = Clerk.Options(
       logLevel: .error,
-      loggerHandler: errorHandler
+      loggerHandler: { entry in
+        entries.withValue { $0.append(entry) }
+      }
     )
     Clerk.configure(publishableKey: testPublishableKey, options: options)
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
-    ClerkLogger.info("Test message", force: true)
+    await ClerkLogger.info("forced info", force: true).value
+    #expect(lines.lines(containing: "forced info").count == 1)
+    #expect(entries.value.isEmpty)
 
-    // The error callback should NOT be invoked for info logs, even with force: true
-    // because performLog only invokes the callback when level == .error
-    #expect(errorCallbackInvoked.value == false)
+    await ClerkLogger.error("error after info").value
+    #expect(entries.value.map(\.message) == ["error after info"])
   }
 
   @Test
-  func error_AlwaysLogsRegardlessOfLogLevel() {
-    // Configure with verbose log level (most restrictive)
-    let options = Clerk.Options(logLevel: .verbose)
-    Clerk.configure(publishableKey: testPublishableKey, options: options)
+  func error_AlwaysLogsRegardlessOfLogLevel() async throws {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
 
-    // error() should always log regardless of log level (uses forceLog: true)
-    // We verify this by checking that error level always passes shouldLog check
-    // and that the method completes successfully
-    let errorShouldAlwaysLog = LogLevel.error <= Clerk.shared.options.logLevel
-    #expect(errorShouldAlwaysLog == true) // error (0) <= verbose (4)
+    await ClerkLogger.error("error message", error: URLError(.badURL)).value
 
-    // Call error() - it should complete without checking log level
-    ClerkLogger.error("Test error message")
-    // If we get here, error() worked (it uses forceLog: true internally)
+    let line = try #require(lines.lines(containing: "error message").only)
+    #expect(line.level == .error)
+    #expect(line.text.contains("[ERROR]"))
+    #expect(line.text.contains("- 🚨 error message\n   Error: "))
   }
 
   @Test
@@ -159,6 +139,33 @@ struct ClerkLoggerTests {
     })
     #expect(keychainEntry.level == .error)
   }
+}
+
+extension Array {
+  fileprivate var only: Element? {
+    count == 1 ? first : nil
+  }
+}
+
+extension LockIsolated<[EmittedLogLine]> {
+  fileprivate func lines(containing needle: String) -> [EmittedLogLine] {
+    value.filter { $0.text.contains(needle) }
+  }
+}
+
+private struct EmittedLogLine {
+  let level: LogLevel
+  let text: String
+}
+
+@MainActor
+private func captureLogLines() -> (LockIsolated<[EmittedLogLine]>, @MainActor () -> Void) {
+  let original = ClerkLogger.sink
+  let lines = LockIsolated<[EmittedLogLine]>([])
+  ClerkLogger.sink = { level, text in
+    lines.withValue { $0.append(EmittedLogLine(level: level, text: text)) }
+  }
+  return (lines, { ClerkLogger.sink = original })
 }
 
 private final class PreInstallationDeleteFailingKeychain: @unchecked Sendable,

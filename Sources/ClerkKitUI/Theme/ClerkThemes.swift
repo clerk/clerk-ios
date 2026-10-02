@@ -9,14 +9,12 @@ import Foundation
 import SwiftUI
 
 extension ClerkTheme {
-  @MainActor
   public static let `default`: ClerkTheme = .init(
     colors: .default,
     fonts: .default,
     design: .default
   )
 
-  @MainActor
   public static let clerk: ClerkTheme = .init(
     colors: .init(
       primary: Color(.clerkPrimary),
@@ -38,8 +36,8 @@ extension EnvironmentValues {
   }
 }
 
-private struct ClerkThemeEnvironmentKey: @preconcurrency EnvironmentKey {
-  @MainActor static var defaultValue: ClerkTheme = .default
+private struct ClerkThemeEnvironmentKey: EnvironmentKey {
+  static let defaultValue: ClerkTheme = .default
 }
 
 #endif

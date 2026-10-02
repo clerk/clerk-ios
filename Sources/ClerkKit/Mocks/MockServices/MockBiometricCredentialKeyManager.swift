@@ -56,7 +56,7 @@ package final class MockBiometricCredentialKeyManager: BiometricCredentialKeyMan
     clientData: String,
     localKeyId: String,
     localizedReason: String?
-  ) throws -> BiometricCredentialKeySignature {
+  ) async throws -> BiometricCredentialKeySignature {
     if let signHandler {
       return try signHandler(clientData, localKeyId, localizedReason)
     }

@@ -416,7 +416,6 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) -> Clerk {
-    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
         // Clean up old managers before resetting to prevent background tasks from interfering
@@ -441,7 +440,6 @@ extension Clerk {
     return clerk
   }
 
-  /// Configures the shared instance with isolated persistence for SDK tests.
   @MainActor
   @discardableResult
   static func configureForTesting(
@@ -511,7 +509,7 @@ extension Clerk {
       let newDependencies = try DependencyContainer(
         publishableKey: publishableKey,
         options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState)
+        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState, clerkProvider: { existing })
       )
       let rollbackState = existing.captureReconfigurationRollbackState()
 
@@ -525,6 +523,10 @@ extension Clerk {
         existing.restoreAfterFailedReconfiguration(rollbackState)
         throw error
       }
+
+      // The outgoing collector is released once the new container is installed, so send its partial batch now.
+      let outgoingTelemetry = existing.dependencies.telemetryCollector
+      Task { await outgoingTelemetry.flush() }
 
       await existing.resetRuntimeStateForReconfiguration()
       existing.installConfiguration(dependencies: newDependencies)
@@ -545,7 +547,7 @@ extension Clerk {
   }
 
   @MainActor
-  package static func resetSharedInstanceForTesting() async {
+  static func resetSharedInstanceForTesting() async {
     guard EnvironmentDetection.isRunningInTests else {
       return
     }
@@ -554,7 +556,7 @@ extension Clerk {
 
     await shared.cleanupManagersAndWait()
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    shared.identityController.invalidateAllSessionTokens()
     _shared = nil
   }
 
@@ -661,7 +663,7 @@ extension Clerk {
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    identityController.invalidateAllSessionTokens()
 
     resetAuthFlowForReconfiguration()
     identityController.resetRuntimeIdentity()

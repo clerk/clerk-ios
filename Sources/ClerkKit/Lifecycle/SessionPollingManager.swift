@@ -23,7 +23,7 @@ final class SessionPollingManager {
 
   static let defaultMaxPollInterval: TimeInterval = 60.0
 
-  private var pollingTask: Task<Void, Error>?
+  private(set) var pollingTask: Task<Void, Error>?
 
   private var authEventTask: Task<Void, Never>?
 
@@ -38,7 +38,7 @@ final class SessionPollingManager {
   let maxPollInterval: TimeInterval
 
   private(set) var consecutiveFailures: Int = 0
-  private var isPollingActive: Bool {
+  var isPollingActive: Bool {
     pollingTask != nil && pollingTask?.isCancelled == false
   }
 
@@ -89,16 +89,11 @@ final class SessionPollingManager {
   func calculateBackoffInterval() -> TimeInterval {
     guard consecutiveFailures > 0 else { return pollInterval }
 
-    let exponentialInterval = pollInterval * pow(2.0, Double(consecutiveFailures))
-    let cappedInterval = min(exponentialInterval, maxPollInterval)
-
+    let cappedInterval = calculateBaseBackoffInterval()
     let jitter = cappedInterval * Double.random(in: -0.2 ... 0.2)
     return cappedInterval + jitter
   }
 
-  /// Calculates the base backoff interval without jitter for testing purposes.
-  ///
-  /// - Returns: The base interval before jitter is applied.
   func calculateBaseBackoffInterval() -> TimeInterval {
     guard consecutiveFailures > 0 else { return pollInterval }
 

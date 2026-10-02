@@ -8,17 +8,17 @@ import Testing
 extension SessionServiceAndTokenFetcherTests {
   @Test
   func signOut() async throws {
-    await SessionTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.clear()
     let firstSession = Session.mock
     var secondSession = Session.mock
     secondSession.id = "sess_other"
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "first.jwt"),
-      cacheKey: firstSession.tokenCacheKey(template: nil)
+      cacheKey: firstSession.tokenCacheKey(template: "secondary")
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "second.jwt"),
-      cacheKey: secondSession.tokenCacheKey(template: nil)
+      cacheKey: secondSession.tokenCacheKey(template: "secondary")
     )
 
     let requestHandled = LockIsolated(false)
@@ -39,11 +39,11 @@ extension SessionServiceAndTokenFetcherTests {
 
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
     #expect(requestHandled.value)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: firstSession.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: firstSession.tokenCacheKey(template: "secondary")
     ) == nil)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: secondSession.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: secondSession.tokenCacheKey(template: "secondary")
     ) == nil)
   }
 
@@ -54,18 +54,18 @@ extension SessionServiceAndTokenFetcherTests {
     session.id = sessionId
     var otherSession = Session.mock
     otherSession.id = "sess_other"
-    await SessionTokensCache.shared.clear()
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "default.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil)
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "template.jwt"),
       cacheKey: session.tokenCacheKey(template: "firebase")
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "other.jwt"),
-      cacheKey: otherSession.tokenCacheKey(template: nil)
+      cacheKey: otherSession.tokenCacheKey(template: "secondary")
     )
 
     let requestHandled = LockIsolated(false)
@@ -86,14 +86,14 @@ extension SessionServiceAndTokenFetcherTests {
 
     try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
     #expect(requestHandled.value)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "secondary")
     ) == nil)
-    #expect(await SessionTokensCache.shared.getToken(
+    #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: "firebase")
     ) == nil)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: otherSession.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: otherSession.tokenCacheKey(template: "secondary")
     )?.jwt == "other.jwt")
   }
 
@@ -102,12 +102,12 @@ extension SessionServiceAndTokenFetcherTests {
     let sessionId = "sess_test123"
     var session = Session.mock
     session.id = sessionId
-    await SessionTokensCache.shared.clear()
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "cached.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil)
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "template.jwt"),
       cacheKey: session.tokenCacheKey(template: "firebase")
     )
@@ -138,10 +138,10 @@ extension SessionServiceAndTokenFetcherTests {
       try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
     }
 
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )?.jwt == "cached.jwt")
-    #expect(await SessionTokensCache.shared.getToken(
+    #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: "firebase")
     )?.jwt == "template.jwt")
   }
@@ -149,10 +149,10 @@ extension SessionServiceAndTokenFetcherTests {
   @Test
   func signOutPreservesCachedTokensWhenRequestFails() async throws {
     let session = Session.mock
-    await SessionTokensCache.shared.clear()
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "cached.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil)
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )
 
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!
@@ -181,8 +181,8 @@ extension SessionServiceAndTokenFetcherTests {
       try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
     }
 
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )?.jwt == "cached.jwt")
   }
 
@@ -233,18 +233,22 @@ extension SessionServiceAndTokenFetcherTests {
     updatedClient.sessions = [session]
     var otherSession = Session.mock
     otherSession.id = "sess_other"
-    await SessionTokensCache.shared.clear()
-    await SessionTokensCache.shared.insertToken(
+    updatedClient.sessions.append(otherSession)
+    var previousClient = updatedClient
+    previousClient.sessions[0].lastActiveOrganizationId = nil
+    Clerk.shared.client = previousClient
+    SessionTemplateTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "default.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil)
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "template.jwt"),
       cacheKey: session.tokenCacheKey(template: "firebase")
     )
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "other.jwt"),
-      cacheKey: otherSession.tokenCacheKey(template: nil)
+      cacheKey: otherSession.tokenCacheKey(template: "secondary")
     )
 
     let requestHandled = LockIsolated(false)
@@ -273,14 +277,14 @@ extension SessionServiceAndTokenFetcherTests {
     )
 
     #expect(requestHandled.value)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "secondary")
     ) == nil)
-    #expect(await SessionTokensCache.shared.getToken(
+    #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: "firebase")
     ) == nil)
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: otherSession.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: otherSession.tokenCacheKey(template: "secondary")
     )?.jwt == "other.jwt")
   }
 
@@ -307,8 +311,8 @@ extension SessionServiceAndTokenFetcherTests {
 
     let template = "firebase"
     let cacheKey = previousSession.tokenCacheKey(template: template)
-    await SessionTokensCache.shared.clear()
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "previous-organization.jwt"),
       cacheKey: cacheKey
     )
@@ -341,7 +345,7 @@ extension SessionServiceAndTokenFetcherTests {
           continue
         }
 
-        let cachedToken = await SessionTokensCache.shared.getToken(cacheKey: cacheKey)
+        let cachedToken = SessionTemplateTokensCache.shared.getToken(cacheKey: cacheKey)
         observedCacheState.continuation.yield(cachedToken == nil)
         return
       }
@@ -440,10 +444,10 @@ extension SessionServiceAndTokenFetcherTests {
   )
   func setActiveWithOrganizationIdPropagatesAPIErrors(scenario: SetActiveErrorScenario) async throws {
     let session = Session.mock
-    await SessionTokensCache.shared.clear()
-    await SessionTokensCache.shared.insertToken(
+    SessionTemplateTokensCache.shared.clear()
+    SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "cached.jwt"),
-      cacheKey: session.tokenCacheKey(template: nil)
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/touch")!
@@ -487,8 +491,8 @@ extension SessionServiceAndTokenFetcherTests {
       #expect(Bool(false), "Expected ClerkAPIError, got \(error)")
     }
 
-    #expect(await SessionTokensCache.shared.getToken(
-      cacheKey: session.tokenCacheKey(template: nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "secondary")
     )?.jwt == "cached.jwt")
   }
 

@@ -61,7 +61,10 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The pending tasks required to activate this session.
   public var tasks: [Task]?
 
-  /// The last active token for the session.
+  /// The last accepted token captured in this session value.
+  ///
+  /// Retained session values are snapshots and do not update when the SDK refreshes a token.
+  /// Use ``getToken(_:)`` to obtain a token for a request, including refreshing it when needed.
   public var lastActiveToken: TokenResource?
 
   /// Minutes since the last first- and second-factor verification: `[firstFactorAge, secondFactorAge]`.

@@ -5,12 +5,10 @@
 //  Created on 2025-01-27.
 //
 
-#if canImport(UIKit)
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
 import Testing
-import UIKit
 
 @MainActor
 final class MockLifecycleHandler: LifecycleEventHandling {
@@ -30,63 +28,108 @@ final class MockLifecycleHandler: LifecycleEventHandling {
 @Suite(.serialized)
 struct LifecycleManagerTests {
   @Test
-  func startsObserving() {
+  func startsObserving() async throws {
+    let center = NotificationCenter()
     let handler = MockLifecycleHandler()
-    let manager = LifecycleManager(handler: handler)
+    let manager = LifecycleManager(handler: handler, notificationCenter: center)
 
     manager.startObserving()
 
-    // Manager should be initialized and ready
-    // (We can't easily test the notification observers without UIKit app context)
-  }
+    center.post(name: LifecycleManager.willEnterForegroundNotification, object: nil)
+    try await waitUntil { handler.foregroundCallCount.value == 1 }
+    #expect(handler.backgroundCallCount.value == 0)
 
-  @Test
-  func testStopObserving() {
-    let handler = MockLifecycleHandler()
-    let manager = LifecycleManager(handler: handler)
-
-    manager.startObserving()
-    manager.stopObserving()
-
-    // Should cleanly stop observing
-    // (We can't easily test the notification observers without UIKit app context)
-  }
-
-  @Test
-  func multipleStartObserving() {
-    let handler = MockLifecycleHandler()
-    let manager = LifecycleManager(handler: handler)
-
-    manager.startObserving()
-    manager.startObserving() // Should be safe to call multiple times
-    manager.startObserving()
+    center.post(name: LifecycleManager.didEnterBackgroundNotification, object: nil)
+    try await waitUntil { handler.backgroundCallCount.value == 1 }
+    #expect(handler.foregroundCallCount.value == 1)
 
     manager.stopObserving()
   }
 
   @Test
-  func stopObservingMultipleTimes() {
+  func testStopObserving() async throws {
+    let center = NotificationCenter()
     let handler = MockLifecycleHandler()
-    let manager = LifecycleManager(handler: handler)
+    let manager = LifecycleManager(handler: handler, notificationCenter: center)
 
     manager.startObserving()
+    center.post(name: LifecycleManager.willEnterForegroundNotification, object: nil)
+    try await waitUntil { handler.foregroundCallCount.value == 1 }
+
     manager.stopObserving()
-    manager.stopObserving() // Should be safe to call multiple times
+
+    postLifecycleNotifications(center)
+    await settle()
+
+    #expect(handler.foregroundCallCount.value == 1)
+    #expect(handler.backgroundCallCount.value == 0)
+  }
+
+  @Test
+  func multipleStartObserving() async throws {
+    let center = NotificationCenter()
+    let handler = MockLifecycleHandler()
+    let manager = LifecycleManager(handler: handler, notificationCenter: center)
+
+    manager.startObserving()
+    manager.startObserving()
+    manager.startObserving()
+
+    postLifecycleNotifications(center)
+    try await waitUntil {
+      handler.foregroundCallCount.value >= 1 && handler.backgroundCallCount.value >= 1
+    }
+    await settle()
+
+    #expect(handler.foregroundCallCount.value == 1)
+    #expect(handler.backgroundCallCount.value == 1)
+
     manager.stopObserving()
   }
 
   @Test
-  func deinitStopsObserving() {
+  func stopObservingMultipleTimes() async throws {
+    let center = NotificationCenter()
     let handler = MockLifecycleHandler()
+    let manager = LifecycleManager(handler: handler, notificationCenter: center)
 
-    do {
-      let manager = LifecycleManager(handler: handler)
-      manager.startObserving()
-      // Manager goes out of scope, should stop observing
+    manager.startObserving()
+    manager.stopObserving()
+    manager.stopObserving()
+    manager.stopObserving()
+
+    postLifecycleNotifications(center)
+    await settle()
+    #expect(handler.foregroundCallCount.value == 0)
+    #expect(handler.backgroundCallCount.value == 0)
+
+    manager.startObserving()
+    postLifecycleNotifications(center)
+    try await waitUntil {
+      handler.foregroundCallCount.value == 1 && handler.backgroundCallCount.value == 1
     }
 
-    // Manager should have cleaned up
+    manager.stopObserving()
+  }
+
+  private func postLifecycleNotifications(_ center: NotificationCenter) {
+    center.post(name: LifecycleManager.willEnterForegroundNotification, object: nil)
+    center.post(name: LifecycleManager.didEnterBackgroundNotification, object: nil)
+  }
+
+  /// Lets any pending observer work run so a delivery that shouldn't happen has the chance to.
+  private func settle() async {
+    for _ in 0 ..< 20 {
+      await Task.yield()
+    }
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for lifecycle handler.")
   }
 }
-
-#endif
