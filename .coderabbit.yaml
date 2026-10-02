@@ -1,4 +1,4 @@
-# Preserve the organization settings while enabling formal review decisions.
+# Preserve organization settings while keeping CI separate from approving reviews.
 inheritance: true
 reviews:
-  request_changes_workflow: true
+  request_changes_workflow: false
