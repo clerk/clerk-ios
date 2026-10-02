@@ -54,6 +54,45 @@ struct ClerkSheetTests {
     runMainLoop { carriedProbe.reads != nil }
     #expect(carriedProbe.reads == context.expectedReads(themePrimary: ClerkTheme.default.colors.primary))
   }
+
+  @Test
+  func itemSheetFromPushedDestinationReadsTheClerkContextAndTheme() {
+    let context = InjectedContext()
+    let probe = ContextProbeLog()
+    let window = hostOffscreen(PushedSheetPresenter(context: context, probe: probe))
+    defer { window.close() }
+
+    runMainLoop { probe.reads != nil }
+
+    #expect(window.sheets.count == 1)
+    #expect(probe.reads == context.expectedReads(themePrimary: .red))
+  }
+
+  @Test
+  func sheetOwnedContextOverridesAbsentPresenterContext() {
+    let context = InjectedContext()
+    let probe = ContextProbeLog()
+    let window = hostOffscreen(SheetOwnedContextPresenter(context: context, probe: probe))
+    defer { window.close() }
+
+    runMainLoop { probe.reads != nil }
+
+    #expect(window.sheets.count == 1)
+    #expect(probe.reads == context.expectedReads(themePrimary: ClerkTheme.default.colors.primary))
+  }
+
+  @Test
+  func presenterWithOnlyClerkDoesNotRequireUnrelatedModels() {
+    let clerk = Clerk()
+    let probe = ContextProbeLog()
+    let window = hostOffscreen(SheetPresenter(probe: probe).environment(clerk))
+    defer { window.close() }
+
+    runMainLoop { probe.reads != nil }
+
+    #expect(window.sheets.count == 1)
+    #expect(probe.reads == ContextReads(clerk: ObjectIdentifier(clerk), themePrimary: ClerkTheme.default.colors.primary))
+  }
 }
 
 private struct ContextReads: Equatable {
@@ -154,6 +193,60 @@ private struct SheetPresenter: View {
   }
 }
 
+private struct PushedSheetPresenter: View {
+  let context: InjectedContext
+  let probe: ContextProbeLog
+  @State private var path = NavigationPath()
+
+  var body: some View {
+    NavigationStack(path: $path) {
+      Color.clear
+        .frame(width: 200, height: 200)
+        .navigationDestination(for: Int.self) { _ in
+          ItemSheetPresenter(probe: probe)
+            .injecting(context)
+        }
+        .onAppear {
+          if path.isEmpty { path.append(1) }
+        }
+    }
+    .environment(\.clerkTheme.colors.primary, .red)
+  }
+}
+
+private struct ItemSheetPresenter: View {
+  struct Item: Identifiable {
+    let id = 1
+  }
+
+  let probe: ContextProbeLog
+  @State private var item: Item?
+
+  var body: some View {
+    Color.clear
+      .frame(width: 200, height: 200)
+      .clerkSheet(item: $item) { _ in
+        ContextProbe(log: probe)
+      }
+      .onAppear { item = Item() }
+  }
+}
+
+private struct SheetOwnedContextPresenter: View {
+  let context: InjectedContext
+  let probe: ContextProbeLog
+  @State private var isPresented = false
+
+  var body: some View {
+    Color.clear
+      .frame(width: 200, height: 200)
+      .clerkSheet(isPresented: $isPresented) {
+        ContextProbe(log: probe).injecting(context)
+      }
+      .onAppear { isPresented = true }
+  }
+}
+
 @MainActor
 private final class CarriedContentSlot {
   var view: AnyView?
@@ -163,6 +256,11 @@ private struct ContextCarrier: View {
   let slot: CarriedContentSlot
   let probe: ContextProbeLog
   private var context = ClerkUIContext()
+
+  init(slot: CarriedContentSlot, probe: ContextProbeLog) {
+    self.slot = slot
+    self.probe = probe
+  }
 
   var body: some View {
     Color.clear

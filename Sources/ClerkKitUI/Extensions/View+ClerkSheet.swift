@@ -36,6 +36,12 @@ private struct ClerkSheetModifier<SheetContent: View>: ViewModifier {
   let sheetContent: () -> SheetContent
   private var context = ClerkUIContext()
 
+  init(isPresented: Binding<Bool>, onDismiss: (() -> Void)?, sheetContent: @escaping () -> SheetContent) {
+    _isPresented = isPresented
+    self.onDismiss = onDismiss
+    self.sheetContent = sheetContent
+  }
+
   func body(content: Content) -> some View {
     content.sheet(isPresented: $isPresented, onDismiss: onDismiss) {
       context.carry(into: sheetContent())
@@ -48,6 +54,12 @@ private struct ClerkItemSheetModifier<Item: Identifiable, SheetContent: View>: V
   let onDismiss: (() -> Void)?
   let sheetContent: (Item) -> SheetContent
   private var context = ClerkUIContext()
+
+  init(item: Binding<Item?>, onDismiss: (() -> Void)?, sheetContent: @escaping (Item) -> SheetContent) {
+    _item = item
+    self.onDismiss = onDismiss
+    self.sheetContent = sheetContent
+  }
 
   func body(content: Content) -> some View {
     content.sheet(item: $item, onDismiss: onDismiss) { item in
