@@ -107,8 +107,7 @@ final class UserService: UserServiceProtocol {
   func createEmailAddress(emailAddress: String) async throws -> EmailAddress {
     let transport = try Clerk.currentDependencies.transport
     let request = EmailAddressAPI.create(email: emailAddress)
-    let result = try await transport.send(request)
-    return result.value.response
+    return try await transport.send(request).value.response
   }
 
   @MainActor
