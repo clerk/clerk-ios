@@ -153,6 +153,24 @@ extension ClerkIdentityController {
     return .applied
   }
 
+  func compareAndSetDeviceToken(_ deviceToken: String?, expected: String?) async throws -> Bool {
+    adoptStoredDeviceToken()
+    guard currentDeviceToken == expected else { return false }
+    guard deviceToken != expected else { return true }
+    let client = deviceToken == nil ? nil : clerk?.client
+    try commit(
+      ClerkIdentitySnapshot(
+        state: client == nil ? .cleared : .present,
+        deviceToken: deviceToken,
+        client: client,
+        serverDate: lastServerDate
+      ).validated(),
+      fenceResponses: true,
+      preservingInvalidatedSessionTokens: invalidatedSessionTokens
+    )
+    return true
+  }
+
   func clearDeviceToken() throws {
     adoptStoredDeviceToken()
     guard currentDeviceToken != nil else { return }
@@ -173,6 +191,7 @@ extension ClerkIdentityController {
   private func commit(
     _ identity: ClerkIdentitySnapshot,
     fenceResponses: Bool = false,
+    preservingInvalidatedSessionTokens invalidatedSessionIds: Set<String> = [],
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
     prepareSessionTokensForIdentityChange(to: identity)
@@ -197,7 +216,7 @@ extension ClerkIdentityController {
         ClerkLogger.logError(error, message: "Failed to cache the Clerk client")
       }
     }
-    invalidatedSessionTokens.subtract(reconciled.reusableSessionIds)
+    invalidatedSessionTokens.subtract(reconciled.reusableSessionIds.subtracting(invalidatedSessionIds))
     apply(identity, fenceResponses: fenceResponses || tokenChanged, authFlowUpdate: authFlowUpdate)
   }
 
