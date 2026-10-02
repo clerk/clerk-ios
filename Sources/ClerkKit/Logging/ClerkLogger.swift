@@ -71,7 +71,6 @@ public enum LogLevel: String, CaseIterable, Comparable, Sendable {
     }
   }
 
-  /// Raw integer values for comparison (lower = more severe)
   private var severity: Int {
     switch self {
     case .error: 0
@@ -191,8 +190,6 @@ package enum ClerkLogger {
       let shouldLogTask = Task { @MainActor in
         ClerkLogger.shouldLog(level: level, configuration: configuration)
       }
-      // For non-async context, we'll log by default if we can't check
-      // This ensures errors always log, and other levels will be filtered properly in async contexts
       return Task {
         guard await shouldLogTask.value else { return }
         let context = Context(
@@ -262,7 +259,6 @@ package enum ClerkLogger {
       }
     }
 
-    // Use unified logging for structured logs only (avoid duplicate console output)
     sink(level, logMessage)
 
     if level == .error {

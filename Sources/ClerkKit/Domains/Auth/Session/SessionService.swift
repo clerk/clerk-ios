@@ -26,10 +26,6 @@ protocol SessionServiceProtocol: Sendable {
 
   @MainActor func signOut(sessionId: String?) async throws
 
-  /// Sets the active session and optionally the active organization.
-  /// - Parameters:
-  ///   - sessionId: The session ID to set as active.
-  ///   - organizationId: Optional organization ID to set as active in the session. If nil, removes the active organization.
   @MainActor func setActive(sessionId: String, organizationId: String?) async throws
 
   @MainActor func fetchToken(
