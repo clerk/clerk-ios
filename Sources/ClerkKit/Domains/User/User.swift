@@ -207,12 +207,16 @@ public struct User: Codable, Equatable, Sendable, Identifiable {
 extension User {
   @MainActor
   private var userService: any UserServiceProtocol {
-    Clerk.shared.dependencies.userService
+    get throws {
+      try Clerk.currentDependencies.userService
+    }
   }
 
   @MainActor
   private var billingService: any BillingServiceProtocol {
-    Clerk.shared.dependencies.billingService
+    get throws {
+      try Clerk.currentDependencies.billingService
+    }
   }
 
   /// Reloads the user from the Clerk API.
@@ -235,7 +239,7 @@ extension User {
   ///   Prefer ``updateMetadata(unsafeMetadata:)`` for metadata updates.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
-    let service = userService
+    let service = try userService
 
     guard let desiredUnsafeMetadata = params.deprecatedUnsafeMetadata else {
       return try await service.update(params: params)

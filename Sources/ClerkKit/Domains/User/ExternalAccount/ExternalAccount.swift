@@ -86,7 +86,9 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Equatable {
 extension ExternalAccount {
   @MainActor
   private var externalAccountService: any ExternalAccountServiceProtocol {
-    Clerk.shared.dependencies.externalAccountService
+    get throws {
+      try Clerk.currentDependencies.externalAccountService
+    }
   }
 
   /// Prepares a reauthorization for an existing external account, requesting new scopes or prompts.

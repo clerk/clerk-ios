@@ -59,6 +59,7 @@ struct Request<Response: Decodable & Sendable> {
   let headers: [String: String]
   let canEstablishClientWhenTokenless: Bool
 
+  private let scopedToActiveSession: Bool
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
   private let automaticallySyncClient: Bool
@@ -70,6 +71,7 @@ struct Request<Response: Decodable & Sendable> {
     method: HTTPMethod = .get,
     headers: [String: String] = [:],
     canEstablishClientWhenTokenless: Bool = false,
+    scopedToActiveSession: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
     automaticallySyncClient: Bool = true,
@@ -90,6 +92,7 @@ struct Request<Response: Decodable & Sendable> {
     self.method = method
     self.headers = headers
     self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
+    self.scopedToActiveSession = scopedToActiveSession
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
     self.automaticallySyncClient = automaticallySyncClient
@@ -145,14 +148,21 @@ struct Request<Response: Decodable & Sendable> {
       }
     }
 
+    applyPipelineFlags(to: &urlRequest)
+
+    return urlRequest
+  }
+
+  private func applyPipelineFlags(to urlRequest: inout URLRequest) {
+    if scopedToActiveSession {
+      urlRequest.scopeToClerkActiveSession()
+    }
     if !automaticallySyncClient {
       urlRequest.disableAutomaticClerkClientSync()
     }
     if !logBodies {
       urlRequest.disableClerkBodyLogging()
     }
-
-    return urlRequest
   }
 
   func decode(_ data: Data, using decoder: JSONDecoder) throws -> Response {

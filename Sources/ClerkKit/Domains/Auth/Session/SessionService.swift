@@ -72,7 +72,7 @@ final class SessionService: SessionServiceProtocol {
     let request = Request<ClientResponse<Session>>(
       path: "/v1/me/sessions/\(sessionId)/revoke",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response

@@ -24,7 +24,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     let request = Request<ClientResponse<EmailAddress>>(
       path: "v1/me/email_addresses",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["email_address": email]
     )
 
@@ -36,7 +36,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     let request = Request<ClientResponse<EmailAddress>>(
       path: "/v1/me/email_addresses/\(emailAddressId)/prepare_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: strategy.requestBody
     )
 
@@ -48,7 +48,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     let request = Request<ClientResponse<EmailAddress>>(
       path: "/v1/me/email_addresses/\(emailAddressId)/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: strategy.requestBody
     )
 
@@ -60,7 +60,7 @@ final class EmailAddressService: EmailAddressServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/email_addresses/\(emailAddressId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response

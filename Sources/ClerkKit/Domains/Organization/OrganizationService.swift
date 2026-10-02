@@ -54,7 +54,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: body
     )
 
@@ -66,7 +66,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations/\(organizationId)",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -77,7 +77,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<Organization>>(
       path: "/v1/organizations/\(organizationId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: [
         "name": name,
         "slug": slug,
@@ -92,7 +92,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/organizations/\(organizationId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -112,7 +112,7 @@ final class OrganizationService: OrganizationServiceProtocol {
       path: "/v1/organizations/\(organizationId)/logo",
       method: .put,
       headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"],
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.upload(for: request, from: data).value.response
@@ -123,7 +123,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/organizations/\(organizationId)/logo",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -134,8 +134,8 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<RoleResource>>>(
       path: "/v1/organizations/\(organizationId)/roles",
       method: .get,
+      scopedToActiveSession: true,
       query: [
-        ("_clerk_session_id", value: Clerk.shared.session?.id),
         ("offset", value: String(initialPage)),
         ("limit", value: String(pageSize)),
       ]
@@ -147,7 +147,6 @@ final class OrganizationService: OrganizationServiceProtocol {
   @MainActor
   func getOrganizationMemberships(organizationId: String, query: String?, role: [String]?, initialPage: Int, pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
       ("paginated", value: String(true)),
@@ -164,6 +163,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
       path: "/v1/organizations/\(organizationId)/memberships",
       method: .get,
+      scopedToActiveSession: true,
       query: queryParams
     )
 
@@ -175,7 +175,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationMembership>>(
       path: "/v1/organizations/\(organizationId)/memberships",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: [
         "user_id": userId,
         "role": role,
@@ -190,7 +190,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationMembership>>(
       path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["role": role]
     )
 
@@ -202,7 +202,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationMembership>>(
       path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -211,7 +211,6 @@ final class OrganizationService: OrganizationServiceProtocol {
   @MainActor
   func getOrganizationInvitations(organizationId: String, initialPage: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
     ]
@@ -221,6 +220,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>>(
       path: "/v1/organizations/\(organizationId)/invitations",
       method: .get,
+      scopedToActiveSession: true,
       query: queryParams
     )
 
@@ -232,7 +232,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationInvitation>>(
       path: "/v1/organizations/\(organizationId)/invitations",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: [
         "email_address": emailAddress,
         "role": role,
@@ -252,7 +252,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<[OrganizationInvitation]>>(
       path: "/v1/organizations/\(organizationId)/invitations/bulk",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: bodyParams
     )
 
@@ -264,7 +264,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationDomain>>(
       path: "/v1/organizations/\(organizationId)/domains",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["name": domainName]
     )
 
@@ -274,7 +274,6 @@ final class OrganizationService: OrganizationServiceProtocol {
   @MainActor
   func getOrganizationDomains(organizationId: String, initialPage: Int, pageSize: Int, enrollmentMode: String?) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
     ]
@@ -286,6 +285,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>>(
       path: "/v1/organizations/\(organizationId)/domains",
       method: .get,
+      scopedToActiveSession: true,
       query: queryParams
     )
 
@@ -297,7 +297,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationDomain>>(
       path: "/v1/organizations/\(organizationId)/domains/\(domainId)",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -306,7 +306,6 @@ final class OrganizationService: OrganizationServiceProtocol {
   @MainActor
   func getOrganizationMembershipRequests(organizationId: String, initialPage: Int, pageSize: Int, status: String?) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(initialPage)),
       ("limit", value: String(pageSize)),
     ]
@@ -318,6 +317,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>>(
       path: "/v1/organizations/\(organizationId)/membership_requests",
       method: .get,
+      scopedToActiveSession: true,
       query: queryParams
     )
 
@@ -329,7 +329,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/organizations/\(organizationId)/domains/\(domainId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -340,7 +340,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationDomain>>(
       path: "/v1/organizations/\(organizationId)/domains/\(domainId)/prepare_affiliation_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["affiliation_email_address": affiliationEmailAddress]
     )
 
@@ -352,7 +352,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationDomain>>(
       path: "/v1/organizations/\(organizationId)/domains/\(domainId)/attempt_affiliation_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["code": code]
     )
 
@@ -372,7 +372,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationDomain>>(
       path: "/v1/organizations/\(organizationId)/domains/\(domainId)/update_enrollment_mode",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: bodyParams
     )
 
@@ -384,7 +384,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationInvitation>>(
       path: "/v1/organizations/\(organizationId)/invitations/\(invitationId)/revoke",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -395,7 +395,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationMembership>>(
       path: "/v1/organizations/\(organizationId)/memberships/\(userId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -406,7 +406,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<UserOrganizationInvitation>>(
       path: "/v1/me/organization_invitations/\(invitationId)/accept",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -417,7 +417,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationSuggestion>>(
       path: "/v1/me/organization_suggestions/\(suggestionId)/accept",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -428,7 +428,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationMembershipRequest>>(
       path: "/v1/organizations/\(organizationId)/membership_requests/\(requestId)/accept",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -439,7 +439,7 @@ final class OrganizationService: OrganizationServiceProtocol {
     let request = Request<ClientResponse<OrganizationMembershipRequest>>(
       path: "/v1/organizations/\(organizationId)/membership_requests/\(requestId)/reject",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response

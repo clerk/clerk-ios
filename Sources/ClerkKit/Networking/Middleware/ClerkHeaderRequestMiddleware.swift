@@ -42,6 +42,10 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
     }
 
+    if request.isScopedToClerkActiveSession {
+      request.url?.append(queryItems: [URLQueryItem(name: "_clerk_session_id", value: identity.activeSessionID)])
+    }
+
     if !skipClientId, let clientId = identity.clientID {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
