@@ -96,7 +96,7 @@ final class ClerkRuntime {
     await tasks.cancelAllAndWait()
 
     let telemetry = dependencies.telemetryCollector
-    tasks.task(priority: .utility) {
+    Task(priority: .utility) {
       await telemetry.flush()
     }
   }

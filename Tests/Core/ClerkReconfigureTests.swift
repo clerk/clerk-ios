@@ -84,11 +84,12 @@ struct ClerkReconfigureTests {
     defer { reconfigured.cleanupManagers() }
 
     let deadline = ContinuousClock.now + .seconds(2)
-    while await outgoingTelemetry.flushCount == 0, ContinuousClock.now < deadline {
+    while await outgoingTelemetry.completedFlushCount == 0, ContinuousClock.now < deadline {
       try await Task.sleep(for: .milliseconds(20))
     }
 
     #expect(await outgoingTelemetry.flushCount == 1)
+    #expect(await outgoingTelemetry.completedFlushCount == 1)
   }
 
   @Test
@@ -829,11 +830,16 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
 
 private actor TelemetryFlushSpy: TelemetryCollectorProtocol {
   private(set) var flushCount = 0
+  private(set) var completedFlushCount = 0
 
   func record(_: TelemetryEventRaw) async {}
 
   func flush() async {
     flushCount += 1
+    try? await Task.sleep(for: .milliseconds(50))
+    if !Task.isCancelled {
+      completedFlushCount += 1
+    }
   }
 }
 
