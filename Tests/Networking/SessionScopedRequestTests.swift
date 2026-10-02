@@ -64,6 +64,31 @@ struct SessionScopedRequestTests {
   }
 
   @Test
+  func sessionScopedRequestCarriesTheActiveSessionId() async throws {
+    Clerk.shared.client = .mock
+    let activeSessionId = try #require(Clerk.shared.session?.id)
+    let requestHandled = LockIsolated(false)
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
+
+    var mock = try Mock(
+      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder().encode(["success": true]),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.url?.queryParam(named: "_clerk_session_id") == activeSessionId)
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    let request = Request<EmptyResponse>(path: "/v1/test", method: .get, scopedToActiveSession: true)
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
+    #expect(requestHandled.value)
+  }
+
+  @Test
   func requestOutsideSessionScopeSendsNoSessionId() async throws {
     Clerk.shared.client = .mock
     let requestHandled = LockIsolated(false)

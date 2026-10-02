@@ -70,6 +70,34 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
+  func addsActiveSessionIdToSessionScopedRequests() async throws {
+    _ = createTestKeychain()
+    try Clerk.shared.seedIdentity(deviceToken: "test-device-token", client: .mock)
+
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/me?limit=5")))
+    request.scopeToClerkActiveSession()
+
+    try await middleware.prepare(&request)
+
+    #expect(request.value(forHTTPHeaderField: "Authorization") == "test-device-token")
+    #expect(request.url?.queryParam(named: "_clerk_session_id") == Client.mock.lastActiveSessionId)
+    #expect(request.url?.queryParam(named: "limit") == "5")
+  }
+
+  @Test
+  func omitsSessionIdFromRequestsOutsideSessionScope() async throws {
+    Clerk.shared.client = .mock
+
+    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://example.com/v1/client")))
+
+    try await middleware.prepare(&request)
+
+    #expect(request.url?.query?.contains("_clerk_session_id") != true)
+  }
+
+  @Test
   func doesNotAddDeviceTokenHeaderWhenMissing() async throws {
     _ = createTestKeychain()
 
