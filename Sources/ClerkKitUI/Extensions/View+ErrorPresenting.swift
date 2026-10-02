@@ -14,7 +14,7 @@ struct ClerkErrorViewModifier: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .sheet(
+      .clerkSheet(
         isPresented: Binding(
           get: { error != nil },
           set: { isPresented in

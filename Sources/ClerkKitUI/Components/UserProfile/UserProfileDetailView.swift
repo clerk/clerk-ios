@@ -11,7 +11,6 @@ import SwiftUI
 struct UserProfileDetailView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var addEmailAddressDestination: UserProfileAddEmailView.Destination?
   @State private var addPhoneNumberDestination: UserProfileAddPhoneView.Destination?
@@ -156,19 +155,14 @@ struct UserProfileDetailView: View {
     #endif
     .presentationBackground(theme.colors.background)
     .background(theme.colors.background)
-    .sheet(item: $addEmailAddressDestination) {
+    .clerkSheet(item: $addEmailAddressDestination) {
       UserProfileAddEmailView(desintation: $0)
-        .environment(clerk)
-        .environment(codeLimiter)
     }
-    .sheet(item: $addPhoneNumberDestination) {
+    .clerkSheet(item: $addPhoneNumberDestination) {
       UserProfileAddPhoneView(desintation: $0)
-        .environment(clerk)
-        .environment(codeLimiter)
     }
-    .sheet(isPresented: $addConnectedAccountIsPresented) {
+    .clerkSheet(isPresented: $addConnectedAccountIsPresented) {
       UserProfileAddConnectedAccountView()
-      .environment(clerk)
     }
     .task {
       _ = try? await clerk.refreshClient()

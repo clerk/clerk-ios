@@ -215,21 +215,13 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
         .onFirstAppear {
           initialPathCount = navigationPath?.wrappedValue.count ?? 0
         }
-        .sheet(isPresented: $updateProfileIsPresented) {
+        .clerkSheet(isPresented: $updateProfileIsPresented) {
           OrganizationProfileUpdateProfileView(organization: organization)
-            .environment(clerk)
         }
-        .sheet(item: $presentedConfirmation) { confirmation in
+        .clerkSheet(item: $presentedConfirmation) { confirmation in
           OrganizationProfileActionConfirmationView(
             action: confirmation,
             organization: organization
-          )
-          .environment(clerk)
-          .environment(
-            OrganizationProfileBuiltInRouter(
-              push: navigateToBuiltIn,
-              dismissAction: dismissAction
-            )
           )
         }
         .task {
