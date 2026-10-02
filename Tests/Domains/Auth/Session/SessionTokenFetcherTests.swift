@@ -416,13 +416,13 @@ struct SessionServiceAndTokenFetcherTests {
     let requestStarted = AsyncStream<Void>.makeStream(
       bufferingPolicy: .bufferingNewest(1)
     )
-    let secondCallerStarted = AsyncStream<Void>.makeStream(
+    let requestShared = AsyncStream<Void>.makeStream(
       bufferingPolicy: .bufferingNewest(1)
     )
     let requestGate = SessionTokenFetchGate()
     defer {
       requestStarted.continuation.finish()
-      secondCallerStarted.continuation.finish()
+      requestShared.continuation.finish()
     }
     let service = MockSessionService(fetchToken: { _, _, _ in
       callCount.withValue { $0 += 1 }
@@ -453,13 +453,15 @@ struct SessionServiceAndTokenFetcherTests {
     let originalTaskId = try #require(originalTask?.id)
 
     let second = Task {
-      secondCallerStarted.continuation.yield()
-      return try await SessionTokenFetcher.shared.getToken(session)
+      try await SessionTokenFetcher.shared.getToken(session, onInFlightTaskShared: { taskId in
+        #expect(taskId == originalTaskId)
+        requestShared.continuation.yield()
+      })
     }
     defer { second.cancel() }
     try await waitForSignal(
-      secondCallerStarted.stream,
-      message: "Timed out waiting for the second inactive-session caller to start."
+      requestShared.stream,
+      message: "Timed out waiting for the second inactive-session caller to share the request."
     )
 
     let sharedTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
