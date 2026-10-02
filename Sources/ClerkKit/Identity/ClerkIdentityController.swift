@@ -7,11 +7,6 @@ import Foundation
 
 @MainActor
 final class ClerkIdentityController {
-  struct RollbackState {
-    let lastAppliedResponseSequence: Int?
-    let lastServerDate: Date?
-  }
-
   weak var clerk: Clerk?
 
   private(set) var currentDeviceToken: String?
@@ -65,20 +60,6 @@ extension ClerkIdentityController {
     if identity.client != nil {
       clerk.setClientFromIdentityController(identity.client)
     }
-  }
-
-  func captureRollbackState() -> RollbackState {
-    RollbackState(
-      lastAppliedResponseSequence: responseOrderingGate.lastAcceptedSequence,
-      lastServerDate: lastServerDate
-    )
-  }
-
-  func restoreRollbackState(_ state: RollbackState) {
-    responseOrderingGate = ClientResponseOrderingGate(
-      lastAcceptedSequence: state.lastAppliedResponseSequence,
-      lastAcceptedServerDate: state.lastServerDate
-    )
   }
 
   func resetOrderingState() {

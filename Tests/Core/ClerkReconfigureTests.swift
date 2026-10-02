@@ -253,7 +253,6 @@ struct ClerkReconfigureTests {
   @Test
   func unreachableKeychainFailsReconfigureBeforeDestructiveWrites() async throws {
     let original = Clerk.shared
-    let previousEpoch = original.configurationEpoch
     let identityKeychain = InMemoryKeychain()
     let sourceDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
@@ -263,6 +262,7 @@ struct ClerkReconfigureTests {
       telemetryCollector: original.dependencies.telemetryCollector
     )
     original.performConfiguration(dependencies: sourceDependencies)
+    let previousRuntime = original.runtime
     try original.seedIdentity(deviceToken: "source-token", client: .mock)
     defer { original.cleanupManagers() }
 
@@ -271,7 +271,8 @@ struct ClerkReconfigureTests {
     }
 
     #expect(Clerk.shared === original)
-    #expect(original.configurationEpoch == previousEpoch)
+    #expect(original.runtime === previousRuntime)
+    #expect(previousRuntime.isCurrent)
     #expect(original.dependencies === sourceDependencies)
     #expect(try sourceDependencies.identityStore.load()?.deviceToken == "source-token")
     #expect(original.client?.id == Client.mock.id)
@@ -280,7 +281,6 @@ struct ClerkReconfigureTests {
   @Test
   func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
     let original = Clerk.shared
-    let previousEpoch = Clerk.shared.configurationEpoch
     let throwingKeychain = ThrowingDeleteKeychain()
     let previousDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
@@ -288,6 +288,7 @@ struct ClerkReconfigureTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     original.performConfiguration(dependencies: previousDependencies)
+    let previousRuntime = original.runtime
     original.client = .mock
     original.environment = .mock
     defer { original.cleanupManagers() }
@@ -310,7 +311,8 @@ struct ClerkReconfigureTests {
 
     let dependenciesUnchanged = Clerk.shared.dependencies === previousDependencies
     #expect(Clerk.shared === original)
-    #expect(Clerk.shared.configurationEpoch == previousEpoch)
+    #expect(Clerk.shared.runtime === previousRuntime)
+    #expect(previousRuntime.isCurrent)
     #expect(dependenciesUnchanged)
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(Clerk.shared.environment == .mock)

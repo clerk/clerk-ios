@@ -10,6 +10,7 @@ import Foundation
 @MainActor
 final class ClerkRuntime {
   weak let clerk: Clerk?
+  let state: ClerkRuntimeState
   var dependencies: any Dependencies
   var internalStateChanges = ClerkInternalStateChangeEmitter()
 
@@ -34,9 +35,14 @@ final class ClerkRuntime {
     maximumDelay: .seconds(5)
   )
 
-  init(clerk: Clerk, dependencies: any Dependencies) {
+  init(clerk: Clerk, state: ClerkRuntimeState, dependencies: any Dependencies) {
     self.clerk = clerk
+    self.state = state
     self.dependencies = dependencies
+  }
+
+  var isCurrent: Bool {
+    state.isCurrent
   }
 
   func start() {
@@ -84,6 +90,7 @@ final class ClerkRuntime {
   }
 
   func shutdown() async {
+    state.retire()
     cancelRefreshes()
     stopManagers()
     await tasks.cancelAllAndWait()

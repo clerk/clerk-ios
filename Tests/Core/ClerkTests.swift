@@ -77,7 +77,7 @@ struct ClerkTests {
     try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      runtimeScope: ClerkRuntimeScope(),
       probesAccessGroupOverride: false,
       keychainStorageOverride: keychain
     ).identityStore.save(ClerkIdentitySnapshot(

@@ -30,13 +30,7 @@ public final class Clerk {
     _shared.map { ClerkLogger.Configuration(options: $0.options) }
   }
 
-  private static var isRuntimeReconfigurationInProgress = false
   private static var runtimeReconfigurationWaiters: [CheckedContinuation<Void, Never>] = []
-
-  private struct ReconfigurationRollbackState {
-    let configurationEpoch: ClerkConfigurationEpoch
-    let identity: ClerkIdentityController.RollbackState
-  }
 
   /// A getter to see if the Clerk object is ready for use or not.
   /// Returns true when both environment and client are loaded.
@@ -134,13 +128,6 @@ public final class Clerk {
     identityController.clientResponseGeneration
   }
 
-  /// Changes every time this instance is reconfigured.
-  /// SDK-owned requests capture this value so stale responses cannot mutate new state.
-  @ObservationIgnored
-  private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
-
-  let runtimeState = ClerkRuntimeState()
-
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
     dependencies.configurationManager.publishableKey
@@ -178,7 +165,7 @@ public final class Clerk {
   lazy var identityController = ClerkIdentityController(clerk: self)
 
   @ObservationIgnored
-  private(set) lazy var runtime = ClerkRuntime(clerk: self, dependencies: Self.makeUnconfiguredDependencies())
+  private(set) lazy var runtime = Self.makeUnconfiguredRuntime(clerk: self)
 
   var dependencies: any Dependencies {
     get { runtime.dependencies }
@@ -243,13 +230,15 @@ public final class Clerk {
 
   package init() {}
 
-  private static func makeUnconfiguredDependencies() -> any Dependencies {
+  private static func makeUnconfiguredRuntime(clerk: Clerk) -> ClerkRuntime {
+    let state = ClerkRuntimeState()
     do {
-      return try DependencyContainer(
+      let dependencies = try DependencyContainer(
         publishableKey: "",
         options: .init(),
-        runtimeScope: .init(epoch: .initial)
+        runtimeScope: ClerkRuntimeScope(state: state)
       )
+      return ClerkRuntime(clerk: clerk, state: state, dependencies: dependencies)
     } catch {
       fatalError("Failed to create the unconfigured dependency container: \(error.localizedDescription)")
     }
@@ -259,7 +248,7 @@ public final class Clerk {
 extension Clerk {
   @MainActor
   func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
-    let runtime = try makeRuntime(publishableKey: publishableKey, options: options, runtimeScope: runtimeScope)
+    let runtime = try makeRuntime(publishableKey: publishableKey, options: options)
     self.runtime.stop()
     install(runtime)
   }
@@ -267,20 +256,17 @@ extension Clerk {
   @MainActor
   func performConfiguration(dependencies: any Dependencies) {
     runtime.stop()
-    install(ClerkRuntime(clerk: self, dependencies: dependencies))
+    install(ClerkRuntime(clerk: self, state: runtime.state, dependencies: dependencies))
   }
 
-  private func makeRuntime(
-    publishableKey: String,
-    options: Clerk.Options,
-    runtimeScope: ClerkRuntimeScope
-  ) throws -> ClerkRuntime {
+  private func makeRuntime(publishableKey: String, options: Clerk.Options) throws -> ClerkRuntime {
+    let state = ClerkRuntimeState()
     let dependencies = try DependencyContainer(
       publishableKey: publishableKey,
       options: options,
-      runtimeScope: runtimeScope
+      runtimeScope: ClerkRuntimeScope(state: state, clerkProvider: { self })
     )
-    return ClerkRuntime(clerk: self, dependencies: dependencies)
+    return ClerkRuntime(clerk: self, state: state, dependencies: dependencies)
   }
 
   private func install(_ runtime: ClerkRuntime) {
@@ -391,23 +377,16 @@ extension Clerk {
     if let existing = _shared {
       _ = try existing.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-      let nextEpoch = existing.nextConfigurationEpoch
-      let next = try existing.makeRuntime(
-        publishableKey: publishableKey,
-        options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState, clerkProvider: { existing })
-      )
+      let next = try existing.makeRuntime(publishableKey: publishableKey, options: options)
       let outgoing = existing.runtime
-      let rollbackState = existing.captureReconfigurationRollbackState()
-
-      existing.setConfigurationEpoch(to: nextEpoch)
-      await existing.cleanupManagersAndWait()
+      existing.urlHandlingCoordinator.cancelAll()
+      await outgoing.shutdown()
 
       do {
         try clearLocalClerkStorageStrictly(in: outgoing.dependencies)
         try clearLocalClerkStorageStrictly(in: next.dependencies)
       } catch {
-        existing.restoreAfterFailedReconfiguration(rollbackState)
+        outgoing.start()
         throw error
       }
 
@@ -417,7 +396,7 @@ extension Clerk {
     }
 
     let clerk = Clerk()
-    let runtime = try clerk.makeRuntime(publishableKey: publishableKey, options: options, runtimeScope: clerk.runtimeScope)
+    let runtime = try clerk.makeRuntime(publishableKey: publishableKey, options: options)
     try clearLocalClerkStorageStrictly(in: runtime.dependencies)
     clerk.install(runtime)
     _shared = clerk
@@ -432,10 +411,12 @@ extension Clerk {
 
     guard let shared = _shared else { return }
 
-    await shared.cleanupManagersAndWait()
+    shared.urlHandlingCoordinator.cancelAll()
+    await shared.runtime.shutdown()
     await SessionTokenFetcher.shared.reset()
     shared.identityController.invalidateAllSessionTokens()
     _shared = nil
+    resumeRuntimeReconfigurationWaiters()
   }
 
   /// Refreshes the current client from the API.
@@ -515,6 +496,7 @@ extension Clerk {
 
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
+    resetPerConfigurationState()
     await SessionTokenFetcher.shared.reset()
     identityController.invalidateAllSessionTokens()
 
@@ -565,78 +547,51 @@ extension Clerk {
 
   @MainActor
   static func beginRuntimeReconfiguration() throws {
-    guard !isRuntimeReconfigurationInProgress else {
+    guard !runtimeReconfigurationIsInProgress else {
       throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.", localizationBundle: .module)
     }
-    isRuntimeReconfigurationInProgress = true
-    _shared?.runtimeState.beginReconfiguration()
+    _shared?.runtime.state.retire()
   }
 
   @MainActor
   static func endRuntimeReconfiguration() {
-    isRuntimeReconfigurationInProgress = false
-    _shared?.runtimeState.endReconfiguration()
-    let waiters = runtimeReconfigurationWaiters
-    runtimeReconfigurationWaiters.removeAll()
-    waiters.forEach { $0.resume() }
+    _shared?.runtime.state.reinstate()
+    resumeRuntimeReconfigurationWaiters()
   }
 
   @MainActor
   static var runtimeReconfigurationIsInProgress: Bool {
-    isRuntimeReconfigurationInProgress
+    _shared?.runtime.isCurrent == false
   }
 
   @MainActor
   static func waitForRuntimeReconfigurationIfNeeded() async {
-    guard isRuntimeReconfigurationInProgress else { return }
+    guard runtimeReconfigurationIsInProgress else { return }
     await withCheckedContinuation {
       runtimeReconfigurationWaiters.append($0)
     }
   }
 
   @MainActor
-  static func requireStableRuntime() throws -> ClerkRuntimeScope {
-    guard !isRuntimeReconfigurationInProgress else {
-      throw CancellationError()
-    }
+  private static func resumeRuntimeReconfigurationWaiters() {
+    let waiters = runtimeReconfigurationWaiters
+    runtimeReconfigurationWaiters.removeAll()
+    waiters.forEach { $0.resume() }
+  }
 
+  @MainActor
+  static func requireStableRuntime() throws -> ClerkRuntimeScope {
     guard let shared = _shared else {
       throw ClerkClientError(message: "Clerk must be configured before getting a session token.", localizationBundle: .module)
     }
 
-    return shared.runtimeScope
+    let scope = shared.runtimeScope
+    try scope.validateStableRuntime()
+    return scope
   }
 
   var runtimeScope: ClerkRuntimeScope {
     ClerkRuntimeScope.current(clerkProvider: { self })
-  }
-
-  var nextConfigurationEpoch: ClerkConfigurationEpoch {
-    configurationEpoch.next()
-  }
-
-  func setConfigurationEpoch(to epoch: ClerkConfigurationEpoch) {
-    configurationEpoch = epoch
-    runtimeState.advance(to: epoch)
-  }
-
-  private func captureReconfigurationRollbackState() -> ReconfigurationRollbackState {
-    ReconfigurationRollbackState(
-      configurationEpoch: configurationEpoch,
-      identity: identityController.captureRollbackState()
-    )
-  }
-
-  private func restoreAfterFailedReconfiguration(
-    _ state: ReconfigurationRollbackState
-  ) {
-    setConfigurationEpoch(to: state.configurationEpoch)
-    identityController.restoreRollbackState(state.identity)
-    runtime.start()
-  }
-
-  func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) -> Bool {
-    configurationEpoch == epoch
   }
 
   /// Cleans up managers that were started during configuration.
@@ -644,19 +599,11 @@ extension Clerk {
   package func cleanupManagers() {
     urlHandlingCoordinator.cancelAll()
     runtime.stop()
-    resetManagerStateForCleanup(finishAuthEventStreams: true)
+    authEventEmitter.finish()
+    resetPerConfigurationState()
   }
 
-  private func cleanupManagersAndWait() async {
-    urlHandlingCoordinator.cancelAll()
-    await runtime.shutdown()
-    resetManagerStateForCleanup(finishAuthEventStreams: false)
-  }
-
-  private func resetManagerStateForCleanup(finishAuthEventStreams: Bool) {
-    if finishAuthEventStreams {
-      authEventEmitter.finish()
-    }
+  private func resetPerConfigurationState() {
     environmentRefreshRevision = 0
     callbackContinuation = nil
     identityController.resetOrderingState()
