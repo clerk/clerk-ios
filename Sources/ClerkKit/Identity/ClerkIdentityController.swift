@@ -128,7 +128,7 @@ extension ClerkIdentityController {
   ) async throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
     adoptStoredDeviceToken()
-    clerk.startupClientRefreshTakeover.beginIfNeeded(
+    clerk.runtime.startupClientRefreshTakeover.beginIfNeeded(
       id: startupClientRefreshTakeoverID,
       deviceToken: currentDeviceToken
     )

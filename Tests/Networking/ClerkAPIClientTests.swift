@@ -432,7 +432,7 @@ struct ClerkAPIClientTests {
     ))
 
     #expect(refreshCount.value == 1)
-    #expect(!clerk.isStartupClientRefreshInProgress)
+    #expect(!clerk.runtime.isStartupClientRefreshInProgress)
     #expect(clerk.client?.id == establishedClient.id)
 
     startupGate.resume()

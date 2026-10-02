@@ -6,12 +6,14 @@
 import Foundation
 
 /// Everything Clerk builds for one installed configuration: the dependency container,
-/// the managers that run beside it, their observers, and the tasks they start.
+/// the managers that run beside it, their observers, and every task they start.
 @MainActor
 final class ClerkRuntime {
   weak let clerk: Clerk?
   var dependencies: any Dependencies
   var internalStateChanges = ClerkInternalStateChangeEmitter()
+
+  private(set) lazy var startupClientRefreshTakeover = StartupClientRefreshTakeover(runtime: self)
 
   private let tasks = TaskCoordinator()
   private var cacheManager: CacheManager?
@@ -19,6 +21,18 @@ final class ClerkRuntime {
   private var lifecycleManager: LifecycleManager?
   private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
   private var sharedIdentityNotifier: SharedIdentityNotifier?
+
+  private var environmentRefreshTask: Task<Clerk.Environment, Error>?
+  private var environmentRefreshTaskID: UUID?
+  private var startupClientRefreshTask: Task<Void, Never>?
+  private var startupClientRefreshID: UUID?
+  private var invalidAuthRefreshTask: Task<Void, Never>?
+
+  private static let startupRefreshRetryPolicy = RetryPolicy(
+    maxAttempts: 3,
+    initialDelay: .milliseconds(500),
+    maximumDelay: .seconds(5)
+  )
 
   init(clerk: Clerk, dependencies: any Dependencies) {
     self.clerk = clerk
@@ -36,9 +50,10 @@ final class ClerkRuntime {
       sessionProvider: clerk,
       authEventsProvider: { [weak clerk] in
         clerk?.auth.events ?? AsyncStream { $0.finish() }
-      }
+      },
+      tasks: tasks
     )
-    let lifecycleManager = LifecycleManager(handler: self)
+    let lifecycleManager = LifecycleManager(handler: self, tasks: tasks)
     self.sessionPollingManager = sessionPollingManager
     self.lifecycleManager = lifecycleManager
     sessionPollingManager.startPolling()
@@ -57,16 +72,26 @@ final class ClerkRuntime {
       internalStateChanges.addObserver(coordinator)
     }
     installSharedIdentityNotifier(clerk: clerk)
+
+    scheduleStartupEnvironmentRefresh()
+    startStartupClientRefreshIfNeeded()
   }
 
   func stop() {
+    cancelRefreshes()
     stopManagers()
     tasks.cancelAll()
   }
 
   func shutdown() async {
+    cancelRefreshes()
     stopManagers()
     await tasks.cancelAllAndWait()
+
+    let telemetry = dependencies.telemetryCollector
+    tasks.task(priority: .utility) {
+      await telemetry.flush()
+    }
   }
 
   @discardableResult
@@ -85,6 +110,15 @@ final class ClerkRuntime {
     internalStateChanges.addObserver(notifier)
   }
 
+  private func cancelRefreshes() {
+    cancelStartupClientRefresh()
+    invalidAuthRefreshTask?.cancel()
+    invalidAuthRefreshTask = nil
+    environmentRefreshTask?.cancel()
+    environmentRefreshTask = nil
+    environmentRefreshTaskID = nil
+  }
+
   private func stopManagers() {
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     watchConnectivityCoordinator = nil
@@ -97,6 +131,131 @@ final class ClerkRuntime {
     lifecycleManager?.stopObserving()
     lifecycleManager = nil
     internalStateChanges.removeAllObservers()
+  }
+}
+
+extension ClerkRuntime {
+  func refreshEnvironment() async throws -> Clerk.Environment {
+    if let environmentRefreshTask {
+      return try await environmentRefreshTask.value
+    }
+
+    guard let clerk else { throw CancellationError() }
+    let runtime = clerk.runtimeScope
+    let taskID = UUID()
+    let task = Task { @MainActor [weak self] in
+      defer {
+        if let self, self.environmentRefreshTaskID == taskID {
+          self.environmentRefreshTask = nil
+          self.environmentRefreshTaskID = nil
+        }
+      }
+
+      guard let self else { throw CancellationError() }
+      let environment = try await dependencies.environmentService.get()
+      try Task.checkCancellation()
+      try runtime.validateStableRuntime()
+      clerk.applyRefreshedEnvironment(environment)
+      return environment
+    }
+
+    tasks.track(task)
+    environmentRefreshTask = task
+    environmentRefreshTaskID = taskID
+    return try await task.value
+  }
+
+  private func scheduleStartupEnvironmentRefresh() {
+    let retryPolicy = Self.startupRefreshRetryPolicy
+    tasks.task { @MainActor [weak self] in
+      guard let self else { return }
+      do {
+        _ = try await retryingOperation(
+          policy: retryPolicy,
+          operationName: "environment refresh"
+        ) {
+          try await self.refreshEnvironment()
+        }
+      } catch is CancellationError {
+        return
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to load environment")
+      }
+    }
+  }
+
+  func startStartupClientRefreshIfNeeded() {
+    guard startupClientRefreshTask == nil else { return }
+
+    let retryPolicy = Self.startupRefreshRetryPolicy
+    let startupClientRefreshID = UUID()
+    self.startupClientRefreshID = startupClientRefreshID
+    startupClientRefreshTask = tasks.task { @MainActor [weak self] in
+      guard let self, let clerk else { return }
+      defer {
+        if self.startupClientRefreshID == startupClientRefreshID {
+          self.startupClientRefreshTask = nil
+          self.startupClientRefreshID = nil
+        }
+      }
+      do {
+        _ = try await retryingOperation(
+          policy: retryPolicy,
+          operationName: "client refresh"
+        ) {
+          try Task.checkCancellation()
+          try await clerk.refreshClient(skipClientId: false)
+        }
+      } catch is CancellationError {
+        return
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to load client")
+      }
+    }
+  }
+
+  @discardableResult
+  func cancelStartupClientRefreshTask() -> Bool {
+    guard let startupClientRefreshTask else { return false }
+    self.startupClientRefreshTask = nil
+    startupClientRefreshID = nil
+    startupClientRefreshTask.cancel()
+    return true
+  }
+
+  var isStartupClientRefreshInProgress: Bool {
+    startupClientRefreshTask != nil
+  }
+
+  @discardableResult
+  func cancelStartupClientRefresh() -> Bool {
+    startupClientRefreshTakeover.cancel()
+    return cancelStartupClientRefreshTask()
+  }
+
+  func refreshClientAfterInvalidAuth() async {
+    let task = startRefreshClientAfterInvalidAuth()
+    await task.value
+  }
+
+  func startRefreshClientAfterInvalidAuth() -> Task<Void, Never> {
+    if let invalidAuthRefreshTask {
+      return invalidAuthRefreshTask
+    }
+
+    let task = tasks.task { @MainActor [weak self] in
+      defer { self?.invalidAuthRefreshTask = nil }
+
+      guard let clerk = self?.clerk else { return }
+      do {
+        try await clerk.refreshClient()
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
+      }
+    }
+
+    invalidAuthRefreshTask = task
+    return task
   }
 }
 
@@ -122,15 +281,13 @@ extension ClerkRuntime: LifecycleEventHandling {
         ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
       }
 
-      // Force an immediate token evaluation after foreground client refresh
-      // rather than waiting for the next polling interval.
       await sessionPollingManager?.refreshNowIfNeeded()
     }
 
-    tasks.task { [weak clerk] in
-      guard let clerk else { return }
+    tasks.task { [weak self] in
+      guard let self else { return }
       do {
-        _ = try await clerk.refreshEnvironment()
+        _ = try await refreshEnvironment()
       } catch {
         ClerkLogger.logError(error, message: "Failed to refresh environment on foreground")
       }

@@ -135,18 +135,6 @@ public final class Clerk {
     identityController.clientResponseGeneration
   }
 
-  @ObservationIgnored
-  private var invalidAuthRefreshTask: Task<Void, Never>?
-
-  /// Configure-time client refresh, canceled when tokenless client creation starts.
-  @ObservationIgnored
-  private var startupClientRefreshTask: Task<Void, Never>?
-  @ObservationIgnored
-  private var startupClientRefreshID: UUID?
-
-  @ObservationIgnored
-  lazy var startupClientRefreshTakeover = StartupClientRefreshTakeover(clerk: self)
-
   /// Changes every time this instance is reconfigured.
   /// SDK-owned requests capture this value so stale responses cannot mutate new state.
   @ObservationIgnored
@@ -173,10 +161,6 @@ public final class Clerk {
   }
 
   private var environmentRefreshRevision = 0
-  @ObservationIgnored
-  private var environmentRefreshTask: Task<Environment, Error>?
-  @ObservationIgnored
-  private var environmentRefreshTaskID: UUID?
 
   package var environmentRefreshCheckpoint: EnvironmentRefreshCheckpoint {
     .init(revision: environmentRefreshRevision)
@@ -291,58 +275,8 @@ extension Clerk {
 
   @MainActor
   private func installConfiguration(dependencies: any Dependencies) {
-    cancelStartupClientRefresh()
     runtime.dependencies = dependencies
     runtime.start()
-
-    let retryPolicy = Self.startupRefreshRetryPolicy
-    runtime.scheduleTask { @MainActor [weak self] in
-      do {
-        guard let self else { return }
-        _ = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "environment refresh"
-        ) {
-          try await self.refreshEnvironment()
-        }
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to load environment")
-      }
-    }
-
-    startStartupClientRefreshIfNeeded()
-  }
-
-  func startStartupClientRefreshIfNeeded() {
-    guard startupClientRefreshTask == nil else { return }
-
-    let retryPolicy = Self.startupRefreshRetryPolicy
-    let startupClientRefreshID = UUID()
-    self.startupClientRefreshID = startupClientRefreshID
-    startupClientRefreshTask = runtime.scheduleTask { @MainActor [weak self] in
-      guard let self else { return }
-      defer {
-        if self.startupClientRefreshID == startupClientRefreshID {
-          self.startupClientRefreshTask = nil
-          self.startupClientRefreshID = nil
-        }
-      }
-      do {
-        _ = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "client refresh"
-        ) {
-          try Task.checkCancellation()
-          try await self.refreshClient(skipClientId: false)
-        }
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to load client")
-      }
-    }
   }
 
   /// Configures the shared Clerk instance.
@@ -467,10 +401,6 @@ extension Clerk {
         throw error
       }
 
-      // The outgoing collector is released once the new container is installed, so send its partial batch now.
-      let outgoingTelemetry = existing.dependencies.telemetryCollector
-      Task { await outgoingTelemetry.flush() }
-
       await existing.resetRuntimeStateForReconfiguration()
       existing.installConfiguration(dependencies: newDependencies)
       return existing
@@ -540,31 +470,12 @@ extension Clerk {
   /// Refreshes the current environment from the API.
   @discardableResult
   public func refreshEnvironment() async throws -> Environment {
-    if let environmentRefreshTask {
-      return try await environmentRefreshTask.value
-    }
+    try await runtime.refreshEnvironment()
+  }
 
-    let runtime = runtimeScope
-    let taskID = UUID()
-    let task = Task { @MainActor in
-      defer {
-        if self.environmentRefreshTaskID == taskID {
-          self.environmentRefreshTask = nil
-          self.environmentRefreshTaskID = nil
-        }
-      }
-
-      let environment = try await self.dependencies.environmentService.get()
-      try Task.checkCancellation()
-      try runtime.validateStableRuntime()
-      self.environment = environment
-      self.environmentRefreshRevision += 1
-      return environment
-    }
-
-    environmentRefreshTask = task
-    environmentRefreshTaskID = taskID
-    return try await task.value
+  func applyRefreshedEnvironment(_ environment: Environment) {
+    self.environment = environment
+    environmentRefreshRevision += 1
   }
 
   @discardableResult
@@ -575,12 +486,6 @@ extension Clerk {
 
     return try await refreshEnvironment()
   }
-
-  private static let startupRefreshRetryPolicy = RetryPolicy(
-    maxAttempts: 3,
-    initialDelay: .milliseconds(500),
-    maximumDelay: .seconds(5)
-  )
 
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
@@ -651,25 +556,6 @@ extension Clerk {
     } catch {
       ClerkLogger.logError(error, message: "Failed to notify Clerk state observer")
     }
-  }
-
-  @discardableResult
-  func cancelStartupClientRefreshTask() -> Bool {
-    guard let startupClientRefreshTask else { return false }
-    self.startupClientRefreshTask = nil
-    startupClientRefreshID = nil
-    startupClientRefreshTask.cancel()
-    return true
-  }
-
-  var isStartupClientRefreshInProgress: Bool {
-    startupClientRefreshTask != nil
-  }
-
-  @discardableResult
-  func cancelStartupClientRefresh() -> Bool {
-    startupClientRefreshTakeover.cancel()
-    return cancelStartupClientRefreshTask()
   }
 
   @MainActor
@@ -749,69 +635,26 @@ extension Clerk {
     configurationEpoch == epoch
   }
 
-  func refreshClientAfterInvalidAuth() async {
-    let task = startRefreshClientAfterInvalidAuth()
-    await task.value
-  }
-
-  func startRefreshClientAfterInvalidAuth() -> Task<Void, Never> {
-    if let invalidAuthRefreshTask {
-      return invalidAuthRefreshTask
-    }
-
-    let task = Task { [self] in
-      defer { invalidAuthRefreshTask = nil }
-
-      do {
-        try await refreshClient()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
-      }
-    }
-
-    invalidAuthRefreshTask = task
-    return task
-  }
-
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
-    cancelOwnedTasks()
+    urlHandlingCoordinator.cancelAll()
     runtime.stop()
     resetManagerStateForCleanup(finishAuthEventStreams: true)
   }
 
   private func cleanupManagersAndWait() async {
-    cancelOwnedTasks()
+    urlHandlingCoordinator.cancelAll()
     await runtime.shutdown()
     resetManagerStateForCleanup(finishAuthEventStreams: false)
-  }
-
-  private func cancelOwnedTasks() {
-    cancelStartupClientRefresh()
-    invalidAuthRefreshTask?.cancel()
-    invalidAuthRefreshTask = nil
-    urlHandlingCoordinator.cancelAll()
-    cancelEnvironmentRefreshTask()
   }
 
   private func resetManagerStateForCleanup(finishAuthEventStreams: Bool) {
     if finishAuthEventStreams {
       authEventEmitter.finish()
     }
-    resetEnvironmentRefreshState()
+    environmentRefreshRevision = 0
     callbackContinuation = nil
     identityController.resetOrderingState()
-  }
-
-  private func cancelEnvironmentRefreshTask() {
-    environmentRefreshTask?.cancel()
-    environmentRefreshTask = nil
-    environmentRefreshTaskID = nil
-  }
-
-  private func resetEnvironmentRefreshState() {
-    cancelEnvironmentRefreshTask()
-    environmentRefreshRevision = 0
   }
 }

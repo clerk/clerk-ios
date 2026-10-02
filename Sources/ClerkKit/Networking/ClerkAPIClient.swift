@@ -203,7 +203,7 @@ actor APIClient {
   private func finishStartupClientRefreshTakeover(_ id: UUID?) async {
     guard let id else { return }
     guard let clerk = try? await runtimeScope.requireCurrentClerk() else { return }
-    await clerk.startupClientRefreshTakeover.finish(id: id)
+    await clerk.runtime.startupClientRefreshTakeover.finish(id: id)
   }
 }
 

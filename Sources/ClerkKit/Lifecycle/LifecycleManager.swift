@@ -27,17 +27,24 @@ protocol LifecycleEventHandling: Sendable {
 /// Call `stopObserving()` before releasing the manager to ensure proper cleanup.
 @MainActor
 final class LifecycleManager {
-  private var willEnterForegroundTask: Task<Void, Error>?
+  private var willEnterForegroundTask: Task<Void, Never>?
 
-  private var didEnterBackgroundTask: Task<Void, Error>?
+  private var didEnterBackgroundTask: Task<Void, Never>?
 
   private let handler: any LifecycleEventHandling
 
   private let notificationCenter: NotificationCenter
 
-  init(handler: any LifecycleEventHandling, notificationCenter: NotificationCenter = .default) {
+  private let tasks: TaskCoordinator
+
+  init(
+    handler: any LifecycleEventHandling,
+    notificationCenter: NotificationCenter = .default,
+    tasks: TaskCoordinator = TaskCoordinator()
+  ) {
     self.handler = handler
     self.notificationCenter = notificationCenter
+    self.tasks = tasks
   }
 
   func startObserving() {
@@ -47,19 +54,23 @@ final class LifecycleManager {
     let willEnterForeground = notificationCenter.notifications(named: Self.willEnterForegroundNotification)
     let didEnterBackground = notificationCenter.notifications(named: Self.didEnterBackgroundNotification)
 
-    willEnterForegroundTask = Task {
+    let foregroundTask = Task {
       for await _ in willEnterForeground.map({ _ in () }) {
         guard !Task.isCancelled else { break }
         await handler.onWillEnterForeground()
       }
     }
+    willEnterForegroundTask = foregroundTask
+    tasks.track(foregroundTask)
 
-    didEnterBackgroundTask = Task {
+    let backgroundTask = Task {
       for await _ in didEnterBackground.map({ _ in () }) {
         guard !Task.isCancelled else { break }
         await handler.onDidEnterBackground()
       }
     }
+    didEnterBackgroundTask = backgroundTask
+    tasks.track(backgroundTask)
   }
 
   func stopObserving() {
