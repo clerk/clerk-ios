@@ -17,6 +17,7 @@ final class MockDependencyContainer: Dependencies {
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
+  let transport: any APITransport
   let telemetryCollector: any TelemetryCollectorProtocol
 
   let clientService: ClientServiceProtocol
@@ -40,6 +41,7 @@ final class MockDependencyContainer: Dependencies {
 
   init(
     apiClient: APIClient,
+    transport: (any APITransport)? = nil,
     keychain: (any KeychainStorage)? = nil,
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
@@ -76,6 +78,7 @@ final class MockDependencyContainer: Dependencies {
       biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
+    self.transport = transport ?? apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
     magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
