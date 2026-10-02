@@ -2,6 +2,7 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
+import Observation
 import Testing
 
 @MainActor
@@ -50,6 +51,22 @@ struct ClerkReconfigureTests {
     #expect(reconfigured.publishableKey == publishableKey)
     #expect(reconfigured.frontendApiUrl == "https://live.clerk.example.com")
     #expect(reconfigured.instanceType == .production)
+  }
+
+  @Test
+  func reconfigureNotifiesObserversOfConfigurationValues() async throws {
+    let clerk = Clerk.shared
+    let didChange = LockIsolated(false)
+    withObservationTracking {
+      _ = clerk.publishableKey
+    } onChange: {
+      didChange.setValue(true)
+    }
+
+    let reconfigured = try await Clerk.reconfigure(publishableKey: publishableKey(for: "ca.clerk.example.com"))
+    defer { reconfigured.cleanupManagers() }
+
+    #expect(didChange.value)
   }
 
   @Test

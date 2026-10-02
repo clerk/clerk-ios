@@ -165,11 +165,27 @@ public final class Clerk {
   lazy var identityController = ClerkIdentityController(clerk: self)
 
   @ObservationIgnored
-  private(set) lazy var runtime = Self.makeUnconfiguredRuntime(clerk: self)
+  private lazy var installedRuntime = Self.makeUnconfiguredRuntime(clerk: self)
+
+  private(set) var runtime: ClerkRuntime {
+    get {
+      access(keyPath: \.runtime)
+      return installedRuntime
+    }
+    set {
+      withMutation(keyPath: \.runtime) {
+        installedRuntime = newValue
+      }
+    }
+  }
 
   var dependencies: any Dependencies {
     get { runtime.dependencies }
-    set { runtime.dependencies = newValue }
+    set {
+      withMutation(keyPath: \.runtime) {
+        installedRuntime.dependencies = newValue
+      }
+    }
   }
 
   /// The event emitter for auth events.
