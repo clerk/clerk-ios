@@ -395,82 +395,77 @@ struct SessionServiceAndTokenFetcherTests {
 
   @Test
   func concurrentNonActiveSessionFetchesShareRequest() async throws {
-    await SessionTokenFetcher.shared.reset()
-    SessionTemplateTokensCache.shared.clear()
+    try await withMainSerialExecutor {
+      await SessionTokenFetcher.shared.reset()
+      SessionTemplateTokensCache.shared.clear()
 
-    let session = Session.mock
-    let serverToken = try token(
-      sessionId: session.id,
-      organizationId: nil,
-      originIssuedAt: 200,
-      issuedAt: 200,
-      signature: "server"
-    )
-    configureCurrentState(session: session, sessionMinterEnabled: true)
-    var signedOutClient = Client.mock
-    signedOutClient.sessions = []
-    signedOutClient.lastActiveSessionId = nil
-    Clerk.shared.client = signedOutClient
+      let session = Session.mock
+      let serverToken = try token(
+        sessionId: session.id,
+        organizationId: nil,
+        originIssuedAt: 200,
+        issuedAt: 200,
+        signature: "server"
+      )
+      configureCurrentState(session: session, sessionMinterEnabled: true)
+      var signedOutClient = Client.mock
+      signedOutClient.sessions = []
+      signedOutClient.lastActiveSessionId = nil
+      Clerk.shared.client = signedOutClient
 
-    let callCount = LockIsolated(0)
-    let requestStarted = AsyncStream<Void>.makeStream(
-      bufferingPolicy: .bufferingNewest(1)
-    )
-    let secondCallerStarted = AsyncStream<Void>.makeStream(
-      bufferingPolicy: .bufferingNewest(1)
-    )
-    let requestGate = SessionTokenFetchGate()
-    defer {
-      requestStarted.continuation.finish()
-      secondCallerStarted.continuation.finish()
+      let callCount = LockIsolated(0)
+      let requestStarted = AsyncStream<Void>.makeStream(
+        bufferingPolicy: .bufferingNewest(1)
+      )
+      let requestGate = SessionTokenFetchGate()
+      defer {
+        requestStarted.continuation.finish()
+      }
+      let service = MockSessionService(fetchToken: { _, _, _ in
+        callCount.withValue { $0 += 1 }
+        requestStarted.continuation.yield()
+        await requestGate.suspend()
+        try Task.checkCancellation()
+        return serverToken
+      })
+      Clerk.shared.dependencies = MockDependencyContainer(
+        apiClient: createMockAPIClient(),
+        sessionService: service
+      )
+
+      let first = Task {
+        try await SessionTokenFetcher.shared.getToken(session)
+      }
+      defer {
+        first.cancel()
+        Task { await requestGate.resume() }
+      }
+      try await waitForSignal(
+        requestStarted.stream,
+        message: "Timed out waiting for the first inactive-session fetch to start."
+      )
+
+      let cacheKey = session.tokenCacheKey(template: nil)
+      let originalTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+      let originalTaskId = try #require(originalTask?.id)
+
+      let second = Task {
+        try await SessionTokenFetcher.shared.getToken(session)
+      }
+      defer { second.cancel() }
+      // Let the second caller join the blocked request on the serial executor before releasing it.
+      await Task.yield()
+
+      let sharedTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
+      #expect(sharedTask?.id == originalTaskId)
+      #expect(sharedTask?.isCurrentActiveSession == false)
+
+      await requestGate.resume()
+
+      #expect(try await first.value == serverToken)
+      #expect(try await second.value == serverToken)
+      #expect(callCount.value == 1)
     }
-    let service = MockSessionService(fetchToken: { _, _, _ in
-      callCount.withValue { $0 += 1 }
-      requestStarted.continuation.yield()
-      await requestGate.suspend()
-      try Task.checkCancellation()
-      return serverToken
-    })
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      sessionService: service
-    )
-
-    let first = Task {
-      try await SessionTokenFetcher.shared.getToken(session)
-    }
-    defer {
-      first.cancel()
-      Task { await requestGate.resume() }
-    }
-    try await waitForSignal(
-      requestStarted.stream,
-      message: "Timed out waiting for the first inactive-session fetch to start."
-    )
-
-    let cacheKey = session.tokenCacheKey(template: nil)
-    let originalTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
-    let originalTaskId = try #require(originalTask?.id)
-
-    let second = Task {
-      secondCallerStarted.continuation.yield()
-      return try await SessionTokenFetcher.shared.getToken(session)
-    }
-    defer { second.cancel() }
-    try await waitForSignal(
-      secondCallerStarted.stream,
-      message: "Timed out waiting for the second inactive-session caller to start."
-    )
-
-    let sharedTask = await SessionTokenFetcher.shared.tokenTasks[cacheKey]
-    #expect(sharedTask?.id == originalTaskId)
-    #expect(sharedTask?.isCurrentActiveSession == false)
-
-    await requestGate.resume()
-
-    #expect(try await first.value == serverToken)
-    #expect(try await second.value == serverToken)
-    #expect(callCount.value == 1)
   }
 
   @Test
