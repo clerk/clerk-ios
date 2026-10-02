@@ -114,7 +114,7 @@ async function resolveRequest({ github, context, core, prNumber }) {
   if (automatic) {
     const reviewComment = comments.filter(comment => isCodeRabbit(comment.user)
       && comment.body.startsWith('<!-- This is an auto-generated comment: summarize by coderabbit.ai -->'))
-      .sort((a, b) => b.id - a.id)[0];
+      .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || b.id - a.id)[0];
     if (!reviewComment || !hasCleanReview(reviewComment.body, headSha)) {
       return skip('CodeRabbit has not reported no actionable comments for the current commit.');
     }

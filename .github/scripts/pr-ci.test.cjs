@@ -32,7 +32,7 @@ function harness() {
     },
     comments: [
       { id: 1, user: ACTIONS, body: INSTRUCTIONS },
-      { id: 2, user: RABBIT, body: cleanBody() },
+      { id: 2, user: RABBIT, body: cleanBody(), updated_at: '2026-10-02T19:30:00Z' },
     ],
     statuses: [{ id: 10, context: 'CodeRabbit', creator: RABBIT, state: 'success', description: 'Review completed' }],
     checks: new Map([[SHA, [{ id: 20, head_sha: SHA, app: { slug: 'github-actions' }, status: 'queued' }]]]),
@@ -147,6 +147,39 @@ test('a green review with findings waits until a later commit has a clean review
   h.state.pr.head.sha = SHA;
   h.state.comments[1].body = cleanBody();
   assert.equal((await h.evaluate()).should_run, 'true');
+});
+
+test('a clean review edited into an older summary starts CI despite a newer-created stale summary', async () => {
+  const h = harness();
+  h.state.comments.push({
+    id: 3, user: RABBIT, body: cleanBody(OLD_SHA), updated_at: '2026-10-02T19:00:00Z',
+  });
+  const result = await h.evaluate();
+  assert.equal(result.should_run, 'true');
+  assert.equal(result.head_sha, SHA);
+  assert.equal(h.state.writes.filter(write => write.kind === 'check').length, 1);
+});
+
+test('findings in the most recently updated summary block an earlier clean result', async () => {
+  const h = harness();
+  h.state.comments[1].body = cleanBody().replace('No actionable comments were generated in the recent review. 🎉', '**Actionable comments posted: 1**');
+  h.state.comments.push({
+    id: 3, user: RABBIT, body: cleanBody(), updated_at: '2026-10-02T19:00:00Z',
+  });
+  assert.equal((await h.evaluate()).should_run, 'false');
+  assert.equal(h.state.writes.length, 0);
+});
+
+test('equally updated summaries use the higher comment ID regardless of response order', async () => {
+  for (const reverse of [false, true]) {
+    const h = harness();
+    h.state.comments.push({
+      id: 3, user: RABBIT, body: cleanBody(OLD_SHA), updated_at: h.state.comments[1].updated_at,
+    });
+    if (reverse) h.state.comments.reverse();
+    assert.equal((await h.evaluate()).should_run, 'false');
+    assert.equal(h.state.writes.length, 0);
+  }
 });
 
 test('summary first, completed status later starts exactly once', async () => {
