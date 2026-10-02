@@ -29,9 +29,11 @@ package final class FakeTransport: APITransport {
       let components = FakeTransport.pathComponents(call.path)
       return method == call.method
         && components.count == pathPattern.count
-        && zip(pathPattern, components).allSatisfy { $0 == "*" || $0 == $1 }
+        && zip(pathPattern, components).allSatisfy { $0 == FakeTransport.anyPathSegment || $0 == $1 }
     }
   }
+
+  package nonisolated static let anyPathSegment = "*"
 
   private nonisolated static let baseURL = URL(string: "https://fake.clerk.test")!
   private var stubs: [Stub] = []
