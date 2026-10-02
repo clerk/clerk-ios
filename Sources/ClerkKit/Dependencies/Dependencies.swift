@@ -51,8 +51,6 @@ protocol Dependencies: AnyObject {
 
   var environmentService: EnvironmentServiceProtocol { get }
 
-  var emailAddressService: EmailAddressServiceProtocol { get }
-
   var phoneNumberService: PhoneNumberServiceProtocol { get }
 
   var externalAccountService: ExternalAccountServiceProtocol { get }

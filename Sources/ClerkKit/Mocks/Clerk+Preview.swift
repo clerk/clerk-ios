@@ -170,7 +170,6 @@ extension Clerk {
       organizationService: services.organizationService,
       billingService: services.billingService,
       environmentService: services.environmentService,
-      emailAddressService: services.emailAddressService,
       phoneNumberService: services.phoneNumberService,
       externalAccountService: services.externalAccountService
     )
