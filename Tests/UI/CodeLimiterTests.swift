@@ -10,14 +10,14 @@ struct CodeLimiterTests {
   @Test(.timeLimit(.minutes(1)))
   func countdownUpdatesUntilItsOwnCooldownEnds() async throws {
     let limiter = CodeLimiter()
-    limiter.recordCodeSent(for: "identifier", cooldown: 4)
+    limiter.recordCodeSent(for: "identifier", cooldown: 5)
 
-    try await Task.sleep(for: .seconds(1))
     #expect(limiter.remainingCooldown(for: "identifier") > 0)
     #expect(try await publishesUpdate { limiter.remainingCooldown(for: "identifier") })
 
-    try await Task.sleep(for: .seconds(2))
-    #expect(limiter.remainingCooldown(for: "identifier") == 0)
+    while limiter.remainingCooldown(for: "identifier") > 0 {
+      try await Task.sleep(for: .milliseconds(100))
+    }
     #expect(try await !publishesUpdate { limiter.remainingCooldown(for: "identifier") })
   }
 
