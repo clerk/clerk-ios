@@ -1,74 +1,106 @@
 @testable import ClerkKit
-import ConcurrencyExtras
 import Foundation
 import Testing
 
 @MainActor
 @Suite(.serialized)
 struct EmailAddressTests {
+  private let transport = FakeTransport()
+
   init() {
     configureClerkForTesting()
+    useTransport(transport)
   }
 
-  private func configureService(_ service: MockEmailAddressService) {
+  private func useTransport(_ transport: FakeTransport) {
+    let apiClient = createMockAPIClient()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      emailAddressService: service
+      apiClient: apiClient,
+      transport: transport,
+      userService: UserService(apiClient: apiClient)
     )
   }
 
   @Test
-  func sendCodeUsesEmailAddressServicePrepareVerification() async throws {
-    let emailAddress = EmailAddress.mock
-    let captured = LockIsolated<(String, EmailAddress.PrepareStrategy)?>(nil)
-    let service = MockEmailAddressService(prepareVerification: { id, strategy in
-      captured.setValue((id, strategy))
-      return .mock
-    })
+  func createEmailAddressPostsTheNewAddress() async throws {
+    let fixture = EmailAddress.mock
+    transport.stub(EmailAddressAPI.create(email: "new@example.com"), returning: ClientResponse(response: fixture, client: nil))
 
-    configureService(service)
+    let created = try await User.mock.createEmailAddress("new@example.com")
 
-    _ = try await emailAddress.sendCode()
-
-    let params = try #require(captured.value)
-    #expect(params.0 == emailAddress.id)
-    #expect(params.1 == .emailCode)
+    #expect(created == fixture)
+    let call = try #require(transport.calls.first)
+    #expect(transport.calls.count == 1)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/me/email_addresses")
+    #expect(call.body?["email_address"]?.stringValue == "new@example.com")
+    #expect(call.isScopedToActiveSession)
   }
 
   @Test
-  func verifyCodeUsesEmailAddressServiceAttemptVerification() async throws {
+  func sendCodePreparesAnEmailCodeVerification() async throws {
     let emailAddress = EmailAddress.mock
-    let captured = LockIsolated<(String, EmailAddress.AttemptStrategy)?>(nil)
-    let service = MockEmailAddressService(attemptVerification: { id, strategy in
-      captured.setValue((id, strategy))
-      return .mock
-    })
+    transport.stub(EmailAddressAPI.prepareVerification(emailAddressId: emailAddress.id, strategy: .emailCode), returning: ClientResponse(response: emailAddress, client: nil))
 
-    configureService(service)
+    let prepared = try await emailAddress.sendCode()
 
-    _ = try await emailAddress.verifyCode("123456")
+    #expect(prepared == emailAddress)
+    let call = try #require(transport.calls.first)
+    #expect(transport.calls.count == 1)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/me/email_addresses/\(emailAddress.id)/prepare_verification")
+    #expect(call.body?["strategy"]?.stringValue == "email_code")
+    #expect(call.isScopedToActiveSession)
+  }
 
-    let params = try #require(captured.value)
-    #expect(params.0 == emailAddress.id)
-    switch params.1 {
-    case .emailCode(let code):
-      #expect(code == "123456")
+  @Test
+  func verifyCodeAttemptsVerificationWithTheCode() async throws {
+    let emailAddress = EmailAddress.mock
+    transport.stub(EmailAddressAPI.attemptVerification(emailAddressId: emailAddress.id, strategy: .emailCode(code: "123456")), returning: ClientResponse(response: emailAddress, client: nil))
+
+    let verified = try await emailAddress.verifyCode("123456")
+
+    #expect(verified == emailAddress)
+    let call = try #require(transport.calls.first)
+    #expect(transport.calls.count == 1)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/me/email_addresses/\(emailAddress.id)/attempt_verification")
+    #expect(call.body?["code"]?.stringValue == "123456")
+    #expect(call.isScopedToActiveSession)
+  }
+
+  @Test
+  func destroyDeletesTheEmailAddress() async throws {
+    let emailAddress = EmailAddress.mock
+    transport.stub(EmailAddressAPI.destroy(emailAddressId: emailAddress.id), returning: ClientResponse(response: .mock, client: nil))
+
+    let deleted = try await emailAddress.destroy()
+
+    #expect(deleted.id == DeletedObject.mock.id)
+    let call = try #require(transport.calls.first)
+    #expect(transport.calls.count == 1)
+    #expect(call.method == .delete)
+    #expect(call.path == "/v1/me/email_addresses/\(emailAddress.id)")
+    #expect(call.body == nil)
+    #expect(call.isScopedToActiveSession)
+  }
+
+  @Test
+  func unstubbedRequestThrows() async throws {
+    await #expect(throws: FakeTransport.Failure.self) {
+      try await EmailAddress.mock.sendCode()
     }
+    #expect(transport.calls.count == 1)
   }
 
   @Test
-  func destroyUsesEmailAddressServiceDestroy() async throws {
+  func previewDefaultsAnswerEveryEmailAddressEndpoint() async throws {
+    useTransport(.previewDefaults())
     let emailAddress = EmailAddress.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockEmailAddressService(destroy: { id in
-      captured.setValue(id)
-      return .mock
-    })
 
-    configureService(service)
-
-    _ = try await emailAddress.destroy()
-
-    #expect(captured.value == emailAddress.id)
+    #expect(try await User.mock.createEmailAddress("preview@example.com").id == emailAddress.id)
+    #expect(try await emailAddress.sendCode().id == emailAddress.id)
+    #expect(try await emailAddress.verifyCode("424242").id == emailAddress.id)
+    #expect(try await emailAddress.destroy().id == DeletedObject.mock.id)
   }
 }

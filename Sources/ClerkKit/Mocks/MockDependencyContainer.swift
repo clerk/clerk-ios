@@ -17,6 +17,7 @@ final class MockDependencyContainer: Dependencies {
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
   let apiClient: APIClient
+  let transport: any APITransport
   let telemetryCollector: any TelemetryCollectorProtocol
 
   let clientService: ClientServiceProtocol
@@ -31,7 +32,6 @@ final class MockDependencyContainer: Dependencies {
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
   let environmentService: EnvironmentServiceProtocol
-  let emailAddressService: EmailAddressServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
@@ -40,6 +40,7 @@ final class MockDependencyContainer: Dependencies {
 
   init(
     apiClient: APIClient,
+    transport: (any APITransport)? = nil,
     keychain: (any KeychainStorage)? = nil,
     appLocalKeychain: (any KeychainStorage)? = nil,
     identityKeychain: (any KeychainStorage)? = nil,
@@ -60,7 +61,6 @@ final class MockDependencyContainer: Dependencies {
     organizationService: (any OrganizationServiceProtocol)? = nil,
     billingService: (any BillingServiceProtocol)? = nil,
     environmentService: (any EnvironmentServiceProtocol)? = nil,
-    emailAddressService: (any EmailAddressServiceProtocol)? = nil,
     phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
     externalAccountService: (any ExternalAccountServiceProtocol)? = nil
   ) {
@@ -76,6 +76,7 @@ final class MockDependencyContainer: Dependencies {
       biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)
     configurationManager = ConfigurationManager()
     self.apiClient = apiClient
+    self.transport = transport ?? apiClient
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
     magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
@@ -92,7 +93,6 @@ final class MockDependencyContainer: Dependencies {
     self.organizationService = organizationService ?? MockOrganizationService()
     self.billingService = billingService ?? MockBillingService()
     self.environmentService = environmentService ?? MockEnvironmentService()
-    self.emailAddressService = emailAddressService ?? MockEmailAddressService()
     self.phoneNumberService = phoneNumberService ?? MockPhoneNumberService()
     self.externalAccountService = externalAccountService ?? MockExternalAccountService()
   }

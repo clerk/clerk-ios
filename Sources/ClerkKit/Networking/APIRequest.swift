@@ -1,6 +1,6 @@
 import Foundation
 
-enum HTTPMethod: String {
+package enum HTTPMethod: String {
   case get = "GET"
   case post = "POST"
   case put = "PUT"
@@ -53,7 +53,7 @@ enum RequestBody: @unchecked Sendable {
 
 struct EmptyResponse: Codable {}
 
-struct Request<Response: Decodable & Sendable> {
+package struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
   let headers: [String: String]

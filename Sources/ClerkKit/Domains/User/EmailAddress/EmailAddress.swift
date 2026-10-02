@@ -49,13 +49,6 @@ public struct EmailAddress: Codable, Equatable, Hashable, Identifiable, Sendable
 }
 
 extension EmailAddress {
-  @MainActor
-  private var emailAddressService: any EmailAddressServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.emailAddressService
-    }
-  }
-
   /// Sends a verification code to this email address.
   ///
   /// An email message with a one-time code or an email link will be sent to the email address box.
@@ -69,7 +62,12 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func sendCode() async throws -> EmailAddress {
-    try await emailAddressService.prepareVerification(emailAddressId: id, strategy: .emailCode)
+    let transport = try Clerk.currentDependencies.transport
+    let request = EmailAddressAPI.prepareVerification(
+      emailAddressId: id,
+      strategy: .emailCode
+    )
+    return try await transport.send(request).value.response
   }
 
   /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -86,12 +84,19 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> EmailAddress {
-    try await emailAddressService.attemptVerification(emailAddressId: id, strategy: .emailCode(code: code))
+    let transport = try Clerk.currentDependencies.transport
+    let request = EmailAddressAPI.attemptVerification(
+      emailAddressId: id,
+      strategy: .emailCode(code: code)
+    )
+    return try await transport.send(request).value.response
   }
 
   /// Deletes this email address.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await emailAddressService.destroy(emailAddressId: id)
+    let transport = try Clerk.currentDependencies.transport
+    let request = EmailAddressAPI.destroy(emailAddressId: id)
+    return try await transport.send(request).value.response
   }
 }

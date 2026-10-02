@@ -8,6 +8,8 @@ import Foundation
 protocol Dependencies: AnyObject {
   var apiClient: APIClient { get }
 
+  var transport: any APITransport { get }
+
   var networkingPipeline: NetworkingPipeline { get }
 
   var keychain: any KeychainStorage { get }
@@ -48,8 +50,6 @@ protocol Dependencies: AnyObject {
   var billingService: BillingServiceProtocol { get }
 
   var environmentService: EnvironmentServiceProtocol { get }
-
-  var emailAddressService: EmailAddressServiceProtocol { get }
 
   var phoneNumberService: PhoneNumberServiceProtocol { get }
 
