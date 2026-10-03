@@ -13,22 +13,24 @@ The rule: no change to clerk-ios UI or auth behavior is done until a `bin/verify
 
 ```console
 $ npm ci                       # once per worktree, before anything else
-$ bin/verify doctor            # exits 3 until the first up, because build is the one failing check
+$ bin/verify doctor            # on a clean machine, exits 3 until the first up, because build is the one failing check
 $ bin/verify up                # build E2EHost for this tree, then lease verify-ios-<n> and install
 build   ios-3f9a1c2e07b1  local  building...
+build   ios-3f9a1c2e07b1  local  built in 58s
 device  verify-ios-1  cloning Clerk Verify Template iOS
 install ios-3f9a1c2e07b1  on verify-ios-1
-build   ios-3f9a1c2e07b1  local  58s
 device  verify-ios-1  local  leased by this worktree  installed ios-3f9a1c2e07b1
 ```
 
-The lane is ready when `up` prints its last line, `device <name> local leased by this worktree installed <build key>`. The `device ... cloning` and `install` lines are progress. A reused build prints `build <key> local reused` and no `building...` line.
+The lane is ready when `up` prints its last line, `device <name> local leased by this worktree installed <build key>`. The `device ... cloning` and `install` lines are progress. A reused build prints one `build <key> local reused` line. The build always finishes before `up` claims a lane, so a `wait` line for a full pool comes after the `build ... built` line.
 
-`up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. `bin/verify up &` followed by `bin/verify run ...` is fine: `run` waits for the `up` to finish and uses its lease.
+`up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. Any change to the tree, including reverting an edit, changes the key, so the next `up` or `run` rebuilds and reinstalls. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. `bin/verify up &` followed by `bin/verify run ...` is fine: `run` prints one `wait` line naming the build, waits for the `up` to finish with no time limit, and uses its lease. `--wait` does not apply to that wait; it bounds waiting for a free lane and for another `run` that holds the device.
+
+Because `run` goes through the same lease step as `up`, a `run` also cleans up after worktrees that were removed without `down` (their lanes, users, and daemons), exactly as `up` does.
 
 The lane simulator is a clone of `Clerk Verify Template iOS`, which trusts this Mac's proxy CA. The clone is deleted and re-cloned when a lease is lost or released, so the name `verify-ios-<n>` can map to a different UDID from one lease to the next. Read the UDID from `.verify/leases/ios.json`.
 
-Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds. Four lane simulators can exist on the Mac at once, across all agents. When all four are taken, `up` and `run` fail with `POOL_FULL`. Pass `--wait <seconds>` to wait for a lane. While waiting, the CLI prints one `wait` line naming the lanes in use, and prints it again only when that set changes.
+Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds. Four lane simulators can exist on the Mac at once, across all agents. When all four are taken, `up` and `run` fail with `POOL_FULL`. Pass `--wait <seconds>` to either verb to wait for a lane. While waiting, the CLI prints one `wait` line naming the lanes in use, and prints it again only when that set changes.
 
 Each worktree runs its own agent-device daemon from its own `node_modules`, with state under `.verify/agent-device/`. The CLI passes `AGENT_DEVICE_STATE_DIR` to e2e and to every `agent-device` call, and `down` stops the daemon. A daemon shared across worktrees breaks every worktree once the worktree that started it is removed. If you call `agent-device` yourself, set `AGENT_DEVICE_STATE_DIR=.verify/agent-device` and use `node_modules/.bin/agent-device`.
 
@@ -61,6 +63,7 @@ $ bin/verify run auth-start                        # one feature (specs/golden/a
 $ bin/verify run sign-up/request-code              # one spec
 $ bin/verify run specs/explored/resend.e2e.ts      # a spec you wrote
 $ bin/verify run --all --skip form-entry           # every golden spec except form entry
+$ bin/verify run sign-up --skip form-entry         # one feature without its form-entry spec
 $ bin/verify screen                                # current UI tree with testIds and VerifyState
 $ bin/verify screen --png                          # plus a screenshot in scratch
 ```
@@ -91,7 +94,7 @@ test('profile shows the seeded user', async ({ host, screen }) => {
 There are two ways to check work.
 
 1. **Golden specs** under `specs/golden/<feature>/` are committed, cover the Feature Map in `features/`, and run unchanged as regression. Run the features your change touches.
-2. **New work.** Write a spec under `specs/explored/` (gitignored), run it, and read the end state with `bin/verify screen`. Fix locators from the `screen` output until it passes. The PR commits that spec into `specs/golden/<feature>/` and updates the feature file when the change adds or changes a user-facing behavior. Otherwise the spec stays with the run evidence (`runs/<id>/specs/` keeps a copy of every spec a run used).
+2. **New work.** Write a spec under `specs/explored/` (gitignored), run it, and read the end state with `bin/verify screen`. `screen` works right after `up` too, but the app then runs without launch arguments, so it shows the `error` screen (no publishable key). To look at a real screen, run a spec that launches it first, even one that only calls `host.launch`. `screen.getByTestId` matches any accessibility identifier, the SDK's `clerk.*` ids and E2EHost's own plain strings such as `e2e.auth.signIn` or an id you add for a probe. Fix locators from the `screen` output until it passes. The PR commits that spec into `specs/golden/<feature>/` and updates the feature file when the change adds or changes a user-facing behavior. Otherwise the spec stays with the run evidence (`runs/<id>/specs/` keeps a copy of every spec a run used).
 
 An explored spec sits one level below `specs/`, so it imports the fixture as `../fixtures.ts`, where a golden spec uses `../../fixtures.ts`:
 
@@ -188,7 +191,7 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path:
 | `video.mp4` | `simctl io recordVideo` of the whole run |
 | `screenshots/<label>.png` | Every `host.screenshot(label)` |
 | `states.jsonl` | Every `VerifyState` the fixture read, in order, across every test in the run |
-| `state.json` | Only the last state of the whole run. With several tests, read per-test states from `states.jsonl` by `launchId` |
+| `state.json` | Only the last state of the whole run. With several tests, read per-test states from `states.jsonl` by `launchId`. The run summary's `last state` line shows the same single state |
 | `app.log` | `com.clerk.verify` and `com.clerk.sdk` log lines from the run (network lines only with `debugLogs: true`) |
 | `e2e/` | e2e's `report.json`, failure pages, and `screen.txt` for failed steps |
 | `e2e.log` | e2e's console output |
@@ -208,7 +211,7 @@ $ bin/verify attach <run-id> --pr <n> --screenshot profile  # video and one scre
 ## Cleanup
 
 ```console
-$ bin/verify down --dry-run   # what it would release, delete (users and organizations), and stop
+$ bin/verify down --dry-run   # what it would release, stop, and delete: each user (instance, id, test email) and organization (instance, id, name)
 $ bin/verify down             # release the simulator, delete run users and their organizations, stop recorders and this worktree's agent-device daemon
 $ bin/verify down --stale     # also finish cleanup left by a crashed run in this worktree
 ```

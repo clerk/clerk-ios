@@ -20,8 +20,8 @@ Preconditions:
 - The spec reserves a fresh email with `host.newEmail('with-email-codes')`, so `bin/verify down` can delete the user the form creates.
 
 - **Request the code.** Run `bin/verify run sign-up/request-code`. The spec fills `clerk.auth.start.identifier`, taps `clerk.auth.start.continue`, expects `clerk.auth.signUp.code`, and waits for `signUpStatus` `missing_requirements`. Screenshot `signup-code`.
-- **Complete sign-up.** Run `bin/verify run sign-up`. `complete.e2e.ts` (tag `form-entry`) fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, fills `clerk.auth.signUp.password` with `Verify-<runId>-Pw1!`, taps `clerk.auth.signUp.continue`, and waits for `signedIn` true and `sessionStatus` `active`. Screenshot `signed-up`.
-- **Proof.** Both specs pass. `bin/verify down` reports the sign-up user as deleted. With `--skip form-entry`, the proof is `request-code` passing with screenshot `signup-code`, and `complete` reported as `skipped by --skip form-entry`. Run `complete` alone with `bin/verify run sign-up/complete`.
+- **Complete sign-up.** Run `bin/verify run sign-up/complete`. `complete.e2e.ts` (tag `form-entry`) fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, fills `clerk.auth.signUp.password` with `Verify-<runId>-Pw1!`, taps `clerk.auth.signUp.continue`, and waits for `signedIn` true and `sessionStatus` `active`. Screenshot `signed-up`.
+- **Proof.** Both specs pass. `bin/verify down` reports the sign-up user as deleted. When only `request-code` ran, `down` reporting 0 users is correct: a sign-up that stops at the code screen never creates a user. With `--skip form-entry`, the proof is `request-code` passing with screenshot `signup-code`, and `complete` reported as `skipped by --skip form-entry`. Run `complete` alone with `bin/verify run sign-up/complete`.
 
 ## Gotchas
 

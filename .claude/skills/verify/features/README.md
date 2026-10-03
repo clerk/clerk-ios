@@ -4,9 +4,9 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 ## Baseline preconditions
 
-- Run every command from `.claude/skills/verify/` in a worktree of clerk-ios. Run `npm ci` there once.
+- Run every command from `.claude/skills/verify/` in a worktree of clerk-ios.
 - Run `bin/verify doctor` first. Every check is `ok` except `build` before the first `bin/verify up`.
-- Run `npm ci` in `.claude/skills/verify/` before `bin/verify doctor`. `doctor` exits 3 until the first `bin/verify up`, because `build` fails until then.
+- Run `npm ci` there once, before `bin/verify doctor`. On a clean machine `doctor` exits 3 until the first `bin/verify up`, because `build` fails until then.
 - `.keys.json` at the root of the main clerk-ios checkout (not a linked worktree) holds `pk` and `sk` for `with-email-codes`, `with-session-tasks`, and `with-session-tasks-setup-mfa`. Only the CLI reads it. Never print a key.
 - The CLI drives only its own lane simulator, `verify-ios-<n>`, cloned from `Clerk Verify Template iOS`. Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds.
 - Every launch gets a new `verifyStorageScope`, so no spec inherits a session from another spec.
@@ -33,7 +33,9 @@ This directory is the maintained source for verifying the user-facing behavior o
 | Continue on the start screen | `clerk.auth.start.continue` |
 | Sign-in code field | `clerk.auth.signIn.code` |
 | Sign-in password field | `clerk.auth.signIn.password` |
-| Try another method | `clerk.auth.signIn.useAnotherMethod` |
+| Try another method on a code or password screen | `clerk.auth.signIn.useAnotherMethod` |
+| Try another method on the email link screen, which has no identifier | `screen.getByRole('button', { name: 'Use another method' })` |
+| Pick a method from the list | `clerk.auth.signIn.alternativeMethod.<strategy>`, for example `clerk.auth.signIn.alternativeMethod.email_code` |
 | Sign-up email, password, continue | `clerk.auth.signUp.emailAddress`, `clerk.auth.signUp.password`, `clerk.auth.signUp.continue` |
 | Sign-up code field | `clerk.auth.signUp.code` |
 | Legal consent, when shown | `clerk.auth.signUp.legalAccepted` |
