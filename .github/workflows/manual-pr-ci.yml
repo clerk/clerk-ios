@@ -9,6 +9,11 @@ on:
   pull_request_target:
     types:
       - ready_for_review
+  workflow_run:
+    workflows:
+      - CodeRabbit review activity
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -16,12 +21,18 @@ permissions:
 jobs:
   find-pull-requests:
     name: Find CI requests
-    # CodeRabbit writes its summary and status separately; either can arrive last.
-    # No pull request code runs in this privileged routing job.
+    # CodeRabbit can resolve its threads before or after its status turns green.
+    # No pull request code runs in this privileged routing job. Unrelated comments
+    # are filtered here so they don't each start a runner.
     if: >-
-      github.event_name != 'status' ||
-      (github.event.context == 'CodeRabbit' && github.event.state == 'success' &&
-       github.event.description == 'Review completed' && github.event.sender.id == 136622811)
+      (github.event_name == 'status' && github.event.context == 'CodeRabbit' &&
+       github.event.state == 'success' && github.event.description == 'Review completed' &&
+       github.event.sender.id == 136622811) ||
+      github.event_name == 'pull_request_target' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request &&
+       ((github.event.action == 'created' && contains(github.event.comment.body, '/run')) ||
+        (github.event.action == 'edited' && contains(github.event.comment.body, '<!-- clerk-ios-manual-ci -->'))))
     runs-on: ubuntu-latest
     permissions:
       contents: read

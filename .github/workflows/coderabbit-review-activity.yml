@@ -1,0 +1,20 @@
+name: CodeRabbit review activity
+
+# Signals PR CI to re-check CodeRabbit's review threads, since GitHub has no
+# workflow event for resolving a thread. PR CI re-verifies everything itself.
+on:
+  pull_request_review_comment:
+    types:
+      - created
+      - edited
+
+permissions: {}
+
+jobs:
+  relay:
+    name: Relay CodeRabbit review activity
+    if: github.event.comment.user.id == 136622811
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record review activity
+        run: echo "CodeRabbit review comment activity on PR #${{ github.event.pull_request.number }}."

@@ -4,9 +4,14 @@ const COMMAND = /^\s*\/run\s+ci\s*$/im;
 const CHECKBOX = /^- \[[xX]\] Run CI\s*$/m;
 const MEMBER_ASSOCIATIONS = new Set(['MEMBER', 'OWNER']);
 const WAITING_STATUSES = new Set(['queued', 'requested', 'waiting', 'pending']);
+const RELAY_PATH = '.github/workflows/coderabbit-review-activity.yml';
 
 function isCodeRabbit(user) {
   return user?.id === 136622811 && user.login === 'coderabbitai[bot]' && user.type === 'Bot';
+}
+
+function isCodeRabbitAuthor(author) {
+  return author?.__typename === 'Bot' && author.login === 'coderabbitai';
 }
 
 function isActionsBot(user) {
@@ -23,39 +28,55 @@ function requestKind(context) {
   if (eventName === 'pull_request_target') {
     return payload.action === 'ready_for_review' ? 'automatic' : null;
   }
+  // CodeRabbit often resolves its threads after its status turns green, and GitHub
+  // has no workflow event for resolving a thread. Its review comment activity is
+  // relayed here as a hint to re-evaluate; the relay itself is never trusted.
+  if (eventName === 'workflow_run') {
+    const run = payload.workflow_run;
+    return run?.path === RELAY_PATH && run.event === 'pull_request_review_comment'
+      && run.conclusion === 'success' ? 'automatic' : null;
+  }
   if (eventName !== 'issue_comment' || !payload.issue?.pull_request) return null;
-  const { comment, sender, action } = payload;
-  if (!['created', 'edited'].includes(action)) return null;
-  if (isCodeRabbit(comment.user) && isCodeRabbit(sender)) return 'automatic';
+  const { comment, action } = payload;
   if (action === 'created' && COMMAND.test(comment.body)) return 'comment command';
   if (action === 'edited' && isActionsBot(comment.user)
     && comment.body.includes(INSTRUCTIONS_MARKER) && CHECKBOX.test(comment.body)) return 'checkbox';
   return null;
 }
 
-// CodeRabbit's green commit status means the review finished, even with findings.
-// Only accept its explicit clean result and commit range inside the latest-review
-// section. Unknown, skipped, or stale output must leave CI available manually.
-function hasCleanReview(body, headSha) {
-  const sections = [...body.matchAll(/<!-- recent_review_start -->([\s\S]*?)<!-- recent_review_end -->/g)];
-  if (sections.length !== 1) return false;
-  const section = sections[0][1];
-  if (!/^\s*No actionable comments were generated in the recent review\.(?: 🎉)?\s*(?:\n|$)/.test(section)) {
-    return false;
-  }
-  const range = section.match(/Reviewing files that changed from the base of the PR and between [a-f0-9]{40} and ([a-f0-9]{40})\./);
-  return range?.[1] === headSha;
+async function hasUnresolvedCodeRabbitThreads(github, repo, prNumber) {
+  let cursor = null;
+  do {
+    const { repository } = await github.graphql(`query($owner: String!, $repo: String!, $number: Int!, $cursor: String) {
+      repository(owner: $owner, name: $repo) {
+        pullRequest(number: $number) {
+          reviewThreads(first: 100, after: $cursor) {
+            nodes { isResolved comments(first: 1) { nodes { author { __typename login } } } }
+            pageInfo { hasNextPage endCursor }
+          }
+        }
+      }
+    }`, { owner: repo.owner, repo: repo.repo, number: prNumber, cursor });
+    const threads = repository.pullRequest.reviewThreads;
+    if (threads.nodes.some(thread => !thread.isResolved && isCodeRabbitAuthor(thread.comments.nodes[0]?.author))) {
+      return true;
+    }
+    cursor = threads.pageInfo.hasNextPage ? threads.pageInfo.endCursor : null;
+  } while (cursor);
+  return false;
 }
 
 async function findPullRequests({ github, context }) {
   if (!requestKind(context)) return [];
-  if (context.eventName === 'issue_comment') return [context.payload.issue.number];
-  if (context.eventName === 'pull_request_target') return [context.payload.pull_request.number];
+  const { eventName, payload, repo } = context;
+  if (eventName === 'issue_comment') return [payload.issue.number];
+  if (eventName === 'pull_request_target') return [payload.pull_request.number];
+  const sha = eventName === 'workflow_run' ? payload.workflow_run.head_sha : payload.sha;
   const prs = await github.paginate(github.rest.repos.listPullRequestsAssociatedWithCommit, {
-    ...context.repo, commit_sha: context.payload.sha, per_page: 100,
+    ...repo, commit_sha: sha, per_page: 100,
   });
-  return [...new Set(prs.filter(pr => pr.state === 'open' && pr.head.sha === context.payload.sha
-    && pr.base.repo.full_name.toLowerCase() === `${context.repo.owner}/${context.repo.repo}`.toLowerCase())
+  return [...new Set(prs.filter(pr => pr.state === 'open' && pr.head.sha === sha
+    && pr.base.repo.full_name.toLowerCase() === `${repo.owner}/${repo.repo}`.toLowerCase())
     .map(pr => pr.number))];
 }
 
@@ -112,12 +133,8 @@ async function resolveRequest({ github, context, core, prNumber }) {
   if (automatic && alreadyStarted) return skip('CI has already started once; further runs are manual.');
 
   if (automatic) {
-    const reviewComment = comments.filter(comment => isCodeRabbit(comment.user)
-      && comment.body.startsWith('<!-- This is an auto-generated comment: summarize by coderabbit.ai -->'))
-      .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || b.id - a.id)[0];
-    if (!reviewComment || !hasCleanReview(reviewComment.body, headSha)) {
-      return skip('CodeRabbit has not reported no actionable comments for the current commit.');
-    }
+    // A green status alone also follows reviews with findings, so additionally
+    // require that every review thread CodeRabbit opened has been resolved.
     const statuses = await github.paginate(github.rest.repos.listCommitStatusesForRef, {
       ...repo, ref: headSha, per_page: 100,
     });
@@ -125,6 +142,9 @@ async function resolveRequest({ github, context, core, prNumber }) {
       .sort((a, b) => b.id - a.id)[0];
     if (status?.state !== 'success' || status.description !== 'Review completed') {
       return skip('CodeRabbit has not completed its review of the current commit.');
+    }
+    if (await hasUnresolvedCodeRabbitThreads(github, repo, prNumber)) {
+      return skip('CodeRabbit has unresolved review threads.');
     }
   }
 
@@ -174,12 +194,12 @@ async function resolveRequest({ github, context, core, prNumber }) {
     return skip('the PR changed while resolving this request.');
   }
 
-  await rememberStart(headSha, runUrl, automatic ? 'automatic after a clean CodeRabbit review' : kind);
+  await rememberStart(headSha, runUrl, automatic ? 'automatic after CodeRabbit\'s review was resolved' : kind);
   const checkData = {
     ...repo, status: 'in_progress', details_url: runUrl, started_at: new Date().toISOString(),
     output: {
       title: 'Manual CI',
-      summary: automatic ? 'CI started automatically after CodeRabbit completed its review with no actionable comments.'
+      summary: automatic ? 'CI started automatically after CodeRabbit completed its review with all of its threads resolved.'
         : `CI requested by ${context.payload.sender.login}.`,
     },
   };
@@ -193,4 +213,4 @@ async function resolveRequest({ github, context, core, prNumber }) {
   core.info(`Accepted ${kind} for PR #${prNumber} at ${headSha}.`);
 }
 
-module.exports = { findPullRequests, hasCleanReview, requestKind, resolveRequest };
+module.exports = { findPullRequests, requestKind, resolveRequest };

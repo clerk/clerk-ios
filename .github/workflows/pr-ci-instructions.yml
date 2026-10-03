@@ -41,7 +41,7 @@ jobs:
           ## Pull request CI
 
           For ready PRs authored by Clerk organization members, CI starts once automatically
-          after CodeRabbit completes a review of the latest commit with no actionable comments.
+          after CodeRabbit completes a review of the latest commit and its review threads are resolved.
 
           A manual kickoff also uses that first run. Later pushes and retries require a manual request.
           Draft PRs and external contributions require a manual request.
@@ -87,7 +87,7 @@ jobs:
               -f status=queued \
               -f details_url="$run_url" \
               -f "output[title]=Manual CI" \
-              -f "output[summary]=CI has not run for this commit. An eligible first run starts after a clean CodeRabbit review. Otherwise, comment \`/run ci\` or check the Run CI box before merging."
+              -f "output[summary]=CI has not run for this commit. An eligible first run starts once CodeRabbit's review is complete and its threads are resolved. Otherwise, comment \`/run ci\` or check the Run CI box before merging."
           elif [ -z "$latest_manual_ci_id" ]; then
             gh api --method POST "repos/$REPO/check-runs" \
               -f name="Manual CI" \
@@ -95,7 +95,7 @@ jobs:
               -f status=queued \
               -f details_url="$run_url" \
               -f "output[title]=Manual CI" \
-              -f "output[summary]=CI has not run for this commit. An eligible first run starts after a clean CodeRabbit review. Otherwise, comment \`/run ci\` or check the Run CI box before merging."
+              -f "output[summary]=CI has not run for this commit. An eligible first run starts once CodeRabbit's review is complete and its threads are resolved. Otherwise, comment \`/run ci\` or check the Run CI box before merging."
           else
             echo "Manual CI already exists for $HEAD_SHA with status '$latest_manual_ci_status' and conclusion '$latest_manual_ci_conclusion'."
           fi
