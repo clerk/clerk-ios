@@ -26,17 +26,19 @@ struct E2EHostApp: App {
   var body: some Scene {
     WindowGroup {
       if let configurationFailure {
-        Text(configurationFailure.message)
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .safeAreaInset(edge: .bottom) {
-            VerifyStateFooter(state: VerifyState(
-              configuration: configuration,
-              screen: "error",
-              clerk: nil,
-              ticket: configuration.signInTicket == nil ? .none : .failed,
-              lastError: configurationFailure
-            ))
-          }
+        VStack(spacing: 0) {
+          Text(configurationFailure.message)
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+          VerifyStateFooter(state: VerifyState(
+            configuration: configuration,
+            screen: "error",
+            clerk: nil,
+            ticket: configuration.signInTicket == nil ? .none : .failed,
+            lastError: configurationFailure
+          ))
+        }
       } else {
         E2EHostView(configuration: configuration)
           .prefetchClerkImages()

@@ -22,20 +22,21 @@ struct E2EHostView: View {
   }
 
   var body: some View {
-    routedScreen
-      .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .safeAreaInset(edge: .bottom) {
-        VerifyStateFooter(state: VerifyState(
-          configuration: configuration,
-          screen: renderedScreen?.rawValue ?? "launching",
-          clerk: clerk,
-          ticket: ticket,
-          lastError: lastError
-        ))
-      }
-      .task {
-        await launch()
-      }
+    VStack(spacing: 0) {
+      routedScreen
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+      VerifyStateFooter(state: VerifyState(
+        configuration: configuration,
+        screen: renderedScreen?.rawValue ?? "launching",
+        clerk: clerk,
+        ticket: ticket,
+        lastError: lastError
+      ))
+    }
+    .task {
+      await launch()
+    }
   }
 
   private var renderedScreen: VerifyScreen? {
