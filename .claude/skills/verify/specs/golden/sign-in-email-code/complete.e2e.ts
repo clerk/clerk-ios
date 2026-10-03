@@ -10,7 +10,7 @@ test('signs in with the email code', { tags: ['form-entry'] }, async ({ host, sc
   await host.tap(screen.getByRole('button', { name: 'Use another method' }));
   await host.tap(screen.getByTestId('clerk.auth.signIn.alternativeMethod.email_code'));
   await expect(screen.getByTestId('clerk.auth.signIn.code')).toBeVisible({ timeout: 20_000 });
-  await host.screenshot('code-screen');
+  await host.screenshot('code-screen-before-fill');
   await host.fill(screen.getByTestId('clerk.auth.signIn.code'), CLERK_TEST_CODE);
   const state = await host.waitForState((s) => s.signedIn && s.sessionStatus === 'active', 30_000);
   expect(state.userId).toBe(user.id);

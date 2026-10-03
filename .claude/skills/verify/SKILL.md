@@ -13,7 +13,7 @@ The rule: no change to clerk-ios UI or auth behavior is done until a `bin/verify
 
 ```console
 $ npm ci                       # once per worktree, before anything else
-$ bin/verify doctor            # on a clean machine, exits 3 until the first up, because build is the one failing check
+$ bin/verify doctor            # exits 3 until a build matches the current tree; on a clean machine build is the one failing check
 $ bin/verify up                # build E2EHost for this tree, then lease verify-ios-<n> and install
 build   ios-3f9a1c2e07b1  local  building...
 build   ios-3f9a1c2e07b1  local  built in 58s
@@ -24,7 +24,9 @@ device  verify-ios-1  local  leased by this worktree  installed ios-3f9a1c2e07b1
 
 The lane is ready when `up` prints its last line, `device <name> local leased by this worktree installed <build key>`. The `device ... cloning` and `install` lines are progress. A reused build prints one `build <key> local reused` line. The build always finishes before `up` claims a lane, so a `wait` line for a full pool comes after the `build ... built` line.
 
-`up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. Any change to the tree, including reverting an edit, changes the key, so the next `up` or `run` rebuilds and reinstalls. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. `bin/verify up &` followed by `bin/verify run ...` is fine: `run` prints one `wait` line naming the build, waits for the `up` to finish with no time limit, and uses its lease. `--wait` does not apply to that wait; it bounds waiting for a free lane and for another `run` that holds the device.
+`up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. Any change to the tree, including reverting an edit, changes the key, so the next `up` or `run` rebuilds and reinstalls. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. To start the slow part early, run `bin/verify up --wait 600 &`, then `bin/verify run ...`. `run` prints one `wait` line naming the build, waits for the `up` to finish with no time limit, and uses its lease. `--wait` does not apply to that wait; it bounds waiting for a free lane and for another `run` that holds the device. Give the background `up` a `--wait`: on a full pool, an `up` without it builds, then exits 3 with `POOL_FULL`, and the `run` claims its own lane.
+
+When `run` leases the lane itself, it prints the same ready line, `device <name> local leased by this worktree installed <build key>`, before its `run <id>` line.
 
 Because `run` goes through the same lease step as `up`, a `run` also cleans up after worktrees that were removed without `down` (their lanes, users, and daemons), exactly as `up` does.
 
@@ -44,8 +46,9 @@ $ bin/verify doctor --json
 
 Run it first, and again whenever anything looks off. It is read-only. It checks:
 
-- Node 24, Xcode, and the pinned e2e and agent-device versions against the global `agent-device`.
-- The template simulator, and the macOS proxy against the template's trust store.
+- Node 24 and Xcode.
+- `e2e-pins`: the installed e2e and `@e2e-dev/mobile` match the pinned versions. `agent-device-global`: the global `agent-device` matches the version `@e2e-dev/mobile` depends on.
+- The template simulator. `proxy-trust`: when macOS has an HTTPS proxy on, the template must trust its CA. With no system HTTPS proxy, the check passes.
 - The three instances' keys by name, and each instance's enabled strategies from `/v1/environment`. Keys come from `.keys.json` at the root of the main clerk-ios checkout, not the linked worktree. CI can pass `CLERK_TEST_KEYS_JSON` instead.
 - Whether an E2EHost build matches the current tree.
 - `gh pr comment --attach` support, stale device claims, and drift in `src/core/`.
@@ -84,17 +87,17 @@ test('profile shows the seeded user', async ({ host, screen }) => {
 });
 ```
 
-- `host.launch({ instance | signedInAs, screen?, authMode?, debugLogs?, keepStorage? })` relaunches E2EHost with launch arguments and returns the first `VerifyState` for that launch that is ready. Screens are `home`, `auth`, `userProfile`, `orgSwitcher`, `orgList`, and `orgProfile`. Auth modes are `signIn`, `signUp`, and `signInOrUp`.
+- `host.launch({ instance | signedInAs, screen?, authMode?, debugLogs?, keepStorage? })` relaunches E2EHost with launch arguments and returns the first `VerifyState` for that launch that is ready. Every launch starts with fresh storage, so a launch with `instance` and no `signedInAs` is signed out, on `home` or any other screen. Screens are `home`, `auth`, `userProfile`, `orgSwitcher`, `orgList`, and `orgProfile`. Auth modes are `signIn`, `signUp`, and `signInOrUp`.
 - `host.seedUser({ instance, phone? })` creates a `+clerk_test` user. `host.newEmail(instance)` reserves an email for a form sign-up.
 - `host.state()` reads the footer. `host.waitForState(predicate, timeoutMs?)` polls it. The footer is not readable while a sheet covers the host.
 - `host.tap(locator)` taps the middle of the node's box, and `host.fill(locator, text)` taps it and types `text` into the focused field. Use them for every action inside AuthView, UserProfileView, and organization sheets. On iOS 27 a SwiftUI toolbar adds a hittable full-screen `Toolbar` node, and agent-device 0.21.18 refuses `locator.tap()` and `locator.fill()` under it with "covered by another visible element". Plain locator actions still work on the E2EHost home screen.
-- The footer `verify.state` holds `verify ` plus one line of JSON: `screen`, `environmentLoaded`, `signedIn`, `userId`, `sessionId`, `sessionStatus`, `pendingTasks`, `orgId`, `signInStatus`, `signUpStatus`, `ticket`, `lastError`, `runId`, and `launchId`. `screen` is what is on screen, not what was asked for. `signedIn` is true for a pending session, so read `sessionStatus`.
+- The footer `verify.state` holds `verify ` plus one line of JSON: `screen`, `environmentLoaded`, `signedIn`, `userId`, `sessionId`, `sessionStatus`, `pendingTasks`, `orgId`, `signInStatus`, `signUpStatus`, `ticket`, `lastError`, `runId`, and `launchId`. `screen` is what is on screen, not what was asked for. `signedIn` is true for a pending session, so read `sessionStatus`. The footer shows in screenshots and videos. Its ids, `sessionId` included, are not secrets: a session id cannot sign anyone in. Sealing still searches every evidence file for the real secrets a run used (secret keys and tickets) and blocks `attach` on a hit.
 - Locate with SDK identifiers, `screen.getByTestId('clerk.auth.start.identifier')`. The full list is in `Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift`. E2EHost adds `e2e.auth.signIn`, `verify.signOut`, `verify.userId`, and `verify.state`.
 
 There are two ways to check work.
 
 1. **Golden specs** under `specs/golden/<feature>/` are committed, cover the Feature Map in `features/`, and run unchanged as regression. Run the features your change touches.
-2. **New work.** Write a spec under `specs/explored/` (gitignored), run it, and read the end state with `bin/verify screen`. `screen` works right after `up` too, but the app then runs without launch arguments, so it shows the `error` screen (no publishable key). To look at a real screen, run a spec that launches it first, even one that only calls `host.launch`. `screen.getByTestId` matches any accessibility identifier, the SDK's `clerk.*` ids and E2EHost's own plain strings such as `e2e.auth.signIn` or an id you add for a probe. Fix locators from the `screen` output until it passes. The PR commits that spec into `specs/golden/<feature>/` and updates the feature file when the change adds or changes a user-facing behavior. Otherwise the spec stays with the run evidence (`runs/<id>/specs/` keeps a copy of every spec a run used).
+2. **New work.** Write a spec under `specs/explored/` (gitignored), run it, and read the end state with `bin/verify screen`. Call `screen` after any run, passing or failing, whenever you need the next locator: after a pass it shows the screen the spec ended on, which is where the next step of new work starts. `screen` works right after `up` too, but the app then runs without launch arguments, so it shows the `error` screen (no publishable key). To look at a real screen, run a spec that launches it first, even one that only calls `host.launch`. `screen.getByTestId` matches any accessibility identifier, the SDK's `clerk.*` ids and E2EHost's own plain strings such as `e2e.auth.signIn` or an id you add for a probe. Fix locators from the `screen` output until it passes. The PR commits that spec into `specs/golden/<feature>/` and updates the feature file when the change adds or changes a user-facing behavior. Otherwise the spec stays with the run evidence (`runs/<id>/specs/` keeps a copy of every spec a run used).
 
 An explored spec sits one level below `specs/`, so it imports the fixture as `../fixtures.ts`, where a golden spec uses `../../fixtures.ts`:
 
@@ -157,7 +160,7 @@ Prove the result from the host's state, not from the screen alone:
 ```ts
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 
-test('signs in with an email code', { tags: ['form-entry'] }, async ({ host, screen }) => {
+test('signs in with the email code', { tags: ['form-entry'] }, async ({ host, screen }) => {
   const user = await host.seedUser({ instance: 'with-email-codes' });
   await host.launch({ instance: 'with-email-codes', screen: 'auth', authMode: 'signIn' });
   await host.fill(screen.getByTestId('clerk.auth.start.identifier'), user.email);
@@ -219,9 +222,13 @@ $ bin/verify down --stale     # also finish cleanup left by a crashed run in thi
 
 `down` deletes only what this worktree created: its lane simulator and the users in its ledger. Ledgers live at `~/.verify/ledgers/<id>.jsonl`, where `<id>` is a hash of the worktree path, and `<id>.owner` beside it holds the path. Find yours with `grep -l "$(git rev-parse --show-toplevel)" ~/.verify/ledgers/*.owner`. It never deletes `.verify/runs/`. Evidence survives teardown at `.claude/skills/verify/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
 
-Evidence lives inside the worktree, so `git worktree remove` deletes `.verify/runs/` with it. Copy the runs you need out first.
+Evidence lives inside the worktree. `git worktree remove` deletes `.verify/runs/` with the rest of the worktree, so copy the runs you need out first.
 
-If a worktree is removed without `down`, the next `up` in any worktree finishes for it. It deletes that worktree's lane simulator and the users in its ledger, then closes the ledger. Lane slots are machine-wide claims under `~/.verify/claims/`. A slot changes hands only by compare-and-swap, so two worktrees never hold the same lane.
+If a worktree is removed without `down`, the next `up` or `run` in any worktree finishes for it. It deletes that worktree's lane simulator and the users in its ledger, stops its agent-device daemon, and prints `reap ledger of <path> ... deleted N users, M organizations, stopped agent-device <pid>`. Then it marks every open ledger entry done. The ledger files stay on disk.
+
+A ledger can number a test email that never became a user: a sign-up spec that stops at the code screen reserves `verify_<run>_<n>` but creates nothing. `down` finds no user for it and deletes 0, which is correct.
+
+`down --dry-run --json` and `down --json` print different shapes. A dry run prints `{ dryRun: true, wouldRelease, wouldDelete, wouldStop, keptRuns }`, where `wouldDelete` lists `{ kind: 'user', instance, id, email }` and `{ kind: 'organization', instance, id, name }` entries. A real `down` prints `{ dryRun: false, released, deletedUsers, deletedOrganizations, stoppedProcesses, keptRuns }`. Lane slots are machine-wide claims under `~/.verify/claims/`. A slot changes hands only by compare-and-swap, so two worktrees never hold the same lane.
 
 ## Helpers
 
