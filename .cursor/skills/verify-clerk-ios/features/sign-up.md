@@ -17,11 +17,11 @@ A new user types a new email address into AuthView in sign-up mode, verifies it 
 Preconditions:
 
 - `with-email-codes` allows sign-up with email code and requires a password.
-- The spec reserves a fresh email with `host.newEmail('with-email-codes')`, so `bin/verify down` can delete the user the form creates.
+- The spec reserves a fresh email with `host.newEmail('with-email-codes')`, so `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down` can delete the user the form creates.
 
-- **Request the code.** Run `bin/verify run sign-up/request-code`. The spec fills `clerk.auth.start.identifier`, taps `clerk.auth.start.continue`, expects `clerk.auth.signUp.code`, and waits for `signUpStatus` `missing_requirements`. Screenshot `signup-code`.
-- **Complete sign-up.** Run `bin/verify run sign-up/complete`. `complete.e2e.ts` (tag `form-entry`) fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, fills `clerk.auth.signUp.password` with `Verify-<runId>-Pw1!`, taps `clerk.auth.signUp.continue`, and waits for `signedIn` true and `sessionStatus` `active`. Screenshot `signed-up`.
-- **Proof.** Both specs pass. `bin/verify down` reports the sign-up user as deleted. When only `request-code` ran, `down` reporting 0 users is correct: a sign-up that stops at the code screen never creates a user. With `--skip form-entry`, the proof is `request-code` passing with screenshot `signup-code`, and `complete` reported as `skipped by --skip form-entry`. Run `complete` alone with `bin/verify run sign-up/complete`.
+- **Request the code.** Run `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/request-code`. The spec fills `clerk.auth.start.identifier`, taps `clerk.auth.start.continue`, expects `clerk.auth.signUp.code`, and waits for `signUpStatus` `missing_requirements`. Screenshot `signup-code`.
+- **Complete sign-up.** Run `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/complete`. `complete.e2e.ts` (tag `form-entry`) fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, fills `clerk.auth.signUp.password` with `Verify-<runId>-Pw1!`, taps `clerk.auth.signUp.continue`, and waits for `signedIn` true and `sessionStatus` `active`. Screenshot `signed-up`.
+- **Proof.** Both specs pass. `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down` reports the sign-up user as deleted. When only `request-code` ran, `down` reporting 0 users is correct: a sign-up that stops at the code screen never creates a user. With `--skip form-entry`, the proof is `request-code` passing with screenshot `signup-code`, and `complete` reported as `skipped by --skip form-entry`. Run `complete` alone with `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/complete`.
 
 ## Gotchas
 

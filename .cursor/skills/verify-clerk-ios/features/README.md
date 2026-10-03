@@ -4,9 +4,9 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 ## Baseline preconditions
 
-- Run every command from `.cursor/skills/verify-clerk-ios/` in a worktree of clerk-ios.
-- Run `npm ci` there once.
-- Then run `bin/verify doctor`. It exits 3 until a build matches the current tree; on a clean machine `build` is the only failing check until the first `bin/verify up`.
+- Run every command from the root of a clerk-ios worktree. The CLI is `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios`, or `control-clerk-ios` with that `bin` directory on `PATH`.
+- Run `npm ci --prefix .cursor/skills/verify-clerk-ios` once.
+- Then run `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios doctor`. It exits 3 until a build matches the current tree; on a clean machine `build` is the only failing check until the first `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios up`.
 - `.keys.json` at the root of the main clerk-ios checkout (not a linked worktree) holds `pk` and `sk` for `with-email-codes`, `with-session-tasks`, and `with-session-tasks-setup-mfa`. Only the CLI reads it. Never print a key.
 - The CLI drives only its own lane simulator, `verify-ios-<n>`, cloned from `Clerk Verify Template iOS`. Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds.
 - Every launch gets a new `verifyStorageScope`, so no spec inherits a session from another spec.
@@ -47,12 +47,12 @@ Rules:
 
 - Type only `+clerk_test` emails, 555-0100 to 0199 phones, and `424242`. The repo is public and every video can land on a PR.
 - Use ticket sign-in (`host.launch({ signedInAs })`) only to reach signed-in screens for features that are not about authentication. A change to an auth method gets a spec that drives the real form.
-- Tag every spec that types a code `form-entry`. Those specs run by default. A runtime that refuses to type codes into an app that talks to hosted Clerk runs `bin/verify run --skip form-entry` and says so in the PR.
-- `bin/verify down` deletes every user the run created, including users created through the sign-up form, by their test email.
+- Tag every spec that types a code `form-entry`. Those specs run by default. A runtime that refuses to type codes into an app that talks to hosted Clerk runs `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run --skip form-entry` and says so in the PR.
+- `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes every user the run created, including users created through the sign-up form, by their test email.
 
 ## Driving conventions
 
-- Input only goes through specs. To look at any state past launch, write a spec, `bin/verify run` it, then `bin/verify screen`.
+- Input only goes through specs. To look at any state past launch, write a spec, `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run` it, then `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios screen`.
 - Prefer SDK identifiers (`screen.getByTestId('clerk....')`) and the E2EHost ids `e2e.auth.signIn`, `verify.signOut`, `verify.userId`, `verify.state`. Fall back to visible text only where the SDK has no identifier.
 - Inside AuthView, the profile, and organization sheets, act with `host.tap(locator)` and `host.fill(locator, text)`. On iOS 27 a SwiftUI toolbar adds a hittable full-screen `Toolbar` node, and agent-device 0.21.18 refuses `locator.tap()` and `locator.fill()` on anything under it with "covered by another visible element".
 - Prove results from `verify.state` (`host.launch`, `host.state`, `host.waitForState`), not from the screen alone. Every spec keeps at least one exact assertion on `verify.state` or an SDK identifier.
@@ -60,8 +60,8 @@ Rules:
 
 ## Proof and skip reporting
 
-- A proof is a passing `bin/verify run` whose run directory holds `video.mp4`, `screenshots/`, `states.jsonl`, `state.json`, `app.log`, and `e2e/report.json`.
-- Name the run id and the specs in the PR. Attach with `bin/verify attach <run-id> --pr <n>`.
+- A proof is a passing `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run` whose run directory holds `video.mp4`, `screenshots/`, `states.jsonl`, `state.json`, `app.log`, and `e2e/report.json`.
+- Name the run id and the specs in the PR. Attach with `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>`.
 - Report a skipped `form-entry` spec as skipped with the reason. The CLI prints `skipped by --skip form-entry`. Never report it as verified through a ticket launch.
 - A runtime that skips form entry proves each auth flow up to its code screen with the `request-code` spec, and reports the `complete` spec as skipped.
 - Report an unreachable path with the attempted command and the unmet precondition.
@@ -76,7 +76,7 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [Sign in with an email code](./sign-in-email-code.md) covers requesting and entering the email code.
 - [Sign up](./sign-up.md) covers requesting the sign-up code and completing sign-up with a password.
 - [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, and sign-out.
-- [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in. The ticket-seeded setup-MFA spec is `bin/verify run session-tasks/setup-mfa`.
+- [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in. The ticket-seeded setup-MFA spec is `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks/setup-mfa`.
 - [Organizations](./organizations.md) covers creating an organization from OrganizationSwitcher.
 
 Not mapped yet: phone code sign-in, password sign-in, social providers (no real OAuth on simulators), passkeys and biometrics (no associated domains or Secure Enclave on the simulator).

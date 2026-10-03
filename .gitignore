@@ -103,7 +103,8 @@ Examples/**/LocalSecrets.plist
 
 # Agent skills
 .codex/skills/
-.claude/skills/
+.claude/skills/*
+!.claude/skills/verify-clerk-ios
 .cursor/skills/*
 !.cursor/skills/verify-clerk-ios/
 .cursor/skills/verify-clerk-ios/node_modules/
