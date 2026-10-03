@@ -304,6 +304,7 @@ export interface SpecResult {
   readonly tags: readonly string[];
   readonly failurePage: EvidencePath | null;
   readonly failureScreen: EvidencePath | null;
+  readonly failureScreenshot: EvidencePath | null;
 }
 
 export interface EvidenceRecord {

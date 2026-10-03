@@ -278,7 +278,7 @@ function targetOf(deps: Deps, outcome: RuntimeOutcome): RunContext['targets'][nu
 export async function up(deps: Deps, command: Extract<Command, { verb: 'up' }>): Promise<UpResult> {
   const platform = platformOf(deps.host, command.platform);
   return deps.workspace.withAcquireLock(platform, async (lock) => {
-    const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk, retryWith: 'bin/verify up --wait 300' });
+    const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk, retryWith: 'bin/verify up --wait <seconds>' });
     const outcome = { ...leased, entry: await startRuntime(deps, leased.lease) };
     writeStandingContext(deps, outcome);
     return { verb: 'up', leases: [outcome.view], builds: [outcome.build] };
@@ -343,7 +343,7 @@ export async function endRun(
 
 export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>, drive: (outcome: RuntimeOutcome) => Promise<T>): Promise<T> {
   const key = await computeBuildKey(deps.host, platform, deps.workspace.worktree);
-  const retryWith = `bin/verify run ${'all' in command.selection ? '--all' : command.selection.selectors.join(' ')} --wait 300`;
+  const retryWith = `bin/verify run ${'all' in command.selection ? '--all' : command.selection.selectors.join(' ')} --wait <seconds>`;
   const deviceWait = {
     seconds: command.waitSeconds,
     busyFix: `let the other run in this worktree finish, or rerun with a wait: ${retryWith}`,

@@ -83,7 +83,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
         throw new VerifyFailure(
           'POOL_FULL',
           `${inUse.size} of ${LOCAL_POOL.ios} iOS lanes are in use on this Mac (${[...inUse].sort().join(', ')})`,
-          `rerun with a wait: ${request.retryWith}, or run bin/verify down in a worktree that no longer needs its lane`,
+          `rerun with a longer --wait than ${request.waitSeconds}s, for example ${request.retryWith.replace('<seconds>', String(Math.max(600, request.waitSeconds * 2)))}, or run bin/verify down in a worktree that no longer needs its lane`,
         );
       }
       const changing = LOCAL_POOL.ios - inUse.size;

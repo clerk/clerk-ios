@@ -196,6 +196,7 @@ function renderRun(result: RunResult, skillDir: string): string[] {
     if (x.error !== null) lines.push(`        ${x.error}`);
     if (x.status === 'passed' && x.tags.includes(KNOWN_BUG_TAG)) lines.push('        passed with --include known-bug: the bug may be fixed; drop the tag');
     if (x.failurePage !== null) lines.push(`        failure page  ${rel(skillDir, x.failurePage)}`);
+    if (x.failureScreenshot !== null) lines.push(`        screenshot    ${rel(skillDir, x.failureScreenshot)}`);
   }
   lines.push(`evidence  ${rel(process.cwd(), result.dir)}`);
   if (r.videos.length > 0) lines.push(`  video        ${r.videos.map((v) => basename(v)).join(', ')}`);
