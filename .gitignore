@@ -103,5 +103,9 @@ Examples/**/LocalSecrets.plist
 
 # Agent skills
 .codex/skills/
-.claude/skills/
+.claude/skills/*
+!.claude/skills/verify/
+.claude/skills/verify/node_modules/
+.claude/skills/verify/specs/explored/
+.verify/
 .cursor/skills/
