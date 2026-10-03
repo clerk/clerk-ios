@@ -1,11 +1,11 @@
 ---
-name: verify
+name: verify-clerk-ios
 description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on a lane iOS simulator against a real Clerk dev instance, and capture video, screenshots, and host state as evidence. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
 ---
 
-# verify
+# verify-clerk-ios
 
-`bin/verify` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from `.claude/skills/verify/`. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
+`bin/verify` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from `.cursor/skills/verify-clerk-ios/`. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
 
 The rule: no change to clerk-ios UI or auth behavior is done until a `bin/verify run` on the real host shows the changed behavior.
 
@@ -227,7 +227,7 @@ $ bin/verify down             # release the simulator, delete run users and thei
 $ bin/verify down --stale     # also finish cleanup left by a crashed run in this worktree
 ```
 
-`down` deletes only what this worktree created: its lane simulator and the users in its ledger. Ledgers live at `~/.verify/ledgers/<id>.jsonl`, where `<id>` is a hash of the worktree path, and `<id>.owner` beside it holds the path. Find yours with `grep -l "$(git rev-parse --show-toplevel)" ~/.verify/ledgers/*.owner`. It never deletes `.verify/runs/`. Evidence survives teardown at `.claude/skills/verify/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
+`down` deletes only what this worktree created: its lane simulator and the users in its ledger. Ledgers live at `~/.verify/ledgers/<id>.jsonl`, where `<id>` is a hash of the worktree path, and `<id>.owner` beside it holds the path. Find yours with `grep -l "$(git rev-parse --show-toplevel)" ~/.verify/ledgers/*.owner`. It never deletes `.verify/runs/`. Evidence survives teardown at `.cursor/skills/verify-clerk-ios/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
 
 Evidence lives inside the worktree. `git worktree remove` deletes `.verify/runs/` with the rest of the worktree, so copy the runs you need out first.
 

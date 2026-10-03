@@ -4,7 +4,7 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 ## Baseline preconditions
 
-- Run every command from `.claude/skills/verify/` in a worktree of clerk-ios.
+- Run every command from `.cursor/skills/verify-clerk-ios/` in a worktree of clerk-ios.
 - Run `npm ci` there once.
 - Then run `bin/verify doctor`. It exits 3 until a build matches the current tree; on a clean machine `build` is the only failing check until the first `bin/verify up`.
 - `.keys.json` at the root of the main clerk-ios checkout (not a linked worktree) holds `pk` and `sk` for `with-email-codes`, `with-session-tasks`, and `with-session-tasks-setup-mfa`. Only the CLI reads it. Never print a key.
