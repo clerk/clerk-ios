@@ -1,0 +1,14 @@
+{
+  "name": "clerk-ios-verify",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@e2e-dev/mobile": "0.9.0",
+    "@types/node": "24.19.1",
+    "e2e": "0.15.2",
+    "typescript": "7.0.2"
+  }
+}
