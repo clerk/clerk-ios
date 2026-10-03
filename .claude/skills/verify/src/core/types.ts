@@ -128,7 +128,7 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
-  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims';
+  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map';
 
 export interface DoctorCheck {
   readonly id: DoctorCheckId;
@@ -245,6 +245,8 @@ export interface LocalLease extends LeaseBase {
   readonly slot: number;
   readonly deviceName: DeviceName;
   readonly deviceId: string;
+  /** Nonce of the machine-wide claim this lease holds. */
+  readonly claim: string;
 }
 export interface EasLease extends LeaseBase {
   readonly backend: 'eas';

@@ -1,7 +1,9 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { run } from './exec.ts';
+import { join, resolve } from 'node:path';
+import type { ClerkBackend } from './clerk.ts';
+import { run, type Runner } from './exec.ts';
+import { finishOrphanLedgers } from './ledgers.ts';
 import { newEntryId, type Workspace } from './workspace.ts';
 import {
   VerifyFailure,
@@ -115,7 +117,7 @@ export async function ensureLease(
   requested: BackendKind | undefined,
   workspace: Workspace,
   host: HostAdapter,
-  options: { readonly waitSeconds: number; readonly progress: (line: string) => void },
+  options: { readonly waitSeconds: number; readonly progress: (line: string) => void; readonly clerk: () => ClerkBackend; readonly runner: Runner },
 ): Promise<LeaseOutcome> {
   return workspace.withAcquireLock(platform, async () => {
     const held = workspace.readLease(platform);
@@ -127,6 +129,7 @@ export async function ensureLease(
       options.progress(`reap    ${backend.describe(stale)}  (owner process and worktree are gone)`);
       await backend.release(stale);
     }
+    await finishOrphanLedgers(workspace.home, resolve(workspace.worktree), options.clerk, options.runner, options.progress);
 
     let lease: Lease | null = held;
     let renewed = false;

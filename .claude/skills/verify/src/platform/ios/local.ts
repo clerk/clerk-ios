@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { createClaim, defaultClaimsDir, isReapable, readClaim, readClaims, removeClaim, updateClaim } from '../../core/claims.ts';
+import { defaultClaimsDir, freeSlot, isOrphaned, readClaim, readClaims, takeSlot, type Claim } from '../../core/claims.ts';
 import { run, sleep } from '../../core/exec.ts';
 import {
   LOCAL_POOL,
@@ -48,14 +48,11 @@ function localTime(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-async function deleteLaneDevice(udid: string, name: string): Promise<void> {
-  if (!LANE_NAME.test(name)) return;
-  const devices = await listSimulators();
-  const device = udid.length > 0 ? devices.find((d) => d.udid === udid) : devices.find((d) => d.name === name);
-  if (device === undefined || device.name !== name) return;
-  udid = device.udid;
-  if (device.state !== 'Shutdown') await run('xcrun', ['simctl', 'shutdown', udid]);
-  await simctl(['delete', udid], `simctl delete ${name}`);
+async function deleteSimulators(match: (device: Simulator) => boolean): Promise<void> {
+  for (const device of (await listSimulators()).filter((d) => LANE_NAME.test(d.name) && match(d))) {
+    if (device.state !== 'Shutdown') await run('xcrun', ['simctl', 'shutdown', device.udid]);
+    await simctl(['delete', device.udid], `simctl delete ${device.name}`);
+  }
 }
 
 export interface LocalIosOptions {
@@ -65,18 +62,19 @@ export interface LocalIosOptions {
 export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<LocalLease> {
   const claimsDir = options.claimsDir ?? defaultClaimsDir();
 
-  async function claimSlot(request: AcquireRequest) {
+  async function claimSlot(request: AcquireRequest): Promise<Claim> {
     const deadline = Date.now() + request.waitSeconds * 1000;
     for (;;) {
       const devices = await listSimulators();
       const claims = readClaims(claimsDir, 'ios');
+      const orphans = new Set(claims.filter(isOrphaned).map((c) => c.deviceName as string));
       const bootedLanes = devices.filter((d) => d.runtime.includes('iOS') && d.state === 'Booted' && d.name.startsWith('verify-')).map((d) => d.name);
-      const inUse = new Set([...bootedLanes, ...claims.map((c) => c.deviceName)]);
+      const inUse = new Set([...bootedLanes, ...claims.map((c) => c.deviceName as string)].filter((name) => !orphans.has(name)));
       if (inUse.size < LOCAL_POOL.ios) {
         for (let slot = 1; slot <= LOCAL_POOL.ios; slot += 1) {
-          const name = `verify-ios-${slot}`;
-          if (claims.some((c) => c.slot === slot) || devices.some((d) => d.name === name)) continue;
-          const claim = createClaim(claimsDir, 'ios', slot, request.worktree);
+          const { gen, claim: holder } = readClaim(claimsDir, 'ios', slot);
+          if (holder !== null && !isOrphaned(holder)) continue;
+          const claim = takeSlot(claimsDir, 'ios', slot, gen, request.worktree);
           if (claim !== null) return claim;
         }
       }
@@ -90,6 +88,14 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
       request.progress(`wait    all ${LOCAL_POOL.ios} iOS lanes are in use`);
       await sleep(5000);
     }
+  }
+
+  /** Takes the slot over from `claim` before deleting by name, so a slot someone else just took is never touched. */
+  async function clearSlot(claim: Claim, worktree: string): Promise<void> {
+    const reaper = takeSlot(claimsDir, 'ios', claim.slot, claim.gen, worktree, true);
+    if (reaper === null) return;
+    await deleteSimulators((d) => d.name === claim.deviceName);
+    freeSlot(claimsDir, reaper);
   }
 
   const backend: DeviceBackend<LocalLease> = {
@@ -108,22 +114,29 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
       const claim = await claimSlot(request);
       let udid = '';
       try {
+        await deleteSimulators((d) => d.name === claim.deviceName);
         request.progress(`device  ${claim.deviceName}  cloning ${TEMPLATE_NAME}`);
         udid = (await simctl(['clone', template.udid, claim.deviceName], `simctl clone ${claim.deviceName}`)).trim();
-        updateClaim(claimsDir, { ...claim, deviceId: udid });
         await simctl(['boot', udid], `simctl boot ${claim.deviceName}`);
         await simctl(['bootstatus', udid, '-b'], `simctl bootstatus ${claim.deviceName}`);
       } catch (error) {
-        await deleteLaneDevice(udid, claim.deviceName).catch(() => undefined);
-        removeClaim(claimsDir, 'ios', claim.slot);
+        await clearSlot(claim, request.worktree).catch(() => undefined);
         throw error;
       }
-      return { backend: 'local', platform: 'ios', slot: claim.slot, deviceName: claim.deviceName, deviceId: udid, acquiredAt: new Date().toISOString(), installedBuild: null };
+      return {
+        backend: 'local',
+        platform: 'ios',
+        slot: claim.slot,
+        deviceName: claim.deviceName,
+        deviceId: udid,
+        claim: claim.nonce,
+        acquiredAt: new Date().toISOString(),
+        installedBuild: null,
+      };
     },
 
     async check(lease) {
-      const claim = readClaim(claimsDir, 'ios', lease.slot);
-      if (claim === null || claim.deviceId !== lease.deviceId) return 'lost';
+      if (readClaim(claimsDir, 'ios', lease.slot).claim?.nonce !== lease.claim) return 'lost';
       const device = (await listSimulators()).find((d) => d.udid === lease.deviceId);
       if (device === undefined || device.name !== lease.deviceName) return 'lost';
       if (device.state !== 'Booted') {
@@ -138,20 +151,24 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
     },
 
     async release(lease) {
-      await deleteLaneDevice(lease.deviceId, lease.deviceName);
-      const claim = readClaim(claimsDir, 'ios', lease.slot);
-      if (claim !== null && (claim.deviceId === lease.deviceId || claim.deviceId === null)) removeClaim(claimsDir, 'ios', lease.slot);
+      const { claim } = readClaim(claimsDir, 'ios', lease.slot);
+      if (claim !== null && claim.nonce === lease.claim) {
+        await clearSlot(claim, claim.worktree);
+        return;
+      }
+      if (lease.deviceId !== '') await deleteSimulators((d) => d.udid === lease.deviceId);
     },
 
     async reapable(owner) {
       return readClaims(claimsDir, 'ios')
-        .filter((claim) => isReapable(claim) || (owner !== undefined && claim.worktree === owner))
+        .filter((claim) => isOrphaned(claim) || (owner !== undefined && claim.worktree === owner))
         .map((claim) => ({
           backend: 'local' as const,
           platform: 'ios' as const,
           slot: claim.slot,
           deviceName: claim.deviceName,
-          deviceId: claim.deviceId ?? '',
+          deviceId: '',
+          claim: claim.nonce,
           acquiredAt: claim.createdAt,
           installedBuild: null,
         }));

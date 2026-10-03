@@ -1,8 +1,9 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
-import { appendFileSync, closeSync, existsSync, mkdirSync, openSync, readFileSync, readdirSync, rmSync, writeFileSync, writeSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
-import { isAlive, sleep } from './exec.ts';
+import { currentProcess, isRunning, sleep, type ProcessRef } from './exec.ts';
+import { advanceSlot, readSlot } from './slot.ts';
 import {
   VerifyFailure,
   type EvidencePath,
@@ -75,7 +76,7 @@ function parseLease(text: string, file: string): Lease {
   if (!isPlatform(r.platform) || typeof r.acquiredAt !== 'string') throw bad();
   const installedBuild = typeof r.installedBuild === 'string' ? r.installedBuild : null;
   if (r.backend === 'local') {
-    if (typeof r.slot !== 'number' || typeof r.deviceName !== 'string' || typeof r.deviceId !== 'string') throw bad();
+    if (typeof r.slot !== 'number' || typeof r.deviceName !== 'string' || typeof r.deviceId !== 'string' || typeof r.claim !== 'string') throw bad();
     if (r.deviceName !== `verify-${r.platform}-${r.slot}`) throw bad();
     return { ...(r as object), installedBuild } as Lease;
   }
@@ -90,21 +91,18 @@ function writePrivate(file: string, text: string): void {
   writeFileSync(file, text, { mode: 0o600 });
 }
 
-async function withFileLock<T>(file: string, timeoutMs: number, onTimeout: () => VerifyFailure, fn: () => Promise<T>): Promise<T> {
+export async function withSlotLock<T>(dir: string, timeoutMs: number, onTimeout: () => VerifyFailure, fn: () => Promise<T>): Promise<T> {
   const deadline = Date.now() + timeoutMs;
+  const me = currentProcess();
+  let held: number;
   for (;;) {
-    try {
-      const fd = openSync(file, 'wx', 0o600);
-      writeSync(fd, String(process.pid));
-      closeSync(fd);
+    const state = readSlot(dir);
+    const running = state.value !== null && isRunning(JSON.parse(state.value) as ProcessRef);
+    if (!running && advanceSlot(dir, state.gen, JSON.stringify(me))) {
+      held = state.gen + 1;
       break;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      const owner = Number(readFileSync(file, 'utf8').trim());
-      if (!Number.isInteger(owner) || owner <= 0 || !isAlive(owner)) {
-        rmSync(file, { force: true });
-        continue;
-      }
+    }
+    if (running) {
       if (Date.now() >= deadline) throw onTimeout();
       await sleep(250);
     }
@@ -112,7 +110,7 @@ async function withFileLock<T>(file: string, timeoutMs: number, onTimeout: () =>
   try {
     return await fn();
   } finally {
-    rmSync(file, { force: true });
+    advanceSlot(dir, held, null);
   }
 }
 
@@ -164,6 +162,8 @@ export function openWorkspace(options: WorkspaceOptions): Workspace {
     },
     append(entry) {
       mkdirSync(join(home, 'ledgers'), { recursive: true });
+      const owner = join(home, 'ledgers', `${worktreeId}.owner`);
+      if (!existsSync(owner)) writePrivate(owner, `${resolve(options.worktree)}\n`);
       appendFileSync(ledgerFile, `${JSON.stringify(entry)}\n`, { mode: 0o600, flag: 'a' });
     },
     entries: readEntries,
@@ -173,11 +173,11 @@ export function openWorkspace(options: WorkspaceOptions): Workspace {
       return entries.filter((e) => e.kind !== 'done' && !closed.has(e.id));
     },
     withAcquireLock(platform, fn) {
-      return withFileLock(join(dir('locks'), `acquire-${platform}.lock`), Number.POSITIVE_INFINITY, () => new VerifyFailure('DEVICE_BUSY', 'unreachable', ''), fn);
+      return withSlotLock(join(dir('locks'), `acquire-${platform}`), Number.POSITIVE_INFINITY, () => new VerifyFailure('DEVICE_BUSY', 'unreachable', ''), fn);
     },
     withDevice(platform, waitSeconds, fn) {
-      return withFileLock(
-        join(dir('locks'), `device-${platform}.lock`),
+      return withSlotLock(
+        join(dir('locks'), `device-${platform}`),
         waitSeconds * 1000,
         () => new VerifyFailure('DEVICE_BUSY', `another verify process in this worktree is driving the ${platform} device`, 'wait for it to finish, or pass --wait <seconds>'),
         fn,

@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { createOutput, exitCodeFor, parseArgv } from '../src/core/cli.ts';
 import { Secret } from '../src/core/secret.ts';
+import { featureMapCheck } from '../src/core/verbs.ts';
+import { host } from '../src/host.ts';
 import { VerifyFailure, type DoctorReport } from '../src/core/types.ts';
 
 function usageError(argv: readonly string[]): VerifyFailure {
@@ -110,5 +115,24 @@ describe('Output', () => {
     assert.equal(parsed.ok, false);
     assert.equal(parsed.checks.length, 1);
     assert.equal(exitCodeFor(report), 3);
+  });
+});
+
+describe('doctor feature-map check', () => {
+  it('fails when a mapped feature has no feature file or no golden spec', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-map-'));
+    mkdirSync(join(dir, 'features'));
+    mkdirSync(join(dir, 'specs', 'golden', 'auth-start'), { recursive: true });
+    writeFileSync(join(dir, 'features', 'auth-start.md'), '# Auth start');
+    writeFileSync(join(dir, 'specs', 'golden', 'auth-start', 'opens.e2e.ts'), '');
+    writeFileSync(join(dir, 'features', 'sign-up.md'), '# Sign up');
+    assert.equal(featureMapCheck(dir, ['auth-start']).ok, true);
+    const gap = featureMapCheck(dir, ['auth-start', 'sign-up', 'organizations']);
+    assert.equal(gap.ok, false);
+    assert.equal(gap.detail, 'missing specs/golden/sign-up/*.e2e.ts, features/organizations.md, specs/golden/organizations/*.e2e.ts');
+  });
+
+  it('passes for the committed clerk-ios Feature Map', () => {
+    assert.equal(featureMapCheck(join(import.meta.dirname, '..'), host.features).ok, true);
   });
 });

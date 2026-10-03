@@ -1,13 +1,14 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { readClaims, isReapable } from './claims.ts';
-import { INSTANCE_REQUIREMENTS, createClerkBackend, parseTestEmail, type ClerkBackend } from './clerk.ts';
+import { isOrphaned, readClaims } from './claims.ts';
+import { INSTANCE_REQUIREMENTS, createClerkBackend, type ClerkBackend } from './clerk.ts';
 import { instancesWithKeys, loadInstanceKeys } from './keys.ts';
 import { backendFor, computeBuildKey, ensureLease, leaseView, readBuiltApp, releaseLease, selectBackend, type LeaseOutcome } from './devices.ts';
 import { collectScreenshots, contextFile, invokeE2E, parseE2EReport, planE2E, resolveSpecs, writeRunContext } from './e2e.ts';
 import { startBroker } from './broker.ts';
 import { assertPublishable, readRecord, readStates, sealEvidence } from './evidence.ts';
-import { isAlive, type Runner } from './exec.ts';
+import type { Runner } from './exec.ts';
+import { deleteIdentities, pendingIdentities, stopRecorders } from './ledgers.ts';
 import { manifestDrift } from './manifest.ts';
 import { postToPullRequest } from './publish.ts';
 import { redact } from './secret.ts';
@@ -70,6 +71,22 @@ function check(id: DoctorCheck['id'], ok: boolean, detail: string, fix: string):
 
 function readJson(file: string): Record<string, unknown> | null {
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
+}
+
+export function featureMapCheck(skillDir: string, features: readonly string[]): DoctorCheck {
+  const missing = features.flatMap((feature) => {
+    const gaps: string[] = [];
+    if (!existsSync(join(skillDir, 'features', `${feature}.md`))) gaps.push(`features/${feature}.md`);
+    const golden = join(skillDir, 'specs', 'golden', feature);
+    if (!existsSync(golden) || !readdirSync(golden).some((f) => f.endsWith('.e2e.ts'))) gaps.push(`specs/golden/${feature}/*.e2e.ts`);
+    return gaps;
+  });
+  return check(
+    'feature-map',
+    missing.length === 0,
+    missing.length === 0 ? `${features.length} features, each with a feature file and golden specs` : `missing ${missing.join(', ')}`,
+    'add the missing feature file or golden spec, or drop the feature from features in src/host.ts',
+  );
 }
 
 export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doctor' }>): Promise<DoctorReport> {
@@ -156,8 +173,10 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
   const gh = await runner('gh', ['pr', 'comment', '--help']);
   checks.push(check('gh-attach', gh.code === 0 && gh.stdout.includes('--attach'), gh.code === 0 ? (gh.stdout.includes('--attach') ? 'gh pr comment supports --attach' : 'gh pr comment has no --attach') : 'gh is not installed', 'install a gh build with `gh pr comment --attach`'));
 
-  const stale = readClaims(workspace.claimsDir, platform).filter(isReapable);
+  const stale = readClaims(workspace.claimsDir, platform).filter(isOrphaned);
   checks.push(check('stale-claims', stale.length === 0, stale.length === 0 ? 'none' : `${stale.map((c) => c.deviceName).join(', ')} belong to deleted worktrees`, 'verify down --stale'));
+
+  checks.push(featureMapCheck(skill, host.features));
 
   const drift = manifestDrift();
   checks.push(check('core-drift', drift.length === 0, drift.length === 0 ? 'src/core matches MANIFEST' : `changed: ${drift.join(', ')}`, 'node src/core/manifest.ts --write, and copy src/core to clerk-android and clerk/javascript'));
@@ -195,7 +214,7 @@ function targetOf(deps: Deps, outcome: LeaseOutcome): RunContext['targets'][numb
 export async function up(deps: Deps, command: Extract<Command, { verb: 'up' }>): Promise<UpResult> {
   const platform = platformOf(deps.host, command.platform);
   return deps.workspace.withDevice(platform, command.waitSeconds, async () => {
-    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress });
+    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk, runner: deps.runner });
     writeStandingContext(deps, outcome);
     return { verb: 'up', leases: [outcome.view], builds: [outcome.build] };
   });
@@ -232,7 +251,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
   const platform = platformOf(host, command.platform);
   const specs = resolveSpecs(workspace.skillDir, command.selection);
   return workspace.withDevice(platform, 0, async () => {
-    const outcome = await ensureLease(platform, command.backend, workspace, host, { waitSeconds: 0, progress: deps.progress });
+    const outcome = await ensureLease(platform, command.backend, workspace, host, { waitSeconds: 0, progress: deps.progress, clerk: deps.clerk, runner: deps.runner });
     writeStandingContext(deps, outcome);
     const { lease, backend } = outcome;
     const { run, dir, scratch } = workspace.newRun();
@@ -430,24 +449,16 @@ async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>)
     if (command.stale) {
       for (const backend of host.backends.filter((b) => b.platform === platform && b.supports(process.platform))) {
         for (const orphan of await backend.reapable(workspace.worktree)) {
-          if (leases.some((l) => l.lease.backend === 'local' && orphan.backend === 'local' && l.lease.deviceId === orphan.deviceId)) continue;
+          if (leases.some((l) => l.lease.backend === 'local' && orphan.backend === 'local' && l.lease.claim === orphan.claim)) continue;
           leases.push({ lease: orphan, backend, view: leaseView(backend, orphan, false), origin: 'stale-claim' });
         }
       }
     }
   }
   const pending = workspace.unclosedEntries();
-  const byEmail = new Map<string, { instance: InstanceName; email: TestEmail; entries: string[] }>();
-  for (const entry of pending) {
-    if (entry.kind !== 'identity' && entry.kind !== 'user') continue;
-    const email = parseTestEmail(entry.email);
-    const group = byEmail.get(email) ?? { instance: entry.instance, email, entries: [] };
-    group.entries.push(entry.id);
-    byEmail.set(email, group);
-  }
   return {
     leases,
-    identities: [...byEmail.values()],
+    identities: pendingIdentities(pending),
     processes: pending.filter((e): e is Extract<LedgerEntry, { kind: 'process' }> => e.kind === 'process'),
     staleIntents: command.stale ? pending.filter((e) => e.kind === 'lease-intent' || e.kind === 'eas-session-created').map((e) => e.id) : [],
   };
@@ -466,7 +477,6 @@ export function down(deps: Deps, command: Extract<Command, { verb: 'down' }>): P
 async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down' }>): Promise<DownResult> {
   const { workspace } = deps;
   const plan = await planDown(deps, command);
-  const stopped = plan.processes.map((p) => `${p.what} ${p.pid}`);
   if (command.dryRun) {
     return {
       verb: 'down',
@@ -474,41 +484,25 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
       released: plan.leases.map((l) => l.view),
       deletedUsers: plan.identities.length,
       deletedOrganizations: 0,
-      stoppedProcesses: stopped,
+      stoppedProcesses: plan.processes.map((p) => `${p.what} ${p.pid}`),
       keptRuns: workspace.runs(),
     };
   }
-  for (const entry of plan.processes) {
-    if (isAlive(entry.pid) && (await deps.runner('ps', ['-o', 'command=', '-p', String(entry.pid)])).stdout.includes('recordVideo')) {
-      try {
-        process.kill(entry.pid, 'SIGINT');
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
-      }
-    }
-    workspace.append({ id: newEntryId(), kind: 'done', ref: entry.id });
-  }
+  const stoppedProcesses = await stopRecorders(workspace, deps.runner);
   for (const { lease, backend, origin } of plan.leases) {
     if (origin === 'lease-file') await releaseLease(workspace, backend, lease);
     else await backend.release(lease);
   }
-  let deletedUsers = 0;
-  let deletedOrganizations = 0;
-  for (const identity of plan.identities) {
-    const deleted = await deps.clerk().deleteByEmail(identity.instance, identity.email);
-    deletedUsers += deleted.users;
-    deletedOrganizations += deleted.organizations;
-    for (const ref of identity.entries) workspace.append({ id: newEntryId(), kind: 'done', ref });
-  }
+  const deleted = await deleteIdentities(workspace, deps.clerk());
   for (const ref of plan.staleIntents) workspace.append({ id: newEntryId(), kind: 'done', ref });
   if (plan.leases.some((l) => l.origin === 'lease-file')) rmSync(join(workspace.root, 'context.json'), { force: true });
   return {
     verb: 'down',
     dryRun: false,
     released: plan.leases.map((l) => l.view),
-    deletedUsers,
-    deletedOrganizations,
-    stoppedProcesses: stopped,
+    deletedUsers: deleted.users,
+    deletedOrganizations: deleted.organizations,
+    stoppedProcesses,
     keptRuns: workspace.runs(),
   };
 }

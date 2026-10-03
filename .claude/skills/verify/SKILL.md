@@ -30,7 +30,7 @@ Teardown is `bin/verify down` (see Cleanup).
 $ bin/verify doctor --json
 ```
 
-Run it first, and again whenever anything looks off. It is read-only. It checks Node 24, Xcode, the pinned e2e and agent-device versions against the global `agent-device`, the template simulator, the macOS proxy against the template's trust store, the three instances' keys by name, each instance's enabled strategies from `/v1/environment`, whether an E2EHost build matches the current tree, `gh pr comment --attach` support, stale device claims, and drift in `src/core/`. A failing check prints the command that fixes it. Before the first `up`, only `build` fails, with fix `verify up`.
+Run it first, and again whenever anything looks off. It is read-only. It checks Node 24, Xcode, the pinned e2e and agent-device versions against the global `agent-device`, the template simulator, the macOS proxy against the template's trust store, the three instances' keys by name, each instance's enabled strategies from `/v1/environment`, whether an E2EHost build matches the current tree, `gh pr comment --attach` support, stale device claims, drift in `src/core/`, and that every feature in the Feature Map has its feature file and at least one golden spec. A failing check prints the command that fixes it. Before the first `up`, only `build` fails, with fix `verify up`.
 
 ## Drive
 
@@ -180,6 +180,8 @@ $ bin/verify down --stale     # also finish cleanup left by a crashed run in thi
 ```
 
 `down` deletes only what this worktree created: its lane simulator and the users in its ledger (`~/.verify/ledgers/<worktree>.jsonl`). It never deletes `.verify/runs/`. Evidence survives teardown at `.claude/skills/verify/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
+
+If a worktree is removed without `down`, the next `up` in any worktree finishes for it. It deletes that worktree's lane simulator and the users in its ledger, then closes the ledger. Lane slots are machine-wide claims under `~/.verify/claims/`. A slot changes hands only by compare-and-swap, so two worktrees never hold the same lane.
 
 ## Helpers
 
