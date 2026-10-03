@@ -68,7 +68,7 @@ $ bin/verify screen                                # current UI tree with testId
 $ bin/verify screen --png                          # plus a screenshot in scratch
 ```
 
-`run` flags are `--skip form-entry`, `--grep <regex>`, `--no-video`, and `--wait <seconds>` (how long to wait for a free lane or for another verb in this worktree that holds the device).
+`run` flags are `--skip form-entry`, `--include known-bug`, `--grep <regex>`, `--no-video`, and `--wait <seconds>` (how long to wait for a free lane or for another verb in this worktree that holds the device).
 
 The `host` fixture:
 
@@ -178,6 +178,7 @@ Rules:
 - Type only `+clerk_test` emails, 555-0100 to 0199 phones, and `424242`. Never a real person's address, number, or password. The repo is public, and every video lands on a PR.
 - Use ticket sign-in (`host.launch({ signedInAs })`) only to reach signed-in screens for features that are not about authentication. A change to an auth method gets a spec that drives the real form.
 - Tag every spec that types a code `form-entry`. Those specs run by default. An agent runtime that refuses to type codes into an app that talks to hosted Clerk runs `bin/verify run --skip form-entry`, which reports them as `skipped by --skip form-entry`, and says so in the PR. CI runs the skipped specs.
+- Tag a golden spec that reproduces an open SDK bug `known-bug`, with a title that names the bug. e2e has no expected-failure status, so `run` leaves `known-bug` specs out unless you pass `--include known-bug`, and reports them as `skipped: known-bug`. A tag on both wins over `form-entry`. A feature whose only golden spec is `known-bug` still passes the Feature Map check. Remove the tag in the PR that fixes the bug.
 - The form-entry specs, one command each: `bin/verify run sign-in-email-code/complete`, `bin/verify run sign-up/complete`, and `bin/verify run session-tasks/complete-setup-mfa`.
 - `bin/verify down` deletes every user the run created, including users created through the sign-up form, by their test email.
 
