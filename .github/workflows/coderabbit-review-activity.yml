@@ -15,6 +15,16 @@ jobs:
     name: Relay CodeRabbit review activity
     if: github.event.comment.user.id == 136622811
     runs-on: ubuntu-latest
+    # Debounce bursts of CodeRabbit activity. Only the last run in a burst succeeds,
+    # and cancelled runs don't relay. CodeRabbit resolves a thread shortly after
+    # replying, so wait before relaying to let that resolution land.
+    concurrency:
+      group: coderabbit-review-activity-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     steps:
-      - name: Record review activity
-        run: echo "CodeRabbit review comment activity on PR #${{ github.event.pull_request.number }}."
+      - name: Wait for CodeRabbit to finish resolving threads
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          echo "CodeRabbit review comment activity on PR ${PR_NUMBER}."
+          sleep 60
