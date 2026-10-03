@@ -448,6 +448,28 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func modelServiceCallsAreCancelledWhileReconfigureIsInProgress() async throws {
+    let serviceCalls = LockIsolated(0)
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
+      userService: MockUserService(reload: {
+        serviceCalls.withValue { $0 += 1 }
+        return .mock
+      })
+    )
+    try Clerk.shared.performConfiguration(dependencies: dependencies)
+
+    try Clerk.beginRuntimeReconfiguration()
+    defer { Clerk.endRuntimeReconfiguration() }
+
+    await #expect(throws: CancellationError.self) {
+      _ = try await User.mock.reload()
+    }
+    #expect(serviceCalls.value == 0)
+  }
+
+  @Test
   func tokenReadBeforeConfigureThrowsConfigurationError() async throws {
     await Clerk.resetSharedInstanceForTesting()
     defer { configureClerkForTesting() }

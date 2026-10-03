@@ -57,7 +57,9 @@ public struct OrganizationInvitation: Codable, Sendable, Identifiable {
 extension OrganizationInvitation {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol {
-    Clerk.shared.dependencies.organizationService
+    get throws {
+      try Clerk.currentDependencies.organizationService
+    }
   }
 
   /// Revokes the invitation for the email it corresponds to.

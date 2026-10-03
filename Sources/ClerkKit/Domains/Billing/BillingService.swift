@@ -30,7 +30,8 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClerkPaginatedResponse<BillingPayment>>(
       path: Self.path("/payment_attempts", orgId: params.orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
+      scopedToActiveSession: true,
+      query: paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value
@@ -41,7 +42,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<BillingPayment>(
       path: Self.path("/payment_attempts/\(params.id)", orgId: params.orgId),
       method: .get,
-      query: sessionQuery()
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value
@@ -49,7 +50,7 @@ final class BillingService: BillingServiceProtocol {
 
   @MainActor
   func getPlans(params: GetPlansParams) async throws -> ClerkPaginatedResponse<BillingPlan> {
-    var query = sessionQuery()
+    var query: [(String, String?)] = []
     query.append(("payer_type", value: params.for == .organization ? "org" : "user"))
     if let orgId = params.orgId {
       query.append(("org_id", value: orgId))
@@ -62,6 +63,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClerkPaginatedResponse<BillingPlan>>(
       path: "/v1/billing/plans",
       method: .get,
+      scopedToActiveSession: true,
       query: query
     )
 
@@ -73,7 +75,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<BillingPlan>(
       path: "/v1/billing/plans/\(params.id)",
       method: .get,
-      query: sessionQuery()
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value
@@ -84,7 +86,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<BillingSubscription>>(
       path: Self.path("/subscription", orgId: params.orgId),
       method: .get,
-      query: sessionQuery()
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -95,7 +97,8 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingStatement>>>(
       path: Self.path("/statements", orgId: params.orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
+      scopedToActiveSession: true,
+      query: paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response
@@ -106,7 +109,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<BillingStatement>>(
       path: Self.path("/statements/\(params.id)", orgId: params.orgId),
       method: .get,
-      query: sessionQuery()
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -117,7 +120,7 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<BillingCreditBalance>>(
       path: Self.path("/credits", orgId: params.orgId),
       method: .get,
-      query: sessionQuery()
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -128,7 +131,8 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingCreditLedger>>>(
       path: Self.path("/credits/history", orgId: params.orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
+      scopedToActiveSession: true,
+      query: paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response
@@ -139,7 +143,8 @@ final class BillingService: BillingServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<BillingPaymentMethod>>>(
       path: Self.path("/payment_methods", orgId: orgId),
       method: .get,
-      query: sessionQuery() + paginationQuery(page: params.page, pageSize: params.pageSize)
+      scopedToActiveSession: true,
+      query: paginationQuery(page: params.page, pageSize: params.pageSize)
     )
 
     return try await apiClient.send(request).value.response
@@ -152,11 +157,6 @@ final class BillingService: BillingServiceProtocol {
       "/v1/me"
     }
     return "\(prefix)/billing\(subPath)"
-  }
-
-  @MainActor
-  private func sessionQuery() -> [(String, String?)] {
-    [("_clerk_session_id", value: Clerk.shared.session?.id)]
   }
 
   private func paginationQuery(page: Int, pageSize: Int) -> [(String, String?)] {

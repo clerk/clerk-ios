@@ -26,7 +26,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["phone_number": phoneNumber]
     )
 
@@ -38,7 +38,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -49,7 +49,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)/prepare_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["strategy": "phone_code"]
     )
 
@@ -61,7 +61,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["code": code]
     )
 
@@ -73,7 +73,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["default_second_factor": true]
     )
 
@@ -85,7 +85,7 @@ final class PhoneNumberService: PhoneNumberServiceProtocol {
     let request = Request<ClientResponse<PhoneNumber>>(
       path: "/v1/me/phone_numbers/\(phoneNumberId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["reserved_for_second_factor": reserved]
     )
 

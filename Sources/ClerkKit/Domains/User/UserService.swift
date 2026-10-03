@@ -38,18 +38,24 @@ final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
   @MainActor
   private var emailAddressService: any EmailAddressServiceProtocol {
-    Clerk.shared.dependencies.emailAddressService
+    get throws {
+      try Clerk.currentDependencies.emailAddressService
+    }
   }
 
   @MainActor
   private var phoneNumberService: any PhoneNumberServiceProtocol {
-    Clerk.shared.dependencies.phoneNumberService
+    get throws {
+      try Clerk.currentDependencies.phoneNumberService
+    }
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
   private var passkeyService: any PasskeyServiceProtocol {
-    Clerk.shared.dependencies.passkeyService
+    get throws {
+      try Clerk.currentDependencies.passkeyService
+    }
   }
   #endif
 
@@ -62,7 +68,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -73,7 +79,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: params
     )
 
@@ -85,7 +91,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me/metadata",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: params
     )
 
@@ -97,7 +103,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<BackupCodeResource>>(
       path: "/v1/me/backup_codes",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -136,7 +142,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<ExternalAccount>>(
       path: "/v1/me/external_accounts",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: bodyParams
     )
 
@@ -148,7 +154,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<ExternalAccount>>(
       path: "/v1/me/external_accounts",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: [
         "strategy": provider.strategy,
         "token": idToken,
@@ -210,7 +216,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<TOTPResource>>(
       path: "/v1/me/totp",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -221,7 +227,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<TOTPResource>>(
       path: "/v1/me/totp/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["code": code]
     )
 
@@ -233,7 +239,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/totp",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -242,7 +248,6 @@ final class UserService: UserServiceProtocol {
   @MainActor
   func getOrganizationInvitations(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(offset)),
       ("limit", value: String(pageSize)),
     ]
@@ -252,6 +257,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<UserOrganizationInvitation>>>(
       path: "/v1/me/organization_invitations",
       method: .get,
+      scopedToActiveSession: true,
       query: queryParams
     )
 
@@ -263,8 +269,8 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>>(
       path: "/v1/me/organization_memberships",
       method: .get,
+      scopedToActiveSession: true,
       query: [
-        ("_clerk_session_id", value: Clerk.shared.session?.id),
         ("offset", value: String(offset)),
         ("limit", value: String(pageSize)),
         ("paginated", value: "true"),
@@ -279,7 +285,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/organization_memberships/\(organizationId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -288,7 +294,6 @@ final class UserService: UserServiceProtocol {
   @MainActor
   func getOrganizationSuggestions(offset: Int, pageSize: Int, status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
     var queryParams: [(String, String?)] = [
-      ("_clerk_session_id", value: Clerk.shared.session?.id),
       ("offset", value: String(offset)),
       ("limit", value: String(pageSize)),
     ]
@@ -298,6 +303,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<ClerkPaginatedResponse<OrganizationSuggestion>>>(
       path: "/v1/me/organization_suggestions",
       method: .get,
+      scopedToActiveSession: true,
       query: queryParams
     )
 
@@ -309,7 +315,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<OrganizationCreationDefaults>>(
       path: "/v1/me/organization_creation_defaults",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -320,7 +326,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<[Session]>(
       path: "/v1/me/sessions/active",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     let sessions = try await apiClient.send(request).value
@@ -333,7 +339,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<User>>(
       path: "/v1/me/change_password",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: params
     )
 
@@ -354,7 +360,7 @@ final class UserService: UserServiceProtocol {
       path: "/v1/me/profile_image",
       method: .post,
       headers: ["Content-Type": "multipart/form-data; boundary=\(boundary)"],
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.upload(for: request, from: data).value.response
@@ -365,7 +371,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/profile_image",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -376,7 +382,7 @@ final class UserService: UserServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     let deletedObject = try await apiClient.send(request).value.response

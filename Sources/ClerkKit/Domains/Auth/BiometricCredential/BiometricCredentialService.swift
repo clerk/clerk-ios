@@ -34,7 +34,7 @@ final class BiometricCredentialService: BiometricCredentialServiceProtocol {
     let request = Request<ClientResponse<[BiometricCredential]>>(
       path: "/v1/me/biometric_credentials",
       method: .get,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response

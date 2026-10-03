@@ -135,6 +135,7 @@ extension ClerkIdentityController {
     return ClerkIdentityRequestSnapshot(
       deviceToken: currentDeviceToken,
       clientID: clerk.client?.id,
+      activeSessionID: clerk.session?.id,
       clientResponseGeneration: clientResponseGeneration,
       authFlowRegistrationId: AuthFlowRequestScope.ownerId
     )
