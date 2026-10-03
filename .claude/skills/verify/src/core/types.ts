@@ -7,6 +7,9 @@ export const HOST_CONTRACT_VERSION = 1 as const;
 
 export type Platform = 'ios' | 'android';
 
+/** Proof that the caller holds the per-platform acquire lock. Only Workspace.withAcquireLock mints one. */
+export type AcquireLock = Brand<{ readonly platform: Platform }, 'AcquireLock'>;
+
 export type CoreScreen = 'home' | 'auth';
 export type NativeHostScreen = CoreScreen | 'userProfile' | 'orgSwitcher' | 'orgList' | 'orgProfile';
 export type AuthMode = 'signIn' | 'signUp' | 'signInOrUp';

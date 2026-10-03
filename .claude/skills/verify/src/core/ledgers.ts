@@ -23,7 +23,6 @@ export function pendingIdentities(entries: readonly LedgerEntry[]): readonly Pen
   return [...byEmail.values()];
 }
 
-/** Signals only a process that is still the one ledgered, matched by pid and start time, never a reused pid. */
 export function stopProcesses(workspace: Workspace): readonly string[] {
   const stopped: string[] = [];
   for (const entry of workspace.unclosedEntries()) {
@@ -58,7 +57,6 @@ export function readDaemonInfo(stateDir: string): DaemonInfo | null {
   }
 }
 
-/** agent-device starts this worktree's daemon on demand, so the CLI ledgers it afterwards for `down` to stop. */
 export function ledgerAgentDeviceDaemon(workspace: Workspace): void {
   const daemon = readDaemonInfo(workspace.agentDeviceDir);
   if (daemon === null || !isRunning(daemon)) return;

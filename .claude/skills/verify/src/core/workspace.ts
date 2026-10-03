@@ -6,6 +6,7 @@ import { currentProcess, isRunning, sleep, type ProcessRef } from './exec.ts';
 import { compareAndSwapSlot, readSlot } from './slot.ts';
 import {
   VerifyFailure,
+  type AcquireLock,
   type EvidencePath,
   type Lease,
   type LedgerEntry,
@@ -41,16 +42,14 @@ export interface Workspace {
   append(entry: LedgerEntry): void;
   entries(): readonly LedgerEntry[];
   unclosedEntries(): readonly LedgerEntry[];
-  withAcquireLock<T>(platform: Platform, fn: () => Promise<T>): Promise<T>;
+  withAcquireLock<T>(platform: Platform, fn: (lock: AcquireLock) => Promise<T>): Promise<T>;
   withDevice<T>(platform: Platform, waitSeconds: number, fn: () => Promise<T>): Promise<T>;
-  /** Waits for the device lock and returns its release, for a verb that takes it while still holding the acquire lock. */
-  lockDevice(platform: Platform, waitSeconds: number): Promise<() => void>;
+  withAcquireThenDevice<A, T>(platform: Platform, waitSeconds: number, prepare: (lock: AcquireLock) => Promise<A>, drive: (prepared: A) => Promise<T>): Promise<T>;
   removeScratch(path: ScratchPath): void;
 }
 
 export const newEntryId = (): string => randomUUID();
 
-/** Each worktree runs its own agent-device daemon from its own node_modules, so removing one worktree never breaks another. */
 export const agentDeviceStateDir = (workspaceRoot: string): string => join(workspaceRoot, 'agent-device');
 
 export function worktreeIdOf(worktree: string): string {
@@ -145,6 +144,9 @@ export function openWorkspace(options: WorkspaceOptions): Workspace {
       .map((line) => JSON.parse(line) as LedgerEntry);
   };
 
+  const acquireDir = (platform: Platform) => join(dir('locks'), `acquire-${platform}`);
+  const unreachable = () => new VerifyFailure('DEVICE_BUSY', 'unreachable', '');
+
   return {
     root,
     skillDir: options.skillDir,
@@ -186,13 +188,26 @@ export function openWorkspace(options: WorkspaceOptions): Workspace {
       return entries.filter((e) => e.kind !== 'done' && !closed.has(e.id));
     },
     withAcquireLock(platform, fn) {
-      return withSlotLock(join(dir('locks'), `acquire-${platform}`), Number.POSITIVE_INFINITY, () => new VerifyFailure('DEVICE_BUSY', 'unreachable', ''), fn);
+      return withSlotLock(acquireDir(platform), Number.POSITIVE_INFINITY, unreachable, () => fn({ platform } as AcquireLock));
     },
     withDevice(platform, waitSeconds, fn) {
       return withSlotLock(join(dir('locks'), `device-${platform}`), waitSeconds * 1000, () => deviceBusy(platform), fn);
     },
-    lockDevice(platform, waitSeconds) {
-      return takeSlotLock(join(dir('locks'), `device-${platform}`), waitSeconds * 1000, () => deviceBusy(platform));
+    async withAcquireThenDevice(platform, waitSeconds, prepare, drive) {
+      const releaseAcquire = await takeSlotLock(acquireDir(platform), Number.POSITIVE_INFINITY, unreachable);
+      let prepared;
+      let releaseDevice;
+      try {
+        prepared = await prepare({ platform } as AcquireLock);
+        releaseDevice = await takeSlotLock(join(dir('locks'), `device-${platform}`), waitSeconds * 1000, () => deviceBusy(platform));
+      } finally {
+        releaseAcquire();
+      }
+      try {
+        return await drive(prepared);
+      } finally {
+        releaseDevice();
+      }
     },
     removeScratch(path) {
       const rel = relative(root, path);

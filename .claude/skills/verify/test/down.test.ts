@@ -27,7 +27,7 @@ function setup() {
       deleted.push(email);
       return { users: 1, organizations: 0 };
     },
-    ownedByEmail: async (instance) => ({ users: 1, organizations: instance === 'with-email-codes' ? 2 : 0 }),
+    previewDeleteByEmail: async (instance) => ({ users: 1, organizations: instance === 'with-email-codes' ? 2 : 0 }),
   } as Partial<ClerkBackend> as ClerkBackend;
   const deps: Deps = { host, workspace, runner: async () => assert.fail('down runs no commands'), env: {}, progress: () => undefined, clerk: () => clerk };
 

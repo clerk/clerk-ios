@@ -7,6 +7,7 @@ import { finishOrphanLedgers } from './ledgers.ts';
 import { newEntryId, type Workspace } from './workspace.ts';
 import {
   VerifyFailure,
+  type AcquireLock,
   type BackendKind,
   type BuildKey,
   type BuildView,
@@ -112,14 +113,14 @@ export async function releaseLease(workspace: Workspace, backend: DeviceBackend,
   closePending(workspace, lease.platform);
 }
 
-/** The caller holds the acquire lock. Builds before claiming a lane, because a build needs no device. */
 export async function ensureLease(
-  platform: Platform,
+  lock: AcquireLock,
   requested: BackendKind | undefined,
   workspace: Workspace,
   host: HostAdapter,
   options: { readonly waitSeconds: number; readonly progress: (line: string) => void; readonly clerk: () => ClerkBackend },
 ): Promise<LeaseOutcome> {
+  const { platform } = lock;
   const held = workspace.readLease(platform);
   if (held !== null && requested !== undefined && held.backend !== requested) {
     throw new VerifyFailure('NOT_READY', `this worktree holds a ${held.backend} ${platform} lease, not ${requested}`, 'bin/verify down');

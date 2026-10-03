@@ -75,10 +75,6 @@ function readJson(file: string): Record<string, unknown> | null {
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
 }
 
-/**
- * agent-device's daemon keeps running from the install that started it. Once that worktree is removed, every command
- * routed to the daemon fails, so a daemon whose script is gone is reported with the pid to stop.
- */
 export function agentDeviceDaemonCheck(stateDirs: readonly string[]): DoctorCheck {
   const broken: string[] = [];
   const healthy: string[] = [];
@@ -242,8 +238,8 @@ function targetOf(deps: Deps, outcome: LeaseOutcome): RunContext['targets'][numb
 
 export async function up(deps: Deps, command: Extract<Command, { verb: 'up' }>): Promise<UpResult> {
   const platform = platformOf(deps.host, command.platform);
-  return deps.workspace.withAcquireLock(platform, async () => {
-    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk });
+  return deps.workspace.withAcquireLock(platform, async (lock) => {
+    const outcome = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk });
     writeStandingContext(deps, outcome);
     return { verb: 'up', leases: [outcome.view], builds: [outcome.build] };
   });
@@ -275,120 +271,124 @@ function lastState(dir: EvidencePath): VerifyState | null {
   }
 }
 
-/** Joins an in-flight `up` by waiting on the acquire lock, then holds the device lock before letting the acquire lock go, so no `up` can reinstall mid-run. */
-export function leaseForRun(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>): Promise<{ readonly outcome: LeaseOutcome; readonly releaseDevice: () => void }> {
-  return deps.workspace.withAcquireLock(platform, async () => {
-    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk });
-    writeStandingContext(deps, outcome);
-    return { outcome, releaseDevice: await deps.workspace.lockDevice(platform, command.waitSeconds) };
-  });
+export function leaseForRun<T>(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>, drive: (outcome: LeaseOutcome) => Promise<T>): Promise<T> {
+  return deps.workspace.withAcquireThenDevice(
+    platform,
+    command.waitSeconds,
+    async (lock) => {
+      const outcome = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk });
+      writeStandingContext(deps, outcome);
+      return outcome;
+    },
+    drive,
+  );
 }
 
 export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run' }>): Promise<RunResult> {
   const { host, workspace } = deps;
   const platform = platformOf(host, command.platform);
   const specs = resolveSpecs(workspace.skillDir, command.selection);
-  const { outcome, releaseDevice } = await leaseForRun(deps, platform, command);
-  try {
-    const { lease, backend } = outcome;
-    const { run, dir, scratch } = workspace.newRun();
-    const startedAt = new Date();
-    deps.progress(`run ${run}  ${platform}  ${outcome.view.backend} ${outcome.view.device}  build ${outcome.app.key}`);
-    for (const spec of specs) {
-      mkdirSync(dirname(join(dir, spec.path)), { recursive: true });
-      cpSync(join(workspace.skillDir, spec.path), join(dir, spec.path));
-    }
-
-    const broker = await startBroker(run, workspace, scratch, {
-      clerk: deps.clerk(),
-      publishableKey: (instance) => loadInstanceKeys(host, instance, workspace.worktree, deps.env).pk,
-      screens: host.screens,
-      platforms: [platform],
-    });
-    const context: ActiveRunContext = {
-      v: 1,
-      run,
-      workspace: workspace.root,
-      broker: { url: broker.url, tokenFile: broker.tokenFile },
-      agentDeviceSession: agentDeviceSession(workspace, platform),
-      targets: [targetOf(deps, outcome)],
-      e2eVideo: false,
-    };
-    writeRunContext(contextFile(context), context);
-
-    let recording: Awaited<ReturnType<DeviceBackend['startRecording']>> | null = null;
-    let recorderEntry: string | null = null;
-    let exitCode = 1;
+  return leaseForRun(deps, platform, command, async (outcome) => {
     try {
-      if (command.video) {
-        recording = await backend.startRecording(lease, dir);
-        if (recording !== 'e2e-records') {
-          recorderEntry = newEntryId();
-          workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString() });
-        }
+      const { lease, backend } = outcome;
+      const { run, dir, scratch } = workspace.newRun();
+      const startedAt = new Date();
+      deps.progress(`run ${run}  ${platform}  ${outcome.view.backend} ${outcome.view.device}  build ${outcome.app.key}`);
+      for (const spec of specs) {
+        mkdirSync(dirname(join(dir, spec.path)), { recursive: true });
+        cpSync(join(workspace.skillDir, spec.path), join(dir, spec.path));
       }
-      const invocation = planE2E(context, specs, command, platform, workspace.skillDir);
-      ({ exitCode } = await invokeE2E(invocation, join(dir, 'e2e.log') as EvidencePath, workspace.skillDir, deps.progress));
+
+      const broker = await startBroker(run, workspace, scratch, {
+        clerk: deps.clerk(),
+        publishableKey: (instance) => loadInstanceKeys(host, instance, workspace.worktree, deps.env).pk,
+        screens: host.screens,
+        platforms: [platform],
+      });
+      const context: ActiveRunContext = {
+        v: 1,
+        run,
+        workspace: workspace.root,
+        broker: { url: broker.url, tokenFile: broker.tokenFile },
+        agentDeviceSession: agentDeviceSession(workspace, platform),
+        targets: [targetOf(deps, outcome)],
+        e2eVideo: false,
+      };
+      writeRunContext(contextFile(context), context);
+
+      let recording: Awaited<ReturnType<DeviceBackend['startRecording']>> | null = null;
+      let recorderEntry: string | null = null;
+      let exitCode = 1;
+      try {
+        if (command.video) {
+          recording = await backend.startRecording(lease, dir);
+          if (recording !== 'e2e-records') {
+            recorderEntry = newEntryId();
+            workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString() });
+          }
+        }
+        const invocation = planE2E(context, specs, command, platform, workspace.skillDir);
+        ({ exitCode } = await invokeE2E(invocation, join(dir, 'e2e.log') as EvidencePath, workspace.skillDir, deps.progress));
+      } finally {
+        if (recording !== null && recording !== 'e2e-records') await recording.stop();
+        if (recorderEntry !== null) workspace.append({ id: newEntryId(), kind: 'done', ref: recorderEntry });
+        await broker.stop();
+        workspace.removeScratch(scratch);
+      }
+
+      const appLog = join(dir, 'app.log') as EvidencePath;
+      writeFileSync(appLog, redact(await backend.logs(lease, startedAt)));
+      const state = lastState(dir);
+      if (state !== null) writeFileSync(join(dir, 'state.json'), `${JSON.stringify(state, null, 2)}\n`);
+
+      const reportFile = join(dir, 'e2e', 'report.json') as EvidencePath;
+      let report: unknown = null;
+      let results: ReturnType<typeof parseE2EReport> = [];
+      let screenshots: ReturnType<typeof collectScreenshots> = [];
+      let unreadable: VerifyFailure | null = null;
+      try {
+        report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
+        results = report === null ? [] : parseE2EReport(report, specs, dir);
+        screenshots = report === null ? [] : collectScreenshots(report, dir);
+      } catch (error) {
+        unreadable = error instanceof VerifyFailure ? error : new VerifyFailure('E2E_CRASHED', `e2e's report could not be read: ${(error as Error).message}`, `read ${reportFile}`);
+        results = [];
+        screenshots = [];
+      }
+      const git = await gitFacts(deps.runner, workspace.worktree);
+      const record = sealEvidence(dir, {
+        run,
+        startedAt: startedAt.toISOString(),
+        finishedAt: new Date().toISOString(),
+        repo: host.repo,
+        gitHead: git.head,
+        dirty: git.dirty,
+        platform,
+        backend: lease.backend,
+        device: outcome.view.device,
+        build: outcome.app.key,
+        results,
+        videos: existsSync(join(dir, 'video.mp4')) ? [join(dir, 'video.mp4') as EvidencePath] : [],
+        screenshots,
+        lastState: state,
+        appLog,
+        e2eReport: reportFile,
+        identities: await runIdentities(deps, run),
+      });
+      if (unreadable !== null) throw unreadable;
+      if (report === null) {
+        throw new VerifyFailure('E2E_CRASHED', `e2e exited ${exitCode} before writing a report`, `read ${join(dir, 'e2e.log')}`);
+      }
+      const failed = results.filter((r) => r.status === 'failed' || r.status === 'interrupted');
+      const next =
+        failed.length === 0
+          ? `bin/verify attach ${run} --pr <n>`
+          : (failed[0]?.failurePage ?? join(dir, 'e2e.log'));
+      return { verb: 'run', dir, record, next };
     } finally {
-      if (recording !== null && recording !== 'e2e-records') await recording.stop();
-      if (recorderEntry !== null) workspace.append({ id: newEntryId(), kind: 'done', ref: recorderEntry });
-      await broker.stop();
-      workspace.removeScratch(scratch);
+      ledgerAgentDeviceDaemon(workspace);
     }
-
-    const appLog = join(dir, 'app.log') as EvidencePath;
-    writeFileSync(appLog, redact(await backend.logs(lease, startedAt)));
-    const state = lastState(dir);
-    if (state !== null) writeFileSync(join(dir, 'state.json'), `${JSON.stringify(state, null, 2)}\n`);
-
-    const reportFile = join(dir, 'e2e', 'report.json') as EvidencePath;
-    let report: unknown = null;
-    let results: ReturnType<typeof parseE2EReport> = [];
-    let screenshots: ReturnType<typeof collectScreenshots> = [];
-    let unreadable: VerifyFailure | null = null;
-    try {
-      report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
-      results = report === null ? [] : parseE2EReport(report, specs, dir);
-      screenshots = report === null ? [] : collectScreenshots(report, dir);
-    } catch (error) {
-      unreadable = error instanceof VerifyFailure ? error : new VerifyFailure('E2E_CRASHED', `e2e's report could not be read: ${(error as Error).message}`, `read ${reportFile}`);
-      results = [];
-      screenshots = [];
-    }
-    const git = await gitFacts(deps.runner, workspace.worktree);
-    const record = sealEvidence(dir, {
-      run,
-      startedAt: startedAt.toISOString(),
-      finishedAt: new Date().toISOString(),
-      repo: host.repo,
-      gitHead: git.head,
-      dirty: git.dirty,
-      platform,
-      backend: lease.backend,
-      device: outcome.view.device,
-      build: outcome.app.key,
-      results,
-      videos: existsSync(join(dir, 'video.mp4')) ? [join(dir, 'video.mp4') as EvidencePath] : [],
-      screenshots,
-      lastState: state,
-      appLog,
-      e2eReport: reportFile,
-      identities: await runIdentities(deps, run),
-    });
-    if (unreadable !== null) throw unreadable;
-    if (report === null) {
-      throw new VerifyFailure('E2E_CRASHED', `e2e exited ${exitCode} before writing a report`, `read ${join(dir, 'e2e.log')}`);
-    }
-    const failed = results.filter((r) => r.status === 'failed' || r.status === 'interrupted');
-    const next =
-      failed.length === 0
-        ? `bin/verify attach ${run} --pr <n>`
-        : (failed[0]?.failurePage ?? join(dir, 'e2e.log'));
-    return { verb: 'run', dir, record, next };
-  } finally {
-    ledgerAgentDeviceDaemon(workspace);
-    releaseDevice();
-  }
+  });
 }
 
 interface SnapshotNode {
@@ -532,7 +532,7 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
     let users = 0;
     let organizations = 0;
     for (const identity of plan.identities) {
-      const owned = await deps.clerk().ownedByEmail(identity.instance, identity.email);
+      const owned = await deps.clerk().previewDeleteByEmail(identity.instance, identity.email);
       users += owned.users;
       organizations += owned.organizations;
     }

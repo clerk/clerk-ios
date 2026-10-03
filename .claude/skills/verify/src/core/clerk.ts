@@ -52,8 +52,7 @@ export interface ClerkBackend {
   createUser(instance: InstanceName, email: TestEmail, phone: TestPhone | null): Promise<SeededUser>;
   mintTicket(user: SeededUser, expiresInSeconds: number): Promise<Secret<'ticket'>>;
   deleteByEmail(instance: InstanceName, email: TestEmail): Promise<{ readonly users: number; readonly organizations: number }>;
-  /** What deleteByEmail would delete, read-only. */
-  ownedByEmail(instance: InstanceName, email: TestEmail): Promise<{ readonly users: number; readonly organizations: number }>;
+  previewDeleteByEmail(instance: InstanceName, email: TestEmail): Promise<{ readonly users: number; readonly organizations: number }>;
   findUserId(instance: InstanceName, email: TestEmail): Promise<string | null>;
   settings(instance: InstanceName): Promise<InstanceSettings>;
 }
@@ -120,7 +119,7 @@ export function createClerkBackend(keysFor: (instance: InstanceName) => Instance
     async findUserId(instance, email) {
       return (await usersByEmail(instance, email))[0]?.id ?? null;
     },
-    async ownedByEmail(instance, email) {
+    async previewDeleteByEmail(instance, email) {
       let organizations = 0;
       const users = await usersByEmail(instance, email);
       for (const user of users) organizations += (await ownedOrganizations(instance, user.id)).length;

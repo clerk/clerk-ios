@@ -70,18 +70,17 @@ describe('lease flow', () => {
     const { deps, events } = setup(400);
     const building = up(deps, { verb: 'up', waitSeconds: 0 });
     await new Promise((resolve) => setTimeout(resolve, 50));
-    const { outcome, releaseDevice } = await leaseForRun(deps, 'ios', runCommand);
+    const device = await leaseForRun(deps, 'ios', runCommand, async (outcome) => outcome.lease.backend === 'local' && outcome.lease.deviceName);
     await building;
-    releaseDevice();
-    assert.equal(outcome.lease.backend === 'local' && outcome.lease.deviceName, 'verify-ios-1');
+    assert.equal(device, 'verify-ios-1');
     assert.deepEqual(events, ['build', 'acquire', 'install'], 'run reused the lease up made');
   });
 
   it('holds the device lock for the run, so a second run reports DEVICE_BUSY', async () => {
     const { deps } = setup(0);
-    const first = await leaseForRun(deps, 'ios', runCommand);
-    await assert.rejects(leaseForRun(deps, 'ios', runCommand), { code: 'DEVICE_BUSY' });
-    first.releaseDevice();
-    (await leaseForRun(deps, 'ios', runCommand)).releaseDevice();
+    await leaseForRun(deps, 'ios', runCommand, async () => {
+      await assert.rejects(leaseForRun(deps, 'ios', runCommand, async () => undefined), { code: 'DEVICE_BUSY' });
+    });
+    await leaseForRun(deps, 'ios', runCommand, async () => undefined);
   });
 });
