@@ -18,7 +18,7 @@ function worktree(root: string, name: string): string {
 }
 
 function fakes(deleted: string[]) {
-  const lease: LocalLease = { backend: 'local', platform: 'ios', slot: 1, deviceName: 'verify-ios-1', deviceId: 'UDID', claim: 'c', acquiredAt: '', installedBuild: null };
+  const lease: LocalLease = { backend: 'local', platform: 'ios', slot: 1, deviceName: 'verify-ios-1', deviceId: 'UDID', claimNonce: 'c', acquiredAt: '', installedBuild: null };
   const backend = {
     kind: 'local',
     platform: 'ios',

@@ -90,7 +90,6 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
     }
   }
 
-  /** Takes the slot over from `claim` before deleting by name, so a slot someone else just took is never touched. */
   async function clearSlot(claim: Claim, worktree: string): Promise<void> {
     const reaper = takeSlot(claimsDir, 'ios', claim.slot, claim.gen, worktree, true);
     if (reaper === null) return;
@@ -129,14 +128,14 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
         slot: claim.slot,
         deviceName: claim.deviceName,
         deviceId: udid,
-        claim: claim.nonce,
+        claimNonce: claim.nonce,
         acquiredAt: new Date().toISOString(),
         installedBuild: null,
       };
     },
 
     async check(lease) {
-      if (readClaim(claimsDir, 'ios', lease.slot).claim?.nonce !== lease.claim) return 'lost';
+      if (readClaim(claimsDir, 'ios', lease.slot).claim?.nonce !== lease.claimNonce) return 'lost';
       const device = (await listSimulators()).find((d) => d.udid === lease.deviceId);
       if (device === undefined || device.name !== lease.deviceName) return 'lost';
       if (device.state !== 'Booted') {
@@ -152,7 +151,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
 
     async release(lease) {
       const { claim } = readClaim(claimsDir, 'ios', lease.slot);
-      if (claim !== null && claim.nonce === lease.claim) {
+      if (claim !== null && claim.nonce === lease.claimNonce) {
         await clearSlot(claim, claim.worktree);
         return;
       }
@@ -168,7 +167,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
           slot: claim.slot,
           deviceName: claim.deviceName,
           deviceId: '',
-          claim: claim.nonce,
+          claimNonce: claim.nonce,
           acquiredAt: claim.createdAt,
           installedBuild: null,
         }));

@@ -449,7 +449,7 @@ async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>)
     if (command.stale) {
       for (const backend of host.backends.filter((b) => b.platform === platform && b.supports(process.platform))) {
         for (const orphan of await backend.reapable(workspace.worktree)) {
-          if (leases.some((l) => l.lease.backend === 'local' && orphan.backend === 'local' && l.lease.claim === orphan.claim)) continue;
+          if (leases.some((l) => l.lease.backend === 'local' && orphan.backend === 'local' && l.lease.claimNonce === orphan.claimNonce)) continue;
           leases.push({ lease: orphan, backend, view: leaseView(backend, orphan, false), origin: 'stale-claim' });
         }
       }

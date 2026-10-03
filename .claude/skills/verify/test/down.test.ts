@@ -30,7 +30,7 @@ function setup() {
   } as Partial<ClerkBackend> as ClerkBackend;
   const deps: Deps = { host, workspace, runner: async () => assert.fail('down runs no commands'), env: {}, progress: () => undefined, clerk: () => clerk };
 
-  const lease: LocalLease = { backend: 'local', platform: 'ios', slot: 2, deviceName: 'verify-ios-2', deviceId: 'UDID-2', claim: 'claim-2', acquiredAt: '2026-10-03T00:00:00Z', installedBuild: null };
+  const lease: LocalLease = { backend: 'local', platform: 'ios', slot: 2, deviceName: 'verify-ios-2', deviceId: 'UDID-2', claimNonce: 'claim-2', acquiredAt: '2026-10-03T00:00:00Z', installedBuild: null };
   workspace.writeLease(lease);
   const { run } = workspace.newRun();
   const email = newTestEmail(run, 1);

@@ -2,15 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { linkSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-/**
- * A compare-and-swap register on the file system. Each state is a file named by its generation, and a writer moves
- * the slot from generation g to g + 1 by hard-linking a new file at that name, which fails if anyone else got there
- * first. Exactly one writer wins each generation, so two processes that see the same stale holder never both win.
- */
 const NAME = /^\d{12}$/;
 const FREE = 'free';
-/** Old generations go only once no writer can still be about to link the one after them. */
-const PRUNE_AFTER_MS = 60_000;
+const STALE_WRITER_WINDOW_MS = 60_000;
 
 const nameOf = (gen: number) => String(gen).padStart(12, '0');
 
@@ -26,7 +20,6 @@ function generations(dir: string): number[] {
 
 export interface SlotState {
   readonly gen: number;
-  /** null when the slot is free. */
   readonly value: string | null;
 }
 
@@ -44,8 +37,11 @@ export function readSlot(dir: string): SlotState {
   }
 }
 
-/** Moves the slot from `from` to `from + 1`, holding `value` (null frees it). False when another writer moved it first. */
-export function advanceSlot(dir: string, from: number, value: string | null): boolean {
+function linkedIntoPrunedGap(gens: readonly number[], linked: number): boolean {
+  return gens.some((g) => g > linked);
+}
+
+export function compareAndSwapSlot(dir: string, from: number, value: string | null): boolean {
   mkdirSync(dir, { recursive: true });
   const next = from + 1;
   const file = join(dir, nameOf(next));
@@ -60,11 +56,11 @@ export function advanceSlot(dir: string, from: number, value: string | null): bo
     rmSync(staged, { force: true });
   }
   const gens = generations(dir);
-  if (gens.some((g) => g > next)) {
+  if (linkedIntoPrunedGap(gens, next)) {
     rmSync(file, { force: true });
     return false;
   }
-  const cutoff = Date.now() - PRUNE_AFTER_MS;
+  const cutoff = Date.now() - STALE_WRITER_WINDOW_MS;
   for (const g of gens) {
     if (g >= next - 1) continue;
     try {

@@ -3,7 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSyn
 import { homedir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { currentProcess, isRunning, sleep, type ProcessRef } from './exec.ts';
-import { advanceSlot, readSlot } from './slot.ts';
+import { compareAndSwapSlot, readSlot } from './slot.ts';
 import {
   VerifyFailure,
   type EvidencePath,
@@ -76,7 +76,7 @@ function parseLease(text: string, file: string): Lease {
   if (!isPlatform(r.platform) || typeof r.acquiredAt !== 'string') throw bad();
   const installedBuild = typeof r.installedBuild === 'string' ? r.installedBuild : null;
   if (r.backend === 'local') {
-    if (typeof r.slot !== 'number' || typeof r.deviceName !== 'string' || typeof r.deviceId !== 'string' || typeof r.claim !== 'string') throw bad();
+    if (typeof r.slot !== 'number' || typeof r.deviceName !== 'string' || typeof r.deviceId !== 'string' || typeof r.claimNonce !== 'string') throw bad();
     if (r.deviceName !== `verify-${r.platform}-${r.slot}`) throw bad();
     return { ...(r as object), installedBuild } as Lease;
   }
@@ -98,7 +98,7 @@ export async function withSlotLock<T>(dir: string, timeoutMs: number, onTimeout:
   for (;;) {
     const state = readSlot(dir);
     const running = state.value !== null && isRunning(JSON.parse(state.value) as ProcessRef);
-    if (!running && advanceSlot(dir, state.gen, JSON.stringify(me))) {
+    if (!running && compareAndSwapSlot(dir, state.gen, JSON.stringify(me))) {
       held = state.gen + 1;
       break;
     }
@@ -110,7 +110,7 @@ export async function withSlotLock<T>(dir: string, timeoutMs: number, onTimeout:
   try {
     return await fn();
   } finally {
-    advanceSlot(dir, held, null);
+    compareAndSwapSlot(dir, held, null);
   }
 }
 

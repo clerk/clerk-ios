@@ -245,8 +245,7 @@ export interface LocalLease extends LeaseBase {
   readonly slot: number;
   readonly deviceName: DeviceName;
   readonly deviceId: string;
-  /** Nonce of the machine-wide claim this lease holds. */
-  readonly claim: string;
+  readonly claimNonce: string;
 }
 export interface EasLease extends LeaseBase {
   readonly backend: 'eas';

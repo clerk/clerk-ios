@@ -52,10 +52,6 @@ export async function deleteIdentities(workspace: Workspace, clerk: ClerkBackend
   return { users, organizations };
 }
 
-/**
- * A worktree removed without `verify down` leaves its ledger behind. Its devices go with its orphaned claims; this
- * deletes the users it created, stops its recorders, and closes every entry it left open.
- */
 export async function finishOrphanLedgers(
   home: string,
   self: string,
