@@ -146,7 +146,6 @@ struct ClerkReconfigureTests {
       result = .failure(error)
     }
 
-    // Release a timed-out shutdown and drain it before another test uses the shared fetcher.
     clerk.cleanupManagers()
     await SessionTokenFetcher.shared.reset()
     _ = await shutdownTask?.result
