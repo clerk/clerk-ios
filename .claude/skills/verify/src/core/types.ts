@@ -135,7 +135,7 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
-  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon';
+  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports';
 
 export interface DoctorCheck {
   readonly id: DoctorCheckId;

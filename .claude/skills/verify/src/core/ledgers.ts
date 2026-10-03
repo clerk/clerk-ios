@@ -34,7 +34,10 @@ export function stopProcesses(workspace: Workspace): readonly string[] {
         stopped.push(`${entry.what} ${entry.pid}`);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
+        stopped.push(`${entry.what} ${entry.pid} had already exited`);
       }
+    } else {
+      stopped.push(`${entry.what} ${entry.pid} had already exited`);
     }
     workspace.append({ id: newEntryId(), kind: 'done', ref: entry.id });
   }
