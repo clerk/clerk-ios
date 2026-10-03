@@ -51,7 +51,7 @@ struct ClerkHeaderRequestMiddlewareTests {
     let keychain = ReadCountingKeychain()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(
-        runtimeScope: .init(epoch: clerk.configurationEpoch, clerkProvider: { clerk })
+        runtimeScope: .current(clerkProvider: { clerk })
       ),
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
@@ -136,7 +136,7 @@ struct ClerkHeaderRequestMiddlewareTests {
         return startupClient
       })
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     defer {
       startupGate.resume()
       clerk.cleanupManagers()

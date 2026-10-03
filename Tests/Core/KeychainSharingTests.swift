@@ -51,7 +51,7 @@ struct KeychainSharingTests {
     try await second.respond(.client(signedIn("client")), date: 100)
 
     try first.clerk.identityController.clearIdentity()
-    await second.clerk.onWillEnterForeground()
+    await second.clerk.runtime.onWillEnterForeground()
 
     #expect(second.clerk.deviceToken == nil)
     #expect(second.clerk.client == nil)
@@ -94,8 +94,8 @@ struct KeychainSharingTests {
     try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
     let firstNotifier = SharedIdentityNotifier(name: name, clerk: first.clerk)
     let secondNotifier = SharedIdentityNotifier(name: name, clerk: second.clerk)
-    first.clerk.internalStateChanges.addObserver(firstNotifier)
-    second.clerk.internalStateChanges.addObserver(secondNotifier)
+    first.clerk.runtime.internalStateChanges.addObserver(firstNotifier)
+    second.clerk.runtime.internalStateChanges.addObserver(secondNotifier)
     defer {
       firstNotifier.stop()
       secondNotifier.stop()
@@ -122,8 +122,8 @@ struct KeychainSharingTests {
     try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
     let firstNotifier = SharedIdentityNotifier(name: name, clerk: first.clerk)
     let secondNotifier = SharedIdentityNotifier(name: name, clerk: second.clerk)
-    first.clerk.internalStateChanges.addObserver(firstNotifier)
-    second.clerk.internalStateChanges.addObserver(secondNotifier)
+    first.clerk.runtime.internalStateChanges.addObserver(firstNotifier)
+    second.clerk.runtime.internalStateChanges.addObserver(secondNotifier)
     defer {
       firstNotifier.stop()
       secondNotifier.stop()

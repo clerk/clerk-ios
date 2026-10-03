@@ -77,7 +77,7 @@ struct ClerkTests {
     try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      runtimeScope: ClerkRuntimeScope(),
       probesAccessGroupOverride: false,
       keychainStorageOverride: keychain
     ).identityStore.save(ClerkIdentitySnapshot(
@@ -320,7 +320,7 @@ struct ClerkTests {
     try credentialStore.save(otherAppCredential)
 
     let clerk = Clerk()
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
 
     #expect(deletedLocalKeyIds.value == ["tdlk_mock"])
@@ -366,7 +366,7 @@ struct ClerkTests {
 
     try credentialStore.save(.mock)
     let clerk = Clerk()
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     defer { clerk.cleanupManagers() }
 
     #expect(deletedLocalKeyIds.value.isEmpty)
@@ -408,14 +408,14 @@ struct ClerkTests {
     )
 
     let firstConfigure = Clerk()
-    try firstConfigure.performConfiguration(dependencies: dependencies)
+    firstConfigure.performConfiguration(dependencies: dependencies)
     firstConfigure.cleanupManagers()
 
     try credentialStore.save(otherAppCredential)
     Clerk.biometricCredentialAppIdentifierProvider = { "com.clerk.other" }
 
     let secondConfigure = Clerk()
-    try secondConfigure.performConfiguration(dependencies: dependencies)
+    secondConfigure.performConfiguration(dependencies: dependencies)
     defer { secondConfigure.cleanupManagers() }
 
     #expect(deletedLocalKeyIds.value == ["tdlk_other_app"])
