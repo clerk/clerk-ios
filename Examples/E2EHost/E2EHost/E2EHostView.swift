@@ -31,7 +31,7 @@ struct E2EHostView: View {
         screen: renderedScreen?.rawValue ?? "launching",
         clerk: clerk,
         ticket: ticket,
-        lastError: lastError
+        lastError: lastError ?? configuration.screenFailure
       ))
     }
     .task {

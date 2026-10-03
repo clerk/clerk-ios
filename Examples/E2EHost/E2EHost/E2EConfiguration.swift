@@ -23,6 +23,7 @@ struct E2EConfiguration {
   let runId: String?
   let launchId: String?
   let screen: VerifyScreen
+  let screenFailure: VerifyState.Failure?
   let signInTicket: String?
   let logLevel: LogLevel
 
@@ -37,6 +38,7 @@ struct E2EConfiguration {
     runId = nil
     launchId = nil
     screen = .home
+    screenFailure = nil
     signInTicket = nil
     logLevel = .error
   }
@@ -54,7 +56,11 @@ struct E2EConfiguration {
       ?? Self.normalized(environment["CLERK_E2E_KEYCHAIN_SERVICE"])
     runId = argument("verifyRunId")
     launchId = argument("verifyLaunchId")
-    screen = argument("verifyScreen").flatMap(VerifyScreen.init(rawValue:)) ?? .home
+    let requestedScreen = argument("verifyScreen")
+    screen = requestedScreen.flatMap(VerifyScreen.init(rawValue:)) ?? .home
+    screenFailure = requestedScreen.flatMap { value in
+      VerifyScreen(rawValue: value) == nil ? .init(code: "unknown-screen", message: value) : nil
+    }
     signInTicket = argument("verifySignInTicket")
     logLevel = argument("verifyLogLevel") == "debug" ? .debug : .error
   }
