@@ -56,7 +56,7 @@ describe('down', () => {
     assert.equal(result.deletedUsers, 2);
     assert.equal(result.deletedOrganizations, 2);
     assert.deepEqual(
-      result.wouldDelete.map((t) => (t.kind === 'user' ? `${t.instance} ${t.id} ${t.email}` : `${t.instance} ${t.id} ${t.name}`)),
+      (result.dryRun ? result.wouldDelete : []).map((t) => (t.kind === 'user' ? `${t.instance} ${t.id} ${t.email}` : `${t.instance} ${t.id} ${t.name}`)),
       [
         `with-email-codes user_with-email-codes ${newTestEmail(run, 1)}`,
         'with-email-codes org_1 Verify one',

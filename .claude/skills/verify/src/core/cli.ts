@@ -232,7 +232,7 @@ function render(value: VerbResult, skillDir: string): string[] {
         ...(value.dryRun ? ['dry run: nothing was changed'] : []),
         `${value.dryRun ? 'would release' : 'released'}  ${value.released.map((l) => l.device).join(', ') || 'nothing'}`,
         `${value.dryRun ? 'would delete' : 'deleted'}   ${value.deletedUsers} users, ${value.deletedOrganizations} organizations`,
-        ...value.wouldDelete.map((t) => (t.kind === 'user' ? `  user          ${t.instance}  ${t.id}  ${t.email}` : `  organization  ${t.instance}  ${t.id}  ${t.name}`)),
+        ...(value.dryRun ? value.wouldDelete : []).map((t) => (t.kind === 'user' ? `  user          ${t.instance}  ${t.id}  ${t.email}` : `  organization  ${t.instance}  ${t.id}  ${t.name}`)),
         `${value.dryRun ? 'would stop' : 'stopped'}   ${value.stoppedProcesses.join(', ') || 'nothing'}${value.stoppedProcesses.some((p) => p.startsWith('agent-device ')) ? '' : '; no agent-device daemon running'}`,
         `kept      ${value.keptRuns.length} runs in .verify/runs/`,
       ];

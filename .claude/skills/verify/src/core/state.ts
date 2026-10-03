@@ -164,10 +164,6 @@ function shellQuote(value: string): string {
   return `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
-/**
- * How the fixture starts the host for one launch. A dev client on Android is started with `am start` and an explicit
- * activity, because agent-device's launch adds `-a MAIN -c LAUNCHER`, which expo-dev-launcher crashes on.
- */
 export function appStart(platform: Platform, appId: string, entry: HostEntry, launchArguments: readonly string[]): AppStart {
   if (entry.kind === 'binary') return { kind: 'open-app', launchArguments };
   const all = [...entry.launchArguments, ...launchArguments];

@@ -203,17 +203,17 @@ export interface AttachResult {
   readonly alreadyPosted: boolean;
 }
 
-export interface DownResult {
+interface DownResultBase {
   readonly verb: 'down';
-  readonly dryRun: boolean;
   readonly released: readonly LeaseView[];
   readonly deletedUsers: number;
   readonly deletedOrganizations: number;
-  /** Dry run only: each user and organization `down` would delete. Empty otherwise. */
-  readonly wouldDelete: readonly DeletionTarget[];
   readonly stoppedProcesses: readonly string[];
   readonly keptRuns: readonly RunId[];
 }
+export type DownResult =
+  | (DownResultBase & { readonly dryRun: true; readonly wouldDelete: readonly DeletionTarget[] })
+  | (DownResultBase & { readonly dryRun: false });
 
 export type DeletionTarget =
   | { readonly kind: 'user'; readonly instance: InstanceName; readonly id: string; readonly email: TestEmail }
@@ -454,10 +454,9 @@ export interface DeviceBackend<L extends Lease = Lease> {
   logs(lease: L, since: Date, extraPredicate?: string): Promise<string>;
   agentDeviceTarget(lease: L): AgentDeviceTarget;
   describe(lease: L): string;
-  /** Read-only readiness checks. */
   /** What the machine needs for this backend, for fix text, e.g. 'a Mac with Xcode'. */
   readonly requirement: string;
-  /** `toolchain` checks print right after Node; `device` checks after the agent-device versions. */
+  /** Read-only readiness checks. `toolchain` checks print right after Node; `device` checks after the agent-device versions. */
   doctorChecks(): Promise<{ readonly toolchain: readonly DoctorCheck[]; readonly device: readonly DoctorCheck[] }>;
 }
 

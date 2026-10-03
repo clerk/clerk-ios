@@ -77,7 +77,7 @@ function readJson(file: string): Record<string, unknown> | null {
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
 }
 
-/** ps joins argv with spaces, so every '/' after a space is a possible start of the script path; any that exists counts. */
+/** ps joins argv with spaces, so every '/' after a space is a possible start of the script path. */
 export function daemonScriptCandidates(command: string): readonly string[] {
   const end = command.lastIndexOf('daemon.js');
   if (end < 0) return [];
@@ -600,7 +600,6 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
     released: plan.leases.map((l) => l.view),
     deletedUsers: deleted.users,
     deletedOrganizations: deleted.organizations,
-    wouldDelete: [],
     stoppedProcesses,
     keptRuns: workspace.runs(),
   };
