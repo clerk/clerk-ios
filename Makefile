@@ -162,7 +162,7 @@ check-e2e-selectors:
 check-e2e-phone-numbers:
 	@./scripts/check-e2e-phone-numbers.sh
 
-# Verify ClerkKitUI sheets present through clerkSheet; runtime tests cover context forwarding
+# Verify ClerkKitUI sheets present through clerkSheet
 check-clerk-presentations:
 	@./scripts/check-clerk-presentations.sh
 
