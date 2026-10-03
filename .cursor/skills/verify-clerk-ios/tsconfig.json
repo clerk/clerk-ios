@@ -12,5 +12,5 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["bin/verify", "src/**/*.ts", "specs/**/*.ts", "test/**/*.ts", "testing/**/*.ts", "e2e.config.ts"]
+  "include": ["bin/control-clerk-ios", "src/**/*.ts", "specs/**/*.ts", "test/**/*.ts", "testing/**/*.ts", "e2e.config.ts"]
 }

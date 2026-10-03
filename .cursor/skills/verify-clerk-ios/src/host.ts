@@ -26,6 +26,7 @@ function xcodebuild(args: readonly string[], cwd: string): Promise<{ code: numbe
 
 export const host: HostAdapter<NativeHostScreen> = {
   repo: 'clerk-ios',
+  cli: '.cursor/skills/verify-clerk-ios/bin/control-clerk-ios',
   platforms: ['ios'],
   screens: ['home', 'auth', 'userProfile', 'orgSwitcher', 'orgList', 'orgProfile'],
   keysFile: '.keys.json',
@@ -34,7 +35,7 @@ export const host: HostAdapter<NativeHostScreen> = {
   buildInputs: () => ['Sources', 'Examples/E2EHost', 'Package.swift', 'Package.resolved', 'Clerk.xcworkspace'],
   buildSources: (_platform, os) => (os === 'darwin' ? ['local'] : ['github-actions']),
   async build(platform, source, key, into) {
-    if (source !== 'local') throw new VerifyFailure('UNSUPPORTED', `clerk-ios builds only locally for now (asked for ${source})`, 'run bin/verify up on a Mac with Xcode');
+    if (source !== 'local') throw new VerifyFailure('UNSUPPORTED', `clerk-ios builds only locally for now (asked for ${source})`, 'run {cli} up on a Mac with Xcode');
     const worktree = new URL('../../../../', import.meta.url).pathname;
     const derived = join(into, '..', 'derived');
     const result = await xcodebuild(
@@ -42,7 +43,7 @@ export const host: HostAdapter<NativeHostScreen> = {
       worktree,
     );
     if (result.code !== 0) {
-      throw new VerifyFailure('BUILD_FAILED', `xcodebuild exited ${result.code}:\n${result.tail}`, 'fix the build error above, then rerun bin/verify up');
+      throw new VerifyFailure('BUILD_FAILED', `xcodebuild exited ${result.code}:\n${result.tail}`, 'fix the build error above, then rerun {cli} up');
     }
     const path = join(into, 'E2EHost.app') as ScratchPath;
     rmSync(path, { recursive: true, force: true });
