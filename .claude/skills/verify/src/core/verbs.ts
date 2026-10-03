@@ -310,7 +310,6 @@ function lastState(dir: EvidencePath): VerifyState | null {
   }
 }
 
-/** Every step runs even when an earlier one throws, so a failed recorder never leaves the broker listening or its token on disk. */
 export async function endRun(
   workspace: Workspace,
   run: {

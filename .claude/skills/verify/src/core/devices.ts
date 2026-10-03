@@ -60,7 +60,6 @@ export function leaseView(backend: DeviceBackend, lease: Lease, renewed: boolean
   };
 }
 
-/** The line that says a lane is ready, printed by `up` and by a `run` that leases. */
 export function leaseLine(view: LeaseView): string {
   return `device  ${view.device}  ${view.backend}  ${view.renewed ? 'renewed' : 'leased by this worktree'}  installed ${view.installedBuild ?? 'nothing'}`;
 }
