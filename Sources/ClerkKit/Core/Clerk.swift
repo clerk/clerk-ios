@@ -396,6 +396,8 @@ extension Clerk {
       let next = try existing.makeRuntime(publishableKey: publishableKey, options: options)
       let outgoing = existing.runtime
       existing.urlHandlingCoordinator.cancelAll()
+      // Polling can await shared token requests, so cancel those before draining runtime tasks.
+      await SessionTokenFetcher.shared.reset()
       await outgoing.shutdown()
 
       do {
@@ -428,8 +430,9 @@ extension Clerk {
     guard let shared = _shared else { return }
 
     shared.urlHandlingCoordinator.cancelAll()
-    await shared.runtime.shutdown()
+    shared.runtime.state.retire()
     await SessionTokenFetcher.shared.reset()
+    await shared.runtime.shutdown()
     shared.identityController.invalidateAllSessionTokens()
     _shared = nil
     resumeRuntimeReconfigurationWaiters()

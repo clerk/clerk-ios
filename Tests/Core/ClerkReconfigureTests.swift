@@ -92,6 +92,68 @@ struct ClerkReconfigureTests {
     #expect(await outgoingTelemetry.completedFlushCount == 1)
   }
 
+  enum ShutdownOperation: CaseIterable {
+    case reconfigure
+    case resetSharedInstance
+  }
+
+  @Test(arguments: ShutdownOperation.allCases)
+  func shutdownCancelsInFlightPollingTokenRequest(operation: ShutdownOperation) async throws {
+    await SessionTokenFetcher.shared.reset()
+    let clerk = Clerk.shared
+    let requestStarted = LockIsolated(false)
+    let requestCancelled = LockIsolated(false)
+    let shutdownFinished = LockIsolated(false)
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      clientService: MockClientService(get: { throw CancellationError() }),
+      sessionService: MockSessionService(fetchToken: { _, _, _ in
+        requestStarted.setValue(true)
+        defer { requestCancelled.setValue(Task.isCancelled) }
+        try await Task.sleep(for: .seconds(30))
+        return nil
+      })
+    )
+
+    var shutdownTask: Task<Void, Error>?
+    let result: Result<Void, Error>
+    do {
+      clerk.performConfiguration(dependencies: dependencies)
+      try clerk.seedIdentity(deviceToken: "polling-token", client: .mock)
+      try await waitUntil(timeout: .seconds(2)) { requestStarted.value }
+
+      let task = Task { @MainActor in
+        defer { shutdownFinished.setValue(true) }
+        switch operation {
+        case .reconfigure:
+          try await Clerk.reconfigure(
+            publishableKey: testPublishableKey,
+            options: .init(
+              telemetryEnabled: false,
+              keychainConfig: .init(service: "com.clerk.tests.polling-shutdown.\(UUID().uuidString)")
+            )
+          )
+        case .resetSharedInstance:
+          await Clerk.resetSharedInstanceForTesting()
+        }
+      }
+      shutdownTask = task
+      try await waitUntil(timeout: .seconds(2)) { shutdownFinished.value }
+      try await task.value
+      #expect(requestCancelled.value)
+      result = .success(())
+    } catch {
+      result = .failure(error)
+    }
+
+    // Release a timed-out shutdown and drain it before another test uses the shared fetcher.
+    clerk.cleanupManagers()
+    await SessionTokenFetcher.shared.reset()
+    _ = await shutdownTask?.result
+    clerk.cleanupManagers()
+    try result.get()
+  }
+
   @Test
   func reconfigurePreservesRegisteredAuthFlow() async throws {
     Clerk.shared.client = nil
