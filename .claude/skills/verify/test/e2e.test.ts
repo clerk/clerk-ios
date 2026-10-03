@@ -41,7 +41,7 @@ describe('planE2E', () => {
       targets: [],
       e2eVideo: false,
     };
-    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], grep: 'x', video: true }, 'ios', '/skill');
+    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], grep: 'x', video: true, waitSeconds: 0 }, 'ios', '/skill');
     assert.deepEqual(plan.args, [
       'run', 'specs/golden/a/b.e2e.ts', '--config', 'e2e.config.ts', '--target', 'ios',
       '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown',
@@ -88,7 +88,7 @@ describe('parseE2EReport', () => {
     assert.equal(results[2]!.error, 'not run: infrastructure-unavailable the device could not be opened');
     assert.equal(results[0]!.seconds, 9.1);
     assert.equal(results[0]!.spec.feature, null);
-    assert.equal(results[1]!.skipReason, 'opt-in: form-entry');
+    assert.equal(results[1]!.skipReason, 'skipped by --skip form-entry');
     assert.equal(results[3]!.error, 'expect.toBeVisible failed; observed: no node');
     assert.equal(results[3]!.failureScreen, join(dir, 'e2e', 'artifacts', 'ios/p/attempt-0/screen.txt'));
     const selected = parseE2EReport(report, [{ kind: 'golden', path: 'specs/golden/auth-start/opens.e2e.ts', feature: null }], dir);

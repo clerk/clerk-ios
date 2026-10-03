@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseTestEmail, type ClerkBackend } from './clerk.ts';
-import { isAlive, type Runner } from './exec.ts';
+import { isRunning } from './exec.ts';
 import { newEntryId, openWorkspace, type Workspace } from './workspace.ts';
 import type { InstanceName, LedgerEntry, TestEmail } from './types.ts';
 
@@ -23,21 +23,47 @@ export function pendingIdentities(entries: readonly LedgerEntry[]): readonly Pen
   return [...byEmail.values()];
 }
 
-export async function stopRecorders(workspace: Workspace, runner: Runner): Promise<readonly string[]> {
+/** Signals only a process that is still the one ledgered, matched by pid and start time, never a reused pid. */
+export function stopProcesses(workspace: Workspace): readonly string[] {
   const stopped: string[] = [];
   for (const entry of workspace.unclosedEntries()) {
     if (entry.kind !== 'process') continue;
-    if (isAlive(entry.pid) && (await runner('ps', ['-o', 'command=', '-p', String(entry.pid)])).stdout.includes('recordVideo')) {
+    if (isRunning({ pid: entry.pid, startedAt: Date.parse(entry.startedAt) })) {
       try {
-        process.kill(entry.pid, 'SIGINT');
+        process.kill(entry.pid, entry.what === 'recorder' ? 'SIGINT' : 'SIGTERM');
+        stopped.push(`${entry.what} ${entry.pid}`);
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error;
       }
     }
-    stopped.push(`${entry.what} ${entry.pid}`);
     workspace.append({ id: newEntryId(), kind: 'done', ref: entry.id });
   }
   return stopped;
+}
+
+export interface DaemonInfo {
+  readonly pid: number;
+  readonly startedAt: number;
+}
+
+export function readDaemonInfo(stateDir: string): DaemonInfo | null {
+  const file = join(stateDir, 'daemon.json');
+  if (!existsSync(file)) return null;
+  try {
+    const raw = JSON.parse(readFileSync(file, 'utf8')) as { pid?: unknown; processStartTime?: unknown };
+    if (typeof raw.pid !== 'number' || typeof raw.processStartTime !== 'string') return null;
+    return { pid: raw.pid, startedAt: Date.parse(raw.processStartTime) };
+  } catch {
+    return null;
+  }
+}
+
+/** agent-device starts this worktree's daemon on demand, so the CLI ledgers it afterwards for `down` to stop. */
+export function ledgerAgentDeviceDaemon(workspace: Workspace): void {
+  const daemon = readDaemonInfo(workspace.agentDeviceDir);
+  if (daemon === null || !isRunning(daemon)) return;
+  const known = workspace.unclosedEntries().some((e) => e.kind === 'process' && e.what === 'agent-device' && e.pid === daemon.pid);
+  if (!known) workspace.append({ id: newEntryId(), kind: 'process', what: 'agent-device', pid: daemon.pid, startedAt: new Date(daemon.startedAt).toISOString() });
 }
 
 export async function deleteIdentities(workspace: Workspace, clerk: ClerkBackend): Promise<{ readonly users: number; readonly organizations: number }> {
@@ -56,7 +82,6 @@ export async function finishOrphanLedgers(
   home: string,
   self: string,
   clerk: () => ClerkBackend,
-  runner: Runner,
   progress: (line: string) => void,
 ): Promise<void> {
   const dir = join(home, 'ledgers');
@@ -67,7 +92,7 @@ export async function finishOrphanLedgers(
     const ledger = openWorkspace({ skillDir: join(worktree, '.claude', 'skills', 'verify'), worktree, home });
     if (ledger.unclosedEntries().length === 0) continue;
     try {
-      await stopRecorders(ledger, runner);
+      stopProcesses(ledger);
       const deleted = await deleteIdentities(ledger, clerk());
       for (const entry of ledger.unclosedEntries()) ledger.append({ id: newEntryId(), kind: 'done', ref: entry.id });
       progress(`reap    ledger of ${worktree}  (worktree is gone)  deleted ${deleted.users} users, ${deleted.organizations} organizations`);

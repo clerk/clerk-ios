@@ -1,4 +1,6 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { isOrphaned, readClaims } from './claims.ts';
 import { INSTANCE_REQUIREMENTS, createClerkBackend, type ClerkBackend } from './clerk.ts';
@@ -7,8 +9,8 @@ import { backendFor, computeBuildKey, ensureLease, leaseView, readBuiltApp, rele
 import { collectScreenshots, contextFile, invokeE2E, parseE2EReport, planE2E, resolveSpecs, writeRunContext } from './e2e.ts';
 import { startBroker } from './broker.ts';
 import { assertPublishable, readRecord, readStates, sealEvidence } from './evidence.ts';
-import type { Runner } from './exec.ts';
-import { deleteIdentities, pendingIdentities, stopRecorders } from './ledgers.ts';
+import { isRunning, type Runner } from './exec.ts';
+import { deleteIdentities, ledgerAgentDeviceDaemon, pendingIdentities, readDaemonInfo, stopProcesses } from './ledgers.ts';
 import { manifestDrift } from './manifest.ts';
 import { postToPullRequest } from './publish.ts';
 import { redact } from './secret.ts';
@@ -71,6 +73,32 @@ function check(id: DoctorCheck['id'], ok: boolean, detail: string, fix: string):
 
 function readJson(file: string): Record<string, unknown> | null {
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
+}
+
+/**
+ * agent-device's daemon keeps running from the install that started it. Once that worktree is removed, every command
+ * routed to the daemon fails, so a daemon whose script is gone is reported with the pid to stop.
+ */
+export function agentDeviceDaemonCheck(stateDirs: readonly string[]): DoctorCheck {
+  const broken: string[] = [];
+  const healthy: string[] = [];
+  for (const dir of stateDirs) {
+    const daemon = readDaemonInfo(dir);
+    if (daemon === null || !isRunning(daemon)) continue;
+    let command = '';
+    try {
+      command = execFileSync('ps', ['-o', 'command=', '-p', String(daemon.pid)], { encoding: 'utf8' }).trim();
+    } catch {
+      continue;
+    }
+    const script = command.split(/\s+/).find((part) => part.endsWith('daemon.js'));
+    if (script === undefined) continue;
+    (existsSync(script) ? healthy : broken).push(`${daemon.pid} from ${script} (${dir})`);
+  }
+  if (broken.length > 0) {
+    return check('agent-device-daemon', false, `daemon runs from a removed install: ${broken.join('; ')}`, `kill ${broken.map((b) => b.split(' ')[0]).join(' ')}; agent-device starts a new daemon on the next command`);
+  }
+  return check('agent-device-daemon', true, healthy.length === 0 ? 'no daemon running' : healthy.join('; '), '');
 }
 
 export function featureMapCheck(skillDir: string, features: readonly string[]): DoctorCheck {
@@ -168,14 +196,15 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
 
   const key = await computeBuildKey(host, platform, workspace.worktree);
   const built = readBuiltApp(workspace, key);
-  checks.push(check('build', built !== null, built === null ? `no ${host.appId(platform)} build for ${key}` : `${key} at ${built.path}`, 'verify up'));
+  checks.push(check('build', built !== null, built === null ? `no ${host.appId(platform)} build for ${key}` : `${key} at ${built.path}`, 'bin/verify up'));
 
   const gh = await runner('gh', ['pr', 'comment', '--help']);
   checks.push(check('gh-attach', gh.code === 0 && gh.stdout.includes('--attach'), gh.code === 0 ? (gh.stdout.includes('--attach') ? 'gh pr comment supports --attach' : 'gh pr comment has no --attach') : 'gh is not installed', 'install a gh build with `gh pr comment --attach`'));
 
   const stale = readClaims(workspace.claimsDir, platform).filter(isOrphaned);
-  checks.push(check('stale-claims', stale.length === 0, stale.length === 0 ? 'none' : `${stale.map((c) => c.deviceName).join(', ')} belong to deleted worktrees`, 'verify down --stale'));
+  checks.push(check('stale-claims', stale.length === 0, stale.length === 0 ? 'none' : `${stale.map((c) => c.deviceName).join(', ')} belong to deleted worktrees`, 'bin/verify down --stale'));
 
+  checks.push(agentDeviceDaemonCheck([join(homedir(), '.agent-device'), workspace.agentDeviceDir]));
   checks.push(featureMapCheck(skill, host.features));
 
   const drift = manifestDrift();
@@ -213,8 +242,8 @@ function targetOf(deps: Deps, outcome: LeaseOutcome): RunContext['targets'][numb
 
 export async function up(deps: Deps, command: Extract<Command, { verb: 'up' }>): Promise<UpResult> {
   const platform = platformOf(deps.host, command.platform);
-  return deps.workspace.withDevice(platform, command.waitSeconds, async () => {
-    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk, runner: deps.runner });
+  return deps.workspace.withAcquireLock(platform, async () => {
+    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk });
     writeStandingContext(deps, outcome);
     return { verb: 'up', leases: [outcome.view], builds: [outcome.build] };
   });
@@ -246,13 +275,21 @@ function lastState(dir: EvidencePath): VerifyState | null {
   }
 }
 
+/** Joins an in-flight `up` by waiting on the acquire lock, then holds the device lock before letting the acquire lock go, so no `up` can reinstall mid-run. */
+export function leaseForRun(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>): Promise<{ readonly outcome: LeaseOutcome; readonly releaseDevice: () => void }> {
+  return deps.workspace.withAcquireLock(platform, async () => {
+    const outcome = await ensureLease(platform, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk });
+    writeStandingContext(deps, outcome);
+    return { outcome, releaseDevice: await deps.workspace.lockDevice(platform, command.waitSeconds) };
+  });
+}
+
 export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run' }>): Promise<RunResult> {
   const { host, workspace } = deps;
   const platform = platformOf(host, command.platform);
   const specs = resolveSpecs(workspace.skillDir, command.selection);
-  return workspace.withDevice(platform, 0, async () => {
-    const outcome = await ensureLease(platform, command.backend, workspace, host, { waitSeconds: 0, progress: deps.progress, clerk: deps.clerk, runner: deps.runner });
-    writeStandingContext(deps, outcome);
+  const { outcome, releaseDevice } = await leaseForRun(deps, platform, command);
+  try {
     const { lease, backend } = outcome;
     const { run, dir, scratch } = workspace.newRun();
     const startedAt = new Date();
@@ -266,6 +303,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       clerk: deps.clerk(),
       publishableKey: (instance) => loadInstanceKeys(host, instance, workspace.worktree, deps.env).pk,
       screens: host.screens,
+      platforms: [platform],
     });
     const context: ActiveRunContext = {
       v: 1,
@@ -286,7 +324,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         recording = await backend.startRecording(lease, dir);
         if (recording !== 'e2e-records') {
           recorderEntry = newEntryId();
-          workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.pid, startedAt: new Date().toISOString() });
+          workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString() });
         }
       }
       const invocation = planE2E(context, specs, command, platform, workspace.skillDir);
@@ -344,10 +382,13 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
     const failed = results.filter((r) => r.status === 'failed' || r.status === 'interrupted');
     const next =
       failed.length === 0
-        ? `verify attach ${run} --pr <n>`
+        ? `bin/verify attach ${run} --pr <n>`
         : (failed[0]?.failurePage ?? join(dir, 'e2e.log'));
     return { verb: 'run', dir, record, next };
-  });
+  } finally {
+    ledgerAgentDeviceDaemon(workspace);
+    releaseDevice();
+  }
 }
 
 interface SnapshotNode {
@@ -361,7 +402,7 @@ interface SnapshotNode {
 
 function heldLease(deps: Deps, platform: Platform): { lease: Lease; backend: DeviceBackend } {
   const lease = deps.workspace.readLease(platform);
-  if (lease === null) throw new VerifyFailure('NOT_READY', `this worktree holds no ${platform} device`, 'verify up');
+  if (lease === null) throw new VerifyFailure('NOT_READY', `this worktree holds no ${platform} device`, 'bin/verify up');
   return { lease, backend: backendFor(deps.host, platform, lease.backend) };
 }
 
@@ -385,15 +426,18 @@ export function screenNodes(snapshot: readonly SnapshotNode[]): readonly ScreenN
 export async function screen(deps: Deps, command: Extract<Command, { verb: 'screen' }>): Promise<ScreenResult> {
   const platform = platformOf(deps.host, command.platform);
   const { lease, backend } = heldLease(deps, platform);
-  if ((await backend.check(lease)) !== 'held') throw new VerifyFailure('LEASE_LOST', `${backend.describe(lease)} is gone`, 'verify up');
+  if ((await backend.check(lease)) !== 'held') throw new VerifyFailure('LEASE_LOST', `${backend.describe(lease)} is gone`, 'bin/verify up');
+  const { CLERK_TEST_KEYS_JSON: _keys, ...env } = deps.env;
+  const agentDevice = (args: readonly string[]) =>
+    deps.runner(join(deps.workspace.skillDir, 'node_modules', '.bin', 'agent-device'), args, { env: { ...env, AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir } });
   return deps.workspace.withDevice(platform, 10, async () => {
     const target = backend.agentDeviceTarget(lease);
     const selector = platform === 'ios' ? ['--platform', 'ios', '--udid', target.deviceId] : ['--platform', 'android', '--serial', target.deviceId];
     const session = ['--session', `${agentDeviceSession(deps.workspace, platform)}-screen`];
     // Without --relaunch, open attaches the session to the running app process instead of restarting it.
-    const opened = await deps.runner('agent-device', ['open', deps.host.appId(platform), '--json', ...selector, ...session]);
-    if (opened.code !== 0) throw new VerifyFailure('NOT_READY', `agent-device open failed: ${redact(opened.stdout.trim() || opened.stderr.trim())}`, 'verify up, then retry');
-    const snap = await deps.runner('agent-device', ['snapshot', '--json', ...selector, ...session]);
+    const opened = await agentDevice(['open', deps.host.appId(platform), '--json', ...selector, ...session]);
+    if (opened.code !== 0) throw new VerifyFailure('NOT_READY', `agent-device open failed: ${redact(opened.stdout.trim() || opened.stderr.trim())}`, 'bin/verify up, then retry');
+    const snap = await agentDevice(['snapshot', '--json', ...selector, ...session]);
     if (snap.code !== 0) throw new VerifyFailure('NOT_READY', `agent-device snapshot failed: ${redact(snap.stderr.trim() || snap.stdout.trim())}`, 'run a spec first so the app is open, then retry');
     const parsed = JSON.parse(snap.stdout) as { data?: { nodes?: SnapshotNode[] } };
     const nodes = screenNodes(parsed.data?.nodes ?? []);
@@ -412,10 +456,11 @@ export async function screen(deps: Deps, command: Extract<Command, { verb: 'scre
       const dir = join(deps.workspace.root, 'scratch', 'screens');
       mkdirSync(dir, { recursive: true });
       png = join(dir, `${new Date().toISOString().replace(/[:.]/g, '-')}.png`) as ScratchPath;
-      const shot = await deps.runner('agent-device', ['screenshot', png, ...selector, ...session]);
-      if (shot.code !== 0) throw new VerifyFailure('NOT_READY', `agent-device screenshot failed: ${redact(shot.stderr.trim())}`, 'retry, or check `verify doctor`');
+      const shot = await agentDevice(['screenshot', png, ...selector, ...session]);
+      if (shot.code !== 0) throw new VerifyFailure('NOT_READY', `agent-device screenshot failed: ${redact(shot.stderr.trim())}`, 'retry, or check `bin/verify doctor`');
     }
-    await deps.runner('agent-device', ['close', ...selector, ...session]);
+    await agentDevice(['close', ...selector, ...session]);
+    ledgerAgentDeviceDaemon(deps.workspace);
     return { verb: 'screen', platform, device: backend.describe(lease), nodes, state, png };
   });
 }
@@ -423,7 +468,7 @@ export async function screen(deps: Deps, command: Extract<Command, { verb: 'scre
 export async function attach(deps: Deps, command: Extract<Command, { verb: 'attach' }>): Promise<AttachResult> {
   const run = parseRunId(command.run);
   const dir = deps.workspace.runDir(run);
-  if (!existsSync(dir)) throw new VerifyFailure('USAGE', `no run ${run} in ${deps.workspace.root}/runs`, 'pass a run id that `verify run` printed');
+  if (!existsSync(dir)) throw new VerifyFailure('USAGE', `no run ${run} in ${deps.workspace.root}/runs`, 'pass a run id that `bin/verify run` printed');
   const record = readRecord(dir);
   const publishable = assertPublishable(record, readStates(dir));
   return postToPullRequest(publishable, dir, deps.host, command.pr, command.screenshots, deps.runner);
@@ -468,27 +513,40 @@ export function down(deps: Deps, command: Extract<Command, { verb: 'down' }>): P
   if (command.dryRun) return downUnlocked(deps, command);
   const platforms = command.platform === undefined ? deps.host.platforms : [platformOf(deps.host, command.platform)];
   const locked = platforms.reduce<() => Promise<DownResult>>(
-    (inner, platform) => () => deps.workspace.withDevice(platform, 0, inner),
+    (inner, platform) => () => deps.workspace.withAcquireLock(platform, () => deps.workspace.withDevice(platform, 0, inner)),
     () => downUnlocked(deps, command),
   );
   return locked();
 }
 
+function runningDaemon(workspace: Workspace): readonly string[] {
+  const daemon = readDaemonInfo(workspace.agentDeviceDir);
+  return daemon !== null && isRunning(daemon) ? [`agent-device ${daemon.pid}`] : [];
+}
+
 async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down' }>): Promise<DownResult> {
   const { workspace } = deps;
+  if (!command.dryRun) ledgerAgentDeviceDaemon(workspace);
   const plan = await planDown(deps, command);
   if (command.dryRun) {
+    let users = 0;
+    let organizations = 0;
+    for (const identity of plan.identities) {
+      const owned = await deps.clerk().ownedByEmail(identity.instance, identity.email);
+      users += owned.users;
+      organizations += owned.organizations;
+    }
     return {
       verb: 'down',
       dryRun: true,
       released: plan.leases.map((l) => l.view),
-      deletedUsers: plan.identities.length,
-      deletedOrganizations: 0,
-      stoppedProcesses: plan.processes.map((p) => `${p.what} ${p.pid}`),
+      deletedUsers: users,
+      deletedOrganizations: organizations,
+      stoppedProcesses: [...new Set([...plan.processes.filter((p) => isRunning({ pid: p.pid, startedAt: Date.parse(p.startedAt) })).map((p) => `${p.what} ${p.pid}`), ...runningDaemon(workspace)])],
       keptRuns: workspace.runs(),
     };
   }
-  const stoppedProcesses = await stopRecorders(workspace, deps.runner);
+  const stoppedProcesses = stopProcesses(workspace);
   for (const { lease, backend, origin } of plan.leases) {
     if (origin === 'lease-file') await releaseLease(workspace, backend, lease);
     else await backend.release(lease);

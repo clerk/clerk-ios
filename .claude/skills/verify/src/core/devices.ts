@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import type { ClerkBackend } from './clerk.ts';
-import { run, type Runner } from './exec.ts';
+import { run } from './exec.ts';
 import { finishOrphanLedgers } from './ledgers.ts';
 import { newEntryId, type Workspace } from './workspace.ts';
 import {
@@ -89,7 +89,7 @@ async function ensureBuild(host: HostAdapter, platform: Platform, workspace: Wor
   if (existing !== null) return { app: existing, view: { platform, key, source: existing.source, reused: true, seconds: 0 } };
   const source = host.buildSources(platform, process.platform)[0];
   if (source !== 'local') {
-    throw new VerifyFailure('UNSUPPORTED', `${host.repo} cannot build ${platform} on ${process.platform} yet`, 'run verify up on a Mac with Xcode; remote builds arrive with CLOUD-IOS');
+    throw new VerifyFailure('UNSUPPORTED', `${host.repo} cannot build ${platform} on ${process.platform} yet`, 'run bin/verify up on a Mac with Xcode; remote builds arrive with CLOUD-IOS');
   }
   const started = Date.now();
   progress(`build   ${key}  ${source}  building...`);
@@ -112,61 +112,62 @@ export async function releaseLease(workspace: Workspace, backend: DeviceBackend,
   closePending(workspace, lease.platform);
 }
 
+/** The caller holds the acquire lock. Builds before claiming a lane, because a build needs no device. */
 export async function ensureLease(
   platform: Platform,
   requested: BackendKind | undefined,
   workspace: Workspace,
   host: HostAdapter,
-  options: { readonly waitSeconds: number; readonly progress: (line: string) => void; readonly clerk: () => ClerkBackend; readonly runner: Runner },
+  options: { readonly waitSeconds: number; readonly progress: (line: string) => void; readonly clerk: () => ClerkBackend },
 ): Promise<LeaseOutcome> {
-  return workspace.withAcquireLock(platform, async () => {
-    const held = workspace.readLease(platform);
-    if (held !== null && requested !== undefined && held.backend !== requested) {
-      throw new VerifyFailure('NOT_READY', `this worktree holds a ${held.backend} ${platform} lease, not ${requested}`, 'verify down');
-    }
-    const backend = selectBackend(host, platform, requested, held);
-    for (const stale of await backend.reapable()) {
-      options.progress(`reap    ${backend.describe(stale)}  (owner process and worktree are gone)`);
-      await backend.release(stale);
-    }
-    await finishOrphanLedgers(workspace.home, resolve(workspace.worktree), options.clerk, options.runner, options.progress);
+  const held = workspace.readLease(platform);
+  if (held !== null && requested !== undefined && held.backend !== requested) {
+    throw new VerifyFailure('NOT_READY', `this worktree holds a ${held.backend} ${platform} lease, not ${requested}`, 'bin/verify down');
+  }
+  const backend = selectBackend(host, platform, requested, held);
+  for (const stale of await backend.reapable()) {
+    options.progress(`reap    ${backend.describe(stale)}  (owner process and worktree are gone)`);
+    await backend.release(stale);
+  }
+  await finishOrphanLedgers(workspace.home, resolve(workspace.worktree), options.clerk, options.progress);
 
-    let lease: Lease | null = held;
-    let renewed = false;
-    if (lease !== null && (await backend.check(lease)) !== 'held') {
-      options.progress(`lost    ${backend.describe(lease)}  renewing`);
-      await releaseLease(workspace, backend, lease);
-      lease = null;
-      renewed = true;
-    }
-    if (lease === null) {
-      for (const orphan of await backend.reapable(workspace.worktree)) {
-        options.progress(`reap    ${backend.describe(orphan)}  (claimed by this worktree with no lease file)`);
-        await backend.release(orphan);
-      }
-      const intent = { id: newEntryId(), kind: 'lease-intent' as const, platform, backend: backend.kind, worktree: workspace.worktree };
-      workspace.append(intent);
-      const acquired = await backend.acquire({ platform, worktree: workspace.worktree, waitSeconds: options.waitSeconds, progress: options.progress });
-      workspace.writeLease(acquired);
-      workspace.append({
-        id: newEntryId(),
-        kind: 'lease-held',
-        platform,
-        backend: backend.kind,
-        sessionId: acquired.backend === 'eas' ? acquired.sessionId : null,
-        deviceId: acquired.backend === 'local' ? acquired.deviceId : null,
-      });
-      workspace.append({ id: newEntryId(), kind: 'done', ref: intent.id });
-      lease = acquired;
-    }
+  const { app, view: build } = await ensureBuild(host, platform, workspace, options.progress);
 
-    const { app, view: build } = await ensureBuild(host, platform, workspace, options.progress);
-    if (lease.installedBuild !== app.key) {
-      options.progress(`install ${app.key}  on ${backend.describe(lease)}`);
-      await backend.install(lease, app);
-      lease = { ...lease, installedBuild: app.key };
-      workspace.writeLease(lease);
+  let lease: Lease | null = held;
+  let renewed = false;
+  if (lease !== null && (await backend.check(lease)) !== 'held') {
+    options.progress(`lost    ${backend.describe(lease)}  renewing`);
+    await releaseLease(workspace, backend, lease);
+    lease = null;
+    renewed = true;
+  }
+  if (lease === null) {
+    for (const orphan of await backend.reapable(workspace.worktree)) {
+      options.progress(`reap    ${backend.describe(orphan)}  (claimed by this worktree with no lease file)`);
+      await backend.release(orphan);
     }
-    return { lease, backend, app, build, view: leaseView(backend, lease, renewed) };
-  });
+    const intent = { id: newEntryId(), kind: 'lease-intent' as const, platform, backend: backend.kind, worktree: workspace.worktree };
+    workspace.append(intent);
+    const acquired = await backend.acquire({ platform, worktree: workspace.worktree, waitSeconds: options.waitSeconds, progress: options.progress });
+    workspace.writeLease(acquired);
+    workspace.append({
+      id: newEntryId(),
+      kind: 'lease-held',
+      platform,
+      backend: backend.kind,
+      sessionId: acquired.backend === 'eas' ? acquired.sessionId : null,
+      deviceId: acquired.backend === 'local' ? acquired.deviceId : null,
+    });
+    workspace.append({ id: newEntryId(), kind: 'done', ref: intent.id });
+    lease = acquired;
+  }
+
+  if (lease.installedBuild !== app.key) {
+    const target = lease;
+    options.progress(`install ${app.key}  on ${backend.describe(target)}`);
+    await workspace.withDevice(platform, options.waitSeconds, () => backend.install(target, app));
+    lease = { ...target, installedBuild: app.key };
+    workspace.writeLease(lease);
+  }
+  return { lease, backend, app, build, view: leaseView(backend, lease, renewed) };
 }

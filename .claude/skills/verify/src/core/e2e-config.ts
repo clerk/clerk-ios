@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { E2EConfig } from 'e2e';
 import { mobile } from '@e2e-dev/mobile';
 import { VerifyFailure, type Lease, type RunContext } from './types.ts';
+import { agentDeviceStateDir } from './workspace.ts';
 
 export const ASSERTION_TIMEOUT_MS = 10_000;
 
@@ -23,14 +24,15 @@ export function loadRunContext(env: Readonly<Record<string, string | undefined>>
   const named = env.VERIFY_CONTEXT;
   if (named !== undefined && named !== '') return parseContext(readFileSync(named, 'utf8'), named);
   if (!existsSync(STANDING_CONTEXT)) {
-    throw new VerifyFailure('NOT_READY', 'no device is leased for this worktree', 'verify up');
+    throw new VerifyFailure('NOT_READY', 'no device is leased for this worktree', 'bin/verify up');
   }
   const context = parseContext(readFileSync(STANDING_CONTEXT, 'utf8'), STANDING_CONTEXT);
-  if (!context.targets.every((t) => existsSync(t.leaseFile))) throw new VerifyFailure('NOT_READY', 'the lease this context names was released', 'verify up');
+  if (!context.targets.every((t) => existsSync(t.leaseFile))) throw new VerifyFailure('NOT_READY', 'the lease this context names was released', 'bin/verify up');
   return context;
 }
 
 export function composeE2EConfig(context: RunContext): E2EConfig {
+  process.env.AGENT_DEVICE_STATE_DIR ??= agentDeviceStateDir(context.workspace);
   const targets = context.targets.map((target) => {
     const lease = JSON.parse(readFileSync(target.leaseFile, 'utf8')) as Lease;
     if (lease.backend !== 'local') {

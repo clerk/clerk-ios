@@ -1,10 +1,14 @@
 import { execFile } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { test as base } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { ASSERTION_TIMEOUT_MS, loadRunContext } from '../src/core/e2e-config.ts';
 import { describeState, parseVerifyState } from '../src/core/state.ts';
+import { agentDeviceStateDir } from '../src/core/workspace.ts';
+import type { host as hostAdapter } from '../src/host.ts';
+
+type HostScreen = (typeof hostAdapter)['screens'][number];
 import {
   CLERK_TEST_CODE,
   LAUNCH_PRESETS,
@@ -14,8 +18,8 @@ import {
   type BrokerLaunchResponse,
   type ErrorCode,
   type HostFixture,
+  type RunContext,
   type RunTarget,
-  type NativeHostScreen,
   type SeededUser,
   type StorageScope,
   type TestEmail,
@@ -30,30 +34,32 @@ const POLL_MS = 400;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** e2e names the worker's agent-device session `<session>-<slot>`, and verify runs one worker, so slot 0. */
-function typeIntoFocused(session: string, target: RunTarget, text: string): Promise<void> {
+function typeIntoFocused(context: RunContext, target: RunTarget, text: string): Promise<void> {
   const lease = JSON.parse(readFileSync(target.leaseFile, 'utf8')) as { deviceId?: string };
   const device =
     lease.deviceId === undefined ? [] : ['--platform', target.platform, target.platform === 'ios' ? '--udid' : '--serial', lease.deviceId];
   return new Promise((resolve, reject) => {
-    execFile('agent-device', ['type', text, '--session', `${session}-0`, ...device], (error, _stdout, stderr) => {
+    const bin = join(dirname(context.workspace), 'node_modules', '.bin', 'agent-device');
+    const env = { ...process.env, AGENT_DEVICE_STATE_DIR: agentDeviceStateDir(context.workspace) };
+    execFile(bin, ['type', text, '--session', `${context.agentDeviceSession}-0`, ...device], { env }, (error, _stdout, stderr) => {
       if (error === null) resolve();
       else reject(new Error(`agent-device type failed: ${stderr.trim() || error.message}`));
     });
   });
 }
 
-export const test = base.extend<{ host: HostFixture<NativeHostScreen> }>({
+export const test = base.extend<{ host: HostFixture<HostScreen> }>({
   host: async ({ app, device, screen, platform }, use) => {
     const context = loadRunContext();
     const target = context.targets.find((t) => t.platform === platform);
-    if (target === undefined) throw new VerifyFailure('NOT_READY', `the run context has no ${platform} target`, 'verify up');
+    if (target === undefined) throw new VerifyFailure('NOT_READY', `the run context has no ${platform} target`, 'bin/verify up');
     const statesFile = context.run === null ? null : join(context.workspace, 'runs', context.run, 'states.jsonl');
     let lastText: string | null = null;
     let lastScope: StorageScope | null = null;
 
     async function call<T>(path: string, body: unknown): Promise<T> {
       if (context.broker === null) {
-        throw new VerifyFailure('NOT_READY', 'host needs the broker that `verify run` starts', 'run this spec with `verify run <path>`');
+        throw new VerifyFailure('NOT_READY', 'host needs the broker that `bin/verify run` starts', 'run this spec with `bin/verify run <path>`');
       }
       const token = readFileSync(context.broker.tokenFile, 'utf8');
       const response = await fetch(`${context.broker.url}${path}`, {
@@ -95,7 +101,7 @@ export const test = base.extend<{ host: HostFixture<NativeHostScreen> }>({
       }
     }
 
-    const host: HostFixture<NativeHostScreen> = {
+    const host: HostFixture<HostScreen> = {
       async newEmail(instance) {
         return (await call<{ email: TestEmail }>('/reserveEmail', { instance })).email;
       },
@@ -141,7 +147,7 @@ export const test = base.extend<{ host: HostFixture<NativeHostScreen> }>({
       },
       async fill(field, text) {
         await host.tap(field);
-        await typeIntoFocused(context.agentDeviceSession, target, text);
+        await typeIntoFocused(context, target, text);
       },
     };
     await use(host);

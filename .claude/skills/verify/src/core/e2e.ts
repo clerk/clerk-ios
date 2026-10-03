@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { redact } from './secret.ts';
+import { agentDeviceStateDir } from './workspace.ts';
 import {
   FORM_ENTRY_TAG,
   VerifyFailure,
@@ -129,7 +130,7 @@ export function planE2E(
     ...(command.grep === undefined ? [] : ['--grep', command.grep]),
     ...(context.e2eVideo ? ['--video=on'] : []),
   ];
-  return { args, env: { VERIFY_CONTEXT: contextFile(context), E2E_TELEMETRY_DISABLED: '1' } };
+  return { args, env: { VERIFY_CONTEXT: contextFile(context), AGENT_DEVICE_STATE_DIR: agentDeviceStateDir(context.workspace), E2E_TELEMETRY_DISABLED: '1' } };
 }
 
 function withoutKeys(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
@@ -208,7 +209,7 @@ interface WireResult {
 function wireResults(reportJson: unknown): readonly WireResult[] {
   const report = reportJson as { schemaVersion?: unknown; run?: { results?: unknown } } | null;
   if (report?.schemaVersion !== 'report-1' || !Array.isArray(report.run?.results)) {
-    throw new VerifyFailure('E2E_CRASHED', 'e2e wrote a report this skill cannot read (expected schemaVersion report-1)', 'check e2e-pins with `verify doctor`');
+    throw new VerifyFailure('E2E_CRASHED', 'e2e wrote a report this skill cannot read (expected schemaVersion report-1)', 'check e2e-pins with `bin/verify doctor`');
   }
   return report.run.results as WireResult[];
 }
@@ -240,7 +241,7 @@ export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], r
       const screenPath = screenArtifact === undefined ? null : join(runDir, 'e2e', 'artifacts', screenArtifact);
       let skipReason: string | null = null;
       if (status === 'skipped') {
-        skipReason = r.tags?.includes(FORM_ENTRY_TAG) && r.skip?.cause === 'filtered' ? `opt-in: ${FORM_ENTRY_TAG}` : `${r.skip?.cause ?? 'skipped'}: ${r.skip?.reason ?? ''}`.trim();
+        skipReason = r.tags?.includes(FORM_ENTRY_TAG) && r.skip?.cause === 'filtered' ? `skipped by --skip ${FORM_ENTRY_TAG}` : `${r.skip?.cause ?? 'skipped'}: ${r.skip?.reason ?? ''}`.trim();
       }
       const message = notRun ? `not run: ${r.skip?.cause ?? 'skipped'} ${r.skip?.reason ?? ''}`.trim() : last?.error?.message;
       return {

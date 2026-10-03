@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
-const holder = join(import.meta.dirname, 'lock-holder.ts');
+const holder = join(import.meta.dirname, '..', 'testing', 'lock-holder.ts');
 
 function runHolder(skillDir: string, home: string, log: string, startAt: number, mode: 'hold' | 'crash'): Promise<number | null> {
   return new Promise((resolve) => {

@@ -27,6 +27,7 @@ function setup() {
       deleted.push(email);
       return { users: 1, organizations: 0 };
     },
+    ownedByEmail: async (instance) => ({ users: 1, organizations: instance === 'with-email-codes' ? 2 : 0 }),
   } as Partial<ClerkBackend> as ClerkBackend;
   const deps: Deps = { host, workspace, runner: async () => assert.fail('down runs no commands'), env: {}, progress: () => undefined, clerk: () => clerk };
 
@@ -48,6 +49,7 @@ describe('down', () => {
     assert.equal(result.dryRun, true);
     assert.deepEqual(result.released.map((l) => l.device), ['verify-ios-2']);
     assert.equal(result.deletedUsers, 2);
+    assert.equal(result.deletedOrganizations, 2, 'dry run lists the organizations down would delete');
     assert.deepEqual(result.keptRuns, [run]);
     assert.deepEqual(released, []);
     assert.deepEqual(deleted, []);

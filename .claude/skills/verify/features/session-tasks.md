@@ -23,7 +23,7 @@ Preconditions:
 - **Setup MFA.** Run `bin/verify run session-tasks/setup-mfa`. The spec expects `ticket` `succeeded`, `sessionStatus` `pending`, `pendingTasks` containing `setup-mfa`, and both `clerk.auth.sessionTask.setupMfa.authenticatorApp` and `clerk.auth.sessionTask.setupMfa.smsCode`. Screenshot `session-task`.
 - **Complete MFA setup.** Run `bin/verify run session-tasks/complete-setup-mfa` (tag `form-entry`). It taps the authenticator app choice, reads `clerk.auth.sessionTask.totp.secret`, taps `clerk.auth.sessionTask.totp.continue`, fills `clerk.auth.sessionTask.totp.code` with the computed TOTP, taps `clerk.auth.sessionTask.backupCodes.continue`, and waits for `sessionStatus` `active` with no pending tasks.
 - **Choose organization.** Run `bin/verify run session-tasks/choose-organization`. The spec expects `pendingTasks` containing `choose-organization` and the organization form field `clerk.organization.profileForm.name`. Screenshot `choose-organization-task`.
-- **Proof.** `state.json` lists the pending task and the screenshot shows the task screen.
+- **Proof.** `states.jsonl` lists the pending task for each test, and the screenshot shows the task screen. `state.json` holds only the run's last state.
 
 ## Gotchas
 

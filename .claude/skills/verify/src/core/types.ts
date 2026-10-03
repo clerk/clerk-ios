@@ -85,6 +85,7 @@ export type Command =
       readonly skip: readonly OptInTag[];
       readonly grep?: string;
       readonly video: boolean;
+      readonly waitSeconds: number;
     }
   | { readonly verb: 'screen'; readonly platform?: Platform; readonly png: boolean }
   | { readonly verb: 'attach'; readonly run: RunId; readonly pr: number; readonly screenshots: 'all' | readonly string[] }
@@ -128,7 +129,7 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
-  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map';
+  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon';
 
 export interface DoctorCheck {
   readonly id: DoctorCheckId;
@@ -269,7 +270,7 @@ export type LedgerEntry =
   | { readonly id: string; readonly kind: 'lease-held'; readonly platform: Platform; readonly backend: BackendKind; readonly sessionId: string | null; readonly deviceId: string | null }
   | { readonly id: string; readonly kind: 'identity'; readonly run: RunId; readonly instance: InstanceName; readonly email: TestEmail }
   | { readonly id: string; readonly kind: 'user'; readonly run: RunId; readonly instance: InstanceName; readonly userId: string; readonly email: TestEmail }
-  | { readonly id: string; readonly kind: 'process'; readonly what: 'metro' | 'recorder'; readonly pid: number; readonly startedAt: string }
+  | { readonly id: string; readonly kind: 'process'; readonly what: 'metro' | 'recorder' | 'agent-device'; readonly pid: number; readonly startedAt: string }
   | { readonly id: string; readonly kind: 'done'; readonly ref: string };
 
 export type SpecStatus = 'passed' | 'failed' | 'skipped' | 'flaky' | 'interrupted';
@@ -395,8 +396,13 @@ export interface AcquireRequest {
   readonly progress: (line: string) => void;
 }
 
-export interface Recording {
+export interface ProcessRef {
   readonly pid: number;
+  readonly startedAt: number;
+}
+
+export interface Recording {
+  readonly process: ProcessRef;
   stop(): Promise<EvidencePath>;
 }
 

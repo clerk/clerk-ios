@@ -27,7 +27,7 @@ Preconditions:
 - **User button.** The third test launches `screen: 'home'`, taps `clerk.userButton.profile`, and expects `clerk.userProfile.row.manageAccount`. Screenshot `user-button-profile`.
 - **Sign out.** The fourth test taps `verify.signOut` and waits up to 10 seconds for `signedIn` false, then expects `e2e.auth.signIn`.
 - **Sign out from the profile.** The fifth test launches `screen: 'userProfile'`, taps `clerk.userProfile.row.signOut`, and waits for `signedIn` false and `sessionId` null.
-- **Proof.** `specs/golden/user-button-and-profile/profile.e2e.ts` passes. `state.json` holds the seeded user's id for the first two tests.
+- **Proof.** `specs/golden/user-button-and-profile/profile.e2e.ts` passes. `states.jsonl` holds each test's states in order, with the seeded user's id for the profile and user-button tests. `state.json` holds only the run's last state, which is signed out after the sign-out tests.
 
 ## Gotchas
 

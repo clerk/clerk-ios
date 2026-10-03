@@ -1,4 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
+import type { ProcessRef } from './types.ts';
 
 export interface ExecResult {
   readonly code: number;
@@ -41,10 +42,7 @@ export function isAlive(pid: number): boolean {
 
 export const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-export interface ProcessRef {
-  readonly pid: number;
-  readonly startedAt: number;
-}
+export type { ProcessRef };
 
 export function currentProcess(): ProcessRef {
   return { pid: process.pid, startedAt: Date.now() - process.uptime() * 1000 };

@@ -30,6 +30,7 @@ describe('parseArgv', () => {
       selection: { selectors: ['auth-start', 'sign-up/request-code'] },
       skip: [],
       video: true,
+      waitSeconds: 0,
     });
     assert.deepEqual(parseArgv(['run', '--all', '--no-video', '--grep', 'profile']).command, {
       verb: 'run',
@@ -37,6 +38,7 @@ describe('parseArgv', () => {
       skip: [],
       grep: 'profile',
       video: false,
+      waitSeconds: 0,
     });
     assert.deepEqual(parseArgv(['screen', '--png']).command, { verb: 'screen', png: true });
     assert.deepEqual(parseArgv(['attach', 'r20261002-141210-7c1e', '--pr', '412', '--screenshot', 'a', '--screenshot=b']).command, {

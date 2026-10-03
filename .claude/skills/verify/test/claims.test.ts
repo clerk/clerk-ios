@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { freeSlot, isOrphaned, readClaim, takeSlot } from '../src/core/claims.ts';
 import { currentProcess, isRunning } from '../src/core/exec.ts';
 
-const taker = join(import.meta.dirname, 'claim-taker.ts');
+const taker = join(import.meta.dirname, '..', 'testing', 'claim-taker.ts');
 
 function take(dir: string, worktree: string, startAt: number): Promise<string> {
   return new Promise((resolve, reject) => {

@@ -21,7 +21,7 @@ Preconditions:
 
 - **Create.** Run `bin/verify run organizations`. The spec checks `orgId` null, taps `Personal account`, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `Verify <runId>`, and taps `clerk.organization.profileForm.submit`.
 - **Skip invites.** The spec taps `Skip` on the invite step, waits for `orgId` to be non-null with the same `userId`, and expects the organization name on the switcher. Screenshot `org-created`.
-- **Proof.** `state.json` reports a non-null `orgId`. `bin/verify down` deletes the organization with its user.
+- **Proof.** `states.jsonl` reports a non-null `orgId`. `bin/verify down --dry-run` lists the organizations it will delete, and `bin/verify down` deletes them with their user.
 
 ## Gotchas
 

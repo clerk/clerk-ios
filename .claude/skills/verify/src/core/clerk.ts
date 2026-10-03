@@ -52,6 +52,8 @@ export interface ClerkBackend {
   createUser(instance: InstanceName, email: TestEmail, phone: TestPhone | null): Promise<SeededUser>;
   mintTicket(user: SeededUser, expiresInSeconds: number): Promise<Secret<'ticket'>>;
   deleteByEmail(instance: InstanceName, email: TestEmail): Promise<{ readonly users: number; readonly organizations: number }>;
+  /** What deleteByEmail would delete, read-only. */
+  ownedByEmail(instance: InstanceName, email: TestEmail): Promise<{ readonly users: number; readonly organizations: number }>;
   findUserId(instance: InstanceName, email: TestEmail): Promise<string | null>;
   settings(instance: InstanceName): Promise<InstanceSettings>;
 }
@@ -87,6 +89,14 @@ export function createClerkBackend(keysFor: (instance: InstanceName) => Instance
     return json;
   }
 
+  async function ownedOrganizations(instance: InstanceName, userId: string): Promise<readonly string[]> {
+    const memberships = (await bapi(instance, 'GET', `/users/${userId}/organization_memberships?limit=100`).catch((error: unknown) => {
+      if (error instanceof ClerkHttpError && error.codes.includes('organization_not_enabled_in_instance')) return { data: [] };
+      throw error;
+    })) as { data?: { organization?: { id?: string; created_by?: string } }[] };
+    return (memberships.data ?? []).flatMap((m) => (typeof m.organization?.id === 'string' && m.organization.created_by === userId ? [m.organization.id] : []));
+  }
+
   async function usersByEmail(instance: InstanceName, email: TestEmail): Promise<readonly { id: string }[]> {
     const users = await bapi(instance, 'GET', `/users?email_address=${encodeURIComponent(email)}`);
     return Array.isArray(users) ? users.filter((u): u is { id: string } => typeof u?.id === 'string') : [];
@@ -110,21 +120,19 @@ export function createClerkBackend(keysFor: (instance: InstanceName) => Instance
     async findUserId(instance, email) {
       return (await usersByEmail(instance, email))[0]?.id ?? null;
     },
+    async ownedByEmail(instance, email) {
+      let organizations = 0;
+      const users = await usersByEmail(instance, email);
+      for (const user of users) organizations += (await ownedOrganizations(instance, user.id)).length;
+      return { users: users.length, organizations };
+    },
     async deleteByEmail(instance, email) {
       let users = 0;
       let organizations = 0;
       for (const user of await usersByEmail(instance, email)) {
-        const memberships = (await bapi(instance, 'GET', `/users/${user.id}/organization_memberships?limit=100`).catch((error: unknown) => {
-          if (error instanceof ClerkHttpError && error.codes.includes('organization_not_enabled_in_instance')) return { data: [] };
-          throw error;
-        })) as {
-          data?: { organization?: { id?: string; created_by?: string } }[];
-        };
-        for (const membership of memberships.data ?? []) {
-          const org = membership.organization;
-          if (typeof org?.id !== 'string' || org.created_by !== user.id) continue;
+        for (const org of await ownedOrganizations(instance, user.id)) {
           try {
-            await bapi(instance, 'DELETE', `/organizations/${org.id}`);
+            await bapi(instance, 'DELETE', `/organizations/${org}`);
             organizations += 1;
           } catch (error) {
             if (!(error instanceof ClerkHttpError && error.status === 404)) throw error;

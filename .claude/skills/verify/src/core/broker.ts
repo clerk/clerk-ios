@@ -29,6 +29,7 @@ export interface BrokerDeps {
   readonly clerk: ClerkBackend;
   readonly publishableKey: (instance: InstanceName) => PublishableKey;
   readonly screens: readonly string[];
+  readonly platforms: readonly Platform[];
 }
 
 export interface Broker {
@@ -78,6 +79,9 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
 
   async function launch(request: BrokerLaunchRequest): Promise<BrokerLaunchResponse> {
     const instance = instanceOf(request.instance);
+    if (!deps.platforms.includes(request.platform)) {
+      throw new VerifyFailure('USAGE', `this run drives ${deps.platforms.join(', ')}, not ${String(request.platform)}`, 'launch from a spec that this run selected');
+    }
     if (request.screen !== null && !deps.screens.includes(request.screen)) {
       throw new VerifyFailure('USAGE', `unknown screen ${request.screen}`, `use one of ${deps.screens.join(', ')}`);
     }
@@ -92,7 +96,7 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
     }
     const scope = request.storageScope ?? (randomId(8) as StorageScope);
     const launchId = randomId(8) as LaunchId;
-    const launchArguments = encodeLaunchArguments(request.platform as Platform, {
+    const launchArguments = encodeLaunchArguments(request.platform, {
       verifyPublishableKey: deps.publishableKey(instance),
       verifyRunId: run,
       verifyStorageScope: scope,

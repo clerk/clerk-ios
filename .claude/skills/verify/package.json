@@ -2,6 +2,10 @@
   "name": "clerk-ios-verify",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc -p ."
+  },
   "engines": {
     "node": ">=24"
   },

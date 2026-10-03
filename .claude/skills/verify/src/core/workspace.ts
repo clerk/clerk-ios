@@ -28,6 +28,7 @@ export interface Workspace {
   readonly home: string;
   readonly ledgerFile: string;
   readonly claimsDir: string;
+  readonly agentDeviceDir: string;
   newRun(): { readonly run: RunId; readonly dir: EvidencePath; readonly scratch: ScratchPath };
   runDir(run: RunId): EvidencePath;
   runs(): readonly RunId[];
@@ -42,10 +43,15 @@ export interface Workspace {
   unclosedEntries(): readonly LedgerEntry[];
   withAcquireLock<T>(platform: Platform, fn: () => Promise<T>): Promise<T>;
   withDevice<T>(platform: Platform, waitSeconds: number, fn: () => Promise<T>): Promise<T>;
+  /** Waits for the device lock and returns its release, for a verb that takes it while still holding the acquire lock. */
+  lockDevice(platform: Platform, waitSeconds: number): Promise<() => void>;
   removeScratch(path: ScratchPath): void;
 }
 
 export const newEntryId = (): string => randomUUID();
+
+/** Each worktree runs its own agent-device daemon from its own node_modules, so removing one worktree never breaks another. */
+export const agentDeviceStateDir = (workspaceRoot: string): string => join(workspaceRoot, 'agent-device');
 
 export function worktreeIdOf(worktree: string): string {
   return createHash('sha256').update(resolve(worktree)).digest('hex').slice(0, 12);
@@ -60,7 +66,7 @@ export function newRunId(now: Date = new Date()): RunId {
 
 const RUN_ID = /^r\d{8}-\d{6}-[0-9a-f]{4}$/;
 export function parseRunId(value: string): RunId {
-  if (!RUN_ID.test(value)) throw new VerifyFailure('USAGE', `${value} is not a run id`, 'pass an id like r20261002-141210-7c1e from `verify run`');
+  if (!RUN_ID.test(value)) throw new VerifyFailure('USAGE', `${value} is not a run id`, 'pass an id like r20261002-141210-7c1e from `bin/verify run`');
   return value as RunId;
 }
 
@@ -70,7 +76,7 @@ function isPlatform(value: unknown): value is Platform {
 
 function parseLease(text: string, file: string): Lease {
   const raw: unknown = JSON.parse(text);
-  const bad = () => new VerifyFailure('LEASE_LOST', `${file} is not a lease`, 'verify down, then verify up');
+  const bad = () => new VerifyFailure('LEASE_LOST', `${file} is not a lease`, 'bin/verify down, then bin/verify up');
   if (typeof raw !== 'object' || raw === null) throw bad();
   const r = raw as Record<string, unknown>;
   if (!isPlatform(r.platform) || typeof r.acquiredAt !== 'string') throw bad();
@@ -91,28 +97,34 @@ function writePrivate(file: string, text: string): void {
   writeFileSync(file, text, { mode: 0o600 });
 }
 
-export async function withSlotLock<T>(dir: string, timeoutMs: number, onTimeout: () => VerifyFailure, fn: () => Promise<T>): Promise<T> {
+export async function takeSlotLock(dir: string, timeoutMs: number, onTimeout: () => VerifyFailure): Promise<() => void> {
   const deadline = Date.now() + timeoutMs;
   const me = currentProcess();
-  let held: number;
   for (;;) {
     const state = readSlot(dir);
     const running = state.value !== null && isRunning(JSON.parse(state.value) as ProcessRef);
     if (!running && compareAndSwapSlot(dir, state.gen, JSON.stringify(me))) {
-      held = state.gen + 1;
-      break;
+      const held = state.gen + 1;
+      return () => void compareAndSwapSlot(dir, held, null);
     }
     if (running) {
       if (Date.now() >= deadline) throw onTimeout();
       await sleep(250);
     }
   }
+}
+
+async function withSlotLock<T>(dir: string, timeoutMs: number, onTimeout: () => VerifyFailure, fn: () => Promise<T>): Promise<T> {
+  const release = await takeSlotLock(dir, timeoutMs, onTimeout);
   try {
     return await fn();
   } finally {
-    compareAndSwapSlot(dir, held, null);
+    release();
   }
 }
+
+const deviceBusy = (platform: Platform) =>
+  new VerifyFailure('DEVICE_BUSY', `another verify process in this worktree is driving the ${platform} device`, 'wait for it to finish, or pass --wait <seconds>');
 
 export function openWorkspace(options: WorkspaceOptions): Workspace {
   const root = join(options.skillDir, '.verify');
@@ -141,6 +153,7 @@ export function openWorkspace(options: WorkspaceOptions): Workspace {
     home,
     ledgerFile,
     claimsDir,
+    agentDeviceDir: agentDeviceStateDir(root),
     newRun() {
       const run = newRunId();
       return { run, dir: dir('runs', run) as EvidencePath, scratch: dir('scratch', run) as ScratchPath };
@@ -176,12 +189,10 @@ export function openWorkspace(options: WorkspaceOptions): Workspace {
       return withSlotLock(join(dir('locks'), `acquire-${platform}`), Number.POSITIVE_INFINITY, () => new VerifyFailure('DEVICE_BUSY', 'unreachable', ''), fn);
     },
     withDevice(platform, waitSeconds, fn) {
-      return withSlotLock(
-        join(dir('locks'), `device-${platform}`),
-        waitSeconds * 1000,
-        () => new VerifyFailure('DEVICE_BUSY', `another verify process in this worktree is driving the ${platform} device`, 'wait for it to finish, or pass --wait <seconds>'),
-        fn,
-      );
+      return withSlotLock(join(dir('locks'), `device-${platform}`), waitSeconds * 1000, () => deviceBusy(platform), fn);
+    },
+    lockDevice(platform, waitSeconds) {
+      return takeSlotLock(join(dir('locks'), `device-${platform}`), waitSeconds * 1000, () => deviceBusy(platform));
     },
     removeScratch(path) {
       const rel = relative(root, path);

@@ -35,7 +35,7 @@ export async function listSimulators(): Promise<readonly Simulator[]> {
 
 async function simctl(args: readonly string[], what: string): Promise<string> {
   const result = await run('xcrun', ['simctl', ...args]);
-  if (result.code !== 0) throw new VerifyFailure('NOT_READY', `${what} failed: ${result.stderr.trim() || result.stdout.trim()}`, 'run `verify doctor`');
+  if (result.code !== 0) throw new VerifyFailure('NOT_READY', `${what} failed: ${result.stderr.trim() || result.stdout.trim()}`, 'run `bin/verify doctor`');
   return result.stdout;
 }
 
@@ -64,6 +64,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
 
   async function claimSlot(request: AcquireRequest): Promise<Claim> {
     const deadline = Date.now() + request.waitSeconds * 1000;
+    let lastWait = '';
     for (;;) {
       const devices = await listSimulators();
       const claims = readClaims(claimsDir, 'ios');
@@ -82,10 +83,12 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
         throw new VerifyFailure(
           'POOL_FULL',
           `${inUse.size} of ${LOCAL_POOL.ios} iOS lanes are in use on this Mac (${[...inUse].sort().join(', ')})`,
-          'wait and retry with `verify up --wait 300`, or run `verify down` in a worktree that no longer needs its lane',
+          'wait and retry with `bin/verify up --wait 300`, or run `bin/verify down` in a worktree that no longer needs its lane',
         );
       }
-      request.progress(`wait    all ${LOCAL_POOL.ios} iOS lanes are in use`);
+      const waiting = `wait    all ${LOCAL_POOL.ios} iOS lanes are in use (${[...inUse].sort().join(', ')}); waiting up to ${request.waitSeconds}s for one to free`;
+      if (waiting !== lastWait) request.progress(waiting);
+      lastWait = waiting;
       await sleep(5000);
     }
   }
@@ -176,6 +179,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
     async startRecording(lease, into) {
       const file = join(into, 'video.mp4') as EvidencePath;
       const child = spawn('xcrun', ['simctl', 'io', lease.deviceId, 'recordVideo', '--codec=h264', '--force', file], { stdio: ['ignore', 'pipe', 'pipe'] });
+      const spawnedAt = Date.now();
       const exited = new Promise<number>((resolve) => child.on('close', (code) => resolve(code ?? 1)));
       await new Promise<void>((resolve, reject) => {
         let seen = '';
@@ -191,11 +195,11 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
         child.stderr.on('data', onData);
         child.on('close', (code) => {
           clearTimeout(timer);
-          reject(new VerifyFailure('NOT_READY', `simctl recordVideo exited ${code}: ${seen.trim()}`, 'rerun with --no-video, or `verify down` and `verify up`'));
+          reject(new VerifyFailure('NOT_READY', `simctl recordVideo exited ${code}: ${seen.trim()}`, 'rerun with --no-video, or `bin/verify down` and `bin/verify up`'));
         });
       });
       const recording: Recording = {
-        pid: child.pid ?? 0,
+        process: { pid: child.pid ?? 0, startedAt: spawnedAt },
         async stop() {
           child.kill('SIGINT');
           let timer: NodeJS.Timeout | undefined;

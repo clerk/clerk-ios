@@ -24,12 +24,12 @@ import {
 const VERBS: readonly Verb[] = ['doctor', 'up', 'run', 'screen', 'attach', 'down'];
 
 const USAGE_FIX = [
-  'verify doctor [--platform p] [--backend b]',
-  'verify up [--platform p] [--backend b] [--wait <seconds>]',
-  'verify run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--skip form-entry] [--grep re] [--no-video]',
-  'verify screen [--platform p] [--png]',
-  'verify attach <run-id> --pr <n> [--screenshot label]...',
-  'verify down [--platform p] [--stale] [--dry-run]',
+  'bin/verify doctor [--platform p] [--backend b]',
+  'bin/verify up [--platform p] [--backend b] [--wait <seconds>]',
+  'bin/verify run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--skip form-entry] [--grep re] [--no-video] [--wait <seconds>]',
+  'bin/verify screen [--platform p] [--png]',
+  'bin/verify attach <run-id> --pr <n> [--screenshot label]...',
+  'bin/verify down [--platform p] [--stale] [--dry-run]',
   'every verb takes --json',
 ].join('; ');
 
@@ -123,7 +123,7 @@ export function parseArgv(argv: readonly string[]): Invocation {
     case 'run': {
       const all = bools.has('all');
       if (all && positionals.length > 0) throw usage('pass selectors or --all, not both');
-      if (!all && positionals.length === 0) throw usage('verify run needs a feature, feature/spec, path.e2e.ts, or --all');
+      if (!all && positionals.length === 0) throw usage('bin/verify run needs a feature, feature/spec, path.e2e.ts, or --all');
       const skip = (lists.get('skip') ?? []).map((tag): OptInTag => {
         if (tag !== FORM_ENTRY_TAG) throw usage(`--skip takes ${FORM_ENTRY_TAG}, not ${tag}`);
         return tag;
@@ -136,6 +136,7 @@ export function parseArgv(argv: readonly string[]): Invocation {
         skip,
         ...(grep === undefined ? {} : { grep }),
         video: !bools.has('no-video'),
+        waitSeconds: positiveInt('wait', values.get('wait'), 0),
       };
       break;
     }
@@ -144,7 +145,7 @@ export function parseArgv(argv: readonly string[]): Invocation {
       command = { verb, ...(platform === undefined ? {} : { platform }), png: bools.has('png') };
       break;
     case 'attach': {
-      if (positionals.length !== 1) throw usage('verify attach takes exactly one run id');
+      if (positionals.length !== 1) throw usage('bin/verify attach takes exactly one run id');
       const shots = lists.get('screenshot');
       command = { verb, run: parseRunId(positionals[0]!), pr: positiveInt('pr', values.get('pr'), undefined), screenshots: shots ?? 'all' };
       break;
@@ -195,7 +196,7 @@ function renderRun(result: RunResult, skillDir: string): string[] {
   if (r.lastState !== null) lines.push(`  last state   ${describeState(r.lastState)}`);
   if (r.appLog !== null) lines.push(`  app log      ${basename(r.appLog)}`);
   if (r.tainted.length > 0) lines.push(`  TAINTED      ${r.tainted.map((t) => rel(result.dir, t)).join(', ')} (attach is blocked)`);
-  lines.push(`next  ${result.next.startsWith('verify ') ? result.next : rel(process.cwd(), result.next)}`);
+  lines.push(`next  ${result.next.startsWith('bin/verify ') ? result.next : rel(process.cwd(), result.next)}`);
   return lines;
 }
 
@@ -231,7 +232,7 @@ function render(value: VerbResult, skillDir: string): string[] {
       return [
         ...(value.dryRun ? ['dry run: nothing was changed'] : []),
         `${value.dryRun ? 'would release' : 'released'}  ${value.released.map((l) => l.device).join(', ') || 'nothing'}`,
-        `${value.dryRun ? 'would delete' : 'deleted'}   ${value.deletedUsers} users${value.dryRun ? '' : `, ${value.deletedOrganizations} organizations`}`,
+        `${value.dryRun ? 'would delete' : 'deleted'}   ${value.deletedUsers} users, ${value.deletedOrganizations} organizations`,
         ...(value.stoppedProcesses.length > 0 ? [`${value.dryRun ? 'would stop' : 'stopped'}   ${value.stoppedProcesses.join(', ')}`] : []),
         `kept      ${value.keptRuns.length} runs in .verify/runs/`,
       ];
@@ -318,7 +319,7 @@ export async function main(argv: readonly string[], host: HostAdapter): Promise<
     return exitCodeFor(result);
   } catch (error) {
     const failure =
-      error instanceof VerifyFailure ? error : new VerifyFailure('NOT_READY', (error as Error).message ?? String(error), 'run `verify doctor`, then retry');
+      error instanceof VerifyFailure ? error : new VerifyFailure('NOT_READY', (error as Error).message ?? String(error), 'run `bin/verify doctor`, then retry');
     out.failure(failure);
     return failure.code === 'USAGE' ? 2 : 3;
   }
