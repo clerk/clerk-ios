@@ -13,12 +13,66 @@ struct E2EHostView: View {
   let configuration: E2EConfiguration
 
   @State private var authViewIsPresented = false
+  @State private var ticket: VerifyState.Ticket
+  @State private var lastError: VerifyState.Failure?
 
   init(configuration: E2EConfiguration) {
     self.configuration = configuration
+    _ticket = State(initialValue: configuration.signInTicket == nil ? .none : .pending)
   }
 
   var body: some View {
+    VStack(spacing: 0) {
+      routedScreen
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+      VerifyStateFooter(state: VerifyState(
+        configuration: configuration,
+        screen: renderedScreen?.rawValue ?? "launching",
+        clerk: clerk,
+        ticket: ticket,
+        lastError: lastError ?? configuration.screenFailure
+      ))
+    }
+    .task {
+      await launch()
+    }
+  }
+
+  private var renderedScreen: VerifyScreen? {
+    if ticket == .pending {
+      return nil
+    }
+
+    if configuration.screen == .auth, clerk.isAuthFlowComplete {
+      return .home
+    }
+
+    return configuration.screen
+  }
+
+  @ViewBuilder
+  private var routedScreen: some View {
+    switch renderedScreen {
+    case nil:
+      ProgressView()
+    case .home:
+      home
+    case .auth:
+      AuthView(mode: configuration.authMode, isDismissible: false)
+        .persistsIdentifiers(false)
+    case .userProfile:
+      UserProfileView(isDismissible: false)
+    case .orgSwitcher:
+      OrganizationSwitcher()
+    case .orgList:
+      OrganizationListView(isDismissible: false)
+    case .orgProfile:
+      OrganizationProfileView(isDismissible: false)
+    }
+  }
+
+  private var home: some View {
     VStack(spacing: 24) {
       UserButton(signedOutContent: {
         Button("Sign in") {
@@ -26,6 +80,8 @@ struct E2EHostView: View {
         }
         .accessibilityIdentifier(E2EIdentifiers.Auth.signIn)
       })
+
+      OrganizationSwitcher()
 
       e2eControls
     }
@@ -43,6 +99,7 @@ struct E2EHostView: View {
 
       if let userID = clerk.user?.id {
         Text(userID)
+          .accessibilityIdentifier(E2EIdentifiers.Verify.userId)
       }
 
       sessionState
@@ -50,6 +107,7 @@ struct E2EHostView: View {
       Button("Sign out") {
         signOut()
       }
+      .accessibilityIdentifier(E2EIdentifiers.Verify.signOut)
 
       if clerk.session?.status == .active {
         Button("Delete account", role: .destructive) {
@@ -84,6 +142,31 @@ struct E2EHostView: View {
         Text(tasks.map(\.rawValue).joined(separator: ","))
           .accessibilityIdentifier(E2EIdentifiers.Auth.pendingTasks)
       }
+    }
+  }
+
+  private func launch() async {
+    do {
+      try await clerk.refreshEnvironment()
+    } catch {
+      lastError = .init(error, fallbackCode: "environment_load_failed")
+    }
+
+    guard ticket == .pending, let signInTicket = configuration.signInTicket else {
+      return
+    }
+
+    guard lastError == nil else {
+      ticket = .failed
+      return
+    }
+
+    do {
+      _ = try await clerk.auth.signInWithTicket(signInTicket)
+      ticket = .succeeded
+    } catch {
+      lastError = .init(error, fallbackCode: "ticket_sign_in_failed")
+      ticket = .failed
     }
   }
 
