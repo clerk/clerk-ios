@@ -13,4 +13,10 @@ enum E2EIdentifiers {
     static let pendingTasks = "e2e.auth.pendingTasks"
     static let deleteAccount = "e2e.auth.deleteAccount"
   }
+
+  enum Verify {
+    static let state = "verify.state"
+    static let signOut = "verify.signOut"
+    static let userId = "verify.userId"
+  }
 }
