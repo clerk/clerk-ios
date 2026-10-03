@@ -154,7 +154,9 @@ public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Se
 extension OrganizationDomain {
   @MainActor
   private var organizationService: any OrganizationServiceProtocol {
-    Clerk.shared.dependencies.organizationService
+    get throws {
+      try Clerk.currentDependencies.organizationService
+    }
   }
 
   /// Deletes the organization domain and removes it from the organization.

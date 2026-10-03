@@ -85,9 +85,6 @@ final class SessionPollingManager {
 
   /// Calculates the backoff interval based on consecutive failures.
   ///
-  /// Uses exponential backoff with jitter: the interval doubles with each failure,
-  /// capped at `maxPollInterval`, with ±20% randomness to prevent thundering herd.
-  ///
   /// - Returns: The interval to wait before the next polling attempt.
   func calculateBackoffInterval() -> TimeInterval {
     guard consecutiveFailures > 0 else { return pollInterval }

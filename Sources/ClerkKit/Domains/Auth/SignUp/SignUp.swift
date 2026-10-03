@@ -110,12 +110,16 @@ public struct SignUp: Codable, Sendable, Equatable {
 extension SignUp {
   @MainActor
   private var signUpService: any SignUpServiceProtocol {
-    Clerk.shared.dependencies.signUpService
+    get throws {
+      try Clerk.currentDependencies.signUpService
+    }
   }
 
   @MainActor
   private var magicLinkStore: MagicLinkStore {
-    Clerk.shared.dependencies.magicLinkStore
+    get throws {
+      try Clerk.currentDependencies.magicLinkStore
+    }
   }
 
   /// This method is used to update the current sign-up.
@@ -254,7 +258,7 @@ extension SignUp {
   @MainActor
   func handleTransferFlow() async throws -> TransferFlowResult {
     if needsTransferToSignIn == true {
-      let signInService: any SignInServiceProtocol = Clerk.shared.dependencies.signInService
+      let signInService: any SignInServiceProtocol = try Clerk.currentDependencies.signInService
       let signIn = try await signInService.create(params: .init(transfer: true))
       return .signIn(signIn)
     } else {

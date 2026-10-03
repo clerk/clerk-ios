@@ -613,6 +613,13 @@ extension Clerk {
     ClerkRuntimeScope.current(clerkProvider: { self })
   }
 
+  @MainActor
+  static var currentDependencies: any Dependencies {
+    get throws {
+      try shared.runtimeScope.requireCurrentClerk().dependencies
+    }
+  }
+
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {

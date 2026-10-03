@@ -40,10 +40,6 @@ struct UserProfileOAuthConfiguration: Equatable {
     guard !configuredScopes.isEmpty else { return false }
 
     let approvedScopes = Set(account.approvedScopes.split(separator: " ").map(String.init))
-
-    // If no approved scopes are reported, assume the configured scopes
-    // have not been granted so the user can request them via reconnect.
-    guard !approvedScopes.isEmpty else { return true }
     return !configuredScopes.isSubset(of: approvedScopes)
   }
 }

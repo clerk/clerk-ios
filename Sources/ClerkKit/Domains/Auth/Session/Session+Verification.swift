@@ -41,7 +41,7 @@ extension Session {
   /// - Returns: A ``SessionVerification`` reflecting the current state of the flow.
   @discardableResult @MainActor
   public func startVerification(level: SessionVerification.Level) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.startVerification(
+    try await Clerk.currentDependencies.sessionService.startVerification(
       sessionId: id,
       params: .init(level: level)
     )
@@ -277,7 +277,7 @@ extension Session {
 
     let localCredential = try biometricCredentials.localCredential(for: userID)
 
-    let service = Clerk.shared.dependencies.sessionService
+    let service = try Clerk.currentDependencies.sessionService
     do {
       try _Concurrency.Task.checkCancellation()
       let prepared = if level == .secondFactor {
@@ -344,7 +344,7 @@ extension Session {
     enterpriseConnectionId: String? = nil,
     redirectUrl: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
+    try await Clerk.currentDependencies.sessionService.prepareFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -363,7 +363,7 @@ extension Session {
     password: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptFirstFactorVerification(
+    try await Clerk.currentDependencies.sessionService.attemptFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -379,7 +379,7 @@ extension Session {
     strategy: FactorStrategy,
     phoneNumberId: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareSecondFactorVerification(
+    try await Clerk.currentDependencies.sessionService.prepareSecondFactorVerification(
       sessionId: id,
       params: .init(strategy: strategy, phoneNumberId: phoneNumberId)
     )
@@ -391,7 +391,7 @@ extension Session {
     code: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
+    try await Clerk.currentDependencies.sessionService.attemptSecondFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,

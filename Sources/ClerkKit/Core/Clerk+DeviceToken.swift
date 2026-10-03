@@ -59,4 +59,33 @@ extension Clerk {
     }
     return try await refreshClient(skipClientId: true)
   }
+
+  /// Replaces the stored Clerk device token only if it still matches `expected`.
+  ///
+  /// This is intended for framework integrations where another Clerk SDK runtime
+  /// shares ClerkKit's client and writes back device tokens rotated by its own
+  /// requests. No request is made and the current client is kept; clearing the
+  /// token also clears the client.
+  ///
+  /// - Parameters:
+  ///   - token: The Clerk device token to store, or `nil` to clear it. Empty or
+  ///     whitespace-only values are rejected.
+  ///   - expected: The device token the caller's request was sent with, or `nil`
+  ///     if it was sent without one.
+  /// - Returns: `true` if the stored device token is now `token`, or `false` if
+  ///   the stored device token no longer matched `expected` and was left unchanged.
+  @_spi(FrameworkIntegration)
+  @discardableResult
+  public func setDeviceToken(_ token: String?, expected: String?) async throws -> Bool {
+    try runtimeScope.validateStableRuntime()
+    let normalizedToken = token.nilIfEmpty
+    guard token == nil || normalizedToken != nil else {
+      throw DeviceTokenError.emptyToken
+    }
+
+    return try await identityController.compareAndSetDeviceToken(
+      normalizedToken,
+      expected: expected.nilIfEmpty
+    )
+  }
 }
