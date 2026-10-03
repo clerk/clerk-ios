@@ -26,7 +26,7 @@ function xcodebuild(args: readonly string[], cwd: string): Promise<{ code: numbe
 
 export const host: HostAdapter<NativeHostScreen> = {
   repo: 'clerk-ios',
-  cli: '.cursor/skills/verify-clerk-ios/bin/control-clerk-ios',
+  cli: '.claude/skills/verify-clerk-ios/bin/control-clerk-ios',
   platforms: ['ios'],
   screens: ['home', 'auth', 'userProfile', 'orgSwitcher', 'orgList', 'orgProfile'],
   keysFile: '.keys.json',

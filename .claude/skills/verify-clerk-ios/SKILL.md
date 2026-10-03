@@ -5,16 +5,16 @@ description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, 
 
 # verify-clerk-ios
 
-`.cursor/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from the repo root. Add `.cursor/skills/verify-clerk-ios/bin` to `PATH` (`export PATH="$PWD/.cursor/skills/verify-clerk-ios/bin:$PATH"`) and you can type `control-clerk-ios` instead of the full path. Claude Code also finds this skill through `.claude/skills/verify-clerk-ios`, a symlink to this directory. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
+`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from the repo root. Add `.claude/skills/verify-clerk-ios/bin` to `PATH` (`export PATH="$PWD/.claude/skills/verify-clerk-ios/bin:$PATH"`) and you can type `control-clerk-ios` instead of the full path. Cursor also finds this skill through `.cursor/skills/verify-clerk-ios`, a symlink to this directory. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
 
-The rule: no change to clerk-ios UI or auth behavior is done until a `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run` on the real host shows the changed behavior.
+The rule: no change to clerk-ios UI or auth behavior is done until a `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run` on the real host shows the changed behavior.
 
 ## Launch
 
 ```console
-$ npm ci --prefix .cursor/skills/verify-clerk-ios  # once per worktree, before anything else
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios doctor  # exits 3 until a build matches the current tree; on a clean machine build is the one failing check
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios up  # build E2EHost for this tree, then lease verify-ios-<n> and install
+$ npm ci --prefix .claude/skills/verify-clerk-ios  # once per worktree, before anything else
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor  # exits 3 until a build matches the current tree; on a clean machine build is the one failing check
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios up  # build E2EHost for this tree, then lease verify-ios-<n> and install
 build   ios-3f9a1c2e07b1  local  building...
 build   ios-3f9a1c2e07b1  local  built in 58s
 device  verify-ios-1  cloning Clerk Verify Template iOS
@@ -24,7 +24,7 @@ device  verify-ios-1  local  leased by this worktree  installed ios-3f9a1c2e07b1
 
 The lane is ready when `up` prints its last line, `device <name> local leased by this worktree installed <build key>`. The `device ... cloning` and `install` lines are progress. A reused build prints one `build <key> local reused` line. The build always finishes before `up` claims a lane, so a `wait` line for a full pool comes after the `build ... built` line.
 
-`up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. Any change to the tree, including reverting an edit, changes the key, so the next `up` or `run` rebuilds and reinstalls. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. To start the slow part early, run `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios up --wait 600 &`, then `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run ...`. `run` prints one `wait` line naming the build, waits for the `up` to finish with no time limit, and uses its lease. `--wait` does not apply to that wait; it bounds waiting for a free lane and for another `run` that holds the device. Give the background `up` a `--wait`: on a full pool, an `up` without it builds, then exits 3 with `POOL_FULL`, and the `run` claims its own lane.
+`up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. Any change to the tree, including reverting an edit, changes the key, so the next `up` or `run` rebuilds and reinstalls. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. To start the slow part early, run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up --wait 600 &`, then `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run ...`. `run` prints one `wait` line naming the build, waits for the `up` to finish with no time limit, and uses its lease. `--wait` does not apply to that wait; it bounds waiting for a free lane and for another `run` that holds the device. Give the background `up` a `--wait`: on a full pool, an `up` without it builds, then exits 3 with `POOL_FULL`, and the `run` claims its own lane.
 
 `run` prints the same ready line, `device <name> local leased by this worktree installed <build key>`, every time it holds a lease, whether it just leased the lane or reused one, before its `run <id>` line.
 
@@ -38,14 +38,14 @@ The lane simulator is a clone of `Clerk Verify Template iOS`, which trusts this 
 
 Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds. Four lane simulators can exist on the Mac at once, across all agents. When all four are taken, `up` and `run` fail with `POOL_FULL`. Pass `--wait <seconds>` to either verb to wait for a lane. While waiting, the CLI prints one `wait` line naming the lanes in use, and prints it again only when that set changes.
 
-Each worktree runs its own agent-device daemon from its own `node_modules`, with state under `.verify/agent-device/`. The CLI passes `AGENT_DEVICE_STATE_DIR` to e2e and to every `agent-device` call, and `down` stops the daemon. A daemon shared across worktrees breaks every worktree once the worktree that started it is removed. If you call `agent-device` yourself, set `AGENT_DEVICE_STATE_DIR=.cursor/skills/verify-clerk-ios/.verify/agent-device` and use `.cursor/skills/verify-clerk-ios/node_modules/.bin/agent-device`. To find this worktree's daemon pid, read the `would stop` line of `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run`. Never print `.verify/agent-device/daemon.json`: it holds the daemon's auth token.
+Each worktree runs its own agent-device daemon from its own `node_modules`, with state under `.verify/agent-device/`. The CLI passes `AGENT_DEVICE_STATE_DIR` to e2e and to every `agent-device` call, and `down` stops the daemon. A daemon shared across worktrees breaks every worktree once the worktree that started it is removed. If you call `agent-device` yourself, set `AGENT_DEVICE_STATE_DIR=.claude/skills/verify-clerk-ios/.verify/agent-device` and use `.claude/skills/verify-clerk-ios/node_modules/.bin/agent-device`. To find this worktree's daemon pid, read the `would stop` line of `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run`. Never print `.verify/agent-device/daemon.json`: it holds the daemon's auth token.
 
-Teardown is `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down` (see Cleanup).
+Teardown is `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` (see Cleanup).
 
 ## Doctor
 
 ```console
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios doctor --json
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor --json
 ```
 
 Run it first, and again whenever anything looks off. It is read-only. It checks:
@@ -59,21 +59,21 @@ Run it first, and again whenever anything looks off. It is read-only. It checks:
 - Whether an agent-device daemon, the Mac-wide one in `~/.agent-device` or this worktree's own, runs from an install that no longer exists. The fix names the pid to kill.
 - Whether every feature in the Feature Map has its feature file and at least one golden spec.
 
-A failing check prints the command that fixes it, and `doctor` exits 3. Before the first `up`, only `build` fails, with fix `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios up`.
+A failing check prints the command that fixes it, and `doctor` exits 3. Before the first `up`, only `build` fails, with fix `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up`.
 
 ## Drive
 
 Input only goes through specs. A spec is a TypeScript file that uses the `host` fixture from `specs/fixtures.ts` and e2e's `screen` locators.
 
 ```console
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run auth-start  # one feature (specs/golden/auth-start/)
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/request-code  # one spec
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run specs/explored/resend.e2e.ts  # a spec you wrote
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run --all --skip form-entry  # every golden spec except form entry
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up --skip form-entry  # one feature without its form-entry spec
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run auth-start sign-up organizations  # several targets in one run, one lease, one video
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios screen  # current UI tree with testIds and VerifyState
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios screen --png  # plus a screenshot in scratch
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run auth-start  # one feature (specs/golden/auth-start/)
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/request-code  # one spec
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run specs/explored/resend.e2e.ts  # a spec you wrote
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run --all --skip form-entry  # every golden spec except form entry
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up --skip form-entry  # one feature without its form-entry spec
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run auth-start sign-up organizations  # several targets in one run, one lease, one video
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen  # current UI tree with testIds and VerifyState
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen --png  # plus a screenshot in scratch
 ```
 
 `run` flags are `--skip form-entry`, `--include known-bug`, `--grep <regex>`, `--no-video`, and `--wait <seconds>` (how long to wait for a free lane or for another verb in this worktree that holds the device).
@@ -102,7 +102,7 @@ test('profile shows the seeded user', async ({ host, screen }) => {
 There are two ways to check work.
 
 1. **Golden specs** under `specs/golden/<feature>/` are committed, cover the Feature Map in `features/`, and run unchanged as regression. Run the features your change touches.
-2. **New work.** Write a spec under `specs/explored/` (gitignored), run it, and read the end state with `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios screen`. Call `screen` after any run, passing or failing, whenever you need the next locator: after a pass it shows the screen the spec ended on, which is where the next step of new work starts. `screen` works right after `up` too, but the app then runs without launch arguments, so it shows the `error` screen (no publishable key). To look at a real screen, run a spec that launches it first, even one that only calls `host.launch`. `screen.getByTestId` matches any accessibility identifier, the SDK's `clerk.*` ids and E2EHost's own plain strings such as `e2e.auth.signIn` or an id you add for a probe. Fix locators from the `screen` output until it passes. The PR commits that spec into `specs/golden/<feature>/` and updates the feature file when the change adds or changes a user-facing behavior. Otherwise the spec stays with the run evidence (`runs/<id>/specs/` keeps a copy of every spec a run used).
+2. **New work.** Write a spec under `specs/explored/` (gitignored), run it, and read the end state with `.claude/skills/verify-clerk-ios/bin/control-clerk-ios screen`. Call `screen` after any run, passing or failing, whenever you need the next locator: after a pass it shows the screen the spec ended on, which is where the next step of new work starts. `screen` works right after `up` too, but the app then runs without launch arguments, so it shows the `error` screen (no publishable key). To look at a real screen, run a spec that launches it first, even one that only calls `host.launch`. `screen.getByTestId` matches any accessibility identifier, the SDK's `clerk.*` ids and E2EHost's own plain strings such as `e2e.auth.signIn` or an id you add for a probe. Fix locators from the `screen` output until it passes. The PR commits that spec into `specs/golden/<feature>/` and updates the feature file when the change adds or changes a user-facing behavior. Otherwise the spec stays with the run evidence (`runs/<id>/specs/` keeps a copy of every spec a run used).
 
 An explored spec sits one level below `specs/`, so it imports the fixture as `../fixtures.ts`, where a golden spec uses `../../fixtures.ts`:
 
@@ -113,11 +113,11 @@ import { test, expect } from '../fixtures.ts';
 A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`runs/<id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. `next` points at it.
 
 ```console
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios run specs/explored/resend-countdown.e2e.ts
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run specs/explored/resend-countdown.e2e.ts
   FAIL  explored/resend-countdown.e2e.ts  shows the resend countdown  14.1s
         expect.toBeVisible failed; locator: getByTestId("clerk.auth.code.resend"); expected: visible; observed: no node (match count 0)
         failure page  .verify/runs/r20261003-020926-ba6f/e2e/failures/specs_explored_resend-countdown.e2e.ts-....md
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios screen
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen
 button  "Resend (29)"   id=clerk.auth.code.resend   screen.getByTestId('clerk.auth.code.resend')
 $ git mv specs/explored/resend-countdown.e2e.ts specs/golden/sign-up/
 ```
@@ -187,14 +187,14 @@ Rules:
 
 - Type only `+clerk_test` emails, 555-0100 to 0199 phones, and `424242`. Never a real person's address, number, or password. The repo is public, and every video lands on a PR.
 - Use ticket sign-in (`host.launch({ signedInAs })`) only to reach signed-in screens for features that are not about authentication. A change to an auth method gets a spec that drives the real form.
-- Tag every spec that types a code `form-entry`. Those specs run by default. An agent runtime that refuses to type codes into an app that talks to hosted Clerk runs `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run --skip form-entry`, which reports them as `skipped by --skip form-entry`, and says so in the PR. CI runs the skipped specs.
+- Tag every spec that types a code `form-entry`. Those specs run by default. An agent runtime that refuses to type codes into an app that talks to hosted Clerk runs `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run --skip form-entry`, which reports them as `skipped by --skip form-entry`, and says so in the PR. CI runs the skipped specs.
 - Tag a golden spec that reproduces an open SDK bug `known-bug`, with a title that names the bug. e2e has no expected-failure status, so `run` leaves `known-bug` specs out unless you pass `--include known-bug`, and reports them as `skipped: known-bug`. A tag on both wins over `form-entry`. A feature whose only golden spec is `known-bug` still passes the Feature Map check. Remove the tag in the PR that fixes the bug.
-- The form-entry specs, one command each: `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-in-email-code/complete`, `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/complete`, and `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks/complete-setup-mfa`.
-- `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes every user the run created, including users created through the sign-up form, by their test email.
+- The form-entry specs, one command each: `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run sign-in-email-code/complete`, `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run sign-up/complete`, and `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks/complete-setup-mfa`.
+- `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes every user the run created, including users created through the sign-up form, by their test email.
 
 ## Evidence
 
-Every `run` writes `.cursor/skills/verify-clerk-ios/.verify/runs/<run-id>/` and prints its path:
+Every `run` writes `.claude/skills/verify-clerk-ios/.verify/runs/<run-id>/` and prints its path:
 
 | File | What it is |
 | --- | --- |
@@ -213,8 +213,8 @@ Proof standards: drive the real user path, capture the action and the resulting 
 After a run, sealing searches the run directory for every secret the run used (secret keys, tickets). A hit marks the file tainted in `run.json`, and a tainted run cannot be attached.
 
 ```console
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>  # video and every screenshot
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot profile  # video and one screenshot
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>  # video and every screenshot
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot profile  # video and one screenshot
 ```
 
 `attach` posts once per run with `gh pr comment --attach`. It refuses a run that is tainted, failed, or shows a user id the run did not create.
@@ -222,12 +222,12 @@ $ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>
 ## Cleanup
 
 ```console
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run  # what it would release, stop, and delete: each user (instance, id, test email) and organization (instance, id, name)
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios down  # release the simulator, delete run users and their organizations, stop recorders and this worktree's agent-device daemon
-$ .cursor/skills/verify-clerk-ios/bin/control-clerk-ios down --stale  # also finish cleanup left by a crashed run in this worktree
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run  # what it would release, stop, and delete: each user (instance, id, test email) and organization (instance, id, name)
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down  # release the simulator, delete run users and their organizations, stop recorders and this worktree's agent-device daemon
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down --stale  # also finish cleanup left by a crashed run in this worktree
 ```
 
-`down` deletes only what this worktree created: its lane simulator and the users in its ledger. Ledgers live at `~/.verify/ledgers/<id>.jsonl`, where `<id>` is a hash of the worktree path, and `<id>.owner` beside it holds the path. Find yours with `grep -l "$(git rev-parse --show-toplevel)" ~/.verify/ledgers/*.owner`. It never deletes `.verify/runs/`. Evidence survives teardown at `.cursor/skills/verify-clerk-ios/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
+`down` deletes only what this worktree created: its lane simulator and the users in its ledger. Ledgers live at `~/.verify/ledgers/<id>.jsonl`, where `<id>` is a hash of the worktree path, and `<id>.owner` beside it holds the path. Find yours with `grep -l "$(git rev-parse --show-toplevel)" ~/.verify/ledgers/*.owner`. It never deletes `.verify/runs/`. Evidence survives teardown at `.claude/skills/verify-clerk-ios/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
 
 Evidence lives inside the worktree. `git worktree remove` deletes `.verify/runs/` with the rest of the worktree, so copy the runs you need out first.
 
@@ -239,10 +239,10 @@ A ledger can number a test email that never became a user: a sign-up spec that s
 
 ## Helpers
 
-- `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios` is the only helper. It is executable. Every invocation is shown above.
-- `e2e.config.ts` composes the e2e config from the CLI's run context. `npx e2e list` works from `.cursor/skills/verify-clerk-ios/` while a lease is held.
+- `.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is the only helper. It is executable. Every invocation is shown above.
+- `e2e.config.ts` composes the e2e config from the CLI's run context. `npx e2e list` works from `.claude/skills/verify-clerk-ios/` while a lease is held.
 - `specs/fixtures.ts` is the `host` fixture. It takes its screen names from `src/host.ts`, so it is the same file in every repo.
-- `npm test --prefix .cursor/skills/verify-clerk-ios` runs the CLI's unit tests (`node --test test/*.test.ts`), with no network, keys, or simulator. `testing/` holds helper processes those tests spawn; they are not tests themselves. `npm run typecheck` runs `tsc`.
+- `npm test --prefix .claude/skills/verify-clerk-ios` runs the CLI's unit tests (`node --test test/*.test.ts`), with no network, keys, or simulator. `testing/` holds helper processes those tests spawn; they are not tests themselves. `npm run typecheck` runs `tsc`.
 - `features/` is the Feature Map. Start with `features/README.md`.
 
 Keep the map honest with `/maintain-verification-skill`.

@@ -16,12 +16,12 @@ A signed-in user opens OrganizationSwitcher, creates an organization, and the ne
 
 Preconditions:
 
-- `with-email-codes` has organizations on and lets users create organizations. `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios doctor` checks that organizations are enabled.
+- `with-email-codes` has organizations on and lets users create organizations. `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` checks that organizations are enabled.
 - The spec seeds a user and signs in with a ticket on `screen: 'orgSwitcher'`.
 
-- **Create.** Run `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios run organizations`. The spec checks `orgId` null, taps `Personal account`, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `Verify <runId>`, and taps `clerk.organization.profileForm.submit`.
+- **Create.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run organizations`. The spec checks `orgId` null, taps `Personal account`, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `Verify <runId>`, and taps `clerk.organization.profileForm.submit`.
 - **Skip invites.** The spec taps `Skip` on the invite step, waits for `orgId` to be non-null with the same `userId`, and expects the organization name on the switcher. Screenshot `org-created`.
-- **Proof.** `states.jsonl` reports a non-null `orgId`. `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run` lists the organizations it will delete, and `.cursor/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes them with their user.
+- **Proof.** `states.jsonl` reports a non-null `orgId`. `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run` lists the organizations it will delete, and `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes them with their user.
 
 ## Gotchas
 
