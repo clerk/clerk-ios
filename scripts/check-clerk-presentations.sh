@@ -39,15 +39,16 @@ while IFS=: read -r file line _; do
   fi
 done < <(scan_ui_sources_for '\.sheet\(')
 
-environment_object_pattern='@Environment\([A-Za-z0-9_]+(<[^>]*>)?\.self\)'
-carried_types="$(grep -oE "$environment_object_pattern" "$clerk_sheet_file" | sed -E 's/@Environment\(([A-Za-z0-9_]+).*/\1/' | sort -u)"
+environment_object_pattern='@Environment\(([A-Za-z0-9_]+\.)*[A-Za-z0-9_]+(<[^>]*>)?\.self\)'
+environment_type_capture='@Environment\((([A-Za-z0-9_]+\.)*)([A-Za-z0-9_]+)(<[^>]*>)?\.self\)'
+carried_types="$(grep -vE '^[[:space:]]*//' "$clerk_sheet_file" | grep -oE "$environment_object_pattern" | sed -E "s/$environment_type_capture/\3/" | sort -u)"
 
 while IFS=: read -r file line match; do
   if [ -z "$file" ] || [ "$file" = "$clerk_sheet_file" ]; then
     continue
   fi
 
-  type_name="$(printf '%s' "$match" | sed -E 's/.*@Environment\(([A-Za-z0-9_]+).*/\1/')"
+  type_name="$(printf '%s' "$match" | sed -E "s/.*$environment_type_capture.*/\3/")"
   if ! printf '%s\n' "$carried_types" | grep -qx "$type_name"; then
     report_error "$file" "$line" "$type_name is read from the environment but ClerkUIContext in $clerk_sheet_file does not carry it, so sheets on Designed for iPad and Mac Catalyst won't receive it."
   fi
