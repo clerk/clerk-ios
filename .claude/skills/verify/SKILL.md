@@ -5,7 +5,7 @@ description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, 
 
 # verify
 
-`bin/verify` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from `.claude/skills/verify/`. Every verb takes `--json` and then prints one `{ "ok": ... }` object. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
+`bin/verify` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from `.claude/skills/verify/`. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
 
 The rule: no change to clerk-ios UI or auth behavior is done until a `bin/verify run` on the real host shows the changed behavior.
 
@@ -26,7 +26,11 @@ The lane is ready when `up` prints its last line, `device <name> local leased by
 
 `up` is idempotent. It reuses a build whose key matches the current tree (a hash of every tracked and modified file minus docs and specs) and a lease this worktree already holds. Any change to the tree, including reverting an edit, changes the key, so the next `up` or `run` rebuilds and reinstalls. It builds before it claims a lane, because a build needs no device. `run` calls `up` itself, so `up` exists to start the slow part early. To start the slow part early, run `bin/verify up --wait 600 &`, then `bin/verify run ...`. `run` prints one `wait` line naming the build, waits for the `up` to finish with no time limit, and uses its lease. `--wait` does not apply to that wait; it bounds waiting for a free lane and for another `run` that holds the device. Give the background `up` a `--wait`: on a full pool, an `up` without it builds, then exits 3 with `POOL_FULL`, and the `run` claims its own lane.
 
-When `run` leases the lane itself, it prints the same ready line, `device <name> local leased by this worktree installed <build key>`, before its `run <id>` line.
+`run` prints the same ready line, `device <name> local leased by this worktree installed <build key>`, every time it holds a lease, whether it just leased the lane or reused one, before its `run <id>` line.
+
+Builds are per worktree: they live in that worktree's `.verify/builds/`. Two worktrees at the same commit have the same build key and still each build once.
+
+Before leasing, `up` and `run` release lanes whose claiming process is gone and whose worktree no longer exists, and print `reap    verify-ios-<n>  (owner process and worktree are gone)` for each.
 
 Because `run` goes through the same lease step as `up`, a `run` also cleans up after worktrees that were removed without `down` (their lanes, users, and daemons), exactly as `up` does.
 
@@ -67,6 +71,7 @@ $ bin/verify run sign-up/request-code              # one spec
 $ bin/verify run specs/explored/resend.e2e.ts      # a spec you wrote
 $ bin/verify run --all --skip form-entry           # every golden spec except form entry
 $ bin/verify run sign-up --skip form-entry         # one feature without its form-entry spec
+$ bin/verify run auth-start sign-up organizations  # several targets in one run, one lease, one video
 $ bin/verify screen                                # current UI tree with testIds and VerifyState
 $ bin/verify screen --png                          # plus a screenshot in scratch
 ```
@@ -118,6 +123,8 @@ $ git mv specs/explored/resend-countdown.e2e.ts specs/golden/sign-up/
 ```
 
 Every spec keeps at least one exact assertion on `verify.state` or an SDK identifier.
+
+A tap or fill on a node that is not on screen fails with `LOCATOR_NOT_FOUND`. Assert `await expect(locator).toBeVisible()` first when you are unsure the node is there, because its failure reads `observed: no node (match count 0)`, which says plainly that the element is missing.
 
 ### AI judge (off by default)
 

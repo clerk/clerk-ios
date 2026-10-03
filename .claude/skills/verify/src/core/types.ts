@@ -426,10 +426,19 @@ export interface BrokerLaunchResponse {
   readonly launchArguments: readonly string[];
 }
 
+/** How long a verb waits for the device lock, and the fix it prints when it gives up. The fix names only flags that verb takes. */
+export interface DeviceWait {
+  readonly seconds: number;
+  readonly busyFix: string;
+  readonly onWait?: (owner: ProcessRef) => void;
+}
+
 export interface AcquireRequest {
   readonly platform: Platform;
   readonly worktree: string;
   readonly waitSeconds: number;
+  /** The calling verb's own command with a wait flag, for the POOL_FULL fix. */
+  readonly retryWith: string;
   readonly progress: (line: string) => void;
 }
 

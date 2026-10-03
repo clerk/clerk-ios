@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseTestEmail, type ClerkBackend } from './clerk.ts';
+import { count } from './state.ts';
 import { isRunning } from './exec.ts';
 import { newEntryId, openWorkspace, type Workspace } from './workspace.ts';
 import type { InstanceName, LedgerEntry, TestEmail } from './types.ts';
@@ -93,7 +94,7 @@ export async function finishOrphanLedgers(
       const stopped = stopProcesses(ledger);
       const deleted = await deleteIdentities(ledger, clerk());
       for (const entry of ledger.unclosedEntries()) ledger.append({ id: newEntryId(), kind: 'done', ref: entry.id });
-      progress(`reap    ledger of ${worktree}  (worktree is gone)  deleted ${deleted.users} users, ${deleted.organizations} organizations, stopped ${stopped.join(', ') || 'nothing'}`);
+      progress(`reap    ledger of ${worktree}  (worktree is gone)  deleted ${count(deleted.users, 'user')}, ${count(deleted.organizations, 'organization')}, stopped ${stopped.join(', ') || 'nothing'}`);
     } catch (error) {
       progress(`reap    ledger of ${worktree} left open: ${(error as Error).message}`);
     }

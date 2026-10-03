@@ -29,4 +29,4 @@ Preconditions:
 - `verify.state` is not readable while a sheet covers the host. Read state after the sheet closes.
 - Use `host.tap` and `host.fill` inside the sheets, because of the iOS 27 `Toolbar` node.
 - The invite step appears only when the organization allows more than one member. The `with-email-codes` default does.
-- Organizations a run creates are deleted by `down` through the owning user. Never delete an organization by name.
+- `down` finds the organizations a run created through the user that created them, deletes each one, then deletes the user. It counts organizations apart from users, and `down --dry-run` lists them. Never delete an organization by name.
