@@ -346,14 +346,14 @@ struct HostedAuthFlowTests {
       #expect(Clerk.shared.client == reconciledClient)
       return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
     })
-    let clientService = HostedAuthClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return reconciledClient
-    })
+    }
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mock
     )
 
@@ -368,7 +368,11 @@ struct HostedAuthFlowTests {
 
     #expect(createCalls.value == 2)
     #expect(refreshCalls.value == 1)
-    #expect(clientService.skipClientIdValues.value == [true])
+    #expect(
+      transport.calls
+        .filter { $0.path == "/v1/client" }
+        .map { $0.headers[ClerkHeaderRequestMiddleware.skipClientIdHeader] } == ["1"]
+    )
     #expect(Clerk.shared.client == reconciledClient)
   }
 
@@ -381,14 +385,14 @@ struct HostedAuthFlowTests {
       createCalls.withValue { $0 += 1 }
       throw hostedAuthAPIError(code: "signed_out")
     })
-    let clientService = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return .mockSignedOut
-    })
+    }
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mock
     )
 
@@ -422,14 +426,14 @@ struct HostedAuthFlowTests {
       createCalls.withValue { $0 += 1 }
       throw hostedAuthAPIError(code: "resource_not_found")
     })
-    let clientService = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return .mockSignedOut
-    })
+    }
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mock
     )
 
@@ -466,14 +470,14 @@ struct HostedAuthFlowTests {
         throw hostedAuthAPIError(code: "signed_out")
       }
     )
-    let clientService = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return .mockSignedOut
-    })
+    }
     configureHostedAuthForTesting(
       hostedAuthService: hostedAuthService,
       sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -946,37 +950,18 @@ private func hostedAuthRedeemResponse(
   )
 }
 
-private final class HostedAuthClientService: ClientServiceProtocol {
-  let skipClientIdValues = LockIsolated<[Bool]>([])
-  let getHandler: @Sendable () async throws -> Client?
-
-  init(get: @escaping @Sendable () async throws -> Client?) {
-    getHandler = get
-  }
-
-  @MainActor
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
-    skipClientIdValues.withValue { $0.append(skipClientId) }
-    return try await ClientServiceResponse(
-      client: getHandler(),
-      requestSequence: nil,
-      serverDate: nil
-    )
-  }
-}
-
 @MainActor
 private func configureHostedAuthForTesting(
   hostedAuthService: some HostedAuthServiceProtocol,
   sessionService: some SessionServiceProtocol,
-  clientService: (any ClientServiceProtocol)? = nil,
+  transport: FakeTransport? = nil,
   initialClient: Client,
   options: Clerk.Options = .init()
 ) {
   configureClerkForTesting()
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: Clerk.shared.dependencies.apiClient,
-    clientService: clientService,
+    transport: transport,
     hostedAuthService: hostedAuthService,
     sessionService: sessionService
   )

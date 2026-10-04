@@ -62,8 +62,8 @@ func setupMockAPIClient() {
   // Explicitly pass real services so tests can intercept HTTP requests through MockingURLProtocol
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: mockAPIClient,
+    transport: mockAPIClient,
     telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-    clientService: ClientService(apiClient: mockAPIClient),
     userService: UserService(apiClient: mockAPIClient),
     signInService: SignInService(apiClient: mockAPIClient),
     signUpService: SignUpService(apiClient: mockAPIClient),
@@ -73,7 +73,6 @@ func setupMockAPIClient() {
     biometricCredentialService: BiometricCredentialService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
     billingService: BillingService(apiClient: mockAPIClient),
-    environmentService: EnvironmentService(apiClient: mockAPIClient),
     phoneNumberService: PhoneNumberService(apiClient: mockAPIClient),
     externalAccountService: ExternalAccountService(apiClient: mockAPIClient)
   )

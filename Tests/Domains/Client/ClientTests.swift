@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 struct ClientTests {
   @Test
-  func refreshClientUsesClientServiceGet() async throws {
+  func refreshClientRequestsTheClient() async throws {
     configureClerkForTesting()
     let called = LockIsolated(false)
     let expectedClient = Client(
@@ -16,14 +16,14 @@ struct ClientTests {
       lastActiveSessionId: nil,
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
-    let service = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       called.setValue(true)
       return expectedClient
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: service
+      transport: transport
     )
     Clerk.shared.client = nil
 
@@ -36,11 +36,9 @@ struct ClientTests {
   @Test
   func refreshClientPreservesClientWhenCanonicalResponseRequestsPreserve() async throws {
     configureClerkForTesting()
-    let service = MockClientService(get: { nil })
-
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: service
+      transport: FakeTransport.answeringClient { nil }
     )
     Clerk.shared.client = Client.mock
 
@@ -56,8 +54,8 @@ struct ClientTests {
     let keychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: MockClientService(get: { nil })
+      transport: FakeTransport.answeringClient { nil },
+      keychain: keychain
     )
     Clerk.shared.client = nil
     try Clerk.shared.seedIdentity(deviceToken: "current-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
@@ -94,9 +92,7 @@ struct ClientTests {
     Clerk.shared.applyResponseClient(current, responseSequence: 2)
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: SequencedClientService(
-        response: ClientServiceResponse(client: stale, requestSequence: 1, serverDate: nil)
-      )
+      transport: clientTransport(stale, requestSequence: 1)
     )
 
     let client = try await Clerk.shared.refreshClient()
@@ -121,9 +117,7 @@ struct ClientTests {
     Clerk.shared.applyResponseClient(current, responseSequence: 2)
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: SequencedClientService(
-        response: ClientServiceResponse(client: nil, requestSequence: 1, serverDate: nil)
-      )
+      transport: clientTransport(nil, requestSequence: 1)
     )
 
     let client = try await Clerk.shared.refreshClient()
@@ -147,14 +141,12 @@ struct ClientTests {
       lastActiveSessionId: nil,
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
-    let service = DeviceTokenUpdateClientService(
-      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
-    )
+    let transport = clientTransport(expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: service
+      transport: transport,
+      keychain: keychain
     )
     try Clerk.shared.seedIdentity(deviceToken: "old-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
 
@@ -163,7 +155,7 @@ struct ClientTests {
     #expect(client?.id == expectedClient.id)
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
-    #expect(service.skipClientIdValues == [true])
+    #expect(skipClientIdValues(transport) == ["1"])
     let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
@@ -184,14 +176,12 @@ struct ClientTests {
       lastActiveSessionId: nil,
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
-    let service = DeviceTokenUpdateClientService(
-      response: ClientServiceResponse(client: expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
-    )
+    let transport = clientTransport(expectedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: service
+      transport: transport,
+      keychain: keychain
     )
     try Clerk.shared.seedIdentity(deviceToken: "old-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
     Clerk.shared.runtime.internalStateChanges.addObserver(ThrowingInternalStateChangeObserver())
@@ -201,7 +191,7 @@ struct ClientTests {
     #expect(client?.id == expectedClient.id)
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
-    #expect(service.skipClientIdValues == [true])
+    #expect(skipClientIdValues(transport) == ["1"])
     let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
@@ -223,14 +213,8 @@ struct ClientTests {
     )
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: DeviceTokenUpdateClientService(
-        response: ClientServiceResponse(
-          client: refreshedClient,
-          requestSequence: 1,
-          serverDate: Date(timeIntervalSince1970: 2000)
-        )
-      )
+      transport: clientTransport(refreshedClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000)),
+      keychain: keychain
     )
     try Clerk.shared.seedIdentity(deviceToken: "old-token", client: oldClient)
     let observer = CoherentIdentityRecordingObserver()
@@ -261,13 +245,13 @@ struct ClientTests {
       lastActiveSessionId: nil,
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
-    let service = DeviceTokenChangingClientService(
-      response: ClientServiceResponse(client: staleClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000))
-    )
+    let transport = clientTransport(staleClient, requestSequence: 1, serverDate: Date(timeIntervalSince1970: 2000)) {
+      try Clerk.shared.identityController.adoptDeviceToken("changed-token")
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: service
+      transport: transport
     )
 
     let client = try await Clerk.shared.refreshClient()
@@ -374,11 +358,11 @@ struct ClientTests {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      keychain: InMemoryKeychain(),
-      clientService: MockClientService(get: {
+      transport: FakeTransport.answeringClient {
         refreshed.setValue(true)
         return nil
-      })
+      },
+      keychain: InMemoryKeychain()
     )
     if let storedToken {
       try clerk.seedIdentity(deviceToken: storedToken, client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
@@ -407,50 +391,30 @@ private final class CoherentIdentityRecordingObserver: ClerkInternalStateChangeO
   }
 }
 
-private final class SequencedClientService: ClientServiceProtocol {
-  private let response: ClientServiceResponse
-
-  init(response: ClientServiceResponse) {
-    self.response = response
+@MainActor
+private func clientTransport(
+  _ client: Client?,
+  requestSequence: Int? = nil,
+  serverDate: Date? = nil,
+  beforeResponding: @escaping @MainActor () throws -> Void = {}
+) -> FakeTransport {
+  let transport = FakeTransport.mockDefaults()
+  transport.stubReply(ClientAPI.get()) { _ in
+    try beforeResponding()
+    return FakeTransport.Reply(
+      ClientResponse(response: client, client: nil),
+      requestSequence: requestSequence,
+      serverDate: serverDate
+    )
   }
-
-  @MainActor
-  func getResponse(skipClientId _: Bool = false) async throws -> ClientServiceResponse {
-    response
-  }
+  return transport
 }
 
-private final class DeviceTokenUpdateClientService: ClientServiceProtocol {
-  private let response: ClientServiceResponse
-  private let skipClientIdValuesStore = LockIsolated([Bool]())
-
-  var skipClientIdValues: [Bool] {
-    skipClientIdValuesStore.value
-  }
-
-  init(response: ClientServiceResponse) {
-    self.response = response
-  }
-
-  @MainActor
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
-    skipClientIdValuesStore.withValue { $0.append(skipClientId) }
-    return response
-  }
-}
-
-private final class DeviceTokenChangingClientService: ClientServiceProtocol {
-  private let response: ClientServiceResponse
-
-  init(response: ClientServiceResponse) {
-    self.response = response
-  }
-
-  @MainActor
-  func getResponse(skipClientId _: Bool) async throws -> ClientServiceResponse {
-    try Clerk.shared.identityController.adoptDeviceToken("changed-token")
-    return response
-  }
+@MainActor
+private func skipClientIdValues(_ transport: FakeTransport) -> [String?] {
+  transport.calls
+    .filter { $0.path == "/v1/client" }
+    .map { $0.headers[ClerkHeaderRequestMiddleware.skipClientIdHeader] }
 }
 
 private final class ThrowingInternalStateChangeObserver: ClerkInternalStateChangeObserver {

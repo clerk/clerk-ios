@@ -350,13 +350,13 @@ struct ClerkResponseClientStateTests {
     return client
   }
 
-  private func makeIsolatedClerk(clientService: (any ClientServiceProtocol)? = nil) -> Clerk {
+  private func makeIsolatedClerk() -> Clerk {
     configureClerkForTesting()
 
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      clientService: clientService ?? MockClientService(get: { nil })
+      transport: FakeTransport.answeringClient { nil }
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager

@@ -106,7 +106,7 @@ struct ClerkReconfigureTests {
     let shutdownFinished = LockIsolated(false)
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      clientService: MockClientService(get: { throw CancellationError() }),
+      transport: FakeTransport.answeringClient { throw CancellationError() },
       sessionService: MockSessionService(fetchToken: { _, _, _ in
         requestStarted.setValue(true)
         defer { requestCancelled.setValue(Task.isCancelled) }
@@ -626,7 +626,7 @@ struct ClerkReconfigureTests {
 
   @Test
   func oldInFlightClientResponseIsIgnoredAfterReconfigure() async throws {
-    let oldClientService = Clerk.shared.dependencies.clientService
+    let oldTransport = Clerk.shared.dependencies.transport
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
     var mock = try Mock(
       url: originalURL,
@@ -641,7 +641,7 @@ struct ClerkReconfigureTests {
     mock.register()
 
     let oldRequest = Task { @MainActor in
-      try await oldClientService.getResponse()
+      try await oldTransport.send(ClientAPI.get())
     }
     try await Task.sleep(for: .milliseconds(20))
 
@@ -670,14 +670,14 @@ struct ClerkReconfigureTests {
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
     let serviceStarted = LockIsolated(false)
-    let service = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       serviceStarted.setValue(true)
       try await Task.sleep(for: .milliseconds(100))
       return staleClient
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      clientService: service
+      transport: transport
     )
 
     let refreshTask = Task { @MainActor in
@@ -704,14 +704,14 @@ struct ClerkReconfigureTests {
   @Test
   func staleRefreshEnvironmentDoesNotApplyAfterReconfigure() async throws {
     let serviceStarted = LockIsolated(false)
-    let service = MockEnvironmentService(get: {
+    let transport = FakeTransport.answeringEnvironment {
       serviceStarted.setValue(true)
       try await Task.sleep(for: .milliseconds(100))
       return .mock
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      environmentService: service
+      transport: transport
     )
 
     let refreshTask = Task { @MainActor in

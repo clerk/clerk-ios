@@ -43,7 +43,7 @@ public final class PreviewBuilder {
 
   package var services: MockServicesBuilder = .init()
 
-  package var transport = FakeTransport.previewDefaults()
+  package var transport = FakeTransport.mockDefaults()
 
   /// Creates a new preview builder.
   public init() {}
@@ -122,12 +122,8 @@ extension Clerk {
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    if previewBuilder.services.clientService.getHandler == nil {
-      previewBuilder.services.clientService.getHandler = { mockClient }
-    }
-    if previewBuilder.services.environmentService.getHandler == nil {
-      previewBuilder.services.environmentService.getHandler = { mockEnvironment }
-    }
+    previewBuilder.transport.fallback(ClientAPI.get(), returning: ClientResponse(response: mockClient, client: nil))
+    previewBuilder.transport.fallback(EnvironmentAPI.get(), returning: mockEnvironment)
     if previewBuilder.services.userService.createEmailAddressHandler == nil {
       let transport = previewBuilder.transport
       previewBuilder.services.userService.createEmailAddressHandler = { emailAddress in
@@ -167,7 +163,6 @@ extension Clerk {
     MockDependencyContainer(
       apiClient: apiClient,
       transport: transport,
-      clientService: services.clientService,
       userService: services.userService,
       signInService: services.signInService,
       signUpService: services.signUpService,
@@ -175,7 +170,6 @@ extension Clerk {
       passkeyService: services.passkeyService,
       organizationService: services.organizationService,
       billingService: services.billingService,
-      environmentService: services.environmentService,
       phoneNumberService: services.phoneNumberService,
       externalAccountService: services.externalAccountService
     )

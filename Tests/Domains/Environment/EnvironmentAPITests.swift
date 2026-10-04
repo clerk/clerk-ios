@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct EnvironmentServiceTests {
+struct EnvironmentAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -29,7 +29,7 @@ struct EnvironmentServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.environmentService.get()
+    _ = try await Clerk.shared.dependencies.transport.send(EnvironmentAPI.get())
     #expect(requestHandled.value)
   }
 }

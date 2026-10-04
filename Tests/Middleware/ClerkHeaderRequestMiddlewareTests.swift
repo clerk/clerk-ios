@@ -156,13 +156,13 @@ struct ClerkHeaderRequestMiddlewareTests {
     startupClient.id = "startup-refresh-client"
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      clientService: MockClientService(get: {
+      transport: FakeTransport.answeringClient {
         await startupGate.suspend()
         #expect(Task.isCancelled)
         await startupCancellationObserved.signal()
         try Task.checkCancellation()
         return startupClient
-      })
+      }
     )
     clerk.performConfiguration(dependencies: dependencies)
     defer {

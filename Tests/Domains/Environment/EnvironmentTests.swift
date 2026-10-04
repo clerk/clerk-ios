@@ -11,14 +11,14 @@ struct EnvironmentTests {
   }
 
   @Test
-  func refreshEnvironmentUsesEnvironmentServiceGet() async throws {
+  func refreshEnvironmentRequestsTheEnvironment() async throws {
     let called = LockIsolated(false)
     let expectedEnvironment = Clerk.Environment.mock
-    let service = MockEnvironmentService(get: {
+    let transport = FakeTransport.answeringEnvironment {
       called.setValue(true)
       return expectedEnvironment
-    })
-    let clerk = makeClerk(environmentService: service)
+    }
+    let clerk = makeClerk(transport: transport)
 
     _ = try await clerk.refreshEnvironment()
 
@@ -29,12 +29,12 @@ struct EnvironmentTests {
   @Test
   func refreshEnvironmentCoalescesConcurrentRequests() async throws {
     let callCount = LockIsolated(0)
-    let service = MockEnvironmentService(get: {
+    let transport = FakeTransport.answeringEnvironment {
       callCount.withValue { $0 += 1 }
       try await Task.sleep(for: .milliseconds(100))
       return .mock
-    })
-    let clerk = makeClerk(environmentService: service)
+    }
+    let clerk = makeClerk(transport: transport)
 
     let firstRefresh = Task { @MainActor in
       try await clerk.refreshEnvironment()
@@ -54,11 +54,11 @@ struct EnvironmentTests {
   @Test
   func ensureEnvironmentRefreshedAfterSatisfiedCheckpointDoesNotRequestAgain() async throws {
     let callCount = LockIsolated(0)
-    let service = MockEnvironmentService(get: {
+    let transport = FakeTransport.answeringEnvironment {
       callCount.withValue { $0 += 1 }
       return .mock
-    })
-    let clerk = makeClerk(environmentService: service)
+    }
+    let clerk = makeClerk(transport: transport)
 
     let checkpoint = clerk.environmentRefreshCheckpoint
     _ = try await clerk.refreshEnvironment()
@@ -70,11 +70,11 @@ struct EnvironmentTests {
   @Test
   func ensureEnvironmentRefreshedAfterUnsatisfiedCheckpointRequestsEnvironment() async throws {
     let callCount = LockIsolated(0)
-    let service = MockEnvironmentService(get: {
+    let transport = FakeTransport.answeringEnvironment {
       callCount.withValue { $0 += 1 }
       return .mock
-    })
-    let clerk = makeClerk(environmentService: service)
+    }
+    let clerk = makeClerk(transport: transport)
 
     let checkpoint = clerk.environmentRefreshCheckpoint
     _ = try await clerk.ensureEnvironmentRefreshed(after: checkpoint)
@@ -82,11 +82,11 @@ struct EnvironmentTests {
     #expect(callCount.value == 1)
   }
 
-  private func makeClerk(environmentService: MockEnvironmentService) -> Clerk {
+  private func makeClerk(transport: FakeTransport) -> Clerk {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      environmentService: environmentService
+      transport: transport
     )
     return clerk
   }

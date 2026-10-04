@@ -94,8 +94,8 @@ struct EmailAddressTests {
   }
 
   @Test
-  func previewDefaultsAnswerEveryEmailAddressEndpoint() async throws {
-    useTransport(.previewDefaults())
+  func mockDefaultsAnswerEveryEmailAddressEndpoint() async throws {
+    useTransport(.mockDefaults())
     let emailAddress = EmailAddress.mock
 
     #expect(try await User.mock.createEmailAddress("preview@example.com").id == emailAddress.id)

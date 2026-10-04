@@ -455,19 +455,16 @@ extension Clerk {
     try Task.checkCancellation()
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
-    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
+    let response = try await dependencies.transport.send(ClientAPI.get(skipClientId: skipClientId))
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
-    switch response.update {
-    case .client(let responseClient):
+    if let responseClient = response.value.response {
       identityController.applyResponseClient(
         responseClient,
         responseSequence: response.requestSequence,
         serverDate: response.serverDate,
         clientResponseGeneration: clientResponseGeneration
       )
-    case .preserve:
-      break
     }
     return client
   }

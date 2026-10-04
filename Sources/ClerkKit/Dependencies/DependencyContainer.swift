@@ -29,7 +29,6 @@ final class DependencyContainer: Dependencies {
 
   // MARK: - Services
 
-  let clientService: ClientServiceProtocol
   let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
@@ -40,7 +39,6 @@ final class DependencyContainer: Dependencies {
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
-  let environmentService: EnvironmentServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
@@ -127,7 +125,6 @@ final class DependencyContainer: Dependencies {
       options: options
     )
 
-    clientService = ClientService(apiClient: apiClient)
     hostedAuthService = HostedAuthService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
@@ -138,7 +135,6 @@ final class DependencyContainer: Dependencies {
     biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
     billingService = BillingService(apiClient: apiClient)
-    environmentService = EnvironmentService(apiClient: apiClient)
     phoneNumberService = PhoneNumberService(apiClient: apiClient)
     externalAccountService = ExternalAccountService(apiClient: apiClient)
   }

@@ -13,11 +13,11 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
 
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      clientService: MockClientService(get: {
+      transport: FakeTransport.answeringClient {
         refreshCount.withValue { $0 += 1 }
         try await Task.sleep(for: .milliseconds(100))
         return Client.mock
-      })
+      }
     )
 
     async let first: Void = clerk.runtime.refreshClientAfterInvalidAuth()

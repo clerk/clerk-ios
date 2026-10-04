@@ -161,14 +161,14 @@ struct KeychainSharingTests {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      transport: FakeTransport.answeringClient {
+        refreshes?.withValue { $0 += 1 }
+        return refreshedClient
+      },
       appLocalKeychain: InMemoryKeychain(),
       identityKeychain: sharedKeychain,
       clientKeychain: InMemoryKeychain(),
-      identityIsInAccessGroup: true,
-      clientService: MockClientService(get: {
-        refreshes?.withValue { $0 += 1 }
-        return refreshedClient
-      })
+      identityIsInAccessGroup: true
     )
     clerk.identityController.hydrate()
     return App(clerk: clerk)

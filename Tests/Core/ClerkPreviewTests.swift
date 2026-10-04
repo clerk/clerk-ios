@@ -14,7 +14,7 @@ struct ClerkPreviewTests {
     var fixture = EmailAddress.mock
     fixture.id = "email_preview"
     fixture.emailAddress = "preview@example.com"
-    let transport = FakeTransport.previewDefaults()
+    let transport = FakeTransport.mockDefaults()
     transport.stub(EmailAddressAPI.create(email: fixture.emailAddress), returning: ClientResponse(response: fixture, client: nil))
 
     let clerk = makePreview { preview in
@@ -33,7 +33,7 @@ struct ClerkPreviewTests {
 
   @Test
   func emailCreationPropagatesPreviewTransportErrors() async throws {
-    let transport = FakeTransport.previewDefaults()
+    let transport = FakeTransport.mockDefaults()
     transport.stub(EmailAddressAPI.create(email: "preview@example.com")) { _ in
       throw PreviewError.rejected
     }

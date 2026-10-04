@@ -27,8 +27,6 @@ protocol Dependencies: AnyObject {
 
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
-  var clientService: ClientServiceProtocol { get }
-
   var hostedAuthService: HostedAuthServiceProtocol { get }
 
   var userService: UserServiceProtocol { get }
@@ -48,8 +46,6 @@ protocol Dependencies: AnyObject {
   var organizationService: OrganizationServiceProtocol { get }
 
   var billingService: BillingServiceProtocol { get }
-
-  var environmentService: EnvironmentServiceProtocol { get }
 
   var phoneNumberService: PhoneNumberServiceProtocol { get }
 
