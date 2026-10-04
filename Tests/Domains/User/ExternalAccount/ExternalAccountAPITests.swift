@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct ExternalAccountServiceTests {
+struct ExternalAccountAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -37,12 +37,12 @@ struct ExternalAccountServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.externalAccountService.reauthorize(
-      externalAccount.id,
-      redirectUrl: nil,
+    _ = try await Clerk.shared.dependencies.transport.send(ExternalAccountAPI.reauthorize(
+      externalAccountId: externalAccount.id,
+      redirectUrl: expectedRedirectUrl,
       additionalScopes: ["write", "view"],
       oidcPrompts: []
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -65,7 +65,7 @@ struct ExternalAccountServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.externalAccountService.destroy(externalAccount.id)
+    _ = try await Clerk.shared.dependencies.transport.send(ExternalAccountAPI.destroy(externalAccountId: externalAccount.id))
     #expect(requestHandled.value)
   }
 }

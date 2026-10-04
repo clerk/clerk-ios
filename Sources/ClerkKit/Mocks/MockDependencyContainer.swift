@@ -23,7 +23,6 @@ final class MockDependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
-  let externalAccountService: ExternalAccountServiceProtocol
 
   let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
@@ -42,8 +41,7 @@ final class MockDependencyContainer: Dependencies {
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
-    billingService: (any BillingServiceProtocol)? = nil,
-    externalAccountService: (any ExternalAccountServiceProtocol)? = nil
+    billingService: (any BillingServiceProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
     let resolvedKeychain = keychain ?? InMemoryKeychain()
@@ -65,6 +63,5 @@ final class MockDependencyContainer: Dependencies {
     self.userService = userService ?? MockUserService()
     self.organizationService = organizationService ?? MockOrganizationService()
     self.billingService = billingService ?? MockBillingService()
-    self.externalAccountService = externalAccountService ?? MockExternalAccountService()
   }
 }

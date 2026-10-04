@@ -32,7 +32,6 @@ final class DependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
-  let externalAccountService: ExternalAccountServiceProtocol
 
   // MARK: - Magic Link
 
@@ -120,7 +119,6 @@ final class DependencyContainer: Dependencies {
     userService = UserService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
     billingService = BillingService(apiClient: apiClient)
-    externalAccountService = ExternalAccountService(apiClient: apiClient)
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {

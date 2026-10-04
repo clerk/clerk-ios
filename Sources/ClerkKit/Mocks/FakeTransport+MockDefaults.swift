@@ -28,6 +28,12 @@ extension FakeTransport {
     transport.fallback(PhoneNumberAPI.setReservedForSecondFactor(phoneNumberId: anyId, reserved: true), returning: ClientResponse(response: PhoneNumber.mock, client: nil))
 
     transport.fallback(
+      ExternalAccountAPI.reauthorize(externalAccountId: anyId, redirectUrl: "", additionalScopes: [], oidcPrompts: []),
+      returning: ClientResponse(response: ExternalAccount.mockVerified, client: nil)
+    )
+    transport.fallback(ExternalAccountAPI.destroy(externalAccountId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+
+    transport.fallback(
       MagicLinkAPI.complete(params: MagicLinkCompleteParams(flowId: anyId, approvalToken: "", codeVerifier: "")),
       returning: ClientResponse(response: .ticket(MagicLinkCompleteResponse(flowId: nil, ticket: "ticket_mock")), client: nil)
     )

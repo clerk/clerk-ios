@@ -84,13 +84,6 @@ public struct ExternalAccount: Codable, Identifiable, Sendable, Equatable {
 }
 
 extension ExternalAccount {
-  @MainActor
-  private var externalAccountService: any ExternalAccountServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.externalAccountService
-    }
-  }
-
   /// Prepares a reauthorization for an existing external account, requesting new scopes or prompts.
   ///
   /// Calls the backend to generate a new authorization URL with the specified parameters.
@@ -108,12 +101,12 @@ extension ExternalAccount {
     additionalScopes: [String] = [],
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
-    try await externalAccountService.reauthorize(
-      id,
-      redirectUrl: redirectUrl,
+    try await Clerk.currentDependencies.transport.send(ExternalAccountAPI.reauthorize(
+      externalAccountId: id,
+      redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
       additionalScopes: additionalScopes,
       oidcPrompts: oidcPrompts
-    )
+    )).value.response
   }
 
   /// Opens the OAuth flow using the redirect URL from this account's verification.
@@ -153,6 +146,6 @@ extension ExternalAccount {
   /// Deletes this external account.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await externalAccountService.destroy(id)
+    try await Clerk.currentDependencies.transport.send(ExternalAccountAPI.destroy(externalAccountId: id)).value.response
   }
 }

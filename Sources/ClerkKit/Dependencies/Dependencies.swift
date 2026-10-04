@@ -33,8 +33,6 @@ protocol Dependencies: AnyObject {
 
   var billingService: BillingServiceProtocol { get }
 
-  var externalAccountService: ExternalAccountServiceProtocol { get }
-
   var configurationManager: ConfigurationManager { get }
 
   var magicLinkStore: MagicLinkStore { get }

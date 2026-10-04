@@ -165,8 +165,7 @@ extension Clerk {
       transport: transport,
       userService: services.userService,
       organizationService: services.organizationService,
-      billingService: services.billingService,
-      externalAccountService: services.externalAccountService
+      billingService: services.billingService
     )
   }
 }
