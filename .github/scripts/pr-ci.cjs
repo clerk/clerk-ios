@@ -80,6 +80,24 @@ async function findPullRequests({ github, context }) {
     .map(pr => pr.number))];
 }
 
+// The workflow token can't see private organization membership, so a private
+// member's association reads as COLLABORATOR. Treat writers who aren't outside
+// collaborators as internal, which works regardless of membership visibility.
+async function internalWriterIssue(github, repo, login) {
+  const { data: access } = await github.rest.repos.getCollaboratorPermissionLevel({ ...repo, username: login });
+  const writeRoles = new Set(['write', 'push', 'maintain', 'admin']);
+  if (!writeRoles.has(access.permission) && !writeRoles.has(access.role_name)) {
+    return 'does not have write access';
+  }
+  const outsiders = await github.paginate(github.rest.repos.listCollaborators, {
+    ...repo, affiliation: 'outside', per_page: 100,
+  });
+  if (outsiders.some(user => user.login.toLowerCase() === login.toLowerCase())) {
+    return 'is an outside collaborator';
+  }
+  return null;
+}
+
 async function resolveRequest({ github, context, core, prNumber }) {
   core.setOutput('should_run', 'false');
   const skip = reason => core.info(`Skipping PR #${prNumber}: ${reason}`);
@@ -93,8 +111,12 @@ async function resolveRequest({ github, context, core, prNumber }) {
   const automatic = kind === 'automatic';
 
   if (automatic) {
-    if (pr.draft || pr.user.type !== 'User' || !MEMBER_ASSOCIATIONS.has(pr.author_association)) {
+    if (pr.draft || pr.user.type !== 'User') {
       return skip('automatic CI requires a ready PR authored by a Clerk organization member.');
+    }
+    if (!MEMBER_ASSOCIATIONS.has(pr.author_association)) {
+      const issue = await internalWriterIssue(github, repo, pr.user.login);
+      if (issue) return skip(`automatic CI requires a Clerk organization member, and the PR author ${issue}.`);
     }
     if (context.eventName === 'status' && context.payload.sha !== headSha) {
       return skip('the completed review belongs to an older commit.');
@@ -110,19 +132,8 @@ async function resolveRequest({ github, context, core, prNumber }) {
       ...repo, comment_id: comment.id, body: comment.body.replace(CHECKBOX, '- [ ] Run CI'),
     });
     if (sender.type !== 'User') return skip('the checkbox editor is not a GitHub user.');
-    const { data: access } = await github.rest.repos.getCollaboratorPermissionLevel({
-      ...repo, username: sender.login,
-    });
-    const writeRoles = new Set(['write', 'push', 'maintain', 'admin']);
-    if (!writeRoles.has(access.permission) && !writeRoles.has(access.role_name)) {
-      return skip('the checkbox editor does not have write access.');
-    }
-    const outsiders = await github.paginate(github.rest.repos.listCollaborators, {
-      ...repo, affiliation: 'outside', per_page: 100,
-    });
-    if (outsiders.some(user => user.login.toLowerCase() === sender.login.toLowerCase())) {
-      return skip('the checkbox editor is an outside collaborator.');
-    }
+    const issue = await internalWriterIssue(github, repo, sender.login);
+    if (issue) return skip(`the checkbox editor ${issue}.`);
   }
 
   const comments = await github.paginate(github.rest.issues.listComments, {
