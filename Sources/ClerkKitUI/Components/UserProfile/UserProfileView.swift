@@ -196,21 +196,17 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         initialPathCount = navigationPath?.wrappedValue.count ?? 0
       }
       .clerkErrorPresenting($error)
-      .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
+      .clerkSheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
         UserButtonAccountSwitcher()
-          .environment(clerk)
-          .environment(sheetNavigation)
       }
-      .sheet(isPresented: $updateProfileIsPresented) {
+      .clerkSheet(isPresented: $updateProfileIsPresented) {
         UserProfileUpdateProfileView(user: user)
-          .environment(clerk)
       }
-      .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
+      .clerkSheet(isPresented: $sheetNavigation.authViewIsPresented) {
         // The add-account sheet is modal over the host, so it dismisses itself
         // rather than showing the host's back button.
         AuthView()
           .environment(\.clerkHostBackAction, nil)
-          .environment(clerk)
       }
       .task(id: user) {
         await getSessionsOnAllDevices()

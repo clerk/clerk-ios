@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-clerk-presentations install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -22,6 +22,7 @@ help:
 	@echo "  make check-e2e-hooks - Verify E2E-only product hooks remain reviewed"
 	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
 	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
+	@echo "  make check-clerk-presentations - Verify ClerkKitUI sheets present through clerkSheet"
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
@@ -161,8 +162,12 @@ check-e2e-selectors:
 check-e2e-phone-numbers:
 	@./scripts/check-e2e-phone-numbers.sh
 
+# Verify ClerkKitUI sheets present through clerkSheet
+check-clerk-presentations:
+	@./scripts/check-clerk-presentations.sh
+
 # Run format-check, lint, and lightweight repo checks
-check: format-check lint check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers
+check: format-check lint check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-clerk-presentations
 	@echo "✅ All checks passed!"
 
 clean:

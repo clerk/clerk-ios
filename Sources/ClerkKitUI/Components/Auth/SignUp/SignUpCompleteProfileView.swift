@@ -129,7 +129,7 @@ struct SignUpCompleteProfileView: View {
     .scrollDismissesKeyboard(.interactively)
     #endif
     .clerkErrorPresenting($error)
-    .sheet(item: $safariSheetItem) { item in
+    .clerkSheet(item: $safariSheetItem) { item in
       SafariView(url: item.url)
     }
     .background(theme.colors.background)

@@ -359,7 +359,7 @@ extension AuthView {
 
 #Preview("In sheet") {
   Color.clear
-    .sheet(isPresented: .constant(true)) {
+    .clerkSheet(isPresented: .constant(true)) {
       AuthView()
         .clerkPreview()
     }

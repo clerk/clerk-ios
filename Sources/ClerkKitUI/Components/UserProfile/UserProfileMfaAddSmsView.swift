@@ -14,7 +14,6 @@ struct UserProfileMfaAddSmsView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
   @Environment(UserProfileSheetNavigation.self) private var navigation
-  @Environment(CodeLimiter.self) private var codeLimiter
 
   @State private var selectedPhoneNumber: ClerkKit.PhoneNumber?
   @State private var addPhoneNumberIsPresented = false
@@ -133,10 +132,8 @@ struct UserProfileMfaAddSmsView: View {
     #if os(iOS)
     .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
     #endif
-    .sheet(isPresented: $addPhoneNumberIsPresented) {
+    .clerkSheet(isPresented: $addPhoneNumberIsPresented) {
       UserProfileAddPhoneView()
-        .environment(clerk)
-        .environment(codeLimiter)
     }
   }
 }

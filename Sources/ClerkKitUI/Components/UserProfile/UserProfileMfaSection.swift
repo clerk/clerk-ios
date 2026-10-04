@@ -73,10 +73,8 @@ struct UserProfileMfaSection: View {
     } header: {
       UserProfileSectionHeader(text: "TWO-STEP VERIFICATION")
     }
-    .sheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
+    .clerkSheet(isPresented: $navigation.chooseMfaTypeIsPresented) {
       UserProfileAddMfaView()
-      .environment(clerk)
-      .environment(navigation)
     }
   }
 }
