@@ -23,7 +23,6 @@ final class MockDependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
-  let phoneNumberService: PhoneNumberServiceProtocol
   let externalAccountService: ExternalAccountServiceProtocol
 
   let magicLinkStore: MagicLinkStore
@@ -44,7 +43,6 @@ final class MockDependencyContainer: Dependencies {
     userService: (any UserServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
     billingService: (any BillingServiceProtocol)? = nil,
-    phoneNumberService: (any PhoneNumberServiceProtocol)? = nil,
     externalAccountService: (any ExternalAccountServiceProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
@@ -67,7 +65,6 @@ final class MockDependencyContainer: Dependencies {
     self.userService = userService ?? MockUserService()
     self.organizationService = organizationService ?? MockOrganizationService()
     self.billingService = billingService ?? MockBillingService()
-    self.phoneNumberService = phoneNumberService ?? MockPhoneNumberService()
     self.externalAccountService = externalAccountService ?? MockExternalAccountService()
   }
 }

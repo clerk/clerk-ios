@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct PhoneNumberServiceTests {
+struct PhoneNumberAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -30,7 +30,7 @@ struct PhoneNumberServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.create(phoneNumber: "+1234567890")
+    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.create(phoneNumber: "+1234567890"))
     #expect(requestHandled.value)
   }
 
@@ -53,7 +53,7 @@ struct PhoneNumberServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.delete(phoneNumberId: phoneNumber.id)
+    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.delete(phoneNumberId: phoneNumber.id))
     #expect(requestHandled.value)
   }
 
@@ -77,7 +77,7 @@ struct PhoneNumberServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.prepareVerification(phoneNumberId: phoneNumber.id)
+    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.prepareVerification(phoneNumberId: phoneNumber.id))
     #expect(requestHandled.value)
   }
 
@@ -101,10 +101,10 @@ struct PhoneNumberServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.attemptVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.attemptVerification(
       phoneNumberId: phoneNumber.id,
       code: "123456"
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -128,7 +128,7 @@ struct PhoneNumberServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.makeDefaultSecondFactor(phoneNumberId: phoneNumber.id)
+    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.makeDefaultSecondFactor(phoneNumberId: phoneNumber.id))
     #expect(requestHandled.value)
   }
 
@@ -152,10 +152,10 @@ struct PhoneNumberServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.phoneNumberService.setReservedForSecondFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.setReservedForSecondFactor(
       phoneNumberId: phoneNumber.id,
       reserved: true
-    )
+    ))
     #expect(requestHandled.value)
   }
 }

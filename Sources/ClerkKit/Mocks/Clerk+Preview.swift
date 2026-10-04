@@ -166,7 +166,6 @@ extension Clerk {
       userService: services.userService,
       organizationService: services.organizationService,
       billingService: services.billingService,
-      phoneNumberService: services.phoneNumberService,
       externalAccountService: services.externalAccountService
     )
   }

@@ -37,13 +37,6 @@ protocol UserServiceProtocol: Sendable {
 final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
 
-  @MainActor
-  private var phoneNumberService: any PhoneNumberServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.phoneNumberService
-    }
-  }
-
   init(apiClient: APIClient) {
     self.apiClient = apiClient
   }
@@ -103,7 +96,7 @@ final class UserService: UserServiceProtocol {
 
   @MainActor
   func createPhoneNumber(phoneNumber: String) async throws -> PhoneNumber {
-    try await phoneNumberService.create(phoneNumber: phoneNumber)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.create(phoneNumber: phoneNumber)).value.response
   }
 
   @MainActor

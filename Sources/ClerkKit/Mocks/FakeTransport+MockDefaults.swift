@@ -20,6 +20,13 @@ extension FakeTransport {
     transport.fallback(EmailAddressAPI.attemptVerification(emailAddressId: anyId, strategy: .emailCode(code: "424242")), returning: ClientResponse(response: EmailAddress.mock, client: nil))
     transport.fallback(EmailAddressAPI.destroy(emailAddressId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
 
+    transport.fallback(PhoneNumberAPI.create(phoneNumber: PhoneNumber.mock.phoneNumber), returning: ClientResponse(response: PhoneNumber.mock, client: nil))
+    transport.fallback(PhoneNumberAPI.delete(phoneNumberId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(PhoneNumberAPI.prepareVerification(phoneNumberId: anyId), returning: ClientResponse(response: PhoneNumber.mock, client: nil))
+    transport.fallback(PhoneNumberAPI.attemptVerification(phoneNumberId: anyId, code: ""), returning: ClientResponse(response: PhoneNumber.mock, client: nil))
+    transport.fallback(PhoneNumberAPI.makeDefaultSecondFactor(phoneNumberId: anyId), returning: ClientResponse(response: PhoneNumber.mock, client: nil))
+    transport.fallback(PhoneNumberAPI.setReservedForSecondFactor(phoneNumberId: anyId, reserved: true), returning: ClientResponse(response: PhoneNumber.mock, client: nil))
+
     transport.fallback(
       MagicLinkAPI.complete(params: MagicLinkCompleteParams(flowId: anyId, approvalToken: "", codeVerifier: "")),
       returning: ClientResponse(response: .ticket(MagicLinkCompleteResponse(flowId: nil, ticket: "ticket_mock")), client: nil)

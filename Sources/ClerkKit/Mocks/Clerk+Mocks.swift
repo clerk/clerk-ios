@@ -15,8 +15,6 @@ package final class MockServicesBuilder {
 
   package var billingService: MockBillingService = .init()
 
-  package var phoneNumberService: MockPhoneNumberService = .init()
-
   package var externalAccountService: MockExternalAccountService = .init()
 
   package init() {}

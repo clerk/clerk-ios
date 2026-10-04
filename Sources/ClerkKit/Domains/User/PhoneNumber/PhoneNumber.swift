@@ -66,17 +66,10 @@ public struct PhoneNumber: Codable, Equatable, Hashable, Identifiable, Sendable 
 }
 
 extension PhoneNumber {
-  @MainActor
-  private var phoneNumberService: any PhoneNumberServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.phoneNumberService
-    }
-  }
-
   /// Deletes this phone number.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await phoneNumberService.delete(phoneNumberId: id)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.delete(phoneNumberId: id)).value.response
   }
 
   /// Send a verification code to this phone number.
@@ -84,7 +77,7 @@ extension PhoneNumber {
   /// An SMS message with a one-time code will be sent to the phone number value.
   @discardableResult @MainActor
   public func sendCode() async throws -> PhoneNumber {
-    try await phoneNumberService.prepareVerification(phoneNumberId: id)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.prepareVerification(phoneNumberId: id)).value.response
   }
 
   /// Attempts to verify this phone number, passing the one-time code that was sent as an SMS message.
@@ -92,19 +85,19 @@ extension PhoneNumber {
   /// The code will be sent when calling the ``PhoneNumber/sendCode()`` method.
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> PhoneNumber {
-    try await phoneNumberService.attemptVerification(phoneNumberId: id, code: code)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.attemptVerification(phoneNumberId: id, code: code)).value.response
   }
 
   /// Marks this phone number as the default second factor for multi-factor authentication(2FA). A user can have exactly one default second factor.
   @discardableResult @MainActor
   public func makeDefaultSecondFactor() async throws -> PhoneNumber {
-    try await phoneNumberService.makeDefaultSecondFactor(phoneNumberId: id)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.makeDefaultSecondFactor(phoneNumberId: id)).value.response
   }
 
   /// Marks this phone number as reserved for multi-factor authentication (2FA) or not.
   /// - Parameter reserved: Pass true to mark this phone number as reserved for 2FA, or false to disable 2FA for this phone number.
   @discardableResult @MainActor
   public func setReservedForSecondFactor(reserved: Bool = true) async throws -> PhoneNumber {
-    try await phoneNumberService.setReservedForSecondFactor(phoneNumberId: id, reserved: reserved)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.setReservedForSecondFactor(phoneNumberId: id, reserved: reserved)).value.response
   }
 }
