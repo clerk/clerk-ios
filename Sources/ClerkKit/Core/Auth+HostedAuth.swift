@@ -107,19 +107,13 @@ extension Auth {
       rotatingTokenNonce: callback.rotatingTokenNonce,
       codeVerifier: pkce.verifier
     )))
-    guard let clientSyncMetadata = response.deferredClientSyncMetadata else {
+    let redeemedClient = response.value.response
+    guard let clientSyncContext = response.deferredClientSyncMetadata?.context(client: redeemedClient) else {
       throw ClerkClientError(
         message: "Hosted auth completion response was missing identity synchronization metadata.",
         localizationBundle: .module
       )
     }
-    let redeemedClient = response.value.response
-    let update: ClientResponseUpdate = if clientSyncMetadata.deviceTokenUpdate == .clear {
-      .explicitClear
-    } else {
-      redeemedClient.map(ClientResponseUpdate.client) ?? .absent
-    }
-    let clientSyncContext = clientSyncMetadata.context(update: update)
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
 

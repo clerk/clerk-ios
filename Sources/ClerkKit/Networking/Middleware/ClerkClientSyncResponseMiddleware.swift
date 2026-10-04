@@ -228,6 +228,17 @@ struct ClientSyncResponseMetadata {
     serverDate = response.serverDate
   }
 
+  /// The context for a deferred-sync response, where an explicit device token clear outranks the returned client.
+  func context(client: Client?) -> ClientSyncResponseContext {
+    let update: ClientResponseUpdate =
+      if deviceTokenUpdate == .clear {
+        .explicitClear
+      } else {
+        client.map(ClientResponseUpdate.client) ?? .absent
+      }
+    return context(update: update)
+  }
+
   func context(
     update: ClientResponseUpdate,
     completedAuthFlow: TransferFlowResult? = nil

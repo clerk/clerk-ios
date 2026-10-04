@@ -598,24 +598,16 @@ extension Auth {
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
     let runtime = try Clerk.requireStableRuntime()
     let response = try await transport.send(SessionAPI.touch(sessionId: sessionId, organizationId: organizationId))
-    guard let clientSyncMetadata = response.deferredClientSyncMetadata else {
+    guard let clientSyncContext = response.deferredClientSyncMetadata?.context(client: response.value.client) else {
       throw ClerkClientError(
         message: "Session activation response was missing identity synchronization metadata."
       )
     }
-    let clientUpdate: ClientResponseUpdate =
-      if clientSyncMetadata.deviceTokenUpdate == .clear {
-        .explicitClear
-      } else {
-        response.value.client.map(ClientResponseUpdate.client) ?? .absent
-      }
 
     try runtime.validateStableRuntime()
     let clerk = try runtime.requireCurrentClerk()
     clerk.identityController.invalidateSessionTokens(sessionId: sessionId)
-    try await clerk.identityController.applyNetworkResponse(
-      clientSyncMetadata.context(update: clientUpdate)
-    )
+    try await clerk.identityController.applyNetworkResponse(clientSyncContext)
   }
 
   /// Retrieves the user's session token for the given template or the default Clerk token.

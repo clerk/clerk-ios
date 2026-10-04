@@ -467,6 +467,41 @@ struct ClerkClientSyncResponseMiddlewareTests {
     #expect(clerk.client?.id == Client.mock.id)
   }
 
+  @Test
+  func deferredContextPrefersExplicitTokenClearOverReturnedClient() throws {
+    let metadata = try deferredMetadata(authorizationHeader: "")
+
+    #expect(metadata.context(client: .mock).update == .explicitClear)
+  }
+
+  @Test
+  func deferredContextAppliesReturnedClient() throws {
+    let metadata = try deferredMetadata(authorizationHeader: "new-token")
+    let returnedClient = Client.mock
+    let context = metadata.context(client: returnedClient)
+
+    #expect(context.update == .client(returnedClient))
+    #expect(context.deviceTokenUpdate == .set("new-token"))
+  }
+
+  @Test
+  func deferredContextWithoutClientIsAbsent() throws {
+    let metadata = try deferredMetadata(authorizationHeader: nil)
+
+    #expect(metadata.context(client: nil).update == .absent)
+  }
+
+  private func deferredMetadata(authorizationHeader: String?) throws -> ClientSyncResponseMetadata {
+    let url = try #require(URL(string: "https://example.com/v1/client/sessions/sess_1/touch"))
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: authorizationHeader.map { ["Authorization": $0] }
+    ))
+    return ClientSyncResponseMetadata(response: response, request: URLRequest(url: url))
+  }
+
   private func client(id: String, updatedAt: Date) -> Client {
     var client = Client.mockSignedOut
     client.id = id
