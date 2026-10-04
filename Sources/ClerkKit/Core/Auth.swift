@@ -600,7 +600,8 @@ extension Auth {
     let response = try await transport.send(SessionAPI.touch(sessionId: sessionId, organizationId: organizationId))
     guard let clientSyncContext = response.deferredClientSyncMetadata?.context(client: response.value.client) else {
       throw ClerkClientError(
-        message: "Session activation response was missing identity synchronization metadata."
+        message: "Session activation response was missing identity synchronization metadata.",
+        localizationBundle: .module
       )
     }
 
