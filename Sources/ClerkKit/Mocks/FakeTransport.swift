@@ -10,8 +10,10 @@ package final class FakeTransport: APITransport {
   package struct Call {
     package let method: HTTPMethod
     package let path: String
+    package let headers: [String: String]
     package let query: [URLQueryItem]
     package let body: JSON?
+    package let uploadBody: Data?
     package let isScopedToActiveSession: Bool
   }
 
@@ -23,7 +25,7 @@ package final class FakeTransport: APITransport {
   private struct Stub {
     let method: HTTPMethod
     let pathPattern: [Substring]
-    let respond: @MainActor (Call) throws -> Any
+    let respond: @MainActor (Call) async throws -> Any
 
     func matches(_ call: Call) -> Bool {
       let components = FakeTransport.pathComponents(call.path)
@@ -43,10 +45,10 @@ package final class FakeTransport: APITransport {
 
   package func stub<Value: Decodable & Sendable>(
     _ request: Request<Value>,
-    respond: @escaping @MainActor (Call) throws -> Value
+    respond: @escaping @MainActor (Call) async throws -> Value
   ) {
     stubs.append(Stub(method: request.method, pathPattern: Self.pathComponents(request.path)) { call in
-      try respond(call) as Any
+      try await respond(call) as Any
     })
   }
 
@@ -55,15 +57,41 @@ package final class FakeTransport: APITransport {
   }
 
   func send<Value: Decodable & Sendable>(_ request: Request<Value>) async throws -> APIResponse<Value> {
-    let call = try Call(request)
+    try await respond(to: request, uploadBody: nil)
+  }
+
+  func upload<Value: Decodable & Sendable>(for request: Request<Value>, from body: Data) async throws -> APIResponse<Value> {
+    try await respond(to: request, uploadBody: body)
+  }
+
+  private func respond<Value: Decodable & Sendable>(
+    to request: Request<Value>,
+    uploadBody: Data?
+  ) async throws -> APIResponse<Value> {
+    let urlRequest = try request.makeURLRequest(baseURL: Self.baseURL, encoder: .clerkEncoder)
+    let call = try Call(request, urlRequest: urlRequest, uploadBody: uploadBody)
     calls.append(call)
     guard let stub = stubs.last(where: { $0.matches(call) }) else {
       throw Failure.unstubbed(method: call.method, path: call.path)
     }
-    guard let value = try stub.respond(call) as? Value else {
+    guard let value = try await stub.respond(call) as? Value else {
       throw Failure.mismatchedResponseType(method: call.method, path: call.path)
     }
-    return APIResponse(value: value, requestSequence: nil, serverDate: nil, deferredClientSyncMetadata: nil)
+    // Requests that defer client sync hand their caller the metadata the live pipeline would.
+    let deferredClientSyncMetadata: ClientSyncResponseMetadata? =
+      if !urlRequest.shouldAutomaticallySyncClerkClient,
+      let url = urlRequest.url,
+      let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
+        ClientSyncResponseMetadata(response: response, request: urlRequest)
+      } else {
+        nil
+      }
+    return APIResponse(
+      value: value,
+      requestSequence: nil,
+      serverDate: nil,
+      deferredClientSyncMetadata: deferredClientSyncMetadata
+    )
   }
 
   private nonisolated static func pathComponents(_ path: String) -> [Substring] {
@@ -72,15 +100,16 @@ package final class FakeTransport: APITransport {
 }
 
 extension FakeTransport.Call {
-  fileprivate init(_ request: Request<some Decodable & Sendable>) throws {
-    let urlRequest = try request.makeURLRequest(baseURL: FakeTransport.baseURL, encoder: .clerkEncoder)
+  fileprivate init(_ request: Request<some Decodable & Sendable>, urlRequest: URLRequest, uploadBody: Data?) throws {
     guard let url = urlRequest.url, let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
       throw RequestError.invalidURL(path: request.path)
     }
     method = request.method
     path = components.path
+    headers = urlRequest.allHTTPHeaderFields ?? [:]
     query = components.queryItems ?? []
     body = try urlRequest.httpBody.map { try JSONDecoder().decode(JSON.self, from: $0) }
+    self.uploadBody = uploadBody
     isScopedToActiveSession = urlRequest.isScopedToClerkActiveSession
   }
 }
