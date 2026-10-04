@@ -41,8 +41,6 @@ public final class PreviewBuilder {
   /// ```
   public var client: Client?
 
-  package var services: MockServicesBuilder = .init()
-
   package var transport = FakeTransport.mockDefaults()
 
   /// Creates a new preview builder.
@@ -56,7 +54,7 @@ extension Clerk {
   /// It automatically configures all async operations to return mock values immediately,
   /// and allows you to configure whether the user is signed in.
   ///
-  /// Advanced service customization is available only within this package.
+  /// Stubbing individual endpoints is available only within this package.
   ///
   /// **Environment Loading:**
   /// This method automatically looks for a `ClerkEnvironment.json` file in the main bundle.
@@ -111,7 +109,7 @@ extension Clerk {
 
     let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
-    // Create a minimal API client (won't be used if services are mocked)
+    // Requests go through the preview transport; this client only satisfies the container.
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
 
@@ -125,12 +123,10 @@ extension Clerk {
     previewBuilder.transport.fallback(ClientAPI.get(), returning: ClientResponse(response: mockClient, client: nil))
     previewBuilder.transport.fallback(EnvironmentAPI.get(), returning: mockEnvironment)
 
-    let container = createMockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: mockAPIClient,
       transport: previewBuilder.transport
     )
-
-    clerk.dependencies = container
     clerk.setClientFromIdentityController(mockClient)
     clerk.environment = mockEnvironment
 
@@ -145,16 +141,5 @@ extension Clerk {
       return nil
     }
     return loadedEnvironment
-  }
-
-  @MainActor
-  private static func createMockDependencyContainer(
-    apiClient: APIClient,
-    transport: FakeTransport
-  ) -> MockDependencyContainer {
-    MockDependencyContainer(
-      apiClient: apiClient,
-      transport: transport
-    )
   }
 }
