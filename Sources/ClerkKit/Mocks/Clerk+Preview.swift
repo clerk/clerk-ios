@@ -124,12 +124,6 @@ extension Clerk {
 
     previewBuilder.transport.fallback(ClientAPI.get(), returning: ClientResponse(response: mockClient, client: nil))
     previewBuilder.transport.fallback(EnvironmentAPI.get(), returning: mockEnvironment)
-    if previewBuilder.services.userService.createEmailAddressHandler == nil {
-      let transport = previewBuilder.transport
-      previewBuilder.services.userService.createEmailAddressHandler = { emailAddress in
-        try await transport.send(EmailAddressAPI.create(email: emailAddress)).value.response
-      }
-    }
 
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
@@ -163,7 +157,6 @@ extension Clerk {
     MockDependencyContainer(
       apiClient: apiClient,
       transport: transport,
-      userService: services.userService,
       organizationService: services.organizationService,
       billingService: services.billingService
     )

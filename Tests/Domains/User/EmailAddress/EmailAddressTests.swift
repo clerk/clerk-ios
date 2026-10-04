@@ -16,8 +16,7 @@ struct EmailAddressTests {
     let apiClient = createMockAPIClient()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: apiClient,
-      transport: transport,
-      userService: UserService(apiClient: apiClient)
+      transport: transport
     )
   }
 

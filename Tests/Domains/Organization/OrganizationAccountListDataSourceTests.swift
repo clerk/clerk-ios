@@ -15,25 +15,24 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     let defaultsCalled = LockIsolated(false)
     let defaults = organizationCreationDefaults()
 
-    let userService = MockUserService(
-      getOrganizationInvitations: { offset, pageSize, status in
-        invitationCalls.withValue { $0.append((offset, pageSize, status)) }
-        return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
-      },
-      getOrganizationMemberships: { offset, pageSize in
-        membershipCalls.withValue { $0.append((offset, pageSize)) }
-        return ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
-      },
-      getOrganizationSuggestions: { offset, pageSize, status in
-        suggestionCalls.withValue { $0.append((offset, pageSize, status)) }
-        return ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
-      },
-      getOrganizationCreationDefaults: {
-        defaultsCalled.setValue(true)
-        return defaults
-      }
-    )
-    setDependencies(userService: userService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { offset, pageSize, status in
+      invitationCalls.withValue { $0.append((offset, pageSize, status)) }
+      return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
+    }
+    transport.stubOrganizationMemberships { offset, pageSize in
+      membershipCalls.withValue { $0.append((offset, pageSize)) }
+      return ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    }
+    transport.stubOrganizationSuggestions { offset, pageSize, status in
+      suggestionCalls.withValue { $0.append((offset, pageSize, status)) }
+      return ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
+    }
+    transport.stub(UserAPI.getOrganizationCreationDefaults()) { _ in
+      defaultsCalled.setValue(true)
+      return ClientResponse(response: defaults, client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 3)
     await model.loadInitial(user: .mock, includeCreationDefaults: true)
@@ -65,18 +64,17 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   func testLoadInitialTracksEmptyState() async {
     configureClerkForTesting()
 
-    let userService = MockUserService(
-      getOrganizationInvitations: { _, _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      },
-      getOrganizationMemberships: { _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      },
-      getOrganizationSuggestions: { _, _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      }
-    )
-    setDependencies(userService: userService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { _, _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    transport.stubOrganizationMemberships { _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    transport.stubOrganizationSuggestions { _, _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
@@ -91,12 +89,11 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   func testLoadInitialClearsLoadingStateAfterFailure() async {
     configureClerkForTesting()
 
-    let userService = MockUserService(
-      getOrganizationMemberships: { _, _ in
-        throw ClerkClientError(message: "Failed to load memberships")
-      }
-    )
-    setDependencies(userService: userService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      throw ClerkClientError(message: "Failed to load memberships")
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
@@ -110,14 +107,15 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let captured = LockIsolated<(offset: Int, pageSize: Int)?>(nil)
-    let userService = MockUserService(getOrganizationMemberships: { offset, pageSize in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { offset, pageSize in
       captured.setValue((offset, pageSize))
       return ClerkPaginatedResponse(
         data: [membership(id: "mem_2", organizationId: "org_member_2")],
         totalCount: 2
       )
-    })
-    setDependencies(userService: userService)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 4)
     model.membershipsPager.replace(with: ClerkPaginatedResponse(
@@ -237,17 +235,18 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
-    let userService = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { offset, pageSize, status in
       invitationCalls.withValue { $0.append((offset, pageSize, status)) }
       return ClerkPaginatedResponse(
         data: [invitation(id: "inv_3", organizationId: "org_3")],
         totalCount: 2
       )
-    })
+    }
     let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
       invitation(id: invitationId, organizationId: "org_1", status: "accepted")
     })
-    setDependencies(userService: userService, organizationService: organizationService)
+    setDependencies(transport: transport, organizationService: organizationService)
 
     let model = OrganizationAccountListDataSource(pageSize: 2)
     let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
@@ -304,14 +303,51 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 
 @MainActor
 private func setDependencies(
-  userService: (any UserServiceProtocol)? = nil,
+  transport: FakeTransport = .mockDefaults(),
   organizationService: (any OrganizationServiceProtocol)? = nil
 ) {
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),
-    userService: userService,
+    transport: transport,
     organizationService: organizationService
   )
+}
+
+@MainActor
+extension FakeTransport {
+  fileprivate func stubOrganizationMemberships(
+    _ respond: @escaping @MainActor (_ offset: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+  ) {
+    stub(UserAPI.getOrganizationMemberships(offset: 0, pageSize: 0)) { call in
+      try await ClientResponse(response: respond(call.intQuery("offset"), call.intQuery("limit")), client: nil)
+    }
+  }
+
+  fileprivate func stubOrganizationInvitations(
+    _ respond: @escaping @MainActor (_ offset: Int, _ pageSize: Int, _ status: [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
+  ) {
+    stub(UserAPI.getOrganizationInvitations(offset: 0, pageSize: 0, status: [])) { call in
+      try await ClientResponse(response: respond(call.intQuery("offset"), call.intQuery("limit"), call.statusQuery), client: nil)
+    }
+  }
+
+  fileprivate func stubOrganizationSuggestions(
+    _ respond: @escaping @MainActor (_ offset: Int, _ pageSize: Int, _ status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+  ) {
+    stub(UserAPI.getOrganizationSuggestions(offset: 0, pageSize: 0, status: [])) { call in
+      try await ClientResponse(response: respond(call.intQuery("offset"), call.intQuery("limit"), call.statusQuery), client: nil)
+    }
+  }
+}
+
+extension FakeTransport.Call {
+  fileprivate func intQuery(_ name: String) -> Int {
+    query.first { $0.name == name }?.value.flatMap(Int.init) ?? -1
+  }
+
+  fileprivate var statusQuery: [String] {
+    query.filter { $0.name == "status" }.compactMap(\.value)
+  }
 }
 
 private func organization(id: String, name: String? = nil) -> Organization {

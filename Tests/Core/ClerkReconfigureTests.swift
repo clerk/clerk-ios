@@ -531,15 +531,17 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func modelServiceCallsAreCancelledWhileReconfigureIsInProgress() async throws {
-    let serviceCalls = LockIsolated(0)
+  func modelRequestsAreCancelledWhileReconfigureIsInProgress() async throws {
+    let requestCount = LockIsolated(0)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(UserAPI.reload()) { _ in
+      requestCount.withValue { $0 += 1 }
+      return ClientResponse(response: .mock, client: nil)
+    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-      userService: MockUserService(reload: {
-        serviceCalls.withValue { $0 += 1 }
-        return .mock
-      })
+      transport: transport,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     try Clerk.shared.performConfiguration(dependencies: dependencies)
 
@@ -549,7 +551,7 @@ struct ClerkReconfigureTests {
     await #expect(throws: CancellationError.self) {
       _ = try await User.mock.reload()
     }
-    #expect(serviceCalls.value == 0)
+    #expect(requestCount.value == 0)
   }
 
   @Test

@@ -15,6 +15,50 @@ extension FakeTransport {
 
     transport.fallback(EnvironmentAPI.get(), returning: .mock)
 
+    transport.fallback(UserAPI.reload(), returning: ClientResponse(response: User.mock, client: nil))
+    transport.fallback(UserAPI.update(params: .init()), returning: ClientResponse(response: User.mock, client: nil))
+    transport.fallback(UserAPI.updateMetadata(params: .init(unsafeMetadata: .object([:]))), returning: ClientResponse(response: User.mock, client: nil))
+    transport.fallback(UserAPI.createBackupCodes(), returning: ClientResponse(response: BackupCodeResource.mock, client: nil))
+    transport.fallback(
+      UserAPI.createExternalAccount(provider: .google, redirectUrl: "", additionalScopes: [], oidcPrompts: []),
+      returning: ClientResponse(response: ExternalAccount.mockVerified, client: nil)
+    )
+    transport.fallback(UserAPI.createExternalAccountToken(provider: .apple, idToken: ""), returning: ClientResponse(response: ExternalAccount.mockVerified, client: nil))
+    transport.fallback(UserAPI.createTotp(), returning: ClientResponse(response: TOTPResource.mock, client: nil))
+    transport.fallback(UserAPI.verifyTotp(code: ""), returning: ClientResponse(response: TOTPResource.mock, client: nil))
+    transport.fallback(UserAPI.disableTotp(), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(
+      UserAPI.getOrganizationInvitations(offset: 0, pageSize: 0, status: []),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [UserOrganizationInvitation.mock], totalCount: 1), client: nil)
+    )
+    transport.fallback(
+      UserAPI.getOrganizationMemberships(offset: 0, pageSize: 0),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [OrganizationMembership.mockWithUserData], totalCount: 1), client: nil)
+    )
+    transport.fallback(UserAPI.leaveOrganization(organizationId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(
+      UserAPI.getOrganizationSuggestions(offset: 0, pageSize: 0, status: []),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [OrganizationSuggestion.mock], totalCount: 1), client: nil)
+    )
+    transport.fallback(
+      UserAPI.getOrganizationCreationDefaults(),
+      returning: ClientResponse(
+        response: OrganizationCreationDefaults(
+          advisory: nil,
+          form: .init(name: "My organization", slug: "my-organization", logo: nil, blurHash: nil)
+        ),
+        client: nil
+      )
+    )
+    transport.fallback(UserAPI.getSessions(), returning: [Session.mock, Session.mock2])
+    transport.fallback(UserAPI.updatePassword(params: .init(newPassword: "", signOutOfOtherSessions: false)), returning: ClientResponse(response: User.mock, client: nil))
+    transport.fallback(
+      UserAPI.setProfileImage(boundary: ""),
+      returning: ClientResponse(response: ImageResource(id: "mock-image-id", name: "mock-image", publicUrl: nil), client: nil)
+    )
+    transport.fallback(UserAPI.deleteProfileImage(), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(UserAPI.delete(), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+
     transport.fallback(EmailAddressAPI.create(email: EmailAddress.mock.emailAddress), returning: ClientResponse(response: EmailAddress.mock, client: nil))
     transport.fallback(EmailAddressAPI.prepareVerification(emailAddressId: anyId, strategy: .emailCode), returning: ClientResponse(response: EmailAddress.mock, client: nil))
     transport.fallback(EmailAddressAPI.attemptVerification(emailAddressId: anyId, strategy: .emailCode(code: "424242")), returning: ClientResponse(response: EmailAddress.mock, client: nil))

@@ -29,7 +29,6 @@ final class DependencyContainer: Dependencies {
 
   // MARK: - Services
 
-  let userService: UserServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
 
@@ -116,7 +115,6 @@ final class DependencyContainer: Dependencies {
       options: options
     )
 
-    userService = UserService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
     billingService = BillingService(apiClient: apiClient)
   }

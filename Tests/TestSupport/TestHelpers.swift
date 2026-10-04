@@ -64,7 +64,6 @@ func setupMockAPIClient() {
     apiClient: mockAPIClient,
     transport: mockAPIClient,
     telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-    userService: UserService(apiClient: mockAPIClient),
     organizationService: OrganizationService(apiClient: mockAPIClient),
     billingService: BillingService(apiClient: mockAPIClient)
   )

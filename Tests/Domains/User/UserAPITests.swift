@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct UserServiceTests {
+struct UserAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -29,7 +29,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.reload()
+    _ = try await User.mock.reload()
     #expect(requestHandled.value)
   }
 
@@ -54,7 +54,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.update(params: .init(firstName: "John", lastName: "Doe"))
+    _ = try await User.mock.update(.init(firstName: "John", lastName: "Doe"))
     #expect(requestHandled.value)
   }
 
@@ -135,8 +135,8 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.updateMetadata(
-      params: .init(unsafeMetadata: ["token": "some-value"])
+    _ = try await User.mock.updateMetadata(
+      .init(unsafeMetadata: ["token": "some-value"])
     )
 
     #expect(requestHandled.value)
@@ -242,7 +242,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createBackupCodes()
+    _ = try await User.mock.createBackupCodes()
     #expect(requestHandled.value)
   }
 
@@ -265,7 +265,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createEmailAddress(emailAddress: "new@example.com")
+    _ = try await User.mock.createEmailAddress("new@example.com")
     #expect(requestHandled.value)
   }
 
@@ -288,7 +288,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createPhoneNumber(phoneNumber: "+1234567890")
+    _ = try await User.mock.createPhoneNumber("+1234567890")
     #expect(requestHandled.value)
   }
 
@@ -315,7 +315,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+    _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
       additionalScopes: [],
@@ -347,7 +347,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+    _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: explicitRedirectUrl,
       additionalScopes: [],
@@ -378,7 +378,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+    _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
       additionalScopes: ["scope1", "scope2"],
@@ -409,7 +409,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+    _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
       additionalScopes: [],
@@ -441,7 +441,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+    _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
       additionalScopes: [],
@@ -474,7 +474,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccount(
+    _ = try await User.mock.createExternalAccount(
       provider: .google,
       redirectUrl: nil,
       additionalScopes: ["scope1", "scope2"],
@@ -503,7 +503,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createExternalAccountToken(
+    _ = try await User.mock.createExternalAccount(
       provider: .apple,
       idToken: "mock_id_token"
     )
@@ -528,7 +528,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.createTotp()
+    _ = try await User.mock.createTOTP()
     #expect(requestHandled.value)
   }
 
@@ -551,7 +551,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.verifyTotp(code: "123456")
+    _ = try await User.mock.verifyTOTP(code: "123456")
     #expect(requestHandled.value)
   }
 
@@ -573,7 +573,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.disableTotp()
+    _ = try await User.mock.disableTOTP()
     #expect(requestHandled.value)
   }
 
@@ -607,7 +607,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(offset: 0, pageSize: 10, status: [])
+    _ = try await User.mock.getOrganizationInvitations(offset: 0, pageSize: 10, status: [])
     #expect(requestHandled.value)
   }
 
@@ -641,7 +641,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationInvitations(
+    _ = try await User.mock.getOrganizationInvitations(
       offset: 0,
       pageSize: 10,
       status: ["pending", "accepted"]
@@ -675,7 +675,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationMemberships(offset: 0, pageSize: 10)
+    _ = try await User.mock.getOrganizationMemberships(offset: 0, pageSize: 10)
     #expect(requestHandled.value)
   }
 
@@ -697,7 +697,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.leaveOrganization(organizationId: "org_123")
+    _ = try await User.mock.leaveOrganization(organizationId: "org_123")
     #expect(requestHandled.value)
   }
 
@@ -726,7 +726,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationSuggestions(offset: 0, pageSize: 10, status: [])
+    _ = try await User.mock.getOrganizationSuggestions(offset: 0, pageSize: 10, status: [])
     #expect(requestHandled.value)
   }
 
@@ -760,7 +760,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.getOrganizationSuggestions(
+    _ = try await User.mock.getOrganizationSuggestions(
       offset: 0,
       pageSize: 10,
       status: ["pending", "accepted"]
@@ -788,7 +788,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    let fetchedSessions = try await Clerk.shared.dependencies.userService.getSessions(user: user)
+    let fetchedSessions = try await user.getSessions()
 
     #expect(requestHandled.value)
     #expect(fetchedSessions.map(\.id) == sessions.map(\.id))
@@ -816,8 +816,8 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.updatePassword(
-      params: .init(
+    _ = try await User.mock.updatePassword(
+      .init(
         currentPassword: "currentPassword123",
         newPassword: "newPassword123",
         signOutOfOtherSessions: true
@@ -847,8 +847,8 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.updatePassword(
-      params: .init(
+    _ = try await User.mock.updatePassword(
+      .init(
         currentPassword: nil,
         newPassword: "newPassword123",
         signOutOfOtherSessions: false
@@ -882,7 +882,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.setProfileImage(imageData: imageData)
+    _ = try await User.mock.setProfileImage(imageData: imageData)
     #expect(requestHandled.value)
   }
 
@@ -904,7 +904,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.deleteProfileImage()
+    _ = try await User.mock.deleteProfileImage()
     #expect(requestHandled.value)
   }
 
@@ -926,7 +926,7 @@ struct UserServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.delete()
+    _ = try await User.mock.delete()
     #expect(requestHandled.value)
   }
 

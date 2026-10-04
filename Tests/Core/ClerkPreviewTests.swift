@@ -49,24 +49,6 @@ struct ClerkPreviewTests {
     #expect(transport.calls.count == 1)
   }
 
-  @Test
-  func emailCreationPreservesExplicitServiceHandler() async throws {
-    var fixture = EmailAddress.mock
-    fixture.id = "email_custom_handler"
-    let transport = FakeTransport()
-    let clerk = makePreview { preview in
-      preview.transport = transport
-      preview.services.userService.createEmailAddressHandler = { email in
-        #expect(email == "custom@example.com")
-        return fixture
-      }
-    }
-    let user = try #require(clerk.user)
-
-    #expect(try await user.createEmailAddress("custom@example.com") == fixture)
-    #expect(transport.calls.isEmpty)
-  }
-
   private func makePreview(_ configure: @escaping (PreviewBuilder) -> Void) -> Clerk {
     let environmentKey = "XCODE_RUNNING_FOR_PREVIEWS"
     let previousValue = ProcessInfo.processInfo.environment[environmentKey]

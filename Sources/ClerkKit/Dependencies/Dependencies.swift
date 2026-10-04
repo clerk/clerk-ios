@@ -27,8 +27,6 @@ protocol Dependencies: AnyObject {
 
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
-  var userService: UserServiceProtocol { get }
-
   var organizationService: OrganizationServiceProtocol { get }
 
   var billingService: BillingServiceProtocol { get }

@@ -36,7 +36,7 @@ struct SessionScopedRequestTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.reload()
+    _ = try await Clerk.shared.dependencies.transport.send(UserAPI.reload())
     #expect(requestHandled.value)
   }
 
@@ -59,7 +59,7 @@ struct SessionScopedRequestTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.reload()
+    _ = try await Clerk.shared.dependencies.transport.send(UserAPI.reload())
     #expect(requestHandled.value)
   }
 
