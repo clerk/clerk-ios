@@ -261,7 +261,7 @@ jobs:
           distribution: zulu
       - uses: android-actions/setup-android@v3
         with:
-          packages: platform-tools emulator "system-images;android-35;google_apis;x86_64" "platforms;android-35"
+          packages: platform-tools emulator system-images;android-35;google_apis;x86_64 platforms;android-35
 
       - name: Enable KVM
         run: |
