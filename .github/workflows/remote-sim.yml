@@ -4,6 +4,9 @@ name: remote-sim
 run-name: remote-sim ${{ inputs.session }} ${{ inputs.platform }}
 
 on:
+  # The push trigger exists only so GitHub registers the workflow for dispatch; a push run skips every job.
+  push:
+    branches: [mike/remote-sim-prototype]
   workflow_dispatch:
     inputs:
       session:
@@ -35,7 +38,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: remote-sim-${{ inputs.session }}
+  group: remote-sim-${{ inputs.session || github.sha }}
   cancel-in-progress: true
 
 env:
@@ -50,8 +53,8 @@ env:
 
 jobs:
   ios:
-    if: inputs.platform == 'ios'
-    runs-on: ${{ inputs.runner }}
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'ios'
+    runs-on: ${{ inputs.runner || 'xcode-27' }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
@@ -244,7 +247,7 @@ jobs:
           retention-days: 3
 
   android:
-    if: inputs.platform == 'android'
+    if: github.event_name == 'workflow_dispatch' && inputs.platform == 'android'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
