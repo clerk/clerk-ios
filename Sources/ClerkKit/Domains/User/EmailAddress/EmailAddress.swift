@@ -62,12 +62,7 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func sendCode() async throws -> EmailAddress {
-    let transport = try Clerk.currentDependencies.transport
-    let request = EmailAddressAPI.prepareVerification(
-      emailAddressId: id,
-      strategy: .emailCode
-    )
-    return try await transport.send(request).value.response
+    try await Clerk.currentDependencies.transport.send(EmailAddressAPI.prepareVerification(emailAddressId: id, strategy: .emailCode)).value.response
   }
 
   /// Attempts to verify this email address, passing the one-time code that was sent as an email message.
@@ -84,19 +79,12 @@ extension EmailAddress {
   /// ```
   @discardableResult @MainActor
   public func verifyCode(_ code: String) async throws -> EmailAddress {
-    let transport = try Clerk.currentDependencies.transport
-    let request = EmailAddressAPI.attemptVerification(
-      emailAddressId: id,
-      strategy: .emailCode(code: code)
-    )
-    return try await transport.send(request).value.response
+    try await Clerk.currentDependencies.transport.send(EmailAddressAPI.attemptVerification(emailAddressId: id, strategy: .emailCode(code: code))).value.response
   }
 
   /// Deletes this email address.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    let transport = try Clerk.currentDependencies.transport
-    let request = EmailAddressAPI.destroy(emailAddressId: id)
-    return try await transport.send(request).value.response
+    try await Clerk.currentDependencies.transport.send(EmailAddressAPI.destroy(emailAddressId: id)).value.response
   }
 }
