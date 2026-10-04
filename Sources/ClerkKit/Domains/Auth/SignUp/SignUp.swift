@@ -251,8 +251,8 @@ extension SignUp {
   @MainActor
   func handleTransferFlow() async throws -> TransferFlowResult {
     if needsTransferToSignIn == true {
-      let signInService: any SignInServiceProtocol = try Clerk.currentDependencies.signInService
-      let signIn = try await signInService.create(params: .init(transfer: true))
+      let transport = try Clerk.currentDependencies.transport
+      let signIn = try await transport.send(SignInAPI.create(params: .init(transfer: true))).value.response
       return .signIn(signIn)
     } else {
       return .signUp(self)

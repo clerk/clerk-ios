@@ -359,14 +359,14 @@ struct BiometricCredentialsTests {
   func signInUsesCurrentAppCredentialWhenSharedKeychainContainsNewerCredential() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(signInService: MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    ))
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_current_app",
       localKeyId: "tdlk_current_app",
@@ -381,7 +381,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_current_app")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_current_app")
     #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
   }
 
@@ -1031,18 +1031,17 @@ struct BiometricCredentialsTests {
   func signInUsesCreateChallengeAndAttemptsFirstFactor() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let capturedAttempt = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let signInService = MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { signInId, params in
-        capturedAttempt.setValue((signInId, params))
-        return .mockBiometricCredentialComplete
-      }
-    )
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let capturedAttempt = LockIsolated<(String, JSON?)?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { signInId, params in
+      capturedAttempt.setValue((signInId, params))
+      return .mockBiometricCredentialComplete
+    }
     let keyManager = MockBiometricCredentialKeyManager(sign: { clientData, localKeyId, localizedReason in
       #expect(clientData == biometricCredentialChallengeClientData)
       #expect(localKeyId == "tdlk_mock")
@@ -1050,35 +1049,35 @@ struct BiometricCredentialsTests {
       return .init(clientData: clientData, signature: "sign_in_signature")
     })
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: signInService,
+      transport: transport,
       keyManager: keyManager
     )
 
     let signIn = try await setup.biometricCredentials.signIn(reason: "Sign in with Face ID.")
 
     #expect(signIn == .mockBiometricCredentialComplete)
-    #expect(capturedCreateParams.value?.strategy == .biometricCredential)
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_123")
+    #expect(capturedCreateParams.value?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_123")
     #expect(capturedAttempt.value?.0 == "si_trusted_device")
-    #expect(capturedAttempt.value?.1.strategy == .biometricCredential)
-    #expect(capturedAttempt.value?.1.biometricCredentialId == "tdc_123")
-    #expect(capturedAttempt.value?.1.clientData == biometricCredentialChallengeClientData)
-    #expect(capturedAttempt.value?.1.signature == "sign_in_signature")
-    #expect(capturedAttempt.value?.1.algorithm == .es256)
+    #expect(capturedAttempt.value?.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+    #expect(capturedAttempt.value?.1?["trusted_device_id"]?.stringValue == "tdc_123")
+    #expect(capturedAttempt.value?.1?["client_data"]?.stringValue == biometricCredentialChallengeClientData)
+    #expect(capturedAttempt.value?.1?["signature"]?.stringValue == "sign_in_signature")
+    #expect(capturedAttempt.value?.1?["algorithm"]?.stringValue == BiometricCredential.Algorithm.es256.rawValue)
   }
 
   @Test
   func signInUsesNewestLocalCredentialWhenNoIdIsProvided() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(signInService: MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    ))
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_old",
       localKeyId: "tdlk_old",
@@ -1092,7 +1091,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_new")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_new")
   }
 
   @Test
@@ -1100,19 +1099,19 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
     let setup = makeBiometricCredentials(
       biometricCredentialService: MockBiometricCredentialService(list: {
         listWasCalled.setValue(true)
         return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       }),
-      signInService: MockSignInService(
-        create: { params in
-          capturedCreateParams.setValue(params)
-          return .mockBiometricCredentialChallenge
-        },
-        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-      )
+      transport: transport
     )
     try setup.credentialStore.save(localCredential(
       id: "tdc_active_user",
@@ -1130,21 +1129,21 @@ struct BiometricCredentialsTests {
     _ = try await setup.biometricCredentials.signIn()
 
     #expect(listWasCalled.value)
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_active_user")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_active_user")
   }
 
   @Test
   func signInUsesIdentifierHintToSelectMatchingLocalCredential() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(signInService: MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    ))
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_sean",
       localKeyId: "tdlk_sean",
@@ -1160,7 +1159,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn(identifierHint: "  SEAN@example.com  ")
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_sean")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_sean")
   }
 
   @Test
@@ -1169,14 +1168,14 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mockSignedOut
     let attemptWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in throw missingBiometricCredentialError(code: "trusted_device_not_registered") }
+    transport.stubSignInAttemptFirstFactor { _, _ in
+      attemptWasCalled.setValue(true)
+      return .mockBiometricCredentialComplete
+    }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in throw missingBiometricCredentialError(code: "trusted_device_not_registered") },
-        attemptFirstFactor: { _, _ in
-          attemptWasCalled.setValue(true)
-          return .mockBiometricCredentialComplete
-        }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1200,11 +1199,11 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in .mockBiometricCredentialChallenge }
+    transport.stubSignInAttemptFirstFactor { _, _ in throw missingBiometricCredentialError() }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in .mockBiometricCredentialChallenge },
-        attemptFirstFactor: { _, _ in throw missingBiometricCredentialError() }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1227,10 +1226,10 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in throw missingBiometricCredentialError(paramName: "identifier") }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in throw missingBiometricCredentialError(paramName: "identifier") }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1252,19 +1251,19 @@ struct BiometricCredentialsTests {
   func signInSkipsStaleNewerCredentialWhenSignedIn() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
     let setup = makeBiometricCredentials(
       biometricCredentialService: MockBiometricCredentialService(list: {
         [biometricCredential(id: "tdc_123", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
       }),
-      signInService: MockSignInService(
-        create: { params in
-          capturedCreateParams.setValue(params)
-          return .mockBiometricCredentialChallenge
-        },
-        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1282,7 +1281,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_123")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_123")
     #expect(deletedLocalKeyIds.value == ["tdlk_new"])
     #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
   }
@@ -1292,15 +1291,14 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let prepareWasCalled = LockIsolated(false)
-    let signInService = MockSignInService(
-      create: { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) },
-      prepareFirstFactor: { _, _ in
-        prepareWasCalled.setValue(true)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    )
-    let setup = try makeBiometricCredentialsWithLocalCredential(signInService: signInService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) }
+    transport.stubSignInPrepareFirstFactor { _, _ in
+      prepareWasCalled.setValue(true)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     do {
       _ = try await setup.biometricCredentials.signIn(id: "tdc_123")
@@ -1392,7 +1390,7 @@ private enum TestKeyDeletionError: Error {
 @MainActor
 private func makeBiometricCredentialsWithLocalCredential(
   biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
-  signInService: SignInServiceProtocol = MockSignInService(),
+  transport: FakeTransport = .mockDefaults(),
   keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
   localCredential: BiometricCredentialLocalRecord = .mock
 ) throws -> (
@@ -1401,7 +1399,7 @@ private func makeBiometricCredentialsWithLocalCredential(
 ) {
   let setup = makeBiometricCredentials(
     biometricCredentialService: biometricCredentialService,
-    signInService: signInService,
+    transport: transport,
     keyManager: keyManager
   )
   try setup.credentialStore.save(localCredential)
@@ -1411,7 +1409,7 @@ private func makeBiometricCredentialsWithLocalCredential(
 @MainActor
 private func makeBiometricCredentials(
   biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
-  signInService: SignInServiceProtocol = MockSignInService(),
+  transport: FakeTransport = .mockDefaults(),
   keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
   credentialStoreKeychain: any KeychainStorage = InMemoryKeychain()
 ) -> (
@@ -1421,7 +1419,7 @@ private func makeBiometricCredentials(
   let credentialStore = BiometricCredentialLocalStore(keychain: credentialStoreKeychain)
   let biometricCredentials = BiometricCredentials(
     biometricCredentialService: biometricCredentialService,
-    signInService: signInService,
+    transport: transport,
     keyManager: keyManager,
     credentialStore: credentialStore,
     appIdentifierProvider: { "com.clerk.example" }
@@ -1520,11 +1518,11 @@ extension BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let credential = localCredential(id: "tdc_123", localKeyId: "tdlk_mock", policy: policy, createdAt: .now)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in .mockBiometricCredentialChallenge }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in .mockBiometricCredentialChallenge },
-        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-      ),
+      transport: transport,
       localCredential: credential
     )
 
@@ -1723,11 +1721,12 @@ extension BiometricCredentialsTests {
       return ClientResponse(response: SessionVerification(status: .complete, level: .multiFactor), client: nil)
     }
     Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
+    transport.stubSignInCreate { _ in
+      Issue.record("Reverification must not create a sign-in.")
+      return .mock
+    }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(create: { _ in
-        Issue.record("Reverification must not create a sign-in.")
-        return .mock
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(sign: { data, key, reason in
         #expect(data == biometricCredentialChallengeClientData)
         #expect(key == BiometricCredentialLocalRecord.mock.localKeyId)

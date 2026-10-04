@@ -14,14 +14,12 @@ struct ClerkTests {
   }
 
   private func configureDependencies(
-    signInService: MockSignInService? = nil,
     keychain: (any KeychainStorage)? = nil,
     environment: Clerk.Environment? = .mock
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      signInService: signInService
+      keychain: keychain
     )
     Clerk.shared.environment = environment
   }
@@ -1734,7 +1732,7 @@ struct ClerkTests {
   @Test
   func handleReturnsTrueForMagicLinkCallback() async throws {
     let keychain = InMemoryKeychain()
-    let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let signInParams = LockIsolated<JSON?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let transport = FakeTransport.mockDefaults()
     transport.stub(MagicLinkAPI.complete(params: MagicLinkCompleteParams(flowId: "flow_123", approvalToken: "", codeVerifier: ""))) { call in
@@ -1750,10 +1748,10 @@ struct ClerkTests {
       createdSessionId: "sess_123"
     )
 
-    let signInService = MockSignInService(create: { params in
+    transport.stubSignInCreate { params in
       signInParams.setValue(params)
       return completedSignIn
-    })
+    }
     transport.stubSetActive { sessionId, _ in
       activatedSessionId.setValue(sessionId)
     }
@@ -1763,8 +1761,7 @@ struct ClerkTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: apiClient,
       transport: transport,
-      keychain: keychain,
-      signInService: signInService
+      keychain: keychain
     )
     try (#require(clerk.dependencies as? MockDependencyContainer))
       .configurationManager
@@ -1785,7 +1782,7 @@ struct ClerkTests {
     #expect(completeCall.body?["flow_id"]?.stringValue == "flow_123")
     #expect(completeCall.body?["approval_token"]?.stringValue == "approval_123")
     #expect(completeCall.body?["code_verifier"]?.stringValue == "verifier_123")
-    #expect(signInParams.value?.ticket == "ticket_123")
+    #expect(signInParams.value?["ticket"]?.stringValue == "ticket_123")
     #expect(activatedSessionId.value == "sess_123")
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == false)
   }
@@ -1811,11 +1808,11 @@ struct ClerkTests {
       createdSessionId: "sess_123"
     )
 
-    let signInService = MockSignInService(create: { _ in
+    transport.stubSignInCreate { _ in
       createCallCount.withValue { $0 += 1 }
       try await Task.sleep(for: .milliseconds(50))
       return completedSignIn
-    })
+    }
     transport.stubSetActive { sessionId, _ in
       activatedSessionId.setValue(sessionId)
     }
@@ -1825,8 +1822,7 @@ struct ClerkTests {
     clerk.dependencies = MockDependencyContainer(
       apiClient: apiClient,
       transport: transport,
-      keychain: keychain,
-      signInService: signInService
+      keychain: keychain
     )
     try (#require(clerk.dependencies as? MockDependencyContainer))
       .configurationManager

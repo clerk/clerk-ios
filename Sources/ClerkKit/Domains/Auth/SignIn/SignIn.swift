@@ -81,13 +81,6 @@ public struct SignIn: Codable, Sendable, Equatable {
 
 extension SignIn {
   @MainActor
-  private var signInService: any SignInServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.signInService
-    }
-  }
-
-  @MainActor
   private var magicLinkStore: MagicLinkStore {
     get throws {
       try Clerk.currentDependencies.magicLinkStore
@@ -105,10 +98,10 @@ extension SignIn {
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    )).value.response
   }
 
   /// Sends a native magic link to the specified email address.
@@ -151,7 +144,7 @@ extension SignIn {
       authFlowOwnerId: AuthFlowRequestScope.ownerId
     )
 
-    return try await signInService.prepareFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .emailLink,
@@ -160,7 +153,7 @@ extension SignIn {
         codeChallenge: pkcePair.challenge,
         codeChallengeMethod: PKCE.codeChallengeMethod
       )
-    )
+    )).value.response
   }
 
   /// Sends a verification code to the specified phone number.
@@ -172,10 +165,10 @@ extension SignIn {
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    )).value.response
   }
 
   /// Verifies the code entered by the user.
@@ -196,10 +189,10 @@ extension SignIn {
       throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
     }
 
-    return try await signInService.attemptFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: resolvedStrategy, code: code)
-    )
+    )).value.response
   }
 
   /// Authenticates with the user's password.
@@ -210,10 +203,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPassword(_ password: String) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .password, password: password)
-    )
+    )).value.response
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -258,10 +251,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .idToken(provider), token: idToken)
-    )
+    )).value.response
   }
 
   /// Authenticates with Apple using Sign in with Apple.
@@ -315,10 +308,10 @@ extension SignIn {
   @MainActor
   public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareSecondFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
       signInId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    )).value.response
   }
 
   /// Sends an MFA code to the email address.
@@ -330,10 +323,10 @@ extension SignIn {
   @MainActor
   public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingSecondFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareSecondFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    )).value.response
   }
 
   /// Verifies the MFA code with the specified type.
@@ -346,10 +339,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
-    try await signInService.attemptSecondFactor(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.attemptSecondFactor(
       signInId: id,
       params: .init(strategy: type.strategy, code: code)
-    )
+    )).value.response
   }
 
   // MARK: - Password Reset
@@ -363,10 +356,10 @@ extension SignIn {
   @MainActor
   public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .resetPasswordEmailCode, emailAddressId: emailId)
-    )
+    )).value.response
   }
 
   /// Sends a password reset code to the specified phone number.
@@ -378,10 +371,10 @@ extension SignIn {
   @MainActor
   public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneId)
-    )
+    )).value.response
   }
 
   /// Resets the user's password after verification.
@@ -394,10 +387,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
-    try await signInService.resetPassword(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.resetPassword(
       signInId: id,
       params: .init(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
-    )
+    )).value.response
   }
 
   // MARK: - Enterprise SSO
@@ -423,13 +416,13 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.prepareFirstFactor(
+    let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .enterpriseSSO,
         redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
       )
-    )
+    )).value.response
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
@@ -471,13 +464,13 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.prepareFirstFactor(
+    let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .oauth(provider),
         redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
       )
-    )
+    )).value.response
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
@@ -550,15 +543,15 @@ extension SignIn {
     let signIn: SignIn
     do {
       if usesSecondFactor {
-        signIn = try await signInService.prepareSecondFactor(
+        signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
           signInId: id,
           params: .init(strategy: .passkey)
-        )
+        )).value.response
       } else {
-        signIn = try await signInService.prepareFirstFactor(
+        signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
           signInId: id,
           params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
-        )
+        )).value.response
       }
     } catch {
       throw PasskeyAuthenticationFailure(
@@ -579,16 +572,16 @@ extension SignIn {
 
     do {
       if usesSecondFactor {
-        return try await signInService.attemptSecondFactor(
+        return try await Clerk.currentDependencies.transport.send(SignInAPI.attemptSecondFactor(
           signInId: signIn.id,
           params: .init(strategy: .passkey, publicKeyCredential: credential)
-        )
+        )).value.response
       }
 
-      return try await signInService.attemptFirstFactor(
+      return try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
         signInId: signIn.id,
         params: .init(strategy: .passkey, publicKeyCredential: credential)
-      )
+      )).value.response
     } catch {
       throw PasskeyAuthenticationFailure(
         stage: usesSecondFactor ? .attemptingSecondFactor : .attemptingFirstFactor,
@@ -605,7 +598,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await signInService.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    try await Clerk.currentDependencies.transport.send(SignInAPI.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))).value.response
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)

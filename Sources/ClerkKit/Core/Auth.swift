@@ -16,7 +16,6 @@ import Foundation
 public struct Auth {
   private let magicLinkStore: MagicLinkStore
   let transport: any APITransport
-  private let signInService: SignInServiceProtocol
   private let biometricCredentials: BiometricCredentials
   private let eventEmitter: EventEmitter<AuthEvent>
   private let urlHandlingCoordinator: URLHandlingCoordinator
@@ -24,14 +23,12 @@ public struct Auth {
   init(
     magicLinkStore: MagicLinkStore,
     transport: any APITransport,
-    signInService: SignInServiceProtocol,
     biometricCredentials: BiometricCredentials,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
   ) {
     self.magicLinkStore = magicLinkStore
     self.transport = transport
-    self.signInService = signInService
     self.biometricCredentials = biometricCredentials
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
@@ -83,7 +80,7 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation fails.
   @discardableResult
   public func signIn(_ identifier: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: identifier))
+    try await transport.send(SignInAPI.create(params: .init(identifier: identifier))).value.response
   }
 
   /// Signs in with an identifier and password.
@@ -95,7 +92,7 @@ public struct Auth {
   /// - Throws: An error if the sign-in fails.
   @discardableResult
   public func signInWithPassword(identifier: String, password: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: identifier, password: password))
+    try await transport.send(SignInAPI.create(params: .init(identifier: identifier, password: password))).value.response
   }
 
   /// Signs in with OTP (One-Time Password) using an email address.
@@ -107,7 +104,7 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation or code sending fails.
   @discardableResult
   public func signInWithEmailCode(emailAddress: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: emailAddress, strategy: .emailCode))
+    try await transport.send(SignInAPI.create(params: .init(identifier: emailAddress, strategy: .emailCode))).value.response
   }
 
   /// Starts a native magic-link sign-in flow for an email address.
@@ -125,7 +122,7 @@ public struct Auth {
       throw ClerkClientError(message: "Email address is required.", localizationBundle: .module)
     }
 
-    let signIn = try await signInService.create(params: .init(identifier: identifier))
+    let signIn = try await transport.send(SignInAPI.create(params: .init(identifier: identifier))).value.response
     return try await signIn.sendEmailLink()
   }
 
@@ -138,7 +135,7 @@ public struct Auth {
   /// - Throws: An error if the sign-in creation or code sending fails.
   @discardableResult
   public func signInWithPhoneCode(phoneNumber: String) async throws -> SignIn {
-    try await signInService.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))
+    try await transport.send(SignInAPI.create(params: .init(identifier: phoneNumber, strategy: .phoneCode))).value.response
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -159,10 +156,10 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(
+    let signIn = try await transport.send(SignInAPI.create(params: .init(
       strategy: .oauth(provider),
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
+    ))).value.response
     return try await signIn.authenticateWithOAuth(
       provider: provider,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
@@ -205,7 +202,7 @@ public struct Auth {
     _ idToken: String,
     provider: IDTokenProvider
   ) async throws -> SignIn {
-    try await signInService.create(params: .init(strategy: .idToken(provider), token: idToken))
+    try await transport.send(SignInAPI.create(params: .init(strategy: .idToken(provider), token: idToken))).value.response
   }
   #endif
 
@@ -260,7 +257,7 @@ public struct Auth {
   /// - Throws: An error if the passkey sign-in attempt cannot be created.
   @discardableResult
   public func createPasskeySignIn() async throws -> SignIn {
-    try await signInService.create(params: .init(strategy: .passkey))
+    try await transport.send(SignInAPI.create(params: .init(strategy: .passkey))).value.response
   }
 
   /// Signs in with a passkey.
@@ -318,18 +315,18 @@ public struct Auth {
     redirectUrl: String? = nil
   ) async throws -> SignIn {
     let resolvedRedirectUrl = redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
-    let signIn = try await signInService.create(params: .init(
+    let signIn = try await transport.send(SignInAPI.create(params: .init(
       identifier: emailAddress,
       strategy: .enterpriseSSO,
       redirectUrl: resolvedRedirectUrl
-    ))
-    return try await signInService.prepareFirstFactor(
+    ))).value.response
+    return try await transport.send(SignInAPI.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(
         strategy: .enterpriseSSO,
         redirectUrl: resolvedRedirectUrl
       )
-    )
+    )).value.response
   }
 
   /// Signs in with Enterprise SSO using an email address.
@@ -352,11 +349,11 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.create(params: .init(
+    let signIn = try await transport.send(SignInAPI.create(params: .init(
       identifier: emailAddress,
       strategy: .enterpriseSSO,
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
+    ))).value.response
     return try await signIn.authenticateWithEnterpriseSSO(
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable,
@@ -372,10 +369,10 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-in fails.
   @discardableResult
   public func signInWithTicket(_ ticket: String) async throws -> SignIn {
-    try await signInService.create(params: .init(
+    try await transport.send(SignInAPI.create(params: .init(
       strategy: .ticket,
       ticket: ticket
-    ))
+    ))).value.response
   }
 
   // MARK: - Sign Up Entry Points

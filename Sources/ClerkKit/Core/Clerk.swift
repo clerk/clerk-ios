@@ -204,7 +204,6 @@ public final class Clerk {
     Auth(
       magicLinkStore: dependencies.magicLinkStore,
       transport: dependencies.transport,
-      signInService: dependencies.signInService,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator
@@ -231,7 +230,7 @@ public final class Clerk {
   public var biometricCredentials: BiometricCredentials {
     BiometricCredentials(
       biometricCredentialService: dependencies.biometricCredentialService,
-      signInService: dependencies.signInService,
+      transport: dependencies.transport,
       keyManager: dependencies.biometricCredentialKeyManager,
       credentialStore: dependencies.biometricCredentialStore
     )

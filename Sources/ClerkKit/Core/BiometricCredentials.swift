@@ -9,14 +9,14 @@ import Foundation
 @MainActor
 public struct BiometricCredentials {
   private let biometricCredentialService: BiometricCredentialServiceProtocol
-  private let signInService: SignInServiceProtocol
+  private let transport: any APITransport
   private let keyManager: any BiometricCredentialKeyManagerProtocol
   private let credentialStore: any BiometricCredentialLocalStoreProtocol
   private let appIdentifierProvider: @MainActor @Sendable () -> String?
 
   init(
     biometricCredentialService: BiometricCredentialServiceProtocol,
-    signInService: SignInServiceProtocol,
+    transport: any APITransport,
     keyManager: any BiometricCredentialKeyManagerProtocol,
     credentialStore: any BiometricCredentialLocalStoreProtocol,
     appIdentifierProvider: @escaping @MainActor @Sendable () -> String? = {
@@ -24,7 +24,7 @@ public struct BiometricCredentials {
     }
   ) {
     self.biometricCredentialService = biometricCredentialService
-    self.signInService = signInService
+    self.transport = transport
     self.keyManager = keyManager
     self.credentialStore = credentialStore
     self.appIdentifierProvider = appIdentifierProvider
@@ -284,10 +284,10 @@ public struct BiometricCredentials {
 
     let signIn: SignIn
     do {
-      signIn = try await signInService.create(params: .init(
+      signIn = try await transport.send(SignInAPI.create(params: .init(
         strategy: .biometricCredential,
         biometricCredentialId: biometricCredentialId
-      ))
+      ))).value.response
     } catch {
       throw handleBiometricCredentialError(error, localCredential: localCredential)
     }
@@ -300,7 +300,7 @@ public struct BiometricCredentials {
     )
 
     do {
-      return try await signInService.attemptFirstFactor(
+      return try await transport.send(SignInAPI.attemptFirstFactor(
         signInId: signIn.id,
         params: .init(
           strategy: .biometricCredential,
@@ -309,7 +309,7 @@ public struct BiometricCredentials {
           signature: signature.signature,
           algorithm: signature.algorithm
         )
-      )
+      )).value.response
     } catch {
       throw handleBiometricCredentialError(error, localCredential: localCredential)
     }

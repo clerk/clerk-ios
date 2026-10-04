@@ -67,4 +67,25 @@ extension FakeTransport {
       try await ClientResponse(response: create(call.body), client: nil)
     }
   }
+
+  /// Answers sign-in creation with `create`'s sign-in, given the request body.
+  func stubSignInCreate(_ create: @escaping @MainActor (JSON?) async throws -> SignIn) {
+    stub(SignInAPI.create(params: .init())) { call in
+      try await ClientResponse(response: create(call.body), client: nil)
+    }
+  }
+
+  /// Answers first-factor preparation with `prepare`'s sign-in, given the sign-in id and the request body.
+  func stubSignInPrepareFirstFactor(_ prepare: @escaping @MainActor (_ signInId: String, _ body: JSON?) async throws -> SignIn) {
+    stub(SignInAPI.prepareFirstFactor(signInId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      try await ClientResponse(response: prepare(String(call.path.split(separator: "/")[3]), call.body), client: nil)
+    }
+  }
+
+  /// Answers first-factor attempts with `attempt`'s sign-in, given the sign-in id and the request body.
+  func stubSignInAttemptFirstFactor(_ attempt: @escaping @MainActor (_ signInId: String, _ body: JSON?) async throws -> SignIn) {
+    stub(SignInAPI.attemptFirstFactor(signInId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      try await ClientResponse(response: attempt(String(call.path.split(separator: "/")[3]), call.body), client: nil)
+    }
+  }
 }

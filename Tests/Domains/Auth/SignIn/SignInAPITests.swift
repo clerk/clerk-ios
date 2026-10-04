@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct SignInServiceTests {
+struct SignInAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -32,7 +32,7 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(identifier: "test@example.com"))
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(identifier: "test@example.com")))
     #expect(requestHandled.value)
   }
 
@@ -58,10 +58,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(
       strategy: .oauth(.google),
       redirectUrl: expectedRedirectUrl
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -88,11 +88,11 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(
       identifier: "user@enterprise.com",
       strategy: .enterpriseSSO,
       redirectUrl: expectedRedirectUrl
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -117,10 +117,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(
       strategy: .idToken(.apple),
       token: "mock_id_token"
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -144,7 +144,7 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(strategy: .passkey))
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(strategy: .passkey)))
     #expect(requestHandled.value)
   }
 
@@ -169,9 +169,9 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(
       params: .init(strategy: .biometricCredential, biometricCredentialId: "tdc_123")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -196,10 +196,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(
       strategy: .ticket,
       ticket: "mock_ticket_value"
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -223,8 +223,8 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Transfer is an internal parameter not exposed in public API, so we test the service directly
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init(transfer: true))
+    // Transfer is an internal parameter not exposed in public API, so we test the request builder directly
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init(transfer: true)))
     #expect(requestHandled.value)
   }
 
@@ -247,8 +247,8 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Empty create is not exposed in public API, so we test the service directly
-    _ = try await Clerk.shared.dependencies.signInService.create(params: .init())
+    // Empty create is not exposed in public API, so we test the request builder directly
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init()))
     #expect(requestHandled.value)
   }
 
@@ -273,10 +273,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.resetPassword(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.resetPassword(
       signInId: signIn.id,
       params: .init(password: "newPassword123", signOutOfOtherSessions: true)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -300,10 +300,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .emailCode)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -331,7 +331,7 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(
         strategy: .emailLink,
@@ -340,7 +340,7 @@ struct SignInServiceTests {
         codeChallenge: "challenge_123",
         codeChallengeMethod: "S256"
       )
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -364,10 +364,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .phoneCode)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -391,11 +391,11 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Passkey prepare requires getting credential first, so we test the service directly for this unit test
-    _ = try await Clerk.shared.dependencies.signInService.prepareFirstFactor(
+    // Passkey prepare requires getting credential first, so we test the request builder directly for this unit test
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -420,10 +420,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .password, password: "password123")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -448,10 +448,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .emailCode, code: "123456")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -477,11 +477,11 @@ struct SignInServiceTests {
     mock.register()
 
     // verifyCode() infers strategy from firstFactorVerification state, which is hard to control in unit tests
-    // For this test that specifically verifies phone_code parameters, we use the service directly
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    // For this test that specifically verifies phone_code parameters, we use the request builder directly
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .phoneCode, code: "654321")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -506,11 +506,11 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    // Passkey attempt requires getting credential first, so we test the service directly for this unit test
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    // Passkey attempt requires getting credential first, so we test the request builder directly for this unit test
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .passkey, publicKeyCredential: "mock_credential")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -538,7 +538,7 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(
         strategy: .biometricCredential,
@@ -547,7 +547,7 @@ struct SignInServiceTests {
         signature: "mock_signature",
         algorithm: .es256
       )
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -574,10 +574,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptFirstFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: signIn.id,
       params: .init(strategy: .idToken(.apple), token: mockIdToken)
-    )
+    ))
     #expect(requestHandled.value)
   }
   #endif
@@ -602,10 +602,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.prepareSecondFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.prepareSecondFactor(
       signInId: signIn.id,
       params: .init(strategy: .phoneCode)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -630,10 +630,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptSecondFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptSecondFactor(
       signInId: signIn.id,
       params: .init(strategy: .phoneCode, code: "123456")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -658,10 +658,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptSecondFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptSecondFactor(
       signInId: signIn.id,
       params: .init(strategy: .totp, code: "654321")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -686,10 +686,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.attemptSecondFactor(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.attemptSecondFactor(
       signInId: signIn.id,
       params: .init(strategy: .backupCode, code: "backup123")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -712,10 +712,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.get(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.get(
       signInId: signIn.id,
       params: .init()
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -739,10 +739,10 @@ struct SignInServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signInService.get(
+    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.get(
       signInId: signIn.id,
       params: .init(rotatingTokenNonce: "test_nonce")
-    )
+    ))
     #expect(requestHandled.value)
   }
 }

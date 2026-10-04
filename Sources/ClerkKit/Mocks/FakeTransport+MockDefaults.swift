@@ -7,7 +7,7 @@ import Foundation
 
 extension FakeTransport {
   /// A transport that answers every endpoint with its `.mock` fixture until a stub overrides it.
-  package static func mockDefaults() -> FakeTransport {
+  package static func mockDefaults() -> FakeTransport { // swiftlint:disable:this function_body_length
     let transport = FakeTransport()
     let anyId = FakeTransport.anyPathSegment
 
@@ -57,6 +57,14 @@ extension FakeTransport {
       SessionAPI.attemptSecondFactorVerification(sessionId: anyId, params: .init(strategy: .phoneCode)),
       returning: ClientResponse(response: .mockComplete, client: nil)
     )
+
+    transport.fallback(SignInAPI.create(params: .init()), returning: ClientResponse(response: SignIn.mock, client: nil))
+    transport.fallback(SignInAPI.prepareFirstFactor(signInId: anyId, params: .init(strategy: .emailCode)), returning: ClientResponse(response: SignIn.mock, client: nil))
+    transport.fallback(SignInAPI.attemptFirstFactor(signInId: anyId, params: .init(strategy: .emailCode)), returning: ClientResponse(response: SignIn.mock, client: nil))
+    transport.fallback(SignInAPI.prepareSecondFactor(signInId: anyId, params: .init(strategy: .phoneCode)), returning: ClientResponse(response: SignIn.mock, client: nil))
+    transport.fallback(SignInAPI.attemptSecondFactor(signInId: anyId, params: .init(strategy: .phoneCode)), returning: ClientResponse(response: SignIn.mock, client: nil))
+    transport.fallback(SignInAPI.resetPassword(signInId: anyId, params: .init(password: "")), returning: ClientResponse(response: SignIn.mock, client: nil))
+    transport.fallback(SignInAPI.get(signInId: anyId, params: .init()), returning: ClientResponse(response: SignIn.mock, client: nil))
 
     transport.fallback(SignUpAPI.create(params: .init()), returning: ClientResponse(response: SignUp.mock, client: nil))
     transport.fallback(SignUpAPI.prepareVerification(signUpId: anyId, params: .init(strategy: .emailCode)), returning: ClientResponse(response: SignUp.mock, client: nil))
