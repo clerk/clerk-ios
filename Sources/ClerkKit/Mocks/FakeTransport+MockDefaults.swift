@@ -58,6 +58,12 @@ extension FakeTransport {
       returning: ClientResponse(response: .mockComplete, client: nil)
     )
 
+    transport.fallback(SignUpAPI.create(params: .init()), returning: ClientResponse(response: SignUp.mock, client: nil))
+    transport.fallback(SignUpAPI.prepareVerification(signUpId: anyId, params: .init(strategy: .emailCode)), returning: ClientResponse(response: SignUp.mock, client: nil))
+    transport.fallback(SignUpAPI.attemptVerification(signUpId: anyId, params: .init(strategy: .emailCode, code: "")), returning: ClientResponse(response: SignUp.mock, client: nil))
+    transport.fallback(SignUpAPI.update(signUpId: anyId, params: .init()), returning: ClientResponse(response: SignUp.mock, client: nil))
+    transport.fallback(SignUpAPI.get(signUpId: anyId, params: .init()), returning: ClientResponse(response: SignUp.mock, client: nil))
+
     return transport
   }
 }

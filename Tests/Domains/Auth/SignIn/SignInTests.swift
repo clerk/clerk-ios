@@ -28,10 +28,10 @@ struct SignInTests {
       .configure(publishableKey: testPublishableKey, options: .init())
   }
 
-  private func configureServices(signUpService: MockSignUpService) {
+  private func configureServices(transport: FakeTransport) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      signUpService: signUpService
+      transport: transport
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -40,12 +40,12 @@ struct SignInTests {
 
   private func configureServices(
     signInService: MockSignInService,
-    signUpService: MockSignUpService
+    transport: FakeTransport
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      signInService: signInService,
-      signUpService: signUpService
+      transport: transport,
+      signInService: signInService
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -608,13 +608,14 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
-    let captured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let captured = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       captured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signUpService: signUpService)
+    configureServices(transport: transport)
 
     let result = try await signIn.handleTransferFlow(
       transferable: true,
@@ -629,8 +630,8 @@ struct SignInTests {
     }
 
     let params = try #require(captured.value)
-    #expect(params.transfer == true)
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["transfer"]?.boolValue == true)
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
@@ -638,13 +639,14 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
-    let captured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let captured = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       captured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signUpService: signUpService)
+    configureServices(transport: transport)
 
     let result = try await signIn.handleTransferFlow(transferable: false)
 
@@ -737,13 +739,14 @@ struct SignInTests {
       return reloadedSignIn
     })
 
-    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let createCaptured = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       createCaptured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signInService: signInService, signUpService: signUpService)
+    configureServices(signInService: signInService, transport: transport)
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
@@ -756,8 +759,8 @@ struct SignInTests {
     #expect(getParams.1.rotatingTokenNonce == nil)
 
     let createParams = try #require(createCaptured.value)
-    #expect(createParams.transfer == true)
-    #expect(createParams.unsafeMetadata == metadata)
+    #expect(createParams["transfer"]?.boolValue == true)
+    #expect(createParams["unsafe_metadata"] == metadata)
 
     switch result {
     case .signUp(let signUp):
@@ -779,13 +782,14 @@ struct SignInTests {
       return reloadedSignIn
     })
 
-    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let createCaptured = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       createCaptured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signInService: signInService, signUpService: signUpService)
+    configureServices(signInService: signInService, transport: transport)
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(

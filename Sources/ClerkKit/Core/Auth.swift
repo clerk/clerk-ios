@@ -17,7 +17,6 @@ public struct Auth {
   private let magicLinkStore: MagicLinkStore
   let transport: any APITransport
   private let signInService: SignInServiceProtocol
-  private let signUpService: SignUpServiceProtocol
   private let biometricCredentials: BiometricCredentials
   private let eventEmitter: EventEmitter<AuthEvent>
   private let urlHandlingCoordinator: URLHandlingCoordinator
@@ -26,7 +25,6 @@ public struct Auth {
     magicLinkStore: MagicLinkStore,
     transport: any APITransport,
     signInService: SignInServiceProtocol,
-    signUpService: SignUpServiceProtocol,
     biometricCredentials: BiometricCredentials,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
@@ -34,7 +32,6 @@ public struct Auth {
     self.magicLinkStore = magicLinkStore
     self.transport = transport
     self.signInService = signInService
-    self.signUpService = signUpService
     self.biometricCredentials = biometricCredentials
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
@@ -409,7 +406,7 @@ public struct Auth {
     legalAccepted: Bool? = nil,
     transfer: Bool = false
   ) async throws -> SignUp {
-    try await signUpService.create(params: .init(
+    try await transport.send(SignUpAPI.create(params: .init(
       emailAddress: emailAddress,
       phoneNumber: phoneNumber,
       password: password,
@@ -419,7 +416,7 @@ public struct Auth {
       unsafeMetadata: unsafeMetadata,
       legalAccepted: legalAccepted,
       transfer: transfer ? true : nil
-    ))
+    ))).value.response
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -437,11 +434,11 @@ public struct Auth {
     prefersEphemeralWebBrowserSession: Bool = false,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signUp = try await signUpService.create(params: .init(
+    let signUp = try await transport.send(SignUpAPI.create(params: .init(
       unsafeMetadata: unsafeMetadata,
       strategy: FactorStrategy(rawValue: provider.strategy),
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
+    ))).value.response
 
     guard
       let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
@@ -511,13 +508,13 @@ public struct Auth {
     lastName: String? = nil,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signUp = try await signUpService.create(params: .init(
+    let signUp = try await transport.send(SignUpAPI.create(params: .init(
       firstName: firstName,
       lastName: lastName,
       unsafeMetadata: unsafeMetadata,
       strategy: FactorStrategy(rawValue: provider.strategy),
       token: idToken
-    ))
+    ))).value.response
     return try await signUp.handleTransferFlow()
   }
   #endif
@@ -537,12 +534,12 @@ public struct Auth {
     prefersEphemeralWebBrowserSession: Bool = false,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signUp = try await signUpService.create(params: .init(
+    let signUp = try await transport.send(SignUpAPI.create(params: .init(
       emailAddress: emailAddress,
       unsafeMetadata: unsafeMetadata,
       strategy: .enterpriseSSO,
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))
+    ))).value.response
 
     guard
       let verification = signUp.verifications.first(where: { $0.key == "external_account" })?.value,
@@ -570,11 +567,11 @@ public struct Auth {
   /// - Throws: An error if the ticket sign-up fails.
   @discardableResult
   public func signUpWithTicket(_ ticket: String, unsafeMetadata: JSON? = nil) async throws -> SignUp {
-    try await signUpService.create(params: .init(
+    try await transport.send(SignUpAPI.create(params: .init(
       unsafeMetadata: unsafeMetadata,
       ticket: ticket,
       strategy: .ticket
-    ))
+    ))).value.response
   }
 }
 

@@ -16,7 +16,6 @@ struct AuthTests {
 
   private func configureDependencies(
     signInService: MockSignInService? = nil,
-    signUpService: MockSignUpService? = nil,
     transport: (any APITransport)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
@@ -29,8 +28,7 @@ struct AuthTests {
       apiClient: apiClient,
       transport: transport ?? apiClient,
       keychain: keychain,
-      signInService: signInService,
-      signUpService: signUpService
+      signInService: signInService
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -41,7 +39,6 @@ struct AuthTests {
 
   private func makeIsolatedClerk(
     signInService: MockSignInService? = nil,
-    signUpService: MockSignUpService? = nil,
     transport: (any APITransport)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
@@ -55,8 +52,7 @@ struct AuthTests {
       apiClient: apiClient,
       transport: transport ?? apiClient,
       keychain: keychain,
-      signInService: signInService,
-      signUpService: signUpService
+      signInService: signInService
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -124,12 +120,13 @@ struct AuthTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       signUpCalled.setValue(true)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signInWithOAuth(provider: .google)
@@ -149,12 +146,13 @@ struct AuthTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       signUpCalled.setValue(true)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
@@ -204,12 +202,13 @@ struct AuthTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       signUpCalled.setValue(true)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     _ = try await Clerk.shared.auth.signInWithIdToken("mock_id_token", provider: .apple)
 
@@ -225,16 +224,17 @@ struct AuthTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<JSON?>(nil)
     let signInService = MockSignInService(create: { _ in
       signIn
     })
-    let signUpService = MockSignUpService(create: { params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     _ = try await Clerk.shared.auth.signInWithIdToken(
       "mock_id_token",
@@ -243,8 +243,8 @@ struct AuthTests {
     )
 
     let params = try #require(signUpParams.value)
-    #expect(params.transfer == true)
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["transfer"]?.boolValue == true)
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
@@ -261,12 +261,13 @@ struct AuthTests {
     let signInService = MockSignInService(create: { _ in
       signIn
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       signUpCalled.setValue(true)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     do {
       _ = try await Clerk.shared.auth.signInWithIdToken(
@@ -389,7 +390,6 @@ struct AuthTests {
       magicLinkStore: MagicLinkStore(keychain: InMemoryKeychain()),
       transport: apiClient,
       signInService: signInService,
-      signUpService: MockSignUpService(),
       biometricCredentials: BiometricCredentials(
         biometricCredentialService: MockBiometricCredentialService(),
         signInService: signInService,
@@ -669,7 +669,7 @@ struct AuthTests {
   func completeMagicLinkRejectsTicketResponseForSignUpFlow() async throws {
     let keychain = InMemoryKeychain()
     let signInParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<[String: String]?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup.clerk.accounts.dev"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
@@ -694,15 +694,11 @@ struct AuthTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
+    try registerSignUpCreateMock(baseURL: testBaseUrl, signUpParams: signUpParams)
     try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
-      signUpService: signUpService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -722,7 +718,7 @@ struct AuthTests {
   @Test
   func completeMagicLinkUsesCompletedSignUpResponse() async throws {
     let keychain = InMemoryKeychain()
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<[String: String]?>(nil)
     let activatedSessionId = LockIsolated<String?>(nil)
     let testBaseUrl = try #require(URL(string: "https://mock-authtests-signup-response.clerk.accounts.dev"))
     let completionUrl = URL(string: testBaseUrl.absoluteString + "/v1/client/magic_links/complete")!
@@ -769,14 +765,10 @@ struct AuthTests {
     )
     completionMock.register()
 
-    let signUpService = MockSignUpService(create: { params in
-      signUpParams.setValue(params)
-      return .mock
-    })
+    try registerSignUpCreateMock(baseURL: testBaseUrl, signUpParams: signUpParams)
     try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
-      signUpService: signUpService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -1201,33 +1193,35 @@ struct AuthTests {
   }
 
   @Test
-  func signUpWithStandardFieldsUsesSignUpServiceCreate() async throws {
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+  func signUpWithStandardFieldsCreatesSignUp() async throws {
+    let signUpParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signUpService: signUpService)
+    configureDependencies(transport: transport)
 
     _ = try await Clerk.shared.auth.signUp(emailAddress: "test@example.com", password: "password123")
 
     let params = try #require(signUpParams.value)
-    #expect(params.emailAddress == "test@example.com")
-    #expect(params.password == "password123")
-    #expect(params.transfer == nil)
+    #expect(params["email_address"]?.stringValue == "test@example.com")
+    #expect(params["password"]?.stringValue == "password123")
+    #expect(params["transfer"] == nil)
   }
 
   @Test
   func signUpTransfersCurrentSignInWithCollectedFields() async throws {
     let metadata: JSON = ["birthday": "1990-01-01"]
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let signUpParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signUpService: signUpService)
+    configureDependencies(transport: transport)
 
     let signUp = try await Clerk.shared.auth.signUp(
       unsafeMetadata: metadata,
@@ -1237,26 +1231,27 @@ struct AuthTests {
 
     #expect(signUp == .mock)
     let params = try #require(signUpParams.value)
-    #expect(params.unsafeMetadata == metadata)
-    #expect(params.legalAccepted == true)
-    #expect(params.transfer == true)
+    #expect(params["unsafe_metadata"] == metadata)
+    #expect(params["legal_accepted"]?.boolValue == true)
+    #expect(params["transfer"]?.boolValue == true)
   }
 
   @Test
-  func signUpWithOAuthUsesSignUpServiceCreate() async throws {
+  func signUpWithOAuthCreatesSignUp() async throws {
     let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<JSON?>(nil)
     let signInService = MockSignInService(create: { _ in
       signInCalled.setValue(true)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signUpWithOAuth(
@@ -1268,25 +1263,26 @@ struct AuthTests {
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
-    #expect(params.strategy?.rawValue == OAuthProvider.google.strategy)
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["strategy"]?.stringValue == OAuthProvider.google.strategy)
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
-  func signUpWithEnterpriseSSOUsesSignUpServiceCreate() async throws {
+  func signUpWithEnterpriseSSOCreatesSignUp() async throws {
     let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<JSON?>(nil)
     let signInService = MockSignInService(create: { _ in
       signInCalled.setValue(true)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signUpWithEnterpriseSSO(
@@ -1298,25 +1294,26 @@ struct AuthTests {
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
-    #expect(params.emailAddress == "user@enterprise.com")
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["email_address"]?.stringValue == "user@enterprise.com")
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
-  func signUpWithIdTokenUsesSignUpServiceCreate() async throws {
+  func signUpWithIdTokenCreatesSignUp() async throws {
     let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<JSON?>(nil)
     let signInService = MockSignInService(create: { _ in
       signInCalled.setValue(true)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    configureDependencies(signInService: signInService, transport: transport)
 
     _ = try await Clerk.shared.auth.signUpWithIdToken(
       "mock_id_token",
@@ -1326,20 +1323,21 @@ struct AuthTests {
 
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
-    #expect(params.strategy?.rawValue == IDTokenProvider.apple.strategy)
-    #expect(params.token == "mock_id_token")
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["strategy"]?.stringValue == IDTokenProvider.apple.strategy)
+    #expect(params["token"]?.stringValue == "mock_id_token")
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
   func signUpWithIdTokenPreservesEnabledNameFields() async throws {
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let signUpParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signUpService: signUpService)
+    configureDependencies(transport: transport)
 
     _ = try await Clerk.shared.auth.signUpWithIdToken(
       "mock_id_token",
@@ -1349,8 +1347,8 @@ struct AuthTests {
     )
 
     let params = try #require(signUpParams.value)
-    #expect(params.firstName == "Jane")
-    #expect(params.lastName == "Doe")
+    #expect(params["first_name"]?.stringValue == "Jane")
+    #expect(params["last_name"]?.stringValue == "Doe")
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
@@ -1394,15 +1392,16 @@ struct AuthTests {
   #endif
 
   @Test
-  func signUpWithTicketUsesSignUpServiceCreate() async throws {
+  func signUpWithTicketCreatesSignUp() async throws {
     let metadata: JSON = ["plan": "pro"]
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let signUpParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
+    }
 
-    configureDependencies(signUpService: signUpService)
+    configureDependencies(transport: transport)
 
     _ = try await Clerk.shared.auth.signUpWithTicket(
       "mock_ticket_value",
@@ -1410,8 +1409,8 @@ struct AuthTests {
     )
 
     let params = try #require(signUpParams.value)
-    #expect(params.ticket == "mock_ticket_value")
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["ticket"]?.stringValue == "mock_ticket_value")
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test(
@@ -1531,6 +1530,23 @@ private func registerSetActiveMock(baseURL: URL, sessionId: String, activatedSes
   )
   mock.onRequestHandler = OnRequestHandler { @Sendable _ in
     activatedSessionId.setValue(sessionId)
+  }
+  mock.register()
+}
+
+@MainActor
+private func registerSignUpCreateMock(baseURL: URL, signUpParams: LockIsolated<[String: String]?>) throws {
+  var mock = try Mock(
+    url: #require(URL(string: baseURL.absoluteString + "/v1/client/sign_ups")),
+    ignoreQuery: true,
+    contentType: .json,
+    statusCode: 200,
+    data: [
+      .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: nil)),
+    ]
+  )
+  mock.onRequestHandler = OnRequestHandler { @Sendable request in
+    signUpParams.setValue(request.urlEncodedFormBody)
   }
   mock.register()
 }

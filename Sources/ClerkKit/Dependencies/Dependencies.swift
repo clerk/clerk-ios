@@ -31,8 +31,6 @@ protocol Dependencies: AnyObject {
 
   var signInService: SignInServiceProtocol { get }
 
-  var signUpService: SignUpServiceProtocol { get }
-
   var passkeyService: PasskeyServiceProtocol { get }
 
   var biometricCredentialService: BiometricCredentialServiceProtocol { get }

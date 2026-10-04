@@ -205,7 +205,6 @@ public final class Clerk {
       magicLinkStore: dependencies.magicLinkStore,
       transport: dependencies.transport,
       signInService: dependencies.signInService,
-      signUpService: dependencies.signUpService,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator

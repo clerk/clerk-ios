@@ -109,13 +109,6 @@ public struct SignUp: Codable, Sendable, Equatable {
 
 extension SignUp {
   @MainActor
-  private var signUpService: any SignUpServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.signUpService
-    }
-  }
-
-  @MainActor
   private var magicLinkStore: MagicLinkStore {
     get throws {
       try Clerk.currentDependencies.magicLinkStore
@@ -150,7 +143,7 @@ extension SignUp {
     unsafeMetadata: JSON? = nil,
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
-    try await signUpService.update(signUpId: id, params: .init(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.update(signUpId: id, params: .init(
       emailAddress: emailAddress,
       phoneNumber: phoneNumber,
       password: password,
@@ -159,7 +152,7 @@ extension SignUp {
       username: username,
       unsafeMetadata: unsafeMetadata,
       legalAccepted: legalAccepted
-    ))
+    ))).value.response
   }
 
   /// Sends a native magic link to the email address for verification.
@@ -185,7 +178,7 @@ extension SignUp {
       authFlowOwnerId: AuthFlowRequestScope.ownerId
     )
 
-    return try await signUpService.prepareVerification(
+    return try await Clerk.currentDependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: id,
       params: .init(
         strategy: .emailLink,
@@ -194,7 +187,7 @@ extension SignUp {
         codeChallenge: pkcePair.challenge,
         codeChallengeMethod: PKCE.codeChallengeMethod
       )
-    )
+    )).value.response
   }
 
   /// Sends a verification code to the email address.
@@ -203,10 +196,10 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendEmailCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, emailAddressId: nil)
-    )
+    )).value.response
   }
 
   /// Sends a verification code to the phone number.
@@ -215,10 +208,10 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendPhoneCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: nil)
-    )
+    )).value.response
   }
 
   /// Verifies the email code entered by the user.
@@ -228,10 +221,10 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyEmailCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.attemptVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, code: code)
-    )
+    )).value.response
   }
 
   /// Verifies the phone code entered by the user.
@@ -241,10 +234,10 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyPhoneCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.attemptVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, code: code)
-    )
+    )).value.response
   }
 }
 
@@ -297,6 +290,6 @@ extension SignUp {
 
   @discardableResult @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    try await signUpService.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))).value.response
   }
 }

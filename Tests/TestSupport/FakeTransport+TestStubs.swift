@@ -60,4 +60,11 @@ extension FakeTransport {
       return ClientResponse(response: .mock, client: nil)
     }
   }
+
+  /// Answers sign-up creation with `create`'s sign-up, given the request body.
+  func stubSignUpCreate(_ create: @escaping @MainActor (JSON?) async throws -> SignUp) {
+    stub(SignUpAPI.create(params: .init())) { call in
+      try await ClientResponse(response: create(call.body), client: nil)
+    }
+  }
 }

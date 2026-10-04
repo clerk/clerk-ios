@@ -15,14 +15,14 @@ struct AuthAppleTests {
 
   private func configureDependencies(
     signInService: MockSignInService = .init(),
-    signUpService: MockSignUpService = .init()
+    transport: FakeTransport = .mockDefaults()
   ) {
     configureClerkForTesting()
     let apiClient = createMockAPIClient(baseURL: mockBaseUrl)
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: apiClient,
-      signInService: signInService,
-      signUpService: signUpService
+      transport: transport,
+      signInService: signInService
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -49,11 +49,12 @@ struct AuthAppleTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       signUpCalled.setValue(true)
       return .mock
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -77,16 +78,17 @@ struct AuthAppleTests {
   func appleSignInStartsWithSignUpAndPreservesAppleProfile() async throws {
     let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
-    let signUpParams = LockIsolated<SignUp.CreateParams?>(nil)
+    let signUpParams = LockIsolated<JSON?>(nil)
     let signInService = MockSignInService(create: { _ in
       signInCalled.setValue(true)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { params in
       signUpParams.setValue(params)
       return .mock
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -102,11 +104,11 @@ struct AuthAppleTests {
     }
     #expect(signInCalled.value == false)
     let params = try #require(signUpParams.value)
-    #expect(params.strategy == .idToken(.apple))
-    #expect(params.token == "apple_token")
-    #expect(params.firstName == "Jane")
-    #expect(params.lastName == "Doe")
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .idToken(.apple))
+    #expect(params["token"]?.stringValue == "apple_token")
+    #expect(params["first_name"]?.stringValue == "Jane")
+    #expect(params["last_name"]?.stringValue == "Doe")
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
@@ -119,10 +121,11 @@ struct AuthAppleTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       transferableSignUp
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -161,10 +164,11 @@ struct AuthAppleTests {
     let signInService = MockSignInService(create: { _ in
       failedSignIn
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       transferableSignUp
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     do {
       _ = try await Clerk.shared.auth.completeAppleSignIn(
@@ -191,10 +195,11 @@ struct AuthAppleTests {
       signInParams.setValue(params)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       throw error
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     let result = try await Clerk.shared.auth.completeAppleSignIn(
       idToken: "apple_token",
@@ -230,10 +235,11 @@ struct AuthAppleTests {
     let signInService = MockSignInService(create: { _ in
       transferableSignIn
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       throw restrictionError
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     do {
       _ = try await Clerk.shared.auth.completeAppleSignIn(
@@ -263,10 +269,11 @@ struct AuthAppleTests {
       signInCalled.setValue(true)
       return .mock
     })
-    let signUpService = MockSignUpService(create: { _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignUpCreate { _ in
       throw unrelatedError
-    })
-    configureDependencies(signInService: signInService, signUpService: signUpService)
+    }
+    configureDependencies(signInService: signInService, transport: transport)
 
     do {
       _ = try await Clerk.shared.auth.completeAppleSignIn(

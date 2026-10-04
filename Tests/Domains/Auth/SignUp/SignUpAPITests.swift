@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct SignUpServiceTests {
+struct SignUpAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -33,10 +33,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init(
       emailAddress: "test@example.com",
       password: "password123"
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -62,10 +62,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init(
       strategy: .oauth(.google),
       redirectUrl: expectedRedirectUrl
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -92,11 +92,11 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init(
       emailAddress: "user@enterprise.com",
       strategy: .enterpriseSSO,
       redirectUrl: expectedRedirectUrl
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -121,10 +121,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init(
       strategy: .idToken(.apple),
       token: "mock_id_token"
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -149,10 +149,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init(
       ticket: "mock_ticket_value",
       strategy: .ticket
-    ))
+    )))
     #expect(requestHandled.value)
   }
 
@@ -176,8 +176,8 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    // Transfer is an internal parameter not exposed in public API, so we test the service directly
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init(transfer: true))
+    // Transfer is an internal parameter not exposed in public API, so we test the request builder directly
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init(transfer: true)))
     #expect(requestHandled.value)
   }
 
@@ -200,7 +200,7 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(params: .init())
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init()))
     #expect(requestHandled.value)
   }
 
@@ -224,9 +224,9 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.create(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(
       params: .init(unsafeMetadata: ["token": "some-value"])
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -252,10 +252,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.update(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.update(
       signUpId: signUp.id,
       params: .init(firstName: "John", lastName: "Doe", legalAccepted: true)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -280,10 +280,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.update(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.update(
       signUpId: signUp.id,
       params: .init(unsafeMetadata: ["token": "some-value"])
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -307,10 +307,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.prepareVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: signUp.id,
       params: .init(strategy: .emailCode)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -334,10 +334,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.prepareVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: signUp.id,
       params: .init(strategy: .phoneCode)
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -362,10 +362,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.attemptVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.attemptVerification(
       signUpId: signUp.id,
       params: .init(strategy: .emailCode, code: "123456")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -390,10 +390,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.attemptVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.attemptVerification(
       signUpId: signUp.id,
       params: .init(strategy: .phoneCode, code: "654321")
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -416,10 +416,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.get(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.get(
       signUpId: signUp.id,
       params: .init()
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -443,10 +443,10 @@ struct SignUpServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.signUpService.get(
+    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.get(
       signUpId: signUp.id,
       params: .init(rotatingTokenNonce: "test_nonce")
-    )
+    ))
     #expect(requestHandled.value)
   }
 }

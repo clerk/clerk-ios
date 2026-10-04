@@ -13,8 +13,6 @@ package final class MockServicesBuilder {
 
   package var signInService: MockSignInService = .init()
 
-  package var signUpService: MockSignUpService = .init()
-
   package var passkeyService: MockPasskeyService = .init()
 
   package var organizationService: MockOrganizationService = .init()

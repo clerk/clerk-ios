@@ -723,11 +723,11 @@ extension SignIn {
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
     if needsTransferToSignUp == true, transferable {
-      let signUpService: any SignUpServiceProtocol = try Clerk.currentDependencies.signUpService
-      let signUp = try await signUpService.create(params: .init(
+      let transport = try Clerk.currentDependencies.transport
+      let signUp = try await transport.send(SignUpAPI.create(params: .init(
         unsafeMetadata: unsafeMetadata,
         transfer: true
-      ))
+      ))).value.response
       return .signUp(signUp)
     } else {
       return .signIn(self)
