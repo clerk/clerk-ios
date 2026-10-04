@@ -27,8 +27,6 @@ protocol Dependencies: AnyObject {
 
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
-  var hostedAuthService: HostedAuthServiceProtocol { get }
-
   var userService: UserServiceProtocol { get }
 
   var signInService: SignInServiceProtocol { get }

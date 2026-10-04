@@ -392,7 +392,6 @@ struct AuthTests {
     let auth = Auth(
       magicLinkStore: MagicLinkStore(keychain: InMemoryKeychain()),
       transport: apiClient,
-      hostedAuthService: MockHostedAuthService(),
       signInService: signInService,
       signUpService: MockSignUpService(),
       sessionService: MockSessionService(),

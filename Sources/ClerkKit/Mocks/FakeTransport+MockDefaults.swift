@@ -25,6 +25,15 @@ extension FakeTransport {
       returning: ClientResponse(response: .ticket(MagicLinkCompleteResponse(flowId: nil, ticket: "ticket_mock")), client: nil)
     )
 
+    transport.fallback(
+      HostedAuthAPI.create(params: HostedAuthCreateParams(redirectUrl: "", codeChallenge: "", state: "", mode: nil)),
+      returning: ClientResponse(response: HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in"), client: nil)
+    )
+    transport.fallback(
+      HostedAuthAPI.redeem(params: HostedAuthRedeemParams(rotatingTokenNonce: "", codeVerifier: "")),
+      returning: ClientResponse<Client?>(response: .mock, client: nil)
+    )
+
     return transport
   }
 }

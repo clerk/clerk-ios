@@ -6,7 +6,7 @@ import Testing
 extension HostedAuthFlowTests {
   @Test
   func redeemPersistsIdentityBeforeActivation() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let persistedBeforeActivation = LockIsolated(false)
     let redeemedClient = makeHostedAuthPersistenceClient(
       id: "redeemed-client",
@@ -31,7 +31,7 @@ extension HostedAuthFlowTests {
     })
     try configureHostedAuthPersistenceTest(
       keychain: keychain,
-      hostedAuthService: hostedAuthService(createParams: createParams, redeemedClient: redeemedClient),
+      transport: hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient),
       sessionService: sessionService
     )
 
@@ -46,7 +46,7 @@ extension HostedAuthFlowTests {
 
   @Test
   func redeemPersistenceFailureDoesNotExposeOrActivateIdentity() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let setActiveCalled = LockIsolated(false)
     let redeemedClient = makeHostedAuthPersistenceClient(
       id: "redeemed-client",
@@ -56,7 +56,7 @@ extension HostedAuthFlowTests {
     let keychain = FailableIdentityKeychain()
     try configureHostedAuthPersistenceTest(
       keychain: keychain,
-      hostedAuthService: hostedAuthService(createParams: createParams, redeemedClient: redeemedClient),
+      transport: hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient),
       sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
     )
     keychain.failsWrites = true
@@ -73,7 +73,7 @@ extension HostedAuthFlowTests {
 
   @Test
   func missingCallbackSessionDoesNotMutatePersistedIdentity() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let setActiveCalled = LockIsolated(false)
     let returnedClient = makeHostedAuthPersistenceClient(
       id: "wrong-client",
@@ -82,7 +82,7 @@ extension HostedAuthFlowTests {
     )
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
-      hostedAuthService: hostedAuthService(createParams: createParams, redeemedClient: returnedClient),
+      transport: hostedAuthTransport(createParams: createParams, redeemedClient: returnedClient),
       sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
     )
 
@@ -100,22 +100,21 @@ extension HostedAuthFlowTests {
 
   @Test
   func generationChangeBeforeRedeemSkipsRedeemAndPreservesIdentity() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let redeemCalled = LockIsolated(false)
     let setActiveCalled = LockIsolated(false)
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        redeemCalled.setValue(true)
-        return hostedAuthRedeemResponse(client: .mock)
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      redeemCalled.setValue(true)
+      return hostedAuthRedeemReply(client: .mock)
+    }
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
-      hostedAuthService: hostedAuthService,
+      transport: transport,
       sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
     )
 
@@ -127,7 +126,7 @@ extension HostedAuthFlowTests {
         webAuthentication: { _, _, _ in
           Clerk.shared.identityController.fenceClientResponses()
           return try hostedAuthPersistenceCallbackURL(
-            state: #require(createParams.value?.state),
+            state: #require(createParams.value?["state"]?.stringValue),
             createdSessionId: Session.mock.id
           )
         }
@@ -145,7 +144,7 @@ extension HostedAuthFlowTests {
 
   @Test
   func tokenReplacedByAnotherAppDuringRedeemRejectsResponseWithoutActivating() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let setActiveCalled = LockIsolated(false)
     let redeemedClient = makeHostedAuthPersistenceClient(
       id: "redeemed-client",
@@ -153,26 +152,25 @@ extension HostedAuthFlowTests {
       lastActiveSessionId: Session.mock.id
     )
     let otherAppClient = makeHostedAuthPersistenceClient(id: "other-app-client", sessions: [], lastActiveSessionId: nil)
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        let response = hostedAuthRedeemResponse(client: redeemedClient)
-        try Clerk.shared.dependencies.identityStore.save(ClerkIdentitySnapshot(
-          state: .present,
-          deviceToken: "other-app-token",
-          client: otherAppClient,
-          serverDate: Date(timeIntervalSince1970: 150)
-        ))
-        return response
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      let response = hostedAuthRedeemReply(client: redeemedClient)
+      try Clerk.shared.dependencies.identityStore.save(ClerkIdentitySnapshot(
+        state: .present,
+        deviceToken: "other-app-token",
+        client: otherAppClient,
+        serverDate: Date(timeIntervalSince1970: 150)
+      ))
+      return response
+    }
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
       identityIsInAccessGroup: true,
-      hostedAuthService: hostedAuthService,
+      transport: transport,
       sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
     )
 
@@ -196,7 +194,7 @@ private let initialClient = makeHostedAuthPersistenceClient(id: "initial-client"
 private func configureHostedAuthPersistenceTest(
   keychain: FailableIdentityKeychain,
   identityIsInAccessGroup: Bool = false,
-  hostedAuthService: some HostedAuthServiceProtocol,
+  transport: FakeTransport,
   sessionService: some SessionServiceProtocol
 ) throws {
   configureClerkForTesting()
@@ -204,10 +202,10 @@ private func configureHostedAuthPersistenceTest(
   clerk.identityController.resetRuntimeIdentity()
   let dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+    transport: transport,
     keychain: InMemoryKeychain(),
     identityKeychain: keychain,
     identityIsInAccessGroup: identityIsInAccessGroup,
-    hostedAuthService: hostedAuthService,
     sessionService: sessionService
   )
   try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: Clerk.Options())
@@ -216,22 +214,22 @@ private func configureHostedAuthPersistenceTest(
 }
 
 @MainActor
-private func hostedAuthService(
-  createParams: LockIsolated<HostedAuthCreateParams?>,
+private func hostedAuthTransport(
+  createParams: LockIsolated<JSON?>,
   redeemedClient: Client
-) -> MockHostedAuthService {
-  MockHostedAuthService(
-    create: { params in
-      createParams.setValue(params)
-      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-    },
-    redeem: { _ in hostedAuthRedeemResponse(client: redeemedClient) }
-  )
+) -> FakeTransport {
+  let transport = FakeTransport.mockDefaults()
+  transport.stubHostedAuthCreate { body in
+    createParams.setValue(body)
+    return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+  }
+  transport.stubHostedAuthRedeem { _ in hostedAuthRedeemReply(client: redeemedClient) }
+  return transport
 }
 
 @MainActor
 private func performHostedAuth(
-  createParams: LockIsolated<HostedAuthCreateParams?>,
+  createParams: LockIsolated<JSON?>,
   createdSessionId: String
 ) async throws -> Session {
   try await Clerk.shared.auth.performHostedAuth(
@@ -240,7 +238,7 @@ private func performHostedAuth(
     prefersEphemeralWebBrowserSession: false,
     webAuthentication: { _, _, _ in
       try hostedAuthPersistenceCallbackURL(
-        state: #require(createParams.value?.state),
+        state: #require(createParams.value?["state"]?.stringValue),
         createdSessionId: createdSessionId
       )
     }
@@ -248,18 +246,12 @@ private func performHostedAuth(
 }
 
 @MainActor
-private func hostedAuthRedeemResponse(client: Client) -> HostedAuthRedeemResponse {
-  HostedAuthRedeemResponse(
-    client: client,
-    clientSyncContext: ClientSyncResponseContext(
-      update: .client(client),
-      deviceTokenUpdate: .set("redeemed-token"),
-      requestDeviceToken: "initial-token",
-      serverDate: Date(timeIntervalSince1970: 200),
-      isCanonicalClientRequest: true,
-      clientResponseGeneration: Clerk.shared.clientResponseGeneration,
-      responseSequence: 1
-    )
+private func hostedAuthRedeemReply(client: Client) -> FakeTransport.Reply<ClientResponse<Client?>> {
+  FakeTransport.Reply(
+    ClientResponse(response: client, client: nil),
+    requestSequence: 1,
+    serverDate: Date(timeIntervalSince1970: 200),
+    headers: ["Authorization": "redeemed-token"]
   )
 }
 

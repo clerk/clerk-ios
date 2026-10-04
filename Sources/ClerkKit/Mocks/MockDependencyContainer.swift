@@ -20,7 +20,6 @@ final class MockDependencyContainer: Dependencies {
   let transport: any APITransport
   let telemetryCollector: any TelemetryCollectorProtocol
 
-  let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
@@ -47,7 +46,6 @@ final class MockDependencyContainer: Dependencies {
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
-    hostedAuthService: (any HostedAuthServiceProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
     signUpService: (any SignUpServiceProtocol)? = nil,
@@ -76,7 +74,6 @@ final class MockDependencyContainer: Dependencies {
     magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
 
-    self.hostedAuthService = hostedAuthService ?? MockHostedAuthService()
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
     self.signUpService = signUpService ?? MockSignUpService()

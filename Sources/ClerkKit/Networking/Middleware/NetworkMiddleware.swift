@@ -124,7 +124,7 @@ extension NetworkingPipeline {
 }
 
 extension HTTPURLResponse {
-  private static let httpDateFormatter: DateFormatter = {
+  static let httpDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.timeZone = TimeZone(identifier: "GMT")

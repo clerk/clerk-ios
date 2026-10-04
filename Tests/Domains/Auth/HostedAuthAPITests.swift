@@ -40,16 +40,15 @@ extension HostedAuthFlowTests {
     }
     mock.register()
 
-    let service = HostedAuthService(apiClient: Clerk.shared.dependencies.apiClient)
-    let response = try await service.create(params: HostedAuthCreateParams(
+    let response = try await Clerk.shared.dependencies.transport.send(HostedAuthAPI.create(params: HostedAuthCreateParams(
       redirectUrl: "myapp://callback",
       codeChallenge: "challenge_123",
       state: "state_123",
       mode: .signUp
-    ))
+    )))
 
     #expect(requestHandled.value)
-    #expect(response.url == resource.url)
+    #expect(response.value.response.url == resource.url)
   }
 
   @Test
@@ -104,26 +103,18 @@ extension HostedAuthFlowTests {
     }
     mock.register()
 
-    let service = HostedAuthService(apiClient: Clerk.shared.dependencies.apiClient)
-    let response = try await service.redeem(params: HostedAuthRedeemParams(
+    let response = try await Clerk.shared.dependencies.transport.send(HostedAuthAPI.redeem(params: HostedAuthRedeemParams(
       rotatingTokenNonce: "nonce_123",
       codeVerifier: "verifier_123"
-    ))
+    )))
 
     #expect(requestHandled.value)
-    #expect(response.client?.id == redeemedClient.id)
-    #expect(response.client?.sessions.map(\.id) == redeemedClient.sessions.map(\.id))
-    guard case .client(let synchronizedClient) = response.clientSyncContext.update else {
-      Issue.record("Expected hosted auth redeem to defer the decoded client update.")
-      return
-    }
-    #expect(synchronizedClient.id == redeemedClient.id)
-    #expect(synchronizedClient.sessions.map(\.id) == redeemedClient.sessions.map(\.id))
-    #expect(response.clientSyncContext.isCanonicalClientRequest)
-    #expect(
-      response.clientSyncContext.clientResponseGeneration
-        == Clerk.shared.clientResponseGeneration
-    )
+    #expect(response.value.response?.id == redeemedClient.id)
+    #expect(response.value.response?.sessions.map(\.id) == redeemedClient.sessions.map(\.id))
+    let metadata = try #require(response.deferredClientSyncMetadata)
+    #expect(metadata.deviceTokenUpdate == .absent)
+    #expect(metadata.checkpoint.isCanonicalClientRequest)
+    #expect(metadata.checkpoint.clientResponseGeneration == Clerk.shared.clientResponseGeneration)
   }
 
   @Test
@@ -149,14 +140,12 @@ extension HostedAuthFlowTests {
     )
     mock.register()
 
-    let service = HostedAuthService(apiClient: Clerk.shared.dependencies.apiClient)
-    let response = try await service.redeem(params: HostedAuthRedeemParams(
+    let response = try await Clerk.shared.dependencies.transport.send(HostedAuthAPI.redeem(params: HostedAuthRedeemParams(
       rotatingTokenNonce: "nonce_123",
       codeVerifier: "verifier_123"
-    ))
+    )))
 
-    #expect(response.client?.id == redeemedClient.id)
-    #expect(response.clientSyncContext.update == .explicitClear)
-    #expect(response.clientSyncContext.deviceTokenUpdate == .clear)
+    #expect(response.value.response?.id == redeemedClient.id)
+    #expect(response.deferredClientSyncMetadata?.deviceTokenUpdate == .clear)
   }
 }

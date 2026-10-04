@@ -19,4 +19,18 @@ extension FakeTransport {
     }
     return transport
   }
+
+  /// Answers hosted-auth creation with `create`'s resource, given the request body.
+  func stubHostedAuthCreate(_ create: @escaping @MainActor (JSON?) async throws -> HostedAuthResource) {
+    stub(HostedAuthAPI.create(params: HostedAuthCreateParams(redirectUrl: "", codeChallenge: "", state: "", mode: nil))) { call in
+      try await ClientResponse(response: create(call.body), client: nil)
+    }
+  }
+
+  /// Answers hosted-auth redemption with `redeem`'s reply, given the request body.
+  func stubHostedAuthRedeem(_ redeem: @escaping @MainActor (JSON?) async throws -> Reply<ClientResponse<Client?>>) {
+    stubReply(HostedAuthAPI.redeem(params: HostedAuthRedeemParams(rotatingTokenNonce: "", codeVerifier: ""))) { call in
+      try await redeem(call.body)
+    }
+  }
 }

@@ -15,8 +15,7 @@ import Foundation
 @MainActor
 public struct Auth {
   private let magicLinkStore: MagicLinkStore
-  private let transport: any APITransport
-  let hostedAuthService: HostedAuthServiceProtocol
+  let transport: any APITransport
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
   private let sessionService: SessionServiceProtocol
@@ -27,7 +26,6 @@ public struct Auth {
   init(
     magicLinkStore: MagicLinkStore,
     transport: any APITransport,
-    hostedAuthService: HostedAuthServiceProtocol,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
     sessionService: SessionServiceProtocol,
@@ -37,7 +35,6 @@ public struct Auth {
   ) {
     self.magicLinkStore = magicLinkStore
     self.transport = transport
-    self.hostedAuthService = hostedAuthService
     self.signInService = signInService
     self.signUpService = signUpService
     self.sessionService = sessionService

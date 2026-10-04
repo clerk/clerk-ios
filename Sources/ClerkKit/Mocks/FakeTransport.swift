@@ -22,11 +22,14 @@ package final class FakeTransport: APITransport {
     package let value: Value
     package let requestSequence: Int?
     package let serverDate: Date?
+    /// HTTP response headers, such as `Authorization`, read into deferred client-sync metadata.
+    package let headers: [String: String]
 
-    package init(_ value: Value, requestSequence: Int? = nil, serverDate: Date? = nil) {
+    package init(_ value: Value, requestSequence: Int? = nil, serverDate: Date? = nil, headers: [String: String] = [:]) {
       self.value = value
       self.requestSequence = requestSequence
       self.serverDate = serverDate
+      self.headers = headers
     }
   }
 
@@ -88,7 +91,7 @@ package final class FakeTransport: APITransport {
   ) -> Stub {
     Stub(method: request.method, pathPattern: pathComponents(request.path)) { call in
       let reply = try await reply(call)
-      return Reply(reply.value as Any, requestSequence: reply.requestSequence, serverDate: reply.serverDate)
+      return Reply(reply.value as Any, requestSequence: reply.requestSequence, serverDate: reply.serverDate, headers: reply.headers)
     }
   }
 
@@ -104,25 +107,39 @@ package final class FakeTransport: APITransport {
     to request: Request<Value>,
     uploadBody: Data?
   ) async throws -> APIResponse<Value> {
-    let urlRequest = try request.makeURLRequest(baseURL: Self.baseURL, encoder: .clerkEncoder)
+    var urlRequest = try request.makeURLRequest(baseURL: Self.baseURL, encoder: .clerkEncoder)
     let call = try Call(request, urlRequest: urlRequest, uploadBody: uploadBody)
     calls.append(call)
     guard let stub = stubs.last(where: { $0.matches(call) }) ?? fallbackStubs.last(where: { $0.matches(call) }) else {
       throw Failure.unstubbed(method: call.method, path: call.path)
     }
+    // Like the live header middleware, capture the request identity before the response arrives.
+    let requestIdentity: ClerkIdentityRequestSnapshot? = urlRequest.shouldAutomaticallySyncClerkClient
+      ? nil
+      : try await Clerk.shared.identityController.captureRequestIdentity()
     let reply = try await stub.respond(call)
     guard let value = reply.value as? Value else {
       throw Failure.mismatchedResponseType(method: call.method, path: call.path)
     }
     // Requests that defer client sync hand their caller the metadata the live pipeline would.
-    let deferredClientSyncMetadata: ClientSyncResponseMetadata? =
-      if !urlRequest.shouldAutomaticallySyncClerkClient,
-      let url = urlRequest.url,
-      let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil) {
-        ClientSyncResponseMetadata(response: response, request: urlRequest)
-      } else {
-        nil
-      }
+    var deferredClientSyncMetadata: ClientSyncResponseMetadata?
+    var responseHeaders = reply.headers
+    if let serverDate = reply.serverDate {
+      responseHeaders["Date"] = HTTPURLResponse.httpDateFormatter.string(from: serverDate)
+    }
+    if let requestIdentity,
+       let url = urlRequest.url,
+       let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: responseHeaders)
+    {
+      urlRequest.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
+        requestSequence: reply.requestSequence,
+        clientResponseGeneration: requestIdentity.clientResponseGeneration,
+        isCanonicalClientRequest: call.headers[ClerkHeaderRequestMiddleware.canonicalClientRequestHeader] == "1",
+        requestDeviceToken: requestIdentity.deviceToken,
+        authFlowRegistrationId: requestIdentity.authFlowRegistrationId
+      ))
+      deferredClientSyncMetadata = ClientSyncResponseMetadata(response: response, request: urlRequest)
+    }
     return APIResponse(
       value: value,
       requestSequence: reply.requestSequence,

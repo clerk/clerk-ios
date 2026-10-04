@@ -29,7 +29,6 @@ final class DependencyContainer: Dependencies {
 
   // MARK: - Services
 
-  let hostedAuthService: HostedAuthServiceProtocol
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
@@ -124,7 +123,6 @@ final class DependencyContainer: Dependencies {
       options: options
     )
 
-    hostedAuthService = HostedAuthService(apiClient: apiClient)
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
     signUpService = SignUpService(apiClient: apiClient)
