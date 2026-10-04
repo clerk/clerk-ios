@@ -17,6 +17,7 @@ jobs:
     concurrency:
       group: manual-ci-${{ github.repository }}-${{ github.event.pull_request.number }}
       cancel-in-progress: false
+      queue: max
     permissions:
       checks: write
       issues: write
@@ -37,11 +38,15 @@ jobs:
           marker="<!-- clerk-ios-manual-ci -->"
           body="$(cat <<'MARKDOWN'
           <!-- clerk-ios-manual-ci -->
-          ## CI paused
+          ## Pull request CI
 
-          CI does not run automatically on pull request updates.
+          For ready PRs authored by Clerk organization members, CI starts once automatically
+          after CodeRabbit completes a review of the latest commit and its review threads are resolved.
 
-          Before merging, manual CI must be run and pass for the latest commit.
+          A manual kickoff also uses that first run. Later pushes and retries require a manual request.
+          Draft PRs and external contributions require a manual request.
+
+          Before merging, CI must pass for the latest commit.
 
           When this PR is ready for CI, a Clerk organization member can comment:
 
@@ -55,7 +60,7 @@ jobs:
 
           existing_comment_id="$(
             gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
-              --jq ".[] | select(.body | contains(\"$marker\")) | .id" \
+              --jq ".[] | select(.user.id == 41898282 and .user.login == \"github-actions[bot]\") | select(.body | startswith(\"$marker\")) | .id" \
               | tail -n 1
           )"
 
@@ -82,7 +87,7 @@ jobs:
               -f status=queued \
               -f details_url="$run_url" \
               -f "output[title]=Manual CI" \
-              -f "output[summary]=Manual CI has not run for this commit. Comment \`/run ci\` or check the Run CI box before merging."
+              -f "output[summary]=CI has not run for this commit. An eligible first run starts once CodeRabbit's review is complete and its threads are resolved. Otherwise, comment \`/run ci\` or check the Run CI box before merging."
           elif [ -z "$latest_manual_ci_id" ]; then
             gh api --method POST "repos/$REPO/check-runs" \
               -f name="Manual CI" \
@@ -90,7 +95,7 @@ jobs:
               -f status=queued \
               -f details_url="$run_url" \
               -f "output[title]=Manual CI" \
-              -f "output[summary]=Manual CI has not run for this commit. Comment \`/run ci\` or check the Run CI box before merging."
+              -f "output[summary]=CI has not run for this commit. An eligible first run starts once CodeRabbit's review is complete and its threads are resolved. Otherwise, comment \`/run ci\` or check the Run CI box before merging."
           else
             echo "Manual CI already exists for $HEAD_SHA with status '$latest_manual_ci_status' and conclusion '$latest_manual_ci_conclusion'."
           fi

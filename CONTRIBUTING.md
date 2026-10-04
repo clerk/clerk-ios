@@ -121,6 +121,40 @@ SwiftLint checks for:
 
 ## Testing
 
+### Pull request CI
+
+For non-draft PRs authored by Clerk organization members, CI starts once after
+CodeRabbit completes a review of the current commit and every review thread it
+opened is resolved. Both signals are structured GitHub data (CodeRabbit's commit
+status and review thread state), so CI doesn't depend on the wording of CodeRabbit's
+comments. CodeRabbit resolves its own threads once they're addressed; resolving a
+thread yourself also counts. Unresolved threads from people don't block the run.
+
+CodeRabbit's automatic approval/request-changes workflow is explicitly disabled in
+`.coderabbit.yaml`, with the organization's other settings inherited. CodeRabbit
+never approves PRs.
+
+After the first CI kickoff, new commits and retries require a Clerk member to comment
+`/run ci`, or a Clerk member with write access to check **Run CI** in the instructions
+comment. A manual kickoff before CodeRabbit finishes also counts as the first run.
+External contributions and draft PRs use these manual controls.
+
+Automatic and manual runs use the same checks, pinned to the requested commit. GitHub
+has no workflow event for resolving a thread, so CI re-checks after CodeRabbit's own
+review comment activity. If you resolve the last thread yourself after CodeRabbit
+finishes, or CodeRabbit skips a review or is unavailable, use the manual controls.
+The first kickoff is recorded in a separate bot comment so pushes, force-pushes, and
+reopening the PR do not reset it.
+
+The CI gate runs trusted scripts from the default branch, so workflow changes become
+active after they land there. Run its regression tests locally with Node.js 22 or later:
+
+```sh
+node --test .github/scripts/pr-ci.test.cjs
+```
+
+### Test suites
+
 This project uses **Swift Testing** for package unit and integration tests, and **Maestro** for app-level E2E UI automation. Tests are organized into three categories:
 
 ### Unit and UI Tests
