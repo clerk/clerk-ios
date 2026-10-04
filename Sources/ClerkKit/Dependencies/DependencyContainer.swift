@@ -32,7 +32,6 @@ final class DependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
-  let sessionService: SessionServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
@@ -126,7 +125,6 @@ final class DependencyContainer: Dependencies {
     userService = UserService(apiClient: apiClient)
     signInService = SignInService(apiClient: apiClient)
     signUpService = SignUpService(apiClient: apiClient)
-    sessionService = SessionService(apiClient: apiClient)
     passkeyService = PasskeyService(apiClient: apiClient)
     biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)

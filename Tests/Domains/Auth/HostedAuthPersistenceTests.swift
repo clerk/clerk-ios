@@ -19,7 +19,8 @@ extension HostedAuthFlowTests {
       lastActiveSessionId: Session.mock2.id
     )
     let keychain = FailableIdentityKeychain()
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
+    let transport = hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient)
+    transport.stubSetActive { sessionId, _ in
       let persisted = try Clerk.shared.dependencies.identityStore.load()
       persistedBeforeActivation.setValue(
         persisted?.deviceToken == "redeemed-token"
@@ -28,11 +29,10 @@ extension HostedAuthFlowTests {
       )
       #expect(sessionId == Session.mock2.id)
       Clerk.shared.client = activatedClient
-    })
+    }
     try configureHostedAuthPersistenceTest(
       keychain: keychain,
-      transport: hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient),
-      sessionService: sessionService
+      transport: transport
     )
 
     let session = try await performHostedAuth(createParams: createParams, createdSessionId: Session.mock2.id)
@@ -54,10 +54,11 @@ extension HostedAuthFlowTests {
       lastActiveSessionId: Session.mock.id
     )
     let keychain = FailableIdentityKeychain()
+    let transport = hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient)
+    transport.stubSetActive { _, _ in setActiveCalled.setValue(true) }
     try configureHostedAuthPersistenceTest(
       keychain: keychain,
-      transport: hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient),
-      sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
+      transport: transport
     )
     keychain.failsWrites = true
 
@@ -80,10 +81,11 @@ extension HostedAuthFlowTests {
       sessions: [.mock],
       lastActiveSessionId: Session.mock.id
     )
+    let transport = hostedAuthTransport(createParams: createParams, redeemedClient: returnedClient)
+    transport.stubSetActive { _, _ in setActiveCalled.setValue(true) }
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
-      transport: hostedAuthTransport(createParams: createParams, redeemedClient: returnedClient),
-      sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
+      transport: transport
     )
 
     do {
@@ -112,10 +114,10 @@ extension HostedAuthFlowTests {
       redeemCalled.setValue(true)
       return hostedAuthRedeemReply(client: .mock)
     }
+    transport.stubSetActive { _, _ in setActiveCalled.setValue(true) }
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
-      transport: transport,
-      sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
+      transport: transport
     )
 
     do {
@@ -167,11 +169,11 @@ extension HostedAuthFlowTests {
       ))
       return response
     }
+    transport.stubSetActive { _, _ in setActiveCalled.setValue(true) }
     try configureHostedAuthPersistenceTest(
       keychain: FailableIdentityKeychain(),
       identityIsInAccessGroup: true,
-      transport: transport,
-      sessionService: MockSessionService(setActive: { _, _ in setActiveCalled.setValue(true) })
+      transport: transport
     )
 
     do {
@@ -194,8 +196,7 @@ private let initialClient = makeHostedAuthPersistenceClient(id: "initial-client"
 private func configureHostedAuthPersistenceTest(
   keychain: FailableIdentityKeychain,
   identityIsInAccessGroup: Bool = false,
-  transport: FakeTransport,
-  sessionService: some SessionServiceProtocol
+  transport: FakeTransport
 ) throws {
   configureClerkForTesting()
   let clerk = Clerk.shared
@@ -205,8 +206,7 @@ private func configureHostedAuthPersistenceTest(
     transport: transport,
     keychain: InMemoryKeychain(),
     identityKeychain: keychain,
-    identityIsInAccessGroup: identityIsInAccessGroup,
-    sessionService: sessionService
+    identityIsInAccessGroup: identityIsInAccessGroup
   )
   try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: Clerk.Options())
   clerk.dependencies = dependencies

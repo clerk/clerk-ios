@@ -104,15 +104,16 @@ struct ClerkReconfigureTests {
     let requestStarted = LockIsolated(false)
     let requestCancelled = LockIsolated(false)
     let shutdownFinished = LockIsolated(false)
+    let transport = FakeTransport.answeringClient { throw CancellationError() }
+    transport.stubSessionToken { _, _, _ in
+      requestStarted.setValue(true)
+      defer { requestCancelled.setValue(Task.isCancelled) }
+      try await Task.sleep(for: .seconds(30))
+      return nil
+    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      transport: FakeTransport.answeringClient { throw CancellationError() },
-      sessionService: MockSessionService(fetchToken: { _, _, _ in
-        requestStarted.setValue(true)
-        defer { requestCancelled.setValue(Task.isCancelled) }
-        try await Task.sleep(for: .seconds(30))
-        return nil
-      })
+      transport: transport
     )
 
     var shutdownTask: Task<Void, Error>?
@@ -461,14 +462,15 @@ struct ClerkReconfigureTests {
   @Test
   func reconfigureClearsTokensBeforeSessionChangedEvent() async throws {
     let cachedJWT = try unexpiredJWT()
-    let sessionService = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       throw CancellationError()
-    })
+    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      transport: transport,
       keychain: InMemoryKeychain(),
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-      sessionService: sessionService
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock

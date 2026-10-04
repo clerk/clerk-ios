@@ -5,7 +5,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct SessionServiceAndTokenFetcherTests {
+struct SessionAPIAndTokenFetcherTests {
   init() {
     configureClerkForTesting()
     Clerk.shared.cleanupManagers()
@@ -21,7 +21,7 @@ struct SessionServiceAndTokenFetcherTests {
       FetchTokenScenario(template: "firebase"),
     ]
   )
-  func fetchTokenUsesSessionServiceFetchToken(
+  func fetchTokenSendsSessionTemplateAndParams(
     scenario: FetchTokenScenario
   ) async throws {
     SessionTemplateTokensCache.shared.clear()
@@ -31,14 +31,15 @@ struct SessionServiceAndTokenFetcherTests {
       template: String?,
       params: SessionTokenRequestParams?
     )?>(nil)
-    let service = MockSessionService(fetchToken: { sessionId, template, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { sessionId, template, params in
       captured.setValue((sessionId: sessionId, template: template, params: params))
       return .mock
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await SessionTokenFetcher.shared.fetchToken(
@@ -65,13 +66,14 @@ struct SessionServiceAndTokenFetcherTests {
     configureCurrentState(session: session, sessionMinterEnabled: false)
     let template = UUID().uuidString
     let tokenResource = TokenResource(jwt: "jwt_123")
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       tokenResource
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await SessionTokenFetcher.shared.fetchToken(
@@ -116,13 +118,14 @@ struct SessionServiceAndTokenFetcherTests {
       signature: "updated"
     )
     let callCount = LockIsolated(0)
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       callCount.withValue { $0 += 1 }
       return updatedToken
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let result = try await SessionTokenFetcher.shared.getToken(
@@ -157,13 +160,14 @@ struct SessionServiceAndTokenFetcherTests {
     )
 
     let requestGate = SessionTokenFetchGate()
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       await requestGate.suspend()
       return response
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let request = Task {
@@ -218,7 +222,8 @@ struct SessionServiceAndTokenFetcherTests {
     let firstGate = SessionTokenFetchGate()
     let secondGate = SessionTokenFetchGate()
     let callCount = LockIsolated(0)
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       let callIndex = callCount.withValue { count in
         defer { count += 1 }
         return count
@@ -236,10 +241,10 @@ struct SessionServiceAndTokenFetcherTests {
       default:
         return TokenResource(jwt: "unexpected.jwt.response")
       }
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let first = Task {
@@ -325,14 +330,15 @@ struct SessionServiceAndTokenFetcherTests {
 
     let callCount = LockIsolated(0)
     let capturedParams = LockIsolated<SessionTokenRequestParams?>(nil)
-    let service = MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       callCount.withValue { $0 += 1 }
       capturedParams.setValue(params)
       return serverToken
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let result = try await SessionTokenFetcher.shared.getToken(session)
@@ -376,14 +382,15 @@ struct SessionServiceAndTokenFetcherTests {
 
     let callCount = LockIsolated(0)
     let capturedParams = LockIsolated<SessionTokenRequestParams?>(nil)
-    let service = MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       callCount.withValue { $0 += 1 }
       capturedParams.setValue(params)
       return serverToken
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let result = try await SessionTokenFetcher.shared.getToken(session)
@@ -424,16 +431,17 @@ struct SessionServiceAndTokenFetcherTests {
       requestStarted.continuation.finish()
       requestShared.continuation.finish()
     }
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       callCount.withValue { $0 += 1 }
       requestStarted.continuation.yield()
       await requestGate.suspend()
       try Task.checkCancellation()
       return serverToken
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let first = Task {
@@ -483,11 +491,13 @@ struct SessionServiceAndTokenFetcherTests {
     Clerk.shared.identityController.invalidateSessionTokens(sessionId: session.id)
     let refreshed = try token(sessionId: session.id, organizationId: nil, originIssuedAt: 200, issuedAt: 200)
     let callCount = LockIsolated(0)
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       #expect(params?.forceOrigin == "true")
       callCount.withValue { $0 += 1 }
       return refreshed
-    }))
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     #expect(try await SessionTokenFetcher.shared.getToken(session) == refreshed)
     #expect(try await SessionTokenFetcher.shared.getToken(session) == refreshed)
     #expect(callCount.value == 1)
@@ -620,13 +630,14 @@ struct SessionServiceAndTokenFetcherTests {
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
     let callCount = LockIsolated(0)
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       callCount.withValue { $0 += 1 }
       return mintedToken
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let forcedToken = try await SessionTokenFetcher.shared.getToken(
@@ -684,7 +695,8 @@ struct SessionServiceAndTokenFetcherTests {
     configureCurrentState(session: current, sessionMinterEnabled: true)
 
     let captured = LockIsolated<SessionTokenRequestParams?>(nil)
-    let service = MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       captured.setValue(params)
       return try token(
         sessionId: session.id,
@@ -693,10 +705,10 @@ struct SessionServiceAndTokenFetcherTests {
         issuedAt: 300,
         signature: "response"
       )
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await SessionTokenFetcher.shared.getToken(session)
@@ -721,7 +733,8 @@ struct SessionServiceAndTokenFetcherTests {
     configureCurrentState(session: currentSession, sessionMinterEnabled: true)
 
     let captured = LockIsolated<SessionTokenRequestParams?>(nil)
-    let service = MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       captured.setValue(params)
       return try token(
         sessionId: currentSession.id,
@@ -730,10 +743,10 @@ struct SessionServiceAndTokenFetcherTests {
         issuedAt: 200,
         signature: "response"
       )
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await SessionTokenFetcher.shared.fetchToken(
@@ -754,13 +767,14 @@ struct SessionServiceAndTokenFetcherTests {
     configureCurrentState(session: session, sessionMinterEnabled: true)
 
     let captured = LockIsolated<SessionTokenRequestParams?>(nil)
-    let service = MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       captured.setValue(params)
       return .mock
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await SessionTokenFetcher.shared.fetchToken(session)
@@ -784,13 +798,14 @@ struct SessionServiceAndTokenFetcherTests {
     configureCurrentState(session: session, sessionMinterEnabled: false)
 
     let captured = LockIsolated<SessionTokenRequestParams?>(nil)
-    let service = MockSessionService(fetchToken: { _, _, params in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
       captured.setValue(params)
       return .mock
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await SessionTokenFetcher.shared.fetchToken(
@@ -839,7 +854,8 @@ struct SessionServiceAndTokenFetcherTests {
       bufferingPolicy: .bufferingNewest(1)
     )
     defer { firstCallStarted.continuation.finish() }
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       let callIndex = callCount.withValue { count in
         defer { count += 1 }
         return count
@@ -850,10 +866,10 @@ struct SessionServiceAndTokenFetcherTests {
         return staleResponse
       }
       return freshResponse
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let first = Task {
@@ -903,16 +919,17 @@ struct SessionServiceAndTokenFetcherTests {
     )
     let requestGate = SessionTokenFetchGate()
     defer { callsStarted.continuation.finish() }
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       callCount.withValue { $0 += 1 }
       callsStarted.continuation.yield()
       await requestGate.suspend()
       try Task.checkCancellation()
       return .mock
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let first = Task {
@@ -969,15 +986,16 @@ struct SessionServiceAndTokenFetcherTests {
     )
     let requestGate = SessionTokenFetchGate()
     defer { callStarted.continuation.finish() }
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       callStarted.continuation.yield()
       await requestGate.suspend()
       try Task.checkCancellation()
       return .mock
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let request = Task {
@@ -1028,7 +1046,8 @@ struct SessionServiceAndTokenFetcherTests {
     let firstGate = SessionTokenFetchGate()
     let secondGate = SessionTokenFetchGate()
     let callCount = LockIsolated(0)
-    let service = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       let callIndex = callCount.withValue { count in
         defer { count += 1 }
         return count
@@ -1046,10 +1065,10 @@ struct SessionServiceAndTokenFetcherTests {
       default:
         return TokenResource(jwt: "unexpected.jwt.value")
       }
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let first = Task {

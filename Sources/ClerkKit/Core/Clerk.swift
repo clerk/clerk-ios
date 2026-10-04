@@ -206,7 +206,6 @@ public final class Clerk {
       transport: dependencies.transport,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,
-      sessionService: dependencies.sessionService,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator

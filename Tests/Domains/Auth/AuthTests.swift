@@ -17,7 +17,6 @@ struct AuthTests {
   private func configureDependencies(
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
-    sessionService: MockSessionService? = nil,
     transport: (any APITransport)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
@@ -31,8 +30,7 @@ struct AuthTests {
       transport: transport ?? apiClient,
       keychain: keychain,
       signInService: signInService,
-      signUpService: signUpService,
-      sessionService: sessionService
+      signUpService: signUpService
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -44,7 +42,6 @@ struct AuthTests {
   private func makeIsolatedClerk(
     signInService: MockSignInService? = nil,
     signUpService: MockSignUpService? = nil,
-    sessionService: MockSessionService? = nil,
     transport: (any APITransport)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
@@ -59,8 +56,7 @@ struct AuthTests {
       transport: transport ?? apiClient,
       keychain: keychain,
       signInService: signInService,
-      signUpService: signUpService,
-      sessionService: sessionService
+      signUpService: signUpService
     )
     try! (clerk.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -394,7 +390,6 @@ struct AuthTests {
       transport: apiClient,
       signInService: signInService,
       signUpService: MockSignUpService(),
-      sessionService: MockSessionService(),
       biometricCredentials: BiometricCredentials(
         biometricCredentialService: MockBiometricCredentialService(),
         signInService: signInService,
@@ -507,13 +502,13 @@ struct AuthTests {
       signInParams.setValue(params)
       return completedSignIn
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
+
+    transport.stubSetActive { sessionId, _ in
       activatedSessionId.setValue(sessionId)
-    })
+    }
 
     configureDependencies(
       signInService: signInService,
-      sessionService: sessionService,
       transport: transport,
       keychain: keychain
     )
@@ -635,13 +630,10 @@ struct AuthTests {
       #expect(params.ticket == "ticket_123")
       return resumableSignIn
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+    try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
-      sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -706,14 +698,11 @@ struct AuthTests {
       signUpParams.setValue(params)
       return .mock
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+    try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
       signUpService: signUpService,
-      sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -784,13 +773,10 @@ struct AuthTests {
       signUpParams.setValue(params)
       return .mock
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+    try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
       signUpService: signUpService,
-      sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -870,12 +856,9 @@ struct AuthTests {
     )
     completionMock.register()
 
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+    try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
-      sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -960,13 +943,10 @@ struct AuthTests {
       signInCalled.setValue(true)
       return .mock
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+    try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
-      sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -1018,13 +998,10 @@ struct AuthTests {
       signInParams.setValue(params)
       return completedSignIn
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
+    try registerSetActiveMock(baseURL: testBaseUrl, sessionId: "sess_123", activatedSessionId: activatedSessionId)
 
     let clerk = makeIsolatedClerk(
       signInService: signInService,
-      sessionService: sessionService,
       keychain: keychain,
       baseURL: testBaseUrl
     )
@@ -1165,18 +1142,18 @@ struct AuthTests {
     let signInService = MockSignInService(create: { _ in
       completedSignIn
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
-      activatedSessionId.setValue(sessionId)
-    })
     let transport = FakeTransport.mockDefaults()
     transport.stub(MagicLinkAPI.complete(params: MagicLinkCompleteParams(flowId: "flow_123", approvalToken: "", codeVerifier: ""))) { _ in
       try magicLinkStore.save(kind: .signIn, flowId: "flow_new", codeVerifier: "verifier_new")
       return ClientResponse(response: .ticket(MagicLinkCompleteResponse(flowId: "flow_123", ticket: "ticket_123")), client: nil)
     }
 
+    transport.stubSetActive { sessionId, _ in
+      activatedSessionId.setValue(sessionId)
+    }
+
     let clerk = makeIsolatedClerk(
       signInService: signInService,
-      sessionService: sessionService,
       transport: transport,
       keychain: keychain,
       baseURL: testBaseUrl
@@ -1443,19 +1420,23 @@ struct AuthTests {
       SignOutScenario(sessionId: "sess_test123"),
     ]
   )
-  func signOutUsesSessionServiceSignOut(
+  func signOutRemovesRequestedSessions(
     scenario: SignOutScenario
   ) async throws {
-    let signOutSessionId = LockIsolated<String?>(nil)
-    let sessionService = MockSessionService(signOut: { sessionId in
-      signOutSessionId.setValue(sessionId)
-    })
+    let transport = FakeTransport.mockDefaults()
 
-    configureDependencies(sessionService: sessionService)
+    configureDependencies(transport: transport)
 
     try await Clerk.shared.auth.signOut(sessionId: scenario.sessionId)
 
-    #expect(signOutSessionId.value == scenario.sessionId)
+    let call = try #require(transport.calls.last)
+    if let sessionId = scenario.sessionId {
+      #expect(call.method == .post)
+      #expect(call.path == "/v1/client/sessions/\(sessionId)/remove")
+    } else {
+      #expect(call.method == .delete)
+      #expect(call.path == "/v1/client/sessions")
+    }
   }
 
   @Test(
@@ -1464,15 +1445,16 @@ struct AuthTests {
       SetActiveScenario(organizationId: "org_test456"),
     ]
   )
-  func setActiveUsesSessionServiceSetActive(
+  func setActiveTouchesSessionWithOrganization(
     scenario: SetActiveScenario
   ) async throws {
     let activeParams = LockIsolated<(String, String?)?>(nil)
-    let sessionService = MockSessionService(setActive: { sessionId, organizationId in
-      activeParams.setValue((sessionId, organizationId))
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSetActive { sessionId, body in
+      activeParams.setValue((sessionId, body?["active_organization_id"]?.stringValue))
+    }
 
-    configureDependencies(sessionService: sessionService)
+    configureDependencies(transport: transport)
 
     try await Clerk.shared.auth.setActive(
       sessionId: "sess_test123",
@@ -1481,33 +1463,35 @@ struct AuthTests {
 
     let params = try #require(activeParams.value)
     #expect(params.0 == "sess_test123")
-    #expect(params.1 == scenario.organizationId)
+    #expect(params.1 == (scenario.organizationId ?? ""))
   }
 
   @Test
-  func setActiveUsesNilOrganizationIdByDefault() async throws {
+  func setActiveClearsOrganizationByDefault() async throws {
     let activeParams = LockIsolated<(String, String?)?>(nil)
-    let sessionService = MockSessionService(setActive: { sessionId, organizationId in
-      activeParams.setValue((sessionId, organizationId))
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSetActive { sessionId, body in
+      activeParams.setValue((sessionId, body?["active_organization_id"]?.stringValue))
+    }
 
-    configureDependencies(sessionService: sessionService)
+    configureDependencies(transport: transport)
 
     try await Clerk.shared.auth.setActive(sessionId: "sess_test123")
 
     let params = try #require(activeParams.value)
     #expect(params.0 == "sess_test123")
-    #expect(params.1 == nil)
+    #expect(params.1 == "")
   }
 
   @Test
   func recoveredSessionActivationWaitsForAuthViewCompletion() async throws {
     struct ActivationError: Error {}
 
-    let sessionService = MockSessionService(setActive: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSetActive { _, _ in
       throw ActivationError()
-    })
-    configureDependencies(sessionService: sessionService)
+    }
+    configureDependencies(transport: transport)
     Clerk.shared.client = nil
     let registration = try #require(Clerk.shared.registerAuthFlow())
     let sessionId = try #require(Client.mock.currentSession?.id)
@@ -1532,4 +1516,21 @@ struct AuthTests {
     #expect(Clerk.shared.isAuthFlowComplete)
     withExtendedLifetime(registration) {}
   }
+}
+
+@MainActor
+private func registerSetActiveMock(baseURL: URL, sessionId: String, activatedSessionId: LockIsolated<String?>) throws {
+  var mock = try Mock(
+    url: #require(URL(string: baseURL.absoluteString + "/v1/client/sessions/\(sessionId)/touch")),
+    ignoreQuery: true,
+    contentType: .json,
+    statusCode: 200,
+    data: [
+      .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: .mock, client: nil)),
+    ]
+  )
+  mock.onRequestHandler = OnRequestHandler { @Sendable _ in
+    activatedSessionId.setValue(sessionId)
+  }
+  mock.register()
 }

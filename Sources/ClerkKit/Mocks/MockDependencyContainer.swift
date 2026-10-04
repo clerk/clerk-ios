@@ -23,7 +23,6 @@ final class MockDependencyContainer: Dependencies {
   let userService: UserServiceProtocol
   let signInService: SignInServiceProtocol
   let signUpService: SignUpServiceProtocol
-  let sessionService: SessionServiceProtocol
   let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
@@ -49,7 +48,6 @@ final class MockDependencyContainer: Dependencies {
     userService: (any UserServiceProtocol)? = nil,
     signInService: (any SignInServiceProtocol)? = nil,
     signUpService: (any SignUpServiceProtocol)? = nil,
-    sessionService: (any SessionServiceProtocol)? = nil,
     passkeyService: (any PasskeyServiceProtocol)? = nil,
     biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
@@ -77,7 +75,6 @@ final class MockDependencyContainer: Dependencies {
     self.userService = userService ?? MockUserService()
     self.signInService = signInService ?? MockSignInService()
     self.signUpService = signUpService ?? MockSignUpService()
-    self.sessionService = sessionService ?? MockSessionService()
     self.passkeyService = passkeyService ?? MockPasskeyService()
     self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()

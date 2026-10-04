@@ -169,11 +169,11 @@ actor SessionTokenFetcher {
       token: minterEnabled ? defaultToken?.jwt : nil,
       forceOrigin: minterEnabled && (options.skipCache || !canReuseDefault) ? "true" : nil
     ) : nil
-    let token = try await clerk.dependencies.sessionService.fetchToken(
+    let token = try await clerk.dependencies.transport.send(SessionAPI.fetchToken(
       sessionId: context.session.id,
       template: options.template,
       params: requestParams
-    )
+    )).value
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
     guard let token else { return nil }

@@ -401,13 +401,15 @@ struct SessionTokenAuthorizationTests {
     await SessionTokenFetcher.shared.reset()
     SessionTemplateTokensCache.shared.clear()
     let clerk = Clerk.shared
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, params in
+      onFetch(params)
+      try await beforeResponse()
+      return response
+    }
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: MockSessionService(fetchToken: { _, _, params in
-        onFetch(params)
-        try await beforeResponse()
-        return response
-      })
+      transport: transport
     )
     clerk.client = nil
     var client = Client.mock

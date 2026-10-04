@@ -18,7 +18,6 @@ public struct Auth {
   let transport: any APITransport
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
-  private let sessionService: SessionServiceProtocol
   private let biometricCredentials: BiometricCredentials
   private let eventEmitter: EventEmitter<AuthEvent>
   private let urlHandlingCoordinator: URLHandlingCoordinator
@@ -28,7 +27,6 @@ public struct Auth {
     transport: any APITransport,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
-    sessionService: SessionServiceProtocol,
     biometricCredentials: BiometricCredentials,
     eventEmitter: EventEmitter<AuthEvent>,
     urlHandlingCoordinator: URLHandlingCoordinator
@@ -37,7 +35,6 @@ public struct Auth {
     self.transport = transport
     self.signInService = signInService
     self.signUpService = signUpService
-    self.sessionService = sessionService
     self.biometricCredentials = biometricCredentials
     self.eventEmitter = eventEmitter
     self.urlHandlingCoordinator = urlHandlingCoordinator
@@ -589,7 +586,13 @@ extension Auth {
   /// - Parameter sessionId: An optional session ID to sign out from a specific session. If nil, signs out from all sessions.
   /// - Throws: An error if the sign-out process fails.
   public func signOut(sessionId: String? = nil) async throws {
-    try await sessionService.signOut(sessionId: sessionId)
+    if let sessionId {
+      _ = try await transport.send(SessionAPI.remove(sessionId: sessionId))
+      Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
+    } else {
+      _ = try await transport.send(SessionAPI.removeAll())
+      Clerk.shared.identityController.invalidateAllSessionTokens()
+    }
   }
 
   /// Sets the active session and optionally the active organization.
@@ -599,9 +602,25 @@ extension Auth {
   ///   - organizationId: The organization ID to set as active in the current session. If nil, removes the active organization.
   /// - Throws: An error if setting the active session fails.
   public func setActive(sessionId: String, organizationId: String? = nil) async throws {
-    try await sessionService.setActive(
-      sessionId: sessionId,
-      organizationId: organizationId
+    let runtime = try Clerk.requireStableRuntime()
+    let response = try await transport.send(SessionAPI.touch(sessionId: sessionId, organizationId: organizationId))
+    guard let clientSyncMetadata = response.deferredClientSyncMetadata else {
+      throw ClerkClientError(
+        message: "Session activation response was missing identity synchronization metadata."
+      )
+    }
+    let clientUpdate: ClientResponseUpdate =
+      if clientSyncMetadata.deviceTokenUpdate == .clear {
+        .explicitClear
+      } else {
+        response.value.client.map(ClientResponseUpdate.client) ?? .absent
+      }
+
+    try runtime.validateStableRuntime()
+    let clerk = try runtime.requireCurrentClerk()
+    clerk.identityController.invalidateSessionTokens(sessionId: sessionId)
+    try await clerk.identityController.applyNetworkResponse(
+      clientSyncMetadata.context(update: clientUpdate)
     )
   }
 
@@ -628,7 +647,7 @@ extension Auth {
   /// - Throws: An error if revoking the session fails.
   @discardableResult
   public func revokeSession(_ session: Session) async throws -> Session {
-    try await sessionService.revoke(sessionId: session.id)
+    try await transport.send(SessionAPI.revoke(sessionId: session.id)).value.response
   }
 }
 

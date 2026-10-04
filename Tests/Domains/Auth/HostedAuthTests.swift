@@ -174,13 +174,12 @@ struct HostedAuthFlowTests {
         serverDate: Date(timeIntervalSince1970: 200)
       )
     }
-    let sessionService = MockSessionService(setActive: { sessionId, organizationId in
-      setActiveCall.setValue(HostedAuthSetActiveCall(sessionId: sessionId, organizationId: organizationId))
+    transport.stubSetActive { sessionId, body in
+      setActiveCall.setValue(HostedAuthSetActiveCall(sessionId: sessionId, organizationId: body?["active_organization_id"]?.stringValue))
       Clerk.shared.client = activatedClient
-    })
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: sessionService,
       initialClient: .mockSignedOut
     )
 
@@ -214,7 +213,7 @@ struct HostedAuthFlowTests {
     #expect(createParams.value?["redirect_url"]?.stringValue == "myapp:///hosted-auth-callback")
     #expect(createParams.value?["mode"]?.stringValue == HostedAuthMode.signUp.rawValue)
     #expect(redeemParams.value?["rotating_token_nonce"]?.stringValue == "nonce_123")
-    #expect(setActiveCall.value == HostedAuthSetActiveCall(sessionId: Session.mock2.id, organizationId: nil))
+    #expect(setActiveCall.value == HostedAuthSetActiveCall(sessionId: Session.mock2.id, organizationId: ""))
     #expect(try browserInputs.value == HostedAuthBrowserInputs(
       url: #require(URL(string: "https://accounts.example.com/sign-in")),
       callbackUrlScheme: "myapp",
@@ -241,7 +240,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mockSignedOut
     )
 
@@ -292,12 +290,11 @@ struct HostedAuthFlowTests {
       redeemCalled.setValue(true)
       return hostedAuthRedeemReply(client: .mock)
     }
-    let sessionService = MockSessionService(setActive: { _, _ in
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: sessionService,
       initialClient: initialClient
     )
 
@@ -349,7 +346,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mock
     )
 
@@ -387,7 +383,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mock
     )
 
@@ -427,7 +422,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mock
     )
 
@@ -468,7 +462,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mockSignedOut
     )
 
@@ -510,12 +503,11 @@ struct HostedAuthFlowTests {
     transport.stubHostedAuthRedeem { _ in
       hostedAuthRedeemReply(client: .mock)
     }
-    let sessionService = MockSessionService(setActive: { _, _ in
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: sessionService,
       initialClient: initialClient
     )
 
@@ -563,11 +555,11 @@ struct HostedAuthFlowTests {
         headers: ["Authorization": "Bearer"]
       )
     }
+    transport.stubSetActive { _, _ in
+      setActiveCalled.setValue(true)
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(setActive: { _, _ in
-        setActiveCalled.setValue(true)
-      }),
       initialClient: .mock
     )
     try Clerk.shared.seedIdentity(deviceToken: "initial-token", client: .mock)
@@ -613,12 +605,11 @@ struct HostedAuthFlowTests {
     transport.stubHostedAuthRedeem { _ in
       hostedAuthRedeemReply(client: redeemedClient)
     }
-    let sessionService = MockSessionService(setActive: { _, _ in
+    transport.stubSetActive { _, _ in
       Clerk.shared.client = .mockSignedOut
-    })
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: sessionService,
       initialClient: .mockSignedOut
     )
 
@@ -663,7 +654,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mockSignedOut
     )
 
@@ -710,7 +700,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mockSignedOut
     )
 
@@ -755,12 +744,11 @@ struct HostedAuthFlowTests {
       redeemCalled.setValue(true)
       return hostedAuthRedeemReply(client: redeemedClient)
     }
-    let sessionService = MockSessionService(setActive: { _, _ in
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: sessionService,
       initialClient: initialClient
     )
 
@@ -811,12 +799,11 @@ struct HostedAuthFlowTests {
       Clerk.shared.identityController.fenceClientResponses()
       return response
     }
-    let sessionService = MockSessionService(setActive: { _, _ in
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: sessionService,
       initialClient: initialClient
     )
 
@@ -864,7 +851,6 @@ struct HostedAuthFlowTests {
     }
     configureHostedAuthForTesting(
       transport: transport,
-      sessionService: MockSessionService(),
       initialClient: .mockSignedOut,
       options: Clerk.Options(
         redirectConfig: .init(redirectUrl: "fallbackapp://hosted-callback", callbackUrlScheme: "fallbackapp")
@@ -924,15 +910,13 @@ private func hostedAuthRedeemReply(
 @MainActor
 private func configureHostedAuthForTesting(
   transport: FakeTransport,
-  sessionService: some SessionServiceProtocol,
   initialClient: Client,
   options: Clerk.Options = .init()
 ) {
   configureClerkForTesting()
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: Clerk.shared.dependencies.apiClient,
-    transport: transport,
-    sessionService: sessionService
+    transport: transport
   )
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager

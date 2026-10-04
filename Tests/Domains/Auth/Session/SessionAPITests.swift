@@ -5,7 +5,7 @@ import Mocker
 import Testing
 
 @MainActor
-extension SessionServiceAndTokenFetcherTests {
+extension SessionAPIAndTokenFetcherTests {
   @Test
   func signOut() async throws {
     SessionTemplateTokensCache.shared.clear()
@@ -37,7 +37,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
+    try await Clerk.shared.auth.signOut(sessionId: nil)
     #expect(requestHandled.value)
     #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: firstSession.tokenCacheKey(template: "secondary")
@@ -84,7 +84,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
+    try await Clerk.shared.auth.signOut(sessionId: sessionId)
     #expect(requestHandled.value)
     #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: "secondary")
@@ -135,7 +135,7 @@ extension SessionServiceAndTokenFetcherTests {
     mock.register()
 
     await #expect(throws: (any Error).self) {
-      try await Clerk.shared.dependencies.sessionService.signOut(sessionId: sessionId)
+      try await Clerk.shared.auth.signOut(sessionId: sessionId)
     }
 
     #expect(SessionTemplateTokensCache.shared.getToken(
@@ -178,7 +178,7 @@ extension SessionServiceAndTokenFetcherTests {
     mock.register()
 
     await #expect(throws: (any Error).self) {
-      try await Clerk.shared.dependencies.sessionService.signOut(sessionId: nil)
+      try await Clerk.shared.auth.signOut(sessionId: nil)
     }
 
     #expect(SessionTemplateTokensCache.shared.getToken(
@@ -218,7 +218,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    try await Clerk.shared.dependencies.sessionService.setActive(sessionId: session.id, organizationId: nil)
+    try await Clerk.shared.auth.setActive(sessionId: session.id, organizationId: nil)
 
     #expect(requestHandled.value)
   }
@@ -271,7 +271,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    try await Clerk.shared.dependencies.sessionService.setActive(
+    try await Clerk.shared.auth.setActive(
       sessionId: session.id,
       organizationId: organizationId
     )
@@ -355,12 +355,12 @@ extension SessionServiceAndTokenFetcherTests {
       observedCacheState.continuation.finish()
     }
 
-    try await Clerk.shared.dependencies.sessionService.setActive(
+    try await Clerk.shared.auth.setActive(
       sessionId: previousSession.id,
       organizationId: updatedSession.lastActiveOrganizationId
     )
 
-    let cacheWasEmptyWhenSessionChanged = try await waitForSessionServiceSignal(
+    let cacheWasEmptyWhenSessionChanged = try await waitForSessionSignal(
       observedCacheState.stream,
       message: "Timed out waiting for the updated session to be published."
     )
@@ -394,7 +394,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    try await Clerk.shared.dependencies.sessionService.setActive(
+    try await Clerk.shared.auth.setActive(
       sessionId: session.id,
       organizationId: nil
     )
@@ -428,7 +428,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    try await Clerk.shared.dependencies.sessionService.setActive(
+    try await Clerk.shared.auth.setActive(
       sessionId: Session.mock.id,
       organizationId: nil
     )
@@ -479,7 +479,7 @@ extension SessionServiceAndTokenFetcherTests {
     mock.register()
 
     do {
-      try await Clerk.shared.dependencies.sessionService.setActive(
+      try await Clerk.shared.auth.setActive(
         sessionId: session.id,
         organizationId: "org_unauthorized"
       )
@@ -523,7 +523,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+    _ = try await Clerk.shared.dependencies.transport.send(SessionAPI.fetchToken(
       sessionId: session.id,
       template: nil,
       params: .init(
@@ -531,7 +531,7 @@ extension SessionServiceAndTokenFetcherTests {
         token: previousToken,
         forceOrigin: "true"
       )
-    )
+    )).value
     #expect(requestHandled.value)
     #expect(capturedBodyLogging.value == false)
   }
@@ -560,11 +560,11 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+    _ = try await Clerk.shared.dependencies.transport.send(SessionAPI.fetchToken(
       sessionId: session.id,
       template: nil,
       params: .init(organizationId: "")
-    )
+    )).value
 
     #expect(requestHandled.value)
     #expect(capturedBodyLogging.value == false)
@@ -593,7 +593,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.fetchToken(
+    _ = try await Clerk.shared.dependencies.transport.send(SessionAPI.fetchToken(
       sessionId: session.id,
       template: template,
       params: .init(
@@ -601,7 +601,7 @@ extension SessionServiceAndTokenFetcherTests {
         token: "token_ignored",
         forceOrigin: "true"
       )
-    )
+    )).value
     #expect(requestHandled.value)
     #expect(capturedBodyLogging.value == false)
   }
@@ -629,10 +629,10 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    let verification = try await Clerk.shared.dependencies.sessionService.startVerification(
+    let verification = try await Clerk.shared.dependencies.transport.send(SessionAPI.startVerification(
       sessionId: session.id,
       params: .init(level: .firstFactor)
-    )
+    )).value.response
 
     #expect(requestHandled.value)
     #expect(verification.status == .needsFirstFactor)
@@ -663,10 +663,10 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(SessionAPI.prepareFirstFactorVerification(
       sessionId: session.id,
       params: .init(strategy: .passkey)
-    )
+    )).value.response
 
     #expect(requestHandled.value)
   }
@@ -700,7 +700,7 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(SessionAPI.prepareFirstFactorVerification(
       sessionId: session.id,
       params: .init(
         strategy: .enterpriseSSO,
@@ -708,7 +708,7 @@ extension SessionServiceAndTokenFetcherTests {
         enterpriseConnectionId: "econn_123",
         redirectUrl: "myapp://callback"
       )
-    )
+    )).value.response
 
     #expect(requestHandled.value)
   }
@@ -739,10 +739,10 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    let verification = try await Clerk.shared.dependencies.sessionService.attemptFirstFactorVerification(
+    let verification = try await Clerk.shared.dependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
       sessionId: session.id,
       params: .init(strategy: .passkey, publicKeyCredential: "{\"id\":\"abc\"}")
-    )
+    )).value.response
 
     #expect(requestHandled.value)
     #expect(verification.status == .complete)
@@ -774,17 +774,17 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    let verification = try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
+    let verification = try await Clerk.shared.dependencies.transport.send(SessionAPI.attemptSecondFactorVerification(
       sessionId: session.id,
       params: .init(strategy: .totp, code: "123456")
-    )
+    )).value.response
 
     #expect(requestHandled.value)
     #expect(verification.status == .complete)
   }
 
   @Test
-  func testRevoke() async throws {
+  func revoke() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/sessions/\(session.id)/revoke")!
@@ -802,16 +802,16 @@ extension SessionServiceAndTokenFetcherTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.sessionService.revoke(sessionId: session.id)
+    _ = try await Clerk.shared.auth.revokeSession(session)
     #expect(requestHandled.value)
   }
 }
 
-private struct SessionServiceSignalTimeoutError: Error, CustomStringConvertible {
+private struct SessionSignalTimeoutError: Error, CustomStringConvertible {
   let description: String
 }
 
-private func waitForSessionServiceSignal<Value: Sendable>(
+private func waitForSessionSignal<Value: Sendable>(
   _ stream: AsyncStream<Value>,
   timeout: Duration = .seconds(1),
   message: String
@@ -821,16 +821,16 @@ private func waitForSessionServiceSignal<Value: Sendable>(
       for await value in stream {
         return value
       }
-      throw SessionServiceSignalTimeoutError(description: message)
+      throw SessionSignalTimeoutError(description: message)
     }
     group.addTask {
       try await Task.sleep(for: timeout)
-      throw SessionServiceSignalTimeoutError(description: message)
+      throw SessionSignalTimeoutError(description: message)
     }
 
     defer { group.cancelAll() }
     guard let value = try await group.next() else {
-      throw SessionServiceSignalTimeoutError(description: message)
+      throw SessionSignalTimeoutError(description: message)
     }
     return value
   }

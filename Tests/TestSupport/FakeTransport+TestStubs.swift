@@ -33,4 +33,31 @@ extension FakeTransport {
       try await redeem(call.body)
     }
   }
+
+  /// Answers session token requests, with or without a template, with `fetchToken`'s result, given the session id, template, and request params.
+  func stubSessionToken(
+    _ fetchToken: @escaping @MainActor (_ sessionId: String, _ template: String?, _ params: SessionTokenRequestParams?) async throws -> TokenResource?
+  ) {
+    let respond: @MainActor (Call) async throws -> TokenResource? = { call in
+      let segments = call.path.split(separator: "/").map(String.init)
+      let params = call.body.map { body in
+        SessionTokenRequestParams(
+          organizationId: body["organization_id"]?.stringValue ?? "",
+          token: body["token"]?.stringValue,
+          forceOrigin: body["force_origin"]?.stringValue
+        )
+      }
+      return try await fetchToken(segments[3], segments.count > 5 ? segments[5] : nil, params)
+    }
+    stub(SessionAPI.fetchToken(sessionId: FakeTransport.anyPathSegment, template: nil, params: nil), respond: respond)
+    stub(SessionAPI.fetchToken(sessionId: FakeTransport.anyPathSegment, template: FakeTransport.anyPathSegment, params: nil), respond: respond)
+  }
+
+  /// Answers session activation without a client update, given the touched session id and the request body.
+  func stubSetActive(_ setActive: @escaping @MainActor (_ sessionId: String, _ body: JSON?) async throws -> Void) {
+    stub(SessionAPI.touch(sessionId: FakeTransport.anyPathSegment, organizationId: nil)) { call in
+      try await setActive(String(call.path.split(separator: "/")[3]), call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
+  }
 }

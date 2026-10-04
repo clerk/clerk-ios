@@ -15,15 +15,13 @@ struct ClerkTests {
 
   private func configureDependencies(
     signInService: MockSignInService? = nil,
-    sessionService: MockSessionService? = nil,
     keychain: (any KeychainStorage)? = nil,
     environment: Clerk.Environment? = .mock
   ) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
       keychain: keychain,
-      signInService: signInService,
-      sessionService: sessionService
+      signInService: signInService
     )
     Clerk.shared.environment = environment
   }
@@ -1756,9 +1754,9 @@ struct ClerkTests {
       signInParams.setValue(params)
       return completedSignIn
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
+    transport.stubSetActive { sessionId, _ in
       activatedSessionId.setValue(sessionId)
-    })
+    }
 
     let clerk = Clerk()
     let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
@@ -1766,8 +1764,7 @@ struct ClerkTests {
       apiClient: apiClient,
       transport: transport,
       keychain: keychain,
-      signInService: signInService,
-      sessionService: sessionService
+      signInService: signInService
     )
     try (#require(clerk.dependencies as? MockDependencyContainer))
       .configurationManager
@@ -1819,9 +1816,9 @@ struct ClerkTests {
       try await Task.sleep(for: .milliseconds(50))
       return completedSignIn
     })
-    let sessionService = MockSessionService(setActive: { sessionId, _ in
+    transport.stubSetActive { sessionId, _ in
       activatedSessionId.setValue(sessionId)
-    })
+    }
 
     let clerk = Clerk()
     let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
@@ -1829,8 +1826,7 @@ struct ClerkTests {
       apiClient: apiClient,
       transport: transport,
       keychain: keychain,
-      signInService: signInService,
-      sessionService: sessionService
+      signInService: signInService
     )
     try (#require(clerk.dependencies as? MockDependencyContainer))
       .configurationManager

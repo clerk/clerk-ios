@@ -34,6 +34,30 @@ extension FakeTransport {
       returning: ClientResponse<Client?>(response: .mock, client: nil)
     )
 
+    transport.fallback(SessionAPI.revoke(sessionId: anyId), returning: ClientResponse(response: Session.mock, client: nil))
+    transport.fallback(SessionAPI.remove(sessionId: anyId), returning: EmptyResponse())
+    transport.fallback(SessionAPI.removeAll(), returning: EmptyResponse())
+    transport.fallback(SessionAPI.touch(sessionId: anyId, organizationId: nil), returning: ClientResponse(response: Session.mock, client: nil))
+    transport.fallback(SessionAPI.fetchToken(sessionId: anyId, template: nil, params: nil), returning: .mock)
+    transport.fallback(SessionAPI.fetchToken(sessionId: anyId, template: anyId, params: nil), returning: .mock)
+    transport.fallback(SessionAPI.startVerification(sessionId: anyId, params: .init(level: .firstFactor)), returning: ClientResponse(response: .mockNeedsFirstFactor, client: nil))
+    transport.fallback(
+      SessionAPI.prepareFirstFactorVerification(sessionId: anyId, params: .init(strategy: .emailCode)),
+      returning: ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    )
+    transport.fallback(
+      SessionAPI.attemptFirstFactorVerification(sessionId: anyId, params: .init(strategy: .emailCode)),
+      returning: ClientResponse(response: .mockComplete, client: nil)
+    )
+    transport.fallback(
+      SessionAPI.prepareSecondFactorVerification(sessionId: anyId, params: .init(strategy: .phoneCode)),
+      returning: ClientResponse(response: .mockNeedsSecondFactor, client: nil)
+    )
+    transport.fallback(
+      SessionAPI.attemptSecondFactorVerification(sessionId: anyId, params: .init(strategy: .phoneCode)),
+      returning: ClientResponse(response: .mockComplete, client: nil)
+    )
+
     return transport
   }
 }

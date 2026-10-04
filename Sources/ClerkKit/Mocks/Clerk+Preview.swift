@@ -166,7 +166,6 @@ extension Clerk {
       userService: services.userService,
       signInService: services.signInService,
       signUpService: services.signUpService,
-      sessionService: services.sessionService,
       passkeyService: services.passkeyService,
       organizationService: services.organizationService,
       billingService: services.billingService,

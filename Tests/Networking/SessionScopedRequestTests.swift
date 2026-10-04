@@ -142,10 +142,10 @@ struct SessionScopedRequestTests {
     }
     throttledMock.register()
 
-    let sessionService = clerk.dependencies.sessionService
+    let auth = clerk.auth
     let retry = ClerkRateLimitRetryMiddleware(sleep: { _ in
       do {
-        try await sessionService.setActive(sessionId: nextSessionID, organizationId: nil)
+        try await auth.setActive(sessionId: nextSessionID, organizationId: nil)
       } catch {
         Issue.record("Could not set the active session: \(error)")
       }
