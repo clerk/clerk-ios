@@ -157,7 +157,6 @@ extension Clerk {
     MockDependencyContainer(
       apiClient: apiClient,
       transport: transport,
-      organizationService: services.organizationService,
       billingService: services.billingService
     )
   }

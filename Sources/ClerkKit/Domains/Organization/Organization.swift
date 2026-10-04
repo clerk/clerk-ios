@@ -108,13 +108,6 @@ public struct Organization: Codable, Equatable, Hashable, Sendable, Identifiable
 
 extension Organization {
   @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.organizationService
-    }
-  }
-
-  @MainActor
   private var billingService: any BillingServiceProtocol {
     get throws {
       try Clerk.currentDependencies.billingService
@@ -131,7 +124,7 @@ extension Organization {
     name: String,
     slug: String? = nil
   ) async throws -> Organization {
-    try await organizationService.updateOrganization(organizationId: id, name: name, slug: slug)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.update(organizationId: id, name: name, slug: slug)).value.response
   }
 
   /// Deletes the organization. Only administrators can delete an organization.
@@ -139,7 +132,7 @@ extension Organization {
   /// Deleting an organization will also delete all memberships and invitations. This is **not reversible**.
   @discardableResult @MainActor
   public func destroy() async throws -> DeletedObject {
-    try await organizationService.destroyOrganization(organizationId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.destroy(organizationId: id)).value.response
   }
 
   /// Sets or replaces an organization's logo.
@@ -148,7 +141,15 @@ extension Organization {
   /// - Returns: ``Organization``
   @discardableResult @MainActor
   public func setLogo(imageData: Data) async throws -> Organization {
-    try await organizationService.setOrganizationLogo(organizationId: id, imageData: imageData)
+    let boundary = UUID().uuidString
+    var data = Data()
+    data.append(Data("\r\n--\(boundary)\r\n".utf8))
+    data.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".utf8))
+    data.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+    data.append(imageData)
+    data.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+    return try await Clerk.currentDependencies.transport.upload(for: OrganizationAPI.setLogo(organizationId: id, boundary: boundary), from: data).value.response
   }
 
   /// Deletes the organization's uploaded logo and falls back to the default logo.
@@ -156,7 +157,7 @@ extension Organization {
   /// - Returns: ``DeletedObject``
   @discardableResult @MainActor
   public func deleteLogo() async throws -> DeletedObject {
-    try await organizationService.deleteOrganizationLogo(organizationId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.deleteLogo(organizationId: id)).value.response
   }
 
   /// Returns a ClerkPaginatedResponse of RoleResource objects.
@@ -171,11 +172,11 @@ extension Organization {
     page: Int = 1,
     pageSize: Int = 20
   ) async throws -> ClerkPaginatedResponse<RoleResource> {
-    try await organizationService.getOrganizationRoles(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.getRoles(
       organizationId: id,
-      initialPage: offset(forPage: page, pageSize: pageSize),
+      offset: offset(forPage: page, pageSize: pageSize),
       pageSize: pageSize
-    )
+    )).value.response
   }
 
   /// Retrieves the list of memberships for the currently active organization.
@@ -220,13 +221,13 @@ extension Organization {
     offset: Int,
     pageSize: Int = 10
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await organizationService.getOrganizationMemberships(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.getMemberships(
       organizationId: id,
       query: query,
       role: role,
-      initialPage: offset,
+      offset: offset,
       pageSize: pageSize
-    )
+    )).value.response
   }
 
   /// Adds a user as a member to an organization.
@@ -247,7 +248,7 @@ extension Organization {
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
-    try await organizationService.addOrganizationMember(organizationId: id, userId: userId, role: role)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.addMember(organizationId: id, userId: userId, role: role)).value.response
   }
 
   /// Updates a member of an organization.
@@ -265,7 +266,7 @@ extension Organization {
     userId: String,
     role: String
   ) async throws -> OrganizationMembership {
-    try await organizationService.updateOrganizationMember(organizationId: id, userId: userId, role: role)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.updateMember(organizationId: id, userId: userId, role: role)).value.response
   }
 
   /// Removes a member from the organization based on the user ID.
@@ -277,7 +278,7 @@ extension Organization {
   ///   An ``OrganizationMembership`` object.
   @discardableResult @MainActor
   public func removeMember(userId: String) async throws -> OrganizationMembership {
-    try await organizationService.removeOrganizationMember(organizationId: id, userId: userId)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.removeMember(organizationId: id, userId: userId)).value.response
   }
 
   /// Retrieves the list of invitations for the currently active organization.
@@ -317,12 +318,12 @@ extension Organization {
     pageSize: Int = 10,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
-    try await organizationService.getOrganizationInvitations(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.getInvitations(
       organizationId: id,
-      initialPage: offset,
+      offset: offset,
       pageSize: pageSize,
       status: status
-    )
+    )).value.response
   }
 
   /// Creates and sends an invitation to the target email address to become a member with the specified role.
@@ -338,7 +339,7 @@ extension Organization {
     emailAddress: String,
     role: String
   ) async throws -> OrganizationInvitation {
-    try await organizationService.inviteOrganizationMember(organizationId: id, emailAddress: emailAddress, role: role)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.inviteMember(organizationId: id, emailAddress: emailAddress, role: role)).value.response
   }
 
   /// Creates and sends invitations to the target email addresses to become members with the specified role.
@@ -354,11 +355,11 @@ extension Organization {
     emailAddresses: [String],
     role: String
   ) async throws -> [OrganizationInvitation] {
-    try await organizationService.inviteOrganizationMembers(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.inviteMembers(
       organizationId: id,
       emailAddresses: emailAddresses,
       role: role
-    )
+    )).value.response
   }
 
   /// Creates a new domain for the currently active organization.
@@ -368,7 +369,7 @@ extension Organization {
   /// - Returns: An ``OrganizationDomain`` object.
   @discardableResult @MainActor
   public func createDomain(domainName: String) async throws -> OrganizationDomain {
-    try await organizationService.createOrganizationDomain(organizationId: id, domainName: domainName)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.createDomain(organizationId: id, domainName: domainName)).value.response
   }
 
   /// Retrieves the list of domains for the currently active organization.
@@ -406,12 +407,12 @@ extension Organization {
     pageSize: Int = 10,
     enrollmentMode: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
-    try await organizationService.getOrganizationDomains(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.getDomains(
       organizationId: id,
-      initialPage: offset,
+      offset: offset,
       pageSize: pageSize,
       enrollmentMode: enrollmentMode
-    )
+    )).value.response
   }
 
   /// Retrieves a domain for an organization based on the given domain ID.
@@ -421,7 +422,7 @@ extension Organization {
   /// - Returns: An ``OrganizationDomain`` object.
   @MainActor
   public func getDomain(domainId: String) async throws -> OrganizationDomain {
-    try await organizationService.getOrganizationDomain(organizationId: id, domainId: domainId)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.getDomain(organizationId: id, domainId: domainId)).value.response
   }
 
   /// Retrieves the list of membership requests for the currently active organization.
@@ -457,12 +458,12 @@ extension Organization {
     pageSize: Int = 10,
     status: String? = nil
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
-    try await organizationService.getOrganizationMembershipRequests(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.getMembershipRequests(
       organizationId: id,
-      initialPage: offset,
+      offset: offset,
       pageSize: pageSize,
       status: status
-    )
+    )).value.response
   }
 
   /// Lists the Organization's saved payment methods. Requires the `org:sys_billing:read` Permission.

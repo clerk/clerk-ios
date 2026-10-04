@@ -218,7 +218,7 @@ public final class Clerk {
   ///
   /// Use this property to create organizations.
   public var organizations: Organizations {
-    Organizations(organizationService: dependencies.organizationService)
+    Organizations(transport: dependencies.transport)
   }
 
   /// Reads Plans, Subscriptions, statements, payment attempts, and credits.

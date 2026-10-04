@@ -152,17 +152,10 @@ public struct OrganizationDomain: Codable, Equatable, Hashable, Identifiable, Se
 }
 
 extension OrganizationDomain {
-  @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.organizationService
-    }
-  }
-
   /// Deletes the organization domain and removes it from the organization.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await organizationService.deleteOrganizationDomain(organizationId: organizationId, domainId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.deleteDomain(organizationId: organizationId, domainId: id)).value.response
   }
 
   /// Prepares affiliation verification for this organization domain by sending a verification email.
@@ -174,7 +167,11 @@ extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be initiated.
   @discardableResult @MainActor
   public func prepareAffiliationVerification(affiliationEmailAddress: String) async throws -> OrganizationDomain {
-    try await organizationService.prepareOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, affiliationEmailAddress: affiliationEmailAddress)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.prepareDomainAffiliationVerification(
+      organizationId: organizationId,
+      domainId: id,
+      affiliationEmailAddress: affiliationEmailAddress
+    )).value.response
   }
 
   /// Attempts to verify the affiliation of this organization domain using a verification code.
@@ -188,7 +185,7 @@ extension OrganizationDomain {
   /// - Throws: An error if the verification process cannot be completed.
   @discardableResult @MainActor
   public func attemptAffiliationVerification(code: String) async throws -> OrganizationDomain {
-    try await organizationService.attemptOrganizationDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.attemptDomainAffiliationVerification(organizationId: organizationId, domainId: id, code: code)).value.response
   }
 
   /// Sends a verification code to the specified email address for domain affiliation verification.
@@ -226,11 +223,11 @@ extension OrganizationDomain {
     _ enrollmentMode: EnrollmentMode,
     deletePending: Bool? = nil
   ) async throws -> OrganizationDomain {
-    try await organizationService.updateOrganizationDomainEnrollmentMode(
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.updateDomainEnrollmentMode(
       organizationId: organizationId,
       domainId: id,
       enrollmentMode: enrollmentMode.rawValue,
       deletePending: deletePending
-    )
+    )).value.response
   }
 }

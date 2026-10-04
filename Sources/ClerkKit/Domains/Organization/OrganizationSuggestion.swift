@@ -71,17 +71,10 @@ public struct OrganizationSuggestion: Codable, Equatable, Sendable, Identifiable
 }
 
 extension OrganizationSuggestion {
-  @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.organizationService
-    }
-  }
-
   /// Accepts the organization suggestion.
   /// - Returns: The accepted ``OrganizationSuggestion``.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationSuggestion {
-    try await organizationService.acceptOrganizationSuggestion(suggestionId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.acceptSuggestion(suggestionId: id)).value.response
   }
 }

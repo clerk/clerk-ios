@@ -87,17 +87,10 @@ public struct UserOrganizationInvitation: Codable, Sendable, Identifiable {
 }
 
 extension UserOrganizationInvitation {
-  @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.organizationService
-    }
-  }
-
   /// Accepts the organization invitation.
   /// - Returns: The accepted ``UserOrganizationInvitation``.
   @discardableResult @MainActor
   public func accept() async throws -> UserOrganizationInvitation {
-    try await organizationService.acceptUserOrganizationInvitation(invitationId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.acceptUserInvitation(invitationId: id)).value.response
   }
 }

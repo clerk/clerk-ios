@@ -29,7 +29,6 @@ final class DependencyContainer: Dependencies {
 
   // MARK: - Services
 
-  let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
 
   // MARK: - Magic Link
@@ -115,7 +114,6 @@ final class DependencyContainer: Dependencies {
       options: options
     )
 
-    organizationService = OrganizationService(apiClient: apiClient)
     billingService = BillingService(apiClient: apiClient)
   }
 

@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct OrganizationServiceTests {
+struct OrganizationAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -46,34 +46,34 @@ struct OrganizationServiceTests {
     func perform(domain: OrganizationDomain) async throws {
       switch self {
       case .create:
-        _ = try await Clerk.shared.dependencies.organizationService.createOrganizationDomain(
+        _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.createDomain(
           organizationId: domain.organizationId,
           domainName: "invalid domain"
-        )
+        )).value.response
       case .delete:
-        _ = try await Clerk.shared.dependencies.organizationService.deleteOrganizationDomain(
+        _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.deleteDomain(
           organizationId: domain.organizationId,
           domainId: domain.id
-        )
+        )).value.response
       case .prepareAffiliationVerification:
-        _ = try await Clerk.shared.dependencies.organizationService.prepareOrganizationDomainAffiliationVerification(
+        _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.prepareDomainAffiliationVerification(
           organizationId: domain.organizationId,
           domainId: domain.id,
           affiliationEmailAddress: "invalid-email"
-        )
+        )).value.response
       case .attemptAffiliationVerification:
-        _ = try await Clerk.shared.dependencies.organizationService.attemptOrganizationDomainAffiliationVerification(
+        _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.attemptDomainAffiliationVerification(
           organizationId: domain.organizationId,
           domainId: domain.id,
           code: "000000"
-        )
+        )).value.response
       case .updateEnrollmentMode:
-        _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationDomainEnrollmentMode(
+        _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.updateDomainEnrollmentMode(
           organizationId: domain.organizationId,
           domainId: domain.id,
           enrollmentMode: "invalid_mode",
           deletePending: nil
-        )
+        )).value.response
       }
     }
   }
@@ -98,7 +98,7 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.createOrganization(name: "My Org", slug: nil)
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.create(name: "My Org", slug: nil)).value.response
     #expect(requestHandled.value)
   }
 
@@ -122,7 +122,7 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.createOrganization(name: "My Org", slug: "my-org")
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.create(name: "My Org", slug: "my-org")).value.response
     #expect(requestHandled.value)
   }
 
@@ -146,7 +146,7 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganization(organizationId: organization.id)
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.get(organizationId: organization.id)).value.response
     #expect(requestHandled.value)
   }
 
@@ -171,11 +171,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.update(
       organizationId: organization.id,
       name: "New Name",
       slug: "new-slug"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -200,11 +200,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.update(
       organizationId: organization.id,
       name: "New Name",
       slug: nil
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -241,11 +241,11 @@ struct OrganizationServiceTests {
     mock.register()
 
     do {
-      _ = try await Clerk.shared.dependencies.organizationService.updateOrganization(
+      _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.update(
         organizationId: organization.id,
         name: "New Name",
         slug: "invalid slug"
-      )
+      )).value.response
       #expect(Bool(false), "Expected API error to be thrown")
     } catch let error as ClerkAPIError {
       #expect(requestHandled.value)
@@ -275,7 +275,7 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.destroyOrganization(organizationId: organization.id)
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.destroy(organizationId: organization.id)).value.response
     #expect(requestHandled.value)
   }
 
@@ -300,10 +300,7 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.setOrganizationLogo(
-      organizationId: organization.id,
-      imageData: imageData
-    )
+    _ = try await organization.setLogo(imageData: imageData)
     #expect(requestHandled.value)
   }
 
@@ -328,9 +325,9 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    let response = try await Clerk.shared.dependencies.organizationService.deleteOrganizationLogo(
+    let response = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.deleteLogo(
       organizationId: organization.id
-    )
+    )).value.response
     #expect(requestHandled.value)
     #expect(response.object == deletedObject.object)
     #expect(response.id == deletedObject.id)
@@ -363,11 +360,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    let response = try await Clerk.shared.dependencies.organizationService.getOrganizationRoles(
+    let response = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getRoles(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10
-    )
+    )).value.response
     #expect(response.hasRoleSetMigration == true)
     #expect(requestHandled.value)
   }
@@ -399,13 +396,13 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationMemberships(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getMemberships(
       organizationId: organization.id,
       query: nil,
       role: nil,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -434,13 +431,13 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationMemberships(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getMemberships(
       organizationId: organization.id,
       query: "test",
       role: nil,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -470,13 +467,13 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationMemberships(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getMemberships(
       organizationId: organization.id,
       query: nil,
       role: ["admin"],
-      initialPage: 0,
+      offset: 0,
       pageSize: 10
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -501,11 +498,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.addOrganizationMember(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.addMember(
       organizationId: organization.id,
       userId: "user123",
       role: "org:member"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -531,11 +528,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationMember(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.updateMember(
       organizationId: organization.id,
       userId: userId,
       role: "org:admin"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -560,10 +557,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.removeOrganizationMember(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.removeMember(
       organizationId: organization.id,
       userId: userId
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -599,12 +596,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationInvitations(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getInvitations(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: []
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -637,12 +634,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationInvitations(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getInvitations(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: ["pending", "accepted"]
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -667,11 +664,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.inviteOrganizationMember(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.inviteMember(
       organizationId: organization.id,
       emailAddress: "user@example.com",
       role: "org:member"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -697,11 +694,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.inviteOrganizationMembers(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.inviteMembers(
       organizationId: organization.id,
       emailAddresses: ["one@example.com", "two@example.com"],
       role: "org:member"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -725,10 +722,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.createOrganizationDomain(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.createDomain(
       organizationId: organization.id,
       domainName: "example.com"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -758,12 +755,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationDomains(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getDomains(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       enrollmentMode: nil
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -792,12 +789,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationDomains(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getDomains(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       enrollmentMode: "automatic"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -821,10 +818,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationDomain(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getDomain(
       organizationId: organization.id,
       domainId: domain.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -854,12 +851,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationMembershipRequests(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getMembershipRequests(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: nil
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -888,12 +885,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.getOrganizationMembershipRequests(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.getMembershipRequests(
       organizationId: organization.id,
-      initialPage: 0,
+      offset: 0,
       pageSize: 10,
       status: "pending"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -917,10 +914,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.deleteOrganizationDomain(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.deleteDomain(
       organizationId: domain.organizationId,
       domainId: domain.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -945,11 +942,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.prepareOrganizationDomainAffiliationVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.prepareDomainAffiliationVerification(
       organizationId: domain.organizationId,
       domainId: domain.id,
       affiliationEmailAddress: "user@example.com"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -974,11 +971,11 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.attemptOrganizationDomainAffiliationVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.attemptDomainAffiliationVerification(
       organizationId: domain.organizationId,
       domainId: domain.id,
       code: "123456"
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1004,12 +1001,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationDomainEnrollmentMode(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.updateDomainEnrollmentMode(
       organizationId: domain.organizationId,
       domainId: domain.id,
       enrollmentMode: "automatic_invitation",
       deletePending: true
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1035,12 +1032,12 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.updateOrganizationDomainEnrollmentMode(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.updateDomainEnrollmentMode(
       organizationId: domain.organizationId,
       domainId: domain.id,
       enrollmentMode: "manual_invitation",
       deletePending: nil
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1113,10 +1110,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.revokeOrganizationInvitation(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.revokeInvitation(
       organizationId: invitation.organizationId,
       invitationId: invitation.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1141,10 +1138,7 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.destroyOrganizationMembership(
-      organizationId: membership.organization.id,
-      userId: userId
-    )
+    _ = try await membership.destroy()
     #expect(requestHandled.value)
   }
 
@@ -1168,9 +1162,9 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.acceptUserOrganizationInvitation(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.acceptUserInvitation(
       invitationId: invitation.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1194,9 +1188,9 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.acceptOrganizationSuggestion(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.acceptSuggestion(
       suggestionId: suggestion.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1220,10 +1214,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.acceptOrganizationMembershipRequest(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.acceptMembershipRequest(
       organizationId: request.organizationId,
       requestId: request.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 
@@ -1247,10 +1241,10 @@ struct OrganizationServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.organizationService.rejectOrganizationMembershipRequest(
+    _ = try await Clerk.shared.dependencies.transport.send(OrganizationAPI.rejectMembershipRequest(
       organizationId: request.organizationId,
       requestId: request.id
-    )
+    )).value.response
     #expect(requestHandled.value)
   }
 }

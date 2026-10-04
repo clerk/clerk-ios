@@ -149,6 +149,64 @@ extension FakeTransport {
     )
     transport.fallback(BiometricCredentialAPI.revoke(biometricCredentialId: anyId, sessionId: nil), returning: ClientResponse(response: BiometricCredential.mock, client: nil))
 
+    transport.fallback(OrganizationAPI.create(name: "", slug: nil), returning: ClientResponse(response: Organization.mock, client: nil))
+    transport.fallback(OrganizationAPI.get(organizationId: anyId), returning: ClientResponse(response: Organization.mock, client: nil))
+    transport.fallback(OrganizationAPI.update(organizationId: anyId, name: "", slug: nil), returning: ClientResponse(response: Organization.mock, client: nil))
+    transport.fallback(OrganizationAPI.destroy(organizationId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(OrganizationAPI.setLogo(organizationId: anyId, boundary: ""), returning: ClientResponse(response: Organization.mock, client: nil))
+    transport.fallback(OrganizationAPI.deleteLogo(organizationId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(
+      OrganizationAPI.getRoles(organizationId: anyId, offset: 0, pageSize: 0),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1), client: nil)
+    )
+    transport.fallback(
+      OrganizationAPI.getMemberships(organizationId: anyId, query: nil, role: nil, offset: 0, pageSize: 0),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [OrganizationMembership.mockWithUserData], totalCount: 1), client: nil)
+    )
+    transport.fallback(OrganizationAPI.addMember(organizationId: anyId, userId: "", role: ""), returning: ClientResponse(response: OrganizationMembership.mockWithUserData, client: nil))
+    transport.fallback(OrganizationAPI.updateMember(organizationId: anyId, userId: anyId, role: ""), returning: ClientResponse(response: OrganizationMembership.mockWithUserData, client: nil))
+    transport.fallback(OrganizationAPI.removeMember(organizationId: anyId, userId: anyId), returning: ClientResponse(response: OrganizationMembership.mockWithUserData, client: nil))
+    transport.fallback(
+      OrganizationAPI.getInvitations(organizationId: anyId, offset: 0, pageSize: 0, status: []),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [OrganizationInvitation.mock], totalCount: 1), client: nil)
+    )
+    transport.fallback(OrganizationAPI.inviteMember(organizationId: anyId, emailAddress: "", role: ""), returning: ClientResponse(response: OrganizationInvitation.mock, client: nil))
+    transport.fallback(OrganizationAPI.inviteMembers(organizationId: anyId, emailAddresses: [], role: ""), returning: ClientResponse(response: [OrganizationInvitation.mock], client: nil))
+    transport.fallback(OrganizationAPI.revokeInvitation(organizationId: anyId, invitationId: anyId), returning: ClientResponse(response: OrganizationInvitation.mock, client: nil))
+    transport.fallback(OrganizationAPI.createDomain(organizationId: anyId, domainName: ""), returning: ClientResponse(response: OrganizationDomain.mock, client: nil))
+    transport.fallback(
+      OrganizationAPI.getDomains(organizationId: anyId, offset: 0, pageSize: 0, enrollmentMode: nil),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [OrganizationDomain.mock], totalCount: 1), client: nil)
+    )
+    transport.fallback(OrganizationAPI.getDomain(organizationId: anyId, domainId: anyId), returning: ClientResponse(response: OrganizationDomain.mock, client: nil))
+    transport.fallback(OrganizationAPI.deleteDomain(organizationId: anyId, domainId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+    transport.fallback(
+      OrganizationAPI.prepareDomainAffiliationVerification(organizationId: anyId, domainId: anyId, affiliationEmailAddress: ""),
+      returning: ClientResponse(response: OrganizationDomain.mock, client: nil)
+    )
+    transport.fallback(
+      OrganizationAPI.attemptDomainAffiliationVerification(organizationId: anyId, domainId: anyId, code: ""),
+      returning: ClientResponse(response: OrganizationDomain.mock, client: nil)
+    )
+    transport.fallback(
+      OrganizationAPI.updateDomainEnrollmentMode(organizationId: anyId, domainId: anyId, enrollmentMode: "", deletePending: nil),
+      returning: ClientResponse(response: OrganizationDomain.mock, client: nil)
+    )
+    transport.fallback(
+      OrganizationAPI.getMembershipRequests(organizationId: anyId, offset: 0, pageSize: 0, status: nil),
+      returning: ClientResponse(response: ClerkPaginatedResponse(data: [OrganizationMembershipRequest.mock], totalCount: 1), client: nil)
+    )
+    transport.fallback(
+      OrganizationAPI.acceptMembershipRequest(organizationId: anyId, requestId: anyId),
+      returning: ClientResponse(response: OrganizationMembershipRequest.mock, client: nil)
+    )
+    transport.fallback(
+      OrganizationAPI.rejectMembershipRequest(organizationId: anyId, requestId: anyId),
+      returning: ClientResponse(response: OrganizationMembershipRequest.mock, client: nil)
+    )
+    transport.fallback(OrganizationAPI.acceptUserInvitation(invitationId: anyId), returning: ClientResponse(response: UserOrganizationInvitation.mock, client: nil))
+    transport.fallback(OrganizationAPI.acceptSuggestion(suggestionId: anyId), returning: ClientResponse(response: OrganizationSuggestion.mock, client: nil))
+
     return transport
   }
 }

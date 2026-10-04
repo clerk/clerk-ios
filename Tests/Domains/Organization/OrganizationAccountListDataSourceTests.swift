@@ -184,11 +184,13 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let capturedInvitationId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { call in
+      let invitationId = String(call.path.split(separator: "/")[3])
       capturedInvitationId.setValue(invitationId)
-      return invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
-    })
-    setDependencies(organizationService: organizationService)
+      return ClientResponse(response: invitation(id: invitationId, organizationId: "org_invite", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
@@ -207,16 +209,18 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let fetchedOrganizationId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(
-      getOrganization: { organizationId in
-        fetchedOrganizationId.setValue(organizationId)
-        throw ClerkClientError(message: "Accepted invitations should not fetch a full organization.")
-      },
-      acceptUserOrganizationInvitation: { invitationId in
-        invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
-      }
-    )
-    setDependencies(organizationService: organizationService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.get(organizationId: FakeTransport.anyPathSegment)) { call in
+      fetchedOrganizationId.setValue(String(call.path.split(separator: "/")[2]))
+      throw ClerkClientError(message: "Accepted invitations should not fetch a full organization.")
+    }
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { call in
+      ClientResponse(
+        response: invitation(id: String(call.path.split(separator: "/")[3]), organizationId: "org_invite", status: "accepted"),
+        client: nil
+      )
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
@@ -243,10 +247,10 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
         totalCount: 2
       )
     }
-    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
-      invitation(id: invitationId, organizationId: "org_1", status: "accepted")
-    })
-    setDependencies(transport: transport, organizationService: organizationService)
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { call in
+      ClientResponse(response: invitation(id: String(call.path.split(separator: "/")[3]), organizationId: "org_1", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 2)
     let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
@@ -282,11 +286,13 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let capturedSuggestionId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.acceptSuggestion(suggestionId: FakeTransport.anyPathSegment)) { call in
+      let suggestionId = String(call.path.split(separator: "/")[3])
       capturedSuggestionId.setValue(suggestionId)
-      return suggestion(id: suggestionId, organizationId: "org_suggested", status: "accepted")
-    })
-    setDependencies(organizationService: organizationService)
+      return ClientResponse(response: suggestion(id: suggestionId, organizationId: "org_suggested", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     model.suggestionsPager.replace(with: ClerkPaginatedResponse(
@@ -302,14 +308,10 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
 }
 
 @MainActor
-private func setDependencies(
-  transport: FakeTransport = .mockDefaults(),
-  organizationService: (any OrganizationServiceProtocol)? = nil
-) {
+private func setDependencies(transport: FakeTransport) {
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),
-    transport: transport,
-    organizationService: organizationService
+    transport: transport
   )
 }
 
