@@ -16,17 +16,18 @@ final class StartupClientRefreshTakeover {
     var requestIDs: Set<UUID>
   }
 
-  private weak var clerk: Clerk?
+  private weak var runtime: ClerkRuntime?
   private var activeTakeover: ActiveTakeover?
 
-  init(clerk: Clerk) {
-    self.clerk = clerk
+  init(runtime: ClerkRuntime) {
+    self.runtime = runtime
   }
 
   func beginIfNeeded(id: UUID?, deviceToken: String?) {
     guard deviceToken == nil,
           let id,
-          let clerk
+          let runtime,
+          let clerk = runtime.clerk
     else {
       return
     }
@@ -37,7 +38,7 @@ final class StartupClientRefreshTakeover {
       return
     }
 
-    guard clerk.cancelStartupClientRefreshTask() else { return }
+    guard runtime.cancelStartupClientRefreshTask() else { return }
     clerk.identityController.fenceClientResponses()
     activeTakeover = ActiveTakeover(
       checkpoint: checkpoint(deviceToken: deviceToken, clerk: clerk),
@@ -50,7 +51,8 @@ final class StartupClientRefreshTakeover {
   }
 
   func finish(id: UUID) async {
-    guard let clerk,
+    guard let runtime,
+          let clerk = runtime.clerk,
           var activeTakeover,
           activeTakeover.requestIDs.remove(id) != nil
     else {
@@ -69,7 +71,7 @@ final class StartupClientRefreshTakeover {
     ) == activeTakeover.checkpoint else {
       return
     }
-    clerk.startStartupClientRefreshIfNeeded()
+    runtime.startStartupClientRefreshIfNeeded()
   }
 
   private func checkpoint(deviceToken: String?, clerk: Clerk) -> Checkpoint {

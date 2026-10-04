@@ -20,8 +20,8 @@ struct ClerkInvalidAuthResponseMiddlewareTests {
       })
     )
 
-    async let first: Void = clerk.refreshClientAfterInvalidAuth()
-    async let second: Void = clerk.refreshClientAfterInvalidAuth()
+    async let first: Void = clerk.runtime.refreshClientAfterInvalidAuth()
+    async let second: Void = clerk.runtime.refreshClientAfterInvalidAuth()
     _ = await (first, second)
 
     #expect(refreshCount.withValue { $0 } == 1)

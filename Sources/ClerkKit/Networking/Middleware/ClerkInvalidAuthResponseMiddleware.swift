@@ -30,7 +30,7 @@ struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
     }
 
     let refreshTask = try await runtimeScope.withCurrentClerk {
-      $0.startRefreshClientAfterInvalidAuth()
+      $0.runtime.startRefreshClientAfterInvalidAuth()
     }
     await refreshTask.value
   }

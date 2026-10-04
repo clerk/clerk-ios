@@ -16,7 +16,7 @@ struct DependencyContainerKeychainTests {
       options: .init(
         keychainConfig: .init(service: "service")
       ),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial)
+      runtimeScope: ClerkRuntimeScope()
     )
 
     #expect(container.keychain is SystemKeychain)
@@ -28,7 +28,7 @@ struct DependencyContainerKeychainTests {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service")),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial)
+      runtimeScope: ClerkRuntimeScope()
     )
 
     #expect(container.identityStore.keychain is SystemKeychain)
@@ -41,7 +41,7 @@ struct DependencyContainerKeychainTests {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(keychainConfig: .init(service: "service", accessGroup: "group.example")),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      runtimeScope: ClerkRuntimeScope(),
       ownerIdentifierProvider: { "com.example.app" }
     )
 
@@ -62,7 +62,7 @@ struct DependencyContainerKeychainTests {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,
       options: .init(),
-      runtimeScope: ClerkRuntimeScope(epoch: .initial),
+      runtimeScope: ClerkRuntimeScope(),
       probesAccessGroupOverride: false,
       keychainStorageOverride: keychain
     )

@@ -10,16 +10,25 @@ import Foundation
 /// Manages and coordinates tasks for cleanup and cancellation.
 @MainActor
 final class TaskCoordinator {
-  private var tasks: Set<Task<Void, Never>> = []
+  private struct TrackedTask {
+    let cancel: @Sendable () -> Void
+    let wait: @Sendable () async -> Void
+  }
+
+  private var tasks: [UUID: TrackedTask] = [:]
 
   init() {}
 
-  func track(_ task: Task<Void, Never>) {
-    tasks.insert(task)
+  func track(_ task: Task<some Sendable, some Error>) {
+    let id = UUID()
+    tasks[id] = TrackedTask(
+      cancel: { task.cancel() },
+      wait: { _ = await task.result }
+    )
 
     Task { [weak self] in
-      await task.value
-      self?.tasks.remove(task)
+      _ = await task.result
+      self?.tasks[id] = nil
     }
   }
 
@@ -36,26 +45,26 @@ final class TaskCoordinator {
   }
 
   func cancelAll() {
-    for task in tasks {
+    for task in tasks.values {
       task.cancel()
     }
     tasks.removeAll()
   }
 
   func cancelAllAndWait() async {
-    let trackedTasks = tasks
+    let trackedTasks = Array(tasks.values)
     for task in trackedTasks {
       task.cancel()
     }
     tasks.removeAll()
 
     for task in trackedTasks {
-      await task.value
+      await task.wait()
     }
   }
 
   deinit {
-    for task in tasks {
+    for task in tasks.values {
       task.cancel()
     }
   }

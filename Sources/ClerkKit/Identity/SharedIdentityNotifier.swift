@@ -67,7 +67,7 @@ final class SharedIdentityNotifier: ClerkInternalStateChangeObserver {
 
   private func otherAppDidChange() {
     guard clerk != nil, refreshTask == nil else { return }
-    refreshTask = clerk?.scheduleManagedTask { [weak self] in
+    refreshTask = clerk?.runtime.scheduleTask { [weak self] in
       await self?.refresh()
     }
   }

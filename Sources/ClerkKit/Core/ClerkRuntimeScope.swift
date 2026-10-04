@@ -5,23 +5,20 @@
 
 import Foundation
 
-/// Identifies the Clerk configuration epoch that an SDK-owned dependency belongs to.
+/// Identifies the Clerk runtime that an SDK-owned dependency belongs to.
 ///
 /// Normal app and domain code should use `Clerk.shared`, `self`, or an injected `Clerk`
 /// reference. Use `ClerkRuntimeScope` only for dependencies that can outlive a runtime
 /// reconfiguration boundary, such as networking pipelines and response middleware.
 struct ClerkRuntimeScope {
-  private let epoch: ClerkConfigurationEpoch
-  private let runtimeState: ClerkRuntimeState
+  private let state: ClerkRuntimeState
   private let clerkProvider: @Sendable @MainActor () -> Clerk
 
   init(
-    epoch: ClerkConfigurationEpoch,
-    runtimeState: ClerkRuntimeState? = nil,
+    state: ClerkRuntimeState = ClerkRuntimeState(),
     clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }
   ) {
-    self.epoch = epoch
-    self.runtimeState = runtimeState ?? ClerkRuntimeState(epoch: epoch)
+    self.state = state
     self.clerkProvider = clerkProvider
   }
 
@@ -29,23 +26,18 @@ struct ClerkRuntimeScope {
   static func current(
     clerkProvider: @escaping @Sendable @MainActor () -> Clerk = { Clerk.shared }
   ) -> ClerkRuntimeScope {
-    let clerk = clerkProvider()
-    return .init(
-      epoch: clerk.configurationEpoch,
-      runtimeState: clerk.runtimeState,
-      clerkProvider: clerkProvider
-    )
+    .init(state: clerkProvider().runtime.state, clerkProvider: clerkProvider)
   }
 
   func validateStableRuntime() throws {
-    try runtimeState.validate(epoch: epoch)
+    try state.validate()
   }
 
   @MainActor
   func requireCurrentClerk() throws -> Clerk {
     try validateStableRuntime()
     let clerk = clerkProvider()
-    guard clerk.isCurrentConfigurationEpoch(epoch) else {
+    guard clerk.runtime.state === state else {
       throw CancellationError()
     }
     return clerk
@@ -55,16 +47,6 @@ struct ClerkRuntimeScope {
   func withCurrentClerk<T>(_ operation: @MainActor (Clerk) throws -> T) throws -> T {
     let clerk = try requireCurrentClerk()
     return try operation(clerk)
-  }
-}
-
-struct ClerkConfigurationEpoch: Equatable {
-  static let initial = ClerkConfigurationEpoch(rawValue: 0)
-
-  private let rawValue: Int
-
-  func next() -> ClerkConfigurationEpoch {
-    ClerkConfigurationEpoch(rawValue: rawValue + 1)
   }
 }
 
@@ -99,41 +81,31 @@ struct ClientResponseGeneration: Equatable {
   }
 }
 
+/// Whether the runtime a scope was built for is still the one Clerk runs.
 final class ClerkRuntimeState: @unchecked Sendable {
   private let lock = NSLock()
-  private var epoch: ClerkConfigurationEpoch
-  private var isReconfiguring = false
+  private var current = true
 
-  init(epoch: ClerkConfigurationEpoch = .initial) {
-    self.epoch = epoch
-  }
-
-  func beginReconfiguration() {
+  var isCurrent: Bool {
     lock.lock()
     defer { lock.unlock() }
-    isReconfiguring = true
+    return current
   }
 
-  func endReconfiguration() {
+  func retire() {
     lock.lock()
     defer { lock.unlock() }
-    isReconfiguring = false
+    current = false
   }
 
-  func advance(to epoch: ClerkConfigurationEpoch) {
+  func reinstate() {
     lock.lock()
     defer { lock.unlock() }
-    self.epoch = epoch
+    current = true
   }
 
-  func isCurrent(_ epoch: ClerkConfigurationEpoch) -> Bool {
-    lock.lock()
-    defer { lock.unlock() }
-    return !isReconfiguring && self.epoch == epoch
-  }
-
-  func validate(epoch: ClerkConfigurationEpoch) throws {
-    guard isCurrent(epoch) else {
+  func validate() throws {
+    guard isCurrent else {
       throw CancellationError()
     }
   }

@@ -2,6 +2,7 @@
 import ConcurrencyExtras
 import Foundation
 import Mocker
+import Observation
 import Testing
 
 @MainActor
@@ -53,6 +54,22 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func reconfigureNotifiesObserversOfConfigurationValues() async throws {
+    let clerk = Clerk.shared
+    let didChange = LockIsolated(false)
+    withObservationTracking {
+      _ = clerk.publishableKey
+    } onChange: {
+      didChange.setValue(true)
+    }
+
+    let reconfigured = try await Clerk.reconfigure(publishableKey: publishableKey(for: "ca.clerk.example.com"))
+    defer { reconfigured.cleanupManagers() }
+
+    #expect(didChange.value)
+  }
+
+  @Test
   func reconfigureFlushesTheOutgoingTelemetryCollector() async throws {
     let outgoingTelemetry = TelemetryFlushSpy()
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -67,11 +84,73 @@ struct ClerkReconfigureTests {
     defer { reconfigured.cleanupManagers() }
 
     let deadline = ContinuousClock.now + .seconds(2)
-    while await outgoingTelemetry.flushCount == 0, ContinuousClock.now < deadline {
+    while await outgoingTelemetry.completedFlushCount == 0, ContinuousClock.now < deadline {
       try await Task.sleep(for: .milliseconds(20))
     }
 
     #expect(await outgoingTelemetry.flushCount == 1)
+    #expect(await outgoingTelemetry.completedFlushCount == 1)
+  }
+
+  enum ShutdownOperation: CaseIterable {
+    case reconfigure
+    case resetSharedInstance
+  }
+
+  @Test(arguments: ShutdownOperation.allCases)
+  func shutdownCancelsInFlightPollingTokenRequest(operation: ShutdownOperation) async throws {
+    await SessionTokenFetcher.shared.reset()
+    let clerk = Clerk.shared
+    let requestStarted = LockIsolated(false)
+    let requestCancelled = LockIsolated(false)
+    let shutdownFinished = LockIsolated(false)
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      clientService: MockClientService(get: { throw CancellationError() }),
+      sessionService: MockSessionService(fetchToken: { _, _, _ in
+        requestStarted.setValue(true)
+        defer { requestCancelled.setValue(Task.isCancelled) }
+        try await Task.sleep(for: .seconds(30))
+        return nil
+      })
+    )
+
+    var shutdownTask: Task<Void, Error>?
+    let result: Result<Void, Error>
+    do {
+      clerk.performConfiguration(dependencies: dependencies)
+      try clerk.seedIdentity(deviceToken: "polling-token", client: .mock)
+      try await waitUntil(timeout: .seconds(2)) { requestStarted.value }
+
+      let task = Task { @MainActor in
+        defer { shutdownFinished.setValue(true) }
+        switch operation {
+        case .reconfigure:
+          try await Clerk.reconfigure(
+            publishableKey: testPublishableKey,
+            options: .init(
+              telemetryEnabled: false,
+              keychainConfig: .init(service: "com.clerk.tests.polling-shutdown.\(UUID().uuidString)")
+            )
+          )
+        case .resetSharedInstance:
+          await Clerk.resetSharedInstanceForTesting()
+        }
+      }
+      shutdownTask = task
+      try await waitUntil(timeout: .seconds(2)) { shutdownFinished.value }
+      try await task.value
+      #expect(requestCancelled.value)
+      result = .success(())
+    } catch {
+      result = .failure(error)
+    }
+
+    clerk.cleanupManagers()
+    await SessionTokenFetcher.shared.reset()
+    _ = await shutdownTask?.result
+    clerk.cleanupManagers()
+    try result.get()
   }
 
   @Test
@@ -224,7 +303,7 @@ struct ClerkReconfigureTests {
       identityIsInAccessGroup: true,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    try clerk.performConfiguration(dependencies: sourceDependencies)
+    clerk.performConfiguration(dependencies: sourceDependencies)
     try clerk.seedIdentity(deviceToken: "shared-token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
     clerk.environment = .mock
     clerk.sessionsByUserId = [User.mock.id: [.mock]]
@@ -253,7 +332,6 @@ struct ClerkReconfigureTests {
   @Test
   func unreachableKeychainFailsReconfigureBeforeDestructiveWrites() async throws {
     let original = Clerk.shared
-    let previousEpoch = original.configurationEpoch
     let identityKeychain = InMemoryKeychain()
     let sourceDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: original.runtimeScope),
@@ -262,7 +340,8 @@ struct ClerkReconfigureTests {
       identityKeychain: identityKeychain,
       telemetryCollector: original.dependencies.telemetryCollector
     )
-    try original.performConfiguration(dependencies: sourceDependencies)
+    original.performConfiguration(dependencies: sourceDependencies)
+    let previousRuntime = original.runtime
     try original.seedIdentity(deviceToken: "source-token", client: .mock)
     defer { original.cleanupManagers() }
 
@@ -271,7 +350,8 @@ struct ClerkReconfigureTests {
     }
 
     #expect(Clerk.shared === original)
-    #expect(original.configurationEpoch == previousEpoch)
+    #expect(original.runtime === previousRuntime)
+    #expect(previousRuntime.isCurrent)
     #expect(original.dependencies === sourceDependencies)
     #expect(try sourceDependencies.identityStore.load()?.deviceToken == "source-token")
     #expect(original.client?.id == Client.mock.id)
@@ -280,14 +360,14 @@ struct ClerkReconfigureTests {
   @Test
   func failedReconfigureLeavesPreviousRuntimeUntouched() async throws {
     let original = Clerk.shared
-    let previousEpoch = Clerk.shared.configurationEpoch
     let throwingKeychain = ThrowingDeleteKeychain()
     let previousDependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       keychain: throwingKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try original.performConfiguration(dependencies: previousDependencies)
+    original.performConfiguration(dependencies: previousDependencies)
+    let previousRuntime = original.runtime
     original.client = .mock
     original.environment = .mock
     defer { original.cleanupManagers() }
@@ -310,7 +390,8 @@ struct ClerkReconfigureTests {
 
     let dependenciesUnchanged = Clerk.shared.dependencies === previousDependencies
     #expect(Clerk.shared === original)
-    #expect(Clerk.shared.configurationEpoch == previousEpoch)
+    #expect(Clerk.shared.runtime === previousRuntime)
+    #expect(previousRuntime.isCurrent)
     #expect(dependenciesUnchanged)
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(Clerk.shared.environment == .mock)
@@ -325,7 +406,7 @@ struct ClerkReconfigureTests {
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     try clerk.seedIdentity(deviceToken: "device-token")
     defer { clerk.cleanupManagers() }
 
@@ -357,7 +438,7 @@ struct ClerkReconfigureTests {
       keychain: oldKeychain,
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
 
     let targetService = "com.clerk.tests.pending-cache-drain.\(UUID().uuidString)"
@@ -389,7 +470,7 @@ struct ClerkReconfigureTests {
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
       sessionService: sessionService
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: cachedJWT),
@@ -431,7 +512,7 @@ struct ClerkReconfigureTests {
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
     let staleSession = try #require(Clerk.shared.session)
     SessionTemplateTokensCache.shared.insertToken(
@@ -531,7 +612,7 @@ struct ClerkReconfigureTests {
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try Clerk.shared.performConfiguration(dependencies: dependencies)
+    Clerk.shared.performConfiguration(dependencies: dependencies)
 
     try Clerk.beginRuntimeReconfiguration()
     defer { Clerk.endRuntimeReconfiguration() }
@@ -832,11 +913,16 @@ private final class SlowKeychain: KeychainStorage, @unchecked Sendable {
 
 private actor TelemetryFlushSpy: TelemetryCollectorProtocol {
   private(set) var flushCount = 0
+  private(set) var completedFlushCount = 0
 
   func record(_: TelemetryEventRaw) async {}
 
   func flush() async {
     flushCount += 1
+    try? await Task.sleep(for: .milliseconds(50))
+    if !Task.isCancelled {
+      completedFlushCount += 1
+    }
   }
 }
 

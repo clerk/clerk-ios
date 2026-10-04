@@ -58,3 +58,10 @@ final class CacheManager {
     coordinator = nil
   }
 }
+
+extension CacheManager: ClerkInternalStateChangeObserver {
+  func handle(_ change: ClerkInternalStateChange, from clerk: Clerk) throws {
+    guard case .environmentDidChange = change, let environment = clerk.environment else { return }
+    saveEnvironment(environment)
+  }
+}

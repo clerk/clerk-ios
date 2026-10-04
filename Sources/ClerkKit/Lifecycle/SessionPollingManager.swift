@@ -28,6 +28,8 @@ final class SessionPollingManager {
 
   private let authEventsProvider: (() -> AsyncStream<AuthEvent>)?
 
+  private let tasks: TaskCoordinator
+
   private let pollInterval: TimeInterval
 
   private let pollTolerance: TimeInterval
@@ -44,10 +46,12 @@ final class SessionPollingManager {
     authEventsProvider: (() -> AsyncStream<AuthEvent>)? = nil,
     pollInterval: TimeInterval = defaultPollInterval,
     pollTolerance: TimeInterval = defaultPollTolerance,
-    maxPollInterval: TimeInterval = defaultMaxPollInterval
+    maxPollInterval: TimeInterval = defaultMaxPollInterval,
+    tasks: TaskCoordinator = TaskCoordinator()
   ) {
     self.sessionProvider = sessionProvider
     self.authEventsProvider = authEventsProvider
+    self.tasks = tasks
     self.pollInterval = pollInterval
     self.pollTolerance = pollTolerance
     self.maxPollInterval = maxPollInterval
@@ -62,12 +66,14 @@ final class SessionPollingManager {
 
     let tolerance = pollTolerance
 
-    pollingTask = Task(priority: .background) { [weak self] in
+    let task = Task(priority: .background) { [weak self] in
       repeat {
         let interval = await self?.refreshAndCalculateInterval() ?? Self.defaultPollInterval
         try await Task.sleep(for: .seconds(interval), tolerance: .seconds(tolerance))
       } while !Task.isCancelled
     }
+    pollingTask = task
+    tasks.track(task)
   }
 
   func stopPolling() {
@@ -117,7 +123,7 @@ final class SessionPollingManager {
       let becameActive = newValue?.status == .active && (oldValue?.status != .active || oldValue?.id != newValue?.id)
       if becameActive, isPollingActive {
         consecutiveFailures = 0
-        Task { [weak self] in
+        tasks.task { [weak self] in
           _ = await self?.refreshTokenIfNeeded()
         }
       }
@@ -134,11 +140,13 @@ final class SessionPollingManager {
       return
     }
 
-    authEventTask = Task { @MainActor [weak self] in
+    let task = Task { @MainActor [weak self] in
       for await event in authEventsProvider() {
         self?.handleAuthEvent(event)
       }
     }
+    authEventTask = task
+    tasks.track(task)
   }
 
   /// Refreshes the token for the current session when it is active.

@@ -194,7 +194,7 @@ struct ClientTests {
       clientService: service
     )
     try Clerk.shared.seedIdentity(deviceToken: "old-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
-    Clerk.shared.internalStateChanges.addObserver(ThrowingInternalStateChangeObserver())
+    Clerk.shared.runtime.internalStateChanges.addObserver(ThrowingInternalStateChangeObserver())
 
     let client = try await Clerk.shared.updateDeviceToken(" new-token\n")
 
@@ -234,7 +234,7 @@ struct ClientTests {
     )
     try Clerk.shared.seedIdentity(deviceToken: "old-token", client: oldClient)
     let observer = CoherentIdentityRecordingObserver()
-    Clerk.shared.internalStateChanges.addObserver(observer)
+    Clerk.shared.runtime.internalStateChanges.addObserver(observer)
 
     _ = try await Clerk.shared.updateDeviceToken("new-token")
 

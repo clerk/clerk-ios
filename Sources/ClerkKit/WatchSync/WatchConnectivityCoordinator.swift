@@ -114,7 +114,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   private func refreshClient(for clerk: Clerk) {
     guard isActive, refreshTask == nil else { return }
-    refreshTask = clerk.scheduleManagedTask { [weak self, weak clerk] in
+    refreshTask = clerk.runtime.scheduleTask { [weak self, weak clerk] in
       do {
         try await clerk?.refreshClient()
       } catch is CancellationError {

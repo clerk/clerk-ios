@@ -730,8 +730,8 @@ struct HostedAuthFlowTests {
       initialClient: .mockSignedOut
     )
 
-    let runtimeState = Clerk.shared.runtimeState
-    defer { runtimeState.endReconfiguration() }
+    let runtimeState = Clerk.shared.runtime.state
+    defer { runtimeState.reinstate() }
 
     await #expect(throws: CancellationError.self) {
       try await Clerk.shared.auth.performHostedAuth(
@@ -739,7 +739,7 @@ struct HostedAuthFlowTests {
         redirectUrl: "myapp://callback",
         prefersEphemeralWebBrowserSession: false,
         webAuthentication: { _, _, _ in
-          runtimeState.beginReconfiguration()
+          runtimeState.retire()
           return try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
             state: #require(createParams.value?.state),
