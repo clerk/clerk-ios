@@ -3,6 +3,9 @@ import { join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { VerifyFailure, type HostAdapter, type NativeHostScreen, type ScratchPath } from './core/types.ts';
 import { localIosBackend } from './platform/ios/local.ts';
+import { githubRunnerBackend } from './platform/remote/github.ts';
+
+const SKILL_DIR = new URL('../', import.meta.url).pathname;
 
 const APP_ID = 'com.clerk.E2EHost';
 
@@ -52,5 +55,17 @@ export const host: HostAdapter<NativeHostScreen> = {
   },
   entry: () => ({ kind: 'binary' }),
   features: ['auth-start', 'sign-in-email-code', 'sign-up', 'user-button-and-profile', 'session-tasks', 'organizations'],
-  backends: [localIosBackend()],
+  backends: [
+    localIosBackend(),
+    githubRunnerBackend({
+      platform: 'ios',
+      repo: 'clerk/clerk-ios',
+      ref: 'mike/remote-sim-prototype',
+      workflow: 'remote-sim.yml',
+      sessionsDir: join(SKILL_DIR, '.verify', 'remote-sessions'),
+      runnerLabel: process.env.VERIFY_REMOTE_RUNNER ?? 'xcode-27',
+      app: process.env.VERIFY_REMOTE_APP === 'none' ? 'none' : 'build',
+      agentDeviceVersion: '0.21.18',
+    }),
+  ],
 };

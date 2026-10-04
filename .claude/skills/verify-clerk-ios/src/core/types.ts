@@ -74,7 +74,7 @@ export interface SecretLike {
 
 export type SecretSink = 'bapi-authorization' | 'launch-argument' | 'agent-device-daemon' | 'e2e-provider-lease';
 
-export type BackendKind = 'local' | 'eas';
+export type BackendKind = 'local' | 'eas' | 'remote';
 export type OptInTag = 'form-entry' | 'known-bug';
 export const FORM_ENTRY_TAG = 'form-entry' satisfies OptInTag;
 /** Marks a spec that reproduces an open SDK bug. Excluded unless `run --include known-bug`, because e2e has no expected-failure status. */
@@ -138,7 +138,7 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
-  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports';
+  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports' | 'gh-auth' | 'remote-workflow';
 
 export interface DoctorCheck {
   readonly id: DoctorCheckId;
@@ -277,7 +277,26 @@ export interface EasLease extends LeaseBase {
   readonly secretsFile: string;
   readonly expiresAt: string;
 }
-export type Lease = LocalLease | EasLease;
+/**
+ * A simulator or emulator on another machine, reached through an agent-device daemon behind an authenticated tunnel.
+ * The provider (a GitHub runner, EAS, a Mac mini) decides how the session starts and ends; the lease only records how to reach it.
+ */
+export interface RemoteLease extends LeaseBase {
+  readonly backend: 'remote';
+  readonly provider: 'github-actions';
+  readonly session: string;
+  /** The provider's handle for the session, here the GitHub Actions run id. */
+  readonly providerRef: string;
+  readonly baseUrl: string;
+  /** Holds the session bearer token, mode 0600. Never copied into a lease view or evidence. */
+  readonly tokenFile: string;
+  readonly deviceId: string;
+  readonly deviceName: string;
+  readonly expiresAt: string;
+  /** How the app got onto the device: the provider built and installed it, or the driver uploads it through the daemon. */
+  readonly app: 'provider-built' | 'driver-installs';
+}
+export type Lease = LocalLease | EasLease | RemoteLease;
 
 export interface SeededUser {
   readonly id: string;
@@ -289,6 +308,7 @@ export interface SeededUser {
 export type LedgerEntry =
   | { readonly id: string; readonly kind: 'lease-intent'; readonly platform: Platform; readonly backend: BackendKind; readonly worktree: string }
   | { readonly id: string; readonly kind: 'eas-session-created'; readonly sessionId: string }
+  | { readonly id: string; readonly kind: 'remote-session-created'; readonly provider: 'github-actions'; readonly providerRef: string }
   | { readonly id: string; readonly kind: 'lease-held'; readonly platform: Platform; readonly backend: BackendKind; readonly sessionId: string | null; readonly deviceId: string | null }
   | { readonly id: string; readonly kind: 'identity'; readonly run: RunId; readonly instance: InstanceName; readonly email: TestEmail }
   | { readonly id: string; readonly kind: 'user'; readonly run: RunId; readonly instance: InstanceName; readonly userId: string; readonly email: TestEmail }
@@ -458,10 +478,9 @@ export interface Recording {
   stop(): Promise<EvidencePath>;
 }
 
-export interface AgentDeviceTarget {
-  readonly daemon: 'local';
-  readonly deviceId: string;
-}
+export type AgentDeviceTarget =
+  | { readonly daemon: 'local'; readonly deviceId: string }
+  | { readonly daemon: 'remote'; readonly deviceId: string; readonly baseUrl: string; readonly tokenFile: string };
 
 export interface DeviceBackend<L extends Lease = Lease> {
   readonly kind: BackendKind;

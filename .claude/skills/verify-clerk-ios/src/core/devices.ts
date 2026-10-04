@@ -56,7 +56,7 @@ export function leaseView(backend: DeviceBackend, lease: Lease, renewed: boolean
     backend: lease.backend,
     device: backend.describe(lease),
     installedBuild: lease.installedBuild,
-    expiresAt: lease.backend === 'eas' ? lease.expiresAt : null,
+    expiresAt: lease.backend === 'local' ? null : lease.expiresAt,
     renewed,
   };
 }
@@ -91,8 +91,13 @@ export function readBuiltApp(workspace: Workspace, key: BuildKey): BuiltApp | nu
   return existsSync(app.path) ? app : null;
 }
 
-async function ensureBuild(host: HostAdapter, platform: Platform, workspace: Workspace, progress: (line: string) => void): Promise<{ app: BuiltApp; view: BuildView }> {
+async function ensureBuild(host: HostAdapter, platform: Platform, workspace: Workspace, backend: DeviceBackend, progress: (line: string) => void): Promise<{ app: BuiltApp; view: BuildView }> {
   const key = await computeBuildKey(host, platform, workspace.worktree);
+  if (backend.kind === 'remote') {
+    // Prototype: the remote provider builds the pushed ref itself, so the driver does not build. A dirty tree is not what the runner builds.
+    const app: BuiltApp = { platform, key, appId: host.appId(platform), path: 'provider-built' as ScratchPath, source: 'github-actions', sourceSha: null };
+    return { app, view: { platform, key, source: 'github-actions', reused: false, seconds: 0 } };
+  }
   const existing = readBuiltApp(workspace, key);
   if (existing !== null) return { app: existing, view: { platform, key, source: existing.source, reused: true, seconds: 0 } };
   const source = host.buildSources(platform, process.platform)[0];
@@ -139,7 +144,7 @@ export async function ensureLease(
   }
   await finishOrphanLedgers(workspace.home, resolve(workspace.worktree), options.clerk, options.progress);
 
-  const { app, view: build } = await ensureBuild(host, platform, workspace, options.progress);
+  const { app, view: build } = await ensureBuild(host, platform, workspace, backend, options.progress);
   options.progress(`build   ${build.key}  ${build.source}  ${build.reused ? 'reused' : `built in ${build.seconds}s`}`);
 
   let lease: Lease | null = held;
@@ -164,7 +169,7 @@ export async function ensureLease(
       kind: 'lease-held',
       platform,
       backend: backend.kind,
-      sessionId: acquired.backend === 'eas' ? acquired.sessionId : null,
+      sessionId: acquired.backend === 'eas' ? acquired.sessionId : acquired.backend === 'remote' ? acquired.providerRef : null,
       deviceId: acquired.backend === 'local' ? acquired.deviceId : null,
     });
     workspace.append({ id: newEntryId(), kind: 'done', ref: intent.id });

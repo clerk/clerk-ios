@@ -92,6 +92,10 @@ function parseLease(text: string, file: string): Lease {
     if (r.deviceName !== `verify-${r.platform}-${r.slot}`) throw bad();
     return { ...(r as object), installedBuild } as Lease;
   }
+  if (r.backend === 'remote') {
+    if (typeof r.session !== 'string' || typeof r.providerRef !== 'string' || typeof r.baseUrl !== 'string' || typeof r.tokenFile !== 'string' || typeof r.deviceId !== 'string') throw bad();
+    return { ...(r as object), installedBuild } as Lease;
+  }
   if (r.backend === 'eas') {
     if (typeof r.sessionId !== 'string' || typeof r.sessionUrl !== 'string') throw bad();
     return { ...(r as object), installedBuild } as Lease;

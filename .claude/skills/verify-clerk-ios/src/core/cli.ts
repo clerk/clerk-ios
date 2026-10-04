@@ -57,8 +57,8 @@ function platformFlag(value: string | undefined): Platform | undefined {
 
 function backendFlag(value: string | undefined): BackendKind | undefined {
   if (value === undefined) return undefined;
-  if (value === 'local' || value === 'eas') return value;
-  throw usage(`--backend must be local or eas, not ${value}`);
+  if (value === 'local' || value === 'eas' || value === 'remote') return value;
+  throw usage(`--backend must be local, eas, or remote, not ${value}`);
 }
 
 function positiveInt(flag: string, value: string | undefined, fallback: number | undefined): number {

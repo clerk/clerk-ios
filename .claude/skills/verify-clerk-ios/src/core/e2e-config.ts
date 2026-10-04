@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { E2EConfig } from 'e2e';
-import { mobile } from '@e2e-dev/mobile';
+import { mobile, type DeviceProvider } from '@e2e-dev/mobile';
 import { VerifyFailure, type Lease, type RunContext } from './types.ts';
 import { agentDeviceStateDir } from './workspace.ts';
 
@@ -35,6 +35,21 @@ export function composeE2EConfig(context: RunContext): E2EConfig {
   process.env.AGENT_DEVICE_STATE_DIR ??= agentDeviceStateDir(context.workspace);
   const targets = context.targets.map((target) => {
     const lease = JSON.parse(readFileSync(target.leaseFile, 'utf8')) as Lease;
+    if (lease.backend === 'remote') {
+      const token = readFileSync(lease.tokenFile, 'utf8');
+      const provider: DeviceProvider = {
+        name: `remote-${lease.provider}`,
+        async acquire() {
+          return { id: lease.session, deviceId: lease.deviceId, device: lease.deviceName, daemon: { baseUrl: `${lease.baseUrl}/agent-device`, authToken: token } };
+        },
+        async release() {},
+      };
+      return {
+        name: target.platform,
+        engine: mobile({ platform: target.platform, device: provider, session: context.agentDeviceSession, videoTouches: false }),
+        app: lease.app === 'provider-built' ? { bundleId: target.appId } : { bundleId: target.appId, appPath: target.appPath },
+      };
+    }
     if (lease.backend !== 'local') {
       throw new VerifyFailure('UNSUPPORTED', 'only local leases drive e2e for now', `run ${target.platform} on a local backend; the EAS backend is not built yet`);
     }
