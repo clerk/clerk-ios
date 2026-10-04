@@ -27,10 +27,6 @@ final class DependencyContainer: Dependencies {
   let transport: any APITransport
   let telemetryCollector: any TelemetryCollectorProtocol
 
-  // MARK: - Services
-
-  let billingService: BillingServiceProtocol
-
   // MARK: - Magic Link
 
   let magicLinkStore: MagicLinkStore
@@ -113,8 +109,6 @@ final class DependencyContainer: Dependencies {
       publishableKey: configurationManager.publishableKey,
       options: options
     )
-
-    billingService = BillingService(apiClient: apiClient)
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {

@@ -127,8 +127,7 @@ extension Clerk {
 
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
-      transport: previewBuilder.transport,
-      services: previewBuilder.services
+      transport: previewBuilder.transport
     )
 
     clerk.dependencies = container
@@ -151,13 +150,11 @@ extension Clerk {
   @MainActor
   private static func createMockDependencyContainer(
     apiClient: APIClient,
-    transport: FakeTransport,
-    services: MockServicesBuilder
+    transport: FakeTransport
   ) -> MockDependencyContainer {
     MockDependencyContainer(
       apiClient: apiClient,
-      transport: transport,
-      billingService: services.billingService
+      transport: transport
     )
   }
 }

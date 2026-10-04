@@ -223,7 +223,7 @@ public final class Clerk {
 
   /// Reads Plans, Subscriptions, statements, payment attempts, and credits.
   public var billing: Billing {
-    Billing(billingService: dependencies.billingService)
+    Billing(transport: dependencies.transport)
   }
 
   /// The main entry point for biometric credential operations.

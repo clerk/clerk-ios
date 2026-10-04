@@ -207,6 +207,29 @@ extension FakeTransport {
     transport.fallback(OrganizationAPI.acceptUserInvitation(invitationId: anyId), returning: ClientResponse(response: UserOrganizationInvitation.mock, client: nil))
     transport.fallback(OrganizationAPI.acceptSuggestion(suggestionId: anyId), returning: ClientResponse(response: OrganizationSuggestion.mock, client: nil))
 
+    transport.fallback(BillingAPI.getPlans(params: .init()), returning: ClerkPaginatedResponse(data: [BillingPlan.mock], totalCount: 1))
+    transport.fallback(BillingAPI.getPlan(params: .init(id: anyId)), returning: .mock)
+    // Billing payer endpoints are user-scoped without an orgId and organization-scoped with one.
+    for orgId in [nil, anyId] {
+      transport.fallback(BillingAPI.getPaymentAttempts(params: .init(orgId: orgId)), returning: ClerkPaginatedResponse(data: [BillingPayment.mock], totalCount: 1))
+      transport.fallback(BillingAPI.getPaymentAttempt(params: .init(id: anyId, orgId: orgId)), returning: .mock)
+      transport.fallback(BillingAPI.getSubscription(params: .init(orgId: orgId)), returning: ClientResponse(response: BillingSubscription.mock, client: nil))
+      transport.fallback(
+        BillingAPI.getStatements(params: .init(orgId: orgId)),
+        returning: ClientResponse(response: ClerkPaginatedResponse(data: [BillingStatement.mock], totalCount: 1), client: nil)
+      )
+      transport.fallback(BillingAPI.getStatement(params: .init(id: anyId, orgId: orgId)), returning: ClientResponse(response: BillingStatement.mock, client: nil))
+      transport.fallback(BillingAPI.getCreditBalance(params: .init(orgId: orgId)), returning: ClientResponse(response: BillingCreditBalance.mock, client: nil))
+      transport.fallback(
+        BillingAPI.getCreditHistory(params: .init(orgId: orgId)),
+        returning: ClientResponse(response: ClerkPaginatedResponse(data: [BillingCreditLedger.mock], totalCount: 1), client: nil)
+      )
+      transport.fallback(
+        BillingAPI.getPaymentMethods(params: .init(), orgId: orgId),
+        returning: ClientResponse(response: ClerkPaginatedResponse(data: [BillingPaymentMethod.mock], totalCount: 1), client: nil)
+      )
+    }
+
     return transport
   }
 }

@@ -20,8 +20,6 @@ final class MockDependencyContainer: Dependencies {
   let transport: any APITransport
   let telemetryCollector: any TelemetryCollectorProtocol
 
-  let billingService: BillingServiceProtocol
-
   let magicLinkStore: MagicLinkStore
   let sessionStatusLogger: SessionStatusLogger
 
@@ -36,8 +34,7 @@ final class MockDependencyContainer: Dependencies {
     identityIsInAccessGroup: Bool = false,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
-    telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
-    billingService: (any BillingServiceProtocol)? = nil
+    telemetryCollector: (any TelemetryCollectorProtocol)? = nil
   ) {
     networkingPipeline = NetworkingPipeline()
     let resolvedKeychain = keychain ?? InMemoryKeychain()
@@ -55,7 +52,5 @@ final class MockDependencyContainer: Dependencies {
     self.telemetryCollector = telemetryCollector ?? NoOpTelemetryCollector()
     magicLinkStore = MagicLinkStore(keychain: self.appLocalKeychain)
     sessionStatusLogger = SessionStatusLogger()
-
-    self.billingService = billingService ?? MockBillingService()
   }
 }

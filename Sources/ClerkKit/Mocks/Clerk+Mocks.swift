@@ -9,7 +9,5 @@ import Foundation
 
 @MainActor
 package final class MockServicesBuilder {
-  package var billingService: MockBillingService = .init()
-
   package init() {}
 }

@@ -205,13 +205,6 @@ public struct User: Codable, Equatable, Sendable, Identifiable {
 }
 
 extension User {
-  @MainActor
-  private var billingService: any BillingServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.billingService
-    }
-  }
-
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor
   public func reload() async throws -> User {
@@ -561,7 +554,7 @@ extension User {
   ///   - pageSize: The maximum number of payment methods to return per page. Defaults to `20`.
   @MainActor
   public func getPaymentMethods(page: Int = 1, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: nil)
+    try await Clerk.currentDependencies.transport.send(BillingAPI.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: nil)).value.response
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.

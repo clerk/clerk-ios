@@ -107,13 +107,6 @@ public struct Organization: Codable, Equatable, Hashable, Sendable, Identifiable
 }
 
 extension Organization {
-  @MainActor
-  private var billingService: any BillingServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.billingService
-    }
-  }
-
   /// Updates an organization's attributes. Returns an Organization object.
   ///
   /// - Parameters:
@@ -473,7 +466,7 @@ extension Organization {
   ///   - pageSize: The maximum number of payment methods to return per page. Defaults to `20`.
   @MainActor
   public func getPaymentMethods(page: Int = 1, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: id)
+    try await Clerk.currentDependencies.transport.send(BillingAPI.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: id)).value.response
   }
 }
 

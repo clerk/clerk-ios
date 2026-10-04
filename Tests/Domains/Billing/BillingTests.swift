@@ -18,10 +18,9 @@ struct BillingTests {
     // Omitted write APIs from clerk-js BillingNamespace / BillingPayerMethods:
     // startCheckout, updateCheckout, initializePaymentMethod, addPaymentMethod,
     // cancel, remove, makeDefault
-    let service = MockBillingService()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      billingService: service
+      transport: FakeTransport.mockDefaults()
     )
 
     _ = try await Clerk.shared.billing.getPaymentAttempts()
