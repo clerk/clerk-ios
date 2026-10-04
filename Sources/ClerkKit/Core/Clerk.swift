@@ -830,6 +830,13 @@ extension Clerk {
     ClerkRuntimeScope.current(clerkProvider: { self })
   }
 
+  @MainActor
+  static var currentDependencies: any Dependencies {
+    get throws {
+      try shared.runtimeScope.requireCurrentClerk().dependencies
+    }
+  }
+
   var nextConfigurationEpoch: ClerkConfigurationEpoch {
     configurationEpoch.next()
   }

@@ -26,10 +26,6 @@ protocol SessionServiceProtocol: Sendable {
 
   @MainActor func signOut(sessionId: String?) async throws
 
-  /// Sets the active session and optionally the active organization.
-  /// - Parameters:
-  ///   - sessionId: The session ID to set as active.
-  ///   - organizationId: Optional organization ID to set as active in the session. If nil, removes the active organization.
   @MainActor func setActive(sessionId: String, organizationId: String?) async throws
 
   @MainActor func fetchToken(
@@ -76,7 +72,7 @@ final class SessionService: SessionServiceProtocol {
     let request = Request<ClientResponse<Session>>(
       path: "/v1/me/sessions/\(sessionId)/revoke",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response

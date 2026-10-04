@@ -284,6 +284,107 @@ struct ClientTests {
       try await Clerk.shared.updateDeviceToken("   ")
     }
   }
+
+  @Test
+  func setDeviceTokenReplacesMatchingTokenKeepingTheClientWithoutRefreshing() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: "old-token", refreshed: refreshed)
+    let previousGeneration = clerk.clientResponseGeneration
+
+    let didSet = try await clerk.setDeviceToken(" new-token\n", expected: "old-token")
+
+    let stored = try #require(try clerk.dependencies.identityStore.load())
+    #expect(didSet)
+    #expect(clerk.deviceToken == "new-token")
+    #expect(stored.deviceToken == "new-token")
+    #expect(stored.client?.id == Client.mock.id)
+    #expect(clerk.client?.id == Client.mock.id)
+    #expect(clerk.clientResponseGeneration != previousGeneration)
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenLeavesTheTokenUnchangedWhenExpectedTokenIsStale() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: "current-token", refreshed: refreshed)
+    let previousGeneration = clerk.clientResponseGeneration
+
+    let didSet = try await clerk.setDeviceToken("new-token", expected: "stale-token")
+
+    #expect(didSet == false)
+    #expect(clerk.deviceToken == "current-token")
+    #expect(try clerk.dependencies.identityStore.load()?.deviceToken == "current-token")
+    #expect(clerk.client?.id == Client.mock.id)
+    #expect(clerk.clientResponseGeneration == previousGeneration)
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenWithNilExpectedOnlyStoresWhenNoTokenExists() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: nil, refreshed: refreshed)
+
+    #expect(try await clerk.setDeviceToken("first-token", expected: nil))
+    #expect(try await clerk.setDeviceToken("second-token", expected: nil) == false)
+
+    #expect(clerk.deviceToken == "first-token")
+    #expect(try clerk.dependencies.identityStore.deviceToken() == "first-token")
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenReportsSuccessWhenTheTokenAlreadyMatches() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: "token", refreshed: refreshed)
+    let previousGeneration = clerk.clientResponseGeneration
+
+    #expect(try await clerk.setDeviceToken("token", expected: "token"))
+    #expect(clerk.clientResponseGeneration == previousGeneration)
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenClearsTheTokenAndClient() async throws {
+    let refreshed = LockIsolated(false)
+    let clerk = try makeDeviceTokenClerk(storedToken: "old-token", refreshed: refreshed)
+
+    let didSet = try await clerk.setDeviceToken(nil, expected: "old-token")
+
+    #expect(didSet)
+    #expect(clerk.deviceToken == nil)
+    #expect(try clerk.dependencies.identityStore.deviceToken() == nil)
+    #expect(clerk.client == nil)
+    #expect(refreshed.value == false)
+  }
+
+  @Test
+  func setDeviceTokenRejectsBlankToken() async throws {
+    let clerk = try makeDeviceTokenClerk(storedToken: "old-token", refreshed: LockIsolated(false))
+
+    await #expect(throws: Clerk.DeviceTokenError.emptyToken) {
+      try await clerk.setDeviceToken("   ", expected: "old-token")
+    }
+    #expect(try clerk.dependencies.identityStore.deviceToken() == "old-token")
+  }
+
+  private func makeDeviceTokenClerk(
+    storedToken: String?,
+    refreshed: LockIsolated<Bool>
+  ) throws -> Clerk {
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: InMemoryKeychain(),
+      clientService: MockClientService(get: {
+        refreshed.setValue(true)
+        return nil
+      })
+    )
+    if let storedToken {
+      try clerk.seedIdentity(deviceToken: storedToken, client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
+    }
+    return clerk
+  }
 }
 
 @MainActor

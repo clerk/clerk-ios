@@ -97,7 +97,6 @@ final class FooterHostSafeAreaView: UIView {
       responder = current.next
     }
     guard var controller = responder as? UIViewController else { return nil }
-    // Stop at the presentation root so a sheet never inherits its presenter's insets.
     while let parent = controller.parent {
       controller = parent
     }

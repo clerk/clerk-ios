@@ -123,17 +123,17 @@ struct TaskCoordinatorTests {
   @Test
   func deinitCancelsAllTasks() async {
     await withMainSerialExecutor {
-      let taskCompleted = LockIsolated(false)
       let taskCancelled = LockIsolated(false)
+      weak var released: TaskCoordinator?
 
       do {
         let coordinator = TaskCoordinator()
+        released = coordinator
         let task = coordinator.task {
           while !Task.isCancelled {
             await Task.yield()
           }
           taskCancelled.setValue(true)
-          taskCompleted.setValue(true)
         }
 
         #expect(task.isCancelled == false)
@@ -146,7 +146,8 @@ struct TaskCoordinatorTests {
         await Task.yield()
       }
 
-      #expect(taskCancelled.value == true || taskCompleted.value == false)
+      #expect(released == nil)
+      #expect(taskCancelled.value)
     }
   }
 }

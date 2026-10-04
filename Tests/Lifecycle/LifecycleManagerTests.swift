@@ -112,6 +112,26 @@ struct LifecycleManagerTests {
     manager.stopObserving()
   }
 
+  @Test
+  func releasedManagerStopsObserving() async {
+    let center = NotificationCenter()
+    let handler = MockLifecycleHandler()
+    weak var released: LifecycleManager?
+
+    do {
+      let manager = LifecycleManager(handler: handler, notificationCenter: center)
+      released = manager
+      manager.startObserving()
+    }
+
+    #expect(released == nil)
+
+    postLifecycleNotifications(center)
+    await settle()
+    #expect(handler.foregroundCallCount.value == 0)
+    #expect(handler.backgroundCallCount.value == 0)
+  }
+
   private func postLifecycleNotifications(_ center: NotificationCenter) {
     center.post(name: LifecycleManager.willEnterForegroundNotification, object: nil)
     center.post(name: LifecycleManager.didEnterBackgroundNotification, object: nil)

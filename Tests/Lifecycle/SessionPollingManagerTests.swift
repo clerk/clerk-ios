@@ -64,6 +64,23 @@ struct SessionPollingManagerTests {
   }
 
   @Test
+  func releasedManagerStopsPolling() throws {
+    let provider = MockSessionProvider()
+    weak var released: SessionPollingManager?
+    let pollingTask: Task<Void, Error>
+
+    do {
+      let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
+      released = manager
+      manager.startPolling()
+      pollingTask = try #require(manager.pollingTask)
+    }
+
+    #expect(released == nil)
+    #expect(pollingTask.isCancelled)
+  }
+
+  @Test
   func startPollingMultipleTimes() throws {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)

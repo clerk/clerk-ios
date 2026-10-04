@@ -96,7 +96,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
     let prepared = await preparePayload(event: raw.event, payload: raw.payload)
     let recordResult = await shouldRecord(prepared, eventSamplingRate: raw.eventSamplingRate)
 
-    // Log exactly once in debug: either as normal or as [skipped] with reason
     if recordResult.shouldRecord {
       await logEventIfDebug(name: prepared.event, prepared)
     } else {
@@ -183,8 +182,6 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
         await flush()
       }
     }
-    // Note: Only flush when buffer is full, not on every event
-    // This allows proper batching of events
   }
 
   package func flush() async {

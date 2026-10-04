@@ -25,7 +25,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     let request = Request<ClientResponse<Passkey>>(
       path: "/v1/me/passkeys",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
@@ -36,7 +36,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     let request = Request<ClientResponse<Passkey>>(
       path: "/v1/me/passkeys/\(passkeyId)",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: ["name": name]
     )
 
@@ -48,7 +48,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     let request = Request<ClientResponse<Passkey>>(
       path: "/v1/me/passkeys/\(passkeyId)/attempt_verification",
       method: .post,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: [
         "strategy": "passkey",
         "public_key_credential": credential,
@@ -63,7 +63,7 @@ final class PasskeyService: PasskeyServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/passkeys/\(passkeyId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response

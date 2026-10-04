@@ -54,6 +54,7 @@ extension ClerkIdentitySnapshot {
 struct ClerkIdentityRequestSnapshot {
   let deviceToken: String?
   let clientID: String?
+  let activeSessionID: String?
   let clientResponseGeneration: ClientResponseGeneration
   let authFlowRegistrationId: UUID?
 }

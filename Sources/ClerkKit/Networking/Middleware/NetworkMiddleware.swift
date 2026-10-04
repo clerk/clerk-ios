@@ -183,6 +183,7 @@ extension URLRequest {
   private static let clerkAuthFlowRegistrationIdKey = "com.clerk.auth-flow-registration-id"
   private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
   private static let clerkBodyLoggingKey = "com.clerk.body-logging"
+  private static let clerkActiveSessionScopeKey = "com.clerk.active-session-scope"
 
   var clerkRequestCheckpoint: ClerkRequestCheckpoint {
     ClerkRequestCheckpoint(request: self)
@@ -235,6 +236,10 @@ extension URLRequest {
 
   var shouldLogClerkBodies: Bool {
     URLProtocol.property(forKey: Self.clerkBodyLoggingKey, in: self) as? Bool ?? true
+  }
+
+  var isScopedToClerkActiveSession: Bool {
+    URLProtocol.property(forKey: Self.clerkActiveSessionScopeKey, in: self) as? Bool ?? false
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -327,5 +332,9 @@ extension URLRequest {
 
   mutating func disableClerkBodyLogging() {
     setClerkProperty(NSNumber(value: false), key: Self.clerkBodyLoggingKey)
+  }
+
+  mutating func scopeToClerkActiveSession() {
+    setClerkProperty(NSNumber(value: true), key: Self.clerkActiveSessionScopeKey)
   }
 }

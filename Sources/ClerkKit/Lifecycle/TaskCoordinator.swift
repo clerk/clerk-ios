@@ -8,9 +8,6 @@
 import Foundation
 
 /// Manages and coordinates tasks for cleanup and cancellation.
-///
-/// This class provides a centralized way to track and cancel tasks.
-/// Call `cancelAll()` before releasing the coordinator to ensure proper cleanup.
 @MainActor
 final class TaskCoordinator {
   private var tasks: Set<Task<Void, Never>> = []
@@ -20,9 +17,9 @@ final class TaskCoordinator {
   func track(_ task: Task<Void, Never>) {
     tasks.insert(task)
 
-    Task {
+    Task { [weak self] in
       await task.value
-      tasks.remove(task)
+      self?.tasks.remove(task)
     }
   }
 
@@ -54,6 +51,12 @@ final class TaskCoordinator {
 
     for task in trackedTasks {
       await task.value
+    }
+  }
+
+  deinit {
+    for task in tasks {
+      task.cancel()
     }
   }
 }

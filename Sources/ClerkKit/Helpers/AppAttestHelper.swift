@@ -12,12 +12,16 @@ enum AppAttestHelper {
 
   @MainActor
   private static var apiClient: APIClient {
-    Clerk.shared.dependencies.apiClient
+    get throws {
+      try Clerk.currentDependencies.apiClient
+    }
   }
 
   @MainActor
   private static var keychain: any KeychainStorage {
-    Clerk.shared.dependencies.appLocalKeychain
+    get throws {
+      try Clerk.currentDependencies.appLocalKeychain
+    }
   }
 
   enum AttestationError: Error {

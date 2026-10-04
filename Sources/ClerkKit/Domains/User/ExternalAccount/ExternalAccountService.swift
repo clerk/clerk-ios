@@ -39,7 +39,7 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
     let request = Request<ClientResponse<ExternalAccount>>(
       path: "/v1/me/external_accounts/\(externalAccountId)/reauthorize",
       method: .patch,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)],
+      scopedToActiveSession: true,
       body: bodyParams
     )
 
@@ -51,7 +51,7 @@ final class ExternalAccountService: ExternalAccountServiceProtocol {
     let request = Request<ClientResponse<DeletedObject>>(
       path: "/v1/me/external_accounts/\(externalAccountId)",
       method: .delete,
-      query: [("_clerk_session_id", value: Clerk.shared.session?.id)]
+      scopedToActiveSession: true
     )
 
     return try await apiClient.send(request).value.response
