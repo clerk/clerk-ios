@@ -391,7 +391,6 @@ struct AuthTests {
       magicLinkStore: MagicLinkStore(keychain: InMemoryKeychain()),
       transport: transport,
       biometricCredentials: BiometricCredentials(
-        biometricCredentialService: MockBiometricCredentialService(),
         transport: transport,
         keyManager: keyManager,
         credentialStore: credentialStore,

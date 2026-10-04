@@ -77,6 +77,21 @@ extension FakeTransport {
     transport.fallback(PasskeyAPI.attemptVerification(passkeyId: anyId, credential: ""), returning: ClientResponse(response: Passkey.mock, client: nil))
     transport.fallback(PasskeyAPI.delete(passkeyId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
 
+    transport.fallback(BiometricCredentialAPI.list(), returning: ClientResponse(response: [BiometricCredential.mock], client: nil))
+    transport.fallback(
+      BiometricCredentialAPI.prepareEnrollment(sessionId: "", params: .init(appIdentifier: "", publicKeyJWK: "")),
+      returning: ClientResponse(response: BiometricCredentialChallenge.mock, client: nil)
+    )
+    transport.fallback(
+      BiometricCredentialAPI.attemptEnrollment(sessionId: "", params: .init(appIdentifier: "", publicKeyJWK: "", clientData: "", signature: "")),
+      returning: ClientResponse(response: BiometricCredential.mock, client: nil)
+    )
+    transport.fallback(
+      BiometricCredentialAPI.validateSignInCredential(biometricCredentialId: ""),
+      returning: ClientResponse(response: BiometricCredentialValidation(valid: true), client: nil)
+    )
+    transport.fallback(BiometricCredentialAPI.revoke(biometricCredentialId: anyId, sessionId: nil), returning: ClientResponse(response: BiometricCredential.mock, client: nil))
+
     return transport
   }
 }

@@ -30,7 +30,6 @@ final class DependencyContainer: Dependencies {
   // MARK: - Services
 
   let userService: UserServiceProtocol
-  let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
   let phoneNumberService: PhoneNumberServiceProtocol
@@ -120,7 +119,6 @@ final class DependencyContainer: Dependencies {
     )
 
     userService = UserService(apiClient: apiClient)
-    biometricCredentialService = BiometricCredentialService(apiClient: apiClient)
     organizationService = OrganizationService(apiClient: apiClient)
     billingService = BillingService(apiClient: apiClient)
     phoneNumberService = PhoneNumberService(apiClient: apiClient)

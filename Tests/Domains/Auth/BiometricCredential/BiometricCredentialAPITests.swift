@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct BiometricCredentialServiceTests {
+struct BiometricCredentialAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -29,7 +29,7 @@ struct BiometricCredentialServiceTests {
     }
     mock.register()
 
-    let biometricCredentials = try await Clerk.shared.dependencies.biometricCredentialService.list()
+    let biometricCredentials = try await Clerk.shared.dependencies.transport.send(BiometricCredentialAPI.list()).value.response
 
     #expect(requestHandled.value)
     #expect(biometricCredentials == [.mock])
@@ -60,14 +60,14 @@ struct BiometricCredentialServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.biometricCredentialService.prepareEnrollment(
+    _ = try await Clerk.shared.dependencies.transport.send(BiometricCredentialAPI.prepareEnrollment(
       sessionId: sessionId,
       params: .init(
         appIdentifier: "com.clerk.example",
         name: "Sean's iPhone",
         publicKeyJWK: "{\"kty\":\"EC\"}"
       )
-    )
+    ))
 
     #expect(requestHandled.value)
   }
@@ -99,7 +99,7 @@ struct BiometricCredentialServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.biometricCredentialService.attemptEnrollment(
+    _ = try await Clerk.shared.dependencies.transport.send(BiometricCredentialAPI.attemptEnrollment(
       sessionId: sessionId,
       params: .init(
         appIdentifier: "com.clerk.example",
@@ -108,7 +108,7 @@ struct BiometricCredentialServiceTests {
         clientData: "{\"challenge_id\":\"tdch_123\"}",
         signature: "mock_signature"
       )
-    )
+    ))
 
     #expect(requestHandled.value)
   }
@@ -137,9 +137,9 @@ struct BiometricCredentialServiceTests {
     }
     mock.register()
 
-    let validation = try await Clerk.shared.dependencies.biometricCredentialService.validateSignInCredential(
+    let validation = try await Clerk.shared.dependencies.transport.send(BiometricCredentialAPI.validateSignInCredential(
       biometricCredentialId: "tdc_123"
-    )
+    )).value.response
 
     #expect(requestHandled.value)
     #expect(validation == .init(valid: true))
@@ -166,10 +166,10 @@ struct BiometricCredentialServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.biometricCredentialService.revoke(
+    _ = try await Clerk.shared.dependencies.transport.send(BiometricCredentialAPI.revoke(
       biometricCredentialId: biometricCredential.id,
       sessionId: sessionId
-    )
+    ))
 
     #expect(requestHandled.value)
   }

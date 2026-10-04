@@ -8,14 +8,12 @@ import Foundation
 /// The main entry point for biometric credential operations.
 @MainActor
 public struct BiometricCredentials {
-  private let biometricCredentialService: BiometricCredentialServiceProtocol
   private let transport: any APITransport
   private let keyManager: any BiometricCredentialKeyManagerProtocol
   private let credentialStore: any BiometricCredentialLocalStoreProtocol
   private let appIdentifierProvider: @MainActor @Sendable () -> String?
 
   init(
-    biometricCredentialService: BiometricCredentialServiceProtocol,
     transport: any APITransport,
     keyManager: any BiometricCredentialKeyManagerProtocol,
     credentialStore: any BiometricCredentialLocalStoreProtocol,
@@ -23,7 +21,6 @@ public struct BiometricCredentials {
       Bundle.main.bundleIdentifier
     }
   ) {
-    self.biometricCredentialService = biometricCredentialService
     self.transport = transport
     self.keyManager = keyManager
     self.credentialStore = credentialStore
@@ -32,7 +29,7 @@ public struct BiometricCredentials {
 
   /// Lists active biometric credentials for the signed-in user.
   public func list() async throws -> [BiometricCredential] {
-    try await biometricCredentialService.list()
+    try await transport.send(BiometricCredentialAPI.list()).value.response
   }
 
   /// Returns local biometric sign-in availability.
@@ -123,20 +120,20 @@ public struct BiometricCredentials {
 
     let localKey = try keyManager.createKey(policy: policy)
     do {
-      let challenge = try await biometricCredentialService.prepareEnrollment(
+      let challenge = try await transport.send(BiometricCredentialAPI.prepareEnrollment(
         sessionId: session.id,
         params: .init(
           appIdentifier: appIdentifier,
           name: name,
           publicKeyJWK: localKey.publicKeyJWK
         )
-      )
+      )).value.response
       let signature = try await keyManager.sign(
         clientData: challenge.clientData,
         localKeyId: localKey.localKeyId,
         localizedReason: reason ?? "Use biometrics to enroll this device."
       )
-      let biometricCredential = try await biometricCredentialService.attemptEnrollment(
+      let biometricCredential = try await transport.send(BiometricCredentialAPI.attemptEnrollment(
         sessionId: session.id,
         params: .init(
           appIdentifier: appIdentifier,
@@ -145,7 +142,7 @@ public struct BiometricCredentials {
           clientData: signature.clientData,
           signature: signature.signature
         )
-      )
+      )).value.response
       try await saveLocalCredential(
         biometricCredential: biometricCredential,
         localKey: localKey,
@@ -167,10 +164,10 @@ public struct BiometricCredentials {
   /// and metadata. A local cleanup failure does not affect the returned revoked credential.
   @discardableResult
   public func revoke(id: String) async throws -> BiometricCredential {
-    let biometricCredential = try await biometricCredentialService.revoke(
+    let biometricCredential = try await transport.send(BiometricCredentialAPI.revoke(
       biometricCredentialId: id,
       sessionId: Clerk.shared.session?.id
-    )
+    )).value.response
     do {
       if let localCredential = try credentialStore.credential(id: id) {
         try deleteLocalCredential(localCredential)
@@ -345,7 +342,7 @@ extension BiometricCredentials {
 
     for localCredential in localCredentials {
       do {
-        let validation = try await biometricCredentialService.validateSignInCredential(biometricCredentialId: localCredential.id)
+        let validation = try await transport.send(BiometricCredentialAPI.validateSignInCredential(biometricCredentialId: localCredential.id)).value.response
         guard validation.valid else {
           try? deleteLocalCredential(localCredential)
           firstUnavailableReason = firstUnavailableReason ?? .serverCredentialMissing
@@ -430,7 +427,7 @@ extension BiometricCredentials {
         if let biometricCredentials {
           activeUserBiometricCredentials = biometricCredentials
         } else {
-          let fetchedBiometricCredentials = try await biometricCredentialService.list()
+          let fetchedBiometricCredentials = try await transport.send(BiometricCredentialAPI.list()).value.response
           biometricCredentials = fetchedBiometricCredentials
           activeUserBiometricCredentials = fetchedBiometricCredentials
         }
@@ -565,10 +562,10 @@ extension BiometricCredentials {
         }
       )
     } catch {
-      _ = try? await biometricCredentialService.revoke(
+      _ = try? await transport.send(BiometricCredentialAPI.revoke(
         biometricCredentialId: biometricCredential.id,
         sessionId: sessionId
-      )
+      ))
       throw error
     }
   }

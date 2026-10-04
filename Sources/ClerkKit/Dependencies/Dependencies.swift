@@ -29,8 +29,6 @@ protocol Dependencies: AnyObject {
 
   var userService: UserServiceProtocol { get }
 
-  var biometricCredentialService: BiometricCredentialServiceProtocol { get }
-
   var organizationService: OrganizationServiceProtocol { get }
 
   var billingService: BillingServiceProtocol { get }
