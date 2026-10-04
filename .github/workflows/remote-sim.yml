@@ -275,10 +275,14 @@ jobs:
         timeout-minutes: 15
         run: |
           set -euo pipefail
+          # cmdline-tools 16 writes AVDs under ~/.config/.android/avd while the emulator reads ~/.android/avd; pin one place for both.
+          export ANDROID_AVD_HOME="$HOME/.android/avd"
+          mkdir -p "$ANDROID_AVD_HOME"
           echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n remote_sim -k "system-images;android-35;google_apis;x86_64" -d pixel_7 --force
+          "$ANDROID_HOME/emulator/emulator" -list-avds | grep -qx remote_sim || { echo "::error::remote_sim was not created"; ls -la "$ANDROID_AVD_HOME"; exit 1; }
           nohup "$ANDROID_HOME/emulator/emulator" -avd remote_sim -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -port 5554 > remote-sim-emulator.log 2>&1 &
           disown
-          adb wait-for-device
+          timeout 300 adb wait-for-device || { echo "::error::no emulator appeared on adb"; tail -40 remote-sim-emulator.log; exit 1; }
           for _ in $(seq 1 120); do
             [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
             sleep 3
