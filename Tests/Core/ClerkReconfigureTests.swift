@@ -410,6 +410,7 @@ struct ClerkReconfigureTests {
     original.performConfiguration(dependencies: previousDependencies)
     try original.seedIdentity(deviceToken: "source-token", client: .mock)
     original.environment = .mock
+    original.sessionsByUserId = [User.mock.id: [.mock]]
     defer { original.cleanupManagers() }
 
     let targetService = "com.clerk.tests.partial-clear.\(UUID().uuidString)"
@@ -432,6 +433,7 @@ struct ClerkReconfigureTests {
     #expect(try previousDependencies.identityStore.deviceToken() == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
+    #expect(Clerk.shared.sessionsByUserId.isEmpty)
     #expect(Clerk.shared.environment == .mock)
   }
 

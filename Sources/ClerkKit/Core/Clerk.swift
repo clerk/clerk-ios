@@ -411,6 +411,7 @@ extension Clerk {
           existing.identityController.invalidateAllSessionTokens()
           existing.identityController.fenceClientResponses()
           existing.identityController.resetRuntimeIdentity()
+          existing.sessionsByUserId = [:]
         }
         outgoing.start()
         throw error
