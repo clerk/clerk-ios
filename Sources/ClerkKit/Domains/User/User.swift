@@ -353,6 +353,11 @@ extension User {
   public func createPasskey() async throws -> Passkey {
     let passkey = try await Clerk.currentDependencies.transport.send(PasskeyAPI.create()).value.response
 
+    // Previews can't present platform passkey registration.
+    if EnvironmentDetection.isRunningInPreviews {
+      return passkey
+    }
+
     guard let challenge = passkey.challenge else {
       throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
     }

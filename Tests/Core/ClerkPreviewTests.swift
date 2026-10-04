@@ -49,6 +49,21 @@ struct ClerkPreviewTests {
     #expect(transport.calls.count == 1)
   }
 
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @Test
+  func passkeyCreationReturnsThePreviewPasskeyWithoutPlatformRegistration() async throws {
+    let clerk = makePreview { _ in }
+    let user = try #require(clerk.user)
+
+    let environmentKey = "XCODE_RUNNING_FOR_PREVIEWS"
+    setenv(environmentKey, "1", 1)
+    defer { unsetenv(environmentKey) }
+    let passkey = try await user.createPasskey()
+
+    #expect(passkey.id == Passkey.mock.id)
+  }
+  #endif
+
   private func makePreview(_ configure: @escaping (PreviewBuilder) -> Void) -> Clerk {
     let environmentKey = "XCODE_RUNNING_FOR_PREVIEWS"
     let previousValue = ProcessInfo.processInfo.environment[environmentKey]
