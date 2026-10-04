@@ -72,6 +72,11 @@ extension FakeTransport {
     transport.fallback(SignUpAPI.update(signUpId: anyId, params: .init()), returning: ClientResponse(response: SignUp.mock, client: nil))
     transport.fallback(SignUpAPI.get(signUpId: anyId, params: .init()), returning: ClientResponse(response: SignUp.mock, client: nil))
 
+    transport.fallback(PasskeyAPI.create(), returning: ClientResponse(response: Passkey.mock, client: nil))
+    transport.fallback(PasskeyAPI.update(passkeyId: anyId, name: ""), returning: ClientResponse(response: Passkey.mock, client: nil))
+    transport.fallback(PasskeyAPI.attemptVerification(passkeyId: anyId, credential: ""), returning: ClientResponse(response: Passkey.mock, client: nil))
+    transport.fallback(PasskeyAPI.delete(passkeyId: anyId), returning: ClientResponse(response: DeletedObject.mock, client: nil))
+
     return transport
   }
 }

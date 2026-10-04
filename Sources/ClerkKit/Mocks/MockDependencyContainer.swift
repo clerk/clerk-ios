@@ -21,7 +21,6 @@ final class MockDependencyContainer: Dependencies {
   let telemetryCollector: any TelemetryCollectorProtocol
 
   let userService: UserServiceProtocol
-  let passkeyService: PasskeyServiceProtocol
   let biometricCredentialService: BiometricCredentialServiceProtocol
   let organizationService: OrganizationServiceProtocol
   let billingService: BillingServiceProtocol
@@ -44,7 +43,6 @@ final class MockDependencyContainer: Dependencies {
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil,
     userService: (any UserServiceProtocol)? = nil,
-    passkeyService: (any PasskeyServiceProtocol)? = nil,
     biometricCredentialService: (any BiometricCredentialServiceProtocol)? = nil,
     organizationService: (any OrganizationServiceProtocol)? = nil,
     billingService: (any BillingServiceProtocol)? = nil,
@@ -69,7 +67,6 @@ final class MockDependencyContainer: Dependencies {
     sessionStatusLogger = SessionStatusLogger()
 
     self.userService = userService ?? MockUserService()
-    self.passkeyService = passkeyService ?? MockPasskeyService()
     self.biometricCredentialService = biometricCredentialService ?? MockBiometricCredentialService()
     self.organizationService = organizationService ?? MockOrganizationService()
     self.billingService = billingService ?? MockBillingService()

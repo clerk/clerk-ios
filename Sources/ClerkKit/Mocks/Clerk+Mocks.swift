@@ -11,8 +11,6 @@ import Foundation
 package final class MockServicesBuilder {
   package var userService: MockUserService = .init()
 
-  package var passkeyService: MockPasskeyService = .init()
-
   package var organizationService: MockOrganizationService = .init()
 
   package var billingService: MockBillingService = .init()

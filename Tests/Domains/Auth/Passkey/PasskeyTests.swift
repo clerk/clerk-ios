@@ -6,63 +6,65 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct PasskeyTests {
+  private let transport = FakeTransport.mockDefaults()
+
   init() {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockPasskeyService) {
+  private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      passkeyService: service
+      transport: transport
     )
   }
 
   @Test
-  func updateUsesPasskeyServiceUpdate() async throws {
+  func updateSendsPasskeyIdAndName() async throws {
     let passkey = Passkey.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockPasskeyService(update: { passkeyId, name in
-      captured.setValue((passkeyId, name))
-      return .mock
-    })
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stub(PasskeyAPI.update(passkeyId: FakeTransport.anyPathSegment, name: "")) { call in
+      captured.setValue((String(call.path.split(separator: "/")[3]), call.body))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await passkey.update(name: "New Name")
 
     let params = try #require(captured.value)
     #expect(params.0 == passkey.id)
-    #expect(params.1 == "New Name")
+    #expect(params.1?["name"]?.stringValue == "New Name")
   }
 
   @Test
-  func attemptVerificationUsesPasskeyServiceAttemptVerification() async throws {
+  func attemptVerificationSendsPasskeyIdAndCredential() async throws {
     let passkey = Passkey.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockPasskeyService(attemptVerification: { passkeyId, credential in
-      captured.setValue((passkeyId, credential))
-      return .mock
-    })
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stub(PasskeyAPI.attemptVerification(passkeyId: FakeTransport.anyPathSegment, credential: "")) { call in
+      captured.setValue((String(call.path.split(separator: "/")[3]), call.body))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await passkey.attemptVerification(credential: "mock_credential")
 
     let params = try #require(captured.value)
     #expect(params.0 == passkey.id)
-    #expect(params.1 == "mock_credential")
+    #expect(params.1?["public_key_credential"]?.stringValue == "mock_credential")
   }
 
   @Test
-  func deleteUsesPasskeyServiceDelete() async throws {
+  func deleteSendsPasskeyId() async throws {
     let passkey = Passkey.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPasskeyService(delete: { passkeyId in
-      captured.setValue(passkeyId)
-      return .mock
-    })
+    transport.stub(PasskeyAPI.delete(passkeyId: FakeTransport.anyPathSegment)) { call in
+      captured.setValue(String(call.path.split(separator: "/")[3]))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await passkey.delete()
 

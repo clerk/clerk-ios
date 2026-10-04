@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct PasskeyServiceTests {
+struct PasskeyAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -29,7 +29,7 @@ struct PasskeyServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.passkeyService.create()
+    _ = try await Clerk.shared.dependencies.transport.send(PasskeyAPI.create())
     #expect(requestHandled.value)
   }
 
@@ -53,7 +53,7 @@ struct PasskeyServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.passkeyService.update(passkeyId: passkey.id, name: "New Name")
+    _ = try await Clerk.shared.dependencies.transport.send(PasskeyAPI.update(passkeyId: passkey.id, name: "New Name"))
     #expect(requestHandled.value)
   }
 
@@ -78,10 +78,10 @@ struct PasskeyServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.passkeyService.attemptVerification(
+    _ = try await Clerk.shared.dependencies.transport.send(PasskeyAPI.attemptVerification(
       passkeyId: passkey.id,
       credential: "mock_credential"
-    )
+    ))
     #expect(requestHandled.value)
   }
 
@@ -104,7 +104,7 @@ struct PasskeyServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.passkeyService.delete(passkeyId: passkey.id)
+    _ = try await Clerk.shared.dependencies.transport.send(PasskeyAPI.delete(passkeyId: passkey.id))
     #expect(requestHandled.value)
   }
 }

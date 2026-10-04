@@ -44,15 +44,6 @@ final class UserService: UserServiceProtocol {
     }
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS)
-  @MainActor
-  private var passkeyService: any PasskeyServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.passkeyService
-    }
-  }
-  #endif
-
   init(apiClient: APIClient) {
     self.apiClient = apiClient
   }
@@ -163,7 +154,7 @@ final class UserService: UserServiceProtocol {
   #if canImport(AuthenticationServices) && !os(watchOS)
   @MainActor
   func createPasskey() async throws -> Passkey {
-    let passkey = try await passkeyService.create()
+    let passkey = try await Clerk.currentDependencies.transport.send(PasskeyAPI.create()).value.response
 
     guard let challenge = passkey.challenge else {
       throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)

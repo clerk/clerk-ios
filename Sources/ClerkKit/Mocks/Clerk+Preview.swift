@@ -164,7 +164,6 @@ extension Clerk {
       apiClient: apiClient,
       transport: transport,
       userService: services.userService,
-      passkeyService: services.passkeyService,
       organizationService: services.organizationService,
       billingService: services.billingService,
       phoneNumberService: services.phoneNumberService,
