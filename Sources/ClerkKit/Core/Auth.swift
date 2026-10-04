@@ -15,7 +15,7 @@ import Foundation
 @MainActor
 public struct Auth {
   private let magicLinkStore: MagicLinkStore
-  private let magicLinkService: MagicLinkServiceProtocol
+  private let transport: any APITransport
   let hostedAuthService: HostedAuthServiceProtocol
   private let signInService: SignInServiceProtocol
   private let signUpService: SignUpServiceProtocol
@@ -26,7 +26,7 @@ public struct Auth {
 
   init(
     magicLinkStore: MagicLinkStore,
-    magicLinkService: MagicLinkServiceProtocol,
+    transport: any APITransport,
     hostedAuthService: HostedAuthServiceProtocol,
     signInService: SignInServiceProtocol,
     signUpService: SignUpServiceProtocol,
@@ -36,7 +36,7 @@ public struct Auth {
     urlHandlingCoordinator: URLHandlingCoordinator
   ) {
     self.magicLinkStore = magicLinkStore
-    self.magicLinkService = magicLinkService
+    self.transport = transport
     self.hostedAuthService = hostedAuthService
     self.signInService = signInService
     self.signUpService = signUpService
@@ -771,7 +771,7 @@ extension Auth {
 
       let completionResult: MagicLinkCompleteResult
       do {
-        completionResult = try await magicLinkService.complete(params: params)
+        completionResult = try await transport.send(MagicLinkAPI.complete(params: params)).value.response
       } catch {
         if MagicLinkTerminalError.contains(error) {
           magicLinkStore.clear(flow: pendingFlow)

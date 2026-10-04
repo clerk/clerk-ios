@@ -37,8 +37,6 @@ protocol Dependencies: AnyObject {
 
   var sessionService: SessionServiceProtocol { get }
 
-  var magicLinkService: MagicLinkServiceProtocol { get }
-
   var passkeyService: PasskeyServiceProtocol { get }
 
   var biometricCredentialService: BiometricCredentialServiceProtocol { get }

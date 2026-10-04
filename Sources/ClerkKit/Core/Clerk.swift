@@ -203,7 +203,7 @@ public final class Clerk {
   public var auth: Auth {
     Auth(
       magicLinkStore: dependencies.magicLinkStore,
-      magicLinkService: dependencies.magicLinkService,
+      transport: dependencies.transport,
       hostedAuthService: dependencies.hostedAuthService,
       signInService: dependencies.signInService,
       signUpService: dependencies.signUpService,

@@ -6,7 +6,7 @@ import Testing
 
 @MainActor
 @Suite(.serialized)
-struct MagicLinkServiceTests {
+struct MagicLinkAPITests {
   init() {
     configureClerkForTesting()
   }
@@ -36,13 +36,13 @@ struct MagicLinkServiceTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.magicLinkService.complete(
+    _ = try await Clerk.shared.dependencies.transport.send(MagicLinkAPI.complete(
       params: MagicLinkCompleteParams(
         flowId: "flow_123",
         approvalToken: "approval_123",
         codeVerifier: "verifier_123"
       )
-    )
+    ))
 
     #expect(requestHandled.value)
   }
