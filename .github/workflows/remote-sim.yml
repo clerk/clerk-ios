@@ -1,0 +1,404 @@
+# Prototype: a remote simulator session on a GitHub-hosted runner, driven over a tunnel.
+# Lives only on branch mike/remote-sim-prototype. Dispatch only. Never merge.
+name: remote-sim
+run-name: remote-sim ${{ inputs.session }} ${{ inputs.platform }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      session:
+        description: Session id chosen by the driver (correlates the run with the driver)
+        required: true
+      driver_public_key:
+        description: base64 of the driver's RSA public key (SPKI PEM). The runner encrypts the session token to it.
+        required: true
+      platform:
+        description: ios or android
+        default: ios
+      minutes:
+        description: Longest the session stays up
+        default: "45"
+      runner:
+        description: Runner label for ios (xcode-27 or macos-26)
+        default: xcode-27
+      device:
+        description: Simulator device name (ios)
+        default: iPhone Air
+      agent_device_version:
+        description: agent-device version to run on the runner. Must match the driver's @e2e-dev/mobile pin.
+        default: "0.21.18"
+      app:
+        description: build (compile the host app on the runner and install it) or none (the driver installs it over the tunnel)
+        default: build
+
+permissions:
+  contents: read
+
+concurrency:
+  group: remote-sim-${{ inputs.session }}
+  cancel-in-progress: true
+
+env:
+  AGENT_PORT: "4310"
+  GATE_PORT: "3199"
+  # The daemon and the XCTest runner reap themselves after 5 idle minutes by default, and the device lease
+  # taken by open expires after 5 minutes without commands. The session is single tenant and dies with the VM.
+  AGENT_DEVICE_DAEMON_IDLE_TIMEOUT_MS: "0"
+  AGENT_DEVICE_IOS_RUNNER_IDLE_STOP_MS: "0"
+  AGENT_DEVICE_LEASE_TTL_MS: "21600000"
+  AGENT_DEVICE_LEASE_MAX_TTL_MS: "21600000"
+
+jobs:
+  ios:
+    if: inputs.platform == 'ios'
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Boot simulator
+        id: sim
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available -j | node -e '
+            const list = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
+            const want = process.argv[1];
+            const all = Object.entries(list).filter(([rt]) => rt.includes("iOS")).sort(([a], [b]) => b.localeCompare(a)).flatMap(([, d]) => d);
+            const pick = all.find((d) => d.name === want) ?? all.find((d) => d.name.startsWith("iPhone"));
+            if (!pick) process.exit(1);
+            process.stdout.write(pick.udid);
+          ' "${{ inputs.device }}")
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl list devices | grep -F "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          echo "xcode=$(xcodebuild -version | head -1 | tr ' ' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Install agent-device
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          npm install -g "agent-device@${{ inputs.agent_device_version }}"
+          agent-device --version
+
+      - name: Cache the agent-device XCTest runner
+        uses: actions/cache@v4
+        with:
+          path: ~/.agent-device/apple-runner/derived
+          key: agent-device-runner-${{ runner.os }}-${{ inputs.agent_device_version }}-${{ steps.sim.outputs.xcode }}
+
+      - name: Start proxy, agent, and tunnel
+        id: tunnel
+        timeout-minutes: 10
+        env:
+          DRIVER_PUBLIC_KEY_B64: ${{ inputs.driver_public_key }}
+        run: |
+          set -euo pipefail
+          mkdir -p remote-sim-work
+          TOKEN=$(openssl rand -hex 32)
+          echo "::add-mask::$TOKEN"
+          umask 077
+          printf '%s' "$TOKEN" > remote-sim-work/token
+          umask 022
+
+          nohup agent-device proxy --host 127.0.0.1 --port "$AGENT_PORT" --daemon-auth-token "$TOKEN" > remote-sim-work/agent-device-proxy.log 2>&1 &
+          disown
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null "http://127.0.0.1:$AGENT_PORT/health" && break
+            sleep 1
+          done
+          curl -fsS "http://127.0.0.1:$AGENT_PORT/health" | sed "s/$TOKEN/<token>/g"
+
+          REMOTE_SIM_TOKEN="$TOKEN" REMOTE_SIM_PORT="$GATE_PORT" REMOTE_SIM_AGENT_PORT="$AGENT_PORT" \
+          REMOTE_SIM_PLATFORM=ios REMOTE_SIM_DEVICE_ID="${{ steps.sim.outputs.udid }}" REMOTE_SIM_WORK="$PWD/remote-sim-work" \
+            nohup node .github/remote-sim/agent.cjs > remote-sim-work/agent.log 2>&1 &
+          disown
+          for _ in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$GATE_PORT/__sim/health" || true)
+            [ "$code" = "403" ] && break
+            sleep 1
+          done
+          curl -fsS -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:$GATE_PORT/__sim/health"
+
+          curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors -o cloudflared.tgz \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz
+          tar -xzf cloudflared.tgz && chmod +x cloudflared
+          nohup ./cloudflared tunnel --no-autoupdate --url "http://127.0.0.1:$GATE_PORT" --logfile remote-sim-work/cloudflared.log > /dev/null 2>&1 &
+          disown
+          TUNNEL=""
+          for _ in $(seq 1 60); do
+            TUNNEL=$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' remote-sim-work/cloudflared.log 2>/dev/null | head -1 || true)
+            [ -n "$TUNNEL" ] && break
+            sleep 2
+          done
+          [ -n "$TUNNEL" ] || { echo "cloudflared never reported a URL"; tail -50 remote-sim-work/cloudflared.log; exit 1; }
+          echo "tunnel=$TUNNEL" >> "$GITHUB_OUTPUT"
+
+          TOKEN="$TOKEN" node -e '
+            const crypto = require("crypto");
+            const key = Buffer.from(process.env.DRIVER_PUBLIC_KEY_B64, "base64").toString("utf8");
+            const sealed = crypto.publicEncrypt({ key, padding: crypto.constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" }, Buffer.from(process.env.TOKEN));
+            const session = {
+              session: process.argv[1], platform: "ios", tunnel: process.argv[2], deviceId: process.argv[3], device: process.argv[4],
+              agentDeviceVersion: process.argv[5], app: process.argv[6], tokenCiphertext: sealed.toString("base64"), publishedAt: new Date().toISOString(),
+            };
+            require("fs").writeFileSync("remote-sim-work/session.json", JSON.stringify(session, null, 2));
+          ' "${{ inputs.session }}" "$TUNNEL" "${{ steps.sim.outputs.udid }}" "${{ inputs.device }}" "${{ inputs.agent_device_version }}" "${{ inputs.app }}"
+          echo "::notice title=remote-sim::$TUNNEL (bearer token encrypted to the driver in the session artifact)"
+
+      - name: Publish the session
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-${{ inputs.session }}
+          path: remote-sim-work/session.json
+          retention-days: 1
+
+      - name: Build E2EHost
+        if: inputs.app == 'build'
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          xcodebuild build -quiet -workspace Clerk.xcworkspace -scheme E2EHost -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath remote-sim-work/derived CODE_SIGNING_ALLOWED=NO
+          ls -d remote-sim-work/derived/Build/Products/Debug-iphonesimulator/E2EHost.app
+          tar -C remote-sim-work/derived/Build/Products/Debug-iphonesimulator -czf remote-sim-work/E2EHost.app.tar.gz E2EHost.app
+
+      - name: Install E2EHost
+        if: inputs.app == 'build'
+        timeout-minutes: 5
+        run: xcrun simctl install "${{ steps.sim.outputs.udid }}" remote-sim-work/derived/Build/Products/Debug-iphonesimulator/E2EHost.app
+
+      - name: Upload the built app
+        if: inputs.app == 'build'
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-${{ inputs.session }}
+          path: remote-sim-work/E2EHost.app.tar.gz
+          retention-days: 1
+
+      - name: Prepare the XCTest runner
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          agent-device prepare ios-runner --platform ios --timeout 900000 || {
+            echo "::warning::prepare ios-runner failed; the first snapshot pays for it"
+            tail -40 remote-sim-work/agent-device-proxy.log | sed "s/$(cat remote-sim-work/token)/<token>/g"
+          }
+
+      - name: Publish ready
+        run: |
+          node -e '
+            require("fs").writeFileSync("remote-sim-work/ready.json", JSON.stringify({ session: process.argv[1], readyAt: new Date().toISOString() }));
+          ' "${{ inputs.session }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ready-${{ inputs.session }}
+          path: remote-sim-work/ready.json
+          retention-days: 1
+
+      - name: Hold the session
+        run: |
+          set -uo pipefail
+          MINUTES=${{ inputs.minutes }}
+          END=$(( $(date +%s) + MINUTES * 60 ))
+          TOKEN=$(cat remote-sim-work/token)
+          LAST_RESTART=0
+          echo "Holding until $(date -r "$END") or until the driver posts /__sim/stop"
+          while [ "$(date +%s)" -lt "$END" ]; do
+            [ -f remote-sim-work/stop ] && { echo "driver ended the session at $(cat remote-sim-work/stop)"; break; }
+            if ! curl -fsS -m 10 "http://127.0.0.1:$AGENT_PORT/health" 2>/dev/null | grep -q '"ok":true'; then
+              NOW=$(date +%s)
+              if [ $(( NOW - LAST_RESTART )) -ge 60 ]; then
+                echo "::warning::agent-device daemon unhealthy; restarting it"
+                LAST_RESTART=$NOW
+                pkill -f 'agent-device proxy' 2>/dev/null || true
+                agent-device daemon stop --clean >/dev/null 2>&1 || true
+                nohup agent-device proxy --host 127.0.0.1 --port "$AGENT_PORT" --daemon-auth-token "$TOKEN" >> remote-sim-work/agent-device-proxy.log 2>&1 &
+                disown
+              fi
+            fi
+            sleep 5
+          done
+          echo "session over"
+
+      - name: Collect runner logs
+        if: always()
+        run: |
+          set -uo pipefail
+          mkdir -p remote-sim-evidence
+          TOKEN=$(cat remote-sim-work/token 2>/dev/null || echo __none__)
+          for f in agent-device-proxy.log agent.log cloudflared.log; do
+            [ -f "remote-sim-work/$f" ] && sed "s/$TOKEN/<token>/g" "remote-sim-work/$f" > "remote-sim-evidence/$f"
+          done
+          xcrun simctl shutdown "${{ steps.sim.outputs.udid }}" || true
+          ls -la remote-sim-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ inputs.session }}
+          path: remote-sim-evidence/
+          retention-days: 3
+
+  android:
+    if: inputs.platform == 'android'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: zulu
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools emulator "system-images;android-35;google_apis;x86_64" "platforms;android-35"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -la /dev/kvm
+
+      - name: Boot emulator
+        id: emu
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          echo no | "$ANDROID_HOME/cmdline-tools/latest/bin/avdmanager" create avd -n remote_sim -k "system-images;android-35;google_apis;x86_64" -d pixel_7 --force
+          nohup "$ANDROID_HOME/emulator/emulator" -avd remote_sim -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -port 5554 > remote-sim-emulator.log 2>&1 &
+          disown
+          adb wait-for-device
+          for _ in $(seq 1 120); do
+            [ "$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = "1" ] && break
+            sleep 3
+          done
+          adb -s emulator-5554 shell getprop sys.boot_completed | grep -q 1
+          adb devices
+          echo "serial=emulator-5554" >> "$GITHUB_OUTPUT"
+
+      - name: Install agent-device
+        run: |
+          set -euo pipefail
+          npm install -g "agent-device@${{ inputs.agent_device_version }}"
+          agent-device --version
+
+      - name: Start proxy, agent, and tunnel
+        id: tunnel
+        timeout-minutes: 10
+        env:
+          DRIVER_PUBLIC_KEY_B64: ${{ inputs.driver_public_key }}
+        run: |
+          set -euo pipefail
+          mkdir -p remote-sim-work
+          TOKEN=$(openssl rand -hex 32)
+          echo "::add-mask::$TOKEN"
+          umask 077
+          printf '%s' "$TOKEN" > remote-sim-work/token
+          umask 022
+          nohup agent-device proxy --host 127.0.0.1 --port "$AGENT_PORT" --daemon-auth-token "$TOKEN" > remote-sim-work/agent-device-proxy.log 2>&1 &
+          disown
+          for _ in $(seq 1 60); do
+            curl -fsS -o /dev/null "http://127.0.0.1:$AGENT_PORT/health" && break
+            sleep 1
+          done
+          curl -fsS "http://127.0.0.1:$AGENT_PORT/health" | sed "s/$TOKEN/<token>/g"
+          REMOTE_SIM_TOKEN="$TOKEN" REMOTE_SIM_PORT="$GATE_PORT" REMOTE_SIM_AGENT_PORT="$AGENT_PORT" \
+          REMOTE_SIM_PLATFORM=android REMOTE_SIM_DEVICE_ID="${{ steps.emu.outputs.serial }}" REMOTE_SIM_WORK="$PWD/remote-sim-work" \
+            nohup node .github/remote-sim/agent.cjs > remote-sim-work/agent.log 2>&1 &
+          disown
+          sleep 2
+          curl -fsS -H "Authorization: Bearer $TOKEN" "http://127.0.0.1:$GATE_PORT/__sim/health"
+          curl -fsSL --retry 3 -o cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
+          nohup ./cloudflared tunnel --no-autoupdate --url "http://127.0.0.1:$GATE_PORT" --logfile remote-sim-work/cloudflared.log > /dev/null 2>&1 &
+          disown
+          TUNNEL=""
+          for _ in $(seq 1 60); do
+            TUNNEL=$(grep -Eo 'https://[a-z0-9-]+\.trycloudflare\.com' remote-sim-work/cloudflared.log 2>/dev/null | head -1 || true)
+            [ -n "$TUNNEL" ] && break
+            sleep 2
+          done
+          [ -n "$TUNNEL" ] || { echo "cloudflared never reported a URL"; tail -50 remote-sim-work/cloudflared.log; exit 1; }
+          TOKEN="$TOKEN" node -e '
+            const crypto = require("crypto");
+            const key = Buffer.from(process.env.DRIVER_PUBLIC_KEY_B64, "base64").toString("utf8");
+            const sealed = crypto.publicEncrypt({ key, padding: crypto.constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha256" }, Buffer.from(process.env.TOKEN));
+            const session = {
+              session: process.argv[1], platform: "android", tunnel: process.argv[2], deviceId: process.argv[3], device: "remote_sim (pixel_7, android-35)",
+              agentDeviceVersion: process.argv[4], app: process.argv[5], tokenCiphertext: sealed.toString("base64"), publishedAt: new Date().toISOString(),
+            };
+            require("fs").writeFileSync("remote-sim-work/session.json", JSON.stringify(session, null, 2));
+          ' "${{ inputs.session }}" "$TUNNEL" "${{ steps.emu.outputs.serial }}" "${{ inputs.agent_device_version }}" "${{ inputs.app }}"
+          echo "::notice title=remote-sim::$TUNNEL"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: session-${{ inputs.session }}
+          path: remote-sim-work/session.json
+          retention-days: 1
+
+      - name: Check out clerk-android
+        if: inputs.app == 'build'
+        uses: actions/checkout@v4
+        with:
+          repository: clerk/clerk-android
+          path: clerk-android
+      - uses: gradle/actions/setup-gradle@v4
+        if: inputs.app == 'build'
+      - name: Build the e2e host
+        if: inputs.app == 'build'
+        timeout-minutes: 40
+        working-directory: clerk-android
+        run: |
+          set -euo pipefail
+          ./gradlew :e2e:assembleDebug --console=plain --quiet
+          ls -la e2e/build/outputs/apk/debug/e2e-debug.apk
+      - name: Install the e2e host
+        if: inputs.app == 'build'
+        run: adb -s "${{ steps.emu.outputs.serial }}" install -r -t clerk-android/e2e/build/outputs/apk/debug/e2e-debug.apk
+
+      - name: Publish ready
+        run: |
+          node -e 'require("fs").writeFileSync("remote-sim-work/ready.json", JSON.stringify({ session: process.argv[1], readyAt: new Date().toISOString() }));' "${{ inputs.session }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ready-${{ inputs.session }}
+          path: remote-sim-work/ready.json
+          retention-days: 1
+
+      - name: Hold the session
+        run: |
+          set -uo pipefail
+          MINUTES=${{ inputs.minutes }}
+          END=$(( $(date +%s) + MINUTES * 60 ))
+          while [ "$(date +%s)" -lt "$END" ]; do
+            [ -f remote-sim-work/stop ] && { echo "driver ended the session at $(cat remote-sim-work/stop)"; break; }
+            sleep 5
+          done
+          echo "session over"
+
+      - name: Collect runner logs
+        if: always()
+        run: |
+          set -uo pipefail
+          mkdir -p remote-sim-evidence
+          TOKEN=$(cat remote-sim-work/token 2>/dev/null || echo __none__)
+          for f in agent-device-proxy.log agent.log cloudflared.log; do
+            [ -f "remote-sim-work/$f" ] && sed "s/$TOKEN/<token>/g" "remote-sim-work/$f" > "remote-sim-evidence/$f"
+          done
+          cp remote-sim-emulator.log remote-sim-evidence/ 2>/dev/null || true
+          ls -la remote-sim-evidence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evidence-${{ inputs.session }}
+          path: remote-sim-evidence/
+          retention-days: 3
