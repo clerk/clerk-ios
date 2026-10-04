@@ -397,6 +397,41 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared.environment == .mock)
   }
 
+  @Test(arguments: [ClerkKeychainKey.cachedClient, .cachedEnvironment])
+  func failedReconfigureAfterDeletingDeviceTokenSignsOutInMemory(failingKey: ClerkKeychainKey) async throws {
+    let original = Clerk.shared
+    let previousDependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: ThrowingDeleteKeychain(failingKey: failingKey),
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    )
+    try original.performConfiguration(dependencies: previousDependencies)
+    try original.seedIdentity(deviceToken: "source-token", client: .mock)
+    original.environment = .mock
+    defer { original.cleanupManagers() }
+
+    let targetService = "com.clerk.tests.partial-clear.\(UUID().uuidString)"
+    let targetKeychain = SystemKeychain(service: targetService)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? targetKeychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    do {
+      _ = try await Clerk.reconfigure(
+        publishableKey: publishableKey(for: "partial-clear.clerk.example.com"),
+        options: Clerk.Options(keychainConfig: .init(service: targetService))
+      )
+      Issue.record("Expected reconfigure to throw when a keychain item cannot be deleted")
+    } catch {}
+
+    #expect(Clerk.shared.dependencies === previousDependencies)
+    #expect(try previousDependencies.identityStore.deviceToken() == nil)
+    #expect(Clerk.shared.client == nil)
+    #expect(Clerk.shared.environment == .mock)
+  }
+
   @Test
   func keychainClearStartedDuringReconfigurationWaitsForInstalledRuntime() async throws {
     let clerk = Clerk.shared
@@ -933,6 +968,11 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
 
   private let lock = NSLock()
   private var storage: [String: Data] = [:]
+  private let failingKey: ClerkKeychainKey?
+
+  init(failingKey: ClerkKeychainKey? = nil) {
+    self.failingKey = failingKey
+  }
 
   func set(_ data: Data, forKey key: String) throws {
     lock.lock()
@@ -946,8 +986,13 @@ private final class ThrowingDeleteKeychain: KeychainStorage, @unchecked Sendable
     return storage[key]
   }
 
-  func deleteItem(forKey _: String) throws {
-    throw DeleteError.failed
+  func deleteItem(forKey key: String) throws {
+    guard let failingKey, failingKey.rawValue != key else {
+      throw DeleteError.failed
+    }
+    lock.lock()
+    defer { lock.unlock() }
+    storage[key] = nil
   }
 
   func hasItem(forKey key: String) throws -> Bool {

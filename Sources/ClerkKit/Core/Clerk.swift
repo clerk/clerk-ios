@@ -404,6 +404,12 @@ extension Clerk {
         try clearLocalClerkStorageStrictly(in: outgoing.dependencies)
         try clearLocalClerkStorageStrictly(in: next.dependencies)
       } catch {
+        // A partial clear can delete the stored device token, so sign out in memory to match it.
+        if existing.identityController.currentDeviceToken != nil,
+           case .success(nil) = Result(catching: { try outgoing.dependencies.identityStore.deviceToken() })
+        {
+          try? existing.identityController.clearIdentity()
+        }
         outgoing.start()
         throw error
       }
