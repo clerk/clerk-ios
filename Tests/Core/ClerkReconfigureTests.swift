@@ -368,7 +368,7 @@ struct ClerkReconfigureTests {
     )
     original.performConfiguration(dependencies: previousDependencies)
     let previousRuntime = original.runtime
-    original.client = .mock
+    try original.seedIdentity(deviceToken: "source-token", client: .mock)
     original.environment = .mock
     defer { original.cleanupManagers() }
 
@@ -393,6 +393,8 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared.runtime === previousRuntime)
     #expect(previousRuntime.isCurrent)
     #expect(dependenciesUnchanged)
+    #expect(try previousDependencies.identityStore.deviceToken() == "source-token")
+    #expect(Clerk.shared.identityController.currentDeviceToken == "source-token")
     #expect(Clerk.shared.client?.id == Client.mock.id)
     #expect(Clerk.shared.environment == .mock)
   }
@@ -405,7 +407,7 @@ struct ClerkReconfigureTests {
       keychain: ThrowingDeleteKeychain(failingKey: failingKey),
       telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
-    try original.performConfiguration(dependencies: previousDependencies)
+    original.performConfiguration(dependencies: previousDependencies)
     try original.seedIdentity(deviceToken: "source-token", client: .mock)
     original.environment = .mock
     defer { original.cleanupManagers() }
@@ -428,6 +430,7 @@ struct ClerkReconfigureTests {
 
     #expect(Clerk.shared.dependencies === previousDependencies)
     #expect(try previousDependencies.identityStore.deviceToken() == nil)
+    #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
     #expect(Clerk.shared.environment == .mock)
   }

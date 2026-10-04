@@ -408,7 +408,9 @@ extension Clerk {
         if existing.identityController.currentDeviceToken != nil,
            case .success(nil) = Result(catching: { try outgoing.dependencies.identityStore.deviceToken() })
         {
-          try? existing.identityController.clearIdentity()
+          existing.identityController.invalidateAllSessionTokens()
+          existing.identityController.fenceClientResponses()
+          existing.identityController.resetRuntimeIdentity()
         }
         outgoing.start()
         throw error
