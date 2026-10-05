@@ -43,6 +43,8 @@ public final class PreviewBuilder {
 
   package var services: MockServicesBuilder = .init()
 
+  package var transport = FakeTransport.previewDefaults()
+
   /// Creates a new preview builder.
   public init() {}
 }
@@ -126,9 +128,16 @@ extension Clerk {
     if previewBuilder.services.environmentService.getHandler == nil {
       previewBuilder.services.environmentService.getHandler = { mockEnvironment }
     }
+    if previewBuilder.services.userService.createEmailAddressHandler == nil {
+      let transport = previewBuilder.transport
+      previewBuilder.services.userService.createEmailAddressHandler = { emailAddress in
+        try await transport.send(EmailAddressAPI.create(email: emailAddress)).value.response
+      }
+    }
 
     let container = createMockDependencyContainer(
       apiClient: mockAPIClient,
+      transport: previewBuilder.transport,
       services: previewBuilder.services
     )
 
@@ -152,10 +161,12 @@ extension Clerk {
   @MainActor
   private static func createMockDependencyContainer(
     apiClient: APIClient,
+    transport: FakeTransport,
     services: MockServicesBuilder
   ) -> MockDependencyContainer {
     MockDependencyContainer(
       apiClient: apiClient,
+      transport: transport,
       clientService: services.clientService,
       userService: services.userService,
       signInService: services.signInService,
@@ -165,7 +176,6 @@ extension Clerk {
       organizationService: services.organizationService,
       billingService: services.billingService,
       environmentService: services.environmentService,
-      emailAddressService: services.emailAddressService,
       phoneNumberService: services.phoneNumberService,
       externalAccountService: services.externalAccountService
     )

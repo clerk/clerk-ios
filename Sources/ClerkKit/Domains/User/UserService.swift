@@ -36,12 +36,6 @@ protocol UserServiceProtocol: Sendable {
 // swiftlint:disable:next type_body_length
 final class UserService: UserServiceProtocol {
   private let apiClient: APIClient
-  @MainActor
-  private var emailAddressService: any EmailAddressServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.emailAddressService
-    }
-  }
 
   @MainActor
   private var phoneNumberService: any PhoneNumberServiceProtocol {
@@ -111,7 +105,9 @@ final class UserService: UserServiceProtocol {
 
   @MainActor
   func createEmailAddress(emailAddress: String) async throws -> EmailAddress {
-    try await emailAddressService.create(email: emailAddress)
+    let transport = try Clerk.currentDependencies.transport
+    let request = EmailAddressAPI.create(email: emailAddress)
+    return try await transport.send(request).value.response
   }
 
   @MainActor
