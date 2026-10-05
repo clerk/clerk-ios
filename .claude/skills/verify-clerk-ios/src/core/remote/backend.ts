@@ -49,7 +49,7 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
       const health = await sessionHealth(lease);
       if (health === null) {
         const state = await viewRun(await github(), lease.providerRef);
-        if (state.status === 'completed') throw new VerifyFailure('LEASE_LOST', `the session ended (${state.conclusion ?? 'no conclusion'}) while it was building`, '{cli} up');
+        if (state.status === 'completed') throw new VerifyFailure('LEASE_LOST', `the session ended (${state.conclusion ?? 'no conclusion'}) while it was building`, `read ${runUrl(lease.providerRef)} for why, then {cli} up`);
       } else {
         if (health.build.state === 'failed' && health.build.sha === sha) {
           throw new VerifyFailure('BUILD_FAILED', `the session could not build ${sha.slice(0, 12)}:\n${health.build.tail}`, 'fix the build error above, commit, push, then rerun {cli} up');
@@ -99,16 +99,20 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
       const tokenFile = saveToken(settings, order.session, token);
       request.progress(`device  remote ${platform}  starting session ${order.session} on ${order.runner} (idle stop ${order.idleMinutes} min, cap ${order.capMinutes} min)`);
       let runId: string | null = null;
+      let session: SessionRef | null = null;
       try {
         const started = await startRun(hub, order, { ref, worktree: request.worktree, runner: deps.runner });
         runId = started.runId;
         request.progress(`device  remote ${platform}  run ${runId} by ${started.trigger}${started.dispatchRefused === null ? '' : ` (dispatch refused: ${started.dispatchRefused})`}  ${runUrl(runId)}`);
-        let queued = false;
-        const host = await waitForStep(hub, runId, STEP.tunnelPattern, 20 * 60, (state) => {
-          if (!queued) request.progress(`wait    run ${runId} is ${state.status}; waiting for a ${order.runner} runner and its tunnel`);
-          queued = true;
+        let waitingFor = '';
+        const host = await waitForStep(hub, runId, STEP.tunnelPattern, 20 * 60, (_state, jobs) => {
+          // The plan job runs on a free GitHub-hosted runner, whose queue is not the session label's queue.
+          const session = jobs.find((job) => job.name === 'session');
+          const now = session === undefined ? 'the free GitHub-hosted job that reads the request' : session.status === 'queued' ? `a ${order.runner} runner` : `the tunnel on ${order.runner}`;
+          if (now !== waitingFor) request.progress(`wait    run ${runId} is waiting for ${now}`);
+          waitingFor = now;
         });
-        const session: SessionRef = { baseUrl: tunnelUrl(host), tokenFile };
+        session = { baseUrl: tunnelUrl(host), tokenFile };
         const health = await firstHealth(session, 180);
         if (health === null || health.device === null) throw new VerifyFailure('NOT_READY', `the session's tunnel at ${host} did not answer with a device`, `read ${runUrl(runId)}`);
         assertSameCore(health);
@@ -130,7 +134,8 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
           installedBuild: null,
         };
       } catch (error) {
-        const ended = runId === null ? null : await endSession(hub, runId, null).catch((failure: Error) => ({ problem: failure.message }));
+        // With the tunnel known, the session is asked to stop first: a driver that may not cancel a run can still do that.
+        const ended = runId === null ? null : await endSession(hub, runId, session).catch((failure: Error) => ({ problem: failure.message }));
         forgetSession(settings, order.session);
         if (runId === null || ended === null || ended.problem === null) throw error;
         throw new VerifyFailure('NOT_READY', `${(error as Error).message}; and the run it started could not be ended: ${ended.problem}`, `open ${runUrl(runId)} and cancel it`);

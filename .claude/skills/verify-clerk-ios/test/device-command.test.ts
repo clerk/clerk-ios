@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, it } from 'node:test';
@@ -7,6 +7,7 @@ import { deviceCommand } from '../src/core/device-command.ts';
 import { run } from '../src/core/exec.ts';
 import { coreVersion } from '../src/core/manifest.ts';
 import { remoteBackend } from '../src/core/remote/backend.ts';
+import type { GitHub } from '../src/core/remote/github.ts';
 import { deviceToolCommand, type SessionHealth } from '../src/core/remote/protocol.ts';
 import { VerifyFailure, type LocalLease, type RemoteLease } from '../src/core/types.ts';
 
@@ -36,7 +37,9 @@ describe('the device tool', () => {
   it('is adb on the device for shell and reverse, and nothing else', () => {
     assert.deepEqual(deviceToolCommand('android', 'emulator-5560', ['shell', 'am force-stop com.x']), { command: 'adb', args: ['-s', 'emulator-5560', 'shell', 'am force-stop com.x'] });
     assert.deepEqual(deviceToolCommand('android', 'emulator-5560', ['reverse', 'tcp:8081', 'tcp:8081'], '/sdk/adb')?.command, '/sdk/adb');
-    for (const args of [['pull', '/sdcard/x', '/etc/x'], ['push', '/etc/passwd', '/sdcard/x'], ['emu', 'kill'], ['-s', 'other', 'shell'], []]) assert.equal(deviceToolCommand('android', 'emulator-5560', args), null, args.join(' '));
+    for (const args of [['reverse', '--list'], ['reverse', '--remove', 'tcp:8081'], ['reverse', '--no-rebind', 'tcp:8081', 'tcp:8081']]) assert.notEqual(deviceToolCommand('android', 'emulator-5560', args), null, args.join(' '));
+    const refused = [['pull', '/sdcard/x', '/etc/x'], ['push', '/etc/passwd', '/sdcard/x'], ['emu', 'kill'], ['-s', 'other', 'shell'], [], ['reverse', 'tcp:9000', 'localfilesystem:/var/run/docker.sock'], ['reverse', 'tcp:9000', 'localabstract:x'], ['reverse', '--unknown']];
+    for (const args of refused) assert.equal(deviceToolCommand('android', 'emulator-5560', args), null, args.join(' '));
     assert.equal(deviceToolCommand('ios', 'UDID', ['shell', 'id']), null);
   });
 });
@@ -95,5 +98,43 @@ describe('a session started from another core', () => {
       tunnel(() => ({ status: 200, body: health(core) }));
       await assert.rejects(backend().check(remoteLease('android')), (error: VerifyFailure) => error.code === 'NOT_READY' && error.message.includes(coreVersion()) && error.fix === 'commit and push the changes under src/core, then {cli} down and {cli} up');
     }
+  });
+});
+
+describe('acquiring a session whose agent has another core', () => {
+  it('asks that session to stop through its tunnel and keeps no lease or token', async () => {
+    const sessionsDir = mkdtempSync(join(tmpdir(), 'verify-acquire-'));
+    const tunnelCalls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      tunnelCalls.push(`${init?.method ?? 'GET'} ${url.host}${url.pathname}`);
+      const body = url.pathname === '/__sim/stop' ? { ok: true } : { ok: true, v: 1, session: 's', core: '0123456789ab', platform: 'android', runner: 'linux', device: { id: 'emulator-5560', name: 'Pixel', ready: false }, daemon: false, build: { state: 'none' }, recording: false, silentSeconds: 0, idleSeconds: 900, capAt: '', ending: null };
+      return new Response(JSON.stringify(body), { status: 200 });
+    }) as typeof fetch;
+    const hubCalls: string[] = [];
+    const hub: GitHub = {
+      repo: 'clerk/clerk-android',
+      workflow: 'verify-remote.yml',
+      tokenSource: 'none',
+      async api(method, path) {
+        hubCalls.push(`${method} ${path}`);
+        if (path.endsWith('/dispatches')) return { status: 200, json: { workflow_run_id: 9 }, headers: new Headers() };
+        if (path.includes('/jobs')) return { status: 200, json: { jobs: [{ name: 'session', status: 'in_progress', conclusion: null, steps: [{ name: 'verify-remote tunnel quick-fox.trycloudflare.com', status: 'completed', conclusion: 'success' }] }] }, headers: new Headers() };
+        const stopped = tunnelCalls.some((call) => call.endsWith('/__sim/stop'));
+        return { status: 200, json: { status: stopped ? 'completed' : 'in_progress', conclusion: stopped ? 'success' : null, html_url: 'https://github.com/x' }, headers: new Headers() };
+      },
+    };
+    const backend = remoteBackend(
+      { platform: 'android', repo: 'clerk/clerk-android', workflow: 'verify-remote.yml', sessionsDir, runner: 'linux', plumbingRunner: 'ubuntu-latest', device: 'Pixel', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' },
+      { env: {}, runner: async () => ({ code: 0, stdout: 'my-branch\n', stderr: '' }), github: async () => hub },
+    );
+    const progress: string[] = [];
+    await assert.rejects(
+      backend.acquire({ platform: 'android', worktree: '/w', waitSeconds: 0, app: { sourceSha: 'f'.repeat(40) } as never, retryWith: '', progress: (line) => progress.push(line) }),
+      (error: VerifyFailure) => error.code === 'NOT_READY' && error.message.includes('0123456789ab') && error.fix.includes('{cli} down and {cli} up'),
+    );
+    assert.deepEqual(tunnelCalls, ['GET quick-fox.trycloudflare.com/__sim/health', 'POST quick-fox.trycloudflare.com/__sim/stop']);
+    assert.equal(hubCalls.some((call) => call.endsWith('/cancel')), false, 'a session that stops when asked is not cancelled');
+    assert.deepEqual(readdirSync(sessionsDir), ['owner'], 'the token of the session that was ended is gone');
   });
 });

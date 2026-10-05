@@ -87,3 +87,14 @@ describe('down', () => {
     assert.deepEqual(again.released, []);
   });
 });
+
+describe('down --stale', () => {
+  it('asks a backend this machine can no longer use, because a claim made before that still has to be finished', async () => {
+    const { deps } = setup();
+    const orphan: LocalLease = { backend: 'local', platform: 'ios', slot: 1, deviceName: 'verify-ios-1', deviceId: 'UDID-1', claimNonce: 'claim-1', acquiredAt: '', installedBuild: null };
+    const unusable = { ...deps.host.backends[0]!, availability: () => ({ usable: false, why: 'the SDK was removed' }), reapable: async () => [orphan] } as DeviceBackend;
+    const result = await down({ ...deps, host: { ...deps.host, backends: [unusable] } }, { verb: 'down', stale: true, dryRun: true });
+    assert.ok(result.dryRun);
+    assert.deepEqual(result.wouldRelease.map((l) => l.device), ['verify-ios-2', 'verify-ios-1']);
+  });
+});

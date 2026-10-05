@@ -230,8 +230,9 @@ describe('session agent', () => {
     const result = (await ran.json()) as { code: number; stdout: string };
     assert.equal(result.code, 0);
     assert.deepEqual(JSON.parse(result.stdout), { args: ['-s', 'UDID-1', 'shell', 'cat > prefs.xml'], stdin: '<map/>' });
-    assert.equal(((await (await command({ args: ['reverse', 'fails'] })).json()) as { code: number }).code, 3, 'a failing command is a result, not an error');
-    for (const refused of [['pull', '/etc/passwd', '/tmp/x'], ['push', 'a', 'b'], ['-s', 'other', 'shell', 'id'], ['emu', 'kill']]) {
+    assert.equal(((await (await command({ args: ['shell', 'fails'] })).json()) as { code: number }).code, 3, 'a failing command is a result, not an error');
+    assert.equal((await command({ args: ['reverse', 'tcp:8081', 'tcp:8081'] })).status, 200);
+    for (const refused of [['pull', '/etc/passwd', '/tmp/x'], ['push', 'a', 'b'], ['-s', 'other', 'shell', 'id'], ['emu', 'kill'], ['reverse', 'tcp:9000', 'localfilesystem:/var/run/docker.sock']]) {
       const response = await command({ args: refused });
       assert.equal(response.status, 403, refused.join(' '));
     }

@@ -33,6 +33,10 @@ describe('the session workflow and the driver agree', () => {
     assert.ok(triggerBranch(request).startsWith('verify-remote/'));
   });
 
+  it('names the job that holds the runner `session`, which is how the driver tells its queue from the plan job\'s', () => {
+    assert.match(workflow, /^  session:\n    needs: plan$/m);
+  });
+
   it('gives the agent the files and variables it waits on, and uploads nothing', () => {
     for (const needle of ['VERIFY_SESSION_REQUEST', 'VERIFY_SESSION_WORK', 'VERIFY_SESSION_DEVICE_ID', 'VERIFY_SESSION_DEVICE_MODULE', 'VERIFY_SESSION_CLOUDFLARED', '$WORK/tunnel', 'device-ready', '$VERIFY_SESSION_WORK/ended', 'persist-credentials: false']) {
       assert.ok(workflow.includes(needle), needle);

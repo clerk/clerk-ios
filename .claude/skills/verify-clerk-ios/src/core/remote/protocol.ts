@@ -176,16 +176,19 @@ export interface RecipeAnswers {
 
 export const DEVICE_COMMAND_LIMITS = { args: 64, argBytes: 4096, stdinBytes: 65_536, outputBytes: 65_536, timeoutMs: 60_000 } as const;
 
-const ADB_SUBCOMMANDS: ReadonlySet<string> = new Set(['shell', 'reverse']);
+const REVERSE_FLAGS: ReadonlySet<string> = new Set(['--list', '--no-rebind', '--remove', '--remove-all']);
 
 /**
  * The platform's device tool pointed at one device, or null for arguments it does not take. The driver and the session
  * agent both build the command here, so what runs for a local lease is what runs for a remote one. Only Android has a
- * tool so far, and only the adb subcommands that act on the device: `push` and `pull` would reach the machine's files.
+ * tool so far, and only the adb commands that act on the device. `push` and `pull` would reach the machine's files,
+ * and so would a `reverse` to anything but a TCP port: adb also forwards to a Unix socket such as Docker's.
  */
 export function deviceToolCommand(platform: Platform, deviceId: string, args: readonly string[], adb = 'adb'): CommandLine | null {
-  if (platform !== 'android' || !ADB_SUBCOMMANDS.has(args[0] ?? '')) return null;
-  return { command: adb, args: ['-s', deviceId, ...args] };
+  if (platform !== 'android') return null;
+  const [subcommand, ...rest] = args;
+  const allowed = subcommand === 'shell' || (subcommand === 'reverse' && rest.every((arg) => REVERSE_FLAGS.has(arg) || /^tcp:\d{1,5}$/.test(arg)));
+  return allowed ? { command: adb, args: ['-s', deviceId, ...args] } : null;
 }
 
 export interface DeviceCommandResult {

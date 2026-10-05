@@ -109,7 +109,6 @@ async function runBriefly(commands: readonly CommandLine[]): Promise<void> {
   }
 }
 
-/** Runs to the end or to `timeoutMs`, and keeps the last `limit` characters of each stream. */
 async function capture(command: CommandLine, options: { readonly timeoutMs: number; readonly limit: number; readonly stdin?: string }): Promise<DeviceCommandResult> {
   const child = spawn(command.command, [...command.args], { cwd: command.cwd, stdio: [options.stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'] });
   const kept = { stdout: '', stderr: '' };
