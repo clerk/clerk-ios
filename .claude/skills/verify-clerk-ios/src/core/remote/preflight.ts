@@ -82,7 +82,8 @@ async function environmentCheck(github: GitHub, deps: RemoteDeps, worktree: stri
   const remote = (await deps.runner('git', ['remote', 'get-url', 'origin'], { cwd: worktree })).stdout.trim();
   const remoteKind = /^(git@|ssh:)/.test(remote) ? 'ssh' : /^https?:\/\/(127\.0\.0\.1|localhost)/.test(remote) ? 'a local git proxy' : /^https?:/.test(remote) ? 'https' : 'unknown';
   const proxy = proxyOf(deps.env);
-  const egress = proxy === null ? 'direct (no HTTPS_PROXY)' : deps.env.NODE_USE_ENV_PROXY === '1' ? `through the proxy at ${proxy.host}` : `direct (HTTPS_PROXY names ${proxy.host}, which does not accept connections)`;
+  const why = deps.env.VERIFY_EGRESS_WHY === undefined ? '' : ` (${deps.env.VERIFY_EGRESS_WHY})`;
+  const egress = proxy === null ? 'direct (no HTTPS_PROXY)' : deps.env.NODE_USE_ENV_PROXY === '1' ? `through the proxy at ${proxy.host}${why}` : `direct, not through the proxy at ${proxy.host}${why}`;
   const detail = [
     `${osPlatform()} ${arch()} ${release()}`,
     `npm ${npm.code === 0 ? npm.stdout.trim() : 'missing'}`,
@@ -115,7 +116,7 @@ async function gitChecks(settings: RemoteSettings, runner: Runner, worktree: str
       pushOwn.code === 0
         ? `dry-run push of ${branch} is accepted; dry-run push of the trigger branch ${trigger} is ${pushTrigger.code === 0 ? 'accepted' : `refused (${gitFailure(pushTrigger.stderr)})`}`
         : `dry-run push of ${branch} failed: ${gitFailure(pushOwn.stderr)}`,
-      `a remote session builds a pushed commit, so this machine needs push access to ${settings.repo}. ${CLOUD_GITHUB_ACCESS}`,
+      `verifying a commit you make here needs git push access to ${settings.repo}, because a remote session builds a pushed commit; verifying a commit GitHub already has needs only REST. ${CLOUD_GITHUB_ACCESS}`,
     ),
   ];
 }

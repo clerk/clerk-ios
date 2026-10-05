@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { agentDeviceFor } from '../src/core/agent-device.ts';
+import { chooseEgress } from '../src/core/launch.mjs';
 import { usedSecretValues } from '../src/core/secret.ts';
 import type { ApiResponse, GitHub } from '../src/core/remote/github.ts';
 import { connectThroughProxy, egressCheck, remoteDoctorChecks } from '../src/core/remote/preflight.ts';
@@ -57,6 +58,25 @@ describe('agent-device calls', () => {
   });
 });
 
+describe('choosing between a direct connection and HTTPS_PROXY', () => {
+  it('keeps a Mac with a debugging proxy exported on its direct connection', () => {
+    assert.equal(chooseEgress({ proxyListens: true, directConnects: true, tokenStatusDirect: null }).proxy, false);
+    assert.equal(chooseEgress({ proxyListens: true, directConnects: true, tokenStatusDirect: 200 }).proxy, false);
+    assert.equal(chooseEgress({ proxyListens: false, directConnects: true, tokenStatusDirect: null }).proxy, false);
+  });
+
+  it('uses the proxy in a sandbox whose token only works through it, although a direct connection opens', () => {
+    const choice = chooseEgress({ proxyListens: true, directConnects: true, tokenStatusDirect: 401 });
+    assert.equal(choice.proxy, true);
+    assert.match(choice.why, /rejects this machine's token on a direct connection/);
+  });
+
+  it('uses the proxy when it is the only way out', () => {
+    assert.equal(chooseEgress({ proxyListens: true, directConnects: false, tokenStatusDirect: null }).proxy, true);
+    assert.equal(chooseEgress({ proxyListens: true, directConnects: true, tokenStatusDirect: 0 }).proxy, true);
+  });
+});
+
 describe('egress checks', () => {
   async function proxyAnswering(line: string): Promise<{ url: URL; close: () => void }> {
     const server = net.createServer((socket) => socket.once('data', () => socket.end(`${line}\r\n\r\n`)));
@@ -99,7 +119,7 @@ describe('doctor for the remote backend', () => {
       assert.ok(byId[id] !== undefined, `${id} is printed`);
     }
     assert.match(byId['git-push']!.detail, /the app has no access to this repository \| fatal: unable to access .* 403/);
-    assert.match(byId['git-push']!.fix!, /Claude GitHub App has no access/);
+    assert.match(byId['git-push']!.fix!, /Claude GitHub App is not installed on this repository/);
     assert.equal(byId['github-rest']!.ok, false);
     assert.equal(byId['remote-trigger']!.detail, 'not run: needs github-rest');
     assert.equal(byId['live-stop']!.detail, 'not run: needs github-rest');

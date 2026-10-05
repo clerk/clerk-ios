@@ -77,7 +77,7 @@ export async function openGitHub(options: GitHubOptions): Promise<GitHub> {
 
 /** The one cause of a refused write that the refusal itself does not explain to someone outside the sandbox. */
 export const CLOUD_GITHUB_ACCESS =
-  'In a Claude Code cloud session, a 403 on push or a 401 with a token present means the Claude GitHub App has no access to this repository for the organization: an org admin installs the app for the repository, or the user reconnects GitHub in claude.ai settings';
+  'In a Claude Code cloud session, a 403 on git push means the Claude GitHub App is not installed on this repository for the organization: an org admin adds the repository to the app, or the user reconnects GitHub in claude.ai settings. REST calls there use the session user\'s own access and do not depend on the app';
 
 /** What git said went wrong: the server's own `remote:` lines, which carry the reason, then git's last line. */
 export function gitFailure(output: string): string {

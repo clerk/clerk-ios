@@ -50,10 +50,29 @@ export async function ensureRuntime() {
   } catch {
     return;
   }
-  // Node ignores HTTPS_PROXY unless told to honor it, and a sandbox's proxy is its only way out and the place its
-  // GitHub credentials are added. A proxy that is not listening (a debugging proxy that is closed) is skipped.
-  if (!(await accepts(url.hostname, Number(url.port || 80)))) return;
+  const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+  const choice = chooseEgress({
+    proxyListens: await accepts(url.hostname, Number(url.port || 80)),
+    directConnects: await accepts('api.github.com', 443),
+    tokenStatusDirect: token ? await fetch('https://api.github.com/rate_limit', { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'verify-remote' }, signal: AbortSignal.timeout(5000) }).then((response) => response.status, () => 0) : null,
+  });
+  process.env.VERIFY_EGRESS_WHY = choice.why;
+  if (!choice.proxy) return;
   const local = 'localhost,127.0.0.1,::1';
   const noProxy = process.env.NO_PROXY || process.env.no_proxy;
   process.exit(await rerun(process.execPath, process.argv.slice(1), { ...process.env, NODE_USE_ENV_PROXY: '1', NO_PROXY: noProxy ? `${noProxy},${local}` : local }));
+}
+
+/**
+ * Node ignores HTTPS_PROXY unless told to honor it, so this decides. A machine that reaches GitHub directly with a
+ * token GitHub accepts keeps going direct: that is a Mac with a debugging proxy exported. The proxy is used when the
+ * direct path does not work for GitHub: it cannot connect, or GitHub rejects the machine's token on it. The second
+ * case is a cloud sandbox, whose token is a placeholder that only its proxy turns into a real credential.
+ * `tokenStatusDirect` is null when the environment holds no GitHub token, and 0 when the request failed.
+ */
+export function chooseEgress({ proxyListens, directConnects, tokenStatusDirect }) {
+  if (!proxyListens) return { proxy: false, why: 'HTTPS_PROXY is set but nothing accepts connections there' };
+  if (!directConnects || tokenStatusDirect === 0) return { proxy: true, why: 'a direct connection to api.github.com fails' };
+  if (tokenStatusDirect === 401) return { proxy: true, why: "GitHub rejects this machine's token on a direct connection, so the proxy is where the real credential is added" };
+  return { proxy: false, why: tokenStatusDirect === null ? 'a direct connection to api.github.com works' : 'a direct connection to api.github.com works and GitHub accepts the token on it' };
 }
