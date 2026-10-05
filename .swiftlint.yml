@@ -31,3 +31,15 @@ excluded:
 
 # Reporter type
 reporter: "xcode"
+
+# Custom rules
+custom_rules:
+  clerk_sheet:
+    name: "Use clerkSheet"
+    included: "Sources/ClerkKitUI/.*\\.swift"
+    excluded: "Sources/ClerkKitUI/Extensions/View\\+ClerkSheet\\.swift"
+    regex: "\\.sheet\\("
+    match_kinds:
+      - identifier
+    message: "Present with clerkSheet instead so the presented content keeps the Clerk UI context on Designed for iPad and Mac Catalyst."
+    severity: error
