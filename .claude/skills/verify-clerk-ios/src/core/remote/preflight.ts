@@ -95,6 +95,32 @@ async function environmentCheck(github: GitHub, deps: RemoteDeps, worktree: stri
   return check('remote-env', npm.code === 0, detail, 'install npm with Node 24');
 }
 
+type Git = (args: readonly string[]) => Promise<{ readonly code: number; readonly stdout: string; readonly stderr: string }>;
+
+/**
+ * Where HEAD stands against the branch on the remote. A clone that a cloud service reuses can sit on a commit the
+ * branch has since moved past, or rewritten away, and then every later check tests old code.
+ */
+async function headCheck(git: Git, branch: string): Promise<DoctorCheck> {
+  const head = (await git(['rev-parse', 'HEAD'])).stdout.trim();
+  const tip = (await git(['ls-remote', 'origin', `refs/heads/${branch}`])).stdout.split(/\s/)[0] ?? '';
+  const resync = `git fetch origin ${branch} && git reset --hard FETCH_HEAD (this drops local commits and edits; keep them with git rebase FETCH_HEAD instead)`;
+  if (tip === '') return check('git-head', true, `origin has no branch ${branch} yet`, '');
+  if (tip === head) return check('git-head', true, `HEAD ${head.slice(0, 12)} is the tip of origin/${branch}`, '');
+  const have = (await git(['cat-file', '-e', `${tip}^{commit}`])).code === 0;
+  const ahead = have && (await git(['merge-base', '--is-ancestor', tip, 'HEAD'])).code === 0;
+  if (ahead) return check('git-head', true, `HEAD ${head.slice(0, 12)} is ahead of origin/${branch} at ${tip.slice(0, 12)}`, '');
+  const behind = have && (await git(['merge-base', '--is-ancestor', 'HEAD', tip])).code === 0;
+  return check(
+    'git-head',
+    false,
+    behind
+      ? `HEAD ${head.slice(0, 12)} is behind origin/${branch}, which is at ${tip.slice(0, 12)}; this is an old checkout`
+      : `HEAD ${head.slice(0, 12)} is not on origin/${branch}, which is at ${tip.slice(0, 12)}${have ? '' : ' (a commit this clone has not fetched)'}; the checkout is stale or the branch was rewritten`,
+    resync,
+  );
+}
+
 async function gitChecks(settings: RemoteSettings, runner: Runner, worktree: string): Promise<readonly DoctorCheck[]> {
   const git = (args: readonly string[]) => runner('git', args, { cwd: worktree, env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } });
   let branch: string;
@@ -102,7 +128,7 @@ async function gitChecks(settings: RemoteSettings, runner: Runner, worktree: str
     branch = await currentBranch(runner, worktree);
   } catch (error) {
     const failure = error as VerifyFailure;
-    return [check('git-fetch', false, failure.message, failure.fix), notRun('git-push', 'git-fetch')];
+    return [check('git-fetch', false, failure.message, failure.fix), notRun('git-head', 'git-fetch'), notRun('git-push', 'git-fetch')];
   }
   const fetched = await git(['fetch', '--dry-run', '--no-tags', 'origin', branch]);
   const pushOwn = await git(['push', '--dry-run', 'origin', `HEAD:refs/heads/${branch}`]);
@@ -110,6 +136,7 @@ async function gitChecks(settings: RemoteSettings, runner: Runner, worktree: str
   const pushTrigger = await git(['push', '--dry-run', 'origin', `HEAD:refs/heads/${trigger}`]);
   return [
     check('git-fetch', fetched.code === 0, fetched.code === 0 ? `git fetch origin ${branch} works` : `git fetch origin ${branch} failed: ${gitFailure(fetched.stderr)}`, `git push -u origin ${branch}, and check the remote with git remote -v`),
+    fetched.code === 0 ? await headCheck(git, branch) : notRun('git-head', 'git-fetch'),
     check(
       'git-push',
       pushOwn.code === 0,

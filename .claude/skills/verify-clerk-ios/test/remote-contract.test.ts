@@ -106,10 +106,15 @@ describe('doctor for the remote backend', () => {
   const settings = (): RemoteSettings => ({ platform: 'ios', repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', sessionsDir: mkdtempSync(join(tmpdir(), 'verify-doctor-')), runner: 'paid-mac', plumbingRunner: 'ubuntu-latest', device: 'iPhone Air', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' });
   const answer = (status: number, json: unknown = {}, refusedWithToken?: string): ApiResponse => ({ status, json, headers: new Headers(), ...(refusedWithToken === undefined ? {} : { refusedWithToken }) });
   const offline = { HTTPS_PROXY: 'http://127.0.0.1:9', NODE_USE_ENV_PROXY: '1' };
-  const git = (pushFails: boolean) => async (command: string, args: readonly string[]) =>
-    command === 'git' && args[0] === 'push' && pushFails
-      ? { code: 128, stdout: '', stderr: "remote: the app has no access to this repository\nfatal: unable to access 'https://github.com/clerk/clerk-ios/': The requested URL returned error: 403\n" }
-      : { code: 0, stdout: args.includes('--abbrev-ref') ? 'my-branch\n' : 'f'.repeat(40), stderr: '' };
+  const git = (pushFails: boolean, remoteTip = 'f'.repeat(40), relation: 'same' | 'behind' | 'unfetched' = 'same') => async (command: string, args: readonly string[]) => {
+    if (command === 'git' && args[0] === 'push' && pushFails) {
+      return { code: 128, stdout: '', stderr: "remote: the app has no access to this repository\nfatal: unable to access 'https://github.com/clerk/clerk-ios/': The requested URL returned error: 403\n" };
+    }
+    if (args[0] === 'ls-remote') return { code: 0, stdout: `${remoteTip}\trefs/heads/my-branch\n`, stderr: '' };
+    if (args[0] === 'cat-file') return { code: relation === 'unfetched' ? 1 : 0, stdout: '', stderr: '' };
+    if (args[0] === 'merge-base') return { code: relation === 'behind' && args[2] === 'HEAD' ? 0 : 1, stdout: '', stderr: '' };
+    return { code: 0, stdout: args.includes('--abbrev-ref') ? 'my-branch\n' : 'f'.repeat(40), stderr: '' };
+  };
 
   it('prints every check even when GitHub refuses everything, and says what each skipped check needed', async () => {
     const github: GitHub = { repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', tokenSource: 'GH_TOKEN', api: async () => answer(401, { message: 'Bad credentials' }) };
@@ -141,6 +146,19 @@ describe('doctor for the remote backend', () => {
     assert.match(byId['remote-trigger']!.detail, /workflow_dispatch was refused \(401 Bad credentials\) and pushing .* failed: the app has no access/);
     assert.match(byId['remote-trigger']!.fix!, /Claude GitHub App/);
     assert.equal(byId['remote-channel']!.detail, 'not run: needs remote-trigger (no run was started)');
+  });
+
+  it('says when the checkout is behind the remote branch or no longer on it, and how to resync', async () => {
+    const github: GitHub = { repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', tokenSource: 'gh', api: async () => answer(401) };
+    const head = async (tip: string, relation: 'same' | 'behind' | 'unfetched') =>
+      (await remoteDoctorChecks(settings(), { env: offline, runner: git(false, tip, relation) }, async () => github, { live: false, worktree: '/w', progress: () => undefined })).device.find((c) => c.id === 'git-head')!;
+    assert.equal((await head('f'.repeat(40), 'same')).ok, true);
+    const behind = await head('a'.repeat(40), 'behind');
+    assert.equal(behind.ok, false);
+    assert.match(behind.detail, /is behind origin\/my-branch, which is at aaaaaaaaaaaa; this is an old checkout/);
+    assert.match(behind.fix!, /^git fetch origin my-branch && git reset --hard FETCH_HEAD/);
+    const rewritten = await head('a'.repeat(40), 'unfetched');
+    assert.match(rewritten.detail, /is not on origin\/my-branch.*not fetched.*stale or the branch was rewritten/);
   });
 
   it('does not push a probe for a HEAD that GitHub does not have', async () => {

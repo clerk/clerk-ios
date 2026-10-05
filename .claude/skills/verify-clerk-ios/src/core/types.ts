@@ -141,7 +141,7 @@ export class VerifyFailure extends Error {
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
   | `instance:${string}` | 'build' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports'
-  | 'backend' | 'remote-env' | 'git-fetch' | 'git-push' | 'github-rest' | 'remote-commit' | 'remote-trigger' | 'remote-channel' | 'tunnel-egress' | 'clerk-egress' | 'remote-sessions'
+  | 'backend' | 'remote-env' | 'git-fetch' | 'git-head' | 'git-push' | 'github-rest' | 'remote-commit' | 'remote-trigger' | 'remote-channel' | 'tunnel-egress' | 'clerk-egress' | 'remote-sessions'
   | `live-${string}`;
 
 export interface DoctorCheck {
