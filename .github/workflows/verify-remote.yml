@@ -1,0 +1,196 @@
+name: verify-remote
+run-name: verify-remote ${{ inputs.owner && format('{0}/{1}', inputs.owner, inputs.session) || github.ref_name }}
+
+# A remote device session for the verify-clerk-ios skill: a simulator on a runner, reached through a tunnel.
+# `control-clerk-ios up --backend remote` starts it and `down` ends it. See .claude/skills/verify-clerk-ios/SKILL.md.
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: Worktree id of the driver, so it can find and reap its own sessions
+        required: true
+      session:
+        description: Session id the driver chose
+        required: true
+      request:
+        description: The session request as one JSON string (src/core/remote/protocol.ts)
+        required: true
+  # The fallback trigger for a driver that may not dispatch: it pushes a commit whose message is the request.
+  push:
+    branches: ['verify-remote/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-remote-${{ inputs.session || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  SKILL: .claude/skills/verify-clerk-ios
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      mode: ${{ steps.plan.outputs.mode }}
+      runner: ${{ steps.plan.outputs.runner }}
+      device: ${{ steps.plan.outputs.device }}
+      sha: ${{ steps.plan.outputs.sha }}
+      timeout: ${{ steps.plan.outputs.timeout }}
+      agent_device: ${{ steps.plan.outputs.agent_device }}
+      request: ${{ steps.plan.outputs.request }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .claude/skills/verify-clerk-ios/src/core
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Read the request
+        id: plan
+        env:
+          VERIFY_REQUEST: ${{ inputs.request || github.event.head_commit.message }}
+        run: node "$SKILL/src/core/remote/session-agent.ts" plan
+      - name: verify-remote probe ${{ steps.plan.outputs.echo }}
+        if: steps.plan.outputs.mode == 'probe'
+        run: "true"
+
+  session:
+    needs: plan
+    if: needs.plan.outputs.mode == 'session'
+    runs-on: ${{ needs.plan.outputs.runner }}
+    timeout-minutes: ${{ fromJSON(needs.plan.outputs.timeout) }}
+    env:
+      VERIFY_SESSION_REQUEST: ${{ needs.plan.outputs.request }}
+      # agent-device reaps its daemon, its XCTest runner, and its device lease after five idle minutes by default.
+      # The session agent owns idle and cap for the whole session instead.
+      AGENT_DEVICE_DAEMON_IDLE_TIMEOUT_MS: "0"
+      AGENT_DEVICE_IOS_RUNNER_IDLE_STOP_MS: "0"
+      AGENT_DEVICE_LEASE_TTL_MS: "21600000"
+      AGENT_DEVICE_LEASE_MAX_TTL_MS: "21600000"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Pick the simulator
+        id: device
+        if: runner.os == 'macOS' && needs.plan.outputs.device != ''
+        env:
+          DEVICE: ${{ needs.plan.outputs.device }}
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          UDID=$(xcrun simctl list devices available -j | node -e '
+            const devices = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
+            const newestFirst = Object.entries(devices).filter(([runtime]) => runtime.includes("iOS")).sort(([a], [b]) => b.localeCompare(a, undefined, { numeric: true }));
+            for (const [runtime, list] of newestFirst) {
+              const match = list.find((d) => d.name === process.argv[1]);
+              if (match) { console.error(`${match.name} on ${runtime.replace(/^.*SimRuntime\./, "")}`); process.stdout.write(match.udid); process.exit(0); }
+            }
+            console.error(`no simulator named ${process.argv[1]}; available: ${[...new Set(newestFirst.flatMap(([, list]) => list.map((d) => d.name)))].join(", ")}`);
+            process.exit(1);
+          ' "$DEVICE")
+          xcrun simctl boot "$UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Start the session agent and tunnel
+        id: tunnel
+        env:
+          VERIFY_SESSION_DEVICE_ID: ${{ steps.device.outputs.udid }}
+          VERIFY_SESSION_DEVICE_NAME: ${{ needs.plan.outputs.device }}
+          VERIFY_SESSION_DEVICE_MODULE: .claude/skills/verify-clerk-ios/src/platform/ios/session-device.ts
+          CLOUDFLARED_VERSION: "2026.9.3"
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/verify-remote"
+          mkdir -p "$WORK"
+          echo "VERIFY_SESSION_WORK=$WORK" >> "$GITHUB_ENV"
+          case "$(uname -s)-$(uname -m)" in
+            Darwin-arm64) ASSET=cloudflared-darwin-arm64.tgz; SUM=587c2cfb1c230fe36c7fa7727da78be459dae028cabe8c001291999350f07095 ;;
+            Linux-x86_64) ASSET=cloudflared-linux-amd64; SUM=77e26d8d900e0b8469f416239d14b5f296525fdf79fee6f511ef55609e3fbac2 ;;
+            Linux-aarch64) ASSET=cloudflared-linux-arm64; SUM=aaeb2d7d0da3614634c7e03ab13487a1522c2e79165ed2929cfe23d5e95b326d ;;
+            *) echo "::error::no cloudflared build for $(uname -s)-$(uname -m)"; exit 1 ;;
+          esac
+          curl -fsSL --retry 3 --retry-delay 2 --retry-all-errors -o "$WORK/$ASSET" "https://github.com/cloudflare/cloudflared/releases/download/$CLOUDFLARED_VERSION/$ASSET"
+          echo "$SUM  $WORK/$ASSET" | shasum -a 256 -c -
+          if [ "${ASSET%.tgz}" != "$ASSET" ]; then tar -xzf "$WORK/$ASSET" -C "$WORK"; else mv "$WORK/$ASSET" "$WORK/cloudflared"; fi
+          chmod +x "$WORK/cloudflared"
+          VERIFY_SESSION_WORK="$WORK" VERIFY_SESSION_CLOUDFLARED="$WORK/cloudflared" \
+            nohup node "$SKILL/src/core/remote/session-agent.ts" serve > "$WORK/agent.log" 2>&1 &
+          disown
+          for _ in $(seq 1 150); do
+            [ -s "$WORK/tunnel" ] && break
+            sleep 1
+          done
+          [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
+          echo "host=$(cat "$WORK/tunnel")" >> "$GITHUB_OUTPUT"
+
+      # The driver reads the tunnel host from this step's name through the jobs API while the job runs.
+      - name: verify-remote tunnel ${{ steps.tunnel.outputs.host }}
+        run: "true"
+
+      - name: Install agent-device
+        timeout-minutes: 10
+        env:
+          VERSION: ${{ needs.plan.outputs.agent_device }}
+        run: |
+          set -euo pipefail
+          npm install -g "agent-device@$VERSION"
+          agent-device --version
+
+      - name: Wait for the simulator
+        if: steps.device.outputs.udid != ''
+        timeout-minutes: 10
+        env:
+          UDID: ${{ steps.device.outputs.udid }}
+        run: xcrun simctl bootstatus "$UDID" -b
+
+      - name: Prepare the XCTest runner
+        if: steps.device.outputs.udid != ''
+        timeout-minutes: 20
+        run: agent-device prepare ios-runner --platform ios --timeout 900000 || echo "::warning::prepare ios-runner failed; the first snapshot pays for it"
+
+      - name: Mark the device ready
+        run: touch "$VERIFY_SESSION_WORK/device-ready"
+
+      - name: Hold the session
+        run: |
+          set -uo pipefail
+          while [ ! -f "$VERIFY_SESSION_WORK/ended" ]; do
+            pgrep -f 'session-agent.ts serve' > /dev/null || { echo "::error::the session agent died"; tail -30 "$VERIFY_SESSION_WORK/agent.log"; exit 1; }
+            sleep 3
+          done
+          echo "session ended: $(cat "$VERIFY_SESSION_WORK/ended")"
+
+      - name: Shut down
+        if: always()
+        env:
+          UDID: ${{ steps.device.outputs.udid }}
+        run: |
+          pkill -f 'session-agent.ts serve' || true
+          if [ -n "$UDID" ]; then xcrun simctl shutdown "$UDID" || true; fi
+
+  cleanup:
+    needs: [plan, session]
+    if: always() && github.event_name == 'push' && (needs.plan.outputs.mode == 'probe' || needs.plan.outputs.mode == 'session')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Delete the trigger branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          case "$BRANCH" in
+            verify-remote/*) gh api -X DELETE "repos/$GITHUB_REPOSITORY/git/refs/heads/$BRANCH" || true ;;
+          esac
