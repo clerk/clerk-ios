@@ -48,6 +48,38 @@ extension SessionAPIAndTokenFetcherTests {
   }
 
   @Test
+  func signOutAllAppliesTheReturnedSignedOutClient() async throws {
+    SessionTemplateTokensCache.shared.clear()
+    let session = Session.mock
+    SessionTemplateTokensCache.shared.insertToken(
+      .init(jwt: "session.jwt"),
+      cacheKey: session.tokenCacheKey(template: "secondary")
+    )
+    try Clerk.shared.seedIdentity(deviceToken: "device-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
+    var signedOutClient = Client.mockSignedOut
+    signedOutClient.id = "client-after-sign-out"
+    signedOutClient.sessions = []
+
+    let mock = try Mock(
+      url: URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .delete: JSONEncoder.clerkEncoder.encode(ClientResponse<Client?>(response: signedOutClient, client: signedOutClient)),
+      ],
+      additionalHeaders: ["Authorization": "device-token"]
+    )
+    mock.register()
+
+    try await Clerk.shared.auth.signOut(sessionId: nil)
+
+    #expect(Clerk.shared.client?.id == signedOutClient.id)
+    #expect(Clerk.shared.client?.sessions.isEmpty == true)
+    #expect(Clerk.shared.session == nil)
+    #expect(SessionTemplateTokensCache.shared.getToken(
+      cacheKey: session.tokenCacheKey(template: "secondary")
+    ) == nil)
+  }
+
+  @Test
   func signOutWithSessionId() async throws {
     let sessionId = "sess_test123"
     var session = Session.mock
