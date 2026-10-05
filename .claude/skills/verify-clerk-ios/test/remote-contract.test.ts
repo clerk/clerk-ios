@@ -97,6 +97,16 @@ describe('egress checks', () => {
     }
   });
 
+  it('counts only an answer with Cloudflare headers as reached, because a sandbox can answer in the host\'s place', async () => {
+    const answering = (status: number, headers: Record<string, string>) => (async () => new Response('', { status, headers })) as typeof fetch;
+    const reached = await egressCheck('clerk-egress', 'api.clerk.com', {}, 'allow the host', answering(404, { server: 'cloudflare', 'cf-ray': 'abc' }));
+    assert.deepEqual(reached, { id: 'clerk-egress', ok: true, detail: 'reached api.clerk.com: HTTP 404 from cloudflare' });
+    const intercepted = await egressCheck('clerk-egress', 'api.clerk.com', {}, 'allow the host', answering(403, {}));
+    assert.equal(intercepted.ok, false);
+    assert.match(intercepted.detail, /^blocked: api\.clerk\.com answered HTTP 403 without Cloudflare's headers/);
+    assert.equal(intercepted.fix, 'allow the host');
+  });
+
   it('says so when the proxy itself is unreachable', async () => {
     assert.equal((await connectThroughProxy(new URL('http://127.0.0.1:9'), 'x.trycloudflare.com')).status, 0);
   });
@@ -170,3 +180,18 @@ describe('doctor for the remote backend', () => {
   });
 });
 
+
+describe('keys for a cloud session', () => {
+  it('needs only the three instances this skill reads, each with pk and sk', async () => {
+    const { instancesWithKeys, loadInstanceKeys } = await import('../src/core/keys.ts');
+    const { host } = await import('../src/host.ts');
+    const { INSTANCE_NAMES } = await import('../src/core/types.ts');
+    assert.deepEqual([...INSTANCE_NAMES], ['with-email-codes', 'with-session-tasks', 'with-session-tasks-setup-mfa']);
+    const minimal = Object.fromEntries(INSTANCE_NAMES.map((name) => [name, { pk: `pk_test_${Buffer.from(`${name}.example.dev$`).toString('base64url')}`, sk: `sk_test_${'x'.repeat(24)}` }]));
+    const env = { CLERK_TEST_KEYS_JSON: JSON.stringify(minimal) };
+    assert.deepEqual(instancesWithKeys(host, '/nowhere', env), { source: 'CLERK_TEST_KEYS_JSON', present: [...INSTANCE_NAMES], missing: [] });
+    const one = { CLERK_TEST_KEYS_JSON: JSON.stringify({ 'with-email-codes': minimal['with-email-codes'] }) };
+    assert.deepEqual(instancesWithKeys(host, '/nowhere', one).missing, ['with-session-tasks', 'with-session-tasks-setup-mfa']);
+    assert.ok(loadInstanceKeys(host, 'with-email-codes', '/nowhere', one).pk.startsWith('pk_test_'));
+  });
+});

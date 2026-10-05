@@ -58,7 +58,7 @@ export function connectThroughProxy(proxy: URL, host: string, timeoutMs = 10_000
  * For a host that Cloudflare serves. Only an answer that carries Cloudflare's own headers counts as reached: a
  * sandbox that inspects TLS can answer for the host itself, and its refusal page is an HTTP response too.
  */
-export async function egressCheck(id: DoctorCheckId, host: string, env: RemoteDeps['env'], fix: string): Promise<DoctorCheck> {
+export async function egressCheck(id: DoctorCheckId, host: string, env: RemoteDeps['env'], fix: string, request: typeof fetch = fetch): Promise<DoctorCheck> {
   const proxy = proxyOf(env);
   const usesProxy = proxy !== null && env.NODE_USE_ENV_PROXY === '1';
   if (usesProxy) {
@@ -67,7 +67,7 @@ export async function egressCheck(id: DoctorCheckId, host: string, env: RemoteDe
   }
   const via = usesProxy ? ` through the proxy at ${proxy.host}` : '';
   try {
-    const response = await fetch(`https://${host}/`, { redirect: 'manual', signal: AbortSignal.timeout(15_000) });
+    const response = await request(`https://${host}/`, { redirect: 'manual', signal: AbortSignal.timeout(15_000) });
     const fromCloudflare = response.headers.has('cf-ray') || response.headers.get('server') === 'cloudflare';
     if (fromCloudflare) return check(id, true, `reached ${host}${via}: HTTP ${response.status} from cloudflare`, '');
     return check(id, false, `blocked: ${host} answered HTTP ${response.status}${via} without Cloudflare's headers, so something between this machine and the host answered in its place`, fix);
