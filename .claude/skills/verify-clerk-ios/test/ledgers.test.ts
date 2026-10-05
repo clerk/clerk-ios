@@ -22,11 +22,11 @@ function fakes(deleted: string[]) {
   const backend = {
     kind: 'local',
     platform: 'ios',
-    supports: () => true,
+    availability: () => ({ usable: true, why: 'test' }),
     reapable: async () => [],
     check: async () => 'held',
     acquire: async () => lease,
-    install: async () => undefined,
+    install: async (held: LocalLease) => held,
     describe: () => 'verify-ios-1',
   } as unknown as DeviceBackend;
   const host = {

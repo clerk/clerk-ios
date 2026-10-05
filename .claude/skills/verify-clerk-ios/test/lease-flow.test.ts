@@ -19,7 +19,7 @@ function setup(buildMs: number, runtime?: HostAdapter['runtime']) {
   const backend = {
     kind: 'local',
     platform: 'ios',
-    supports: () => true,
+    availability: () => ({ usable: true, why: 'test' }),
     reapable: async () => [],
     check: async () => 'held',
     async acquire(request: { waitSeconds: number }): Promise<LocalLease> {
@@ -27,7 +27,7 @@ function setup(buildMs: number, runtime?: HostAdapter['runtime']) {
       leases += 1;
       return { backend: 'local', platform: 'ios', slot: leases, deviceName: `verify-ios-${leases}`, deviceId: `UDID-${leases}`, claimNonce: `c${leases}`, acquiredAt: '', installedBuild: null };
     },
-    install: async () => void events.push('install'),
+    install: async (lease: LocalLease) => (events.push('install'), lease),
     release: async () => void events.push('release'),
     describe: (lease: LocalLease) => lease.deviceName,
   } as unknown as DeviceBackend;

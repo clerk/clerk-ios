@@ -31,6 +31,7 @@ function partialRecord(dir: EvidencePath, run: RunId): Omit<EvidenceRecord, 'sea
     dirty: false,
     platform: 'ios',
     backend: 'local',
+    remote: null,
     device: 'verify-ios-1',
     build: 'ios-000000000000' as BuildKey,
     results: [

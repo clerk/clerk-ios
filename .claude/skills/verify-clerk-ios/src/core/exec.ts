@@ -13,6 +13,13 @@ export interface ExecOptions {
   readonly input?: string;
 }
 
+/** A program and its arguments, for code that describes a command without running it. */
+export interface CommandLine {
+  readonly command: string;
+  readonly args: readonly string[];
+  readonly cwd?: string;
+}
+
 export type Runner = (command: string, args: readonly string[], options?: ExecOptions) => Promise<ExecResult>;
 
 export const run: Runner = (command, args, options = {}) =>

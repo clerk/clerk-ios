@@ -5,7 +5,8 @@ import { dirname, join } from 'node:path';
 import { isOrphaned, readClaims } from './claims.ts';
 import { INSTANCE_REQUIREMENTS, createClerkBackend, type ClerkBackend } from './clerk.ts';
 import { instancesWithKeys, loadInstanceKeys } from './keys.ts';
-import { backendFor, computeBuildKey, ensureLease, leaseLine, leaseView, readBuiltApp, releaseLease, selectBackend, type LeaseOutcome } from './devices.ts';
+import { agentDeviceFor } from './agent-device.ts';
+import { backendFor, computeBuildKey, describeChoice, ensureLease, leaseLine, leaseView, readBuiltApp, releaseLease, selectBackend, type LeaseOutcome } from './devices.ts';
 import { assertSomethingRan, collectScreenshots, contextFile, excludedTagNames, invokeE2E, parseE2EReport, planE2E, resolveSpecs, writeRunContext } from './e2e.ts';
 import { startBroker } from './broker.ts';
 import { assertPublishable, readRecord, readStates, sealEvidence } from './evidence.ts';
@@ -138,13 +139,20 @@ export function featureMapCheck(skillDir: string, features: readonly string[]): 
 export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doctor' }>): Promise<DoctorReport> {
   const { host, workspace, runner } = deps;
   const platform = platformOf(host, command.platform);
-  const backend = selectBackend(host, platform, command.backend, workspace.readLease(platform));
+  const held = workspace.readLease(platform);
+  const choice = selectBackend(host, platform, command.backend, held);
+  const { backend } = choice;
   const skill = workspace.skillDir;
-  const checks: DoctorCheck[] = [];
+  const checks: DoctorCheck[] = [check('backend', true, describeChoice(choice), '')];
 
   const node = process.versions.node;
   checks.push(check('node', node.startsWith('24.'), node, 'install Node 24 (nvm install 24)'));
-  const backendChecks = await backend.doctorChecks();
+  const backendChecks = await backend.doctorChecks({
+    live: command.live,
+    ...(command.runner === undefined ? {} : { runner: command.runner }),
+    worktree: workspace.worktree,
+    progress: deps.progress,
+  });
   checks.push(...backendChecks.toolchain);
 
   const pkg = readJson(join(skill, 'package.json'));
@@ -161,16 +169,18 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
       `cd ${skill} && npm ci`,
     ),
   );
-  const globalAgentDevice = await runner('agent-device', ['--version']);
-  const haveAgentDevice = globalAgentDevice.code === 0 ? globalAgentDevice.stdout.trim() : 'missing';
-  checks.push(
-    check(
-      'agent-device-global',
-      wantAgentDevice !== undefined && haveAgentDevice === wantAgentDevice,
-      `global ${haveAgentDevice}, @e2e-dev/mobile wants ${wantAgentDevice ?? 'unknown'}`,
-      `npm i -g agent-device@${wantAgentDevice ?? '<version>'}`,
-    ),
-  );
+  if (backend.kind === 'local') {
+    const globalAgentDevice = await runner('agent-device', ['--version']);
+    const haveAgentDevice = globalAgentDevice.code === 0 ? globalAgentDevice.stdout.trim() : 'missing';
+    checks.push(
+      check(
+        'agent-device-global',
+        wantAgentDevice !== undefined && haveAgentDevice === wantAgentDevice,
+        `global ${haveAgentDevice}, @e2e-dev/mobile wants ${wantAgentDevice ?? 'unknown'}`,
+        `npm i -g agent-device@${wantAgentDevice ?? '<version>'}`,
+      ),
+    );
+  }
   checks.push(...backendChecks.device);
 
   let keyed: readonly InstanceName[] = [];
@@ -213,8 +223,13 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
   }
 
   const key = await computeBuildKey(host, platform, workspace.worktree);
-  const built = readBuiltApp(workspace, key);
-  checks.push(check('build', built !== null, built === null ? `no ${host.appId(platform)} build for ${key}` : `${key} at ${built.path}`, '{cli} up'));
+  if (backend.sourceCommit === undefined) {
+    const built = readBuiltApp(workspace, key);
+    checks.push(check('build', built !== null, built === null ? `no ${host.appId(platform)} build for ${key}` : `${key} at ${built.path}`, '{cli} up'));
+  } else {
+    const onSession = held !== null && held.backend === 'remote' && held.installedBuild === key;
+    checks.push(check('build', onSession, onSession ? `${key} (commit ${held.builtSha?.slice(0, 12) ?? 'unknown'}) is on the session's device` : `no session holds a ${host.appId(platform)} build for ${key}`, 'commit and push, then {cli} up'));
+  }
 
   const gh = await runner('gh', ['pr', 'comment', '--help']);
   checks.push(check('gh-attach', gh.code === 0 && gh.stdout.includes('--attach'), gh.code === 0 ? (gh.stdout.includes('--attach') ? 'gh pr comment supports --attach' : 'gh pr comment has no --attach') : 'gh is not installed', 'install a gh build with `gh pr comment --attach`'));
@@ -279,7 +294,7 @@ function targetOf(deps: Deps, outcome: RuntimeOutcome): RunContext['targets'][nu
 export async function up(deps: Deps, command: Extract<Command, { verb: 'up' }>): Promise<UpResult> {
   const platform = platformOf(deps.host, command.platform);
   return deps.workspace.withAcquireLock(platform, async (lock) => {
-    const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk, retryWith: '{cli} up --wait <seconds>' });
+    const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, ...(command.runner === undefined ? {} : { runner: command.runner }), progress: deps.progress, clerk: deps.clerk, retryWith: '{cli} up --wait <seconds>' });
     const outcome = { ...leased, entry: await startRuntime(deps, leased.lease) };
     writeStandingContext(deps, outcome);
     return { verb: 'up', leases: [outcome.view], builds: [outcome.build] };
@@ -362,7 +377,7 @@ export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Ex
     platform,
     deviceWait,
     async (lock) => {
-      const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, progress: deps.progress, clerk: deps.clerk, retryWith });
+      const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, ...(command.runner === undefined ? {} : { runner: command.runner }), progress: deps.progress, clerk: deps.clerk, retryWith });
       const outcome: RuntimeOutcome = { ...leased, entry: await startRuntime(deps, leased.lease) };
       writeStandingContext(deps, outcome);
       deps.progress(leaseLine(outcome.view));
@@ -411,7 +426,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       try {
         if (command.video) {
           recording = await backend.startRecording(lease, dir);
-          if (recording !== 'e2e-records') {
+          if (recording !== 'e2e-records' && recording.process !== null) {
             recorderEntry = newEntryId();
             workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString() });
           }
@@ -451,6 +466,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         dirty: git.dirty,
         platform,
         backend: lease.backend,
+        remote: lease.backend === 'remote' ? { provider: lease.provider, runner: lease.runner, builtSha: lease.builtSha } : null,
         device: outcome.view.device,
         build: outcome.app.key,
         results,
@@ -508,14 +524,14 @@ export function screenNodes(snapshot: readonly SnapshotNode[]): readonly ScreenN
 export async function screen(deps: Deps, command: Extract<Command, { verb: 'screen' }>): Promise<ScreenResult> {
   const platform = platformOf(deps.host, command.platform);
   const { lease, backend } = heldLease(deps, platform);
-  if ((await backend.check(lease)) !== 'held') throw new VerifyFailure('LEASE_LOST', `${backend.describe(lease)} is gone`, '{cli} up');
+  if ((await backend.check(lease)) === 'lost') throw new VerifyFailure('LEASE_LOST', `${backend.describe(lease)} is gone`, '{cli} up');
   const { CLERK_TEST_KEYS_JSON: _keys, ...env } = deps.env;
+  const target = agentDeviceFor(lease);
   const agentDevice = (args: readonly string[]) =>
-    deps.runner(join(deps.workspace.skillDir, 'node_modules', '.bin', 'agent-device'), args, { env: { ...env, AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir } });
+    deps.runner(join(deps.workspace.skillDir, 'node_modules', '.bin', 'agent-device'), args, { env: { ...env, AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env } });
   const screenWait = { seconds: 10, busyFix: 'let the run in this worktree finish, then rerun {cli} screen' };
   return deps.workspace.withDevice(platform, screenWait, async () => {
-    const target = backend.agentDeviceTarget(lease);
-    const selector = platform === 'ios' ? ['--platform', 'ios', '--udid', target.deviceId] : ['--platform', 'android', '--serial', target.deviceId];
+    const selector = target.selector;
     const session = ['--session', `${agentDeviceSession(deps.workspace, platform)}-screen`];
     // Without --relaunch, open attaches the session to the running app process instead of restarting it.
     const opened = await agentDevice(['open', deps.host.appId(platform), '--json', ...selector, ...session]);
@@ -564,6 +580,8 @@ interface DownPlan {
   readonly staleIntents: readonly string[];
 }
 
+const leaseIdentity = (lease: Lease): string => (lease.backend === 'local' ? `local:${lease.claimNonce}` : `remote:${lease.session}`);
+
 async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>): Promise<DownPlan> {
   const { host, workspace } = deps;
   const platforms = command.platform === undefined ? host.platforms : [platformOf(host, command.platform)];
@@ -575,9 +593,9 @@ async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>)
       leases.push({ lease, backend, view: leaseView(backend, lease, false), origin: 'lease-file' });
     }
     if (command.stale) {
-      for (const backend of host.backends.filter((b) => b.platform === platform && b.supports(process.platform))) {
+      for (const backend of host.backends.filter((b) => b.platform === platform && b.availability(process.platform).usable)) {
         for (const orphan of await backend.reapable(workspace.worktree)) {
-          if (leases.some((l) => l.lease.backend === 'local' && orphan.backend === 'local' && l.lease.claimNonce === orphan.claimNonce)) continue;
+          if (leases.some((l) => leaseIdentity(l.lease) === leaseIdentity(orphan))) continue;
           leases.push({ lease: orphan, backend, view: leaseView(backend, orphan, false), origin: 'stale-claim' });
         }
       }
@@ -588,7 +606,7 @@ async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>)
     leases,
     identities: pendingIdentities(pending),
     processes: pending.filter((e): e is Extract<LedgerEntry, { kind: 'process' }> => e.kind === 'process'),
-    staleIntents: command.stale ? pending.filter((e) => e.kind === 'lease-intent' || e.kind === 'eas-session-created').map((e) => e.id) : [],
+    staleIntents: command.stale ? pending.filter((e) => e.kind === 'lease-intent').map((e) => e.id) : [],
   };
 }
 
@@ -638,13 +656,15 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
     };
   }
   const stoppedProcesses = stopProcesses(workspace);
+  // A device that will not release must not keep the run's test users alive, so the failure waits until the end.
+  const unreleased: unknown[] = [];
   for (const { lease, backend, origin } of plan.leases) {
-    if (origin === 'lease-file') await releaseLease(workspace, backend, lease);
-    else await backend.release(lease);
+    await (origin === 'lease-file' ? releaseLease(workspace, backend, lease) : backend.release(lease)).catch((error: unknown) => unreleased.push(error));
   }
   const deleted = await deleteIdentities(workspace, deps.clerk());
   for (const ref of plan.staleIntents) workspace.append({ id: newEntryId(), kind: 'done', ref });
   if (plan.leases.some((l) => l.origin === 'lease-file')) rmSync(join(workspace.root, 'context.json'), { force: true });
+  if (unreleased.length > 0) throw unreleased[0];
   return {
     verb: 'down',
     dryRun: false,

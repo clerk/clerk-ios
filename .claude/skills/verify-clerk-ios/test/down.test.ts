@@ -16,7 +16,7 @@ function setup() {
   const backend = {
     kind: 'local',
     platform: 'ios',
-    supports: () => true,
+    availability: () => ({ usable: true, why: 'test' }),
     release: async (lease: LocalLease) => void released.push(lease.deviceId),
     reapable: async () => [],
     describe: (lease: LocalLease) => lease.deviceName,

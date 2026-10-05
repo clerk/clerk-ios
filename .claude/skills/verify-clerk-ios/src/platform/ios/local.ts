@@ -15,9 +15,10 @@ import {
   type Recording,
 } from '../../core/types.ts';
 
+import { recordVideo, showLogs } from './simulator.ts';
+
 export const TEMPLATE_NAME = 'Clerk Verify Template iOS';
 const LANE_NAME = /^verify-ios-(\d+)$/;
-const LOG_PREDICATE = 'subsystem == "com.clerk.verify" OR subsystem == "com.clerk.sdk"';
 
 export interface Simulator {
   readonly udid: string;
@@ -41,11 +42,6 @@ async function simctl(args: readonly string[], what: string): Promise<string> {
 
 function simulatorDataDir(udid: string): string {
   return join(homedir(), 'Library', 'Developer', 'CoreSimulator', 'Devices', udid, 'data');
-}
-
-function localTime(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
 async function deleteSimulators(match: (device: Simulator) => boolean): Promise<void> {
@@ -105,7 +101,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
   const backend: DeviceBackend<LocalLease> = {
     kind: 'local',
     platform: 'ios',
-    supports: (os) => os === 'darwin',
+    availability: (os) => (os === 'darwin' ? { usable: true, why: 'this Mac runs the simulator itself' } : { usable: false, why: `the iOS simulator needs macOS and this machine runs ${os}` }),
     requirement: 'a Mac with Xcode',
 
     async acquire(request) {
@@ -153,6 +149,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
 
     async install(lease, app) {
       await simctl(['install', lease.deviceId, app.path], `simctl install on ${lease.deviceName}`);
+      return lease;
     },
 
     async release(lease) {
@@ -181,7 +178,8 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
 
     async startRecording(lease, into) {
       const file = join(into, 'video.mp4') as EvidencePath;
-      const child = spawn('xcrun', ['simctl', 'io', lease.deviceId, 'recordVideo', '--codec=h264', '--force', file], { stdio: ['ignore', 'pipe', 'pipe'] });
+      const record = recordVideo(lease.deviceId, file);
+      const child = spawn(record.command, [...record.args], { stdio: ['ignore', 'pipe', 'pipe'] });
       const spawnedAt = Date.now();
       const exited = new Promise<number>((resolve) => child.on('close', (code) => resolve(code ?? 1)));
       await new Promise<void>((resolve, reject) => {
@@ -219,12 +217,10 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
     },
 
     async logs(lease, since, extraPredicate) {
-      const predicate = extraPredicate === undefined ? LOG_PREDICATE : `${LOG_PREDICATE} OR (${extraPredicate})`;
-      const result = await run('xcrun', ['simctl', 'spawn', lease.deviceId, 'log', 'show', '--style', 'compact', '--start', localTime(since), '--predicate', predicate]);
-      return result.stdout;
+      const show = showLogs(lease.deviceId, since, extraPredicate ?? null);
+      return (await run(show.command, show.args)).stdout;
     },
 
-    agentDeviceTarget: (lease) => ({ daemon: 'local', deviceId: lease.deviceId }),
     describe: (lease) => lease.deviceName,
 
     async doctorChecks() {

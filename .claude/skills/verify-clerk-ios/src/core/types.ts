@@ -72,9 +72,10 @@ export interface SecretLike {
   use<T>(sink: SecretSink, fn: (plain: string) => T): T;
 }
 
-export type SecretSink = 'bapi-authorization' | 'launch-argument' | 'agent-device-daemon' | 'e2e-provider-lease';
+export type SecretSink = 'bapi-authorization' | 'launch-argument' | 'agent-device-daemon' | 'e2e-provider-lease' | 'github-authorization' | 'session-bearer';
 
-export type BackendKind = 'local' | 'eas';
+export type BackendKind = 'local' | 'remote';
+export type RemoteProvider = 'github-actions';
 export type OptInTag = 'form-entry' | 'known-bug';
 export const FORM_ENTRY_TAG = 'form-entry' satisfies OptInTag;
 /** Marks a spec that reproduces an open SDK bug. Excluded unless `run --include known-bug`, because e2e has no expected-failure status. */
@@ -83,13 +84,14 @@ export const KNOWN_BUG_TAG = 'known-bug' satisfies OptInTag;
 export type SpecSelection = { readonly all: true } | { readonly selectors: readonly string[] };
 
 export type Command =
-  | { readonly verb: 'doctor'; readonly platform?: Platform; readonly backend?: BackendKind }
-  | { readonly verb: 'up'; readonly platform?: Platform; readonly backend?: BackendKind; readonly waitSeconds: number }
+  | { readonly verb: 'doctor'; readonly platform?: Platform; readonly backend?: BackendKind; readonly runner?: string; readonly live: boolean }
+  | { readonly verb: 'up'; readonly platform?: Platform; readonly backend?: BackendKind; readonly runner?: string; readonly waitSeconds: number }
   | {
       readonly verb: 'run';
       readonly selection: SpecSelection;
       readonly platform?: Platform;
       readonly backend?: BackendKind;
+      readonly runner?: string;
       readonly skip: readonly OptInTag[];
       readonly include: readonly OptInTag[];
       readonly grep?: string;
@@ -138,7 +140,9 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
-  | `instance:${string}` | 'build' | 'eas' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports';
+  | `instance:${string}` | 'build' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports'
+  | 'backend' | 'remote-env' | 'git-fetch' | 'git-push' | 'github-rest' | 'remote-commit' | 'remote-trigger' | 'remote-channel' | 'tunnel-egress' | 'clerk-egress' | 'remote-sessions'
+  | `live-${string}`;
 
 export interface DoctorCheck {
   readonly id: DoctorCheckId;
@@ -245,12 +249,13 @@ export interface SpecRef {
   readonly feature: FeatureName | null;
 }
 
-export type BuildSource = 'local' | 'github-actions' | 'eas-build';
+export type BuildSource = 'local' | 'github-actions';
 
 export interface BuiltApp {
   readonly platform: Platform;
   readonly key: BuildKey;
   readonly appId: string;
+  /** Empty when a backend built the app on its own machine, where the driver has no copy. */
   readonly path: ScratchPath;
   readonly source: BuildSource;
   readonly sourceSha: string | null;
@@ -270,14 +275,25 @@ export interface LocalLease extends LeaseBase {
   readonly deviceId: string;
   readonly claimNonce: string;
 }
-export interface EasLease extends LeaseBase {
-  readonly backend: 'eas';
-  readonly sessionId: string;
-  readonly sessionUrl: string;
-  readonly secretsFile: string;
+export interface RemoteLease extends LeaseBase {
+  readonly backend: 'remote';
+  readonly provider: RemoteProvider;
+  /** The driver's own id for the session; it is in the run title and in every progress line. */
+  readonly session: string;
+  /** The provider's handle: a workflow run id for github-actions. */
+  readonly providerRef: string;
+  /** The tunnel origin. agent-device answers at `${baseUrl}/agent-device`. */
+  readonly baseUrl: string;
+  /** Mode 0600. The only copy of the session bearer on the driver. */
+  readonly tokenFile: string;
+  readonly deviceId: string;
+  readonly deviceName: string;
+  readonly runner: string;
   readonly expiresAt: string;
+  /** The commit the session last built and installed, or null before the first build. */
+  readonly builtSha: string | null;
 }
-export type Lease = LocalLease | EasLease;
+export type Lease = LocalLease | RemoteLease;
 
 export interface SeededUser {
   readonly id: string;
@@ -288,7 +304,6 @@ export interface SeededUser {
 
 export type LedgerEntry =
   | { readonly id: string; readonly kind: 'lease-intent'; readonly platform: Platform; readonly backend: BackendKind; readonly worktree: string }
-  | { readonly id: string; readonly kind: 'eas-session-created'; readonly sessionId: string }
   | { readonly id: string; readonly kind: 'lease-held'; readonly platform: Platform; readonly backend: BackendKind; readonly sessionId: string | null; readonly deviceId: string | null }
   | { readonly id: string; readonly kind: 'identity'; readonly run: RunId; readonly instance: InstanceName; readonly email: TestEmail }
   | { readonly id: string; readonly kind: 'user'; readonly run: RunId; readonly instance: InstanceName; readonly userId: string; readonly email: TestEmail }
@@ -321,6 +336,8 @@ export interface EvidenceRecord {
   readonly dirty: boolean;
   readonly platform: Platform;
   readonly backend: BackendKind;
+  /** For a remote backend: who ran the device, on which runner label, and the commit it built. */
+  readonly remote: { readonly provider: RemoteProvider; readonly runner: string; readonly builtSha: string | null } | null;
   readonly device: string;
   readonly build: BuildKey;
   readonly results: readonly SpecResult[];
@@ -443,6 +460,10 @@ export interface AcquireRequest {
   readonly platform: Platform;
   readonly worktree: string;
   readonly waitSeconds: number;
+  /** The app the lease will hold, so a backend that builds can start while its device boots. */
+  readonly app: BuiltApp;
+  /** A runner label that overrides the backend's default for this lease. */
+  readonly runner?: string;
   /** The calling verb's own command with a wait flag, for the POOL_FULL fix. */
   readonly retryWith: string;
   readonly progress: (line: string) => void;
@@ -454,22 +475,39 @@ export interface ProcessRef {
 }
 
 export interface Recording {
-  readonly process: ProcessRef;
+  /** The local recorder to stop if the run dies. Null when the device's own machine records. */
+  readonly process: ProcessRef | null;
   stop(): Promise<EvidencePath>;
 }
 
-export interface AgentDeviceTarget {
-  readonly daemon: 'local';
-  readonly deviceId: string;
+export interface Availability {
+  readonly usable: boolean;
+  /** Why, in words `doctor` and `up` print after the backend's name. */
+  readonly why: string;
+}
+
+export interface DoctorOptions {
+  /** Start a real session, reach it, and stop it. */
+  readonly live: boolean;
+  readonly runner?: string;
+  readonly worktree: string;
+  readonly progress: (line: string) => void;
 }
 
 export interface DeviceBackend<L extends Lease = Lease> {
   readonly kind: BackendKind;
   readonly platform: Platform;
-  supports(os: NodeJS.Platform): boolean;
+  /** Whether a machine running `os` can use this backend. `--backend auto` takes the first usable one in host order. */
+  availability(os: NodeJS.Platform): Availability;
+  /**
+   * Present when the backend builds the app itself from a pushed commit. It names that commit, and refuses a tree
+   * whose build inputs are edited or whose HEAD the provider cannot fetch.
+   */
+  sourceCommit?(input: { readonly worktree: string; readonly inputs: readonly string[] }): Promise<string>;
   acquire(request: AcquireRequest): Promise<L>;
   check(lease: L): Promise<'held' | 'lost' | 'expiring'>;
-  install(lease: L, app: BuiltApp): Promise<void>;
+  /** Puts `app` on the lease's device and returns the lease as it then stands. A backend that builds does the build here. */
+  install(lease: L, app: BuiltApp, progress: (line: string) => void): Promise<L>;
   release(lease: L): Promise<void>;
   /**
    * Devices whose machine-wide claim has a dead process and a missing worktree, plus, when `owner` is given,
@@ -478,12 +516,15 @@ export interface DeviceBackend<L extends Lease = Lease> {
   reapable(owner?: string): Promise<readonly L[]>;
   startRecording(lease: L, into: EvidencePath): Promise<Recording | 'e2e-records'>;
   logs(lease: L, since: Date, extraPredicate?: string): Promise<string>;
-  agentDeviceTarget(lease: L): AgentDeviceTarget;
   describe(lease: L): string;
   /** What the machine needs for this backend, for fix text, e.g. 'a Mac with Xcode'. */
   readonly requirement: string;
-  /** Read-only readiness checks. `toolchain` checks print right after Node; `device` checks after the agent-device versions. */
-  doctorChecks(): Promise<{ readonly toolchain: readonly DoctorCheck[]; readonly device: readonly DoctorCheck[] }>;
+  /**
+   * Readiness checks that change nothing on this machine. A remote backend starts one short probe run at its
+   * provider, and one short session when `live` is set. `toolchain` checks print right after Node; `device` checks
+   * after the agent-device versions.
+   */
+  doctorChecks(options: DoctorOptions): Promise<{ readonly toolchain: readonly DoctorCheck[]; readonly device: readonly DoctorCheck[] }>;
 }
 
 export const LOCAL_POOL: Readonly<Record<Platform, number>> = { ios: 4, android: 2 };
