@@ -30,7 +30,11 @@ export interface GitHubOptions {
   readonly workflow: string;
   readonly env: Readonly<Record<string, string | undefined>>;
   readonly runner: Runner;
+  /** Tests shorten the wait between retries of a read that got a 5xx. */
+  readonly retryDelayMs?: number;
 }
+
+const TRANSIENT_RETRIES = 3;
 
 export async function openGitHub(options: GitHubOptions): Promise<GitHub> {
   const { env } = options;
@@ -67,7 +71,12 @@ export async function openGitHub(options: GitHubOptions): Promise<GitHub> {
         }
         return { status: response.status, json, headers: response.headers };
       };
-      const first = await send(true);
+      let first = await send(true);
+      // GitHub answers a read with a 5xx now and then. A failed read here can fail an `up` that was about to end a billed run.
+      for (let attempt = 1; method === 'GET' && first.status >= 500 && attempt <= TRANSIENT_RETRIES; attempt += 1) {
+        await sleep(attempt * (options.retryDelayMs ?? 1500));
+        first = await send(true);
+      }
       // A token that GitHub rejects must not hide a public repository: reads fall back to no token.
       if (method !== 'GET' || token === null || (first.status !== 401 && first.status !== 403)) return first;
       return { ...(await send(false)), refusedWithToken: message(first) };
@@ -100,6 +109,17 @@ export interface StartOptions {
   readonly ref: string;
   readonly worktree: string;
   readonly runner: Runner;
+  /** How long to wait for a dispatched run to be readable. Tests shorten it. */
+  readonly readableWithinMs?: number;
+}
+
+/**
+ * A dispatch returns its run id before a read of that run answers 200: for a moment the read is a 404. Callers poll the
+ * run right away and treat a failed read as the run being gone, so the id is handed out only once it reads.
+ */
+async function untilReadable(github: GitHub, runId: string, withinMs: number): Promise<void> {
+  const deadline = Date.now() + withinMs;
+  while ((await github.api('GET', `/actions/runs/${runId}`)).status !== 200 && Date.now() < deadline) await sleep(Math.min(1500, withinMs / 4));
 }
 
 async function findRun(github: GitHub, query: string, matches: (run: { id: number; display_title: string }) => boolean, seconds: number): Promise<string | null> {
@@ -129,6 +149,7 @@ export async function startRun(github: GitHub, request: SessionRequest, options:
     const direct = (dispatched.json as { workflow_run_id?: number } | null)?.workflow_run_id;
     const runId = direct !== undefined ? String(direct) : await findRun(github, 'event=workflow_dispatch', isRunOf(request), 180);
     if (runId === null) throw new VerifyFailure('NOT_READY', `GitHub accepted the dispatch of ${github.workflow} but no run for session ${request.session} appeared in 3 minutes; if it starts later it bills until it idles out`, `{cli} down --stale ends it once it shows at https://github.com/${github.repo}/actions/workflows/${github.workflow}`);
+    await untilReadable(github, runId, options.readableWithinMs ?? 60_000);
     return { runId, trigger: 'dispatch', dispatchRefused: null };
   }
   const dispatchRefused = message(dispatched);

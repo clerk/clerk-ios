@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import http from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, it } from 'node:test';
 import { selectBackend } from '../src/core/devices.ts';
 import type { ExecResult } from '../src/core/exec.ts';
-import { publishedStep, startRun, type GitHub, type JobView } from '../src/core/remote/github.ts';
+import { openGitHub, publishedStep, startRun, type GitHub, type JobView } from '../src/core/remote/github.ts';
 import { RUN_TITLE, RequestError, STEP, matchesToken, parseRequest, probeEcho, sha256Hex, triggerBranch, type SessionRequest } from '../src/core/remote/protocol.ts';
 import { tunnelUrl } from '../src/core/remote/session.ts';
 import { VerifyFailure, type DeviceBackend, type HostAdapter } from '../src/core/types.ts';
@@ -103,6 +105,37 @@ describe('starting a run', () => {
     const started = await startRun(github, request, { ref: 'mike/branch', worktree: '/w', runner: async (_c, args) => (git.push(args.join(' ')), ok()) });
     assert.deepEqual(started, { runId: '41', trigger: 'dispatch', dispatchRefused: null });
     assert.deepEqual(git, []);
+  });
+
+  it('hands out a dispatched run only once GitHub can read it, because the first reads are 404', async () => {
+    let reads = 0;
+    const github: GitHub = {
+      repo: 'clerk/clerk-ios',
+      workflow: 'verify-remote.yml',
+      tokenSource: 'none',
+      api: async (_method, path) => (path.endsWith('/dispatches') ? { status: 200, json: { workflow_run_id: 41 }, headers: new Headers() } : { status: (reads += 1) < 3 ? 404 : 200, json: {}, headers: new Headers() }),
+    };
+    const started = await startRun(github, request, { ref: 'b', worktree: '/w', runner: async () => ok(), readableWithinMs: 400 });
+    assert.equal(started.runId, '41');
+    assert.equal(reads, 3);
+  });
+
+  it('retries a read that GitHub answers with a 5xx, and never a write', async () => {
+    const seen: string[] = [];
+    const server = http.createServer((req, res) => {
+      seen.push(`${req.method} ${req.url}`);
+      res.writeHead(req.method === 'GET' && seen.filter((line) => line.startsWith('GET')).length >= 3 ? 200 : 502, { 'content-type': 'application/json' }).end('{}');
+    });
+    await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
+    try {
+      const hub = await openGitHub({ repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', env: { GH_TOKEN: 'x', GITHUB_API_URL: `http://127.0.0.1:${(server.address() as AddressInfo).port}` }, runner: async () => ok(), retryDelayMs: 1 });
+      assert.equal((await hub.api('GET', '/actions/runs/1')).status, 200);
+      assert.equal(seen.length, 3);
+      assert.equal((await hub.api('POST', '/actions/runs/1/cancel')).status, 502);
+      assert.equal(seen.length, 4, 'a refused cancel is reported, not sent again');
+    } finally {
+      server.close();
+    }
   });
 
   it('falls back to pushing a request commit when dispatch is refused', async () => {

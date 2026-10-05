@@ -103,6 +103,12 @@ describe('session settings', () => {
     assert.equal(JSON.stringify(request).includes(token), false);
   });
 
+  it('names a probe run apart from a session, so reaping never takes a probe for a session', () => {
+    const s = settings(dir());
+    assert.match(newSessionRequest(s, { env: {}, runner: run }, { mode: 'session', device: null, sha: null }).request.session, /^ios[0-9a-f]{6}$/);
+    assert.match(newSessionRequest(s, { env: {}, runner: run }, { mode: 'probe', device: null, sha: null }).request.session, /^probe[0-9a-f]{6}$/);
+  });
+
   it('gives each checkout its own id, even at the same path, and keeps it', () => {
     const first = settings(dir());
     assert.match(driverId(first), /^[a-f0-9]{12}$/);
@@ -124,6 +130,7 @@ describe('reaping', () => {
               { id: 1, display_title: `verify-remote ${mine}/iosaaaaaa`, created_at: '2026-10-05T00:00:00Z' },
               { id: 2, display_title: 'verify-remote 0123456789ab/iosbbbbbb', created_at: '2026-10-05T00:00:00Z' },
               { id: 4, display_title: `verify-remote ${mine}/androiddddd`, created_at: '2026-10-05T00:00:00Z' },
+              { id: 5, display_title: `verify-remote ${mine}/probeeeeee`, created_at: '2026-10-05T00:00:00Z' },
             ]
           : [{ id: 3, display_title: `verify-remote verify-remote/${mine}/ioscccccc`, created_at: '2026-10-05T00:00:00Z' }],
       },

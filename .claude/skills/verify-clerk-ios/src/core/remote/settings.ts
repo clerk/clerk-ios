@@ -59,7 +59,8 @@ export function newSessionRequest(settings: RemoteSettings, deps: RemoteDeps, in
   const capMinutes = input.capMinutes ?? minutes(deps.env, 'VERIFY_REMOTE_CAP_MINUTES', settings.capMinutes, LIMITS.capMinutes);
   const draft: SessionRequest = {
     v: REQUEST_VERSION,
-    session: `${settings.platform}${randomBytes(3).toString('hex')}`,
+    // A probe run is not a session: its name must not start with the platform, which is how reaping finds sessions.
+    session: `${input.mode === 'probe' ? 'probe' : settings.platform}${randomBytes(3).toString('hex')}`,
     owner: driverId(settings),
     mode: input.mode,
     platform: settings.platform,
