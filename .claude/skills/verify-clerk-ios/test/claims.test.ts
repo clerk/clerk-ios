@@ -9,9 +9,10 @@ import { currentProcess, isRunning } from '../src/core/exec.ts';
 
 const taker = join(import.meta.dirname, '..', 'testing', 'claim-taker.ts');
 
-function take(dir: string, worktree: string, startAt: number): Promise<string> {
+/** Every taker swaps from the generation it saw the orphan at, as a lane claim does, so a late one cannot take the winner's claim. */
+function take(dir: string, worktree: string, startAt: number, from: number): Promise<string> {
   return new Promise((resolve, reject) => {
-    execFile(process.execPath, [taker, dir, worktree, String(startAt)], (error, stdout) => (error === null ? resolve(stdout) : reject(error)));
+    execFile(process.execPath, [taker, dir, worktree, String(startAt), String(from)], (error, stdout) => (error === null ? resolve(stdout) : reject(error)));
   });
 }
 
@@ -24,7 +25,7 @@ describe('device claims', () => {
       rmSync(gone, { recursive: true });
       assert.equal(isOrphaned({ ...orphan, owner: { pid: 1, startedAt: 0 } }), true);
       const startAt = Date.now() + 1500;
-      const results = await Promise.all(Array.from({ length: 6 }, (_, i) => take(dir, join(dir, `worktree-${i}`), startAt)));
+      const results = await Promise.all(Array.from({ length: 6 }, (_, i) => take(dir, join(dir, `worktree-${i}`), startAt, orphan.gen)));
       assert.equal(results.filter((r) => r === 'won').length, 1, `round ${round}: ${results.join(' ')}`);
     }
   });
