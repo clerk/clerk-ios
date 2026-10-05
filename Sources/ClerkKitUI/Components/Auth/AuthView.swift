@@ -70,6 +70,7 @@ public struct AuthView: View {
   @Environment(Clerk.self) var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) var dismiss
+  @Environment(\.clerkHostDismissAction) var hostDismissAction
   @State var navigation = AuthNavigation()
 
   @State var authState: AuthState
