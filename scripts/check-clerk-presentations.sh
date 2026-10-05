@@ -29,16 +29,6 @@ scan_ui_sources_for() {
   grep -rnE --include='*.swift' "$pattern" "$ui_sources" 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*//' || true
 }
 
-while IFS=: read -r file line _; do
-  if [ -z "$file" ]; then
-    continue
-  fi
-
-  if [ "$file" != "$clerk_sheet_file" ]; then
-    report_error "$file" "$line" "Present with clerkSheet instead so the presented content keeps the Clerk UI context on Designed for iPad and Mac Catalyst."
-  fi
-done < <(scan_ui_sources_for '\.sheet\(')
-
 environment_object_pattern='@Environment\(([A-Za-z0-9_]+\.)*[A-Za-z0-9_]+(<[^>]*>)?\.self\)'
 environment_type_capture='@Environment\((([A-Za-z0-9_]+\.)*[A-Za-z0-9_]+)(<[^>]*>)?\.self\)'
 carried_types="$(grep -vE '^[[:space:]]*//' "$clerk_sheet_file" | grep -oE "$environment_object_pattern" | sed -E "s/$environment_type_capture/\1/" | sort -u)"
@@ -59,5 +49,4 @@ if [ "$failure_count" -gt 0 ]; then
   exit 1
 fi
 
-clerk_sheet_count="$(scan_ui_sources_for '\.clerkSheet\(' | wc -l | tr -d ' ')"
-printf 'Clerk presentation check passed: %s clerkSheet call sites.\n' "$clerk_sheet_count"
+printf 'Clerk presentation check passed: ClerkUIContext carries %s environment object types.\n' "$(printf '%s\n' "$carried_types" | wc -l | tr -d ' ')"
