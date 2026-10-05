@@ -7,13 +7,16 @@ import Foundation
 
 struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
   private let sleep: @Sendable (UInt64) async -> Void
+  private let currentDate: @Sendable () -> Date
 
   init(
     sleep: @escaping @Sendable (UInt64) async -> Void = { nanos in
       try? await Task.sleep(nanoseconds: nanos)
-    }
+    },
+    currentDate: @escaping @Sendable () -> Date = { .now }
   ) {
     self.sleep = sleep
+    self.currentDate = currentDate
   }
 
   func shouldRetry(
@@ -113,7 +116,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
     formatter.dateFormat = "E',' dd MMM yyyy HH':'mm':'ss zzz"
 
     if let date = formatter.date(from: value) {
-      let interval = date.timeIntervalSinceNow
+      let interval = date.timeIntervalSince(currentDate())
       guard interval > 0 else { return nil }
       return nanosecondsFrom(seconds: interval)
     }
@@ -123,7 +126,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
 
   private func retryDelayFromReset(_ value: String) -> UInt64? {
     guard let resetInterval = TimeInterval(value) else { return nil }
-    let interval = resetInterval - Date().timeIntervalSince1970
+    let interval = resetInterval - currentDate().timeIntervalSince1970
     guard interval > 0 else { return nil }
     return nanosecondsFrom(seconds: interval)
   }

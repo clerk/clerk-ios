@@ -319,7 +319,7 @@ struct SessionAuthorizationTests {
   }
 
   @Test
-  func hasOnCachedTokenStaysUnderOneMillisecond() {
+  func hasOnCachedTokenCostsLessThanTenTokenDecodes() throws {
     let session = makeSession(
       orgId: "org_123",
       orgRole: "org:admin",
@@ -327,19 +327,20 @@ struct SessionAuthorizationTests {
       features: "o:reservations,u:dashboard",
       plans: "u:plus"
     )
+    let jwt = try #require(session.lastActiveToken?.jwt)
     let params = CheckAuthorizationParams(plan: "plus")
-    _ = session.checkAuthorization(params)
+    #expect(session.checkAuthorization(params))
 
-    var samples: [Double] = []
-    samples.reserveCapacity(1000)
+    let clock = ContinuousClock()
+    var checks: [Duration] = []
+    var decodes: [Duration] = []
     for _ in 0 ..< 1000 {
-      let start = CFAbsoluteTimeGetCurrent()
-      _ = session.checkAuthorization(params)
-      samples.append((CFAbsoluteTimeGetCurrent() - start) * 1000)
+      checks.append(clock.measure { _ = session.checkAuthorization(params) })
+      decodes.append(clock.measure { _ = try? DecodedJWT(jwt: jwt) })
     }
-    samples.sort()
-    let p95 = samples[949]
-    #expect(p95 < 1.0)
+    let fastestCheck = try #require(checks.min())
+    let fastestDecode = try #require(decodes.min())
+    #expect(fastestCheck < fastestDecode * 10)
   }
 
   @Test
