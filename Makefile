@@ -22,7 +22,7 @@ help:
 	@echo "  make check-e2e-hooks - Verify E2E-only product hooks remain reviewed"
 	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
 	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
-	@echo "  make check-clerk-presentations - Verify ClerkKitUI sheets present through clerkSheet"
+	@echo "  make check-clerk-presentations - Verify ClerkUIContext carries every environment object ClerkKitUI reads"
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
 	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
@@ -162,7 +162,7 @@ check-e2e-selectors:
 check-e2e-phone-numbers:
 	@./scripts/check-e2e-phone-numbers.sh
 
-# Verify ClerkKitUI sheets present through clerkSheet
+# Verify ClerkUIContext carries every environment object ClerkKitUI reads
 check-clerk-presentations:
 	@./scripts/check-clerk-presentations.sh
 
