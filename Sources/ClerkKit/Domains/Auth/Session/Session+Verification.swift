@@ -41,10 +41,10 @@ extension Session {
   /// - Returns: A ``SessionVerification`` reflecting the current state of the flow.
   @discardableResult @MainActor
   public func startVerification(level: SessionVerification.Level) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.sessionService.startVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.startVerification(
       sessionId: id,
       params: .init(level: level)
-    )
+    )).value.response
   }
 
   /// Verifies the current session using a biometric credential enrolled on this app installation.
@@ -277,19 +277,19 @@ extension Session {
 
     let localCredential = try biometricCredentials.localCredential(for: userID)
 
-    let service = try Clerk.currentDependencies.sessionService
+    let transport = try Clerk.currentDependencies.transport
     do {
       try _Concurrency.Task.checkCancellation()
       let prepared = if level == .secondFactor {
-        try await service.prepareSecondFactorVerification(
+        try await transport.send(SessionAPI.prepareSecondFactorVerification(
           sessionId: id,
           params: .init(strategy: .biometricCredential, biometricCredentialId: localCredential.id)
-        )
+        )).value.response
       } else {
-        try await service.prepareFirstFactorVerification(
+        try await transport.send(SessionAPI.prepareFirstFactorVerification(
           sessionId: id,
           params: .init(strategy: .biometricCredential, biometricCredentialId: localCredential.id)
-        )
+        )).value.response
       }
       let factor = level == .secondFactor ? prepared.secondFactorVerification : prepared.firstFactorVerification
       guard factor?.strategy == .biometricCredential,
@@ -305,7 +305,7 @@ extension Session {
       )
       try _Concurrency.Task.checkCancellation()
       let verified = if level == .secondFactor {
-        try await service.attemptSecondFactorVerification(
+        try await transport.send(SessionAPI.attemptSecondFactorVerification(
           sessionId: id,
           params: .init(
             strategy: .biometricCredential,
@@ -314,9 +314,9 @@ extension Session {
             signature: signature.signature,
             algorithm: signature.algorithm
           )
-        )
+        )).value.response
       } else {
-        try await service.attemptFirstFactorVerification(
+        try await transport.send(SessionAPI.attemptFirstFactorVerification(
           sessionId: id,
           params: .init(
             strategy: .biometricCredential,
@@ -325,7 +325,7 @@ extension Session {
             signature: signature.signature,
             algorithm: signature.algorithm
           )
-        )
+        )).value.response
       }
       if verified.status == .complete {
         Clerk.shared.identityController.invalidateSessionTokens(sessionId: id)
@@ -344,7 +344,7 @@ extension Session {
     enterpriseConnectionId: String? = nil,
     redirectUrl: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.sessionService.prepareFirstFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.prepareFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -353,7 +353,7 @@ extension Session {
         enterpriseConnectionId: enterpriseConnectionId,
         redirectUrl: redirectUrl
       )
-    )
+    )).value.response
   }
 
   @discardableResult @MainActor
@@ -363,7 +363,7 @@ extension Session {
     password: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.sessionService.attemptFirstFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -371,7 +371,7 @@ extension Session {
         password: password,
         publicKeyCredential: publicKeyCredential
       )
-    )
+    )).value.response
   }
 
   @discardableResult @MainActor
@@ -379,10 +379,10 @@ extension Session {
     strategy: FactorStrategy,
     phoneNumberId: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.sessionService.prepareSecondFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.prepareSecondFactorVerification(
       sessionId: id,
       params: .init(strategy: strategy, phoneNumberId: phoneNumberId)
-    )
+    )).value.response
   }
 
   @discardableResult @MainActor
@@ -391,13 +391,13 @@ extension Session {
     code: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.sessionService.attemptSecondFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.attemptSecondFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
         code: code,
         publicKeyCredential: publicKeyCredential
       )
-    )
+    )).value.response
   }
 }

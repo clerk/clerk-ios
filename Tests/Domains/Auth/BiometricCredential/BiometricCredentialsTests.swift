@@ -11,16 +11,17 @@ struct BiometricCredentialsTests {
   }
 
   @Test
-  func listUsesBiometricCredentialService() async throws {
+  func listReturnsServerCredentials() async throws {
     let called = LockIsolated(false)
-    let service = MockBiometricCredentialService(list: {
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
       called.setValue(true)
       return [.mock]
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      biometricCredentialService: service
+      transport: transport
     )
 
     let biometricCredentials = try await Clerk.shared.biometricCredentials.list()
@@ -30,19 +31,20 @@ struct BiometricCredentialsTests {
   }
 
   @Test
-  func revokeUsesBiometricCredentialService() async throws {
+  func revokeSendsCredentialIdAndActiveSessionId() async throws {
     Clerk.shared.client = .mock
     let capturedBiometricCredentialId = LockIsolated<String?>(nil)
     let capturedSessionId = LockIsolated<String?>(nil)
-    let service = MockBiometricCredentialService(revoke: { biometricCredentialId, sessionId in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, sessionId in
       capturedBiometricCredentialId.setValue(biometricCredentialId)
       capturedSessionId.setValue(sessionId)
       return .mock
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      biometricCredentialService: service
+      transport: transport
     )
 
     let biometricCredential = try await Clerk.shared.biometricCredentials.revoke(id: "tdc_123")
@@ -89,9 +91,9 @@ struct BiometricCredentialsTests {
   func availabilityReconcilesServerCredentialWhenSessionIsActive() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(list: { [.mock] })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList { [.mock] }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     let availability = try await setup.biometricCredentials.availability()
 
@@ -102,12 +104,12 @@ struct BiometricCredentialsTests {
   func localAvailabilityDoesNotReconcileServerCredentialWhenSessionIsActive() throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        Issue.record("Local availability should not fetch biometric credentials.")
-        return []
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      Issue.record("Local availability should not fetch biometric credentials.")
+      return []
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     let availability = try setup.biometricCredentials.localAvailability()
 
@@ -121,12 +123,12 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let capturedBiometricCredentialId = LockIsolated<String?>(nil)
-    let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { biometricCredentialId in
-        capturedBiometricCredentialId.setValue(biometricCredentialId)
-        return .init(valid: true)
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialValidate { biometricCredentialId in
+      capturedBiometricCredentialId.setValue(biometricCredentialId)
+      return .init(valid: true)
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
@@ -140,10 +142,12 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialValidate { _ in
+      throw missingBiometricCredentialError()
+    }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { _ in
-        throw missingBiometricCredentialError()
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -162,14 +166,16 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mockSignedOut
     let validatedBiometricCredentialIds = LockIsolated<[String]>([])
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialValidate { biometricCredentialId in
+      validatedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      if biometricCredentialId == "tdc_new" {
+        throw missingBiometricCredentialError()
+      }
+      return .init(valid: true)
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { biometricCredentialId in
-        validatedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
-        if biometricCredentialId == "tdc_new" {
-          throw missingBiometricCredentialError()
-        }
-        return .init(valid: true)
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -199,10 +205,12 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialValidate { _ in
+      throw URLError(.timedOut)
+    }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { _ in
-        throw URLError(.timedOut)
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -219,12 +227,12 @@ struct BiometricCredentialsTests {
   func validateLocalCredentialIfPossibleIsInconclusiveWithoutCachedClient() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = nil
-    let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(validateSignInCredential: { _ in
-        Issue.record("Validation should not run without a cached client.")
-        return .init(valid: true)
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialValidate { _ in
+      Issue.record("Validation should not run without a cached client.")
+      return .init(valid: true)
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     let result = await setup.biometricCredentials.validateLocalCredentialIfPossible()
 
@@ -237,10 +245,12 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      [biometricCredential(id: "tdc_old", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        [biometricCredential(id: "tdc_old", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -272,12 +282,12 @@ struct BiometricCredentialsTests {
       lastActiveSessionId: Session.mockExpired.id,
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
-    let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        Issue.record("Expired sessions should not trigger authenticated biometric-credential list.")
-        return []
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      Issue.record("Expired sessions should not trigger authenticated biometric-credential list.")
+      return []
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     let availability = try await setup.biometricCredentials.availability()
 
@@ -316,8 +326,10 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList { [] }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(list: { [] }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -359,14 +371,14 @@ struct BiometricCredentialsTests {
   func signInUsesCurrentAppCredentialWhenSharedKeychainContainsNewerCredential() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(signInService: MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    ))
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_current_app",
       localKeyId: "tdlk_current_app",
@@ -381,7 +393,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_current_app")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_current_app")
     #expect(try setup.credentialStore.credential(id: "tdc_other_app") != nil)
   }
 
@@ -391,11 +403,13 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      listWasCalled.setValue(true)
+      return []
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        listWasCalled.setValue(true)
-        return []
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -423,11 +437,13 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      listWasCalled.setValue(true)
+      return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        listWasCalled.setValue(true)
-        return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -458,11 +474,11 @@ struct BiometricCredentialsTests {
   func availabilityUsesUserIDWhenIdentifierHintChanged() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        [biometricCredential(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      [biometricCredential(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_current_user",
       localKeyId: "tdlk_current_user",
@@ -499,18 +515,17 @@ struct BiometricCredentialsTests {
   func enrollCreatesKeyPreparesChallengeAttemptsAndPersistsMetadata() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let preparedParams = LockIsolated<BiometricCredential.PrepareEnrollmentParams?>(nil)
-    let attemptedParams = LockIsolated<BiometricCredential.AttemptEnrollmentParams?>(nil)
-    let biometricCredentialService = MockBiometricCredentialService(
-      prepareEnrollment: { _, params in
-        preparedParams.setValue(params)
-        return .mock
-      },
-      attemptEnrollment: { _, params in
-        attemptedParams.setValue(params)
-        return .mock
-      }
-    )
+    let preparedParams = LockIsolated<JSON?>(nil)
+    let attemptedParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialPrepareEnrollment { _, params in
+      preparedParams.setValue(params)
+      return .mock
+    }
+    transport.stubBiometricCredentialAttemptEnrollment { _, params in
+      attemptedParams.setValue(params)
+      return .mock
+    }
     let keyManager = MockBiometricCredentialKeyManager(
       createKeyWithPolicy: { policy in
         #expect(policy == .biometryOrDevicePasscode)
@@ -528,7 +543,7 @@ struct BiometricCredentialsTests {
       }
     )
     let setup = makeBiometricCredentials(
-      biometricCredentialService: biometricCredentialService,
+      transport: transport,
       keyManager: keyManager
     )
 
@@ -541,10 +556,10 @@ struct BiometricCredentialsTests {
     let localCredential = try #require(try setup.credentialStore.credential(id: "tdc_123"))
 
     #expect(biometricCredential == .mock)
-    #expect(preparedParams.value?.appIdentifier == "com.clerk.example")
-    #expect(preparedParams.value?.name == "Sean's iPhone")
-    #expect(preparedParams.value?.publicKeyJWK == BiometricCredentialLocalKey.mock.publicKeyJWK)
-    #expect(attemptedParams.value?.signature == "enrollment_signature")
+    #expect(preparedParams.value?["app_identifier"]?.stringValue == "com.clerk.example")
+    #expect(preparedParams.value?["name"]?.stringValue == "Sean's iPhone")
+    #expect(preparedParams.value?["public_key_jwk"]?.stringValue == BiometricCredentialLocalKey.mock.publicKeyJWK)
+    #expect(attemptedParams.value?["signature"]?.stringValue == "enrollment_signature")
     #expect(localCredential.localKeyId == BiometricCredentialLocalKey.mock.localKeyId)
     #expect(localCredential.userID == User.mock.id)
     #expect(localCredential.identifierHint == "sean@example.com")
@@ -556,23 +571,19 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let requestedSessionIds = LockIsolated<[String]>([])
-    let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(
-        prepareEnrollment: { sessionId, _ in
-          requestedSessionIds.withValue { $0.append(sessionId) }
-          await MainActor.run {
-            var client = Client.mock
-            client.lastActiveSessionId = Session.mock2.id
-            Clerk.shared.client = client
-          }
-          return .mock
-        },
-        attemptEnrollment: { sessionId, _ in
-          requestedSessionIds.withValue { $0.append(sessionId) }
-          return .mock
-        }
-      )
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialPrepareEnrollment { sessionId, _ in
+      requestedSessionIds.withValue { $0.append(sessionId) }
+      var client = Client.mock
+      client.lastActiveSessionId = Session.mock2.id
+      Clerk.shared.client = client
+      return .mock
+    }
+    transport.stubBiometricCredentialAttemptEnrollment { sessionId, _ in
+      requestedSessionIds.withValue { $0.append(sessionId) }
+      return .mock
+    }
+    let setup = makeBiometricCredentials(transport: transport)
 
     _ = try await setup.biometricCredentials.enroll()
     let localCredential = try #require(try setup.credentialStore.credential(id: BiometricCredential.mock.id))
@@ -588,22 +599,20 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mock
     let revokedBiometricCredentialIds = LockIsolated<[String]>([])
     let revokedSessionIds = LockIsolated<[String?]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialAttemptEnrollment { _, _ in
+      var client = Client.mock
+      client.lastActiveSessionId = Session.mock2.id
+      Clerk.shared.client = client
+      return .mock
+    }
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, sessionId in
+      revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      revokedSessionIds.withValue { $0.append(sessionId) }
+      return .mock
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(
-        attemptEnrollment: { _, _ in
-          await MainActor.run {
-            var client = Client.mock
-            client.lastActiveSessionId = Session.mock2.id
-            Clerk.shared.client = client
-          }
-          return .mock
-        },
-        revoke: { biometricCredentialId, sessionId in
-          revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
-          revokedSessionIds.withValue { $0.append(sessionId) }
-          return .mock
-        }
-      ),
+      transport: transport,
       credentialStoreKeychain: SetFailingKeychain()
     )
 
@@ -622,11 +631,13 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mock
     let revokedBiometricCredentialIds = LockIsolated<[String]>([])
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, _ in
+      revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      return biometricCredential(id: biometricCredentialId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(revoke: { biometricCredentialId, _ in
-        revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
-        return biometricCredential(id: biometricCredentialId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -665,11 +676,11 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialPrepareEnrollment { _, _ in .mock }
+    transport.stubBiometricCredentialAttemptEnrollment { _, _ in throw ClerkClientError(message: "Attempt failed") }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(
-        prepareEnrollment: { _, _ in .mock },
-        attemptEnrollment: { _, _ in throw ClerkClientError(message: "Attempt failed") }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -694,10 +705,12 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { _, _ in
+      throw ClerkClientError(message: "Revoke failed")
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in
-        throw ClerkClientError(message: "Revoke failed")
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -729,14 +742,12 @@ struct BiometricCredentialsTests {
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
     let prepareWasCalled = LockIsolated(false)
-    let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(
-        prepareEnrollment: { _, _ in
-          prepareWasCalled.setValue(true)
-          return .mock
-        }
-      )
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialPrepareEnrollment { _, _ in
+      prepareWasCalled.setValue(true)
+      return .mock
+    }
+    let setup = makeBiometricCredentials(transport: transport)
 
     _ = try await setup.biometricCredentials.enroll()
 
@@ -773,15 +784,14 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let deletedLocalKeyIds = LockIsolated<[String]>([])
-    let biometricCredentialService = MockBiometricCredentialService(
-      prepareEnrollment: { _, _ in .mock },
-      attemptEnrollment: { _, _ in throw ClerkClientError(message: "Attempt failed") }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialPrepareEnrollment { _, _ in .mock }
+    transport.stubBiometricCredentialAttemptEnrollment { _, _ in throw ClerkClientError(message: "Attempt failed") }
     let keyManager = MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
       deletedLocalKeyIds.withValue { $0.append(localKeyId) }
     })
     let setup = makeBiometricCredentials(
-      biometricCredentialService: biometricCredentialService,
+      transport: transport,
       keyManager: keyManager
     )
 
@@ -813,8 +823,10 @@ struct BiometricCredentialsTests {
   @Test
   func revokeDeletesLocalCredentialAfterServerRevoke() async throws {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { _, _ in .mock }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in .mock }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -830,8 +842,10 @@ struct BiometricCredentialsTests {
   @Test
   func revokeReturnsServerCredentialWhenLocalCleanupFails() async throws {
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { _, _ in .mock }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in .mock }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
         throw TestKeyDeletionError.failed
@@ -850,20 +864,18 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let revokedBiometricCredentialIds = LockIsolated<[String]>([])
-    let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(
-        list: {
-          [
-            biometricCredential(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10)),
-            biometricCredential(id: "tdc_other_user", createdAt: Date(timeIntervalSinceReferenceDate: 20)),
-          ]
-        },
-        revoke: { biometricCredentialId, _ in
-          revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
-          return biometricCredential(id: biometricCredentialId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
-        }
-      )
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialList {
+      [
+        biometricCredential(id: "tdc_current_user", createdAt: Date(timeIntervalSinceReferenceDate: 10)),
+        biometricCredential(id: "tdc_other_user", createdAt: Date(timeIntervalSinceReferenceDate: 20)),
+      ]
+    }
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, _ in
+      revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      return biometricCredential(id: biometricCredentialId, createdAt: Date(timeIntervalSinceReferenceDate: 10))
+    }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_current_user",
       localKeyId: "tdlk_current_user",
@@ -892,12 +904,12 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let revokeWasCalled = LockIsolated(false)
-    let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(revoke: { _, _ in
-        revokeWasCalled.setValue(true)
-        return .mock
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { _, _ in
+      revokeWasCalled.setValue(true)
+      return .mock
+    }
+    let setup = makeBiometricCredentials(transport: transport)
 
     let biometricCredential = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
 
@@ -919,12 +931,12 @@ struct BiometricCredentialsTests {
       updatedAt: Date(timeIntervalSinceReferenceDate: 1_234_567_890)
     )
     let revokedBiometricCredentialIds = LockIsolated<[String]>([])
-    let setup = try makeBiometricCredentialsWithLocalCredential(
-      biometricCredentialService: MockBiometricCredentialService(revoke: { biometricCredentialId, _ in
-        revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
-        return .mock
-      })
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, _ in
+      revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      return .mock
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     _ = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
 
@@ -1031,18 +1043,17 @@ struct BiometricCredentialsTests {
   func signInUsesCreateChallengeAndAttemptsFirstFactor() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let capturedAttempt = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let signInService = MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { signInId, params in
-        capturedAttempt.setValue((signInId, params))
-        return .mockBiometricCredentialComplete
-      }
-    )
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let capturedAttempt = LockIsolated<(String, JSON?)?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { signInId, params in
+      capturedAttempt.setValue((signInId, params))
+      return .mockBiometricCredentialComplete
+    }
     let keyManager = MockBiometricCredentialKeyManager(sign: { clientData, localKeyId, localizedReason in
       #expect(clientData == biometricCredentialChallengeClientData)
       #expect(localKeyId == "tdlk_mock")
@@ -1050,35 +1061,35 @@ struct BiometricCredentialsTests {
       return .init(clientData: clientData, signature: "sign_in_signature")
     })
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: signInService,
+      transport: transport,
       keyManager: keyManager
     )
 
     let signIn = try await setup.biometricCredentials.signIn(reason: "Sign in with Face ID.")
 
     #expect(signIn == .mockBiometricCredentialComplete)
-    #expect(capturedCreateParams.value?.strategy == .biometricCredential)
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_123")
+    #expect(capturedCreateParams.value?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_123")
     #expect(capturedAttempt.value?.0 == "si_trusted_device")
-    #expect(capturedAttempt.value?.1.strategy == .biometricCredential)
-    #expect(capturedAttempt.value?.1.biometricCredentialId == "tdc_123")
-    #expect(capturedAttempt.value?.1.clientData == biometricCredentialChallengeClientData)
-    #expect(capturedAttempt.value?.1.signature == "sign_in_signature")
-    #expect(capturedAttempt.value?.1.algorithm == .es256)
+    #expect(capturedAttempt.value?.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+    #expect(capturedAttempt.value?.1?["trusted_device_id"]?.stringValue == "tdc_123")
+    #expect(capturedAttempt.value?.1?["client_data"]?.stringValue == biometricCredentialChallengeClientData)
+    #expect(capturedAttempt.value?.1?["signature"]?.stringValue == "sign_in_signature")
+    #expect(capturedAttempt.value?.1?["algorithm"]?.stringValue == BiometricCredential.Algorithm.es256.rawValue)
   }
 
   @Test
   func signInUsesNewestLocalCredentialWhenNoIdIsProvided() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(signInService: MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    ))
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_old",
       localKeyId: "tdlk_old",
@@ -1092,7 +1103,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_new")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_new")
   }
 
   @Test
@@ -1100,20 +1111,18 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
     let listWasCalled = LockIsolated(false)
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        listWasCalled.setValue(true)
-        return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
-      }),
-      signInService: MockSignInService(
-        create: { params in
-          capturedCreateParams.setValue(params)
-          return .mockBiometricCredentialChallenge
-        },
-        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-      )
-    )
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    transport.stubBiometricCredentialList {
+      listWasCalled.setValue(true)
+      return [biometricCredential(id: "tdc_active_user", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_active_user",
       localKeyId: "tdlk_active_user",
@@ -1130,21 +1139,21 @@ struct BiometricCredentialsTests {
     _ = try await setup.biometricCredentials.signIn()
 
     #expect(listWasCalled.value)
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_active_user")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_active_user")
   }
 
   @Test
   func signInUsesIdentifierHintToSelectMatchingLocalCredential() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
-    let setup = makeBiometricCredentials(signInService: MockSignInService(
-      create: { params in
-        capturedCreateParams.setValue(params)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    ))
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = makeBiometricCredentials(transport: transport)
     try setup.credentialStore.save(localCredential(
       id: "tdc_sean",
       localKeyId: "tdlk_sean",
@@ -1160,7 +1169,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn(identifierHint: "  SEAN@example.com  ")
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_sean")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_sean")
   }
 
   @Test
@@ -1169,14 +1178,14 @@ struct BiometricCredentialsTests {
     Clerk.shared.client = .mockSignedOut
     let attemptWasCalled = LockIsolated(false)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in throw missingBiometricCredentialError(code: "trusted_device_not_registered") }
+    transport.stubSignInAttemptFirstFactor { _, _ in
+      attemptWasCalled.setValue(true)
+      return .mockBiometricCredentialComplete
+    }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in throw missingBiometricCredentialError(code: "trusted_device_not_registered") },
-        attemptFirstFactor: { _, _ in
-          attemptWasCalled.setValue(true)
-          return .mockBiometricCredentialComplete
-        }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1200,11 +1209,11 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in .mockBiometricCredentialChallenge }
+    transport.stubSignInAttemptFirstFactor { _, _ in throw missingBiometricCredentialError() }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in .mockBiometricCredentialChallenge },
-        attemptFirstFactor: { _, _ in throw missingBiometricCredentialError() }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1227,10 +1236,10 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in throw missingBiometricCredentialError(paramName: "identifier") }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in throw missingBiometricCredentialError(paramName: "identifier") }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1252,19 +1261,19 @@ struct BiometricCredentialsTests {
   func signInSkipsStaleNewerCredentialWhenSignedIn() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mock
-    let capturedCreateParams = LockIsolated<SignIn.CreateParams?>(nil)
+    let capturedCreateParams = LockIsolated<JSON?>(nil)
     let deletedLocalKeyIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { params in
+      capturedCreateParams.setValue(params)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    transport.stubBiometricCredentialList {
+      [biometricCredential(id: "tdc_123", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
+    }
     let setup = makeBiometricCredentials(
-      biometricCredentialService: MockBiometricCredentialService(list: {
-        [biometricCredential(id: "tdc_123", createdAt: Date(timeIntervalSinceReferenceDate: 10))]
-      }),
-      signInService: MockSignInService(
-        create: { params in
-          capturedCreateParams.setValue(params)
-          return .mockBiometricCredentialChallenge
-        },
-        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-      ),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(deleteKey: { localKeyId in
         deletedLocalKeyIds.withValue { $0.append(localKeyId) }
       })
@@ -1282,7 +1291,7 @@ struct BiometricCredentialsTests {
 
     _ = try await setup.biometricCredentials.signIn()
 
-    #expect(capturedCreateParams.value?.biometricCredentialId == "tdc_123")
+    #expect(capturedCreateParams.value?["trusted_device_id"]?.stringValue == "tdc_123")
     #expect(deletedLocalKeyIds.value == ["tdlk_new"])
     #expect(try setup.credentialStore.credential(id: "tdc_new") == nil)
   }
@@ -1292,15 +1301,14 @@ struct BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let prepareWasCalled = LockIsolated(false)
-    let signInService = MockSignInService(
-      create: { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) },
-      prepareFirstFactor: { _, _ in
-        prepareWasCalled.setValue(true)
-        return .mockBiometricCredentialChallenge
-      },
-      attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-    )
-    let setup = try makeBiometricCredentialsWithLocalCredential(signInService: signInService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in SignIn(id: "si_missing_challenge", status: .needsIdentifier) }
+    transport.stubSignInPrepareFirstFactor { _, _ in
+      prepareWasCalled.setValue(true)
+      return .mockBiometricCredentialChallenge
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
 
     do {
       _ = try await setup.biometricCredentials.signIn(id: "tdc_123")
@@ -1391,8 +1399,7 @@ private enum TestKeyDeletionError: Error {
 
 @MainActor
 private func makeBiometricCredentialsWithLocalCredential(
-  biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
-  signInService: SignInServiceProtocol = MockSignInService(),
+  transport: FakeTransport = .mockDefaults(),
   keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
   localCredential: BiometricCredentialLocalRecord = .mock
 ) throws -> (
@@ -1400,8 +1407,7 @@ private func makeBiometricCredentialsWithLocalCredential(
   credentialStore: BiometricCredentialLocalStore
 ) {
   let setup = makeBiometricCredentials(
-    biometricCredentialService: biometricCredentialService,
-    signInService: signInService,
+    transport: transport,
     keyManager: keyManager
   )
   try setup.credentialStore.save(localCredential)
@@ -1410,8 +1416,7 @@ private func makeBiometricCredentialsWithLocalCredential(
 
 @MainActor
 private func makeBiometricCredentials(
-  biometricCredentialService: BiometricCredentialServiceProtocol = MockBiometricCredentialService(),
-  signInService: SignInServiceProtocol = MockSignInService(),
+  transport: FakeTransport = .mockDefaults(),
   keyManager: MockBiometricCredentialKeyManager = MockBiometricCredentialKeyManager(),
   credentialStoreKeychain: any KeychainStorage = InMemoryKeychain()
 ) -> (
@@ -1420,13 +1425,61 @@ private func makeBiometricCredentials(
 ) {
   let credentialStore = BiometricCredentialLocalStore(keychain: credentialStoreKeychain)
   let biometricCredentials = BiometricCredentials(
-    biometricCredentialService: biometricCredentialService,
-    signInService: signInService,
+    transport: transport,
     keyManager: keyManager,
     credentialStore: credentialStore,
     appIdentifierProvider: { "com.clerk.example" }
   )
   return (biometricCredentials, credentialStore)
+}
+
+extension FakeTransport {
+  fileprivate func stubBiometricCredentialList(_ list: @escaping @MainActor () async throws -> [BiometricCredential]) {
+    stub(BiometricCredentialAPI.list()) { _ in
+      try await ClientResponse(response: list(), client: nil)
+    }
+  }
+
+  fileprivate func stubBiometricCredentialPrepareEnrollment(
+    _ prepare: @escaping @MainActor (_ sessionId: String, _ body: JSON?) async throws -> BiometricCredentialChallenge
+  ) {
+    stub(BiometricCredentialAPI.prepareEnrollment(sessionId: "", params: .init(appIdentifier: "", publicKeyJWK: ""))) { call in
+      try await ClientResponse(response: prepare(call.sessionIdQueryValue ?? "", call.body), client: nil)
+    }
+  }
+
+  fileprivate func stubBiometricCredentialAttemptEnrollment(
+    _ attempt: @escaping @MainActor (_ sessionId: String, _ body: JSON?) async throws -> BiometricCredential
+  ) {
+    stub(BiometricCredentialAPI.attemptEnrollment(
+      sessionId: "",
+      params: .init(appIdentifier: "", publicKeyJWK: "", clientData: "", signature: "")
+    )) { call in
+      try await ClientResponse(response: attempt(call.sessionIdQueryValue ?? "", call.body), client: nil)
+    }
+  }
+
+  fileprivate func stubBiometricCredentialValidate(
+    _ validate: @escaping @MainActor (_ biometricCredentialId: String) async throws -> BiometricCredentialValidation
+  ) {
+    stub(BiometricCredentialAPI.validateSignInCredential(biometricCredentialId: "")) { call in
+      try await ClientResponse(response: validate(call.body?["trusted_device_id"]?.stringValue ?? ""), client: nil)
+    }
+  }
+
+  fileprivate func stubBiometricCredentialRevoke(
+    _ revoke: @escaping @MainActor (_ biometricCredentialId: String, _ sessionId: String?) async throws -> BiometricCredential
+  ) {
+    stub(BiometricCredentialAPI.revoke(biometricCredentialId: FakeTransport.anyPathSegment, sessionId: nil)) { call in
+      try await ClientResponse(response: revoke(String(call.path.split(separator: "/")[3]), call.sessionIdQueryValue), client: nil)
+    }
+  }
+}
+
+extension FakeTransport.Call {
+  fileprivate var sessionIdQueryValue: String? {
+    query.first { $0.name == "_clerk_session_id" }?.value
+  }
 }
 
 extension SignIn {
@@ -1471,17 +1524,16 @@ extension BiometricCredentialsTests {
       ),
       localCredential: credential
     )
-    let service = MockSessionService(
-      prepareFirstFactorVerification: { _, _ in
-        Issue.record("An incompatible credential must be rejected before a network request.")
-        return .mockNeedsFirstFactor
-      },
-      prepareSecondFactorVerification: { _, _ in
-        Issue.record("An incompatible credential must be rejected before a network request.")
-        return .mockNeedsSecondFactor
-      }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      Issue.record("An incompatible credential must be rejected before a network request.")
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
+    transport.stub(SessionAPI.prepareSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { _ in
+      Issue.record("An incompatible credential must be rejected before a network request.")
+      return ClientResponse(response: .mockNeedsSecondFactor, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
 
     await #expect(throws: BiometricCredentialError.policyIncompatible) {
       try await Session.mock.verifyWithBiometrics(level: level, biometricCredentials: setup.biometricCredentials)
@@ -1498,18 +1550,17 @@ extension BiometricCredentialsTests {
     try setup.credentialStore.save(localCredential(
       id: "tdc_weaker", localKeyId: "tdlk_weaker", policy: policy, createdAt: Date(timeIntervalSinceReferenceDate: 20)
     ))
-    let service = MockSessionService(
-      prepareFirstFactorVerification: { _, params in
-        #expect(params.biometricCredentialId == "tdc_123")
-        return SessionVerification(status: .needsFirstFactor, level: .firstFactor,
-                                   firstFactorVerification: Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge))
-      },
-      attemptFirstFactorVerification: { _, params in
-        #expect(params.biometricCredentialId == "tdc_123")
-        return SessionVerification(status: .complete, level: .firstFactor)
-      }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      return ClientResponse(response: SessionVerification(status: .needsFirstFactor, level: .firstFactor,
+                                                          firstFactorVerification: Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge)), client: nil)
+    }
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      return ClientResponse(response: SessionVerification(status: .complete, level: .firstFactor), client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
 
     let result = try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
 
@@ -1522,11 +1573,11 @@ extension BiometricCredentialsTests {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
     let credential = localCredential(id: "tdc_123", localKeyId: "tdlk_mock", policy: policy, createdAt: .now)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in .mockBiometricCredentialChallenge }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mockBiometricCredentialComplete }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(
-        create: { _ in .mockBiometricCredentialChallenge },
-        attemptFirstFactor: { _, _ in .mockBiometricCredentialComplete }
-      ),
+      transport: transport,
       localCredential: credential
     )
 
@@ -1554,53 +1605,57 @@ extension BiometricCredentialsTests {
     Clerk.shared.client = client
     let calls = LockIsolated<[String]>([])
     let factor = Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge)
-    let service = MockSessionService(
-      startVerification: { id, _ in
-        #expect(id == Session.mock.id)
-        calls.withValue { $0.append("start") }
-        return try decodedBiometricReverification(status: .needsFirstFactor)
-      },
-      prepareFirstFactorVerification: { id, params in
-        #expect(level == .firstFactor)
-        #expect(id == Session.mock.id)
-        #expect(params.biometricCredentialId == "tdc_123")
-        calls.withValue { $0.append("prepare") }
-        var prepared = try decodedBiometricReverification(status: .needsFirstFactor)
-        prepared.firstFactorVerification = factor
-        return prepared
-      },
-      attemptFirstFactorVerification: { id, params in
-        #expect(id == Session.mock.id)
-        if level == .secondFactor {
-          #expect(params.strategy == .password)
-          #expect(params.password == "test-password")
-          calls.withValue { $0.append("password") }
-          return try decodedBiometricReverification(status: .needsSecondFactor)
-        }
-        #expect(params.strategy == .biometricCredential)
-        #expect(params.biometricCredentialId == "tdc_123")
-        calls.withValue { $0.append("attempt") }
-        return try decodedBiometricReverification(status: .complete)
-      },
-      prepareSecondFactorVerification: { id, params in
-        #expect(level == .secondFactor)
-        #expect(id == Session.mock.id)
-        #expect(params.biometricCredentialId == "tdc_123")
-        calls.withValue { $0.append("prepare") }
-        var prepared = try decodedBiometricReverification(status: .needsSecondFactor)
-        prepared.secondFactorVerification = factor
-        return prepared
-      },
-      attemptSecondFactorVerification: { id, params in
-        #expect(level == .secondFactor)
-        #expect(id == Session.mock.id)
-        #expect(params.strategy == .biometricCredential)
-        #expect(params.biometricCredentialId == "tdc_123")
-        calls.withValue { $0.append("attempt") }
-        return try decodedBiometricReverification(status: .complete)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.startVerification(sessionId: FakeTransport.anyPathSegment, params: .init(level: .firstFactor))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(id == Session.mock.id)
+      calls.withValue { $0.append("start") }
+      return try ClientResponse(response: decodedBiometricReverification(status: .needsFirstFactor), client: nil)
+    }
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .firstFactor)
+      #expect(id == Session.mock.id)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      calls.withValue { $0.append("prepare") }
+      var prepared = try decodedBiometricReverification(status: .needsFirstFactor)
+      prepared.firstFactorVerification = factor
+      return ClientResponse(response: prepared, client: nil)
+    }
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(id == Session.mock.id)
+      if level == .secondFactor {
+        #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .password)
+        #expect(call.body?["password"]?.stringValue == "test-password")
+        calls.withValue { $0.append("password") }
+        return try ClientResponse(response: decodedBiometricReverification(status: .needsSecondFactor), client: nil)
       }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+      #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      calls.withValue { $0.append("attempt") }
+      return try ClientResponse(response: decodedBiometricReverification(status: .complete), client: nil)
+    }
+    transport.stub(SessionAPI.prepareSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .secondFactor)
+      #expect(id == Session.mock.id)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      calls.withValue { $0.append("prepare") }
+      var prepared = try decodedBiometricReverification(status: .needsSecondFactor)
+      prepared.secondFactorVerification = factor
+      return ClientResponse(response: prepared, client: nil)
+    }
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .secondFactor)
+      #expect(id == Session.mock.id)
+      #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      calls.withValue { $0.append("attempt") }
+      return try ClientResponse(response: decodedBiometricReverification(status: .complete), client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(sign: { data, key, _ in
       #expect(key == BiometricCredentialLocalRecord.mock.localKeyId)
       calls.withValue { $0.append("sign") }
@@ -1641,17 +1696,16 @@ extension BiometricCredentialsTests {
       client.sessions.append(session)
     }
     Clerk.shared.client = client
-    let service = MockSessionService(
-      prepareFirstFactorVerification: { _, _ in
-        Issue.record("Must resolve the session's user before preparing a challenge.")
-        return .mockNeedsFirstFactor
-      },
-      prepareSecondFactorVerification: { _, _ in
-        Issue.record("Must resolve the session's user before preparing a challenge.")
-        return .mockNeedsSecondFactor
-      }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      Issue.record("Must resolve the session's user before preparing a challenge.")
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
+    transport.stub(SessionAPI.prepareSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { _ in
+      Issue.record("Must resolve the session's user before preparing a challenge.")
+      return ClientResponse(response: .mockNeedsSecondFactor, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     // A usable credential for the active user must not substitute for the missing owner.
     let setup = try makeBiometricCredentialsWithLocalCredential(
       keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
@@ -1678,52 +1732,56 @@ extension BiometricCredentialsTests {
       firstFactorVerification: level == .firstFactor ? factor : nil,
       secondFactorVerification: level == .secondFactor ? factor : nil
     )
-    let service = MockSessionService(
-      prepareFirstFactorVerification: { id, params in
-        #expect(level == .firstFactor)
-        #expect(id == session.id)
-        #expect(params.biometricCredentialId == "tdc_123")
-        #expect(params.strategy == .biometricCredential)
-        calls.withValue { $0.append("prepare") }
-        return prepared
-      },
-      attemptFirstFactorVerification: { id, params in
-        #expect(level == .firstFactor)
-        #expect(id == session.id)
-        #expect(params.strategy == .biometricCredential)
-        #expect(params.biometricCredentialId == "tdc_123")
-        #expect(params.clientData == biometricCredentialChallengeClientData)
-        #expect(params.signature == "signed-challenge")
-        #expect(params.algorithm == .es256)
-        calls.withValue { $0.append("attempt") }
-        return SessionVerification(status: .complete, level: .multiFactor)
-      },
-      prepareSecondFactorVerification: { id, params in
-        #expect(level == .secondFactor)
-        #expect(id == session.id)
-        #expect(params.biometricCredentialId == "tdc_123")
-        #expect(params.strategy == .biometricCredential)
-        calls.withValue { $0.append("prepare") }
-        return prepared
-      },
-      attemptSecondFactorVerification: { id, params in
-        #expect(level == .secondFactor)
-        #expect(id == session.id)
-        #expect(params.strategy == .biometricCredential)
-        #expect(params.biometricCredentialId == "tdc_123")
-        #expect(params.clientData == biometricCredentialChallengeClientData)
-        #expect(params.signature == "signed-challenge")
-        #expect(params.algorithm == .es256)
-        calls.withValue { $0.append("attempt") }
-        return SessionVerification(status: .complete, level: .multiFactor)
-      }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .firstFactor)
+      #expect(id == session.id)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+      calls.withValue { $0.append("prepare") }
+      return ClientResponse(response: prepared, client: nil)
+    }
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .firstFactor)
+      #expect(id == session.id)
+      #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      #expect(call.body?["client_data"]?.stringValue == biometricCredentialChallengeClientData)
+      #expect(call.body?["signature"]?.stringValue == "signed-challenge")
+      #expect(call.body?["algorithm"]?.stringValue == BiometricCredential.Algorithm.es256.rawValue)
+      calls.withValue { $0.append("attempt") }
+      return ClientResponse(response: SessionVerification(status: .complete, level: .multiFactor), client: nil)
+    }
+    transport.stub(SessionAPI.prepareSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .secondFactor)
+      #expect(id == session.id)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+      calls.withValue { $0.append("prepare") }
+      return ClientResponse(response: prepared, client: nil)
+    }
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      let id = String(call.path.split(separator: "/")[3])
+      #expect(level == .secondFactor)
+      #expect(id == session.id)
+      #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .biometricCredential)
+      #expect(call.body?["trusted_device_id"]?.stringValue == "tdc_123")
+      #expect(call.body?["client_data"]?.stringValue == biometricCredentialChallengeClientData)
+      #expect(call.body?["signature"]?.stringValue == "signed-challenge")
+      #expect(call.body?["algorithm"]?.stringValue == BiometricCredential.Algorithm.es256.rawValue)
+      calls.withValue { $0.append("attempt") }
+      return ClientResponse(response: SessionVerification(status: .complete, level: .multiFactor), client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
+    transport.stubSignInCreate { _ in
+      Issue.record("Reverification must not create a sign-in.")
+      return .mock
+    }
     let setup = try makeBiometricCredentialsWithLocalCredential(
-      signInService: MockSignInService(create: { _ in
-        Issue.record("Reverification must not create a sign-in.")
-        return .mock
-      }),
+      transport: transport,
       keyManager: MockBiometricCredentialKeyManager(sign: { data, key, reason in
         #expect(data == biometricCredentialChallengeClientData)
         #expect(key == BiometricCredentialLocalRecord.mock.localKeyId)
@@ -1750,11 +1808,12 @@ extension BiometricCredentialsTests {
       }),
       localCredential: localCredential(id: "tdc_other", localKeyId: "other-key", userID: "other-user", createdAt: .now)
     )
-    let service = MockSessionService(prepareFirstFactorVerification: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
       Issue.record("Must not prepare another user's credential.")
-      return .mockNeedsFirstFactor
-    })
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     await #expect(throws: ClerkClientError.self) {
       try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)
     }
@@ -1767,8 +1826,9 @@ extension BiometricCredentialsTests {
     challenge.biometricCredentialId = "tdc_other"
     let prepared = SessionVerification(status: .needsFirstFactor, level: .firstFactor,
                                        firstFactorVerification: mismatched ? Verification(strategy: .biometricCredential, biometricCredentialChallenge: challenge) : nil)
-    let service = MockSessionService(prepareFirstFactorVerification: { _, _ in prepared })
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in ClientResponse(response: prepared, client: nil) }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
       Issue.record("Must not sign an invalid challenge.")
       throw CancellationError()
@@ -1781,17 +1841,16 @@ extension BiometricCredentialsTests {
   @Test
   func reverifyCancellationDoesNotSubmitOrDeleteCredential() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
-    let service = MockSessionService(
-      prepareFirstFactorVerification: { _, _ in
-        SessionVerification(status: .needsFirstFactor, level: .firstFactor,
-                            firstFactorVerification: Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge))
-      },
-      attemptFirstFactorVerification: { _, _ in
-        Issue.record("Cancelled biometrics must not submit a verification.")
-        return .mockComplete
-      }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      ClientResponse(response: SessionVerification(status: .needsFirstFactor, level: .firstFactor,
+                                                   firstFactorVerification: Verification(strategy: .biometricCredential, biometricCredentialChallenge: biometricCredentialChallenge)), client: nil)
+    }
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      Issue.record("Cancelled biometrics must not submit a verification.")
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(sign: { _, _, _ in
       throw BiometricCredentialKeyManagerError.biometricAuthenticationCanceled
     }))
@@ -1813,25 +1872,24 @@ extension BiometricCredentialsTests {
       firstFactorVerification: level == .firstFactor ? factor : nil,
       secondFactorVerification: level == .secondFactor ? factor : nil
     )
-    let service = MockSessionService(
-      prepareFirstFactorVerification: { _, _ in
-        #expect(level == .firstFactor)
-        return prepared
-      },
-      attemptFirstFactorVerification: { _, _ in
-        Issue.record("Expired challenges must not submit a first-factor verification.")
-        return .mockComplete
-      },
-      prepareSecondFactorVerification: { _, _ in
-        #expect(level == .secondFactor)
-        return prepared
-      },
-      attemptSecondFactorVerification: { _, _ in
-        Issue.record("Expired challenges must not submit a second-factor verification.")
-        return .mockComplete
-      }
-    )
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      #expect(level == .firstFactor)
+      return ClientResponse(response: prepared, client: nil)
+    }
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      Issue.record("Expired challenges must not submit a first-factor verification.")
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
+    transport.stub(SessionAPI.prepareSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { _ in
+      #expect(level == .secondFactor)
+      return ClientResponse(response: prepared, client: nil)
+    }
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { _ in
+      Issue.record("Expired challenges must not submit a second-factor verification.")
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     let setup = try makeBiometricCredentialsWithLocalCredential(keyManager: MockBiometricCredentialKeyManager(
       sign: { _, _, _ in
         Issue.record("Expired challenges must not show the biometric prompt.")
@@ -1854,10 +1912,11 @@ extension BiometricCredentialsTests {
   @Test
   func reverifyRemovesRevokedCredential() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
-    let service = MockSessionService(prepareFirstFactorVerification: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
       throw missingBiometricCredentialError(code: "trusted_device_not_registered")
-    })
-    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), sessionService: service)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
     let setup = try makeBiometricCredentialsWithLocalCredential()
     await #expect(throws: ClerkClientError.self) {
       try await Session.mock.verifyWithBiometrics(biometricCredentials: setup.biometricCredentials)

@@ -222,9 +222,9 @@ struct WatchConnectivityCoordinatorTests {
     let keychain = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
+      transport: FakeTransport.answeringClient { throw CancellationError() },
       keychain: keychain,
-      identityKeychain: SetFailingKeychain(),
-      clientService: MockClientService(get: { throw CancellationError() })
+      identityKeychain: SetFailingKeychain()
     )
     try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
     clerk.dependencies = dependencies
@@ -238,16 +238,15 @@ struct WatchConnectivityCoordinatorTests {
 
   private func makeClerk(
     token: String? = nil,
-    client: Client? = nil,
-    clientService: (any ClientServiceProtocol)? = nil
+    client: Client? = nil
   ) throws -> (Clerk, InMemoryKeychain) {
     configureClerkForTesting()
     let clerk = Clerk()
     let keychain = InMemoryKeychain()
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      clientService: clientService ?? MockClientService(get: { throw CancellationError() })
+      transport: FakeTransport.answeringClient { throw CancellationError() },
+      keychain: keychain
     )
     try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
     clerk.dependencies = dependencies

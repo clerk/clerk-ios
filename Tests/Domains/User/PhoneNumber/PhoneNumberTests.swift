@@ -6,27 +6,29 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct PhoneNumberTests {
+  private let transport = FakeTransport.mockDefaults()
+
   init() {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockPhoneNumberService) {
+  private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      phoneNumberService: service
+      transport: transport
     )
   }
 
   @Test
-  func deleteUsesPhoneNumberServiceDelete() async throws {
+  func deleteSendsPhoneNumberId() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(delete: { phoneNumberId in
-      captured.setValue(phoneNumberId)
-      return .mock
-    })
+    transport.stub(PhoneNumberAPI.delete(phoneNumberId: FakeTransport.anyPathSegment)) { call in
+      captured.setValue(String(call.path.split(separator: "/")[3]))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await phoneNumber.delete()
 
@@ -34,15 +36,15 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func sendCodeUsesPhoneNumberServicePrepareVerification() async throws {
+  func sendCodeSendsPhoneNumberId() async throws {
     let phoneNumber = PhoneNumber.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(prepareVerification: { phoneNumberId in
-      captured.setValue(phoneNumberId)
-      return .mock
-    })
+    transport.stub(PhoneNumberAPI.prepareVerification(phoneNumberId: FakeTransport.anyPathSegment)) { call in
+      captured.setValue(String(call.path.split(separator: "/")[3]))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await phoneNumber.sendCode()
 
@@ -50,54 +52,56 @@ struct PhoneNumberTests {
   }
 
   @Test
-  func verifyCodeUsesPhoneNumberServiceAttemptVerification() async throws {
+  func verifyCodeSendsPhoneNumberIdAndCode() async throws {
     let phoneNumber = PhoneNumber.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockPhoneNumberService(attemptVerification: { phoneNumberId, code in
-      captured.setValue((phoneNumberId, code))
-      return .mock
-    })
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stub(PhoneNumberAPI.attemptVerification(phoneNumberId: FakeTransport.anyPathSegment, code: "")) { call in
+      captured.setValue((String(call.path.split(separator: "/")[3]), call.body))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await phoneNumber.verifyCode("123456")
 
     let params = try #require(captured.value)
     #expect(params.0 == phoneNumber.id)
-    #expect(params.1 == "123456")
+    #expect(params.1?["code"]?.stringValue == "123456")
   }
 
   @Test
-  func makeDefaultSecondFactorUsesPhoneNumberServiceMakeDefaultSecondFactor() async throws {
+  func makeDefaultSecondFactorSendsPhoneNumberId() async throws {
     let phoneNumber = PhoneNumber.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockPhoneNumberService(makeDefaultSecondFactor: { phoneNumberId in
-      captured.setValue(phoneNumberId)
-      return .mock
-    })
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stub(PhoneNumberAPI.makeDefaultSecondFactor(phoneNumberId: FakeTransport.anyPathSegment)) { call in
+      captured.setValue((String(call.path.split(separator: "/")[3]), call.body))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await phoneNumber.makeDefaultSecondFactor()
 
-    #expect(captured.value == phoneNumber.id)
+    let params = try #require(captured.value)
+    #expect(params.0 == phoneNumber.id)
+    #expect(params.1?["default_second_factor"]?.boolValue == true)
   }
 
   @Test
-  func setReservedForSecondFactorUsesPhoneNumberServiceSetReservedForSecondFactor() async throws {
+  func setReservedForSecondFactorSendsPhoneNumberIdAndReserved() async throws {
     let phoneNumber = PhoneNumber.mock
-    let captured = LockIsolated<(String, Bool)?>(nil)
-    let service = MockPhoneNumberService(setReservedForSecondFactor: { phoneNumberId, reserved in
-      captured.setValue((phoneNumberId, reserved))
-      return .mock
-    })
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stub(PhoneNumberAPI.setReservedForSecondFactor(phoneNumberId: FakeTransport.anyPathSegment, reserved: true)) { call in
+      captured.setValue((String(call.path.split(separator: "/")[3]), call.body))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await phoneNumber.setReservedForSecondFactor(reserved: true)
 
     let params = try #require(captured.value)
     #expect(params.0 == phoneNumber.id)
-    #expect(params.1 == true)
+    #expect(params.1?["reserved_for_second_factor"]?.boolValue == true)
   }
 }

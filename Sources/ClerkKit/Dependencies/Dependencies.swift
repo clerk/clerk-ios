@@ -27,34 +27,6 @@ protocol Dependencies: AnyObject {
 
   var telemetryCollector: any TelemetryCollectorProtocol { get }
 
-  var clientService: ClientServiceProtocol { get }
-
-  var hostedAuthService: HostedAuthServiceProtocol { get }
-
-  var userService: UserServiceProtocol { get }
-
-  var signInService: SignInServiceProtocol { get }
-
-  var signUpService: SignUpServiceProtocol { get }
-
-  var sessionService: SessionServiceProtocol { get }
-
-  var magicLinkService: MagicLinkServiceProtocol { get }
-
-  var passkeyService: PasskeyServiceProtocol { get }
-
-  var biometricCredentialService: BiometricCredentialServiceProtocol { get }
-
-  var organizationService: OrganizationServiceProtocol { get }
-
-  var billingService: BillingServiceProtocol { get }
-
-  var environmentService: EnvironmentServiceProtocol { get }
-
-  var phoneNumberService: PhoneNumberServiceProtocol { get }
-
-  var externalAccountService: ExternalAccountServiceProtocol { get }
-
   var configurationManager: ConfigurationManager { get }
 
   var magicLinkStore: MagicLinkStore { get }

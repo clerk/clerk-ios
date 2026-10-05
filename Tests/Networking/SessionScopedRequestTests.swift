@@ -36,7 +36,7 @@ struct SessionScopedRequestTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.reload()
+    _ = try await Clerk.shared.dependencies.transport.send(UserAPI.reload())
     #expect(requestHandled.value)
   }
 
@@ -59,7 +59,7 @@ struct SessionScopedRequestTests {
     }
     mock.register()
 
-    _ = try await Clerk.shared.dependencies.userService.reload()
+    _ = try await Clerk.shared.dependencies.transport.send(UserAPI.reload())
     #expect(requestHandled.value)
   }
 
@@ -142,10 +142,10 @@ struct SessionScopedRequestTests {
     }
     throttledMock.register()
 
-    let sessionService = clerk.dependencies.sessionService
+    let auth = clerk.auth
     let retry = ClerkRateLimitRetryMiddleware(sleep: { _ in
       do {
-        try await sessionService.setActive(sessionId: nextSessionID, organizationId: nil)
+        try await auth.setActive(sessionId: nextSessionID, organizationId: nil)
       } catch {
         Issue.record("Could not set the active session: \(error)")
       }

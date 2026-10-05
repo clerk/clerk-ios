@@ -348,7 +348,7 @@ struct ClerkAPIClientTests {
     }
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
-      clientService: MockClientService(get: {
+      transport: FakeTransport.answeringClient {
         let call = refreshCount.withValue {
           $0 += 1
           return $0
@@ -358,7 +358,7 @@ struct ClerkAPIClientTests {
           return startupClient
         }
         return recoveredClient
-      })
+      }
     )
     clerk.performConfiguration(dependencies: dependencies)
     defer {
@@ -407,7 +407,7 @@ struct ClerkAPIClientTests {
     let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
-      clientService: MockClientService(get: {
+      transport: FakeTransport.answeringClient {
         let call = refreshCount.withValue {
           $0 += 1
           return $0
@@ -416,7 +416,7 @@ struct ClerkAPIClientTests {
           await startupGate.suspend()
         }
         return startupClient
-      })
+      }
     )
     clerk.performConfiguration(dependencies: dependencies)
     defer {

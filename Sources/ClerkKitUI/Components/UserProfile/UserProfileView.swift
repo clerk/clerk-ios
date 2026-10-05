@@ -630,17 +630,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   UserProfileView()
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -679,17 +679,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
     }
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -704,17 +704,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   UserProfileView(isDismissible: false)
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -731,17 +731,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   UserProfileView(isDismissible: false, navigationPath: $navigationPath)
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }

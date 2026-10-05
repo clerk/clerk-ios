@@ -14,7 +14,7 @@ struct ClerkPreviewTests {
     var fixture = EmailAddress.mock
     fixture.id = "email_preview"
     fixture.emailAddress = "preview@example.com"
-    let transport = FakeTransport.previewDefaults()
+    let transport = FakeTransport.mockDefaults()
     transport.stub(EmailAddressAPI.create(email: fixture.emailAddress), returning: ClientResponse(response: fixture, client: nil))
 
     let clerk = makePreview { preview in
@@ -33,7 +33,7 @@ struct ClerkPreviewTests {
 
   @Test
   func emailCreationPropagatesPreviewTransportErrors() async throws {
-    let transport = FakeTransport.previewDefaults()
+    let transport = FakeTransport.mockDefaults()
     transport.stub(EmailAddressAPI.create(email: "preview@example.com")) { _ in
       throw PreviewError.rejected
     }
@@ -49,23 +49,20 @@ struct ClerkPreviewTests {
     #expect(transport.calls.count == 1)
   }
 
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @Test
-  func emailCreationPreservesExplicitServiceHandler() async throws {
-    var fixture = EmailAddress.mock
-    fixture.id = "email_custom_handler"
-    let transport = FakeTransport()
-    let clerk = makePreview { preview in
-      preview.transport = transport
-      preview.services.userService.createEmailAddressHandler = { email in
-        #expect(email == "custom@example.com")
-        return fixture
-      }
-    }
+  func passkeyCreationReturnsThePreviewPasskeyWithoutPlatformRegistration() async throws {
+    let clerk = makePreview { _ in }
     let user = try #require(clerk.user)
 
-    #expect(try await user.createEmailAddress("custom@example.com") == fixture)
-    #expect(transport.calls.isEmpty)
+    let environmentKey = "XCODE_RUNNING_FOR_PREVIEWS"
+    setenv(environmentKey, "1", 1)
+    defer { unsetenv(environmentKey) }
+    let passkey = try await user.createPasskey()
+
+    #expect(passkey.id == Passkey.mock.id)
   }
+  #endif
 
   private func makePreview(_ configure: @escaping (PreviewBuilder) -> Void) -> Clerk {
     let environmentKey = "XCODE_RUNNING_FOR_PREVIEWS"

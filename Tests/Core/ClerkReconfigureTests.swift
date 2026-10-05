@@ -104,15 +104,16 @@ struct ClerkReconfigureTests {
     let requestStarted = LockIsolated(false)
     let requestCancelled = LockIsolated(false)
     let shutdownFinished = LockIsolated(false)
+    let transport = FakeTransport.answeringClient { throw CancellationError() }
+    transport.stubSessionToken { _, _, _ in
+      requestStarted.setValue(true)
+      defer { requestCancelled.setValue(Task.isCancelled) }
+      try await Task.sleep(for: .seconds(30))
+      return nil
+    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
-      clientService: MockClientService(get: { throw CancellationError() }),
-      sessionService: MockSessionService(fetchToken: { _, _, _ in
-        requestStarted.setValue(true)
-        defer { requestCancelled.setValue(Task.isCancelled) }
-        try await Task.sleep(for: .seconds(30))
-        return nil
-      })
+      transport: transport
     )
 
     var shutdownTask: Task<Void, Error>?
@@ -501,14 +502,15 @@ struct ClerkReconfigureTests {
   @Test
   func reconfigureClearsTokensBeforeSessionChangedEvent() async throws {
     let cachedJWT = try unexpiredJWT()
-    let sessionService = MockSessionService(fetchToken: { _, _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSessionToken { _, _, _ in
       throw CancellationError()
-    })
+    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      transport: transport,
       keychain: InMemoryKeychain(),
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-      sessionService: sessionService
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     Clerk.shared.performConfiguration(dependencies: dependencies)
     Clerk.shared.client = .mock
@@ -569,15 +571,17 @@ struct ClerkReconfigureTests {
   }
 
   @Test
-  func modelServiceCallsAreCancelledWhileReconfigureIsInProgress() async throws {
-    let serviceCalls = LockIsolated(0)
+  func modelRequestsAreCancelledWhileReconfigureIsInProgress() async throws {
+    let requestCount = LockIsolated(0)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(UserAPI.reload()) { _ in
+      requestCount.withValue { $0 += 1 }
+      return ClientResponse(response: .mock, client: nil)
+    }
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector,
-      userService: MockUserService(reload: {
-        serviceCalls.withValue { $0 += 1 }
-        return .mock
-      })
+      transport: transport,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
     )
     try Clerk.shared.performConfiguration(dependencies: dependencies)
 
@@ -587,7 +591,7 @@ struct ClerkReconfigureTests {
     await #expect(throws: CancellationError.self) {
       _ = try await User.mock.reload()
     }
-    #expect(serviceCalls.value == 0)
+    #expect(requestCount.value == 0)
   }
 
   @Test
@@ -666,7 +670,7 @@ struct ClerkReconfigureTests {
 
   @Test
   func oldInFlightClientResponseIsIgnoredAfterReconfigure() async throws {
-    let oldClientService = Clerk.shared.dependencies.clientService
+    let oldTransport = Clerk.shared.dependencies.transport
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client")!
     var mock = try Mock(
       url: originalURL,
@@ -681,7 +685,7 @@ struct ClerkReconfigureTests {
     mock.register()
 
     let oldRequest = Task { @MainActor in
-      try await oldClientService.getResponse()
+      try await oldTransport.send(ClientAPI.get())
     }
     try await Task.sleep(for: .milliseconds(20))
 
@@ -710,14 +714,14 @@ struct ClerkReconfigureTests {
       updatedAt: Date(timeIntervalSince1970: 1_700_000_000)
     )
     let serviceStarted = LockIsolated(false)
-    let service = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       serviceStarted.setValue(true)
       try await Task.sleep(for: .milliseconds(100))
       return staleClient
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      clientService: service
+      transport: transport
     )
 
     let refreshTask = Task { @MainActor in
@@ -744,14 +748,14 @@ struct ClerkReconfigureTests {
   @Test
   func staleRefreshEnvironmentDoesNotApplyAfterReconfigure() async throws {
     let serviceStarted = LockIsolated(false)
-    let service = MockEnvironmentService(get: {
+    let transport = FakeTransport.answeringEnvironment {
       serviceStarted.setValue(true)
       try await Task.sleep(for: .milliseconds(100))
       return .mock
-    })
+    }
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
-      environmentService: service
+      transport: transport
     )
 
     let refreshTask = Task { @MainActor in

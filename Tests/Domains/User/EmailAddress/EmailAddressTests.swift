@@ -16,8 +16,7 @@ struct EmailAddressTests {
     let apiClient = createMockAPIClient()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: apiClient,
-      transport: transport,
-      userService: UserService(apiClient: apiClient)
+      transport: transport
     )
   }
 
@@ -94,8 +93,8 @@ struct EmailAddressTests {
   }
 
   @Test
-  func previewDefaultsAnswerEveryEmailAddressEndpoint() async throws {
-    useTransport(.previewDefaults())
+  func mockDefaultsAnswerEveryEmailAddressEndpoint() async throws {
+    useTransport(.mockDefaults())
     let emailAddress = EmailAddress.mock
 
     #expect(try await User.mock.createEmailAddress("preview@example.com").id == emailAddress.id)

@@ -205,24 +205,10 @@ public struct User: Codable, Equatable, Sendable, Identifiable {
 }
 
 extension User {
-  @MainActor
-  private var userService: any UserServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.userService
-    }
-  }
-
-  @MainActor
-  private var billingService: any BillingServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.billingService
-    }
-  }
-
   /// Reloads the user from the Clerk API.
   @discardableResult @MainActor
   public func reload() async throws -> User {
-    try await userService.reload()
+    try await Clerk.currentDependencies.transport.send(UserAPI.reload()).value.response
   }
 
   /// Updates the user's attributes. Use this method to save information you collected about the user.
@@ -239,19 +225,19 @@ extension User {
   ///   Prefer ``updateMetadata(unsafeMetadata:)`` for metadata updates.
   @discardableResult @MainActor
   public func update(_ params: User.UpdateParams) async throws -> User {
-    let service = try userService
+    let transport = try Clerk.currentDependencies.transport
 
     guard let desiredUnsafeMetadata = params.deprecatedUnsafeMetadata else {
-      return try await service.update(params: params)
+      return try await transport.send(UserAPI.update(params: params)).value.response
     }
 
     let paramsWithoutUnsafeMetadata = params.withoutUnsafeMetadata
     let hasProfileUpdates = paramsWithoutUnsafeMetadata.hasAnyField
     let userAfterProfileUpdate: User =
       if hasProfileUpdates {
-        try await service.update(params: paramsWithoutUnsafeMetadata)
+        try await transport.send(UserAPI.update(params: paramsWithoutUnsafeMetadata)).value.response
       } else {
-        try await service.reload()
+        try await transport.send(UserAPI.reload()).value.response
       }
 
     let currentUnsafeMetadata = userAfterProfileUpdate.unsafeMetadata ?? .object([:])
@@ -260,7 +246,7 @@ extension User {
       return userAfterProfileUpdate
     }
 
-    return try await service.updateMetadata(params: .init(unsafeMetadata: patch))
+    return try await transport.send(UserAPI.updateMetadata(params: .init(unsafeMetadata: patch))).value.response
   }
 
   /// Updates the user's unsafe metadata.
@@ -268,7 +254,7 @@ extension User {
   /// Values are merged into the existing unsafe metadata. Set a key to `JSON.null` to remove it.
   @discardableResult @MainActor
   public func updateMetadata(_ params: User.UpdateMetadataParams) async throws -> User {
-    try await userService.updateMetadata(params: params)
+    try await Clerk.currentDependencies.transport.send(UserAPI.updateMetadata(params: params)).value.response
   }
 
   /// Updates the user's unsafe metadata.
@@ -284,21 +270,21 @@ extension User {
   /// - Returns: ``BackupCodeResource``
   @discardableResult @MainActor
   public func createBackupCodes() async throws -> BackupCodeResource {
-    try await userService.createBackupCodes()
+    try await Clerk.currentDependencies.transport.send(UserAPI.createBackupCodes()).value.response
   }
 
   /// Adds an email address for the user. A new EmailAddress will be created and associated with the user.
   /// - Parameter email: The value of the email address.
   @discardableResult @MainActor
   public func createEmailAddress(_ emailAddress: String) async throws -> EmailAddress {
-    try await userService.createEmailAddress(emailAddress: emailAddress)
+    try await Clerk.currentDependencies.transport.send(EmailAddressAPI.create(email: emailAddress)).value.response
   }
 
   /// Adds a phone number for the user. A new PhoneNumber will be created and associated with the user.
   /// - Parameter phoneNumber: The value of the phone number, in E.164 format.
   @discardableResult @MainActor
   public func createPhoneNumber(_ phoneNumber: String) async throws -> PhoneNumber {
-    try await userService.createPhoneNumber(phoneNumber: phoneNumber)
+    try await Clerk.currentDependencies.transport.send(PhoneNumberAPI.create(phoneNumber: phoneNumber)).value.response
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -316,12 +302,12 @@ extension User {
     additionalScopes: [String]? = nil,
     oidcPrompts: [OIDCPrompt] = []
   ) async throws -> ExternalAccount {
-    try await userService.createExternalAccount(
+    try await Clerk.currentDependencies.transport.send(UserAPI.createExternalAccount(
       provider: provider,
-      redirectUrl: redirectUrl,
+      redirectUrl: redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl,
       additionalScopes: additionalScopes ?? [],
       oidcPrompts: oidcPrompts
-    )
+    )).value.response
   }
 
   /// Adds an external account for the user. A new ExternalAccount will be created and associated with the user.
@@ -332,7 +318,7 @@ extension User {
   ///     - idToken: The ID token from the provider.
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    try await userService.createExternalAccountToken(provider: provider, idToken: idToken)
+    try await Clerk.currentDependencies.transport.send(UserAPI.createExternalAccountToken(provider: provider, idToken: idToken)).value.response
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
@@ -365,7 +351,52 @@ extension User {
   /// - Returns: ``Passkey``
   @discardableResult @MainActor
   public func createPasskey() async throws -> Passkey {
-    try await userService.createPasskey()
+    let passkey = try await Clerk.currentDependencies.transport.send(PasskeyAPI.create()).value.response
+
+    // Previews can't present platform passkey registration.
+    if EnvironmentDetection.isRunningInPreviews {
+      return passkey
+    }
+
+    guard let challenge = passkey.challenge else {
+      throw ClerkClientError(message: "Unable to get the challenge for the passkey.", localizationBundle: .module)
+    }
+
+    guard let name = passkey.username else {
+      throw ClerkClientError(message: "Unable to get the username for the passkey.", localizationBundle: .module)
+    }
+
+    guard let userId = passkey.userId else {
+      throw ClerkClientError(message: "Unable to get the user ID for the passkey.", localizationBundle: .module)
+    }
+
+    let manager = PasskeyHelper()
+    let authorization = try await manager.createPasskey(
+      challenge: challenge,
+      name: name,
+      userId: userId,
+      relyingPartyIdentifier: passkey.relyingPartyIdentifier
+    )
+
+    guard
+      let credentialRegistration = authorization.credential as? ASAuthorizationPlatformPublicKeyCredentialRegistration,
+      let rawAttestationObject = credentialRegistration.rawAttestationObject
+    else {
+      throw ClerkClientError(message: "Invalid credential type.", localizationBundle: .module)
+    }
+
+    let publicKeyCredential: [String: any Encodable] = [
+      "id": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+      "rawId": credentialRegistration.credentialID.base64EncodedString().base64URLFromBase64String(),
+      "type": "public-key",
+      "response": [
+        "attestationObject": rawAttestationObject.base64EncodedString().base64URLFromBase64String(),
+        "clientDataJSON": credentialRegistration.rawClientDataJSON.base64EncodedString().base64URLFromBase64String(),
+      ],
+    ]
+
+    let publicKeyCredentialJSON = try JSON(publicKeyCredential)
+    return try await passkey.attemptVerification(credential: publicKeyCredentialJSON.debugDescription)
   }
   #endif
 
@@ -374,7 +405,7 @@ extension User {
   /// Note that if this method is called again (while still unverified), it replaces the previously generated secret.
   @discardableResult @MainActor
   public func createTOTP() async throws -> TOTPResource {
-    try await userService.createTotp()
+    try await Clerk.currentDependencies.transport.send(UserAPI.createTotp()).value.response
   }
 
   /// Verifies a TOTP secret after a user has created it.
@@ -384,13 +415,13 @@ extension User {
   /// - Parameter code: A 6 digit TOTP generated from the user's authenticator app.
   @discardableResult @MainActor
   public func verifyTOTP(code: String) async throws -> TOTPResource {
-    try await userService.verifyTotp(code: code)
+    try await Clerk.currentDependencies.transport.send(UserAPI.verifyTotp(code: code)).value.response
   }
 
   /// Disables TOTP by deleting the user's TOTP secret.
   @discardableResult @MainActor
   public func disableTOTP() async throws -> DeletedObject {
-    try await userService.disableTotp()
+    try await Clerk.currentDependencies.transport.send(UserAPI.disableTotp()).value.response
   }
 
   /// Retrieves a list of organization invitations for the user.
@@ -424,7 +455,7 @@ extension User {
     pageSize: Int = 10,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation> {
-    try await userService.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: status)
+    try await Clerk.currentDependencies.transport.send(UserAPI.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: status)).value.response
   }
 
   /// Retrieves a list of organization memberships for the user.
@@ -453,7 +484,7 @@ extension User {
     offset: Int = 0,
     pageSize: Int = 10
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
-    try await userService.getOrganizationMemberships(offset: offset, pageSize: pageSize)
+    try await Clerk.currentDependencies.transport.send(UserAPI.getOrganizationMemberships(offset: offset, pageSize: pageSize)).value.response
   }
 
   /// Leaves the organization with the provided id.
@@ -461,7 +492,7 @@ extension User {
   /// - Returns: A ``DeletedObject`` response.
   @discardableResult @MainActor
   public func leaveOrganization(organizationId: String) async throws -> DeletedObject {
-    try await userService.leaveOrganization(organizationId: organizationId)
+    try await Clerk.currentDependencies.transport.send(UserAPI.leaveOrganization(organizationId: organizationId)).value.response
   }
 
   /// Retrieves a list of organization suggestions for the user.
@@ -495,7 +526,7 @@ extension User {
     pageSize: Int = 10,
     status: [String] = []
   ) async throws -> ClerkPaginatedResponse<OrganizationSuggestion> {
-    try await userService.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: status)
+    try await Clerk.currentDependencies.transport.send(UserAPI.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: status)).value.response
   }
 
   private func offset(forPage page: Int, pageSize: Int) -> Int {
@@ -508,7 +539,7 @@ extension User {
   /// - Returns: An ``OrganizationCreationDefaults`` object.
   @discardableResult @MainActor
   public func getOrganizationCreationDefaults() async throws -> OrganizationCreationDefaults {
-    try await userService.getOrganizationCreationDefaults()
+    try await Clerk.currentDependencies.transport.send(UserAPI.getOrganizationCreationDefaults()).value.response
   }
 
   /// Retrieves all active sessions for this user.
@@ -516,7 +547,9 @@ extension User {
   /// This method uses a cache so a network request will only be triggered only once. Returns an array of SessionWithActivities objects.
   @discardableResult @MainActor
   public func getSessions() async throws -> [Session] {
-    try await userService.getSessions(user: self)
+    let sessions = try await Clerk.currentDependencies.transport.send(UserAPI.getSessions()).value
+    Clerk.shared.sessionsByUserId[id] = sessions
+    return sessions
   }
 
   /// Lists the user's saved payment methods.
@@ -526,13 +559,13 @@ extension User {
   ///   - pageSize: The maximum number of payment methods to return per page. Defaults to `20`.
   @MainActor
   public func getPaymentMethods(page: Int = 1, pageSize: Int = 20) async throws -> ClerkPaginatedResponse<BillingPaymentMethod> {
-    try await billingService.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: nil)
+    try await Clerk.currentDependencies.transport.send(BillingAPI.getPaymentMethods(params: GetPaymentMethodsParams(page: page, pageSize: pageSize), orgId: nil)).value.response
   }
 
   /// Updates the user's password. Passwords must be at least 8 characters long.
   @discardableResult @MainActor
   public func updatePassword(_ params: UpdatePasswordParams) async throws -> User {
-    try await userService.updatePassword(params: params)
+    try await Clerk.currentDependencies.transport.send(UserAPI.updatePassword(params: params)).value.response
   }
 
   /// Adds the user's profile image or replaces it if one already exists. This method will upload an image and associate it with the user.
@@ -540,18 +573,28 @@ extension User {
   ///     - imageData: The image, in data format, to set as the user's profile image.
   @discardableResult @MainActor
   public func setProfileImage(imageData: Data) async throws -> ImageResource {
-    try await userService.setProfileImage(imageData: imageData)
+    let boundary = UUID().uuidString
+    var data = Data()
+    data.append(Data("\r\n--\(boundary)\r\n".utf8))
+    data.append(Data("Content-Disposition: form-data; name=\"file\"; filename=\"\(UUID().uuidString)\"\r\n".utf8))
+    data.append(Data("Content-Type: image/jpeg\r\n\r\n".utf8))
+    data.append(imageData)
+    data.append(Data("\r\n--\(boundary)--\r\n".utf8))
+
+    return try await Clerk.currentDependencies.transport.upload(for: UserAPI.setProfileImage(boundary: boundary), from: data).value.response
   }
 
   /// Deletes the user's profile image.
   @discardableResult @MainActor
   public func deleteProfileImage() async throws -> DeletedObject {
-    try await userService.deleteProfileImage()
+    try await Clerk.currentDependencies.transport.send(UserAPI.deleteProfileImage()).value.response
   }
 
   /// Deletes the current user.
   @discardableResult @MainActor
   public func delete() async throws -> DeletedObject {
-    try await userService.delete()
+    let deletedObject = try await Clerk.currentDependencies.transport.send(UserAPI.delete()).value.response
+    Clerk.shared.auth.send(.accountDeleted)
+    return deletedObject
   }
 }

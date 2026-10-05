@@ -203,11 +203,7 @@ public final class Clerk {
   public var auth: Auth {
     Auth(
       magicLinkStore: dependencies.magicLinkStore,
-      magicLinkService: dependencies.magicLinkService,
-      hostedAuthService: dependencies.hostedAuthService,
-      signInService: dependencies.signInService,
-      signUpService: dependencies.signUpService,
-      sessionService: dependencies.sessionService,
+      transport: dependencies.transport,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator
@@ -222,19 +218,18 @@ public final class Clerk {
   ///
   /// Use this property to create organizations.
   public var organizations: Organizations {
-    Organizations(organizationService: dependencies.organizationService)
+    Organizations(transport: dependencies.transport)
   }
 
   /// Reads Plans, Subscriptions, statements, payment attempts, and credits.
   public var billing: Billing {
-    Billing(billingService: dependencies.billingService)
+    Billing(transport: dependencies.transport)
   }
 
   /// The main entry point for biometric credential operations.
   public var biometricCredentials: BiometricCredentials {
     BiometricCredentials(
-      biometricCredentialService: dependencies.biometricCredentialService,
-      signInService: dependencies.signInService,
+      transport: dependencies.transport,
       keyManager: dependencies.biometricCredentialKeyManager,
       credentialStore: dependencies.biometricCredentialStore
     )
@@ -464,19 +459,16 @@ extension Clerk {
     try Task.checkCancellation()
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
-    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
+    let response = try await dependencies.transport.send(ClientAPI.get(skipClientId: skipClientId))
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
-    switch response.update {
-    case .client(let responseClient):
+    if let responseClient = response.value.response {
       identityController.applyResponseClient(
         responseClient,
         responseSequence: response.requestSequence,
         serverDate: response.serverDate,
         clientResponseGeneration: clientResponseGeneration
       )
-    case .preserve:
-      break
     }
     return client
   }

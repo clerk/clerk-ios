@@ -6,6 +6,8 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SignInTests {
+  private let transport = FakeTransport.mockDefaults()
+
   private enum PasskeyTestError: Error {
     case preparationFailed
     case secondFactorPreparationFailed
@@ -18,34 +20,10 @@ struct SignInTests {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockSignInService) {
+  private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      signInService: service
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  private func configureServices(signUpService: MockSignUpService) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signUpService: signUpService
-    )
-    try! (Clerk.shared.dependencies as! MockDependencyContainer)
-      .configurationManager
-      .configure(publishableKey: testPublishableKey, options: .init())
-  }
-
-  private func configureServices(
-    signInService: MockSignInService,
-    signUpService: MockSignUpService
-  ) {
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      signInService: signInService,
-      signUpService: signUpService
+      transport: transport
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -61,22 +39,20 @@ struct SignInTests {
     _ expectedStage: PasskeyAuthenticationFailure.Stage
   ) async {
     let signIn = SignIn.mock
-    let service = MockSignInService(
-      prepareFirstFactor: { _, _ in
-        if expectedStage == .preparingFirstFactor {
-          throw PasskeyTestError.preparationFailed
-        }
-        return .mock
-      },
-      attemptFirstFactor: { _, _ in
-        if expectedStage == .attemptingFirstFactor {
-          throw PasskeyTestError.attemptFailed
-        }
-        return .mock
+    transport.stubSignInPrepareFirstFactor { _, _ in
+      if expectedStage == .preparingFirstFactor {
+        throw PasskeyTestError.preparationFailed
       }
-    )
+      return .mock
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in
+      if expectedStage == .attemptingFirstFactor {
+        throw PasskeyTestError.attemptFailed
+      }
+      return .mock
+    }
 
-    configureService(service)
+    configureTransport()
 
     do {
       _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in
@@ -95,11 +71,11 @@ struct SignInTests {
   @Test
   func publicPasskeyAuthenticationPreservesUnderlyingError() async {
     let signIn = SignIn.mock
-    let service = MockSignInService(prepareFirstFactor: { _, _ in
+    transport.stubSignInPrepareFirstFactor { _, _ in
       throw PasskeyTestError.preparationFailed
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     await #expect(throws: PasskeyTestError.self) {
       try await signIn.authenticateWithPasskey()
@@ -140,31 +116,29 @@ struct SignInTests {
         nonce: "{\"challenge\":\"challenge\"}"
       )
     )
-    let capturedPrepare = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
-    let capturedAttempt = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
-    let service = MockSignInService(
-      prepareSecondFactor: { id, params in
-        capturedPrepare.setValue((id, params))
-        return preparedSignIn
-      },
-      attemptSecondFactor: { id, params in
-        capturedAttempt.setValue((id, params))
-        return preparedSignIn
-      }
-    )
+    let capturedPrepare = LockIsolated<(String, JSON?)?>(nil)
+    let capturedAttempt = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareSecondFactor { id, params in
+      capturedPrepare.setValue((id, params))
+      return preparedSignIn
+    }
+    transport.stubSignInAttemptSecondFactor { id, params in
+      capturedAttempt.setValue((id, params))
+      return preparedSignIn
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
 
     let prepare = try #require(capturedPrepare.value)
     #expect(prepare.0 == signIn.id)
-    #expect(prepare.1.strategy == .passkey)
+    #expect(prepare.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .passkey)
     let attempt = try #require(capturedAttempt.value)
     #expect(attempt.0 == signIn.id)
-    #expect(attempt.1.strategy == .passkey)
-    #expect(attempt.1.code == nil)
-    #expect(attempt.1.publicKeyCredential == "credential")
+    #expect(attempt.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .passkey)
+    #expect(attempt.1?["code"] == nil)
+    #expect(attempt.1?["public_key_credential"]?.stringValue == "credential")
   }
 
   @Test(arguments: [
@@ -179,22 +153,20 @@ struct SignInTests {
       status: .needsSecondFactor,
       supportedSecondFactors: [Factor(strategy: .passkey)]
     )
-    let service = MockSignInService(
-      prepareSecondFactor: { _, _ in
-        if expectedStage == .preparingSecondFactor {
-          throw PasskeyTestError.secondFactorPreparationFailed
-        }
-        return signIn
-      },
-      attemptSecondFactor: { _, _ in
-        if expectedStage == .attemptingSecondFactor {
-          throw PasskeyTestError.secondFactorAttemptFailed
-        }
-        return signIn
+    transport.stubSignInPrepareSecondFactor { _, _ in
+      if expectedStage == .preparingSecondFactor {
+        throw PasskeyTestError.secondFactorPreparationFailed
       }
-    )
+      return signIn
+    }
+    transport.stubSignInAttemptSecondFactor { _, _ in
+      if expectedStage == .attemptingSecondFactor {
+        throw PasskeyTestError.secondFactorAttemptFailed
+      }
+      return signIn
+    }
 
-    configureService(service)
+    configureTransport()
 
     do {
       _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
@@ -206,25 +178,25 @@ struct SignInTests {
   }
 
   @Test
-  func sendEmailCodeUsesSignInServicePrepareFirstFactor() async throws {
+  func sendEmailCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
-    let service = MockSignInService(prepareFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.sendEmailCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .emailCode)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailCode)
   }
 
   @Test
-  func sendEmailLinkUsesSignInServicePrepareFirstFactor() async throws {
+  func sendEmailLinkPreparesFirstFactor() async throws {
     let keychain = InMemoryKeychain()
     let signIn = SignIn(
       id: "sign_in_123",
@@ -238,16 +210,16 @@ struct SignInTests {
         ),
       ]
     )
-    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
-    let service = MockSignInService(prepareFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareFirstFactor { id, params in
       captured.setValue((id, params))
       return signIn
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      signInService: service
+      transport: transport,
+      keychain: keychain
     )
     let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
@@ -255,11 +227,11 @@ struct SignInTests {
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .emailLink)
-    #expect(params.1.emailAddressId == "ema_123")
-    #expect(params.1.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
-    #expect(params.1.codeChallengeMethod == PKCE.codeChallengeMethod)
-    #expect(params.1.codeChallenge?.isEmpty == false)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailLink)
+    #expect(params.1?["email_address_id"]?.stringValue == "ema_123")
+    #expect(params.1?["redirect_uri"]?.stringValue == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(params.1?["code_challenge_method"]?.stringValue == PKCE.codeChallengeMethod)
+    #expect(params.1?["code_challenge"]?.stringValue?.isEmpty == false)
 
     let pendingFlow = try #require(magicLinkStore.load())
     #expect(pendingFlow.kind == .signIn)
@@ -282,14 +254,14 @@ struct SignInTests {
         ),
       ]
     )
-    let service = MockSignInService(prepareFirstFactor: { _, _ in
+    transport.stubSignInPrepareFirstFactor { _, _ in
       throw ClerkClientError(message: "Prepare failed.")
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: keychain,
-      signInService: service
+      transport: transport,
+      keychain: keychain
     )
     let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
@@ -317,15 +289,15 @@ struct SignInTests {
         ),
       ]
     )
-    let service = MockSignInService(prepareFirstFactor: { _, _ in
+    transport.stubSignInPrepareFirstFactor { _, _ in
       prepareWasCalled.setValue(true)
       return signIn
-    })
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      keychain: SetFailingKeychain(),
-      signInService: service
+      transport: transport,
+      keychain: SetFailingKeychain()
     )
 
     await #expect(throws: SetFailingKeychain.Failure.self) {
@@ -335,40 +307,40 @@ struct SignInTests {
   }
 
   @Test
-  func sendPhoneCodeUsesSignInServicePrepareFirstFactor() async throws {
+  func sendPhoneCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
-    let service = MockSignInService(prepareFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.sendPhoneCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .phoneCode)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .phoneCode)
   }
 
   @Test
-  func verifyCodeUsesSignInServiceAttemptFirstFactor() async throws {
+  func verifyCodeAttemptsFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let service = MockSignInService(attemptFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.verifyCode("123456")
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .emailCode)
-    #expect(params.1.code == "123456")
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailCode)
+    #expect(params.1?["code"]?.stringValue == "123456")
   }
 
   @Test
@@ -379,20 +351,20 @@ struct SignInTests {
       strategy: .resetPasswordPhoneCode
     )
 
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let service = MockSignInService(attemptFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.verifyCode("123456")
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .resetPasswordPhoneCode)
-    #expect(params.1.code == "123456")
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .resetPasswordPhoneCode)
+    #expect(params.1?["code"]?.stringValue == "123456")
   }
 
   @Test
@@ -403,13 +375,13 @@ struct SignInTests {
       strategy: .password
     )
 
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let service = MockSignInService(attemptFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     do {
       _ = try await signIn.verifyCode("123456")
@@ -428,13 +400,13 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = nil
 
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let service = MockSignInService(attemptFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     do {
       _ = try await signIn.verifyCode("123456")
@@ -449,79 +421,79 @@ struct SignInTests {
   }
 
   @Test
-  func authenticateWithPasswordUsesSignInServiceAttemptFirstFactor() async throws {
+  func authenticateWithPasswordAttemptsFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let service = MockSignInService(attemptFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.authenticateWithPassword("password123")
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .password)
-    #expect(params.1.password == "password123")
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .password)
+    #expect(params.1?["password"]?.stringValue == "password123")
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
   @Test
-  func authenticateWithIdTokenUsesSignInServiceAttemptFirstFactor() async throws {
+  func authenticateWithIdTokenAttemptsFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.AttemptFirstFactorParams)?>(nil)
-    let service = MockSignInService(attemptFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.authenticateWithIdToken("mock_id_token", provider: .apple)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .idToken(.apple))
-    #expect(params.1.token == "mock_id_token")
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .idToken(.apple))
+    #expect(params.1?["token"]?.stringValue == "mock_id_token")
   }
   #endif
 
   @Test
-  func sendMfaPhoneCodeUsesSignInServicePrepareSecondFactor() async throws {
+  func sendMfaPhoneCodePreparesSecondFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
-    let service = MockSignInService(prepareSecondFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareSecondFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.sendMfaPhoneCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .phoneCode)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .phoneCode)
   }
 
   @Test
-  func sendMfaEmailCodeUsesSignInServicePrepareSecondFactor() async throws {
+  func sendMfaEmailCodePreparesSecondFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareSecondFactorParams)?>(nil)
-    let service = MockSignInService(prepareSecondFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareSecondFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.sendMfaEmailCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .emailCode)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailCode)
   }
 
   enum MfaVerifyScenario: String, CaseIterable, Codable {
@@ -564,42 +536,42 @@ struct SignInTests {
   }
 
   @Test(arguments: MfaVerifyScenario.allCases)
-  func verifyMfaCodeUsesSignInServiceAttemptSecondFactor(
+  func verifyMfaCodeAttemptsSecondFactor(
     scenario: MfaVerifyScenario
   ) async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.AttemptSecondFactorParams)?>(nil)
-    let service = MockSignInService(attemptSecondFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInAttemptSecondFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.verifyMfaCode(scenario.code, type: scenario.mfaType)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == scenario.expectedStrategy)
-    #expect(params.1.code == scenario.code)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == scenario.expectedStrategy)
+    #expect(params.1?["code"]?.stringValue == scenario.code)
   }
 
   @Test
-  func sendResetPasswordEmailCodeUsesSignInServicePrepareFirstFactor() async throws {
+  func sendResetPasswordEmailCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
-    let service = MockSignInService(prepareFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.sendResetPasswordEmailCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .resetPasswordEmailCode)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .resetPasswordEmailCode)
   }
 
   @Test
@@ -608,13 +580,13 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
-    let captured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stubSignUpCreate { params in
       captured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signUpService: signUpService)
+    configureTransport()
 
     let result = try await signIn.handleTransferFlow(
       transferable: true,
@@ -629,8 +601,8 @@ struct SignInTests {
     }
 
     let params = try #require(captured.value)
-    #expect(params.transfer == true)
-    #expect(params.unsafeMetadata == metadata)
+    #expect(params["transfer"]?.boolValue == true)
+    #expect(params["unsafe_metadata"] == metadata)
   }
 
   @Test
@@ -638,13 +610,13 @@ struct SignInTests {
     var signIn = SignIn.mock
     signIn.firstFactorVerification = Verification(status: .transferable)
 
-    let captured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stubSignUpCreate { params in
       captured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signUpService: signUpService)
+    configureTransport()
 
     let result = try await signIn.handleTransferFlow(transferable: false)
 
@@ -659,40 +631,40 @@ struct SignInTests {
   }
 
   @Test
-  func sendResetPasswordPhoneCodeUsesSignInServicePrepareFirstFactor() async throws {
+  func sendResetPasswordPhoneCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.PrepareFirstFactorParams)?>(nil)
-    let service = MockSignInService(prepareFirstFactor: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareFirstFactor { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.sendResetPasswordPhoneCode()
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.strategy == .resetPasswordPhoneCode)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .resetPasswordPhoneCode)
   }
 
   @Test
-  func resetPasswordUsesSignInServiceResetPassword() async throws {
+  func resetPasswordPostsNewPassword() async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.ResetPasswordParams)?>(nil)
-    let service = MockSignInService(resetPassword: { id, params in
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInResetPassword { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.resetPassword(newPassword: "newPassword123", signOutOfOtherSessions: true)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.password == "newPassword123")
-    #expect(params.1.signOutOfOtherSessions == true)
+    #expect(params.1?["password"]?.stringValue == "newPassword123")
+    #expect(params.1?["sign_out_of_other_sessions"]?.boolValue == true)
   }
 
   @Test
@@ -701,20 +673,20 @@ struct SignInTests {
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .verified)
 
-    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let service = MockSignInService(get: { id, params in
+    let captured = LockIsolated<(String, String?)?>(nil)
+    transport.stubSignInGet { id, params in
       captured.setValue((id, params))
       return reloadedSignIn
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     let callbackURL = try #require(URL(string: "myapp://callback?rotating_token_nonce=test_nonce"))
     let result = try await signIn.completeEnterpriseSSO(callbackURL: callbackURL)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.rotatingTokenNonce == "test_nonce")
+    #expect(params.1 == "test_nonce")
 
     switch result {
     case .signIn(let updatedSignIn):
@@ -731,19 +703,19 @@ struct SignInTests {
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
 
-    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let signInService = MockSignInService(get: { id, params in
+    let getCaptured = LockIsolated<(String, String?)?>(nil)
+    transport.stubSignInGet { id, params in
       getCaptured.setValue((id, params))
       return reloadedSignIn
-    })
+    }
 
-    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let createCaptured = LockIsolated<JSON?>(nil)
+    transport.stubSignUpCreate { params in
       createCaptured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signInService: signInService, signUpService: signUpService)
+    configureTransport()
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
@@ -753,11 +725,11 @@ struct SignInTests {
 
     let getParams = try #require(getCaptured.value)
     #expect(getParams.0 == signIn.id)
-    #expect(getParams.1.rotatingTokenNonce == nil)
+    #expect(getParams.1 == nil)
 
     let createParams = try #require(createCaptured.value)
-    #expect(createParams.transfer == true)
-    #expect(createParams.unsafeMetadata == metadata)
+    #expect(createParams["transfer"]?.boolValue == true)
+    #expect(createParams["unsafe_metadata"] == metadata)
 
     switch result {
     case .signUp(let signUp):
@@ -773,19 +745,19 @@ struct SignInTests {
     var reloadedSignIn = SignIn.mock
     reloadedSignIn.firstFactorVerification = Verification(status: .transferable)
 
-    let getCaptured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let signInService = MockSignInService(get: { id, params in
+    let getCaptured = LockIsolated<(String, String?)?>(nil)
+    transport.stubSignInGet { id, params in
       getCaptured.setValue((id, params))
       return reloadedSignIn
-    })
+    }
 
-    let createCaptured = LockIsolated<SignUp.CreateParams?>(nil)
-    let signUpService = MockSignUpService(create: { params in
+    let createCaptured = LockIsolated<JSON?>(nil)
+    transport.stubSignUpCreate { params in
       createCaptured.setValue(params)
       return .mock
-    })
+    }
 
-    configureServices(signInService: signInService, signUpService: signUpService)
+    configureTransport()
 
     let callbackURL = try #require(URL(string: "myapp://callback"))
     let result = try await signIn.completeEnterpriseSSO(
@@ -795,7 +767,7 @@ struct SignInTests {
 
     let getParams = try #require(getCaptured.value)
     #expect(getParams.0 == signIn.id)
-    #expect(getParams.1.rotatingTokenNonce == nil)
+    #expect(getParams.1 == nil)
     #expect(createCaptured.value == nil)
 
     switch result {
@@ -816,22 +788,49 @@ struct SignInTests {
       ReloadScenario(rotatingTokenNonce: "test_nonce"),
     ]
   )
-  func reloadUsesSignInServiceGet(
+  func reloadFetchesSignInWithNonce(
     scenario: ReloadScenario
   ) async throws {
     let signIn = SignIn.mock
-    let captured = LockIsolated<(String, SignIn.GetParams)?>(nil)
-    let service = MockSignInService(get: { id, params in
+    let captured = LockIsolated<(String, String?)?>(nil)
+    transport.stubSignInGet { id, params in
       captured.setValue((id, params))
       return .mock
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await signIn.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
 
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
-    #expect(params.1.rotatingTokenNonce == scenario.rotatingTokenNonce)
+    #expect(params.1 == scenario.rotatingTokenNonce)
+  }
+}
+
+extension FakeTransport {
+  fileprivate func stubSignInPrepareSecondFactor(_ prepare: @escaping @MainActor (_ signInId: String, _ body: JSON?) async throws -> SignIn) {
+    stub(SignInAPI.prepareSecondFactor(signInId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      try await ClientResponse(response: prepare(String(call.path.split(separator: "/")[3]), call.body), client: nil)
+    }
+  }
+
+  fileprivate func stubSignInAttemptSecondFactor(_ attempt: @escaping @MainActor (_ signInId: String, _ body: JSON?) async throws -> SignIn) {
+    stub(SignInAPI.attemptSecondFactor(signInId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      try await ClientResponse(response: attempt(String(call.path.split(separator: "/")[3]), call.body), client: nil)
+    }
+  }
+
+  fileprivate func stubSignInResetPassword(_ reset: @escaping @MainActor (_ signInId: String, _ body: JSON?) async throws -> SignIn) {
+    stub(SignInAPI.resetPassword(signInId: FakeTransport.anyPathSegment, params: .init(password: ""))) { call in
+      try await ClientResponse(response: reset(String(call.path.split(separator: "/")[3]), call.body), client: nil)
+    }
+  }
+
+  fileprivate func stubSignInGet(_ get: @escaping @MainActor (_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn) {
+    stub(SignInAPI.get(signInId: FakeTransport.anyPathSegment, params: .init())) { call in
+      let nonce = call.query.first { $0.name == "rotating_token_nonce" }?.value
+      return try await ClientResponse(response: get(String(call.path.split(separator: "/")[3]), nonce), client: nil)
+    }
   }
 }

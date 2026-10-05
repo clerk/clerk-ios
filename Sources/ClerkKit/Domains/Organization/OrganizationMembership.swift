@@ -74,13 +74,6 @@ public enum OrganizationSystemPermission: String, Codable, CaseIterable, Sendabl
 }
 
 extension OrganizationMembership {
-  @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.organizationService
-    }
-  }
-
   /// Returns whether the membership includes the provided organization system permission.
   public func hasPermission(_ permission: OrganizationSystemPermission) -> Bool {
     hasPermission(permission.rawValue)
@@ -141,7 +134,7 @@ extension OrganizationMembership {
       throw ClerkClientError(message: "Unable to delete membership: missing userId", localizationBundle: .module)
     }
 
-    return try await organizationService.destroyOrganizationMembership(organizationId: organization.id, userId: userId)
+    return try await Clerk.currentDependencies.transport.send(OrganizationAPI.removeMember(organizationId: organization.id, userId: userId)).value.response
   }
 
   /// Updates the member's role in the organization.
@@ -155,6 +148,6 @@ extension OrganizationMembership {
       throw ClerkClientError(message: "Unable to update membership: missing userId", localizationBundle: .module)
     }
 
-    return try await organizationService.updateOrganizationMember(organizationId: organization.id, userId: userId, role: role)
+    return try await Clerk.currentDependencies.transport.send(OrganizationAPI.updateMember(organizationId: organization.id, userId: userId, role: role)).value.response
   }
 }

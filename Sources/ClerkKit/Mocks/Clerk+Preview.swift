@@ -41,9 +41,7 @@ public final class PreviewBuilder {
   /// ```
   public var client: Client?
 
-  package var services: MockServicesBuilder = .init()
-
-  package var transport = FakeTransport.previewDefaults()
+  package var transport = FakeTransport.mockDefaults()
 
   /// Creates a new preview builder.
   public init() {}
@@ -56,7 +54,7 @@ extension Clerk {
   /// It automatically configures all async operations to return mock values immediately,
   /// and allows you to configure whether the user is signed in.
   ///
-  /// Advanced service customization is available only within this package.
+  /// Stubbing individual endpoints is available only within this package.
   ///
   /// **Environment Loading:**
   /// This method automatically looks for a `ClerkEnvironment.json` file in the main bundle.
@@ -111,7 +109,7 @@ extension Clerk {
 
     let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
-    // Create a minimal API client (won't be used if services are mocked)
+    // Requests go through the preview transport; this client only satisfies the container.
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
 
@@ -122,26 +120,13 @@ extension Clerk {
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    if previewBuilder.services.clientService.getHandler == nil {
-      previewBuilder.services.clientService.getHandler = { mockClient }
-    }
-    if previewBuilder.services.environmentService.getHandler == nil {
-      previewBuilder.services.environmentService.getHandler = { mockEnvironment }
-    }
-    if previewBuilder.services.userService.createEmailAddressHandler == nil {
-      let transport = previewBuilder.transport
-      previewBuilder.services.userService.createEmailAddressHandler = { emailAddress in
-        try await transport.send(EmailAddressAPI.create(email: emailAddress)).value.response
-      }
-    }
+    previewBuilder.transport.fallback(ClientAPI.get(), returning: ClientResponse(response: mockClient, client: nil))
+    previewBuilder.transport.fallback(EnvironmentAPI.get(), returning: mockEnvironment)
 
-    let container = createMockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: mockAPIClient,
-      transport: previewBuilder.transport,
-      services: previewBuilder.services
+      transport: previewBuilder.transport
     )
-
-    clerk.dependencies = container
     clerk.setClientFromIdentityController(mockClient)
     clerk.environment = mockEnvironment
 
@@ -156,28 +141,5 @@ extension Clerk {
       return nil
     }
     return loadedEnvironment
-  }
-
-  @MainActor
-  private static func createMockDependencyContainer(
-    apiClient: APIClient,
-    transport: FakeTransport,
-    services: MockServicesBuilder
-  ) -> MockDependencyContainer {
-    MockDependencyContainer(
-      apiClient: apiClient,
-      transport: transport,
-      clientService: services.clientService,
-      userService: services.userService,
-      signInService: services.signInService,
-      signUpService: services.signUpService,
-      sessionService: services.sessionService,
-      passkeyService: services.passkeyService,
-      organizationService: services.organizationService,
-      billingService: services.billingService,
-      environmentService: services.environmentService,
-      phoneNumberService: services.phoneNumberService,
-      externalAccountService: services.externalAccountService
-    )
   }
 }

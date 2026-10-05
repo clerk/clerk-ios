@@ -10,40 +10,42 @@ struct OrganizationsTests {
   }
 
   @Test
-  func createUsesOrganizationServiceCreateOrganization() async throws {
-    let captured = LockIsolated<(String, String?)?>(nil)
-    let service = MockOrganizationService(createOrganization: { name, slug in
-      captured.setValue((name, slug))
-      return .mock
-    })
+  func createSendsNameAndOmitsNilSlug() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.create(name: "", slug: nil)) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      organizationService: service
+      transport: transport
     )
 
     _ = try await Clerk.shared.organizations.create(name: "My Org", slug: nil)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == "My Org")
-    #expect(params.1 == nil)
+    let body = try #require(captured.value)
+    #expect(body["name"]?.stringValue == "My Org")
+    #expect(body["slug"] == nil)
   }
 
   @Test
-  func getUsesOrganizationServiceGetOrganization() async throws {
-    let capturedId = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(getOrganization: { organizationId in
-      capturedId.setValue(organizationId)
-      return .mock
-    })
+  func getRequestsOrganizationById() async throws {
+    let capturedPath = LockIsolated<String?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.get(organizationId: FakeTransport.anyPathSegment)) { call in
+      capturedPath.setValue(call.path)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      organizationService: service
+      transport: transport
     )
 
     _ = try await Clerk.shared.organizations.get(id: "org_123")
 
-    #expect(capturedId.value == "org_123")
+    #expect(capturedPath.value == "/v1/organizations/org_123")
   }
 }

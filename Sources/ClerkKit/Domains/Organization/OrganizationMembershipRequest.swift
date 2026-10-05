@@ -43,22 +43,15 @@ public struct OrganizationMembershipRequest: Codable, Sendable, Identifiable {
 }
 
 extension OrganizationMembershipRequest {
-  @MainActor
-  private var organizationService: any OrganizationServiceProtocol {
-    get throws {
-      try Clerk.currentDependencies.organizationService
-    }
-  }
-
   /// Accepts the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func accept() async throws -> OrganizationMembershipRequest {
-    try await organizationService.acceptOrganizationMembershipRequest(organizationId: organizationId, requestId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.acceptMembershipRequest(organizationId: organizationId, requestId: id)).value.response
   }
 
   /// Rejects the request of a user to join the organization the request refers to.
   @discardableResult @MainActor
   public func reject() async throws -> OrganizationMembershipRequest {
-    try await organizationService.rejectOrganizationMembershipRequest(organizationId: organizationId, requestId: id)
+    try await Clerk.currentDependencies.transport.send(OrganizationAPI.rejectMembershipRequest(organizationId: organizationId, requestId: id)).value.response
   }
 }

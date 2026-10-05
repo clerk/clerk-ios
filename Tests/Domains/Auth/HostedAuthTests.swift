@@ -146,8 +146,8 @@ struct HostedAuthProtocolTests {
 struct HostedAuthFlowTests {
   @Test
   func successRedeemsUpdatesClientAndActivatesOnlyCallbackSession() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
-    let redeemParams = LockIsolated<HostedAuthRedeemParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
+    let redeemParams = LockIsolated<JSON?>(nil)
     let browserInputs = LockIsolated<HostedAuthBrowserInputs?>(nil)
     let setActiveCall = LockIsolated<HostedAuthSetActiveCall?>(nil)
 
@@ -157,31 +157,29 @@ struct HostedAuthFlowTests {
     var activatedClient = redeemedClient
     activatedClient.lastActiveSessionId = Session.mock2.id
 
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { params in
-        redeemParams.setValue(params)
-        guard let createParams = createParams.value else {
-          throw ClerkClientError(message: "Missing create params in test.")
-        }
-        #expect(PKCE.challenge(for: params.codeVerifier) == createParams.codeChallenge)
-        return hostedAuthRedeemResponse(
-          client: redeemedClient,
-          responseSequence: 1,
-          serverDate: Date(timeIntervalSince1970: 200)
-        )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { body in
+      redeemParams.setValue(body)
+      guard let createParams = createParams.value else {
+        throw ClerkClientError(message: "Missing create params in test.")
       }
-    )
-    let sessionService = MockSessionService(setActive: { sessionId, organizationId in
-      setActiveCall.setValue(HostedAuthSetActiveCall(sessionId: sessionId, organizationId: organizationId))
+      #expect(PKCE.challenge(for: body?["code_verifier"]?.stringValue ?? "") == createParams["code_challenge"]?.stringValue)
+      return hostedAuthRedeemReply(
+        client: redeemedClient,
+        responseSequence: 1,
+        serverDate: Date(timeIntervalSince1970: 200)
+      )
+    }
+    transport.stubSetActive { sessionId, body in
+      setActiveCall.setValue(HostedAuthSetActiveCall(sessionId: sessionId, organizationId: body?["active_organization_id"]?.stringValue))
       Clerk.shared.client = activatedClient
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: sessionService,
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -195,7 +193,7 @@ struct HostedAuthFlowTests {
           callbackUrlScheme: callbackUrlScheme,
           prefersEphemeralWebBrowserSession: prefersEphemeral
         ))
-        guard let state = createParams.value?.state else {
+        guard let state = createParams.value?["state"]?.stringValue else {
           throw ClerkClientError(message: "Missing state in test.")
         }
         return try makeHostedAuthCallbackUrl(
@@ -212,10 +210,10 @@ struct HostedAuthFlowTests {
     #expect(Clerk.shared.identityController.currentDeviceToken == "hosted_auth_test_device_token")
     #expect(try Clerk.shared.dependencies.identityStore.load()?.deviceToken == "hosted_auth_test_device_token")
     #expect(Clerk.shared.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
-    #expect(createParams.value?.redirectUrl == "myapp:///hosted-auth-callback")
-    #expect(createParams.value?.mode == .signUp)
-    #expect(redeemParams.value?.rotatingTokenNonce == "nonce_123")
-    #expect(setActiveCall.value == HostedAuthSetActiveCall(sessionId: Session.mock2.id, organizationId: nil))
+    #expect(createParams.value?["redirect_url"]?.stringValue == "myapp:///hosted-auth-callback")
+    #expect(createParams.value?["mode"]?.stringValue == HostedAuthMode.signUp.rawValue)
+    #expect(redeemParams.value?["rotating_token_nonce"]?.stringValue == "nonce_123")
+    #expect(setActiveCall.value == HostedAuthSetActiveCall(sessionId: Session.mock2.id, organizationId: ""))
     #expect(try browserInputs.value == HostedAuthBrowserInputs(
       url: #require(URL(string: "https://accounts.example.com/sign-in")),
       callbackUrlScheme: "myapp",
@@ -226,24 +224,22 @@ struct HostedAuthFlowTests {
   @Test
   func overlappingStartIsRejectedBeforeCreatingAnotherTransfer() async throws {
     let createCalls = LockIsolated(0)
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     var redeemedClient = Client.mock
     redeemedClient.sessions = [.mock]
     redeemedClient.lastActiveSessionId = Session.mock.id
 
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createCalls.withValue { $0 += 1 }
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        hostedAuthRedeemResponse(client: redeemedClient)
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createCalls.withValue { $0 += 1 }
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      hostedAuthRedeemReply(client: redeemedClient)
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -270,7 +266,7 @@ struct HostedAuthFlowTests {
 
         return try makeHostedAuthCallbackUrl(
           redirectUrl: "myapp://callback",
-          state: #require(createParams.value?.state),
+          state: #require(createParams.value?["state"]?.stringValue),
           rotatingTokenNonce: "nonce_123",
           createdSessionId: Session.mock.id
         )
@@ -281,26 +277,24 @@ struct HostedAuthFlowTests {
 
   @Test
   func cancellationPropagatesWithoutRedeemingOrActivating() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let redeemCalled = LockIsolated(false)
     let setActiveCalled = LockIsolated(false)
     let initialClient = Client.mockSignedOut
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        redeemCalled.setValue(true)
-        return hostedAuthRedeemResponse(client: .mock)
-      }
-    )
-    let sessionService = MockSessionService(setActive: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      redeemCalled.setValue(true)
+      return hostedAuthRedeemReply(client: .mock)
+    }
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: sessionService,
+      transport: transport,
       initialClient: initialClient
     )
 
@@ -313,7 +307,7 @@ struct HostedAuthFlowTests {
       )
       Issue.record("Expected hosted auth cancellation to throw")
     } catch is CancellationError {
-      #expect(createParams.value?.redirectUrl == "myapp://callback")
+      #expect(createParams.value?["redirect_url"]?.stringValue == "myapp://callback")
       #expect(!redeemCalled.value)
       #expect(!setActiveCalled.value)
       #expect(Clerk.shared.client == initialClient)
@@ -325,35 +319,33 @@ struct HostedAuthFlowTests {
   @Test
   func signedOutCreateRefreshesClientAndRetriesOnceWithSameParams() async throws {
     let createCalls = LockIsolated(0)
-    let firstCreateParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let firstCreateParams = LockIsolated<JSON?>(nil)
     let refreshCalls = LockIsolated(0)
     let reconciledClient = Client.mockSignedOut
-    let hostedAuthService = MockHostedAuthService(create: { params in
+    let transport = FakeTransport.answeringClient {
+      refreshCalls.withValue { $0 += 1 }
+      return reconciledClient
+    }
+    transport.stubHostedAuthCreate { body in
       let call = createCalls.withValue { calls in
         defer { calls += 1 }
         return calls
       }
       if call == 0 {
-        firstCreateParams.setValue(params)
+        firstCreateParams.setValue(body)
         throw hostedAuthAPIError(code: "signed_out")
       }
 
       let firstParams = try #require(firstCreateParams.value)
-      #expect(params.redirectUrl == firstParams.redirectUrl)
-      #expect(params.codeChallenge == firstParams.codeChallenge)
-      #expect(params.state == firstParams.state)
-      #expect(params.mode == firstParams.mode)
+      #expect(body?["redirect_url"] == firstParams["redirect_url"])
+      #expect(body?["code_challenge"] == firstParams["code_challenge"])
+      #expect(body?["state"] == firstParams["state"])
+      #expect(body?["mode"] == firstParams["mode"])
       #expect(Clerk.shared.client == reconciledClient)
       return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-    })
-    let clientService = HostedAuthClientService(get: {
-      refreshCalls.withValue { $0 += 1 }
-      return reconciledClient
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mock
     )
 
@@ -368,7 +360,11 @@ struct HostedAuthFlowTests {
 
     #expect(createCalls.value == 2)
     #expect(refreshCalls.value == 1)
-    #expect(clientService.skipClientIdValues.value == [true])
+    #expect(
+      transport.calls
+        .filter { $0.path == "/v1/client" }
+        .map { $0.headers[ClerkHeaderRequestMiddleware.skipClientIdHeader] } == ["1"]
+    )
     #expect(Clerk.shared.client == reconciledClient)
   }
 
@@ -377,18 +373,16 @@ struct HostedAuthFlowTests {
     let createCalls = LockIsolated(0)
     let refreshCalls = LockIsolated(0)
     let browserCalled = LockIsolated(false)
-    let hostedAuthService = MockHostedAuthService(create: { _ in
-      createCalls.withValue { $0 += 1 }
-      throw hostedAuthAPIError(code: "signed_out")
-    })
-    let clientService = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return .mockSignedOut
-    })
+    }
+    transport.stubHostedAuthCreate { _ in
+      createCalls.withValue { $0 += 1 }
+      throw hostedAuthAPIError(code: "signed_out")
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mock
     )
 
@@ -418,18 +412,16 @@ struct HostedAuthFlowTests {
   func nonSignedOutCreateErrorIsNotRetried() async throws {
     let createCalls = LockIsolated(0)
     let refreshCalls = LockIsolated(0)
-    let hostedAuthService = MockHostedAuthService(create: { _ in
-      createCalls.withValue { $0 += 1 }
-      throw hostedAuthAPIError(code: "resource_not_found")
-    })
-    let clientService = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return .mockSignedOut
-    })
+    }
+    transport.stubHostedAuthCreate { _ in
+      createCalls.withValue { $0 += 1 }
+      throw hostedAuthAPIError(code: "resource_not_found")
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mock
     )
 
@@ -453,27 +445,23 @@ struct HostedAuthFlowTests {
 
   @Test
   func signedOutRedeemErrorIsNotRetriedOrReconciled() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let redeemCalls = LockIsolated(0)
     let refreshCalls = LockIsolated(0)
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        redeemCalls.withValue { $0 += 1 }
-        throw hostedAuthAPIError(code: "signed_out")
-      }
-    )
-    let clientService = MockClientService(get: {
+    let transport = FakeTransport.answeringClient {
       refreshCalls.withValue { $0 += 1 }
       return .mockSignedOut
-    })
+    }
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      redeemCalls.withValue { $0 += 1 }
+      throw hostedAuthAPIError(code: "signed_out")
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
-      clientService: clientService,
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -485,7 +473,7 @@ struct HostedAuthFlowTests {
         webAuthentication: { _, _, _ in
           try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
-            state: #require(createParams.value?.state),
+            state: #require(createParams.value?["state"]?.stringValue),
             rotatingTokenNonce: "nonce_123",
             createdSessionId: Session.mock.id
           )
@@ -504,24 +492,22 @@ struct HostedAuthFlowTests {
 
   @Test
   func missingCallbackSessionDoesNotApplyClientOrActivateAnotherSession() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let setActiveCalled = LockIsolated(false)
     let initialClient = Client.mockSignedOut
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        hostedAuthRedeemResponse(client: .mock)
-      }
-    )
-    let sessionService = MockSessionService(setActive: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      hostedAuthRedeemReply(client: .mock)
+    }
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: sessionService,
+      transport: transport,
       initialClient: initialClient
     )
 
@@ -531,7 +517,7 @@ struct HostedAuthFlowTests {
         redirectUrl: "myapp://callback",
         prefersEphemeralWebBrowserSession: false,
         webAuthentication: { _, _, _ in
-          guard let state = createParams.value?.state else {
+          guard let state = createParams.value?["state"]?.stringValue else {
             throw ClerkClientError(message: "Missing state in test.")
           }
           return try makeHostedAuthCallbackUrl(
@@ -554,33 +540,26 @@ struct HostedAuthFlowTests {
 
   @Test
   func explicitClearRedeemResponseClearsIdentityWithoutActivating() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let setActiveCalled = LockIsolated(false)
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        HostedAuthRedeemResponse(
-          client: nil,
-          clientSyncContext: ClientSyncResponseContext(
-            update: .explicitClear,
-            deviceTokenUpdate: .clear,
-            requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
-            serverDate: Date(timeIntervalSince1970: 200),
-            isCanonicalClientRequest: true,
-            clientResponseGeneration: Clerk.shared.clientResponseGeneration,
-            responseSequence: 1
-          )
-        )
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      FakeTransport.Reply(
+        ClientResponse(response: nil, client: nil),
+        requestSequence: 1,
+        serverDate: Date(timeIntervalSince1970: 200),
+        headers: ["Authorization": "Bearer"]
+      )
+    }
+    transport.stubSetActive { _, _ in
+      setActiveCalled.setValue(true)
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(setActive: { _, _ in
-        setActiveCalled.setValue(true)
-      }),
+      transport: transport,
       initialClient: .mock
     )
     try Clerk.shared.seedIdentity(deviceToken: "initial-token", client: .mock)
@@ -593,7 +572,7 @@ struct HostedAuthFlowTests {
         webAuthentication: { _, _, _ in
           try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
-            state: #require(createParams.value?.state),
+            state: #require(createParams.value?["state"]?.stringValue),
             rotatingTokenNonce: "nonce_123",
             createdSessionId: Session.mock.id
           )
@@ -614,25 +593,23 @@ struct HostedAuthFlowTests {
 
   @Test
   func clientChangeDuringActivationDoesNotReturnStaleSession() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     var redeemedClient = Client.mock
     redeemedClient.sessions = [.mock]
     redeemedClient.lastActiveSessionId = Session.mock.id
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        hostedAuthRedeemResponse(client: redeemedClient)
-      }
-    )
-    let sessionService = MockSessionService(setActive: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      hostedAuthRedeemReply(client: redeemedClient)
+    }
+    transport.stubSetActive { _, _ in
       Clerk.shared.client = .mockSignedOut
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: sessionService,
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -642,7 +619,7 @@ struct HostedAuthFlowTests {
         redirectUrl: "myapp://callback",
         prefersEphemeralWebBrowserSession: false,
         webAuthentication: { _, _, _ in
-          let state = try #require(createParams.value?.state)
+          let state = try #require(createParams.value?["state"]?.stringValue)
           return try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
             state: state,
@@ -661,24 +638,22 @@ struct HostedAuthFlowTests {
   @Test
   func failedFlowReleasesInFlightGateForSubsequentAttempts() async throws {
     let createCalls = LockIsolated(0)
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     var redeemedClient = Client.mock
     redeemedClient.sessions = [.mock]
     redeemedClient.lastActiveSessionId = Session.mock.id
 
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createCalls.withValue { $0 += 1 }
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        hostedAuthRedeemResponse(client: redeemedClient)
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createCalls.withValue { $0 += 1 }
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      hostedAuthRedeemReply(client: redeemedClient)
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -699,7 +674,7 @@ struct HostedAuthFlowTests {
       webAuthentication: { _, _, _ in
         try makeHostedAuthCallbackUrl(
           redirectUrl: "myapp://callback",
-          state: #require(createParams.value?.state),
+          state: #require(createParams.value?["state"]?.stringValue),
           rotatingTokenNonce: "nonce_123",
           createdSessionId: Session.mock.id
         )
@@ -712,21 +687,19 @@ struct HostedAuthFlowTests {
 
   @Test
   func reconfigurationWhileBrowserOpenFailsBeforeRedeem() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let redeemCalled = LockIsolated(false)
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        redeemCalled.setValue(true)
-        return hostedAuthRedeemResponse(client: .mock)
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      redeemCalled.setValue(true)
+      return hostedAuthRedeemReply(client: .mock)
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
+      transport: transport,
       initialClient: .mockSignedOut
     )
 
@@ -742,7 +715,7 @@ struct HostedAuthFlowTests {
           runtimeState.retire()
           return try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
-            state: #require(createParams.value?.state),
+            state: #require(createParams.value?["state"]?.stringValue),
             rotatingTokenNonce: "nonce_123",
             createdSessionId: Session.mock.id
           )
@@ -754,7 +727,7 @@ struct HostedAuthFlowTests {
 
   @Test
   func generationChangeWhileBrowserOpenDiscardsRedeemedClient() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let redeemCalled = LockIsolated(false)
     let setActiveCalled = LockIsolated(false)
     let initialClient = Client.mockSignedOut
@@ -762,22 +735,20 @@ struct HostedAuthFlowTests {
     redeemedClient.sessions = [.mock]
     redeemedClient.lastActiveSessionId = Session.mock.id
 
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        redeemCalled.setValue(true)
-        return hostedAuthRedeemResponse(client: redeemedClient)
-      }
-    )
-    let sessionService = MockSessionService(setActive: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      redeemCalled.setValue(true)
+      return hostedAuthRedeemReply(client: redeemedClient)
+    }
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: sessionService,
+      transport: transport,
       initialClient: initialClient
     )
 
@@ -790,7 +761,7 @@ struct HostedAuthFlowTests {
           Clerk.shared.identityController.fenceClientResponses()
           return try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
-            state: #require(createParams.value?.state),
+            state: #require(createParams.value?["state"]?.stringValue),
             rotatingTokenNonce: "nonce_123",
             createdSessionId: Session.mock.id
           )
@@ -809,7 +780,7 @@ struct HostedAuthFlowTests {
 
   @Test
   func generationChangeDuringRedeemDiscardsResponseWithoutActivating() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let redeemCalled = LockIsolated(false)
     let setActiveCalled = LockIsolated(false)
     let initialClient = Client.mockSignedOut
@@ -817,24 +788,22 @@ struct HostedAuthFlowTests {
     redeemedClient.sessions = [.mock]
     redeemedClient.lastActiveSessionId = Session.mock.id
 
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        redeemCalled.setValue(true)
-        let response = hostedAuthRedeemResponse(client: redeemedClient)
-        Clerk.shared.identityController.fenceClientResponses()
-        return response
-      }
-    )
-    let sessionService = MockSessionService(setActive: { _, _ in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      redeemCalled.setValue(true)
+      let response = hostedAuthRedeemReply(client: redeemedClient)
+      Clerk.shared.identityController.fenceClientResponses()
+      return response
+    }
+    transport.stubSetActive { _, _ in
       setActiveCalled.setValue(true)
-    })
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: sessionService,
+      transport: transport,
       initialClient: initialClient
     )
 
@@ -846,7 +815,7 @@ struct HostedAuthFlowTests {
         webAuthentication: { _, _, _ in
           try makeHostedAuthCallbackUrl(
             redirectUrl: "myapp://callback",
-            state: #require(createParams.value?.state),
+            state: #require(createParams.value?["state"]?.stringValue),
             rotatingTokenNonce: "nonce_123",
             createdSessionId: Session.mock.id
           )
@@ -866,24 +835,22 @@ struct HostedAuthFlowTests {
 
   @Test
   func nilRedirectUrlFallsBackToConfiguredRedirectUrl() async throws {
-    let createParams = LockIsolated<HostedAuthCreateParams?>(nil)
+    let createParams = LockIsolated<JSON?>(nil)
     let browserInputs = LockIsolated<HostedAuthBrowserInputs?>(nil)
     var redeemedClient = Client.mock
     redeemedClient.sessions = [.mock]
     redeemedClient.lastActiveSessionId = Session.mock.id
 
-    let hostedAuthService = MockHostedAuthService(
-      create: { params in
-        createParams.setValue(params)
-        return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-      },
-      redeem: { _ in
-        hostedAuthRedeemResponse(client: redeemedClient)
-      }
-    )
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      hostedAuthRedeemReply(client: redeemedClient)
+    }
     configureHostedAuthForTesting(
-      hostedAuthService: hostedAuthService,
-      sessionService: MockSessionService(),
+      transport: transport,
       initialClient: .mockSignedOut,
       options: Clerk.Options(
         redirectConfig: .init(redirectUrl: "fallbackapp://hosted-callback", callbackUrlScheme: "fallbackapp")
@@ -902,14 +869,14 @@ struct HostedAuthFlowTests {
         ))
         return try makeHostedAuthCallbackUrl(
           redirectUrl: "fallbackapp://hosted-callback",
-          state: #require(createParams.value?.state),
+          state: #require(createParams.value?["state"]?.stringValue),
           rotatingTokenNonce: "nonce_123",
           createdSessionId: Session.mock.id
         )
       }
     )
 
-    #expect(createParams.value?.redirectUrl == "fallbackapp://hosted-callback")
+    #expect(createParams.value?["redirect_url"]?.stringValue == "fallbackapp://hosted-callback")
     #expect(browserInputs.value?.callbackUrlScheme == "fallbackapp")
     #expect(session.id == Session.mock.id)
   }
@@ -927,58 +894,29 @@ private struct HostedAuthSetActiveCall: Equatable {
 }
 
 @MainActor
-private func hostedAuthRedeemResponse(
+private func hostedAuthRedeemReply(
   client: Client?,
   responseSequence: Int? = nil,
   serverDate: Date? = nil
-) -> HostedAuthRedeemResponse {
-  HostedAuthRedeemResponse(
-    client: client,
-    clientSyncContext: ClientSyncResponseContext(
-      update: client.map(ClientResponseUpdate.client) ?? .absent,
-      deviceTokenUpdate: .set("hosted_auth_test_device_token"),
-      requestDeviceToken: Clerk.shared.identityController.currentDeviceToken,
-      serverDate: serverDate,
-      isCanonicalClientRequest: true,
-      clientResponseGeneration: Clerk.shared.clientResponseGeneration,
-      responseSequence: responseSequence
-    )
+) -> FakeTransport.Reply<ClientResponse<Client?>> {
+  FakeTransport.Reply(
+    ClientResponse(response: client, client: nil),
+    requestSequence: responseSequence,
+    serverDate: serverDate,
+    headers: ["Authorization": "hosted_auth_test_device_token"]
   )
-}
-
-private final class HostedAuthClientService: ClientServiceProtocol {
-  let skipClientIdValues = LockIsolated<[Bool]>([])
-  let getHandler: @Sendable () async throws -> Client?
-
-  init(get: @escaping @Sendable () async throws -> Client?) {
-    getHandler = get
-  }
-
-  @MainActor
-  func getResponse(skipClientId: Bool) async throws -> ClientServiceResponse {
-    skipClientIdValues.withValue { $0.append(skipClientId) }
-    return try await ClientServiceResponse(
-      client: getHandler(),
-      requestSequence: nil,
-      serverDate: nil
-    )
-  }
 }
 
 @MainActor
 private func configureHostedAuthForTesting(
-  hostedAuthService: some HostedAuthServiceProtocol,
-  sessionService: some SessionServiceProtocol,
-  clientService: (any ClientServiceProtocol)? = nil,
+  transport: FakeTransport,
   initialClient: Client,
   options: Clerk.Options = .init()
 ) {
   configureClerkForTesting()
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: Clerk.shared.dependencies.apiClient,
-    clientService: clientService,
-    hostedAuthService: hostedAuthService,
-    sessionService: sessionService
+    transport: transport
   )
   try! (Clerk.shared.dependencies as! MockDependencyContainer)
     .configurationManager

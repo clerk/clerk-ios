@@ -159,7 +159,7 @@ extension ClerkRuntime {
       }
 
       guard let self else { throw CancellationError() }
-      let environment = try await dependencies.environmentService.get()
+      let environment = try await dependencies.transport.send(EnvironmentAPI.get()).value
       try Task.checkCancellation()
       try runtime.validateStableRuntime()
       clerk.applyRefreshedEnvironment(environment)
