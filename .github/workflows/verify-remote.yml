@@ -15,6 +15,10 @@ on:
       request:
         description: The session request as one JSON string (src/core/remote/protocol.ts)
         required: true
+      plan_runner:
+        description: Runner label for the short job that reads the request
+        required: false
+        default: ubuntu-latest
   # The fallback trigger for a driver that may not dispatch: it pushes a commit whose message is the request.
   push:
     branches: ['verify-remote/**']
@@ -31,7 +35,8 @@ env:
 
 jobs:
   plan:
-    runs-on: ubuntu-latest
+    # The driver names this label, so a session on a billed runner does not first wait in the free runners' queue.
+    runs-on: ${{ inputs.plan_runner || 'ubuntu-latest' }}
     timeout-minutes: 5
     outputs:
       mode: ${{ steps.plan.outputs.mode }}

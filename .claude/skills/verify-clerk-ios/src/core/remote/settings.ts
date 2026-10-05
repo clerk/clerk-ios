@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import type { Runner } from '../exec.ts';
 import { VerifyFailure, type Platform } from '../types.ts';
 import type { GitHub } from './github.ts';
-import { LIMITS, REQUEST_VERSION, RequestError, parseRequest, sha256Hex, type SessionRequest } from './protocol.ts';
+import { LIMITS, REQUEST_VERSION, RUNNER_LABEL, RequestError, parseRequest, sha256Hex, type SessionRequest } from './protocol.ts';
 
 export interface RemoteSettings {
   readonly platform: Platform;
@@ -13,7 +13,12 @@ export interface RemoteSettings {
   readonly sessionsDir: string;
   /** The label sessions run on unless `--runner` or VERIFY_REMOTE_RUNNER names another. */
   readonly runner: string;
-  /** A free label with no device, enough for `doctor --live` to prove the plumbing. */
+  /**
+   * The label of the short job that reads the request, for a session whose own label comes from the same provider.
+   * A session must not wait in one provider's queue for a runner it then takes from another.
+   */
+  readonly planRunner: string;
+  /** A free label with no device, enough for `doctor --live` to prove the plumbing. It also reads the request of a session on any label `planRunner` does not cover, so a free session stays free. */
   readonly plumbingRunner: string;
   readonly device: string;
   readonly idleMinutes: number;
@@ -36,6 +41,18 @@ function minutes(env: RemoteDeps['env'], name: 'VERIFY_REMOTE_IDLE_MINUTES' | 'V
   const value = Number(raw);
   if (!Number.isInteger(value) || value < limits.min || value > limits.max) throw new VerifyFailure('USAGE', `${name}=${raw} is not a whole number from ${limits.min} to ${limits.max}`, `unset ${name} or set it within range`);
   return value;
+}
+
+const providerOf = (label: string): string => label.split('-')[0]!;
+
+/** The label for the job that reads a request, given the label the session itself will run on. VERIFY_REMOTE_PLAN_RUNNER forces one. */
+export function planRunnerFor(settings: RemoteSettings, env: RemoteDeps['env'], sessionRunner: string): string {
+  const forced = env.VERIFY_REMOTE_PLAN_RUNNER;
+  if (forced !== undefined && forced !== '') {
+    if (!RUNNER_LABEL.test(forced)) throw new VerifyFailure('USAGE', `VERIFY_REMOTE_PLAN_RUNNER=${forced} is not a runner label`, 'unset VERIFY_REMOTE_PLAN_RUNNER or set it to a label such as ubuntu-latest');
+    return forced;
+  }
+  return providerOf(sessionRunner) === providerOf(settings.planRunner) ? settings.planRunner : settings.plumbingRunner;
 }
 
 /**

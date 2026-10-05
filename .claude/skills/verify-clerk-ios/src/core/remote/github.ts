@@ -107,6 +107,8 @@ export interface StartedRun {
 export interface StartOptions {
   /** The branch whose workflow file a dispatch runs. */
   readonly ref: string;
+  /** The label of the job that reads the request. Only a dispatch can name it; a pushed request is read on the workflow's own default. */
+  readonly planRunner: string;
   readonly worktree: string;
   readonly runner: Runner;
   /** How long to wait for a dispatched run to be readable. Tests shorten it. */
@@ -142,7 +144,7 @@ const isRunOf = (request: Pick<SessionRequest, 'owner' | 'session'>) => (run: { 
 export async function startRun(github: GitHub, request: SessionRequest, options: StartOptions): Promise<StartedRun> {
   const dispatched = await github.api('POST', `/actions/workflows/${github.workflow}/dispatches`, {
     ref: options.ref,
-    inputs: { owner: request.owner, session: request.session, request: JSON.stringify(request) },
+    inputs: { owner: request.owner, session: request.session, request: JSON.stringify(request), plan_runner: options.planRunner },
     return_run_details: true,
   });
   if (dispatched.status === 200 || dispatched.status === 204) {
@@ -230,6 +232,32 @@ export async function waitForStep(github: GitHub, runId: string, pattern: RegExp
     onWait?.(run, jobs);
     await sleep(4000);
   }
+}
+
+/**
+ * Progress for a run that has published nothing yet: which queue it is in and for how long, printed when that changes
+ * and once a minute. A slow start then names the runner label that is slow.
+ */
+export function waitReporter(progress: (line: string) => void, runId: string, labels: { readonly plan: string; readonly session: string }): (run: RunView, jobs: readonly JobView[]) => void {
+  const began = Date.now();
+  let last = '';
+  let lastAt = 0;
+  return (_run, jobs) => {
+    const session = jobs.find((job) => job.name === 'session');
+    const plan = jobs.find((job) => job.name === 'plan');
+    const what =
+      session === undefined
+        ? plan?.status === 'in_progress'
+          ? `its request to be read on ${labels.plan}`
+          : `a ${labels.plan} runner to read its request`
+        : session.status === 'queued'
+          ? `a ${labels.session} runner`
+          : `the tunnel on ${labels.session}`;
+    if (what === last && Date.now() - lastAt < 60_000) return;
+    progress(`wait    run ${runId} has waited ${Math.round((Date.now() - began) / 1000)}s, now for ${what}`);
+    last = what;
+    lastAt = Date.now();
+  };
 }
 
 export async function waitForRunEnd(github: GitHub, runId: string, seconds: number): Promise<RunView> {

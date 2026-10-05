@@ -5,12 +5,12 @@ import { pipeline } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
 import { run, sleep } from '../exec.ts';
 import { VerifyFailure, type AcquireRequest, type DeviceBackend, type EvidencePath, type Recording, type RemoteLease } from '../types.ts';
-import { currentBranch, endSession, liveRuns, openGitHub, startRun, viewRun, waitForStep, type GitHub } from './github.ts';
+import { currentBranch, endSession, liveRuns, openGitHub, startRun, viewRun, waitForStep, waitReporter, type GitHub } from './github.ts';
 import { coreVersion } from '../manifest.ts';
 import { remoteDoctorChecks } from './preflight.ts';
 import { STEP, type SessionHealth } from './protocol.ts';
 import { firstHealth, sessionCall, sessionHealth, tunnelUrl, type SessionRef } from './session.ts';
-import { driverId, forgetSession, newSessionRequest, saveToken, type RemoteDeps, type RemoteSettings } from './settings.ts';
+import { driverId, forgetSession, newSessionRequest, planRunnerFor, saveToken, type RemoteDeps, type RemoteSettings } from './settings.ts';
 
 const READY_DEADLINE_MS = 25 * 60_000;
 const EXPIRING_MS = 2 * 60_000;
@@ -101,17 +101,11 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
       let runId: string | null = null;
       let session: SessionRef | null = null;
       try {
-        const started = await startRun(hub, order, { ref, worktree: request.worktree, runner: deps.runner });
+        const planRunner = planRunnerFor(settings, deps.env, order.runner);
+        const started = await startRun(hub, order, { ref, planRunner, worktree: request.worktree, runner: deps.runner });
         runId = started.runId;
         request.progress(`device  remote ${platform}  run ${runId} by ${started.trigger}${started.dispatchRefused === null ? '' : ` (dispatch refused: ${started.dispatchRefused})`}  ${runUrl(runId)}`);
-        let waitingFor = '';
-        const host = await waitForStep(hub, runId, STEP.tunnelPattern, 20 * 60, (_state, jobs) => {
-          // The plan job runs on a free GitHub-hosted runner, whose queue is not the session label's queue.
-          const session = jobs.find((job) => job.name === 'session');
-          const now = session === undefined ? 'the free GitHub-hosted job that reads the request' : session.status === 'queued' ? `a ${order.runner} runner` : `the tunnel on ${order.runner}`;
-          if (now !== waitingFor) request.progress(`wait    run ${runId} is waiting for ${now}`);
-          waitingFor = now;
-        });
+        const host = await waitForStep(hub, runId, STEP.tunnelPattern, 20 * 60, waitReporter(request.progress, runId, { plan: started.trigger === 'dispatch' ? planRunner : settings.plumbingRunner, session: order.runner }));
         session = { baseUrl: tunnelUrl(host), tokenFile };
         const health = await firstHealth(session, 180);
         if (health === null || health.device === null) throw new VerifyFailure('NOT_READY', `the session's tunnel at ${host} did not answer with a device`, `read ${runUrl(runId)}`);

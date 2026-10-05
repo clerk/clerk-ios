@@ -84,7 +84,7 @@ describe('a session started from another core', () => {
     ({ ok: true, v: 1, session: 'androidabc123', core, platform: 'android', runner: 'linux', device: { id: 'emulator-5554', name: 'Pixel', ready: true }, daemon: true, build: { state: 'none' }, recording: false, silentSeconds: 0, idleSeconds: 900, capAt: '', ending: null }) as SessionHealth;
   const backend = () =>
     remoteBackend(
-      { platform: 'android', repo: 'clerk/clerk-android', workflow: 'verify-remote.yml', sessionsDir: mkdtempSync(join(tmpdir(), 'verify-core-')), runner: 'linux', plumbingRunner: 'ubuntu-latest', device: 'Pixel', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' },
+      { platform: 'android', repo: 'clerk/clerk-android', workflow: 'verify-remote.yml', sessionsDir: mkdtempSync(join(tmpdir(), 'verify-core-')), runner: 'linux', planRunner: 'paid-small', plumbingRunner: 'ubuntu-latest', device: 'Pixel', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' },
       { env: {}, runner: run, github: async () => assert.fail('a session that answers is not looked up at GitHub') },
     );
 
@@ -125,7 +125,7 @@ describe('acquiring a session whose agent has another core', () => {
       },
     };
     const backend = remoteBackend(
-      { platform: 'android', repo: 'clerk/clerk-android', workflow: 'verify-remote.yml', sessionsDir, runner: 'linux', plumbingRunner: 'ubuntu-latest', device: 'Pixel', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' },
+      { platform: 'android', repo: 'clerk/clerk-android', workflow: 'verify-remote.yml', sessionsDir, runner: 'linux', planRunner: 'paid-small', plumbingRunner: 'ubuntu-latest', device: 'Pixel', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' },
       { env: {}, runner: async () => ({ code: 0, stdout: 'my-branch\n', stderr: '' }), github: async () => hub },
     );
     const progress: string[] = [];

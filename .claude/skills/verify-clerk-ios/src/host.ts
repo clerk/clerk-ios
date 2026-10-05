@@ -71,6 +71,7 @@ export const host: HostAdapter<NativeHostScreen> = {
       workflow: 'verify-remote.yml',
       sessionsDir: join(SKILL_DIR, '.verify', 'remote'),
       runner: 'blacksmith-6vcpu-macos-27',
+      planRunner: 'blacksmith-2vcpu-ubuntu-2404',
       plumbingRunner: 'ubuntu-latest',
       device: 'iPhone Air',
       idleMinutes: 15,

@@ -33,6 +33,11 @@ describe('the session workflow and the driver agree', () => {
     assert.ok(triggerBranch(request).startsWith('verify-remote/'));
   });
 
+  it('reads the request on the label the driver sends, and on the free label for a pushed request', () => {
+    assert.match(workflow, /^      plan_runner:$/m);
+    assert.match(workflow, /^  plan:\n(    #.*\n)*    runs-on: \$\{\{ inputs\.plan_runner \|\| 'ubuntu-latest' \}\}$/m);
+  });
+
   it('names the job that holds the runner `session`, which is how the driver tells its queue from the plan job\'s', () => {
     assert.match(workflow, /^  session:\n    needs: plan$/m);
   });
@@ -117,7 +122,7 @@ describe('egress checks', () => {
 });
 
 describe('doctor for the remote backend', () => {
-  const settings = (): RemoteSettings => ({ platform: 'ios', repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', sessionsDir: mkdtempSync(join(tmpdir(), 'verify-doctor-')), runner: 'paid-mac', plumbingRunner: 'ubuntu-latest', device: 'iPhone Air', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' });
+  const settings = (): RemoteSettings => ({ platform: 'ios', repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', sessionsDir: mkdtempSync(join(tmpdir(), 'verify-doctor-')), runner: 'paid-mac', planRunner: 'paid-small', plumbingRunner: 'ubuntu-latest', device: 'iPhone Air', idleMinutes: 15, capMinutes: 60, agentDevice: () => '0.21.18', requirement: '' });
   const answer = (status: number, json: unknown = {}, refusedWithToken?: string): ApiResponse => ({ status, json, headers: new Headers(), ...(refusedWithToken === undefined ? {} : { refusedWithToken }) });
   const offline = { HTTPS_PROXY: 'http://127.0.0.1:9', NODE_USE_ENV_PROXY: '1' };
   const git = (pushFails: boolean, remoteTip = 'f'.repeat(40), relation: 'same' | 'behind' | 'unfetched' = 'same') => async (command: string, args: readonly string[]) => {

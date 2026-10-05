@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { run } from '../src/core/exec.ts';
 import { remoteBackend } from '../src/core/remote/backend.ts';
 import type { GitHub } from '../src/core/remote/github.ts';
-import { driverId, newSessionRequest, type RemoteSettings } from '../src/core/remote/settings.ts';
+import { driverId, newSessionRequest, planRunnerFor, type RemoteSettings } from '../src/core/remote/settings.ts';
 import { VerifyFailure } from '../src/core/types.ts';
 
 function repo(): { dir: string; git: (...args: string[]) => string } {
@@ -27,6 +27,7 @@ const settings = (dir: string): RemoteSettings => ({
   workflow: 'verify-remote.yml',
   sessionsDir: join(dir, '.verify', 'remote'),
   runner: 'paid-mac',
+  planRunner: 'paid-small',
   plumbingRunner: 'ubuntu-latest',
   device: 'iPhone Air',
   idleMinutes: 15,
@@ -101,6 +102,16 @@ describe('session settings', () => {
   it('never puts the bearer in the request', () => {
     const { request, token } = newSessionRequest(settings(dir()), { env: {}, runner: run }, { mode: 'session', device: null, sha: null });
     assert.equal(JSON.stringify(request).includes(token), false);
+  });
+
+  it('reads the request on the session\'s own provider, and on the free label for a session on any other', () => {
+    const s = settings(dir());
+    const withPlan = { ...s, runner: 'paid-mac', planRunner: 'paid-small' };
+    assert.equal(planRunnerFor(withPlan, {}, 'paid-mac'), 'paid-small');
+    assert.equal(planRunnerFor(withPlan, {}, 'ubuntu-latest'), 'ubuntu-latest', 'a free session stays free');
+    assert.equal(planRunnerFor(withPlan, {}, 'xcode-27'), 'ubuntu-latest');
+    assert.equal(planRunnerFor(withPlan, { VERIFY_REMOTE_PLAN_RUNNER: 'other-label' }, 'paid-mac'), 'other-label');
+    assert.throws(() => planRunnerFor(withPlan, { VERIFY_REMOTE_PLAN_RUNNER: 'bad label; rm' }, 'paid-mac'), (error: VerifyFailure) => error.code === 'USAGE');
   });
 
   it('names a probe run apart from a session, so reaping never takes a probe for a session', () => {

@@ -4,7 +4,7 @@ import type { AddressInfo } from 'node:net';
 import { describe, it } from 'node:test';
 import { selectBackend } from '../src/core/devices.ts';
 import type { ExecResult } from '../src/core/exec.ts';
-import { openGitHub, publishedStep, startRun, type GitHub, type JobView } from '../src/core/remote/github.ts';
+import { openGitHub, publishedStep, startRun, waitReporter, type GitHub, type JobView } from '../src/core/remote/github.ts';
 import { RUN_TITLE, RequestError, STEP, matchesToken, parseRequest, probeEcho, sha256Hex, triggerBranch, type SessionRequest } from '../src/core/remote/protocol.ts';
 import { tunnelUrl } from '../src/core/remote/session.ts';
 import { VerifyFailure, type DeviceBackend, type HostAdapter } from '../src/core/types.ts';
@@ -83,28 +83,49 @@ describe('the step-name channel', () => {
 });
 
 describe('starting a run', () => {
-  function fakeGitHub(dispatchStatus: number, runs: readonly { id: number; display_title: string }[]): { github: GitHub; calls: string[] } {
+  function fakeGitHub(dispatchStatus: number, runs: readonly { id: number; display_title: string }[]): { github: GitHub; calls: string[]; dispatched: unknown[] } {
     const calls: string[] = [];
+    const dispatched: unknown[] = [];
     const github: GitHub = {
       repo: 'clerk/clerk-ios',
       workflow: 'verify-remote.yml',
       tokenSource: 'none',
-      async api(method, path) {
+      async api(method, path, body) {
         calls.push(`${method} ${path}`);
+        if (path.endsWith('/dispatches')) dispatched.push(body);
         if (path.endsWith('/dispatches')) return { status: dispatchStatus, json: dispatchStatus === 200 ? { workflow_run_id: 41 } : { message: 'Resource not accessible by integration' }, headers: new Headers() };
         return { status: 200, json: { workflow_runs: runs }, headers: new Headers() };
       },
     };
-    return { github, calls };
+    return { github, calls, dispatched };
   }
   const ok = (stdout = ''): ExecResult => ({ code: 0, stdout, stderr: '' });
 
   it('uses the run id a dispatch returns and never touches git', async () => {
-    const { github } = fakeGitHub(200, []);
+    const { github, dispatched } = fakeGitHub(200, []);
     const git: string[] = [];
-    const started = await startRun(github, request, { ref: 'mike/branch', worktree: '/w', runner: async (_c, args) => (git.push(args.join(' ')), ok()) });
+    const started = await startRun(github, request, { ref: 'mike/branch', planRunner: 'paid-small', worktree: '/w', runner: async (_c, args) => (git.push(args.join(' ')), ok()) });
     assert.deepEqual(started, { runId: '41', trigger: 'dispatch', dispatchRefused: null });
     assert.deepEqual(git, []);
+    assert.deepEqual((dispatched[0] as { inputs: { plan_runner: string } }).inputs.plan_runner, 'paid-small', 'the dispatch names the label that reads the request');
+  });
+
+  it('says which queue a run waits in and for how long, once per change', () => {
+    const lines: string[] = [];
+    const report = waitReporter((line) => lines.push(line.replace(/\d+s/, 'Ns')), '41', { plan: 'paid-small', session: 'paid-mac' });
+    const jobs = (...list: [string, string][]): JobView[] => list.map(([name, status]) => ({ name, status, conclusion: null, steps: [] }));
+    const view = { status: 'queued', conclusion: null, url: '' };
+    report(view, []);
+    report(view, jobs(['plan', 'queued']));
+    report(view, jobs(['plan', 'in_progress']));
+    report(view, jobs(['plan', 'completed'], ['session', 'queued']));
+    report(view, jobs(['plan', 'completed'], ['session', 'in_progress']));
+    assert.deepEqual(lines, [
+      'wait    run 41 has waited Ns, now for a paid-small runner to read its request',
+      'wait    run 41 has waited Ns, now for its request to be read on paid-small',
+      'wait    run 41 has waited Ns, now for a paid-mac runner',
+      'wait    run 41 has waited Ns, now for the tunnel on paid-mac',
+    ]);
   });
 
   it('hands out a dispatched run only once GitHub can read it, because the first reads are 404', async () => {
@@ -115,7 +136,7 @@ describe('starting a run', () => {
       tokenSource: 'none',
       api: async (_method, path) => (path.endsWith('/dispatches') ? { status: 200, json: { workflow_run_id: 41 }, headers: new Headers() } : { status: (reads += 1) < 3 ? 404 : 200, json: {}, headers: new Headers() }),
     };
-    const started = await startRun(github, request, { ref: 'b', worktree: '/w', runner: async () => ok(), readableWithinMs: 400 });
+    const started = await startRun(github, request, { ref: 'b', planRunner: 'paid-small', worktree: '/w', runner: async () => ok(), readableWithinMs: 400 });
     assert.equal(started.runId, '41');
     assert.equal(reads, 3);
   });
@@ -143,6 +164,7 @@ describe('starting a run', () => {
     const git: string[][] = [];
     const started = await startRun(github, request, {
       ref: 'mike/branch',
+      planRunner: 'paid-small',
       worktree: '/w',
       runner: async (_c, args) => {
         git.push([...args]);
@@ -159,7 +181,7 @@ describe('starting a run', () => {
   it('names both refusals when neither trigger works', async () => {
     const { github } = fakeGitHub(403, []);
     await assert.rejects(
-      startRun(github, request, { ref: 'b', worktree: '/w', runner: async (_c, args) => (args[0] === 'push' ? { code: 1, stdout: '', stderr: 'remote: denied' } : ok('x\n')) }),
+      startRun(github, request, { ref: 'b', planRunner: 'paid-small', worktree: '/w', runner: async (_c, args) => (args[0] === 'push' ? { code: 1, stdout: '', stderr: 'remote: denied' } : ok('x\n')) }),
       (error: VerifyFailure) => error.code === 'NOT_READY' && error.message.includes('403') && error.message.includes('remote: denied') && error.fix.includes('verify-remote/*'),
     );
   });

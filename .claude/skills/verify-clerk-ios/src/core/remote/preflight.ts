@@ -2,10 +2,10 @@ import net from 'node:net';
 import { arch, platform as osPlatform, release } from 'node:os';
 import type { Runner } from '../exec.ts';
 import { VerifyFailure, type DoctorCheck, type DoctorCheckId, type DoctorOptions } from '../types.ts';
-import { CLOUD_GITHUB_ACCESS, apiMessage, currentBranch, endSession, gitFailure, liveRuns, startRun, viewJobs, waitForStep, type ApiResponse, type GitHub, type StartedRun } from './github.ts';
+import { CLOUD_GITHUB_ACCESS, apiMessage, currentBranch, endSession, gitFailure, liveRuns, startRun, viewJobs, waitForStep, waitReporter, type ApiResponse, type GitHub, type StartedRun } from './github.ts';
 import { STEP, probeEcho, triggerBranch } from './protocol.ts';
 import { daemonHealthy, firstHealth, sessionHealth, tunnelUrl, type SessionRef } from './session.ts';
-import { driverId, forgetSession, newSessionRequest, saveToken, type RemoteDeps, type RemoteSettings } from './settings.ts';
+import { driverId, forgetSession, newSessionRequest, planRunnerFor, saveToken, type RemoteDeps, type RemoteSettings } from './settings.ts';
 import { TUNNEL } from './tunnel.ts';
 
 const CLOUD_FIX = `add ${TUNNEL.allowedHost} to the allowed domains of the cloud environment the session runs in (Claude Code: the Default environment's network settings)`;
@@ -178,28 +178,33 @@ async function commitCheck(github: GitHub, runner: Runner, worktree: string): Pr
 async function probeChecks(settings: RemoteSettings, deps: RemoteDeps, github: GitHub, options: DoctorOptions): Promise<{ readonly runId: string | null; readonly checks: readonly DoctorCheck[] }> {
   const { request } = newSessionRequest(settings, deps, { mode: 'probe', runner: settings.plumbingRunner, device: null, sha: null });
   let started: StartedRun;
+  let planRunner = settings.plumbingRunner;
   try {
-    started = await startRun(github, request, { ref: await currentBranch(deps.runner, options.worktree), worktree: options.worktree, runner: deps.runner });
+    planRunner = planRunnerFor(settings, deps.env, request.runner);
+    started = await startRun(github, request, { ref: await currentBranch(deps.runner, options.worktree), planRunner, worktree: options.worktree, runner: deps.runner });
   } catch (error) {
     const failure = error instanceof VerifyFailure ? error : new VerifyFailure('NOT_READY', failureText(error), `check access to ${settings.repo}. ${CLOUD_GITHUB_ACCESS}`);
     return { runId: null, checks: [check('remote-trigger', false, failure.message, failure.fix), notRun('remote-channel', 'remote-trigger', 'no run was started')] };
   }
   const { runId } = started;
+  const label = started.trigger === 'dispatch' ? planRunner : settings.plumbingRunner;
   const trigger = check(
     'remote-trigger',
     true,
     started.trigger === 'dispatch'
-      ? `workflow_dispatch started probe run ${runId} (it uses only the free plan job)`
+      ? `workflow_dispatch started probe run ${runId} (one short job on ${label}, and no session)`
       : `a push to ${triggerBranch(request)} started probe run ${runId}; workflow_dispatch was refused (${started.dispatchRefused})`,
     '',
   );
   const began = Date.now();
+  const seconds = () => Math.round((Date.now() - began) / 1000);
   try {
-    const echo = await waitForStep(github, runId, STEP.probePattern, 180);
+    const echo = await waitForStep(github, runId, STEP.probePattern, 180, waitReporter(options.progress, runId, { plan: label, session: label }));
     const ok = echo === probeEcho(request);
-    return { runId, checks: [trigger, check('remote-channel', ok, ok ? `read this probe's echo from a job step name over REST in ${Math.round((Date.now() - began) / 1000)}s` : `the probe run echoed ${echo}, not this probe's value`, 'report this as a verify bug')] };
+    return { runId, checks: [trigger, check('remote-channel', ok, ok ? `read this probe's echo from a job step name over REST in ${seconds()}s, on ${label}` : `the probe run echoed ${echo}, not this probe's value`, 'report this as a verify bug')] };
   } catch (error) {
-    return { runId, checks: [trigger, check('remote-channel', false, failureText(error), `read https://github.com/${settings.repo}/actions/runs/${runId}`)] };
+    const fix = `read https://github.com/${settings.repo}/actions/runs/${runId}; if ${label} runners are slow to start, VERIFY_REMOTE_PLAN_RUNNER names another label for this job`;
+    return { runId, checks: [trigger, check('remote-channel', false, `${failureText(error)}, ${seconds()}s after it was started on ${label}`, fix)] };
   }
 }
 
@@ -223,10 +228,11 @@ async function liveChecks(settings: RemoteSettings, deps: RemoteDeps, github: Gi
   let runId: string | null = null;
   let session: SessionRef | null = null;
   try {
-    const started = await startRun(github, request, { ref: await currentBranch(deps.runner, options.worktree), worktree: options.worktree, runner: deps.runner });
+    const planRunner = planRunnerFor(settings, deps.env, request.runner);
+    const started = await startRun(github, request, { ref: await currentBranch(deps.runner, options.worktree), planRunner, worktree: options.worktree, runner: deps.runner });
     runId = started.runId;
     options.progress(`live    session ${request.session} is run ${runId} on ${request.runner}, started by ${started.trigger}; it stops itself after 3 idle minutes`);
-    const host = await waitForStep(github, runId, STEP.tunnelPattern, 15 * 60);
+    const host = await waitForStep(github, runId, STEP.tunnelPattern, 15 * 60, waitReporter(options.progress, runId, { plan: started.trigger === 'dispatch' ? planRunner : settings.plumbingRunner, session: request.runner }));
     session = { baseUrl: tunnelUrl(host), tokenFile };
     checks.push(check('live-session', true, `run ${runId} on ${request.runner} published its tunnel ${seconds()}s after the ${started.trigger}`, ''));
 
