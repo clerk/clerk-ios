@@ -6,9 +6,10 @@ This directory is the maintained source for verifying the user-facing behavior o
 
 - Run every command from the root of a clerk-ios worktree. The CLI is `.claude/skills/verify-clerk-ios/bin/control-clerk-ios`, or `control-clerk-ios` with that `bin` directory on `PATH`.
 - Run `npm ci --prefix .claude/skills/verify-clerk-ios` once.
-- Then run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor`. It exits 3 until a build matches the current tree; on a clean machine `build` is the only failing check until the first `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up`.
-- `.keys.json` at the root of the main clerk-ios checkout (not a linked worktree) holds `pk` and `sk` for `with-email-codes`, `with-session-tasks`, and `with-session-tasks-setup-mfa`. Only the CLI reads it. Never print a key.
-- The CLI drives only its own lane simulator, `verify-ios-<n>`, cloned from `Clerk Verify Template iOS`. Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds.
+- Then run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor`. Its first line names the backend, `local` or `remote`, and why. It exits 3 until a build matches the current tree; on a clean Mac `build` is the only failing check until the first `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up`. On Linux, `remote-commit` also fails until HEAD is pushed, and `gh-attach` fails without `gh`.
+- `.keys.json` at the root of the main clerk-ios checkout (not a linked worktree) holds `pk` and `sk` for `with-email-codes`, `with-session-tasks`, and `with-session-tasks-setup-mfa`. A machine with no such file passes the same JSON in `CLERK_TEST_KEYS_JSON`. Only the CLI reads it. Never print a key.
+- On a Mac the CLI drives only its own lane simulator, `verify-ios-<n>`, cloned from `Clerk Verify Template iOS`. Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds.
+- On Linux the CLI drives a remote simulator on a CI runner instead, and every recipe here is unchanged. The differences are in `SKILL.md` under Remote simulator: commit and push before `up` or `run`, because the session builds the pushed commit, and run `down` as soon as you are done, because the session is billed by the minute.
 - Every launch gets a new `verifyStorageScope`, so no spec inherits a session from another spec.
 
 ### Test users and sign-in

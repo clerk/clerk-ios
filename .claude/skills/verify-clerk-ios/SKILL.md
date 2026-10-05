@@ -1,11 +1,11 @@
 ---
 name: verify-clerk-ios
-description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on a lane iOS simulator against a real Clerk dev instance, and capture video, screenshots, and host state as evidence. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk dev instance, and capture video, screenshots, and host state as evidence. The simulator is a lane on this Mac, or a remote one on a CI runner when the machine is Linux. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
 ---
 
 # verify-clerk-ios
 
-`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a lane simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. Run every command from the repo root. Add `.claude/skills/verify-clerk-ios/bin` to `PATH` (`export PATH="$PWD/.claude/skills/verify-clerk-ios/bin:$PATH"`) and you can type `control-clerk-ios` instead of the full path. Cursor also finds this skill through `.cursor/skills/verify-clerk-ios`, a symlink to this directory. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
+`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a simulator, seeds `+clerk_test` users, runs specs, and keeps the evidence. On a Mac the simulator is a local lane. On any other machine it is a remote simulator on a CI runner; read [Remote simulator](#remote-simulator) first if you are on Linux. Run every command from the repo root. Add `.claude/skills/verify-clerk-ios/bin` to `PATH` (`export PATH="$PWD/.claude/skills/verify-clerk-ios/bin:$PATH"`) and you can type `control-clerk-ios` instead of the full path. Cursor also finds this skill through `.cursor/skills/verify-clerk-ios`, a symlink to this directory. Every verb takes `--json` and then prints one object. On success it is `{ "ok": true, "verb": "<verb>", ... }`, where `verb` names the verb and decides the remaining keys. On failure it is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`. Exit codes are 0 for ok, 1 for spec failures, 2 for usage errors, and 3 for a failed precondition. Every error carries a `fix`.
 
 The rule: no change to clerk-ios UI or auth behavior is done until a `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run` on the real host shows the changed behavior.
 
@@ -36,11 +36,52 @@ Because `run` goes through the same lease step as `up`, a `run` also cleans up a
 
 The lane simulator is a clone of `Clerk Verify Template iOS`, which trusts this Mac's proxy CA. The clone is deleted and re-cloned when a lease is lost or released, so the name `verify-ios-<n>` can map to a different UDID from one lease to the next. Read the UDID from `.verify/leases/ios.json`.
 
-Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds. Four lane simulators can exist on the Mac at once, across all agents. When all four are taken, `up` and `run` fail with `POOL_FULL`. Pass `--wait <seconds>` to either verb to wait for a lane. While waiting, the CLI prints one `wait` line naming the lanes in use, and prints it again only when that set changes.
+On a Mac, never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds. Four lane simulators can exist on the Mac at once, across all agents. When all four are taken, `up` and `run` fail with `POOL_FULL`. Pass `--wait <seconds>` to either verb to wait for a lane. While waiting, the CLI prints one `wait` line naming the lanes in use, and prints it again only when that set changes.
 
 Each worktree runs its own agent-device daemon from its own `node_modules`, with state under `.verify/agent-device/`. The CLI passes `AGENT_DEVICE_STATE_DIR` to e2e and to every `agent-device` call, and `down` stops the daemon. A daemon shared across worktrees breaks every worktree once the worktree that started it is removed. If you call `agent-device` yourself, set `AGENT_DEVICE_STATE_DIR=.claude/skills/verify-clerk-ios/.verify/agent-device` and use `.claude/skills/verify-clerk-ios/node_modules/.bin/agent-device`. To find this worktree's daemon pid, read the `would stop` line of `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run`. Never print `.verify/agent-device/daemon.json`: it holds the daemon's auth token.
 
 Teardown is `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` (see Cleanup).
+
+## Remote simulator
+
+A Linux machine cannot run an iOS simulator, so there the CLI leases one on a GitHub Actions runner and drives it through a tunnel. Every verb, spec, and evidence file is the same. `up` and `run` print which backend they chose and why as their first line, and `doctor` prints the same as its `backend` check:
+
+```console
+backend remote  local is out: the iOS simulator needs macOS and this machine runs linux; the device runs on a CI runner (blacksmith-6vcpu-macos-27 unless --runner names another), started through verify-remote.yml on clerk/clerk-ios
+```
+
+`--backend auto` is the default: `local` when this machine can run the simulator, otherwise `remote`. `--backend local` or `--backend remote` forces one, and fails with `UNSUPPORTED` when this machine cannot use it. A worktree that holds a lease keeps that lease's backend until `down`.
+
+The Launch section above describes the Mac lane: the local build, `.verify/builds/`, the lane pool, `--wait`, and the per-worktree agent-device daemon. None of that exists for a remote simulator. The remote loop is commit, push, run:
+
+```console
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor  # on Linux this checks the remote path: push access, GitHub REST, the tunnel host
+$ git commit -am "..." && git push  # the session builds a pushed commit, never your working tree
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios up
+backend remote  local is out: the iOS simulator needs macOS and this machine runs linux; the device runs on a CI runner (...)
+build   ios-e4835f8835d9  github-actions  commit 2e11c5ffe39c  the session builds it
+device  remote ios  starting session ios1857e9 on blacksmith-6vcpu-macos-27 (idle stop 15 min, cap 60 min)
+device  remote ios  run 37346962333 by dispatch  https://github.com/clerk/clerk-ios/actions/runs/37346962333
+device  remote ios  tunnel up, iPhone Air on blacksmith-6vcpu-macos-27
+install ios-e4835f8835d9  on iPhone Air on blacksmith-6vcpu-macos-27
+wait    build 2e11c5ffe39c building 92s; device ready; agent-device up
+build   ios-e4835f8835d9  github-actions  2e11c5ffe39c built in 125s on blacksmith-6vcpu-macos-27
+device  iPhone Air on blacksmith-6vcpu-macos-27  remote  leased by this worktree  installed ios-e4835f8835d9
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run auth-start  # reuses the session
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down  # ends the runner job; do this as soon as you are done
+```
+
+- **Ready takes about three minutes on the default runner.** The runner boots the simulator and builds E2EHost at the same time. Run `up` as soon as you have pushed, then write the spec while it builds. The remote simulator is the runner's own `iPhone Air`; the rule against driving `iPhone Air` is about the one on a Mac.
+- **After an edit to the app, commit and push, then `run` again.** `run` sees that the app sources changed, asks the same session to build the new commit, and runs once it is installed. The build is incremental: 6 to 9 seconds measured for one-file edits, longer for a change many files depend on. Uncommitted changes to the app sources, or a HEAD that GitHub does not have, fail with `BUILD_FAILED` and the fix `git commit` or `git push`. Edits to specs, docs, and this skill need no commit and no push: specs run from your working tree, and a session that already holds the build for your app sources is reused as is.
+- **A session costs money by the minute.** It stops itself after 15 minutes without a call from the CLI, and always after 60 minutes. `down` stops it at once. After an idle stop, the next `up` or `run` prints `lost ... renewing` and starts a new session. A session with under two minutes left before its cap is replaced the same way, with `ending ... renewing`. Set `VERIFY_REMOTE_IDLE_MINUTES` or `VERIFY_REMOTE_CAP_MINUTES` to change the limits for sessions you start.
+- **A crashed run cannot strand a session for long.** Each checkout has a random id in `.verify/remote/owner`, and its sessions carry it. When the checkout holds no lease, `up` and `run` end any session with that id that is still running, and `down --stale` does so at any time. The idle stop ends whatever they miss, such as the session of a checkout that was deleted.
+- **The runner label is one setting.** The default is `blacksmith-6vcpu-macos-27` (Xcode 27, iOS 27, `iPhone Air`), which is billed. `--runner xcode-27` or `VERIFY_REMOTE_RUNNER=xcode-27` uses a free GitHub-hosted label instead and needs no other change; there the first build took 12 minutes instead of 2. A held session keeps its label, and `--runner` with another label fails until `down`.
+- **`screen`, explored specs, video, screenshots, `app.log`, and `states.jsonl` work the same.** `run.json` also has `remote`, with `provider`, `runner`, and `builtSha`.
+- **`attach` needs `gh` with `gh pr comment --attach`.** A machine without it reports `gh-attach` as failing in `doctor`, and can still run and keep evidence. Name the run id in the PR and say the evidence was not attached.
+- **What a session needs from the machine:** Node 24 (on an older Node the CLI reruns itself under `node@24` through `npx` and says so), a pushed branch that holds `.github/workflows/verify-remote.yml`, permission to dispatch that workflow or to push a branch named `verify-remote/*`, REST access to the repository, and network access to `*.trycloudflare.com`, `api.clerk.com`, and `*.clerk.accounts.dev`. Keys come from `CLERK_TEST_KEYS_JSON` when it is set, otherwise from `.keys.json`. `doctor --backend remote` checks each of these and prints the fix. `doctor --backend remote --live` also starts a real session on a free runner with no simulator, reaches it through the tunnel, and stops it, in about a minute. Add `--runner <label>` to make that live check boot the simulator on that label.
+- **Secrets.** The Clerk secret keys never leave this machine. The session's bearer token is made here, lives in `.verify/remote/<session>/token`, and is deleted by `down`; never print it. GitHub sees only the token's SHA-256. The runner sees sign-in tickets and publishable keys as launch arguments, uploads no artifact, and prints none of them in its job log. The tunnel ends TLS at Cloudflare, so Cloudflare can read what passes through it, the bearer and tickets included. The tunnel's host name is public for the life of the session, and every route on it answers 403 without the bearer.
+
+A cloud sandbox whose way out is an HTTP proxy works without configuration: when `HTTPS_PROXY` names a proxy that accepts connections, the CLI reruns itself with that proxy in effect for itself, e2e, and agent-device. A blocked host shows in `doctor` as `blocked: ...`, and the fix is to add the host to the environment's allowed domains. A refused push or a refused GitHub token in a Claude Code cloud session means the Claude GitHub App has no access to the repository; `doctor` says so, and nothing in this skill can grant it.
 
 ## Doctor
 
@@ -48,18 +89,18 @@ Teardown is `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` (see Cl
 $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor --json
 ```
 
-Run it first, and again whenever anything looks off. It is read-only. It checks:
+Run it first, and again whenever anything looks off. It changes nothing on this machine. With the remote backend it starts one short probe run on GitHub, which needs no runner beyond a free job, and with `--live` one short session. If this machine may not dispatch the workflow, the probe pushes a `verify-remote/...` branch holding HEAD, which the run deletes; it does that only for a HEAD that is already on GitHub. It checks:
 
-- Node 24 and Xcode.
-- `e2e-pins`: the installed e2e and `@e2e-dev/mobile` match the pinned versions. `agent-device-global`: the global `agent-device` matches the version `@e2e-dev/mobile` depends on.
+- Which backend it chose and why, then Node 24 and Xcode. With the remote backend it checks git fetch and a dry-run push, GitHub REST, that GitHub has HEAD, that a session can be triggered and its answer read back (a probe run that uses only a free job), and network access to the tunnel and Clerk hosts, in place of the Xcode, template, and lane checks.
+- `e2e-pins`: the installed e2e and `@e2e-dev/mobile` match the pinned versions. `agent-device-global` (local backend only): the global `agent-device` matches the version `@e2e-dev/mobile` depends on.
 - The template simulator. `proxy-trust`: when macOS has an HTTPS proxy on, the template must trust its CA. With no system HTTPS proxy, the check passes.
 - The three instances' keys by name, and each instance's enabled strategies from `/v1/environment`. Keys come from `.keys.json` at the root of the main clerk-ios checkout, not the linked worktree. CI can pass `CLERK_TEST_KEYS_JSON` instead.
-- Whether an E2EHost build matches the current tree.
+- Whether an E2EHost build matches the current tree. With the remote backend, whether the held session has built the current tree.
 - `gh pr comment --attach` support, stale device claims, and drift in `src/core/`.
 - Whether an agent-device daemon, the Mac-wide one in `~/.agent-device` or this worktree's own, runs from an install that no longer exists. The fix names the pid to kill.
 - Whether every feature in the Feature Map has its feature file and at least one golden spec.
 
-A failing check prints the command that fixes it, and `doctor` exits 3. Before the first `up`, only `build` fails, with fix `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up`.
+A failing check prints the command that fixes it, and `doctor` exits 3. A check that could not run because an earlier one failed still prints, as `not run: needs <check>`. On a Mac, before the first `up`, only `build` fails, with fix `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up`. With the remote backend, `build` fails until a session holds the current build, `remote-commit` fails until HEAD is pushed, and `gh-attach` fails on a machine with no `gh`.
 
 ## Drive
 
@@ -76,7 +117,7 @@ $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen  # current UI tre
 $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen --png  # plus a screenshot in scratch
 ```
 
-`run` flags are `--skip form-entry`, `--include known-bug`, `--grep <regex>`, `--no-video`, and `--wait <seconds>` (how long to wait for a free lane or for another verb in this worktree that holds the device).
+`run` flags are `--skip form-entry`, `--include known-bug`, `--grep <regex>`, `--no-video`, `--backend auto|local|remote`, `--runner <label>` (remote only), and `--wait <seconds>` (how long to wait for a free lane or for another verb in this worktree that holds the device).
 
 The `host` fixture:
 
@@ -198,8 +239,8 @@ Every `run` writes `.claude/skills/verify-clerk-ios/.verify/runs/<run-id>/` and 
 
 | File | What it is |
 | --- | --- |
-| `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build` (the build key), `device`, `identities`, and `tainted` files |
-| `video.mp4` | `simctl io recordVideo` of the whole run |
+| `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build` (the build key), `backend`, `device`, `identities`, and `tainted` files. For a remote run also `remote`: `provider`, `runner` (the runner label), and `builtSha` (the commit the session built) |
+| `video.mp4` | `simctl io recordVideo` of the whole run, recorded on the machine that runs the simulator |
 | `screenshots/<label>.png` | Every `host.screenshot(label)` |
 | `states.jsonl` | Every `VerifyState` the fixture read, in order, across every test in the run |
 | `state.json` | Only the last state of the whole run. With several tests, read per-test states from `states.jsonl` by `launchId`. The run summary's `last state` line shows the same single state |
@@ -225,15 +266,15 @@ Attach the focused run, not the regression run. Run your new or changed spec on 
 
 ```console
 $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down --dry-run  # what it would release, stop, and delete: each user (instance, id, test email) and organization (instance, id, name)
-$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down  # release the simulator, delete run users and their organizations, stop recorders and this worktree's agent-device daemon
-$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down --stale  # also finish cleanup left by a crashed run in this worktree
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down  # release the simulator (for a remote one, end the runner job), delete run users and their organizations, stop recorders and this worktree's agent-device daemon
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down --stale  # also finish cleanup left by a crashed run in this worktree, including a remote session it left running
 ```
 
 `down` deletes only what this worktree created: its lane simulator and the users in its ledger. Ledgers live at `~/.verify/ledgers/<id>.jsonl`, where `<id>` is a hash of the worktree path, and `<id>.owner` beside it holds the path. Find yours with `grep -l "$(git rev-parse --show-toplevel)" ~/.verify/ledgers/*.owner`. It never deletes `.verify/runs/`. Evidence survives teardown at `.claude/skills/verify-clerk-ios/.verify/runs/<run-id>/`, and `down` lists the kept runs. Run `down` after a failed iteration too, so no simulator is stranded.
 
 Evidence lives inside the worktree. `git worktree remove` deletes `.verify/runs/` with the rest of the worktree, so copy the runs you need out first.
 
-If a worktree is removed without `down`, the next `up` or `run` in any worktree finishes for it. It deletes that worktree's lane simulator and the users in its ledger, stops its agent-device daemon, and prints `reap ledger of <path> ... deleted N users, M organizations, stopped agent-device <pid>`. Then it marks every open ledger entry done. The ledger files stay on disk.
+If a worktree is removed without `down`, the next `up` or `run` in any worktree on the same machine finishes for it. A remote session it left running is the exception: only that session's own idle stop ends it. It deletes that worktree's lane simulator and the users in its ledger, stops its agent-device daemon, and prints `reap ledger of <path> ... deleted N users, M organizations, stopped agent-device <pid>`. Then it marks every open ledger entry done. The ledger files stay on disk.
 
 A ledger can number a test email that never became a user: a sign-up spec that stops at the code screen reserves `verify_<run>_<n>` but creates nothing. `down` finds no user for it and deletes 0, which is correct.
 
@@ -244,6 +285,7 @@ A ledger can number a test email that never became a user: a sign-up spec that s
 - `.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is the only helper. It is executable. Every invocation is shown above.
 - `e2e.config.ts` composes the e2e config from the CLI's run context. `npx e2e list` works from `.claude/skills/verify-clerk-ios/` while a lease is held.
 - `specs/fixtures.ts` is the `host` fixture. It takes its screen names from `src/host.ts`, so it is the same file in every repo.
+- `src/core/remote/` is the remote backend: the session agent that runs on the runner, the GitHub Actions provider, and the tunnel settings (`tunnel.ts` is the one place that names the tunnel host). `.github/workflows/verify-remote.yml` is the session workflow.
 - `npm test --prefix .claude/skills/verify-clerk-ios` runs the CLI's unit tests (`node --test test/*.test.ts`), with no network, keys, or simulator. `testing/` holds helper processes those tests spawn; they are not tests themselves. `npm run typecheck` runs `tsc`.
 - `features/` is the Feature Map. Start with `features/README.md`.
 
