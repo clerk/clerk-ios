@@ -190,8 +190,14 @@ test('a relayed event is only a hint and still requires the completed review', a
 });
 
 for (const [name, change] of [
-  ['external author', h => { h.state.pr.author_association = 'CONTRIBUTOR'; }],
-  ['outside collaborator author', h => { h.state.pr.author_association = 'COLLABORATOR'; }],
+  ['external author', h => {
+    h.state.pr.author_association = 'CONTRIBUTOR';
+    h.state.permission = { permission: 'read', role_name: 'read' };
+  }],
+  ['outside collaborator author', h => {
+    h.state.pr.author_association = 'COLLABORATOR';
+    h.state.outsiders = [MEMBER];
+  }],
   ['bot author', h => { h.state.pr.user = RABBIT; }],
   ['draft PR', h => { h.state.pr.draft = true; }],
   ['closed PR', h => { h.state.pr.state = 'closed'; }],
@@ -214,6 +220,12 @@ for (const [name, change] of [
     assert.equal(h.state.writes.length, 0);
   });
 }
+
+test('a private Clerk member, seen as COLLABORATOR by the workflow token, gets automatic CI', async () => {
+  const h = harness();
+  h.state.pr.author_association = 'COLLABORATOR';
+  assert.equal((await h.evaluate()).should_run, 'true');
+});
 
 test('fork authored by a Clerk member uses the fork repository and exact reviewed SHA', async () => {
   const h = harness();

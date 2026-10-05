@@ -177,18 +177,19 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func retryDelayFromXRateLimitResetHeader() async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
 
-    let middleware = ClerkRateLimitRetryMiddleware { delay in
-      sleepDelay.setValue(delay)
-    }
+    let middleware = ClerkRateLimitRetryMiddleware(
+      sleep: { delay in sleepDelay.setValue(delay) },
+      currentDate: { now }
+    )
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
-    let resetTime = Date().timeIntervalSince1970 + 2.0
     let response = try HTTPURLResponse(
       url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
-      headerFields: ["X-RateLimit-Reset": String(format: "%.0f", resetTime)]
+      headerFields: ["X-RateLimit-Reset": "1700000002"]
     )
 
     _ = try await middleware.shouldRetry(
@@ -198,15 +199,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
       attempts: 1
     )
 
-    // Should delay for approximately 2 seconds (some time may have passed)
-    #expect(sleepDelay.value != nil)
-    if let delay = sleepDelay.value {
-      // Allow tolerance for timing variance - delay should be approximately 2 seconds
-      // (accounting for time that may have passed between setting resetTime and calculation)
-      // The delay is clamped between 0.1s and 5s, so we check it's in a reasonable range
-      #expect(delay >= 1_500_000_000, "Delay should be approximately 2 seconds")
-      #expect(delay <= 2_500_000_000, "Delay should be approximately 2 seconds")
-    }
+    #expect(sleepDelay.value == 2_000_000_000)
   }
 
   @Test
