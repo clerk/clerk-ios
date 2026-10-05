@@ -49,6 +49,48 @@ struct AuthViewHostDismissTests {
     #expect(hostDismissCount == 1)
   }
 
+  @Test
+  func completedFlowRunsTheHostDismissActionWhenTheViewIsNotPresented() async throws {
+    let clerk = Clerk.mockSignedOut
+    var authCompleteCount = 0
+    var hostDismissCount = 0
+    let content = AuthView { authCompleteCount += 1 }
+      .environment(clerk)
+      .environment(\.clerkHostDismissAction, ClerkHostDismissAction { hostDismissCount += 1 })
+      .transaction { $0.disablesAnimations = true }
+    let host = UIHostingController(rootView: content)
+    let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+    window.rootViewController = host
+    window.isHidden = false
+    defer {
+      window.isHidden = true
+      window.rootViewController = nil
+    }
+    for _ in 0 ..< 6 {
+      window.layoutIfNeeded()
+      host.view.layoutIfNeeded()
+      await withCheckedContinuation { continuation in
+        DispatchQueue.main.async { continuation.resume() }
+      }
+    }
+    try #require(clerk.authFlowRegistrationId != nil)
+
+    var signIn = SignIn.mock
+    signIn.status = .complete
+    signIn.createdSessionId = Client.mock.currentSession?.id
+    clerk.setClientFromIdentityController(
+      .mock,
+      authFlowUpdate: .completionAccepted(.signIn(signIn), ownerId: UUID())
+    )
+
+    for _ in 0 ..< 200 where authCompleteCount == 0 {
+      window.layoutIfNeeded()
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    #expect(authCompleteCount == 1)
+    #expect(hostDismissCount == 1)
+  }
+
   private func navigationController(in controller: UIViewController) -> UINavigationController? {
     if let navigation = controller as? UINavigationController { return navigation }
     return controller.children.lazy.compactMap { navigationController(in: $0) }.first
