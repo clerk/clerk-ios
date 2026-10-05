@@ -73,14 +73,15 @@ struct AuthViewHostDismissTests {
         DispatchQueue.main.async { continuation.resume() }
       }
     }
-    try #require(clerk.authFlowRegistrationId != nil)
+    let ownerId = try #require(clerk.authFlowRegistrationId)
+    clerk.applyRefreshedEnvironment(.mock)
 
     var signIn = SignIn.mock
     signIn.status = .complete
     signIn.createdSessionId = Client.mock.currentSession?.id
     clerk.setClientFromIdentityController(
       .mock,
-      authFlowUpdate: .completionAccepted(.signIn(signIn), ownerId: UUID())
+      authFlowUpdate: .completionAccepted(.signIn(signIn), ownerId: ownerId)
     )
 
     for _ in 0 ..< 200 where authCompleteCount == 0 {
