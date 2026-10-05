@@ -241,6 +241,7 @@ extension AuthView {
     authFlowRegistration = nil
     onAuthComplete()
     if isDismissible {
+      hostDismissAction?()
       dismiss()
     }
   }
