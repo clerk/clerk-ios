@@ -484,6 +484,8 @@ export interface Availability {
   readonly usable: boolean;
   /** Why, in words `doctor` and `up` print after the backend's name. */
   readonly why: string;
+  /** For a backend that is not usable: what would make it usable on this machine, when something would. */
+  readonly fix?: string;
 }
 
 export interface DoctorOptions {
@@ -497,8 +499,12 @@ export interface DoctorOptions {
 export interface DeviceBackend<L extends Lease = Lease> {
   readonly kind: BackendKind;
   readonly platform: Platform;
-  /** Whether a machine running `os` can use this backend. `--backend auto` takes the first usable one in host order. */
-  availability(os: NodeJS.Platform): Availability;
+  /**
+   * Whether this machine can use the backend, from whatever the backend's own factory was given to look at: the OS, the
+   * SDK, /dev/kvm. `--backend auto` takes the first usable backend in host order. It is asked on every `doctor`, `up`,
+   * and `run`, so it reads files and runs no tool: a tool that hangs or fails must not change the choice.
+   */
+  availability(): Availability;
   /**
    * Present when the backend builds the app itself from a pushed commit. It names that commit, and refuses a tree
    * whose build inputs are edited or whose HEAD the provider cannot fetch.

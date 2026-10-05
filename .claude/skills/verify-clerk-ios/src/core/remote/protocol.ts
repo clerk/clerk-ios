@@ -124,6 +124,8 @@ export interface SessionHealth {
   readonly ok: true;
   readonly v: typeof REQUEST_VERSION;
   readonly session: string;
+  /** Names the core the agent was started from. A driver whose own core differs must not drive this session. */
+  readonly core: string;
   readonly platform: Platform;
   readonly runner: string;
   readonly device: { readonly id: string; readonly name: string; readonly ready: boolean } | null;
@@ -149,4 +151,45 @@ export interface SessionDevice {
   };
   logs(since: Date, predicate: string | null): CommandLine;
 }
-export type SessionDeviceFactory = (deviceId: string) => SessionDevice;
+/** `id` is the simulator's udid or the emulator's serial on the session's machine. */
+export interface SessionDeviceRef {
+  readonly id: string;
+  readonly platform: Platform;
+}
+export type SessionDeviceFactory = (device: SessionDeviceRef) => SessionDevice;
+
+/**
+ * One question the session agent asks about the device module. A short child process answers it from the working
+ * tree as it stands, so after a rebuild every answer comes from the commit that was just checked out.
+ */
+export type RecipeRequest =
+  | { readonly op: 'build'; readonly work: string }
+  | { readonly op: 'record'; readonly file: string }
+  | { readonly op: 'logs'; readonly since: string; readonly predicate: string | null };
+
+export interface RecipeAnswers {
+  readonly build: readonly CommandLine[];
+  /** All three at once, so a recording is stopped by the recipe that started it even if a rebuild lands in between. */
+  readonly record: { readonly start: CommandLine; readonly stop: readonly CommandLine[] | null; readonly collect: readonly CommandLine[] };
+  readonly logs: CommandLine;
+}
+
+export const DEVICE_COMMAND_LIMITS = { args: 64, argBytes: 4096, stdinBytes: 65_536, outputBytes: 65_536, timeoutMs: 60_000 } as const;
+
+const ADB_SUBCOMMANDS: ReadonlySet<string> = new Set(['shell', 'reverse']);
+
+/**
+ * The platform's device tool pointed at one device, or null for arguments it does not take. The driver and the session
+ * agent both build the command here, so what runs for a local lease is what runs for a remote one. Only Android has a
+ * tool so far, and only the adb subcommands that act on the device: `push` and `pull` would reach the machine's files.
+ */
+export function deviceToolCommand(platform: Platform, deviceId: string, args: readonly string[], adb = 'adb'): CommandLine | null {
+  if (platform !== 'android' || !ADB_SUBCOMMANDS.has(args[0] ?? '')) return null;
+  return { command: adb, args: ['-s', deviceId, ...args] };
+}
+
+export interface DeviceCommandResult {
+  readonly code: number;
+  readonly stdout: string;
+  readonly stderr: string;
+}

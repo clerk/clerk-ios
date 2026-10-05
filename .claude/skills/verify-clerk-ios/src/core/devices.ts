@@ -8,6 +8,7 @@ import { newEntryId, type Workspace } from './workspace.ts';
 import {
   VerifyFailure,
   type AcquireLock,
+  type Availability,
   type BackendKind,
   type BuildKey,
   type BuildView,
@@ -45,21 +46,24 @@ export interface BackendChoice {
   readonly why: string;
 }
 
-export function selectBackend(host: HostAdapter, platform: Platform, requested: BackendKind | undefined, held: Lease | null, os: NodeJS.Platform = process.platform): BackendChoice {
+const toUseIt = (availability: Availability): string => (availability.fix === undefined ? '' : ` (to run it here: ${availability.fix})`);
+
+export function selectBackend(host: HostAdapter, platform: Platform, requested: BackendKind | undefined, held: Lease | null): BackendChoice {
   if (requested !== undefined) {
     const backend = backendFor(host, platform, requested);
-    const forced = backend.availability(os);
-    if (!forced.usable) throw new VerifyFailure('UNSUPPORTED', `--backend ${requested} cannot run here: ${forced.why}`, `drop --backend so the CLI picks one, or run on ${backend.requirement}`);
+    const forced = backend.availability();
+    if (!forced.usable) throw new VerifyFailure('UNSUPPORTED', `--backend ${requested} cannot run here: ${forced.why}`, forced.fix ?? `drop --backend so the CLI picks one, or run on ${backend.requirement}`);
     return { backend, why: `forced by --backend ${requested}` };
   }
   if (held !== null) return { backend: backendFor(host, platform, held.backend), why: `this worktree already holds a ${held.backend} lease` };
-  const candidates = host.backends.filter((b) => b.platform === platform).map((backend) => ({ backend, ...backend.availability(os) }));
-  const chosen = candidates.find((c) => c.usable);
+  const candidates = host.backends.filter((b) => b.platform === platform).map((backend) => ({ backend, availability: backend.availability() }));
+  const chosen = candidates.find((c) => c.availability.usable);
   if (chosen === undefined) {
-    throw new VerifyFailure('UNSUPPORTED', `no ${platform} backend runs on ${os}`, candidates.length === 0 ? `${host.repo} has no ${platform} backend` : `run on ${candidates.map((c) => c.backend.requirement).join(' or ')}`);
+    const out = candidates.map((c) => `${c.backend.kind}: ${c.availability.why}${toUseIt(c.availability)}`).join('; ');
+    throw new VerifyFailure('UNSUPPORTED', `no ${platform} backend runs on this machine${out === '' ? '' : ` (${out})`}`, candidates.length === 0 ? `${host.repo} has no ${platform} backend` : `run on ${candidates.map((c) => c.backend.requirement).join(' or ')}`);
   }
-  const passed = candidates.slice(0, candidates.indexOf(chosen)).map((c) => `${c.backend.kind} is out: ${c.why}`);
-  return { backend: chosen.backend, why: [...passed, chosen.why].join('; ') };
+  const passed = candidates.slice(0, candidates.indexOf(chosen)).map((c) => `${c.backend.kind} is out: ${c.availability.why}${toUseIt(c.availability)}`);
+  return { backend: chosen.backend, why: [...passed, chosen.availability.why].join('; ') };
 }
 
 export const describeChoice = (choice: BackendChoice): string => `${choice.backend.kind}  ${choice.why}`;

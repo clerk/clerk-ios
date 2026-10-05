@@ -53,10 +53,12 @@ async function deleteSimulators(match: (device: Simulator) => boolean): Promise<
 
 export interface LocalIosOptions {
   readonly claimsDir?: string;
+  readonly os?: NodeJS.Platform;
 }
 
 export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<LocalLease> {
   const claimsDir = options.claimsDir ?? defaultClaimsDir();
+  const os = options.os ?? process.platform;
 
   async function claimSlot(request: AcquireRequest): Promise<Claim> {
     const deadline = Date.now() + request.waitSeconds * 1000;
@@ -101,7 +103,7 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
   const backend: DeviceBackend<LocalLease> = {
     kind: 'local',
     platform: 'ios',
-    availability: (os) => (os === 'darwin' ? { usable: true, why: 'this Mac runs the simulator itself' } : { usable: false, why: `the iOS simulator needs macOS and this machine runs ${os}` }),
+    availability: () => (os === 'darwin' ? { usable: true, why: 'this Mac runs the simulator itself' } : { usable: false, why: `the iOS simulator needs macOS and this machine runs ${os}` }),
     requirement: 'a Mac with Xcode',
 
     async acquire(request) {

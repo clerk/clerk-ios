@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { test as base } from '@e2e-dev/mobile';
 import { expect } from 'e2e';
 import { agentDeviceFor } from '../src/core/agent-device.ts';
+import { deviceCommand } from '../src/core/device-command.ts';
 import { ASSERTION_TIMEOUT_MS, loadRunContext } from '../src/core/e2e-config.ts';
 import { appStart, describeState, parseVerifyState, performAppStart } from '../src/core/state.ts';
 import { agentDeviceStateDir } from '../src/core/workspace.ts';
@@ -35,14 +36,9 @@ const POLL_MS = 400;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function adb(target: RunTarget, args: readonly string[]): Promise<void> {
-  const lease = JSON.parse(readFileSync(target.leaseFile, 'utf8')) as { deviceId: string };
-  return new Promise((resolve, reject) => {
-    execFile('adb', ['-s', lease.deviceId, ...args], (error, _stdout, stderr) => {
-      if (error === null) resolve();
-      else reject(new Error(`adb ${args[0]} failed: ${stderr.trim() || error.message}`));
-    });
-  });
+async function adb(target: RunTarget, args: readonly string[]): Promise<void> {
+  const result = await deviceCommand(JSON.parse(readFileSync(target.leaseFile, 'utf8')) as Lease, args);
+  if (result.code !== 0) throw new Error(`adb ${args[0]} failed: ${result.stderr.trim() || result.stdout.trim() || `exit ${result.code}`}`);
 }
 
 /** e2e names the worker's agent-device session `<session>-<slot>`, and verify runs one worker, so slot 0. */

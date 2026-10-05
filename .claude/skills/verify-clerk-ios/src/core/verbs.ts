@@ -593,7 +593,8 @@ async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>)
       leases.push({ lease, backend, view: leaseView(backend, lease, false), origin: 'lease-file' });
     }
     if (command.stale) {
-      for (const backend of host.backends.filter((b) => b.platform === platform && b.availability(process.platform).usable)) {
+      // Every backend is asked, usable here or not: a claim made before the machine changed still has to be finished.
+      for (const backend of host.backends.filter((b) => b.platform === platform)) {
         for (const orphan of await backend.reapable(workspace.worktree)) {
           if (leases.some((l) => leaseIdentity(l.lease) === leaseIdentity(orphan))) continue;
           leases.push({ lease: orphan, backend, view: leaseView(backend, orphan, false), origin: 'stale-claim' });

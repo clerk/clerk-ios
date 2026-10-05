@@ -18,10 +18,16 @@ export function tunnelUrl(host: string): string {
   return `https://${host}`;
 }
 
-export async function sessionCall(ref: SessionRef, path: string, init: { readonly method?: 'GET' | 'POST'; readonly timeoutMs?: number } = {}): Promise<Response> {
+export async function sessionCall(ref: SessionRef, path: string, init: { readonly method?: 'GET' | 'POST'; readonly json?: unknown; readonly timeoutMs?: number } = {}): Promise<Response> {
   tunnelUrl(new URL(ref.baseUrl).host);
+  const body = init.json === undefined ? {} : { body: JSON.stringify(init.json) };
   return sessionToken(ref).use('session-bearer', (plain) =>
-    fetch(`${ref.baseUrl}${path}`, { method: init.method ?? 'GET', headers: { Authorization: `Bearer ${plain}` }, signal: AbortSignal.timeout(init.timeoutMs ?? 30_000) }),
+    fetch(`${ref.baseUrl}${path}`, {
+      method: init.method ?? 'GET',
+      headers: { Authorization: `Bearer ${plain}`, ...(init.json === undefined ? {} : { 'Content-Type': 'application/json' }) },
+      ...body,
+      signal: AbortSignal.timeout(init.timeoutMs ?? 30_000),
+    }),
   );
 }
 

@@ -6,6 +6,7 @@ import type { ReadableStream } from 'node:stream/web';
 import { run, sleep } from '../exec.ts';
 import { VerifyFailure, type AcquireRequest, type DeviceBackend, type EvidencePath, type Recording, type RemoteLease } from '../types.ts';
 import { currentBranch, endSession, liveRuns, openGitHub, startRun, viewRun, waitForStep, type GitHub } from './github.ts';
+import { coreVersion } from '../manifest.ts';
 import { remoteDoctorChecks } from './preflight.ts';
 import { STEP, type SessionHealth } from './protocol.ts';
 import { firstHealth, sessionCall, sessionHealth, tunnelUrl, type SessionRef } from './session.ts';
@@ -19,6 +20,20 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
   let opened: Promise<GitHub> | undefined;
   const github = () => (opened ??= deps.github?.() ?? openGitHub({ repo: settings.repo, workflow: settings.workflow, env: deps.env, runner: deps.runner }));
   const runUrl = (runId: string) => `https://github.com/${settings.repo}/actions/runs/${runId}`;
+
+  /**
+   * The agent keeps the core of the commit its session started on. A driver on another core would call routes that
+   * agent does not have, so it is told to start over; renewing by itself would bill a session per attempt.
+   */
+  function assertSameCore(health: SessionHealth): void {
+    const mine = coreVersion();
+    if (health.core === mine) return;
+    throw new VerifyFailure(
+      'NOT_READY',
+      `the session runs verify core ${health.core ?? 'from before core versions'} and this checkout has ${mine}, so its agent may not have the routes this CLI calls`,
+      'commit and push the changes under src/core, then {cli} down and {cli} up',
+    );
+  }
 
   function describeBuild(health: SessionHealth): string {
     const build = health.build;
@@ -96,6 +111,7 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
         const session: SessionRef = { baseUrl: tunnelUrl(host), tokenFile };
         const health = await firstHealth(session, 180);
         if (health === null || health.device === null) throw new VerifyFailure('NOT_READY', `the session's tunnel at ${host} did not answer with a device`, `read ${runUrl(runId)}`);
+        assertSameCore(health);
         request.progress(`device  remote ${platform}  tunnel up, ${health.device.name} on ${order.runner}`);
         return {
           backend: 'remote',
@@ -135,6 +151,7 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
         throw new VerifyFailure('NOT_READY', `the session is still running (${runUrl(lease.providerRef)}) but its tunnel does not answer`, 'retry in a minute; if it stays unreachable, {cli} down, then {cli} up');
       }
       if (health.ending !== null) return 'lost';
+      assertSameCore(health);
       return Date.parse(lease.expiresAt) - Date.now() < EXPIRING_MS ? 'expiring' : 'held';
     },
 

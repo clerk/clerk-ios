@@ -35,6 +35,15 @@ export function manifestDrift(dir: string = CORE_DIR): readonly string[] {
   return [...names].filter((name) => committed.get(name) !== actual.get(name)).sort();
 }
 
+/** Short name for the core as committed. A driver and a session agent with different names come from different cores. */
+export function coreVersion(dir: string = CORE_DIR): string {
+  try {
+    return createHash('sha256').update(readFileSync(join(dir, 'MANIFEST'))).digest('hex').slice(0, 12);
+  } catch {
+    return 'unknown';
+  }
+}
+
 if (import.meta.main && process.argv.includes('--write')) {
   writeFileSync(MANIFEST_FILE, computeManifest());
 }

@@ -4,20 +4,25 @@ import { appendFileSync, createReadStream, existsSync, mkdirSync, rmSync, statSy
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import net from 'node:net';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import {
+  DEVICE_COMMAND_LIMITS,
   RequestError,
+  deviceToolCommand,
   matchesToken,
   parseRequest,
   probeEcho,
   type BuildState,
+  type DeviceCommandResult,
   type EndReason,
-  type SessionDevice,
-  type SessionDeviceFactory,
+  type RecipeAnswers,
+  type RecipeRequest,
+  type SessionDeviceRef,
   type SessionHealth,
   type SessionRequest,
 } from './protocol.ts';
 import type { CommandLine } from '../exec.ts';
+import { coreVersion } from '../manifest.ts';
 import { TUNNEL } from './tunnel.ts';
 
 /**
@@ -30,6 +35,7 @@ const RUNNER_LOGS = ['agent-device-proxy', 'build', 'tunnel'] as const;
 const DAEMON_GRACE_MS = 60_000;
 const COMMAND_TIMEOUT_MS = 30_000;
 const BUILD_TIMEOUT_MINUTES = 30;
+const RECIPE = fileURLToPath(new URL('./recipe.ts', import.meta.url));
 
 function setOutputs(file: string | undefined, values: Readonly<Record<string, string>>): void {
   const text = Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join('');
@@ -103,6 +109,56 @@ async function runBriefly(commands: readonly CommandLine[]): Promise<void> {
   }
 }
 
+/** Runs to the end or to `timeoutMs`, and keeps the last `limit` characters of each stream. */
+async function capture(command: CommandLine, options: { readonly timeoutMs: number; readonly limit: number; readonly stdin?: string }): Promise<DeviceCommandResult> {
+  const child = spawn(command.command, [...command.args], { cwd: command.cwd, stdio: [options.stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'] });
+  const kept = { stdout: '', stderr: '' };
+  const keep = (stream: 'stdout' | 'stderr') => (chunk: Buffer) => (kept[stream] = (kept[stream] + chunk.toString()).slice(-options.limit));
+  child.stdout!.on('data', keep('stdout'));
+  child.stderr!.on('data', keep('stderr'));
+  child.stdin?.on('error', () => undefined);
+  child.stdin?.end(options.stdin);
+  const timer = setTimeout(() => child.kill('SIGKILL'), options.timeoutMs);
+  const code = await exitOf(child);
+  clearTimeout(timer);
+  return { code, ...kept };
+}
+
+/** Asks the device module, as the working tree has it now, for the commands that answer `request`. */
+async function recipe<Op extends RecipeRequest['op']>(device: SessionDeviceRef, request: Extract<RecipeRequest, { op: Op }>): Promise<RecipeAnswers[Op]> {
+  const asked = await capture({ command: process.execPath, args: [RECIPE, JSON.stringify({ device, request })] }, { timeoutMs: COMMAND_TIMEOUT_MS, limit: 1_000_000 });
+  if (asked.code !== 0) {
+    const lines = asked.stderr.split('\n').map((line) => line.trim()).filter((line) => line !== '');
+    throw new Error(`the device module of the checked-out commit could not answer ${request.op}: ${lines.find((line) => /^\w*Error\b/.test(line)) ?? lines.slice(-3).join(' | ')}`);
+  }
+  return JSON.parse(asked.stdout) as RecipeAnswers[Op];
+}
+
+function readBody(req: IncomingMessage, limit: number): Promise<string | null> {
+  return new Promise((done) => {
+    let text = '';
+    let over = false;
+    req.on('data', (chunk: Buffer) => {
+      over ||= text.length + chunk.length > limit;
+      if (!over) text += chunk.toString();
+    });
+    req.on('end', () => done(over ? null : text));
+    req.on('error', () => done(null));
+  });
+}
+
+function deviceCommandBody(body: string | null): { readonly args: readonly string[]; readonly stdin?: string } | null {
+  try {
+    const { args, stdin } = JSON.parse(body ?? '') as { args?: unknown; stdin?: unknown };
+    const limits = DEVICE_COMMAND_LIMITS;
+    if (!Array.isArray(args) || args.length === 0 || args.length > limits.args || !args.every((arg) => typeof arg === 'string' && arg.length <= limits.argBytes)) return null;
+    if (stdin !== undefined && (typeof stdin !== 'string' || stdin.length > limits.stdinBytes)) return null;
+    return { args: args as string[], ...(stdin === undefined ? {} : { stdin }) };
+  } catch {
+    return null;
+  }
+}
+
 export async function serve(env: Readonly<Record<string, string | undefined>> = process.env): Promise<void> {
   const request = parseRequest(env.VERIFY_SESSION_REQUEST ?? '');
   const work = resolve(env.VERIFY_SESSION_WORK ?? 'verify-remote-work');
@@ -112,11 +168,8 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
   const deviceName = env.VERIFY_SESSION_DEVICE_NAME ?? deviceId;
   mkdirSync(work, { recursive: true });
 
-  let device: SessionDevice | null = null;
-  if (deviceId !== '') {
-    const module = (await import(pathToFileURL(resolve(env.VERIFY_SESSION_DEVICE_MODULE ?? '')).href)) as { default: SessionDeviceFactory };
-    device = module.default(deviceId);
-  }
+  const device: SessionDeviceRef | null = deviceId === '' ? null : { id: deviceId, platform: request.platform };
+  const core = coreVersion();
 
   /** Tests shorten the minute so idle stop and the cap can be watched without waiting for them. */
   const minuteMs = Number(env.VERIFY_SESSION_MINUTE_MS ?? 60_000);
@@ -130,7 +183,7 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
   let daemonOkAt = 0;
   let proxy: ChildProcess | null = null;
   let proxyStartedAt = 0;
-  let recorder: { readonly child: ChildProcess; readonly exited: Promise<number>; readonly file: string } | null = null;
+  let recorder: ({ readonly child: ChildProcess; readonly exited: Promise<number>; readonly file: string } & Pick<RecipeAnswers['record'], 'stop' | 'collect'>) | null = null;
   let build: BuildState = { state: 'none' };
   let buildChild: ChildProcess | null = null;
   let buildGeneration = 0;
@@ -232,13 +285,23 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
     }, BUILD_TIMEOUT_MINUTES * minuteMs);
     build = { state: 'building', sha, seconds: 0 };
     rmSync(logFile('build'), { force: true });
-    const commands: CommandLine[] = [
+    const checkout: CommandLine[] = [
       { command: 'git', args: ['fetch', '--no-tags', '--depth=1', 'origin', sha] },
       { command: 'git', args: ['checkout', '--force', '--detach', sha] },
-      ...device.build(work),
     ];
+    const target = device;
+    const checkoutThenBuild = async (): Promise<number> => {
+      const checkedOut = await runCommands(checkout, generation, tail);
+      if (checkedOut !== 0) return checkedOut;
+      try {
+        return await runCommands(await recipe(target, { op: 'build', work }), generation, tail);
+      } catch (error) {
+        tail.push((error as Error).message);
+        return 1;
+      }
+    };
     // The build it replaces must be gone first: it may still hold git's index lock or be writing the same build directory.
-    buildSettled = buildSettled.then(() => runCommands(commands, generation, tail)).then((code) => {
+    buildSettled = buildSettled.then(checkoutThenBuild).then((code) => {
       clearTimeout(timeout);
       if (generation !== buildGeneration) return;
       const seconds = Math.round((Date.now() - began) / 1000);
@@ -257,6 +320,7 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
       ok: true,
       v: request.v,
       session: request.session,
+      core,
       platform: request.platform,
       runner: request.runner,
       device: device === null ? null : { id: deviceId, name: deviceName, ready: existsSync(join(work, 'device-ready')) },
@@ -271,18 +335,17 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
   }
 
   async function stopRecording(): Promise<number> {
-    if (recorder === null || device === null) return 0;
+    if (recorder === null) return 0;
     const current = recorder;
     recorder = null;
-    const stop = device.record.stop?.(current.file);
-    if (stop === undefined) current.child.kill('SIGINT');
-    else await runBriefly(stop);
+    if (current.stop === null) current.child.kill('SIGINT');
+    else await runBriefly(current.stop);
     const code = await Promise.race([current.exited, new Promise<null>((done) => setTimeout(() => done(null), COMMAND_TIMEOUT_MS))]);
     if (code === null) {
       current.child.kill('SIGKILL');
       await current.exited;
     }
-    await runBriefly(device.record.collect?.(current.file) ?? []);
+    await runBriefly(current.collect);
     return existsSync(current.file) ? statSync(current.file).size : 0;
   }
 
@@ -320,9 +383,9 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
         await stopRecording();
         const file = join(work, 'recording.mp4');
         rmSync(file, { force: true });
-        const start = device.record.start(file);
+        const { start, stop, collect } = await recipe(device, { op: 'record', file });
         const child = spawn(start.command, [...start.args], { cwd: start.cwd, stdio: 'ignore' });
-        recorder = { child, exited: exitOf(child), file };
+        recorder = { child, exited: exitOf(child), file, stop, collect };
         return json(res, 200, { ok: true });
       }
       case 'POST /record/stop':
@@ -337,13 +400,24 @@ export async function serve(env: Readonly<Record<string, string | undefined>> = 
       }
       case 'GET /logs': {
         if (device === null) return json(res, 409, { error: 'this session has no device' });
-        const since = new Date(url.searchParams.get('since') ?? Date.now() - 600_000);
-        const command = device.logs(Number.isNaN(since.getTime()) ? new Date(Date.now() - 600_000) : since, url.searchParams.get('predicate'));
+        const asked = new Date(url.searchParams.get('since') ?? Date.now() - 600_000);
+        const since = Number.isNaN(asked.getTime()) ? new Date(Date.now() - 600_000) : asked;
+        const command = await recipe(device, { op: 'logs', since: since.toISOString(), predicate: url.searchParams.get('predicate') });
         const child = spawn(command.command, [...command.args], { cwd: command.cwd, stdio: ['ignore', 'pipe', 'ignore'] });
         res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
         child.stdout.pipe(res);
         child.on('error', () => res.end());
         return;
+      }
+      case 'POST /device-command': {
+        if (device === null) return json(res, 409, { error: 'this session has no device' });
+        const limits = DEVICE_COMMAND_LIMITS;
+        const body = deviceCommandBody(await readBody(req, limits.args * limits.argBytes + limits.stdinBytes));
+        if (body === null) return json(res, 400, { error: `the body must be {"args": [...], "stdin"?: "..."} with 1 to ${limits.args} string arguments` });
+        const command = deviceToolCommand(device.platform, device.id, body.args);
+        if (command === null) return json(res, 403, { error: `no ${device.platform} device command starts with ${body.args[0]}` });
+        const result = await capture(command, { timeoutMs: limits.timeoutMs, limit: limits.outputBytes, ...(body.stdin === undefined ? {} : { stdin: body.stdin }) });
+        return json(res, 200, { code: result.code, stdout: scrub(result.stdout), stderr: scrub(result.stderr) } satisfies DeviceCommandResult);
       }
       case 'GET /runner-log': {
         const name = RUNNER_LOGS.find((known) => known === url.searchParams.get('name'));

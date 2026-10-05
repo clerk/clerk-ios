@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
+import { coreVersion } from '../src/core/manifest.ts';
 import { plan } from '../src/core/remote/session-agent.ts';
 import { sha256Hex, type SessionHealth, type SessionRequest } from '../src/core/remote/protocol.ts';
 
@@ -42,13 +43,14 @@ function repoWithCommit(): { dir: string; sha: string; commit(text: string): str
   return { dir, sha, commit };
 }
 
-async function startAgent(request: SessionRequest, options: { readonly cwd?: string; readonly device?: boolean; readonly minuteMs?: number; readonly agentDevice?: boolean } = {}) {
+async function startAgent(request: SessionRequest, options: { readonly cwd?: string; readonly device?: boolean; readonly deviceModule?: string; readonly minuteMs?: number; readonly agentDevice?: boolean; readonly env?: Readonly<Record<string, string>> } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'verify-agent-'));
   const port = (nextPort += 2);
   const bin = join(work, 'bin');
   mkdirSync(bin);
   const script = (name: string, file: string) => writeFileSync(join(bin, name), `#!/bin/sh\nexec "${process.execPath}" "${join(here, '..', 'testing', file)}" "$@"\n`, { mode: 0o755 });
   script('cloudflared', 'fake-tunnel.ts');
+  script('adb', 'fake-adb.ts');
   if (options.agentDevice === true) script('agent-device', 'fake-agent-device.ts');
   const child = spawn(process.execPath, [join(here, '..', 'src', 'core', 'remote', 'session-agent.ts'), 'serve'], {
     cwd: options.cwd ?? work,
@@ -61,14 +63,15 @@ async function startAgent(request: SessionRequest, options: { readonly cwd?: str
       VERIFY_SESSION_CLOUDFLARED: join(bin, 'cloudflared'),
       VERIFY_SESSION_SKIP_DNS: '1',
       ...(options.minuteMs === undefined ? {} : { VERIFY_SESSION_MINUTE_MS: String(options.minuteMs) }),
-      ...(options.device === false ? {} : { VERIFY_SESSION_DEVICE_ID: 'UDID-1', VERIFY_SESSION_DEVICE_NAME: 'Test Phone', VERIFY_SESSION_DEVICE_MODULE: join(here, '..', 'testing', 'fake-session-device.ts') }),
+      ...(options.device === false ? {} : { VERIFY_SESSION_DEVICE_ID: 'UDID-1', VERIFY_SESSION_DEVICE_NAME: 'Test Phone', VERIFY_SESSION_DEVICE_MODULE: options.deviceModule ?? join(here, '..', 'testing', 'fake-session-device.ts') }),
+      ...options.env,
     },
     stdio: 'ignore',
   });
   children.push(child);
   const exited = new Promise<number>((done) => child.on('close', (code) => done(code ?? 1)));
-  const call = (path: string, init: { method?: string; bearer?: string | null } = {}) =>
-    fetch(`http://127.0.0.1:${port}${path}`, { method: init.method ?? 'GET', headers: init.bearer === null ? {} : { Authorization: `Bearer ${init.bearer ?? token}` } });
+  const call = (path: string, init: { method?: string; bearer?: string | null; body?: string } = {}) =>
+    fetch(`http://127.0.0.1:${port}${path}`, { method: init.method ?? 'GET', headers: init.bearer === null ? {} : { Authorization: `Bearer ${init.bearer ?? token}` }, ...(init.body === undefined ? {} : { body: init.body }) });
   await until(() => (existsSync(join(work, 'tunnel')) ? true : null), 'the tunnel file');
   await until(() => call('/__sim/health', { bearer: null }).then((r) => r.status).catch(() => null), 'the agent to listen');
   const health = async () => (await (await call('/__sim/health')).json()) as SessionHealth;
@@ -105,6 +108,7 @@ describe('session agent', () => {
     const health = await agent.health();
     assert.deepEqual(health.device, { id: 'UDID-1', name: 'Test Phone', ready: false });
     assert.equal(health.idleSeconds, 300);
+    assert.equal(health.core, coreVersion(), 'a driver compares this with its own core before it drives the session');
     writeFileSync(join(agent.work, 'device-ready'), '');
     assert.equal((await agent.health()).device?.ready, true);
     assert.equal((await agent.call('/__sim/stop', { method: 'POST' })).status, 200);
@@ -180,6 +184,68 @@ describe('session agent', () => {
     await agent.exited;
   });
 
+  it('builds each commit with the recipe that commit holds, not the one the session started on', async () => {
+    const repo = repoWithCommit();
+    const recipeOf = (label: string) =>
+      `export default () => ({ build: (work) => [{ command: process.execPath, args: ['-e', "require('fs').writeFileSync(require('path').join(process.argv[1], 'built'), '${label} recipe built ' + require('fs').readFileSync('app.txt', 'utf8'))", work] }] });\n`;
+    writeFileSync(join(repo.dir, 'device.ts'), recipeOf('first'));
+    const first = repo.commit('one');
+    const agent = await startAgent({ ...base, sha: first }, { cwd: repo.dir, deviceModule: 'device.ts' });
+    const built = (sha: string) => until(async () => { const b = (await agent.health()).build; return b.state !== 'building' && b.state !== 'none' && b.sha === sha ? b : null; }, `build of ${sha}`);
+    assert.equal((await built(first)).state, 'built');
+    assert.equal(readFileSync(join(agent.work, 'built'), 'utf8'), 'first recipe built one');
+
+    writeFileSync(join(repo.dir, 'device.ts'), recipeOf('second'));
+    const second = repo.commit('two');
+    await agent.call(`/__sim/build?sha=${second}`, { method: 'POST' });
+    assert.equal((await built(second)).state, 'built');
+    assert.equal(readFileSync(join(agent.work, 'built'), 'utf8'), 'second recipe built two');
+
+    writeFileSync(join(repo.dir, 'device.ts'), 'export default () => { throw new Error("this module is broken"); };\n');
+    const third = repo.commit('three');
+    await agent.call(`/__sim/build?sha=${third}`, { method: 'POST' });
+    const failed = await built(third);
+    assert.equal(failed.state, 'failed');
+    assert.match(failed.state === 'failed' ? failed.tail : '', /could not answer build: .*this module is broken/);
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('stops and collects a recording with the commands its own start named', async () => {
+    const agent = await startAgent({ ...base, platform: 'android' }, { env: { FAKE_DEVICE_RECORDER: 'on-device' } });
+    assert.equal((await agent.call('/__sim/record/start', { method: 'POST' })).status, 200);
+    await sleep(300);
+    const stopped = (await (await agent.call('/__sim/record/stop', { method: 'POST' })).json()) as { bytes: number };
+    assert.ok(stopped.bytes > 0);
+    assert.equal(await (await agent.call('/__sim/record/file')).text(), 'pulled from android UDID-1');
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('runs adb shell and reverse against its own device, with stdin, and nothing else', async () => {
+    const agent = await startAgent({ ...base, platform: 'android' });
+    const command = (body: unknown) => agent.call('/__sim/device-command', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) });
+    const ran = await command({ args: ['shell', 'cat > prefs.xml'], stdin: '<map/>' });
+    assert.equal(ran.status, 200);
+    const result = (await ran.json()) as { code: number; stdout: string };
+    assert.equal(result.code, 0);
+    assert.deepEqual(JSON.parse(result.stdout), { args: ['-s', 'UDID-1', 'shell', 'cat > prefs.xml'], stdin: '<map/>' });
+    assert.equal(((await (await command({ args: ['reverse', 'fails'] })).json()) as { code: number }).code, 3, 'a failing command is a result, not an error');
+    for (const refused of [['pull', '/etc/passwd', '/tmp/x'], ['push', 'a', 'b'], ['-s', 'other', 'shell', 'id'], ['emu', 'kill']]) {
+      const response = await command({ args: refused });
+      assert.equal(response.status, 403, refused.join(' '));
+    }
+    for (const malformed of ['not json', { args: [] }, { args: 'shell' }, { args: ['shell', 1] }, { args: ['shell'], stdin: 7 }]) assert.equal((await command(malformed)).status, 400);
+    assert.equal((await agent.call('/__sim/device-command', { method: 'POST', bearer: null, body: '{"args":["shell","id"]}' })).status, 403);
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+
+    const ios = await startAgent(base);
+    assert.equal((await ios.call('/__sim/device-command', { method: 'POST', body: '{"args":["shell","id"]}' })).status, 403, 'iOS has no device tool');
+    await ios.call('/__sim/stop', { method: 'POST' });
+    await ios.exited;
+  });
+
   it('records, serves the file, and reads device logs', async () => {
     const agent = await startAgent(base);
     assert.equal((await agent.call('/__sim/record/start', { method: 'POST' })).status, 200);
@@ -199,6 +265,7 @@ describe('session agent', () => {
     assert.equal((await agent.health()).device, null);
     assert.equal((await agent.call('/__sim/record/start', { method: 'POST' })).status, 409);
     assert.equal((await agent.call(`/__sim/build?sha=${'a'.repeat(40)}`, { method: 'POST' })).status, 409);
+    assert.equal((await agent.call('/__sim/device-command', { method: 'POST', body: '{"args":["shell","id"]}' })).status, 409);
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
   });

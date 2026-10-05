@@ -6,6 +6,7 @@ import { publishedStep, startRun, type GitHub, type JobView } from '../src/core/
 import { RUN_TITLE, RequestError, STEP, matchesToken, parseRequest, probeEcho, sha256Hex, triggerBranch, type SessionRequest } from '../src/core/remote/protocol.ts';
 import { tunnelUrl } from '../src/core/remote/session.ts';
 import { VerifyFailure, type DeviceBackend, type HostAdapter } from '../src/core/types.ts';
+import { localIosBackend } from '../src/platform/ios/local.ts';
 
 const token = 'a'.repeat(64);
 const request: SessionRequest = {
@@ -134,15 +135,19 @@ describe('starting a run', () => {
 describe('the clerk-ios host', () => {
   it('runs the simulator locally on a Mac and remotely anywhere else', async () => {
     const { host: real } = await import('../src/host.ts');
-    assert.equal(selectBackend(real, 'ios', undefined, null, 'darwin').backend.kind, 'local');
-    const onLinux = selectBackend(real, 'ios', undefined, null, 'linux');
+    const remote = real.backends.find((b) => b.kind === 'remote')!;
+    const on = (os: NodeJS.Platform) => selectBackend({ ...real, backends: [localIosBackend({ os }), remote] }, 'ios', undefined, null);
+    assert.deepEqual(real.backends.map((b) => b.kind), ['local', 'remote']);
+    assert.equal(on('darwin').backend.kind, 'local');
+    const onLinux = on('linux');
     assert.equal(onLinux.backend.kind, 'remote');
     assert.match(onLinux.why, /^local is out: the iOS simulator needs macOS and this machine runs linux; /);
   });
 });
 
 describe('backend selection', () => {
-  const backend = (kind: 'local' | 'remote', usable: boolean, why: string) => ({ kind, platform: 'ios', requirement: `${kind} needs`, availability: () => ({ usable, why }) }) as unknown as DeviceBackend;
+  const backend = (kind: 'local' | 'remote', usable: boolean, why: string, fix?: string) =>
+    ({ kind, platform: 'ios', requirement: `${kind} needs`, availability: () => ({ usable, why, ...(fix === undefined ? {} : { fix }) }) }) as unknown as DeviceBackend;
   const host = (backends: DeviceBackend[]) => ({ repo: 'clerk-ios', backends }) as unknown as HostAdapter;
 
   it('takes local where the machine can run the device and says why', () => {
@@ -155,6 +160,14 @@ describe('backend selection', () => {
     const choice = selectBackend(host([backend('local', false, 'the iOS simulator needs macOS and this machine runs linux'), backend('remote', true, 'a runner')]), 'ios', undefined, null);
     assert.equal(choice.backend.kind, 'remote');
     assert.equal(choice.why, 'local is out: the iOS simulator needs macOS and this machine runs linux; a runner');
+  });
+
+  it('prints what would make an unusable backend usable, and gives it as the fix when that backend is forced', () => {
+    const noKvm = backend('local', false, 'no kvm', 'add the udev rule');
+    const hosted = host([noKvm, backend('remote', true, 'a runner')]);
+    assert.equal(selectBackend(hosted, 'ios', undefined, null).why, 'local is out: no kvm (to run it here: add the udev rule); a runner');
+    assert.throws(() => selectBackend(hosted, 'ios', 'local', null), (error: VerifyFailure) => error.code === 'UNSUPPORTED' && error.message === '--backend local cannot run here: no kvm' && error.fix === 'add the udev rule');
+    assert.throws(() => selectBackend(host([noKvm]), 'ios', undefined, null), (error: VerifyFailure) => error.message === 'no ios backend runs on this machine (local: no kvm (to run it here: add the udev rule))' && error.fix === 'run on local needs');
   });
 
   it('lets --backend force either way, and keeps the backend of a held lease', () => {
