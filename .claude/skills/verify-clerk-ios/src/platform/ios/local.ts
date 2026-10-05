@@ -248,6 +248,11 @@ export function localIosBackend(options: LocalIosOptions = {}): DeviceBackend<Lo
   return backend;
 }
 
+const TRUST_STORE_LOCATIONS = [
+  ['private', 'var', 'protected', 'trustd', 'private', 'TrustStore.sqlite3'],
+  ['Library', 'Keychains', 'TrustStore.sqlite3'],
+];
+
 async function proxyTrustCheck(template: Simulator | undefined): Promise<DoctorCheck> {
   const proxy = await run('scutil', ['--proxy']);
   const httpsEnabled = /HTTPSEnable\s*:\s*1/.test(proxy.stdout);
@@ -256,8 +261,8 @@ async function proxyTrustCheck(template: Simulator | undefined): Promise<DoctorC
   const port = /HTTPSPort\s*:\s*(\d+)/.exec(proxy.stdout)?.[1] ?? '';
   const proxyName = `${where}${port ? `:${port}` : ''}`;
   if (template === undefined) return { id: 'proxy-trust', ok: false, detail: `HTTPS proxy ${proxyName} is on and there is no template to check`, fix: 'create the template first (see the template check)' };
-  const store = join(simulatorDataDir(template.udid), 'Library', 'Keychains', 'TrustStore.sqlite3');
-  if (!existsSync(store)) {
+  const store = TRUST_STORE_LOCATIONS.map((parts) => join(simulatorDataDir(template.udid), ...parts)).find((path) => existsSync(path));
+  if (store === undefined) {
     return { id: 'proxy-trust', ok: false, detail: `HTTPS proxy ${proxyName} is on and ${TEMPLATE_NAME} has no trust store`, fix: `boot ${TEMPLATE_NAME}, install and trust the proxy CA, then shut it down` };
   }
   const rows = await run('sqlite3', [store, 'select count(*) from tsettings']);
