@@ -33,8 +33,6 @@ public struct BillingCreditLedger: Codable, Equatable, Sendable, Identifiable {
     sourceType = try container.decode(String.self, forKey: .sourceType)
     sourceId = try container.decode(String.self, forKey: .sourceId)
 
-    // FAPI serializes this field as an RFC 3339 string, unlike the epoch
-    // milliseconds used by the other billing resources.
     if let rawCreatedAt = try? container.decode(String.self, forKey: .createdAt) {
       guard let date = Self.date(fromRFC3339: rawCreatedAt) else {
         throw DecodingError.dataCorruptedError(
