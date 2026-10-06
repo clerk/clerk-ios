@@ -53,6 +53,7 @@ struct RoleResourceTests {
     #expect(page.data.map(\.key) == ["org:member", "org:billing"])
     #expect(page.data[0].description == "Default member role")
     #expect(page.data[1].description == nil)
-    #expect(page.data[1].permissions.first?.description == nil)
+    let permission = try #require(page.data[1].permissions.first)
+    #expect(permission.description == nil)
   }
 }
