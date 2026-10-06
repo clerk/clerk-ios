@@ -18,6 +18,7 @@ extension User {
     return fullName.isEmptyTrimmed ? nil : fullName
   }
 
+  @MainActor
   var identifier: String? {
     if let username, !username.isEmptyTrimmed {
       return username
