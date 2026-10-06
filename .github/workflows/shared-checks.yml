@@ -81,6 +81,7 @@ jobs:
             "$CHECK_RUN_NAME_PREFIX / Build watchOS"
             "$CHECK_RUN_NAME_PREFIX / Build tvOS"
             "$CHECK_RUN_NAME_PREFIX / Build visionOS"
+            "$CHECK_RUN_NAME_PREFIX / Run verify skill tests"
           )
 
           if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
@@ -456,6 +457,35 @@ jobs:
           esac
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
 
+  verify-skill:
+    name: Run verify skill tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .claude/skills/verify-clerk-ios
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.checkout_repository || github.repository }}
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
   report-manual-ci-check-runs:
     name: Report manual CI check runs
     needs:
@@ -465,6 +495,7 @@ jobs:
       - test-ui
       - test-e2e
       - build
+      - verify-skill
     if: always() && inputs.report_check_runs && inputs.check_run_sha != ''
     runs-on: ubuntu-latest
     permissions:
@@ -551,6 +582,7 @@ jobs:
           update_check_run "$CHECK_RUN_NAME_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
+          update_check_run "$CHECK_RUN_NAME_PREFIX / Run verify skill tests" "$(job_result "Run verify skill tests")"
 
           if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
             update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (auth-email)" "$(job_result "Run required E2EHost Maestro tests on iOS (auth-email)")"
