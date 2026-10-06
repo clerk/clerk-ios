@@ -1,0 +1,231 @@
+name: Verify end-to-end tests
+
+on:
+  workflow_call:
+    inputs:
+      checkout_ref:
+        description: Commit to verify
+        required: true
+        type: string
+      check_run_sha:
+        description: Commit SHA to receive the end-to-end tests check run
+        required: false
+        type: string
+        default: ""
+    secrets:
+      MOBILE_VERIFICATION_PLATFORM_API_KEY:
+        required: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  CHECK_RUN_NAME: Manual CI / Run verify end-to-end tests on iOS
+
+jobs:
+  plan:
+    name: Plan verify end-to-end tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      checks: write
+    outputs:
+      check_run_id: ${{ steps.plan.outputs.check_run_id }}
+    steps:
+      - name: Check that the end-to-end tests can run
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HAS_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY != '' }}
+          CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
+        run: |
+          set -euo pipefail
+
+          if [ "$HAS_PLATFORM_API_KEY" != "true" ]; then
+            echo "::error title=End-to-end tests::The MOBILE_VERIFICATION_PLATFORM_API_KEY secret is not set for this repository, so the end-to-end tests cannot run."
+            exit 1
+          fi
+
+          if [ -z "$CHECK_RUN_SHA" ]; then
+            exit 0
+          fi
+
+          target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          check_run_id="$(
+            gh api --method POST "repos/$GITHUB_REPOSITORY/check-runs" \
+              -f name="$CHECK_RUN_NAME" \
+              -f head_sha="$CHECK_RUN_SHA" \
+              -f status=in_progress \
+              -f details_url="$target_url" \
+              -f started_at="$now" \
+              --jq '.id'
+          )"
+          echo "check_run_id=$check_run_id" >> "$GITHUB_OUTPUT"
+
+  e2e-tests:
+    name: Run verify end-to-end tests on iOS
+    needs: plan
+    runs-on: ${{ vars.VERIFY_CI_RUNNER || 'xcode-27' }}
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    concurrency:
+      group: verify-e2e-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      PACKAGE: e2e-tests
+      CLI: e2e-tests/bin/control-clerk-ios
+      IOS_RUNTIME: iOS-27-0
+      # A cancelled job can end before it deletes its Clerk application. A later run of the CLI deletes it after this many hours, and two is the minimum.
+      VERIFY_THROWAWAY_HOURS: "2"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.checkout_ref || github.sha }}
+          persist-credentials: false
+
+      - name: Verify macOS and Xcode version
+        run: |
+          sw_vers
+          xcodebuild -version
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Install the test package
+        id: install
+        run: npm ci --prefix "$PACKAGE" --no-audit --no-fund
+
+      - name: Create the template simulator that the CLI clones
+        run: |
+          set -euo pipefail
+          available="$(xcrun simctl list runtimes available -j | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).runtimes.map((r) => r.identifier.replace(/^.*SimRuntime\./, "")).filter((id) => id.startsWith("iOS-")).join(", ")')"
+          case ", $available," in
+            *", $IOS_RUNTIME,"*) ;;
+            *)
+              echo "::error::This runner has no $IOS_RUNTIME simulator runtime. It has: ${available:-none}. Change IOS_RUNTIME in this workflow on purpose, or choose another runner."
+              exit 1
+              ;;
+          esac
+          xcrun simctl create "Clerk Verify Template iOS" "iPhone Air" "com.apple.CoreSimulator.SimRuntime.$IOS_RUNTIME"
+
+      - name: Build E2EHost and boot a simulator
+        env:
+          CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
+        run: |
+          "$CLI" up --backend local
+
+      # agent-device compiles its XCTest runner on first use, which would otherwise happen inside the first spec's launch timeout.
+      - name: Prepare the XCTest runner
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          udid="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).deviceId' "$PACKAGE/.verify/leases/ios.json")"
+          AGENT_DEVICE_STATE_DIR="$GITHUB_WORKSPACE/$PACKAGE/.verify/agent-device" \
+            "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --udid "$udid" --timeout 900000 \
+            || echo "::warning::prepare ios-runner failed; the run starts its own agent-device daemon, and the first test waits for the XCTest runner"
+
+      - name: Run the golden specs
+        timeout-minutes: 45
+        env:
+          CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          "$CLI" run --all --backend local --retries 1 --github-report
+
+      - name: Release the simulator and delete the Clerk application
+        if: always() && steps.install.outcome == 'success'
+        env:
+          CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
+        run: |
+          "$CLI" down
+
+      - name: Check that every run is sealed
+        id: evidence
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const runs = path.join(process.env.PACKAGE, ".verify", "runs");
+            const ids = fs.existsSync(runs) ? fs.readdirSync(runs) : [];
+            let upload = ids.length > 0;
+            for (const id of ids) {
+              let record = null;
+              try { record = JSON.parse(fs.readFileSync(path.join(runs, id, "run.json"), "utf8")); } catch {}
+              if (record === null || record.sealed !== true || record.tainted.length > 0) {
+                upload = false;
+                console.log("::warning::Run " + id + " was not sealed, or a file in it holds a secret value. No evidence is uploaded.");
+              }
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, "upload=" + upload + "\n");
+          '
+
+      - name: Upload the evidence
+        if: ${{ !cancelled() && steps.evidence.outputs.upload == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verify-e2e-ios
+          overwrite: true
+          include-hidden-files: true
+          path: |
+            ${{ env.PACKAGE }}/.verify/runs/*/run.json
+            ${{ env.PACKAGE }}/.verify/runs/*/app.log
+            ${{ env.PACKAGE }}/.verify/runs/*/driver
+            ${{ env.PACKAGE }}/.verify/runs/*/video.mp4
+            ${{ env.PACKAGE }}/.verify/runs/*/screenshots
+            ${{ env.PACKAGE }}/.verify/runs/*/e2e*/report.json
+            ${{ env.PACKAGE }}/.verify/runs/*/e2e*/junit.xml
+            ${{ env.PACKAGE }}/.verify/runs/*/e2e*/summary.md
+            ${{ env.PACKAGE }}/.verify/runs/*/e2e*/failures
+            ${{ env.PACKAGE }}/.verify/runs/*/e2e*/artifacts
+          retention-days: 3
+          if-no-files-found: warn
+
+  report:
+    name: Report verify end-to-end tests
+    needs:
+      - plan
+      - e2e-tests
+    if: always() && needs.plan.outputs.check_run_id != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      checks: write
+    steps:
+      - name: Report the check run on the release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHECK_RUN_ID: ${{ needs.plan.outputs.check_run_id }}
+          RESULT: ${{ needs.e2e-tests.result }}
+        run: |
+          set -euo pipefail
+
+          case "$RESULT" in
+            success)
+              conclusion="success"
+              summary="The golden specs passed on the simulator."
+              ;;
+            cancelled)
+              conclusion="cancelled"
+              summary="The end-to-end tests were cancelled or ran out of time."
+              ;;
+            *)
+              conclusion="failure"
+              summary="A golden spec failed on both of its attempts, or the end-to-end tests could not run. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
+              ;;
+          esac
+
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/check-runs/$CHECK_RUN_ID" \
+            -f status=completed \
+            -f conclusion="$conclusion" \
+            -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -f "output[title]=$CHECK_RUN_NAME" \
+            -f "output[summary]=$summary" \
+            --silent
