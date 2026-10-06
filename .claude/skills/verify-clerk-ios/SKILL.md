@@ -101,7 +101,7 @@ A spec file that needs other settings than the standard ones declares them in a 
 
 ### Check your work
 
-Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Run the features your change touches. For new work:
+Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
 
 1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
 2. Run it by path.
@@ -145,7 +145,7 @@ $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>
 
 `attach` posts one comment per run and PR with `gh pr comment --attach`. It needs a `gh` whose `gh pr comment` has that flag, and it fails with a fix when the flag is missing. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create.
 
-Attach the focused run, not the regression run. Run your new or changed spec on its own and attach that run, so the PR video shows only the behavior the change is about. Run the golden specs for every feature you touched in a separate `run`, and cite its run id in the PR as regression evidence.
+Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the PR video shows only the behavior the change is about. If you ran other golden specs too, cite that run's id in the PR.
 
 ## Cleanup
 
@@ -175,4 +175,5 @@ If a worktree is removed without `down`, the next `up` or `run` in any worktree 
 
 - The Android and Expo verification skills share `src/core/`, and it is copied to them. After a change under `src/core/`, `node .claude/skills/verify-clerk-ios/src/core/manifest.ts --write` rewrites `src/core/MANIFEST`.
 - `npm test --prefix .claude/skills/verify-clerk-ios` runs the CLI's unit tests, with no network, key, or simulator. `npm run typecheck --prefix .claude/skills/verify-clerk-ios` runs `tsc`. The `Run verify skill tests` job in `.github/workflows/shared-checks.yml` runs both on Linux.
+- `.github/workflows/verify-e2e.yml` runs `up`, `run --all --retries 1 --github-report`, and `down` on a simulator on a CI runner. It needs the repository secret `MOBILE_VERIFICATION_PLATFORM_API_KEY`. It runs on the `xcode-27` label unless the repository variable `VERIFY_CI_RUNNER` names another. `gh workflow run verify-e2e.yml --ref <branch>` starts it by hand.
 - `run --github-report` hands the results of a run to `@e2e-dev/github`, which writes them to the job summary and to one pull request comment.
