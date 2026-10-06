@@ -13,13 +13,14 @@ import type { host as hostAdapter } from '../src/host.ts';
 type HostScreen = (typeof hostAdapter)['screens'][number];
 import {
   CLERK_TEST_CODE,
-  LAUNCH_PRESETS,
   STATE_ELEMENT_ID,
   VerifyFailure,
+  refuseNamedInstance,
   type BrokerLaunchRequest,
   type BrokerLaunchResponse,
   type ErrorCode,
   type HostFixture,
+  type InstanceSettings,
   type Lease,
   type RunContext,
   type RunTarget,
@@ -29,7 +30,8 @@ import {
   type VerifyState,
 } from '../src/core/types.ts';
 
-export { expect, CLERK_TEST_CODE, LAUNCH_PRESETS };
+export { expect, CLERK_TEST_CODE };
+export type { InstanceSettings };
 
 const LAUNCH_TIMEOUT_MS = 60_000;
 const POLL_MS = 400;
@@ -108,18 +110,19 @@ export const test = base.extend<{ host: HostFixture<HostScreen> }>({
     }
 
     const host: HostFixture<HostScreen> = {
-      async newEmail(instance) {
-        return (await call<{ email: TestEmail }>('/reserveEmail', { instance })).email;
+      async newEmail(...given: readonly unknown[]) {
+        refuseNamedInstance('host.newEmail', given[0], true);
+        return (await call<{ email: TestEmail }>('/reserveEmail', {})).email;
       },
-      seedUser(options) {
-        return call<SeededUser>('/seedUser', { instance: options.instance, phone: options.phone === true });
+      async seedUser(options = {}) {
+        refuseNamedInstance('host.seedUser', options);
+        return call<SeededUser>('/seedUser', { phone: options.phone === true });
       },
       async launch(options) {
+        refuseNamedInstance('host.launch', options);
         const user = options.signedInAs ?? null;
-        const instance = options.signedInAs === undefined ? options.instance : options.signedInAs.instance;
         const request: BrokerLaunchRequest = {
           platform: target.platform,
-          instance,
           user,
           screen: options.screen ?? null,
           authMode: options.authMode ?? null,

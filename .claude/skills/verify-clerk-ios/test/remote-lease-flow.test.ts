@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { standingInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
-import type { ClerkBackend } from '../src/core/clerk.ts';
 import { doctor, down, up, type Deps } from '../src/core/verbs.ts';
 import { openWorkspace } from '../src/core/workspace.ts';
 import { newEntryId } from '../src/core/workspace.ts';
@@ -73,7 +73,7 @@ function setup() {
     runner: async () => ({ code: 1, stdout: '', stderr: '' }),
     env: {},
     progress: (line: string) => void progress.push(line),
-    clerk: () => ({ deleteByEmail: async (_instance: string, email: string) => (deleted.push(email), { users: 1, organizations: 0 }) }) as Partial<ClerkBackend> as ClerkBackend,
+    instances: standingInstances({ clerk: () => ({ deleteByEmail: async (email) => (deleted.push(email), { users: 1, organizations: 0 }) }) }),
   };
   const edit = (text: string, newSha: string) => {
     writeFileSync(join(dir, 'app.swift'), text);

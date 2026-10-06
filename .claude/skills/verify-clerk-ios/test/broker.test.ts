@@ -14,8 +14,8 @@ describe('broker', () => {
     const workspace = openWorkspace({ skillDir: dir, worktree: dir, home: join(dir, 'home') });
     const { run, scratch } = workspace.newRun();
     const broker = await startBroker(run, workspace, scratch, {
-      clerk: {} as ClerkBackend,
-      publishableKey: () => 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk' as PublishableKey,
+      clerk: () => ({}) as ClerkBackend,
+      instance: () => ({ pk: 'pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk' as PublishableKey, home: { instance: 'with-email-codes' } }),
       screens: ['home', 'auth'],
       platforms: ['ios'],
     });
@@ -23,7 +23,7 @@ describe('broker', () => {
       fetch(`${broker.url}/launch`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${readFileSync(broker.tokenFile, 'utf8')}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform, instance: 'with-email-codes', user: null, screen: 'auth', authMode: null, debugLogs: false, storageScope: null }),
+        body: JSON.stringify({ platform, user: null, screen: 'auth', authMode: null, debugLogs: false, storageScope: null }),
       });
     try {
       const ios = await launch('ios');

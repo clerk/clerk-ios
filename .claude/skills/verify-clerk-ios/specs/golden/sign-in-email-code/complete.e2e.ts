@@ -1,8 +1,8 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 
 test('signs in with the email code', { tags: ['form-entry'] }, async ({ host, screen }) => {
-  const user = await host.seedUser({ instance: 'with-email-codes' });
-  await host.launch({ instance: 'with-email-codes', screen: 'auth', authMode: 'signIn' });
+  const user = await host.seedUser();
+  await host.launch({ screen: 'auth', authMode: 'signIn' });
   await expect(screen.getByTestId('clerk.auth.start.identifier')).toBeVisible({ timeout: 20_000 });
   await host.fill(screen.getByTestId('clerk.auth.start.identifier'), user.email);
   await host.tap(screen.getByTestId('clerk.auth.start.continue'));

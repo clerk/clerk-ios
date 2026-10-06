@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { standingInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
 import { newTestEmail, parseTestEmail, parseTestPhone } from '../src/core/clerk.ts';
 import { assertPublishable, sealEvidence } from '../src/core/evidence.ts';
@@ -43,6 +44,8 @@ function partialRecord(dir: EvidencePath, run: RunId): Omit<EvidenceRecord, 'sea
     appLog: join(dir, 'app.log') as EvidencePath,
     e2eReport: join(dir, 'e2e', 'report.json') as EvidencePath,
     identities: [{ email: newTestEmail(run, 1), userId: OWN_USER }],
+    instances: [{ application: null, standing: 'with-email-codes' }],
+    settings: [{ label: 'standard', askedBy: null, specs: ['specs/explored/a.e2e.ts'], application: null, changed: false, held: true, e2eReport: join(dir, 'e2e', 'report.json') as EvidencePath }],
   };
 }
 
@@ -117,6 +120,23 @@ describe('assertPublishable', () => {
   });
 });
 
+describe('assertPublishable and the groups of a run', () => {
+  it('rejects a run with a group that lost its settings or never invoked e2e, though every result passed', () => {
+    const { dir, run } = runDir();
+    const base = sealEvidence(dir, partialRecord(dir, run), []);
+    const group = base.settings[0]!;
+    const other = { ...group, label: 'auth_multi_factor.required_for_sign_up=true' };
+    assert.throws(() => assertPublishable({ ...base, settings: [group, { ...other, held: false }] }, []), { code: 'EVIDENCE_UNSAFE', message: /1 group that did not run in full on its settings: auth_multi_factor\.required_for_sign_up=true/ });
+    assert.throws(() => assertPublishable({ ...base, settings: [{ ...group, e2eReport: null }, other] }, []), { code: 'EVIDENCE_UNSAFE', message: /did not run in full on its settings: standard/ });
+  });
+
+  it('passes a record sealed before a run recorded its groups', () => {
+    const { dir, run } = runDir();
+    const { settings: _unrecorded, ...old } = sealEvidence(dir, partialRecord(dir, run), []);
+    assert.equal(assertPublishable(old as EvidenceRecord, [state(OWN_USER)]).run, run);
+  });
+});
+
 describe('attach', () => {
   const host = { repo: 'clerk-ios', githubRepo: 'clerk/clerk-ios' } as HostAdapter;
 
@@ -137,7 +157,7 @@ describe('attach', () => {
     sealEvidence(dir, partialRecord(dir, run), []);
     writeFileSync(join(dir, 'states.jsonl'), `${JSON.stringify(state('user_foreign'))}\n`);
     const { runner, calls } = recordingRunner();
-    const deps = { host, workspace, runner, env: {}, progress: () => undefined, clerk: () => assert.fail('attach must not touch Clerk') };
+    const deps = { host, workspace, runner, env: {}, progress: () => undefined, instances: standingInstances() };
     await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, screenshots: 'all' }), { code: 'EVIDENCE_UNSAFE' });
     assert.equal(calls.length, 0);
   });

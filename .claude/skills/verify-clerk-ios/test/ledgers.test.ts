@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { standingInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
 import { newTestEmail, type ClerkBackend } from '../src/core/clerk.ts';
 import { ensureLease } from '../src/core/devices.ts';
@@ -42,12 +43,12 @@ function fakes(deleted: string[]) {
       return { platform, key, appId: 'com.clerk.E2EHost', path: join(into, 'E2EHost.app') as ScratchPath, source, sourceSha: null };
     },
   } as unknown as HostAdapter;
-  const clerk = {
-    deleteByEmail: async (_instance, email) => {
+  const clerk = (): Partial<ClerkBackend> => ({
+    deleteByEmail: async (email) => {
       deleted.push(email);
       return { users: 1, organizations: 0 };
     },
-  } as Partial<ClerkBackend> as ClerkBackend;
+  });
   return { host, clerk };
 }
 
@@ -70,7 +71,7 @@ describe('up finishes ledgers of deleted worktrees', () => {
     const deleted: string[] = [];
     const { host, clerk } = fakes(deleted);
     const workspace = openWorkspace({ skillDir: live, worktree: live, home });
-    const options = { waitSeconds: 0, progress: () => undefined, clerk: () => clerk, retryWith: '{cli} up --wait <seconds>' };
+    const options = { waitSeconds: 0, progress: () => undefined, instances: standingInstances({ clerk }), retryWith: '{cli} up --wait <seconds>' };
     await workspace.withAcquireLock('ios', (lock) => ensureLease(lock, undefined, workspace, host, options));
 
     assert.deepEqual(deleted.sort(), [newTestEmail(run, 1), newTestEmail(run, 2)].sort());
@@ -90,10 +91,10 @@ describe('up finishes ledgers of deleted worktrees', () => {
     openWorkspace({ skillDir: gone, worktree: gone, home }).append({ id: newEntryId(), kind: 'identity', run, instance: 'with-email-codes', email: newTestEmail(run, 1) });
     rmSync(gone, { recursive: true });
     const { host } = fakes([]);
-    const failing = { deleteByEmail: async () => assert.fail('BAPI is down') } as Partial<ClerkBackend> as ClerkBackend;
+    const failing = (): Partial<ClerkBackend> => ({ deleteByEmail: async () => assert.fail('BAPI is down') });
     const lines: string[] = [];
     const workspace = openWorkspace({ skillDir: live, worktree: live, home });
-    await workspace.withAcquireLock('ios', (lock) => ensureLease(lock, undefined, workspace, host, { waitSeconds: 0, progress: (l) => lines.push(l), clerk: () => failing, retryWith: '{cli} up --wait <seconds>' }));
+    await workspace.withAcquireLock('ios', (lock) => ensureLease(lock, undefined, workspace, host, { waitSeconds: 0, progress: (l) => lines.push(l), instances: standingInstances({ clerk: failing }), retryWith: '{cli} up --wait <seconds>' }));
     assert.equal(openWorkspace({ skillDir: gone, worktree: gone, home }).unclosedEntries().length, 1);
     assert.ok(lines.some((l) => l.includes('left open')));
   });
@@ -114,7 +115,7 @@ describe('up finishes ledgers of deleted worktrees', () => {
     const { host, clerk } = fakes(deleted);
     const workspace = openWorkspace({ skillDir: live, worktree: live, home });
     await workspace.withAcquireLock('ios', (lock) =>
-      ensureLease(lock, undefined, workspace, host, { waitSeconds: 0, progress: () => undefined, clerk: () => clerk, retryWith: '{cli} up --wait <seconds>' }),
+      ensureLease(lock, undefined, workspace, host, { waitSeconds: 0, progress: () => undefined, instances: standingInstances({ clerk }), retryWith: '{cli} up --wait <seconds>' }),
     );
     assert.deepEqual(deleted, [newTestEmail(run, 1)]);
     assert.deepEqual(openWorkspace({ skillDir, worktree: gone, home }).unclosedEntries(), []);

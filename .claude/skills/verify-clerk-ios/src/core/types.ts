@@ -29,8 +29,45 @@ export type TestPhone = Brand<string, 'TestPhone'>;
 export type EvidencePath = Brand<string, 'EvidencePath'>;
 export type ScratchPath = Brand<string, 'ScratchPath'>;
 
+export type Json = null | boolean | number | string | readonly Json[] | { readonly [key: string]: Json };
+
+/**
+ * What a spec file exports as `instanceSettings` when it needs other settings than the standard instance: the part of
+ * the Platform API config to change, and the leaves of the instance's public `/v1/environment` that show the change.
+ */
+export interface InstanceSettings {
+  readonly config: { readonly [key: string]: Json };
+  readonly environment: { readonly [leaf: string]: Json };
+}
+
+export const NO_INSTANCE_FIX =
+  'a spec names no instance: call `host.launch({ screen })`, `host.seedUser()`, `host.newEmail()`, and when the spec needs other settings than the standard instance declare them once with `export const instanceSettings = { config, environment }` (see SKILL.md, Test instances)';
+
 export const INSTANCE_NAMES = ['with-email-codes', 'with-session-tasks', 'with-session-tasks-setup-mfa'] as const;
 export type InstanceName = (typeof INSTANCE_NAMES)[number];
+
+/** The standing instance that has the standard settings. */
+export const DEFAULT_INSTANCE = 'with-email-codes' satisfies InstanceName;
+
+/** `given` is an options object or a request body; with `anyArgument`, anything at all counts. */
+export function refuseNamedInstance(method: string, given: unknown, anyArgument = false): void {
+  const named = anyArgument ? given !== undefined : typeof given === 'object' && given !== null && 'instance' in given;
+  if (named) throw new VerifyFailure('USAGE', `${method} was given an instance`, NO_INSTANCE_FIX);
+}
+
+export type InstanceSource = 'standing' | 'throwaway';
+
+export type InstanceView =
+  | { readonly source: 'standing'; readonly instance: InstanceName }
+  /** `created` tells a new application from one this worktree already held. `settings` is the label of the settings it is on. */
+  | { readonly source: 'throwaway'; readonly id: string; readonly name: string; readonly created: boolean; readonly settings: string };
+
+export interface ApplicationView {
+  readonly name: string;
+}
+
+/** Where a test identity lives: the throwaway application it goes away with, or the standing instance it must be deleted from. */
+export type IdentityHome = { readonly application: string } | { readonly instance: InstanceName; readonly application?: undefined };
 
 export const STATE_ELEMENT_ID = 'verify.state';
 export const STATE_TEXT_PREFIX = 'verify ';
@@ -72,7 +109,7 @@ export interface SecretLike {
   use<T>(sink: SecretSink, fn: (plain: string) => T): T;
 }
 
-export type SecretSink = 'bapi-authorization' | 'launch-argument' | 'agent-device-daemon' | 'e2e-provider-lease' | 'github-authorization' | 'session-bearer';
+export type SecretSink = 'bapi-authorization' | 'launch-argument' | 'agent-device-daemon' | 'e2e-provider-lease' | 'github-authorization' | 'session-bearer' | 'platform-authorization' | 'instance-keys-file' | 'one-password-read';
 
 export type BackendKind = 'local' | 'remote';
 export type RemoteProvider = 'github-actions';
@@ -124,9 +161,10 @@ export type ErrorCode =
   | 'NO_SPECS'
   | 'E2E_CRASHED'
   | 'EVIDENCE_UNSAFE'
-  | 'UNSUPPORTED';
+  | 'UNSUPPORTED'
+  | 'RATE_LIMITED';
 
-export const RETRYABLE: ReadonlySet<ErrorCode> = new Set<ErrorCode>(['POOL_FULL', 'DEVICE_BUSY', 'LEASE_LOST']);
+export const RETRYABLE: ReadonlySet<ErrorCode> = new Set<ErrorCode>(['POOL_FULL', 'DEVICE_BUSY', 'LEASE_LOST', 'RATE_LIMITED']);
 
 export class VerifyFailure extends Error {
   readonly code: ErrorCode;
@@ -140,7 +178,8 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'agent-device-global' | 'template' | 'proxy-trust' | 'keys'
-  | `instance:${string}` | 'build' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports'
+  | `instance:${string}` | 'settings' | 'build' | 'kvm' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'feature-map' | 'agent-device-daemon' | 'lane-ports'
+  | 'instances' | 'clerk-api'
   | 'backend' | 'remote-env' | 'git-fetch' | 'git-head' | 'git-push' | 'github-rest' | 'remote-commit' | 'remote-trigger' | 'remote-channel' | 'tunnel-egress' | 'clerk-egress' | 'remote-sessions'
   | `live-${string}`;
 
@@ -179,6 +218,7 @@ export interface UpResult {
   readonly verb: 'up';
   readonly leases: readonly LeaseView[];
   readonly builds: readonly BuildView[];
+  readonly instances: readonly InstanceView[];
 }
 
 export interface RunResult {
@@ -220,6 +260,8 @@ export type DownResult =
       readonly released: readonly LeaseView[];
       readonly deletedUsers: number;
       readonly deletedOrganizations: number;
+      /** Throwaway applications deleted, each with every user and organization inside it. */
+      readonly deletedApplications: readonly ApplicationView[];
       readonly stoppedProcesses: readonly string[];
       readonly keptRuns: readonly RunId[];
     }
@@ -234,7 +276,8 @@ export type DownResult =
 
 export type DeletionTarget =
   | { readonly kind: 'user'; readonly instance: InstanceName; readonly id: string; readonly email: TestEmail }
-  | { readonly kind: 'organization'; readonly instance: InstanceName; readonly id: string; readonly name: string };
+  | { readonly kind: 'organization'; readonly instance: InstanceName; readonly id: string; readonly name: string }
+  | { readonly kind: 'application'; readonly name: string };
 
 export type VerbResult = DoctorReport | UpResult | RunResult | ScreenResult | AttachResult | DownResult;
 
@@ -297,7 +340,6 @@ export type Lease = LocalLease | RemoteLease;
 
 export interface SeededUser {
   readonly id: string;
-  readonly instance: InstanceName;
   readonly email: TestEmail;
   readonly phone: TestPhone | null;
 }
@@ -305,8 +347,11 @@ export interface SeededUser {
 export type LedgerEntry =
   | { readonly id: string; readonly kind: 'lease-intent'; readonly platform: Platform; readonly backend: BackendKind; readonly worktree: string }
   | { readonly id: string; readonly kind: 'lease-held'; readonly platform: Platform; readonly backend: BackendKind; readonly sessionId: string | null; readonly deviceId: string | null }
-  | { readonly id: string; readonly kind: 'identity'; readonly run: RunId; readonly instance: InstanceName; readonly email: TestEmail }
-  | { readonly id: string; readonly kind: 'user'; readonly run: RunId; readonly instance: InstanceName; readonly userId: string; readonly email: TestEmail }
+  /** Written before the create call, so a lost answer still leaves a name `down` can find. Open means this worktree owns it. */
+  | { readonly id: string; readonly kind: 'application'; readonly name: string; readonly workspace: string }
+  /** An entry whose home is a throwaway application needs no deletion of its own: the user goes with the application. */
+  | ({ readonly id: string; readonly kind: 'identity'; readonly run: RunId; readonly email: TestEmail } & IdentityHome)
+  | ({ readonly id: string; readonly kind: 'user'; readonly run: RunId; readonly userId: string; readonly email: TestEmail } & IdentityHome)
   | { readonly id: string; readonly kind: 'process'; readonly what: 'metro' | 'watch' | 'recorder' | 'agent-device'; readonly pid: number; readonly startedAt: string }
   | { readonly id: string; readonly kind: 'done'; readonly ref: string };
 
@@ -345,25 +390,41 @@ export interface EvidenceRecord {
   readonly screenshots: readonly { readonly label: string; readonly path: EvidencePath }[];
   readonly lastState: VerifyState | null;
   readonly appLog: EvidencePath | null;
+  /** The report of the first group. Each group's own is in `settings`. */
   readonly e2eReport: EvidencePath;
   readonly identities: readonly { readonly email: TestEmail; readonly userId: string | null }[];
+  /** A throwaway application by id, or a standing instance by name. */
+  readonly instances: readonly { readonly application: string | null; readonly standing: InstanceName | null }[];
+  /** One entry per group of spec files that declare the same settings, in the order the groups ran. */
+  readonly settings: readonly {
+    readonly label: string;
+    /** The spec file that declared the settings. Null for the standard settings. */
+    readonly askedBy: string | null;
+    readonly specs: readonly string[];
+    /** The application id. Null on a standing instance, and for a group that did not run. */
+    readonly application: string | null;
+    /** A config PATCH was sent for this group. */
+    readonly changed: boolean;
+    /** The instance still showed the settings when the group ended. False for a group that did not run. */
+    readonly held: boolean;
+    /** Null for a group that did not run. */
+    readonly e2eReport: EvidencePath | null;
+  }[];
   readonly tainted: readonly EvidencePath[];
   readonly sealed: true;
 }
 
-export type LaunchOptions<S extends string = string> = {
+export interface LaunchOptions<S extends string = string> {
   readonly screen?: S;
   readonly authMode?: AuthMode;
   readonly debugLogs?: boolean;
   readonly keepStorage?: boolean;
-} & (
-  | { readonly instance: InstanceName; readonly signedInAs?: never }
-  | { readonly signedInAs: SeededUser; readonly instance?: never }
-);
+  readonly signedInAs?: SeededUser;
+}
 
 export interface HostFixture<S extends string = string> {
-  newEmail(instance: InstanceName): Promise<TestEmail>;
-  seedUser(options: { readonly instance: InstanceName; readonly phone?: boolean; readonly password?: false }): Promise<SeededUser>;
+  newEmail(): Promise<TestEmail>;
+  seedUser(options?: { readonly phone?: boolean; readonly password?: false }): Promise<SeededUser>;
   launch(options: LaunchOptions<S>): Promise<VerifyState>;
   state(): Promise<VerifyState>;
   waitForState(predicate: (state: VerifyState) => boolean, timeoutMs?: number): Promise<VerifyState>;
@@ -376,13 +437,6 @@ export interface HostFixture<S extends string = string> {
   /** Focuses the field with `tap`, then types `text` into it through the keyboard. Appends to what the field holds. */
   fill(target: Locator, text: string): Promise<void>;
 }
-
-export const LAUNCH_PRESETS = {
-  signedOut: { instance: 'with-email-codes', screen: 'auth' },
-  signedIn: { instance: 'with-email-codes', screen: 'home' },
-  mfaRequired: { instance: 'with-session-tasks-setup-mfa', screen: 'home' },
-  orgRequired: { instance: 'with-session-tasks', screen: 'home' },
-} as const satisfies Readonly<Record<string, { readonly instance: InstanceName; readonly screen: string }>>;
 
 export const E2E_SECRET_NAMES = [] as const;
 export const CLERK_TEST_CODE = '424242' as const;
@@ -436,7 +490,6 @@ export interface E2EInvocation {
 
 export interface BrokerLaunchRequest {
   readonly platform: Platform;
-  readonly instance: InstanceName;
   readonly user: SeededUser | null;
   readonly screen: string | null;
   readonly authMode: AuthMode | null;

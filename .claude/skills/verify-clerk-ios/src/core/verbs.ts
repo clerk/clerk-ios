@@ -1,30 +1,30 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { isOrphaned, readClaims } from './claims.ts';
-import { INSTANCE_REQUIREMENTS, createClerkBackend, type ClerkBackend } from './clerk.ts';
-import { instancesWithKeys, loadInstanceKeys } from './keys.ts';
+import type { AppliedInstance, Instances } from './instances/instances.ts';
+import { STANDARD, SettingsRefused, planGroups, sourceHash, type SettingsGroup } from './instances/settings.ts';
+import { withoutClerkKeys } from './keys.ts';
+import { openApplications } from './instances/throwaway.ts';
 import { agentDeviceFor } from './agent-device.ts';
 import { backendFor, computeBuildKey, describeChoice, ensureLease, leaseLine, leaseView, readBuiltApp, releaseLease, selectBackend, type LeaseOutcome } from './devices.ts';
-import { assertSomethingRan, collectScreenshots, contextFile, excludedTagNames, invokeE2E, parseE2EReport, planE2E, resolveSpecs, writeRunContext } from './e2e.ts';
+import { assertSomethingRan, collectScreenshots, contextFile, e2eOutputDir, excludedTagNames, invokeE2E, parseE2EReport, planE2E, resolveSpecs, writeRunContext } from './e2e.ts';
 import { startBroker } from './broker.ts';
 import { assertPublishable, readRecord, readStates, sealEvidence } from './evidence.ts';
 import { isRunning, type Runner } from './exec.ts';
-import { deleteIdentities, ledgerAgentDeviceDaemon, pendingIdentities, readDaemonInfo, stopProcesses } from './ledgers.ts';
+import { ledgerAgentDeviceDaemon, readDaemonInfo, stopProcesses } from './ledgers.ts';
 import { manifestDrift } from './manifest.ts';
 import { postToPullRequest } from './publish.ts';
 import { redact } from './secret.ts';
-import { parseVerifyState } from './state.ts';
+import { count, parseVerifyState } from './state.ts';
 import { newEntryId, parseRunId, type Workspace } from './workspace.ts';
 import {
-  INSTANCE_NAMES,
   STATE_ELEMENT_ID,
   VerifyFailure,
   type ActiveRunContext,
   type AttachResult,
   type Command,
-  type DeletionTarget,
   type DeviceBackend,
   type ProcessRef,
   type Recording,
@@ -32,9 +32,10 @@ import {
   type DoctorReport,
   type DownResult,
   type EvidencePath,
+  type EvidenceRecord,
   type HostAdapter,
   type HostEntry,
-  type InstanceName,
+  type InstanceView,
   type Lease,
   type LeaseView,
   type LedgerEntry,
@@ -45,8 +46,8 @@ import {
   type ScratchPath,
   type ScreenNode,
   type ScreenResult,
+  type SpecRef,
   type SpecResult,
-  type TestEmail,
   type UpResult,
   type VerifyState,
 } from './types.ts';
@@ -57,12 +58,30 @@ export interface Deps {
   readonly runner: Runner;
   readonly env: Readonly<Record<string, string | undefined>>;
   readonly progress: (line: string) => void;
-  readonly clerk: () => ClerkBackend;
+  readonly instances: Instances;
 }
 
-export function defaultClerk(host: HostAdapter, worktree: string, env: Readonly<Record<string, string | undefined>>): () => ClerkBackend {
-  let backend: ClerkBackend | undefined;
-  return () => (backend ??= createClerkBackend((instance) => loadInstanceKeys(host, instance, worktree, env)));
+/**
+ * Leases the device and brings an instance up side by side. It first settles where instances come from, so a
+ * credential that does not work fails before a device is leased. It then waits for both halves: a lease being
+ * acquired can be billed, and must reach the lease file even when the instance fails.
+ *
+ * A run that will change settings needs the Platform credential later, with the device already leased. Its instance
+ * is therefore brought up first, which opens the credential: a 1Password prompt or a missing key stops the run here.
+ */
+async function leaseWithInstances(deps: Deps, instances: { readonly willChange: boolean }, lease: () => Promise<LeaseOutcome>): Promise<[LeaseOutcome, readonly InstanceView[]]> {
+  await deps.instances.choice();
+  if (instances.willChange) {
+    const ensured = await deps.instances.ensure(instances, deps.progress);
+    return [await lease(), ensured.instances];
+  }
+  const [leased, ensured] = await Promise.allSettled([lease(), deps.instances.ensure(instances, deps.progress)]);
+  if (leased.status === 'rejected') throw leased.reason;
+  if (ensured.status === 'rejected') {
+    const failure = ensured.reason instanceof VerifyFailure ? ensured.reason : new VerifyFailure('NOT_READY', (ensured.reason as Error).message, 'run `{cli} doctor`');
+    throw new VerifyFailure(failure.code, failure.message, `${failure.fix}; the device stays leased until \`{cli} down\``);
+  }
+  return [leased.value, ensured.value.instances];
 }
 
 const platformOf = (host: HostAdapter, platform: Platform | undefined): Platform => {
@@ -183,44 +202,7 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
   }
   checks.push(...backendChecks.device);
 
-  let keyed: readonly InstanceName[] = [];
-  try {
-    const keys = instancesWithKeys(host, workspace.worktree, deps.env);
-    keyed = keys.present;
-    checks.push(
-      check(
-        'keys',
-        keys.missing.length === 0,
-        keys.missing.length === 0 ? `${keys.present.join(', ')} (pk and sk present)` : `missing pk or sk for ${keys.missing.join(', ')}`,
-        `add ${keys.missing.join(', ')} to ${host.keysFile} in the main worktree`,
-      ),
-    );
-  } catch (error) {
-    checks.push(check('keys', false, (error as Error).message, error instanceof VerifyFailure ? error.fix : `add ${host.keysFile} to the main worktree`));
-  }
-  for (const instance of INSTANCE_NAMES) {
-    const id = `instance:${instance}` as const;
-    if (!keyed.includes(instance)) {
-      checks.push(check(id, false, 'no keys', 'see the keys check'));
-      continue;
-    }
-    try {
-      const found = await deps.clerk().settings(instance);
-      const want = INSTANCE_REQUIREMENTS[instance];
-      const missing = [...want.strategies.filter((s) => !found.strategies.includes(s)), ...(want.organizations && !found.organizations ? ['organizations'] : [])];
-      const wanted = [...want.strategies, ...(want.organizations ? ['organizations'] : [])];
-      checks.push(
-        check(
-          id,
-          missing.length === 0,
-          missing.length === 0 ? `${wanted.join(', ')} enabled` : `${missing.join(', ')} not enabled`,
-          `enable ${missing.join(', ')} on the ${instance} instance in the Clerk dashboard`,
-        ),
-      );
-    } catch (error) {
-      checks.push(check(id, false, `FAPI environment failed: ${(error as Error).message}`, 'check the network and the instance pk'));
-    }
-  }
+  checks.push(...(await deps.instances.doctorChecks({ live: command.live }, deps.progress)));
 
   const key = await computeBuildKey(host, platform, workspace.worktree);
   if (backend.sourceCommit === undefined) {
@@ -251,7 +233,7 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
   return { verb: 'doctor', ok: checks.every((c) => c.ok), backend: { [platform]: backend.kind }, checks };
 }
 
-type RuntimeOutcome = LeaseOutcome & { readonly entry: HostEntry };
+type RuntimeOutcome = LeaseOutcome & { readonly entry: HostEntry; readonly instances: readonly InstanceView[] };
 
 async function startRuntime(deps: Deps, lease: Lease): Promise<HostEntry> {
   if (deps.host.runtime === undefined) return deps.host.entry(lease.platform);
@@ -294,10 +276,12 @@ function targetOf(deps: Deps, outcome: RuntimeOutcome): RunContext['targets'][nu
 export async function up(deps: Deps, command: Extract<Command, { verb: 'up' }>): Promise<UpResult> {
   const platform = platformOf(deps.host, command.platform);
   return deps.workspace.withAcquireLock(platform, async (lock) => {
-    const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, ...(command.runner === undefined ? {} : { runner: command.runner }), progress: deps.progress, clerk: deps.clerk, retryWith: '{cli} up --wait <seconds>' });
-    const outcome = { ...leased, entry: await startRuntime(deps, leased.lease) };
+    const [leased, instances] = await leaseWithInstances(deps, { willChange: false }, () =>
+      ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, ...(command.runner === undefined ? {} : { runner: command.runner }), progress: deps.progress, instances: deps.instances, retryWith: '{cli} up --wait <seconds>' }),
+    );
+    const outcome = { ...leased, entry: await startRuntime(deps, leased.lease), instances };
     writeStandingContext(deps, outcome);
-    return { verb: 'up', leases: [outcome.view], builds: [outcome.build] };
+    return { verb: 'up', leases: [outcome.view], builds: [outcome.build], instances: outcome.instances };
   }, (owner) => deps.progress(`wait    another {cli} in this worktree (pid ${owner.pid}) is leasing the device; waiting for it, with no time limit`));
 }
 
@@ -307,13 +291,15 @@ async function gitFacts(runner: Runner, worktree: string): Promise<{ head: strin
   return { head: head.stdout.trim(), dirty: status.stdout.trim().length > 0 };
 }
 
-async function runIdentities(deps: Deps, run: RunId): Promise<{ email: TestEmail; userId: string | null }[]> {
+type Identity = EvidenceRecord['identities'][number];
+
+async function newIdentities(deps: Deps, run: RunId, known: readonly Identity[]): Promise<readonly Identity[]> {
   const entries = deps.workspace.entries();
-  const reserved = entries.flatMap((e) => (e.kind === 'identity' && e.run === run ? [e] : []));
-  const out: { email: TestEmail; userId: string | null }[] = [];
+  const reserved = entries.flatMap((e) => (e.kind === 'identity' && e.run === run && !known.some((identity) => identity.email === e.email) ? [e] : []));
+  const out: Identity[] = [];
   for (const identity of reserved) {
     let userId = entries.find((e): e is Extract<LedgerEntry, { kind: 'user' }> => e.kind === 'user' && e.email === identity.email)?.userId ?? null;
-    if (userId === null) userId = await deps.clerk().findUserId(identity.instance, identity.email).catch(() => null);
+    if (userId === null) userId = await deps.instances.clerk().findUserId(identity.email).catch(() => null);
     out.push({ email: identity.email, userId });
   }
   return out;
@@ -365,7 +351,7 @@ export function nextStep(run: RunId, dir: EvidencePath, results: readonly SpecRe
   return `{cli} attach ${run} --pr <n>`;
 }
 
-export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>, drive: (outcome: RuntimeOutcome) => Promise<T>): Promise<T> {
+export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>, instances: { readonly willChange: boolean }, drive: (outcome: RuntimeOutcome) => Promise<T>): Promise<T> {
   const key = await computeBuildKey(deps.host, platform, deps.workspace.worktree);
   const retryWith = `{cli} run ${'all' in command.selection ? '--all' : command.selection.selectors.join(' ')} --wait <seconds>`;
   const deviceWait = {
@@ -377,8 +363,10 @@ export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Ex
     platform,
     deviceWait,
     async (lock) => {
-      const leased = await ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, ...(command.runner === undefined ? {} : { runner: command.runner }), progress: deps.progress, clerk: deps.clerk, retryWith });
-      const outcome: RuntimeOutcome = { ...leased, entry: await startRuntime(deps, leased.lease) };
+      const [leased, up] = await leaseWithInstances(deps, instances, () =>
+        ensureLease(lock, command.backend, deps.workspace, deps.host, { waitSeconds: command.waitSeconds, ...(command.runner === undefined ? {} : { runner: command.runner }), progress: deps.progress, instances: deps.instances, retryWith }),
+      );
+      const outcome: RuntimeOutcome = { ...leased, entry: await startRuntime(deps, leased.lease), instances: up };
       writeStandingContext(deps, outcome);
       deps.progress(leaseLine(outcome.view));
       return outcome;
@@ -388,24 +376,163 @@ export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Ex
   );
 }
 
+interface GroupRun {
+  readonly run: RunId;
+  readonly dir: EvidencePath;
+  readonly log: EvidencePath;
+  readonly context: ActiveRunContext;
+  readonly command: Extract<Command, { verb: 'run' }>;
+  readonly platform: Platform;
+}
+
+interface GroupOutcome {
+  readonly record: EvidenceRecord['settings'][number];
+  readonly instance: EvidenceRecord['instances'][number] | null;
+  readonly results: readonly SpecResult[];
+  readonly screenshots: EvidenceRecord['screenshots'];
+  readonly identities: readonly Identity[];
+  /** The first one of a run is thrown after the evidence is sealed. */
+  readonly failure: VerifyFailure | null;
+  /** The failure says nothing about this group's declaration or its files, so the next group would meet it too. */
+  readonly stopsTheRun: boolean;
+}
+
+const notRun = (spec: SpecRef, platform: Platform, why: string): SpecResult => ({
+  spec,
+  title: 'not run',
+  platform,
+  status: 'failed',
+  seconds: 0,
+  error: redact(why),
+  skipReason: null,
+  skippedBy: null,
+  tags: [],
+  failurePage: null,
+  failureScreen: null,
+  failureScreenshot: null,
+});
+
+/** Fails only its own group: the next one never read the file. */
+class SpecEdited extends VerifyFailure {}
+
+const asFailure = (error: unknown): VerifyFailure => (error instanceof VerifyFailure ? error : new VerifyFailure('NOT_READY', (error as Error).message ?? String(error), 'run `{cli} doctor`, then rerun'));
+
+/** Every file of the group gets a result, so a group that could not run can never read as a pass. */
+async function runGroup(deps: Deps, the: GroupRun, group: SettingsGroup, index: number, known: readonly Identity[], stopped: VerifyFailure | null): Promise<GroupOutcome> {
+  const { workspace } = deps;
+  const { settings } = group;
+  const specs = group.specs.map((spec): SpecRef => ({ kind: spec.kind, path: spec.path, feature: spec.feature }));
+  const outputDir = e2eOutputDir(the.dir, index);
+  const reportFile = join(outputDir, 'report.json') as EvidencePath;
+  let applied: AppliedInstance | null = null;
+  let invoked: { readonly exitCode: number } | null = null;
+  let held = false;
+  let unread: string | null = null;
+  let identities: readonly Identity[] = [];
+  let failure: VerifyFailure | null = null;
+  let stopsTheRun = false;
+  let lostItsSettings = false;
+  const refuseEdited = (): void => {
+    const edited = group.specs.find((spec) => sourceHash(readFileSync(join(workspace.skillDir, spec.path), 'utf8')) !== spec.sourceHash);
+    if (edited !== undefined) throw new SpecEdited('USAGE', `${edited.path} changed while the run was in progress`, 'rerun; a run plans its groups from the spec files as they are when it starts');
+  };
+  try {
+    if (stopped !== null) throw new VerifyFailure(stopped.code, `an earlier group of this run failed, so this one did not run: ${stopped.message}`, stopped.fix);
+    refuseEdited();
+    try {
+      applied = await deps.instances.apply(group, deps.progress);
+    } catch (error) {
+      stopsTheRun = !(error instanceof SettingsRefused);
+      throw error;
+    }
+    try {
+      // Applying can take seconds, and e2e reads the files itself: an edit made meanwhile would run under the old plan.
+      refuseEdited();
+      if (index > 0) appendFileSync(the.log, `settings ${settings.label}: ${count(specs.length, 'spec file')}\n`);
+      invoked = await invokeE2E(planE2E(the.context, specs, the.command, the.platform, workspace.skillDir, outputDir), the.log, workspace.skillDir, deps.progress);
+      identities = await newIdentities(deps, the.run, known);
+      try {
+        held = await applied.stillApplied();
+      } catch (error) {
+        unread = (error as Error).message ?? String(error);
+      }
+      // e2e loads each file some time after it starts, so only a check after it returns covers what it read.
+      refuseEdited();
+    } finally {
+      await applied.release();
+    }
+  } catch (error) {
+    failure = asFailure(error);
+    stopsTheRun ||= stopped === null && applied !== null && !(error instanceof SpecEdited);
+  }
+
+  let results: readonly SpecResult[] = [];
+  let screenshots: EvidenceRecord['screenshots'] = [];
+  if (invoked !== null && failure === null) {
+    try {
+      const report: unknown = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
+      if (report === null) throw new VerifyFailure('E2E_CRASHED', `e2e exited ${invoked.exitCode} before writing a report for ${settings.label}`, `read ${the.log}`);
+      results = parseE2EReport(report, specs, outputDir, excludedTagNames(the.command));
+      screenshots = collectScreenshots(report, the.dir, outputDir);
+    } catch (error) {
+      failure = error instanceof VerifyFailure ? error : new VerifyFailure('E2E_CRASHED', `e2e's report could not be read: ${(error as Error).message}`, `read ${reportFile}`);
+      results = [];
+      screenshots = [];
+    }
+    if (failure === null && !held) {
+      lostItsSettings = true;
+      failure =
+        unread === null
+          ? new VerifyFailure('INSTANCE_MISCONFIGURED', `the instance no longer showed ${settings.label} when its specs ended, so what they saw is unknown`, 'rerun; if another command in this worktree changed the instance, let one finish before the other starts')
+          : new VerifyFailure('NOT_READY', `the instance's environment could not be read after the specs on ${settings.label} ended, so what they saw is unknown: ${unread}`, 'rerun; a cloud environment needs *.clerk.accounts.dev in its allowed domains');
+    }
+  }
+  const unreported = invoked === null || invoked.exitCode === 0 ? 'e2e reported no result for this file: it registers no test' : `e2e exited ${invoked.exitCode} and reported no result for this file: it failed to load or registers no test; e2e.log in the run directory says which`;
+  const why = failure?.message ?? unreported;
+  const missing = specs.filter((spec) => !results.some((result) => result.spec.path === spec.path));
+  const reported = lostItsSettings ? specs.filter((spec) => !missing.includes(spec)) : [];
+  return {
+    record: {
+      label: settings.label,
+      askedBy: settings.askedBy,
+      specs: specs.map((spec) => spec.path),
+      application: applied?.instance.source === 'throwaway' ? applied.instance.id : null,
+      changed: applied !== null && applied.changed !== null,
+      held,
+      e2eReport: invoked === null ? null : reportFile,
+    },
+    instance: applied === null ? null : applied.instance.source === 'throwaway' ? { application: applied.instance.id, standing: null } : { application: null, standing: applied.instance.instance },
+    results: [...results, ...[...missing, ...reported].map((spec) => notRun(spec, the.platform, why))],
+    screenshots,
+    identities,
+    failure,
+    stopsTheRun,
+  };
+}
+
 export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run' }>): Promise<RunResult> {
   const { host, workspace } = deps;
   const platform = platformOf(host, command.platform);
   const specs = resolveSpecs(workspace.skillDir, command.selection);
-  return leaseForRun(deps, platform, command, async (outcome) => {
+  const recorded = deps.instances.recordedKey();
+  const sources = specs.map((spec) => ({ spec, source: readFileSync(join(workspace.skillDir, spec.path), 'utf8') }));
+  // A new application and one whose record is lost are both put on the standard settings before the run drives.
+  const groups = planGroups(sources, recorded ?? STANDARD.key);
+  if (groups.length > 1) deps.progress(`settings ${groups.length} groups in this run: ${groups.map((group, index) => `${group.settings.label} (${index === 0 ? count(group.specs.length, 'spec file') : group.specs.length})`).join(', ')}`);
+  return leaseForRun(deps, platform, command, { willChange: groups.some((group) => group.settings.key !== recorded) }, async (outcome) => {
     try {
       const { lease, backend } = outcome;
       const { run, dir, scratch } = workspace.newRun();
       const startedAt = new Date();
       deps.progress(`run ${run}  ${platform}  ${outcome.view.backend} ${outcome.view.device}  build ${outcome.app.key}`);
-      for (const spec of specs) {
+      for (const { spec, source } of sources) {
         mkdirSync(dirname(join(dir, spec.path)), { recursive: true });
-        cpSync(join(workspace.skillDir, spec.path), join(dir, spec.path));
+        writeFileSync(join(dir, spec.path), source);
       }
 
       const broker = await startBroker(run, workspace, scratch, {
-        clerk: deps.clerk(),
-        publishableKey: (instance) => loadInstanceKeys(host, instance, workspace.worktree, deps.env).pk,
+        clerk: () => deps.instances.clerk(),
+        instance: () => deps.instances.keys(),
         screens: host.screens,
         platforms: [platform],
       });
@@ -422,7 +549,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
 
       let recording: Awaited<ReturnType<DeviceBackend['startRecording']>> | null = null;
       let recorderEntry: string | null = null;
-      let exitCode = 1;
+      const outcomes: GroupOutcome[] = [];
       try {
         if (command.video) {
           recording = await backend.startRecording(lease, dir);
@@ -431,8 +558,11 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
             workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString() });
           }
         }
-        const invocation = planE2E(context, specs, command, platform, workspace.skillDir);
-        ({ exitCode } = await invokeE2E(invocation, join(dir, 'e2e.log') as EvidencePath, workspace.skillDir, deps.progress));
+        const the: GroupRun = { run, dir, log: join(dir, 'e2e.log') as EvidencePath, context, command, platform };
+        for (const [index, group] of groups.entries()) {
+          const stopped = outcomes.find((done) => done.stopsTheRun)?.failure ?? null;
+          outcomes.push(await runGroup(deps, the, group, index, outcomes.flatMap((done) => done.identities), stopped));
+        }
       } finally {
         await endRun(workspace, { recording, recorderEntry, broker, scratch });
       }
@@ -442,20 +572,9 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       const state = lastState(dir);
       if (state !== null) writeFileSync(join(dir, 'state.json'), `${JSON.stringify(state, null, 2)}\n`);
 
-      const reportFile = join(dir, 'e2e', 'report.json') as EvidencePath;
-      let report: unknown = null;
-      let results: ReturnType<typeof parseE2EReport> = [];
-      let screenshots: ReturnType<typeof collectScreenshots> = [];
-      let unreadable: VerifyFailure | null = null;
-      try {
-        report = existsSync(reportFile) ? JSON.parse(readFileSync(reportFile, 'utf8')) : null;
-        results = report === null ? [] : parseE2EReport(report, specs, dir, excludedTagNames(command));
-        screenshots = report === null ? [] : collectScreenshots(report, dir);
-      } catch (error) {
-        unreadable = error instanceof VerifyFailure ? error : new VerifyFailure('E2E_CRASHED', `e2e's report could not be read: ${(error as Error).message}`, `read ${reportFile}`);
-        results = [];
-        screenshots = [];
-      }
+      const results = outcomes.flatMap((done) => done.results);
+      const instances = new Map(outcomes.flatMap((done) => (done.instance === null ? [] : [[JSON.stringify(done.instance), done.instance] as const])));
+      const screenshots = new Map(outcomes.flatMap((done) => done.screenshots.map((shot) => [shot.label, shot] as const)));
       const git = await gitFacts(deps.runner, workspace.worktree);
       const record = sealEvidence(dir, {
         run,
@@ -471,15 +590,18 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         build: outcome.app.key,
         results,
         videos: existsSync(join(dir, 'video.mp4')) ? [join(dir, 'video.mp4') as EvidencePath] : [],
-        screenshots,
+        screenshots: [...screenshots.values()],
         lastState: state,
         appLog,
-        e2eReport: reportFile,
-        identities: await runIdentities(deps, run),
+        e2eReport: join(e2eOutputDir(dir, 0), 'report.json') as EvidencePath,
+        identities: outcomes.flatMap((done) => done.identities),
+        instances: [...instances.values()],
+        settings: outcomes.map((done) => done.record),
       });
-      if (unreadable !== null) throw unreadable;
-      if (report === null) {
-        throw new VerifyFailure('E2E_CRASHED', `e2e exited ${exitCode} before writing a report`, `read ${join(dir, 'e2e.log')}`);
+      const failed = outcomes.flatMap((done) => (done.failure === null ? [] : [done.failure]));
+      if (failed[0] !== undefined) {
+        deps.progress(`evidence  ${dir}  sealed; ${count(failed.length, 'group')} of ${groups.length} did not run in full, and run.json has a failed result for each of their spec files`);
+        throw failed[0];
       }
       const next = nextStep(run, dir, results, 'all' in command.selection ? '--all' : command.selection.selectors.join(' '));
       return { verb: 'run', dir, record, next };
@@ -525,7 +647,7 @@ export async function screen(deps: Deps, command: Extract<Command, { verb: 'scre
   const platform = platformOf(deps.host, command.platform);
   const { lease, backend } = heldLease(deps, platform);
   if ((await backend.check(lease)) === 'lost') throw new VerifyFailure('LEASE_LOST', `${backend.describe(lease)} is gone`, '{cli} up');
-  const { CLERK_TEST_KEYS_JSON: _keys, ...env } = deps.env;
+  const env = withoutClerkKeys(deps.env);
   const target = agentDeviceFor(lease);
   const agentDevice = (args: readonly string[]) =>
     deps.runner(join(deps.workspace.skillDir, 'node_modules', '.bin', 'agent-device'), args, { env: { ...env, AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env } });
@@ -575,7 +697,6 @@ export async function attach(deps: Deps, command: Extract<Command, { verb: 'atta
 
 interface DownPlan {
   readonly leases: readonly { readonly lease: Lease; readonly backend: DeviceBackend; readonly view: LeaseView; readonly origin: 'lease-file' | 'stale-claim' }[];
-  readonly identities: readonly { readonly instance: InstanceName; readonly email: TestEmail; readonly entries: readonly string[] }[];
   readonly processes: readonly Extract<LedgerEntry, { kind: 'process' }>[];
   readonly staleIntents: readonly string[];
 }
@@ -605,7 +726,6 @@ async function planDown(deps: Deps, command: Extract<Command, { verb: 'down' }>)
   const pending = workspace.unclosedEntries();
   return {
     leases,
-    identities: pendingIdentities(pending),
     processes: pending.filter((e): e is Extract<LedgerEntry, { kind: 'process' }> => e.kind === 'process'),
     staleIntents: command.stale ? pending.filter((e) => e.kind === 'lease-intent').map((e) => e.id) : [],
   };
@@ -645,13 +765,11 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
   if (!command.dryRun) ledgerAgentDeviceDaemon(workspace);
   const plan = await planDown(deps, command);
   if (command.dryRun) {
-    const wouldDelete: DeletionTarget[] = [];
-    for (const identity of plan.identities) wouldDelete.push(...(await deps.clerk().previewDeleteByEmail(identity.instance, identity.email)));
     return {
       verb: 'down',
       dryRun: true,
       wouldRelease: plan.leases.map((l) => l.view),
-      wouldDelete,
+      wouldDelete: await deps.instances.preview(workspace),
       wouldStop: [...new Set([...plan.processes.filter((p) => isRunning({ pid: p.pid, startedAt: Date.parse(p.startedAt) })).map((p) => `${p.what} ${p.pid}`), ...runningDaemon(workspace)])],
       keptRuns: workspace.runs(),
     };
@@ -662,7 +780,14 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
   for (const { lease, backend, origin } of plan.leases) {
     await (origin === 'lease-file' ? releaseLease(workspace, backend, lease) : backend.release(lease)).catch((error: unknown) => unreleased.push(error));
   }
-  const deleted = await deleteIdentities(workspace, deps.clerk());
+  // A lease on a platform this `down` was not asked about still runs against the same instances. One that this `down` failed to release does not count: its instances go either way.
+  const asked = command.platform === undefined ? deps.host.platforms : [command.platform];
+  const inUse = deps.host.platforms.filter((platform) => !asked.includes(platform) && workspace.readLease(platform) !== null);
+  if (inUse.length > 0 && openApplications(workspace).length > 0) deps.progress(`kept    this worktree's throwaway instances, which its ${inUse.join(' and ')} lease still uses`);
+  const deleted = await deps.instances.finish(workspace, { keepApplications: inUse.length > 0 }, deps.progress).catch((error: unknown) => {
+    unreleased.push(error);
+    return { applications: [], users: 0, organizations: 0 };
+  });
   for (const ref of plan.staleIntents) workspace.append({ id: newEntryId(), kind: 'done', ref });
   if (plan.leases.some((l) => l.origin === 'lease-file')) rmSync(join(workspace.root, 'context.json'), { force: true });
   if (unreleased.length > 0) throw unreleased[0];
@@ -672,6 +797,7 @@ async function downUnlocked(deps: Deps, command: Extract<Command, { verb: 'down'
     released: plan.leases.map((l) => l.view),
     deletedUsers: deleted.users,
     deletedOrganizations: deleted.organizations,
+    deletedApplications: deleted.applications,
     stoppedProcesses,
     keptRuns: workspace.runs(),
   };

@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { collectScreenshots, excludedTags, parseE2EReport, planE2E, resolveSpecs } from '../src/core/e2e.ts';
+import { collectScreenshots, e2eOutputDir, excludedTags, parseE2EReport, planE2E, resolveSpecs } from '../src/core/e2e.ts';
 import { manifestDrift } from '../src/core/manifest.ts';
 import type { ActiveRunContext, EvidencePath, RunId } from '../src/core/types.ts';
 
@@ -41,7 +41,7 @@ describe('planE2E', () => {
       targets: [],
       e2eVideo: false,
     };
-    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, waitSeconds: 0 }, 'ios', '/skill');
+    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
     assert.deepEqual(plan.args, [
       'run', 'specs/golden/a/b.e2e.ts', '--config', 'e2e.config.ts', '--target', 'ios',
       '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown',
@@ -49,8 +49,9 @@ describe('planE2E', () => {
     ]);
     assert.equal(plan.env.VERIFY_CONTEXT, '/skill/.verify/scratch/r20261002-141210-7c1e/context.json');
     assert.equal(plan.env.E2E_TELEMETRY_DISABLED, '1');
-    const everything = planE2E(context, [], { verb: 'run', selection: { all: true }, skip: [], include: ['known-bug'], video: true, waitSeconds: 0 }, 'ios', '/skill');
-    assert.equal(everything.args.includes('--pass-with-no-tests'), false, 'a run that excludes nothing still fails on an empty selection');
+    const later = planE2E(context, [], { verb: 'run', selection: { all: true }, skip: [], include: ['known-bug'], video: true, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 2));
+    assert.equal(later.args[later.args.indexOf('--output') + 1], '.verify/runs/r20261002-141210-7c1e/e2e-3', 'a later group of the run writes beside the first');
+    assert.equal(later.args.includes('--pass-with-no-tests'), true, 'every invocation is one group of a run, and a group with nothing left to run must not fail it');
   });
 
   it('excludes known-bug specs by default and keeps them with --include known-bug', () => {
@@ -94,12 +95,14 @@ describe('parseE2EReport', () => {
     },
   };
 
-  it('maps statuses, skip reasons, errors, and failure pages', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'verify-report-')) as EvidencePath;
-    mkdirSync(join(dir, 'e2e', 'failures'), { recursive: true });
-    writeFileSync(join(dir, 'e2e', 'failures', 'specs_explored_probe-fails-cccccccc.md'), '');
-    mkdirSync(join(dir, 'e2e', 'artifacts', 'ios/p/attempt-0'), { recursive: true });
-    writeFileSync(join(dir, 'e2e', 'artifacts', 'ios/p/attempt-0/screen.txt'), '');
+  it('maps statuses, skip reasons, errors, and failure pages, in the directory its invocation wrote to', () => {
+    const run = mkdtempSync(join(tmpdir(), 'verify-report-')) as EvidencePath;
+    const dir = e2eOutputDir(run, 1);
+    assert.equal(dir, join(run, 'e2e-2'));
+    mkdirSync(join(dir, 'failures'), { recursive: true });
+    writeFileSync(join(dir, 'failures', 'specs_explored_probe-fails-cccccccc.md'), '');
+    mkdirSync(join(dir, 'artifacts', 'ios/p/attempt-0'), { recursive: true });
+    writeFileSync(join(dir, 'artifacts', 'ios/p/attempt-0/screen.txt'), '');
     const results = parseE2EReport(report, [], dir, ['form-entry', 'known-bug']);
     assert.deepEqual(results.map((r) => r.status), ['passed', 'skipped', 'skipped', 'skipped', 'failed', 'failed']);
     assert.equal(results[4]!.error, 'not run: infrastructure-unavailable the device could not be opened');
@@ -112,22 +115,25 @@ describe('parseE2EReport', () => {
     const included = parseE2EReport(report, [], dir, ['form-entry']);
     assert.equal(included[2]!.skipReason, 'skipped by --skip form-entry', 'with --include known-bug, the reason is the tag that was excluded');
     assert.equal(results[5]!.error, 'expect.toBeVisible failed; observed: no node');
-    assert.equal(results[5]!.failureScreen, join(dir, 'e2e', 'artifacts', 'ios/p/attempt-0/screen.txt'));
-    assert.equal(results[5]!.failureScreenshot, join(dir, 'e2e', 'artifacts', 'ios/p/attempt-0/screenshots/001-failure.png'), 'the full path, never truncated');
+    assert.equal(results[5]!.failureScreen, join(dir, 'artifacts', 'ios/p/attempt-0/screen.txt'));
+    assert.equal(results[5]!.failureScreenshot, join(dir, 'artifacts', 'ios/p/attempt-0/screenshots/001-failure.png'), 'the full path, never truncated');
     const selected = parseE2EReport(report, [{ kind: 'golden', path: 'specs/golden/auth-start/opens.e2e.ts', feature: null }], dir);
     assert.deepEqual(selected.map((r) => r.spec.path), ['specs/golden/auth-start/opens.e2e.ts', 'specs/golden/auth-start/opens.e2e.ts'], 'files e2e lists but the run did not select are dropped');
-    assert.equal(results[5]!.failurePage, join(dir, 'e2e', 'failures', 'specs_explored_probe-fails-cccccccc.md'));
+    assert.equal(results[5]!.failurePage, join(dir, 'failures', 'specs_explored_probe-fails-cccccccc.md'));
   });
 
   it('refuses a report of another schema', () => {
     assert.throws(() => parseE2EReport({ schemaVersion: 'report-2', run: { results: [] } }, [], '/x' as EvidencePath), { code: 'E2E_CRASHED' });
   });
 
-  it('copies app.screenshot artifacts under their labels', () => {
+  it('copies app.screenshot artifacts under their labels, a later group replacing an earlier one with the same label', () => {
     const dir = mkdtempSync(join(tmpdir(), 'verify-shots-')) as EvidencePath;
-    mkdirSync(join(dir, 'e2e', 'artifacts', 'ios/x/attempt-0/screenshots'), { recursive: true });
-    writeFileSync(join(dir, 'e2e', 'artifacts', 'ios/x/attempt-0/screenshots/001-auth.png'), 'png');
-    assert.deepEqual(collectScreenshots(report, dir), [{ label: 'auth', path: join(dir, 'screenshots', 'auth.png') }]);
+    for (const [index, bytes] of [[0, 'first'], [1, 'second']] as const) {
+      mkdirSync(join(e2eOutputDir(dir, index), 'artifacts', 'ios/x/attempt-0/screenshots'), { recursive: true });
+      writeFileSync(join(e2eOutputDir(dir, index), 'artifacts', 'ios/x/attempt-0/screenshots/001-auth.png'), bytes);
+      assert.deepEqual(collectScreenshots(report, dir, e2eOutputDir(dir, index)), [{ label: 'auth', path: join(dir, 'screenshots', 'auth.png') }]);
+      assert.equal(readFileSync(join(dir, 'screenshots', 'auth.png'), 'utf8'), bytes);
+    }
   });
 });
 

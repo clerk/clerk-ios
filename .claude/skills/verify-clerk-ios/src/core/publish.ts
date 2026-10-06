@@ -11,13 +11,19 @@ interface Posted {
   readonly posted: readonly EvidencePath[];
 }
 
-function commentBody(evidence: Publishable): string {
+export function commentBody(evidence: Publishable): string {
   const passed = evidence.results.filter((r) => r.status === 'passed').length;
   const lines = [
     `verify run \`${evidence.run}\` on ${evidence.platform} (${evidence.device}), build \`${evidence.build}\`, ${passed} of ${evidence.results.length} passed.`,
     '',
     ...evidence.results.map((r) => `- ${r.status}: \`${r.spec.path}\` ${r.title}`),
   ];
+  // A run sealed before runs had groups has no `settings`, and can still be attached.
+  for (const group of evidence.settings ?? []) {
+    if (group.askedBy === null) continue;
+    const results = evidence.results.filter((r) => group.specs.includes(r.spec.path));
+    lines.push('', `Instance settings \`${group.label}\` (declared by \`${group.askedBy}\`): ${results.filter((r) => r.status === 'passed').length} of ${results.length} passed.`);
+  }
   if (evidence.lastState !== null) lines.push('', `Last state: \`${describeState(evidence.lastState)}\``);
   return lines.join('\n');
 }

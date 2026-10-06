@@ -1,7 +1,7 @@
 import { test, expect } from '../../fixtures.ts';
 
 test('creating an organization from OrganizationSwitcher makes it active', async ({ host, screen }) => {
-  const user = await host.seedUser({ instance: 'with-email-codes' });
+  const user = await host.seedUser();
   const state = await host.launch({ signedInAs: user, screen: 'orgSwitcher' });
   expect(state.orgId).toBeNull();
   await host.tap(screen.getByText('Personal account'));

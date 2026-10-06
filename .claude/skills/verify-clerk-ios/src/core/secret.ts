@@ -1,14 +1,14 @@
 import type { SecretSink } from './types.ts';
 
-const usedValues = new Set<string>();
+const knownValues = new Set<string>();
 
 export function usedSecretValues(): readonly string[] {
-  return [...usedValues];
+  return [...knownValues];
 }
 
 export function redact(text: string): string {
   let out = text;
-  for (const value of usedValues) {
+  for (const value of knownValues) {
     if (out.includes(value)) out = out.split(value).join('<redacted>');
   }
   return out;
@@ -20,6 +20,8 @@ export class Secret<Name extends string> {
   constructor(name: Name, value: string) {
     this.name = name;
     this.#value = value;
+    // Known to the redactor before any use: a key read from 1Password or a create answer must not print even if nothing sends it.
+    knownValues.add(value);
   }
   toString(): string {
     return `<secret:${this.name}>`;
@@ -31,7 +33,6 @@ export class Secret<Name extends string> {
     return `<secret:${this.name}>`;
   }
   use<T>(_sink: SecretSink, fn: (plain: string) => T): T {
-    usedValues.add(this.#value);
     return fn(this.#value);
   }
 }

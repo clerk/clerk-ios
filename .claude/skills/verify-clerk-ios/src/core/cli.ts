@@ -2,11 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { basename, dirname, isAbsolute, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run as defaultRunner } from './exec.ts';
+import { CLERK_KEY_VARIABLES } from './keys.ts';
 import { redact } from './secret.ts';
 import { leaseLine } from './devices.ts';
 import { RUNNER_LABEL } from './remote/protocol.ts';
 import { count, describeState } from './state.ts';
-import { defaultClerk, verbs, type Deps } from './verbs.ts';
+import { createInstances } from './instances/instances.ts';
+import { verbs, type Deps } from './verbs.ts';
 import { openWorkspace, parseRunId } from './workspace.ts';
 import {
   FORM_ENTRY_TAG,
@@ -16,6 +18,7 @@ import {
   VerifyFailure,
   type BackendKind,
   type Command,
+  type DeletionTarget,
   type HostAdapter,
   type Invocation,
   type OptInTag,
@@ -224,9 +227,7 @@ function render(value: VerbResult, skillDir: string): string[] {
       return value.checks.flatMap((c) => [`${pad(c.ok ? 'ok' : 'FAIL', 5)} ${pad(c.id, width)}  ${c.detail}`, ...(c.fix === undefined ? [] : [`      fix: ${c.fix}`])]);
     }
     case 'up':
-      return [
-        ...value.leases.map(leaseLine),
-      ];
+      return value.leases.map(leaseLine);
     case 'run':
       return renderRun(value, skillDir);
     case 'screen': {
@@ -250,13 +251,13 @@ function render(value: VerbResult, skillDir: string): string[] {
           ? [
               'dry run: nothing was changed',
               `would release  ${value.wouldRelease.map((l) => l.device).join(', ') || 'nothing'}`,
-              `would delete   ${count(value.wouldDelete.filter((t) => t.kind === 'user').length, 'user')}, ${count(value.wouldDelete.filter((t) => t.kind === 'organization').length, 'organization')}`,
-              ...value.wouldDelete.map((t) => (t.kind === 'user' ? `  user          ${t.instance}  ${t.id}  ${t.email}` : `  organization  ${t.instance}  ${t.id}  ${t.name}`)),
+              `would delete   ${(['user', 'organization', 'application'] as const).map((kind) => count(value.wouldDelete.filter((t) => t.kind === kind).length, kind)).join(', ')}`,
+              ...value.wouldDelete.map(describeTarget),
               stoppedLine('would stop', value.wouldStop),
             ]
           : [
               `released  ${value.released.map((l) => l.device).join(', ') || 'nothing'}`,
-              `deleted   ${count(value.deletedUsers, 'user')}, ${count(value.deletedOrganizations, 'organization')}`,
+              `deleted   ${count(value.deletedUsers, 'user')}, ${count(value.deletedOrganizations, 'organization')}, ${count(value.deletedApplications.length, 'application')}${value.deletedApplications.length === 0 ? '' : ` (${value.deletedApplications.map((a) => a.name).join(', ')}, with every test user in them)`}`,
               stoppedLine('stopped', value.stoppedProcesses),
             ]),
         `kept      ${count(value.keptRuns.length, 'run')} in .verify/runs/`,
@@ -287,6 +288,21 @@ export function createOutput(json: boolean, skillDir: string, cli: string, stdou
   };
 }
 
+function describeTarget(target: DeletionTarget): string {
+  switch (target.kind) {
+    case 'user':
+      return `  user          ${target.instance}  ${target.id}  ${target.email}`;
+    case 'organization':
+      return `  organization  ${target.instance}  ${target.id}  ${target.name}`;
+    case 'application':
+      return `  application   ${target.name}  (with every test user in it)`;
+    default: {
+      const exhaustive: never = target;
+      return exhaustive;
+    }
+  }
+}
+
 function stoppedLine(label: string, processes: readonly string[]): string {
   const daemon = processes.some((p) => p.startsWith('agent-device ')) ? '' : '; no agent-device daemon running';
   return `${label}   ${processes.join(', ') || 'nothing'}${daemon}`;
@@ -300,6 +316,17 @@ export function exitCodeFor(value: VerbResult): number {
 
 export const SKILL_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
+/**
+ * Removes the Platform API key, the variables that say where it is kept, and the standing instances' secret keys from
+ * `env` and returns a copy that still has them. Only the instances layer gets the copy, so nothing this CLI starts or
+ * passes its environment to (git, the build, e2e, agent-device) ever holds a Clerk key or learns where one is.
+ */
+export function takePlatformKey(env: NodeJS.ProcessEnv): Readonly<Record<string, string | undefined>> {
+  const withKeys = { ...env };
+  for (const name of CLERK_KEY_VARIABLES) delete env[name];
+  return withKeys;
+}
+
 export async function main(argv: readonly string[], host: HostAdapter): Promise<number> {
   let invocation: Invocation;
   try {
@@ -311,15 +338,17 @@ export async function main(argv: readonly string[], host: HostAdapter): Promise<
   }
   const out = createOutput(invocation.json, SKILL_DIR, host.cli);
   try {
+    const withPlatformKey = takePlatformKey(process.env);
     const worktree = execFileSync('git', ['rev-parse', '--show-toplevel'], { cwd: SKILL_DIR, encoding: 'utf8' }).trim();
     const workspace = openWorkspace({ skillDir: SKILL_DIR, worktree });
+    const progress = (line: string) => out.progress(line);
     const deps: Deps = {
       host,
       workspace,
       runner: defaultRunner,
       env: process.env,
-      progress: (line) => out.progress(line),
-      clerk: defaultClerk(host, worktree, process.env),
+      progress,
+      instances: createInstances({ host, workspace, env: withPlatformKey, runner: defaultRunner, progress }),
     };
     const command = invocation.command;
     let result: VerbResult;

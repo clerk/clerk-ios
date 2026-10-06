@@ -1,5 +1,10 @@
 import { createHmac } from 'node:crypto';
-import { test, expect } from '../../fixtures.ts';
+import { test, expect, type InstanceSettings } from '../../fixtures.ts';
+
+export const instanceSettings: InstanceSettings = {
+  config: { auth_multi_factor: { required_for_sign_up: true } },
+  environment: { 'user_settings.sign_up.mfa.required': true },
+};
 
 function totp(base32Secret: string, unixSeconds: number): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -16,7 +21,7 @@ function totp(base32Secret: string, unixSeconds: number): string {
 }
 
 test('enrolls an authenticator app to finish the setup-MFA task', { tags: ['form-entry'] }, async ({ host, screen }) => {
-  const user = await host.seedUser({ instance: 'with-session-tasks-setup-mfa' });
+  const user = await host.seedUser();
   const state = await host.launch({ signedInAs: user, screen: 'auth' });
   expect(state.pendingTasks).toContain('setup-mfa');
   await host.tap(screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp'));

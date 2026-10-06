@@ -11,6 +11,8 @@ export interface ExecOptions {
   readonly cwd?: string;
   readonly env?: Readonly<Record<string, string | undefined>>;
   readonly input?: string;
+  /** Stops the command when it runs longer, and reports exit code 124. */
+  readonly timeoutMs?: number;
 }
 
 /** A program and its arguments, for code that describes a command without running it. */
@@ -33,8 +35,19 @@ export const run: Runner = (command, args, options = {}) =>
     let stderr = '';
     child.stdout?.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
     child.stderr?.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
-    child.on('error', (error) => resolve({ code: 127, stdout, stderr: stderr + error.message }));
-    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
+    let timedOut = false;
+    const timer = options.timeoutMs === undefined ? undefined : setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+    }, options.timeoutMs);
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      resolve({ code: 127, stdout, stderr: stderr + error.message });
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolve({ code: timedOut ? 124 : (code ?? 1), stdout, stderr });
+    });
     if (options.input !== undefined) child.stdin?.end(options.input);
   });
 

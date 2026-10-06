@@ -1,7 +1,12 @@
-import { test, expect } from '../../fixtures.ts';
+import { test, expect, type InstanceSettings } from '../../fixtures.ts';
+
+export const instanceSettings: InstanceSettings = {
+  config: { organization_settings: { force_organization_selection: true } },
+  environment: { 'organization_settings.force_organization_selection': true },
+};
 
 test('a ticket sign-in with forced organization selection stops on the organization task', async ({ host, screen }) => {
-  const user = await host.seedUser({ instance: 'with-session-tasks' });
+  const user = await host.seedUser();
   const state = await host.launch({ signedInAs: user, screen: 'auth' });
   expect(state.ticket).toBe('succeeded');
   expect(state.sessionStatus).toBe('pending');

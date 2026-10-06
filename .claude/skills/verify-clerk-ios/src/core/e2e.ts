@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { appendFileSync, copyFileSync, existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { withoutClerkKeys } from './keys.ts';
 import { redact } from './secret.ts';
 import { agentDeviceStateDir } from './workspace.ts';
 import {
@@ -105,8 +106,9 @@ export function writeRunContext(file: string, context: RunContext): void {
   writeFileSync(file, `${JSON.stringify(context, null, 2)}\n`, { mode: 0o600 });
 }
 
-export function e2eOutputDir(skillDir: string, runDir: EvidencePath): string {
-  return toPosix(relative(skillDir, join(runDir, 'e2e')));
+/** The first invocation writes where a run with one invocation writes. */
+export function e2eOutputDir(runDir: EvidencePath, index: number): EvidencePath {
+  return join(runDir, index === 0 ? 'e2e' : `e2e-${index + 1}`) as EvidencePath;
 }
 
 export function excludedTagNames(command: Pick<RunCommand, 'skip' | 'include'>): readonly OptInTag[] {
@@ -124,8 +126,9 @@ export function planE2E(
   command: RunCommand,
   platform: Platform,
   skillDir: string,
+  outputDir: EvidencePath,
 ): E2EInvocation {
-  const output = toPosix(relative(skillDir, join(context.workspace, 'runs', context.run, 'e2e')));
+  const output = toPosix(relative(skillDir, outputDir));
   const args = [
     'run',
     ...specs.map((s) => s.path),
@@ -140,14 +143,10 @@ export function planE2E(
     ...excludedTags(command),
     ...(command.grep === undefined ? [] : ['--grep', command.grep]),
     ...(context.e2eVideo ? ['--video=on'] : []),
+    // One invocation runs one group of a run, and a group whose tests are all left out is not a failure: assertSomethingRan judges the whole run.
+    '--pass-with-no-tests',
   ];
-  if (excludedTagNames(command).length > 0) args.push('--pass-with-no-tests');
   return { args, env: { VERIFY_CONTEXT: contextFile(context), AGENT_DEVICE_STATE_DIR: agentDeviceStateDir(context.workspace), E2E_TELEMETRY_DISABLED: '1' } };
-}
-
-function withoutKeys(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
-  const { CLERK_TEST_KEYS_JSON: _keys, ...rest } = env;
-  return rest;
 }
 
 export async function invokeE2E(invocation: E2EInvocation, log: EvidencePath, skillDir: string, onLine: (line: string) => void): Promise<{ readonly exitCode: number }> {
@@ -156,7 +155,7 @@ export async function invokeE2E(invocation: E2EInvocation, log: EvidencePath, sk
   return new Promise((resolvePromise) => {
     const child = spawn(bin, [...invocation.args], {
       cwd: skillDir,
-      env: { ...withoutKeys(process.env), ...invocation.env, NO_COLOR: '1' },
+      env: { ...withoutClerkKeys(process.env), ...invocation.env, NO_COLOR: '1' },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     const pipe = (stream: NodeJS.ReadableStream) => {
@@ -240,8 +239,8 @@ function platformSkip(reason: string | undefined): string {
   return declared === undefined ? `skipped: ${reason ?? 'other platform'}` : `skipped: ${declared.split(/,\s*/).join(' and ')} only`;
 }
 
-export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], runDir: EvidencePath, excluded: readonly OptInTag[] = [KNOWN_BUG_TAG]): readonly SpecResult[] {
-  const failuresDir = join(runDir, 'e2e', 'failures');
+export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], outputDir: EvidencePath, excluded: readonly OptInTag[] = [KNOWN_BUG_TAG]): readonly SpecResult[] {
+  const failuresDir = join(outputDir, 'failures');
   const pages = existsSync(failuresDir) ? readdirSync(failuresDir) : [];
   const selected = new Set(specs.map((s) => s.path));
   return wireResults(reportJson)
@@ -256,7 +255,7 @@ export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], r
       const page = r.id === undefined ? undefined : pages.find((p) => p.endsWith(`-${r.id!.slice(0, 8)}.md`));
       const artifactPath = (id: string | undefined): EvidencePath | null => {
         const path = id === undefined ? undefined : last?.artifacts?.find((a) => a.id === id)?.path;
-        return path === undefined ? null : (join(runDir, 'e2e', 'artifacts', path) as EvidencePath);
+        return path === undefined ? null : (join(outputDir, 'artifacts', path) as EvidencePath);
       };
       const screenPath = artifactPath(last?.failure?.screen);
       const excludedBy = (tag: OptInTag) => excluded.includes(tag) && (r.tags ?? []).includes(tag);
@@ -292,7 +291,8 @@ export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], r
     });
 }
 
-export function collectScreenshots(reportJson: unknown, runDir: EvidencePath): readonly { readonly label: string; readonly path: EvidencePath }[] {
+/** A later invocation's label replaces an earlier one's. */
+export function collectScreenshots(reportJson: unknown, runDir: EvidencePath, outputDir: EvidencePath): readonly { readonly label: string; readonly path: EvidencePath }[] {
   const out = new Map<string, EvidencePath>();
   const dir = join(runDir, 'screenshots');
   for (const result of wireResults(reportJson)) {
@@ -302,7 +302,7 @@ export function collectScreenshots(reportJson: unknown, runDir: EvidencePath): r
         if (artifact.kind !== 'screenshot' || artifact.path === undefined) continue;
         const step = artifact.producer?.stepId === undefined ? undefined : steps.get(artifact.producer.stepId);
         if (step?.api !== 'app.screenshot' || !step.label) continue;
-        const source = join(runDir, 'e2e', 'artifacts', artifact.path);
+        const source = join(outputDir, 'artifacts', artifact.path);
         if (!existsSync(source)) continue;
         const label = step.label.replace(/[^A-Za-z0-9._-]/g, '-');
         mkdirSync(dir, { recursive: true });

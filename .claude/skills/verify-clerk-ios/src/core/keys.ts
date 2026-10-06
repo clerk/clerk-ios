@@ -1,12 +1,20 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { PLATFORM_CREDENTIAL_VARIABLES } from './launch.mjs';
 import { Secret } from './secret.ts';
 import { INSTANCE_NAMES, VerifyFailure, type HostAdapter, type InstanceName, type PublishableKey } from './types.ts';
 
 export interface InstanceKeys {
   readonly pk: PublishableKey;
   readonly sk: Secret<'clerk-secret-key'>;
+}
+
+export const CLERK_KEY_VARIABLES: readonly string[] = ['CLERK_TEST_KEYS_JSON', ...PLATFORM_CREDENTIAL_VARIABLES];
+
+/** The environment for a program this CLI starts. No child needs a Clerk key, and a device driver or a spec must never hold one. */
+export function withoutClerkKeys<T extends Readonly<Record<string, string | undefined>>>(env: T): T {
+  return Object.fromEntries(Object.entries(env).filter(([name]) => !CLERK_KEY_VARIABLES.includes(name))) as T;
 }
 
 export function mainWorktree(worktree: string): string {

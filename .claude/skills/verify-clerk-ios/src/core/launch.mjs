@@ -1,7 +1,12 @@
 import { spawn, spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import net from 'node:net';
+import { delimiter, dirname } from 'node:path';
 
 // Plain JavaScript that any Node can parse, because it is what gets an old Node out of the way before any TypeScript loads.
+
+/** The variables that hold the Platform API key or say where it is kept. Nothing this CLI starts gets any of them. */
+export const PLATFORM_CREDENTIAL_VARIABLES = ['CLERK_PLATFORM_API_KEY', 'CLERK_PLATFORM_API_KEY_FILE', 'VERIFY_PLATFORM_KEY_REFERENCE'];
 
 function rerun(command, args, env) {
   return new Promise((resolve) => {
@@ -31,9 +36,12 @@ export async function ensureRuntime() {
   if (Number(process.versions.node.split('.')[0]) !== 24) {
     // A cloud sandbox often ships an older Node. npx fetches Node 24 from the npm registry and puts it first on PATH,
     // so e2e and agent-device, which this CLI starts, run on it too.
-    if (process.env.VERIFY_NODE_RERUN === undefined && /^v24\./.test(spawnSync('npx', ['-y', 'node@24', '--version'], { encoding: 'utf8' }).stdout ?? '')) {
+    // npm and the package's install script run without the Platform API key. Only the Node binary they leave behind is then started with it.
+    const withoutKey = Object.fromEntries(Object.entries(process.env).filter(([name]) => !PLATFORM_CREDENTIAL_VARIABLES.includes(name)));
+    const node24 = process.env.VERIFY_NODE_RERUN === undefined ? (spawnSync('npx', ['-y', 'node@24', '-p', 'process.execPath'], { encoding: 'utf8', env: withoutKey }).stdout ?? '').trim() : '';
+    if (node24 !== '' && existsSync(node24)) {
       console.error(`note  this is Node ${process.versions.node}; running under node@24 through npx`);
-      process.exit(await rerun('npx', ['-y', 'node@24', ...process.argv.slice(1)], { ...process.env, VERIFY_NODE_RERUN: '1' }));
+      process.exit(await rerun(node24, process.argv.slice(1), { ...process.env, PATH: `${dirname(node24)}${delimiter}${process.env.PATH ?? ''}`, VERIFY_NODE_RERUN: '1' }));
     }
     const message = `this CLI needs Node 24 and this is Node ${process.versions.node}; npx could not fetch node@24`;
     const fix = 'install Node 24 (nvm install 24 && nvm use 24) and rerun';

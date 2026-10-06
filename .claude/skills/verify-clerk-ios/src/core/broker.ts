@@ -7,11 +7,11 @@ import { encodeLaunchArguments } from './state.ts';
 import { newEntryId, type Workspace } from './workspace.ts';
 import {
   AUTH_MODES,
-  INSTANCE_NAMES,
   VerifyFailure,
+  refuseNamedInstance,
   type BrokerLaunchRequest,
   type BrokerLaunchResponse,
-  type InstanceName,
+  type IdentityHome,
   type LaunchId,
   type Platform,
   type PublishableKey,
@@ -26,8 +26,9 @@ import {
 export const TICKET_SECONDS = 120;
 
 export interface BrokerDeps {
-  readonly clerk: ClerkBackend;
-  readonly publishableKey: (instance: InstanceName) => PublishableKey;
+  /** The Backend API of the instance the run is on when a request arrives. */
+  readonly clerk: () => ClerkBackend;
+  readonly instance: () => { readonly pk: PublishableKey; readonly home: IdentityHome };
   readonly screens: readonly string[];
   readonly platforms: readonly Platform[];
 }
@@ -40,12 +41,6 @@ export interface Broker {
 
 const randomId = (bytes: number) => randomBytes(bytes).toString('hex');
 
-function instanceOf(value: unknown): InstanceName {
-  const found = INSTANCE_NAMES.find((name) => name === value);
-  if (found === undefined) throw new VerifyFailure('USAGE', `unknown instance ${String(value)}`, `use one of ${INSTANCE_NAMES.join(', ')}`);
-  return found;
-}
-
 export async function startBroker(run: RunId, workspace: Workspace, scratch: ScratchPath, deps: BrokerDeps): Promise<Broker> {
   const token = randomId(32);
   const tokenFile = join(scratch, 'broker-token');
@@ -53,21 +48,23 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
   const users = new Map<string, SeededUser>();
   let emails = workspace.entries().filter((e) => e.kind === 'identity' && e.run === run).length;
 
-  function reserve(instance: InstanceName): TestEmail {
+  function reserve(): TestEmail {
+    const { home } = deps.instance();
     emails += 1;
     const email = newTestEmail(run, emails);
-    workspace.append({ id: newEntryId(), kind: 'identity', run, instance, email });
+    workspace.append({ id: newEntryId(), kind: 'identity', run, email, ...home });
     return email;
   }
 
-  async function seedUser(instance: InstanceName, wantsPhone: boolean): Promise<SeededUser> {
-    const email = reserve(instance);
+  async function seedUser(wantsPhone: boolean): Promise<SeededUser> {
+    const { home } = deps.instance();
+    const email = reserve();
     const first = Math.floor(Math.random() * 100);
     for (let i = 0; i < (wantsPhone ? 100 : 1); i += 1) {
       const phone: TestPhone | null = wantsPhone ? parseTestPhone(`+1201555${String(100 + ((first + i) % 100)).padStart(4, '0')}`) : null;
       try {
-        const user = await deps.clerk.createUser(instance, email, phone);
-        workspace.append({ id: newEntryId(), kind: 'user', run, instance, userId: user.id, email });
+        const user = await deps.clerk().createUser(email, phone);
+        workspace.append({ id: newEntryId(), kind: 'user', run, userId: user.id, email, ...home });
         users.set(user.id, user);
         return user;
       } catch (error) {
@@ -78,7 +75,6 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
   }
 
   async function launch(request: BrokerLaunchRequest): Promise<BrokerLaunchResponse> {
-    const instance = instanceOf(request.instance);
     if (!deps.platforms.includes(request.platform)) {
       throw new VerifyFailure('USAGE', `this run drives ${deps.platforms.join(', ')}, not ${String(request.platform)}`, 'launch from a spec that this run selected');
     }
@@ -92,12 +88,12 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
     if (request.user !== null) {
       const user = users.get(request.user.id);
       if (user === undefined) throw new VerifyFailure('NOT_TEST_IDENTITY', `user ${request.user.id} was not seeded by this run`, 'sign in only users from host.seedUser');
-      ticket = await deps.clerk.mintTicket(user, TICKET_SECONDS);
+      ticket = await deps.clerk().mintTicket(user, TICKET_SECONDS);
     }
     const scope = request.storageScope ?? (randomId(8) as StorageScope);
     const launchId = randomId(8) as LaunchId;
     const launchArguments = encodeLaunchArguments(request.platform, {
-      verifyPublishableKey: deps.publishableKey(instance),
+      verifyPublishableKey: deps.instance().pk,
       verifyRunId: run,
       verifyStorageScope: scope,
       verifyLaunchId: launchId,
@@ -110,8 +106,8 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
   }
 
   const routes: Readonly<Record<string, (body: Record<string, unknown>) => Promise<unknown>>> = {
-    '/seedUser': (body) => seedUser(instanceOf(body.instance), body.phone === true),
-    '/reserveEmail': async (body) => ({ email: reserve(instanceOf(body.instance)) }),
+    '/seedUser': (body) => seedUser(body.phone === true),
+    '/reserveEmail': async () => ({ email: reserve() }),
     '/launch': (body) => launch(body as unknown as BrokerLaunchRequest),
   };
 
@@ -130,7 +126,9 @@ export async function startBroker(run: RunId, workspace: Workspace, scratch: Scr
     let text = '';
     for await (const chunk of request) text += chunk;
     try {
-      const result = await route(text.length > 0 ? (JSON.parse(text) as Record<string, unknown>) : {});
+      const body = text.length > 0 ? (JSON.parse(text) as Record<string, unknown>) : {};
+      refuseNamedInstance(`the broker's ${request.url}`, body);
+      const result = await route(body);
       response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(result));
     } catch (error) {
       const failure = error instanceof VerifyFailure ? error : new VerifyFailure('NOT_READY', (error as Error).message, 'see e2e.log');

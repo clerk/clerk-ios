@@ -303,7 +303,7 @@ export async function remoteDoctorChecks(settings: RemoteSettings, deps: RemoteD
     }
   }
   device.push(await egressCheck('tunnel-egress', TUNNEL.probeHost, deps.env, CLOUD_FIX));
-  device.push(await egressCheck('clerk-egress', 'api.clerk.com', deps.env, 'add api.clerk.com and *.clerk.accounts.dev to the allowed domains; the driver creates test users and sign-in tickets there'));
+  device.push(await egressCheck('clerk-egress', 'api.clerk.com', deps.env, 'add api.clerk.com, api.clerk.dev, and *.clerk.accounts.dev to the allowed domains; the driver creates test instances, test users, and sign-in tickets there'));
   if (rest.ok) {
     const mine = (await liveRuns(github)).filter((run) => run.owner === driverId(settings) && run.runId !== probeRunId);
     device.push(check('remote-sessions', true, mine.length === 0 ? 'no session of this checkout is running' : `running for this checkout and billed until ended: ${mine.map((run) => `${run.session} (run ${run.runId})`).join(', ')}; {cli} down ends a leased session and {cli} down --stale ends any other`, ''));

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { parseTestEmail, type ClerkBackend } from './clerk.ts';
+import { parseTestEmail, type StandingClerk } from './clerk.ts';
+import type { Instances } from './instances/instances.ts';
 import { count } from './state.ts';
 import { isRunning } from './exec.ts';
 import { newEntryId, openWorkspace, type Workspace } from './workspace.ts';
@@ -12,10 +13,11 @@ export interface PendingIdentity {
   readonly entries: readonly string[];
 }
 
+/** Identities in the standing instances. One that names a throwaway application goes with that application instead. */
 export function pendingIdentities(entries: readonly LedgerEntry[]): readonly PendingIdentity[] {
   const byEmail = new Map<string, { instance: InstanceName; email: TestEmail; entries: string[] }>();
   for (const entry of entries) {
-    if (entry.kind !== 'identity' && entry.kind !== 'user') continue;
+    if ((entry.kind !== 'identity' && entry.kind !== 'user') || entry.application !== undefined) continue;
     const email = parseTestEmail(entry.email);
     const group = byEmail.get(email) ?? { instance: entry.instance, email, entries: [] };
     group.entries.push(entry.id);
@@ -68,11 +70,11 @@ export function ledgerAgentDeviceDaemon(workspace: Workspace): void {
   if (!known) workspace.append({ id: newEntryId(), kind: 'process', what: 'agent-device', pid: daemon.pid, startedAt: new Date(daemon.startedAt).toISOString() });
 }
 
-export async function deleteIdentities(workspace: Workspace, clerk: ClerkBackend): Promise<{ readonly users: number; readonly organizations: number }> {
+export async function deleteIdentities(workspace: Workspace, clerk: StandingClerk): Promise<{ readonly users: number; readonly organizations: number }> {
   let users = 0;
   let organizations = 0;
   for (const identity of pendingIdentities(workspace.unclosedEntries())) {
-    const deleted = await clerk.deleteByEmail(identity.instance, identity.email);
+    const deleted = await clerk(identity.instance).deleteByEmail(identity.email);
     users += deleted.users;
     organizations += deleted.organizations;
     for (const ref of identity.entries) workspace.append({ id: newEntryId(), kind: 'done', ref });
@@ -83,7 +85,7 @@ export async function deleteIdentities(workspace: Workspace, clerk: ClerkBackend
 export async function finishOrphanLedgers(
   home: string,
   self: string,
-  clerk: () => ClerkBackend,
+  instances: Instances,
   progress: (line: string) => void,
 ): Promise<void> {
   const dir = join(home, 'ledgers');
@@ -95,9 +97,9 @@ export async function finishOrphanLedgers(
     if (ledger.unclosedEntries().length === 0) continue;
     try {
       const stopped = stopProcesses(ledger);
-      const deleted = await deleteIdentities(ledger, clerk());
+      const deleted = await instances.finish(ledger, { keepApplications: false }, progress);
       for (const entry of ledger.unclosedEntries()) ledger.append({ id: newEntryId(), kind: 'done', ref: entry.id });
-      progress(`reap    ledger of ${worktree}  (worktree is gone)  deleted ${count(deleted.users, 'user')}, ${count(deleted.organizations, 'organization')}, stopped ${stopped.join(', ') || 'nothing'}`);
+      progress(`reap    ledger of ${worktree}  (worktree is gone)  deleted ${count(deleted.users, 'user')}, ${count(deleted.organizations, 'organization')}, ${count(deleted.applications.length, 'application')}, stopped ${stopped.join(', ') || 'nothing'}`);
     } catch (error) {
       progress(`reap    ledger of ${worktree} left open: ${(error as Error).message}`);
     }

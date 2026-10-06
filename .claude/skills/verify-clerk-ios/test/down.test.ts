@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { standingInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
 import { newTestEmail, type ClerkBackend } from '../src/core/clerk.ts';
 import { down, type Deps } from '../src/core/verbs.ts';
 import { newEntryId, newRunId, openWorkspace } from '../src/core/workspace.ts';
-import type { DeviceBackend, HostAdapter, LocalLease } from '../src/core/types.ts';
+import type { DeviceBackend, HostAdapter, InstanceName, LocalLease } from '../src/core/types.ts';
 
 function setup() {
   const skillDir = mkdtempSync(join(tmpdir(), 'verify-down-'));
@@ -22,19 +23,17 @@ function setup() {
     describe: (lease: LocalLease) => lease.deviceName,
   } as unknown as DeviceBackend;
   const host = { repo: 'clerk-ios', platforms: ['ios'], backends: [backend] } as unknown as HostAdapter;
-  const clerk = {
-    deleteByEmail: async (_instance, email) => {
+  const clerk = (instance: InstanceName): Partial<ClerkBackend> => ({
+    deleteByEmail: async (email) => {
       deleted.push(email);
       return { users: 1, organizations: 0 };
     },
-    previewDeleteByEmail: async (instance, email) => [
-      { kind: 'user' as const, instance, id: `user_${instance}`, email },
-      ...(instance === 'with-email-codes'
-        ? [{ kind: 'organization' as const, instance, id: 'org_1', name: 'Verify one' }, { kind: 'organization' as const, instance, id: 'org_2', name: 'Verify two' }]
-        : []),
+    previewDeleteByEmail: async (email) => [
+      { kind: 'user' as const, id: `user_${instance}`, email },
+      ...(instance === 'with-email-codes' ? [{ kind: 'organization' as const, id: 'org_1', name: 'Verify one' }, { kind: 'organization' as const, id: 'org_2', name: 'Verify two' }] : []),
     ],
-  } as Partial<ClerkBackend> as ClerkBackend;
-  const deps: Deps = { host, workspace, runner: async () => assert.fail('down runs no commands'), env: {}, progress: () => undefined, clerk: () => clerk };
+  });
+  const deps: Deps = { host, workspace, runner: async () => assert.fail('down runs no commands'), env: {}, progress: () => undefined, instances: standingInstances({ clerk }) };
 
   const lease: LocalLease = { backend: 'local', platform: 'ios', slot: 2, deviceName: 'verify-ios-2', deviceId: 'UDID-2', claimNonce: 'claim-2', acquiredAt: '2026-10-03T00:00:00Z', installedBuild: null };
   workspace.writeLease(lease);
@@ -55,7 +54,7 @@ describe('down', () => {
     assert.equal('deletedUsers' in result, false, 'a dry run reports nothing in the past tense');
     assert.deepEqual(result.wouldRelease.map((l) => l.device), ['verify-ios-2']);
     assert.deepEqual(
-      result.wouldDelete.map((t) => (t.kind === 'user' ? `${t.instance} ${t.id} ${t.email}` : `${t.instance} ${t.id} ${t.name}`)),
+      result.wouldDelete.map((t) => (t.kind === 'user' ? `${t.instance} ${t.id} ${t.email}` : t.kind === 'organization' ? `${t.instance} ${t.id} ${t.name}` : t.name)),
       [
         `with-email-codes user_with-email-codes ${newTestEmail(run, 1)}`,
         'with-email-codes org_1 Verify one',

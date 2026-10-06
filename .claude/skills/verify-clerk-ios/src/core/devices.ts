@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import type { ClerkBackend } from './clerk.ts';
+import type { Instances } from './instances/instances.ts';
 import { run } from './exec.ts';
 import { finishOrphanLedgers } from './ledgers.ts';
 import { newEntryId, type Workspace } from './workspace.ts';
@@ -150,7 +150,7 @@ export async function ensureLease(
   requested: BackendKind | undefined,
   workspace: Workspace,
   host: HostAdapter,
-  options: { readonly waitSeconds: number; readonly runner?: string; readonly progress: (line: string) => void; readonly clerk: () => ClerkBackend; readonly retryWith: string },
+  options: { readonly waitSeconds: number; readonly runner?: string; readonly progress: (line: string) => void; readonly instances: Instances; readonly retryWith: string },
 ): Promise<LeaseOutcome> {
   const { platform } = lock;
   const held = workspace.readLease(platform);
@@ -167,7 +167,7 @@ export async function ensureLease(
     options.progress(`reap    ${backend.describe(stale)}  (owner process and worktree are gone)`);
     await backend.release(stale);
   }
-  await finishOrphanLedgers(workspace.home, resolve(workspace.worktree), options.clerk, options.progress);
+  await finishOrphanLedgers(workspace.home, resolve(workspace.worktree), options.instances, options.progress);
 
   const { app, view: build } = await ensureBuild(host, platform, workspace, backend, held, options.progress);
   const builtBy = app.sourceSha === null ? (build.reused ? 'reused' : `built in ${build.seconds}s`) : `commit ${app.sourceSha.slice(0, 12)}  ${build.reused ? 'already on the session' : 'the session builds it'}`;

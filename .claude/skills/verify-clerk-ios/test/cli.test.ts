@@ -157,6 +157,7 @@ describe('down output', () => {
       released: [],
       deletedUsers: 1,
       deletedOrganizations: 1,
+      deletedApplications: [],
       stoppedProcesses,
       keptRuns: [],
     });

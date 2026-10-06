@@ -3,8 +3,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { standingInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
-import type { ClerkBackend } from '../src/core/clerk.ts';
 import { down, leaseForRun, up, type Deps } from '../src/core/verbs.ts';
 import { openWorkspace } from '../src/core/workspace.ts';
 import { VerifyFailure, type BuildKey, type Command, type DeviceBackend, type HostAdapter, type HostEntry, type LocalLease, type RunContext, type ScratchPath } from '../src/core/types.ts';
@@ -55,7 +55,7 @@ function setup(buildMs: number, runtime?: HostAdapter['runtime']) {
     runner: async () => ({ code: 0, stdout: '', stderr: '' }),
     env: {},
     progress: (line: string) => void progress.push(line),
-    clerk: () => ({ deleteByEmail: async () => ({ users: 0, organizations: 0 }) }) as Partial<ClerkBackend> as ClerkBackend,
+    instances: standingInstances(),
   };
   return { deps, events, progress };
 }
@@ -69,12 +69,32 @@ describe('lease flow', () => {
     assert.deepEqual(events, ['build', 'acquire wait=0', 'install']);
   });
 
+  it('leases no device when it cannot tell where instances come from', async () => {
+    const { deps, events } = setup(0);
+    const noCredential = { ...deps.instances, choice: async () => Promise.reject(new VerifyFailure('KEYS_MISSING', 'no Clerk Platform API credential works here', 'set one')) };
+    await assert.rejects(up({ ...deps, instances: noCredential }, { verb: 'up', waitSeconds: 0 }), (error: VerifyFailure) => error.code === 'KEYS_MISSING');
+    assert.deepEqual(events, [], 'nothing was built or leased');
+  });
+
+  it('keeps the lease and says so when the instances fail after the device was leased', async () => {
+    const { deps, events } = setup(0);
+    const failing = { ...deps.instances, ensure: async () => Promise.reject(new VerifyFailure('INSTANCE_MISCONFIGURED', 'the instance does not match its file', 'correct the file')) };
+    await assert.rejects(up({ ...deps, instances: failing }, { verb: 'up', waitSeconds: 0 }), (error: VerifyFailure) => error.code === 'INSTANCE_MISCONFIGURED' && error.fix === 'correct the file; the device stays leased until `{cli} down`');
+    assert.deepEqual(events, ['build', 'acquire wait=0', 'install'], 'the lease finished and reached the lease file');
+    assert.notEqual(deps.workspace.readLease('ios'), null);
+  });
+
+  it('reports the instances it brought up', async () => {
+    const { deps } = setup(0);
+    assert.deepEqual((await up(deps, { verb: 'up', waitSeconds: 0 })).instances, [{ source: 'standing', instance: 'with-email-codes' }]);
+  });
+
   it('lets run join an up that is still building instead of failing DEVICE_BUSY', async () => {
     const { deps, events, progress } = setup(400);
     const building = up(deps, { verb: 'up', waitSeconds: 0 });
     await new Promise((resolve) => setTimeout(resolve, 50));
     progress.length = 0;
-    const device = await leaseForRun(deps, 'ios', runCommand, async (outcome) => outcome.lease.backend === 'local' && outcome.lease.deviceName);
+    const device = await leaseForRun(deps, 'ios', runCommand, { willChange: false }, async (outcome) => outcome.lease.backend === 'local' && outcome.lease.deviceName);
     await building;
     assert.equal(device, 'verify-ios-1');
     assert.equal(progress.filter((l) => l.startsWith('wait')).length, 1, 'one wait line while up holds the lock');
@@ -84,19 +104,19 @@ describe('lease flow', () => {
 
   it('holds the device lock for the run, so a second run reports DEVICE_BUSY', async () => {
     const { deps } = setup(0);
-    await leaseForRun(deps, 'ios', runCommand, async () => {
-      await assert.rejects(leaseForRun(deps, 'ios', runCommand, async () => undefined), (error: VerifyFailure) => {
+    await leaseForRun(deps, 'ios', runCommand, { willChange: false }, async () => {
+      await assert.rejects(leaseForRun(deps, 'ios', runCommand, { willChange: false }, async () => undefined), (error: VerifyFailure) => {
         assert.equal(error.code, 'DEVICE_BUSY');
         assert.match(error.fix, /\{cli\} run --all --wait <seconds>/, 'the fix names run, the verb that takes --wait');
         return true;
       });
     });
-    await leaseForRun(deps, 'ios', runCommand, async () => undefined);
+    await leaseForRun(deps, 'ios', runCommand, { willChange: false }, async () => undefined);
   });
 
   it('passes run --wait to the lane claim', async () => {
     const { deps, events } = setup(0);
-    await leaseForRun(deps, 'ios', { ...runCommand, waitSeconds: 300 }, async () => undefined);
+    await leaseForRun(deps, 'ios', { ...runCommand, waitSeconds: 300 }, { willChange: false }, async () => undefined);
     assert.ok(events.includes('acquire wait=300'));
   });
 
@@ -105,7 +125,7 @@ describe('lease flow', () => {
     const metro = { what: 'metro' as const, pid: 4242, startedAt: Date.parse('2026-10-03T00:00:00Z') };
     const { deps } = setup(0, async () => ({ entry: devClient, processes: [metro] }));
     await up(deps, { verb: 'up', waitSeconds: 0 });
-    const entry = await leaseForRun(deps, 'ios', runCommand, async (outcome) => outcome.entry);
+    const entry = await leaseForRun(deps, 'ios', runCommand, { willChange: false }, async (outcome) => outcome.entry);
     assert.deepEqual(entry, devClient);
     const context = JSON.parse(readFileSync(join(deps.workspace.root, 'context.json'), 'utf8')) as RunContext;
     assert.deepEqual(context.targets[0]!.entry, devClient);
@@ -115,14 +135,14 @@ describe('lease flow', () => {
 
   it('keeps the binary entry for hosts without a runtime', async () => {
     const { deps } = setup(0);
-    assert.deepEqual(await leaseForRun(deps, 'ios', runCommand, async (outcome) => outcome.entry), { kind: 'binary' });
+    assert.deepEqual(await leaseForRun(deps, 'ios', runCommand, { willChange: false }, async (outcome) => outcome.entry), { kind: 'binary' });
   });
 
   it('makes down wait for a run that holds the device, with one wait line, instead of failing DEVICE_BUSY', async () => {
     const { deps, progress } = setup(0);
     let downFinished = false;
     let releaseRun: () => void = () => undefined;
-    const running = leaseForRun(deps, 'ios', runCommand, () => new Promise<void>((resolve) => (releaseRun = resolve)));
+    const running = leaseForRun(deps, 'ios', runCommand, { willChange: false }, () => new Promise<void>((resolve) => (releaseRun = resolve)));
     await new Promise((resolve) => setTimeout(resolve, 100));
     progress.length = 0;
     const downing = down(deps, { verb: 'down', stale: false, dryRun: false }).then((result) => {
