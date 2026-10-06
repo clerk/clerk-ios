@@ -16,8 +16,8 @@ public struct RoleResource: Codable, Sendable, Identifiable {
   /// The name of the role.
   public var name: String
 
-  /// The description of the role.
-  public var description: String
+  /// The description of the role, or `nil` if the role has none.
+  public var description: String?
 
   /// The permissions associated with the role.
   public var permissions: [PermissionResource]
@@ -32,7 +32,7 @@ public struct RoleResource: Codable, Sendable, Identifiable {
     id: String,
     key: String,
     name: String,
-    description: String,
+    description: String? = nil,
     permissions: [PermissionResource],
     createdAt: Date,
     updatedAt: Date
