@@ -487,4 +487,45 @@ struct ClerkHasTests {
     #expect(!Clerk.shared.has(plan: "plus"))
     #expect(!Clerk.shared.has(reverification: .lax))
   }
+
+  @Test
+  func authorizesAnActiveSession() {
+    setCurrentSession(status: .active)
+    defer { Clerk.shared.client = .mock }
+
+    #expect(Clerk.shared.has(plan: "plus"))
+    #expect(Clerk.shared.has(feature: "dashboard"))
+    #expect(Clerk.shared.has(role: "org:admin"))
+    #expect(Clerk.shared.has(permission: "org:sys_memberships:read"))
+    #expect(Clerk.shared.has(reverification: .lax))
+  }
+
+  @Test
+  func returnsFalseForAPendingSession() throws {
+    setCurrentSession(status: .pending)
+    defer { Clerk.shared.client = .mock }
+
+    let session = try #require(Clerk.shared.session)
+    #expect(session.checkAuthorization(plan: "plus"))
+    #expect(!Clerk.shared.has(plan: "plus"))
+    #expect(!Clerk.shared.has(feature: "dashboard"))
+    #expect(!Clerk.shared.has(role: "org:admin"))
+    #expect(!Clerk.shared.has(permission: "org:sys_memberships:read"))
+    #expect(!Clerk.shared.has(reverification: .lax))
+  }
+
+  private func setCurrentSession(status: Session.SessionStatus) {
+    var session = makeSession(
+      orgId: "org_123",
+      orgRole: "org:admin",
+      orgPermissions: ["org:sys_memberships:read"],
+      features: "u:dashboard",
+      plans: "u:plus"
+    )
+    session.status = status
+    var client = Client.mock
+    client.sessions = [session]
+    client.lastActiveSessionId = session.id
+    Clerk.shared.client = client
+  }
 }
