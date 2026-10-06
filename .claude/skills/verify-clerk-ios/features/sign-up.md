@@ -29,5 +29,6 @@ Preconditions:
 - Fill AuthView fields with `host.fill`. A plain `locator.fill()` fails there, because a field shows no text input until it has focus.
 - Always reserve the email with `host.newEmail`. The run finds the user that the form created by that email, and `attach` refuses a run that shows a user it cannot account for.
 - `clerk.auth.signUp.password` matches three nodes once the field has focus: the floating label, the secure field, and the reveal button. Wait on `.first()`, then wait for `screen.getByRole('textbox')` to have a count of 1 before filling it. Two text boxes match for a moment while the code screen is replaced.
+- The password field is a secure field, and the screen withholds its value. `host.fill` types the password once and cannot confirm that it landed, so assert on what the form does next.
 - After a password is submitted, iOS may cover the app with its own "Save Password?" sheet. `host.waitForState` taps "Not Now" when it cannot read the state element and that sheet is up.
 - `complete.e2e.ts` is tagged `form-entry`.

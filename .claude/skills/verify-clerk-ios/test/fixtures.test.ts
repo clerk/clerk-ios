@@ -17,4 +17,10 @@ describe('specs/fixtures.ts', () => {
     assert.match(source, /async fill\(field, text\) \{\n\s+await host\.tap\(field\);/);
     assert.doesNotMatch(source, /\.fill\(/);
   });
+
+  it('confirms what it typed against the text input that had focus before the typing, and treats a value the screen withholds as unreadable', () => {
+    const source = readFileSync(join(import.meta.dirname, '..', 'specs', 'fixtures.ts'), 'utf8');
+    assert.match(source, /const focused = device\.locator\('role=textbox focused'\);/);
+    assert.match(source, /const now = await frame\(\)\.catch\(\(\) => null\);\n\s+if \(input === null \|\| now === null \|\| now\.x !== input\.x \|\| now\.y !== input\.y \|\| now\.width !== input\.width \|\| now\.height !== input\.height\) return null;\n\s+return focused\.inputValue\(\)\.catch\(\(\) => null\);/, 'a focused input at another place is another field, and typing into it again would be wrong');
+  });
 });

@@ -7,6 +7,7 @@ import { agentDeviceFor } from '../src/core/agent-device.ts';
 import { deviceCommand } from '../src/core/device-command.ts';
 import { ASSERTION_TIMEOUT_MS, loadRunContext } from '../src/core/e2e-config.ts';
 import { appStart, describeState, parseVerifyState, performAppStart } from '../src/core/state.ts';
+import { typeConfirmed } from '../src/core/typing.ts';
 import { agentDeviceStateDir } from '../src/core/workspace.ts';
 import type { host as hostAdapter } from '../src/host.ts';
 import {
@@ -34,6 +35,7 @@ export type { InstanceSettings };
 
 const LAUNCH_TIMEOUT_MS = 60_000;
 const POLL_MS = 400;
+const CONFIRM_READS = 5;
 const ONLY_E2E_WORKER_SLOT = 0;
 
 const e2eWorkerSession = (context: RunContext): string => `${context.agentDeviceSession}-${ONLY_E2E_WORKER_SLOT}`;
@@ -160,7 +162,22 @@ export const test = base.extend<{ host: HostFixture<HostScreen> }>({
       tap: (target) => target.tap({ timeout: ASSERTION_TIMEOUT_MS }),
       async fill(field, text) {
         await host.tap(field);
-        await typeIntoFocused(context, target, text);
+        const focused = device.locator('role=textbox focused');
+        const frame = async () => ((await focused.count()) === 1 ? await focused.boundingBox() : null);
+        const input = await frame().catch(() => null);
+        await typeConfirmed(
+          {
+            type: (value) => typeIntoFocused(context, target, value),
+            async valueIfReadable() {
+              const now = await frame().catch(() => null);
+              if (input === null || now === null || now.x !== input.x || now.y !== input.y || now.width !== input.width || now.height !== input.height) return null;
+              return focused.inputValue().catch(() => null);
+            },
+            refocus: () => focused.tap({ timeout: ASSERTION_TIMEOUT_MS }),
+          },
+          text,
+          { reads: CONFIRM_READS, wait: () => sleep(POLL_MS) },
+        );
       },
     };
     await use(host);
