@@ -17,10 +17,12 @@ After sign-in, an instance can require more steps before the session becomes act
 
 Preconditions:
 
-- `with-session-tasks-setup-mfa` requires MFA for every user. `with-session-tasks` forces organization selection.
-- The specs seed a user on that instance and sign in with a ticket, then launch `screen: 'auth'` so AuthView adopts the pending session.
+- `setup-mfa.e2e.ts` and `complete-setup-mfa.e2e.ts` declare `config: { auth_multi_factor: { required_for_sign_up: true } }` and `environment: { 'user_settings.sign_up.mfa.required': true }`.
+- `choose-organization.e2e.ts` declares `config: { organization_settings: { force_organization_selection: true } }` and `environment: { 'organization_settings.force_organization_selection': true }`.
+- `run` puts the worktree's application on the declared settings before the tests in each file start. `SKILL.md` under Test instances describes the declaration.
+- Each spec seeds a user and signs in with a ticket, then launches `screen: 'auth'` so AuthView adopts the pending session.
 
-- **Both task screens at once.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks --skip form-entry` to run `setup-mfa` and `choose-organization` and skip `complete-setup-mfa`.
+- **Both task screens at once.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks --skip form-entry` to run `setup-mfa` and `choose-organization` and skip `complete-setup-mfa`. The run has one group per declaration, so it writes `e2e/` and `e2e-2/`.
 - **Setup MFA.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks/setup-mfa`. The spec expects `ticket` `succeeded`, `sessionStatus` `pending`, `pendingTasks` containing `setup-mfa`, and both `clerk.auth.sessionTask.setupMfa.authenticatorApp` and `clerk.auth.sessionTask.setupMfa.smsCode`. Screenshot `session-task`.
 - **Complete MFA setup.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks/complete-setup-mfa` (tag `form-entry`). It taps the authenticator app choice, reads `clerk.auth.sessionTask.totp.secret`, taps `clerk.auth.sessionTask.totp.continue`, fills `clerk.auth.sessionTask.totp.code` with the computed TOTP, taps `clerk.auth.sessionTask.backupCodes.continue`, and waits for `sessionStatus` `active` with no pending tasks.
 - **Choose organization.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run session-tasks/choose-organization`. The spec expects `pendingTasks` containing `choose-organization` and the organization form field `clerk.organization.profileForm.name`. Screenshot `choose-organization-task`.

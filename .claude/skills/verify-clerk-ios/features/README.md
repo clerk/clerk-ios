@@ -7,24 +7,20 @@ This directory is the maintained source for verifying the user-facing behavior o
 - Run every command from the root of a clerk-ios worktree. The CLI is `.claude/skills/verify-clerk-ios/bin/control-clerk-ios`, or `control-clerk-ios` with that `bin` directory on `PATH`.
 - Run `npm ci --prefix .claude/skills/verify-clerk-ios` once.
 - Then run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor`. Its first line names the backend, `local` or `remote`, and why. It exits 3 until a build matches the current tree; on a clean Mac `build` is the only failing check until the first `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up`. On Linux, `remote-commit` also fails until HEAD is pushed, and `gh-attach` fails without `gh`.
-- `.keys.json` at the root of the main clerk-ios checkout (not a linked worktree) holds `pk` and `sk` for `with-email-codes`, `with-session-tasks`, and `with-session-tasks-setup-mfa`. A machine with no such file passes the same JSON in `CLERK_TEST_KEYS_JSON`. Only the CLI reads it. Never print a key.
+- Specs run on the standard test instance, in one Clerk application that `up` creates for this worktree and `down` deletes. A spec names no instance, and a spec file that needs other settings declares them. `SKILL.md` under Test instances has the declaration, the Platform API key the CLI needs, and the override that uses the standing instances from `.keys.json` or `CLERK_TEST_KEYS_JSON`. Never print a key.
 - On a Mac the CLI drives only its own lane simulator, `verify-ios-<n>`, cloned from `Clerk Verify Template iOS`. Never drive `iPhone Air`, the template, a physical device, or a simulator another worktree holds.
 - On Linux the CLI drives a remote simulator on a CI runner instead, and every recipe here is unchanged. The differences are in `SKILL.md` under Remote simulator: commit and push before `up` or `run`, because the session builds the pushed commit, and run `down` as soon as you are done, because the session is billed by the minute.
 - Every launch gets a new `verifyStorageScope`, so no spec inherits a session from another spec.
 
 ### Test users and sign-in
 
-- **Emails.** Any address that contains `+clerk_test@` is a test address. Clerk sends no mail and accepts the code below. The fixture mints `verify_<runId>_<n>+clerk_test@example.com` per run with `host.newEmail(instance)` or `host.seedUser({ instance })`.
-- **Phones.** US numbers 555-0100 to 555-0199 are test numbers, typed as ten digits such as `5555550142`. They are shared across repos, CI, and agents, so get one from `host.seedUser({ instance, phone: true })` instead of picking one by hand.
+- **Emails.** Any address that contains `+clerk_test@` is a test address. Clerk sends no mail and accepts the code below. The fixture mints `verify_<runId>_<n>+clerk_test@example.com` per run with `host.newEmail()` or `host.seedUser()`.
+- **Phones.** US numbers 555-0100 to 555-0199 are test numbers, typed as ten digits such as `5555550142`. On the standing instances they are shared across repos, CI, and agents, so get one from `host.seedUser({ phone: true })` instead of picking one by hand.
 - **One-time code.** `424242` verifies every email and SMS code for test addresses and phones. Specs use the constant `CLERK_TEST_CODE`. It is public and not an e2e secret, so screenshots after the fill are kept.
-- **Passwords.** `with-email-codes` requires a password at sign-up. Use a throwaway per run, such as `Verify-<runId>-Pw1!`.
+- **Passwords.** The standard instance requires a password at sign-up. Use a throwaway per run, such as `Verify-<runId>-Pw1!`.
 - **Authenticator codes.** Read the setup key from `clerk.auth.sessionTask.totp.secret` and compute the 6-digit RFC 6238 code (SHA-1, 30 second step). `specs/golden/session-tasks/complete-setup-mfa.e2e.ts` has the helper.
 
-| Instance key in `.keys.json` | Use it for |
-| --- | --- |
-| `with-email-codes` (the `all-enabled` instance) | Every auth method and every signed-in feature. |
-| `with-session-tasks-setup-mfa` | Sign-ins that must stop on the setup-MFA session task. |
-| `with-session-tasks` | Sign-ins that must stop on the choose-organization session task. |
+The standard instance has every auth method and every signed-in feature. A spec file that needs other settings declares them, as `SKILL.md` under Test instances describes.
 
 | Step | SDK identifier |
 | --- | --- |
@@ -49,7 +45,7 @@ Rules:
 - Type only `+clerk_test` emails, 555-0100 to 0199 phones, and `424242`. The repo is public and every video can land on a PR.
 - Use ticket sign-in (`host.launch({ signedInAs })`) only to reach signed-in screens for features that are not about authentication. A change to an auth method gets a spec that drives the real form.
 - Tag every spec that types a code `form-entry`. Those specs run by default. A runtime that refuses to type codes into an app that talks to hosted Clerk runs `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run --skip form-entry` and says so in the PR.
-- `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes every user the run created, including users created through the sign-up form, by their test email.
+- `.claude/skills/verify-clerk-ios/bin/control-clerk-ios down` deletes this worktree's application, and with it every user the run created, including users created through the sign-up form.
 
 ## Driving conventions
 

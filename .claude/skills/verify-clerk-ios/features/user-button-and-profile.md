@@ -20,7 +20,7 @@ A signed-in user opens their profile from UserButton or from a profile screen, s
 
 Preconditions:
 
-- The spec seeds a `+clerk_test` user on `with-email-codes` and signs in with a ticket (`host.launch({ signedInAs })`).
+- The spec seeds a `+clerk_test` user on the standard instance and signs in with a ticket (`host.launch({ signedInAs })`).
 
 - **Profile.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run user-button-and-profile`. The first test launches `screen: 'userProfile'`, checks `userId` and `sessionStatus` `active`, expects `Edit profile` and `clerk.userProfile.currentUser.<userId>`, taps `clerk.userProfile.row.manageAccount`, and expects the user's email. Screenshot `profile`.
 - **Add account.** The second test launches `screen: 'userProfile'`, taps `clerk.userProfile.row.addAccount`, and expects `clerk.auth.start.identifier` in the sheet. Screenshot `add-account`.

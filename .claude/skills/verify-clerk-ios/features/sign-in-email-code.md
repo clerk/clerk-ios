@@ -10,14 +10,14 @@ An existing user types their email address into AuthView, receives a one-time co
 ## How to get to it (user POV)
 
 - Open AuthView in sign-in mode, type the email address, and tap Continue.
-- On `with-email-codes` the first factor is an email link ("Check your email", "Open email app"). Tap `Use another method`, then `Email code`.
+- On the standard instance the first factor is an email link ("Check your email", "Open email app"). Tap `Use another method`, then `Email code`.
 - Type the code from the email into the code field.
 
 ## Driving it with verify
 
 Preconditions:
 
-- `with-email-codes` has the `email_code` strategy on. `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` checks it.
+- The standard instance has the `email_code` strategy on. The `settings` check of `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` compares the live instance with the standard file.
 - The spec seeds its own `+clerk_test` user through `host.seedUser`. Do not reuse a user from another run.
 
 - **Both, in a runtime that can't type codes.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run sign-in-email-code --skip form-entry`. It runs `request-code` and reports `complete` as skipped.

@@ -17,7 +17,7 @@ A signed-out user opens AuthView and sees the identifier field and the Continue 
 Preconditions:
 
 - `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` passes apart from `build`.
-- `with-email-codes` keys are present.
+- The spec declares no settings, so it runs on the standard instance.
 
 - **Home button.** Run `.claude/skills/verify-clerk-ios/bin/control-clerk-ios run auth-start`. The spec launches `screen: 'home'`, checks `environmentLoaded` true and `signedIn` false, taps `e2e.auth.signIn`, and expects `clerk.auth.start.identifier` and `clerk.auth.start.continue`. Screenshot `auth-start`.
 - **Direct launch.** The same run's second test launches `screen: 'auth'` and expects `state.screen` to be `auth`, `lastError` null, and `clerk.auth.start.identifier` visible.
@@ -25,6 +25,6 @@ Preconditions:
 
 ## Gotchas
 
-- A missing or rejected key shows `state.screen` `error` and `lastError.code` `invalid_publishable_key` instead of an empty AuthView. Check `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` keys first.
-- Behind the Proxyman HTTPS proxy, a simulator that does not trust its CA shows only the AuthView header. Lane simulators clone the template for this reason. `doctor`'s `proxy-trust` check catches drift.
+- A missing or rejected key shows `state.screen` `error` and `lastError.code` `invalid_publishable_key` instead of an empty AuthView. Read the `instances` and `settings` checks of `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` first.
+- Behind an HTTPS debugging proxy such as Proxyman, a simulator that does not trust the proxy's CA shows only the AuthView header. Lane simulators clone the template for this reason. `doctor`'s `proxy-trust` check catches drift.
 - AuthView remembers identifiers only when asked. E2EHost turns that off, so the field starts empty on every launch.
