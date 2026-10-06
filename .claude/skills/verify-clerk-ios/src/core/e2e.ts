@@ -138,7 +138,7 @@ export function planE2E(
     '--output',
     output,
     '--reporter',
-    'list,markdown',
+    'list,markdown,junit',
     '--retries',
     String(command.retries),
     ...excludedTags(command),

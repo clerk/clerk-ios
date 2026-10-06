@@ -146,7 +146,7 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path.
 | `states.jsonl` | Every `VerifyState` the fixture read, in order, across every test in the run. A read that returns the same text as the read before it adds no line |
 | `state.json` | The last state of the run only. Read the states of one test from `states.jsonl` by `launchId` |
 | `app.log` | The `com.clerk.verify` and `com.clerk.sdk` log lines of the run. The SDK logs errors only, unless the launch passes `debugLogs: true` |
-| `e2e/`, `e2e.log` | e2e's `report.json`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |
+| `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |
 | `specs/` | A copy of every spec the run used |
 
 A proof drives the real user path. It captures the action and the resulting state, which the video and `states.jsonl` give you. It checks side effects in `states.jsonl` (`userId`, `orgId`, `pendingTasks`), not only the final screen.

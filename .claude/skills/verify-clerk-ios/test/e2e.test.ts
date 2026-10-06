@@ -43,7 +43,7 @@ describe('planE2E', () => {
     const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, retries: 1, githubReport: false, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
     assert.deepEqual(plan.args, [
       'run', 'specs/golden/a/b.e2e.ts', '--config', 'e2e.config.ts', '--target', 'ios',
-      '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown', '--retries', '1',
+      '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown,junit', '--retries', '1',
       '--exclude-tag', 'form-entry,known-bug', '--grep', 'x', '--pass-with-no-tests',
     ]);
     assert.equal(plan.env.VERIFY_CONTEXT, '/skill/.verify/scratch/r20261002-141210-7c1e/context.json');
