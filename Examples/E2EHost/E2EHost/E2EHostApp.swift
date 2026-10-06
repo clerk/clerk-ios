@@ -13,6 +13,12 @@ struct E2EHostApp: App {
   private let configurationFailure: VerifyState.Failure?
 
   init() {
+    // A verify launch passes arguments, not environment, and ClerkKitUI reads this
+    // variable to keep password AutoFill prompts from covering the form.
+    if configuration.launchId != nil {
+      setenv("CLERK_E2E_MODE", "1", 1)
+    }
+
     configurationFailure = configuration.publishableKeyFailure
 
     if configurationFailure == nil {
