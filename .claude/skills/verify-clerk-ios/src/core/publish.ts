@@ -11,17 +11,21 @@ interface Posted {
   readonly posted: readonly EvidencePath[];
 }
 
+function tally(results: Publishable['results']): string {
+  const flaky = results.filter((r) => r.status === 'flaky').length;
+  return `${results.filter((r) => r.status === 'passed').length} of ${results.length} passed${flaky === 0 ? '' : `, ${flaky} flaky (passed only on a retry)`}.`;
+}
+
 export function commentBody(evidence: Publishable): string {
-  const passed = evidence.results.filter((r) => r.status === 'passed').length;
   const lines = [
-    `verify run \`${evidence.run}\` on ${evidence.platform} (${evidence.device}), build \`${evidence.build}\`, ${passed} of ${evidence.results.length} passed.`,
+    `verify run \`${evidence.run}\` on ${evidence.platform} (${evidence.device}), build \`${evidence.build}\`, ${tally(evidence.results)}`,
     '',
     ...evidence.results.map((r) => `- ${r.status}: \`${r.spec.path}\` ${r.title}`),
   ];
   for (const group of evidence.settings) {
     if (group.askedBy === null) continue;
     const results = evidence.results.filter((r) => group.specs.includes(r.spec.path));
-    lines.push('', `Instance settings \`${group.label}\` (declared by \`${group.askedBy}\`): ${results.filter((r) => r.status === 'passed').length} of ${results.length} passed.`);
+    lines.push('', `Instance settings \`${group.label}\` (declared by \`${group.askedBy}\`): ${tally(results)}`);
   }
   if (evidence.lastState !== null) lines.push('', `Last state: \`${describeState(evidence.lastState)}\``);
   return lines.join('\n');

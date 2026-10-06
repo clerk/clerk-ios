@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { newTestEmail, parseTestEmail, parseTestPhone } from '../src/core/clerk.ts';
 import { assertPublishable, sealEvidence } from '../src/core/evidence.ts';
 import type { Runner } from '../src/core/exec.ts';
-import { postToPullRequest } from '../src/core/publish.ts';
+import { commentBody, postToPullRequest } from '../src/core/publish.ts';
 import { Secret } from '../src/core/secret.ts';
 import { parseVerifyState } from '../src/core/state.ts';
 import { attach } from '../src/core/verbs.ts';
@@ -35,7 +35,7 @@ function partialRecord(dir: EvidencePath, run: RunId): Omit<EvidenceRecord, 'sea
     device: 'verify-ios-1',
     build: 'ios-000000000000' as BuildKey,
     results: [
-      { spec: { kind: 'explored', path: 'specs/explored/a.e2e.ts', feature: null }, title: 'a', platform: 'ios', status: 'passed', seconds: 1, error: null, skipReason: null, skippedBy: null, tags: [], failurePage: null, failureScreen: null, failureScreenshot: null },
+      { spec: { kind: 'explored', path: 'specs/explored/a.e2e.ts', feature: null }, title: 'a', platform: 'ios', status: 'passed', seconds: 1, attempts: 1, error: null, skipReason: null, skippedBy: null, tags: [], failurePage: null, failureScreen: null, failureScreenshot: null },
     ],
     videos: [join(dir, 'video.mp4') as EvidencePath],
     screenshots: [{ label: 'profile', path: join(dir, 'screenshots', 'profile.png') as EvidencePath }],
@@ -116,6 +116,17 @@ describe('assertPublishable', () => {
     assert.throws(() => assertPublishable({ ...base, identities: [{ email: 'someone@example.com' as never, userId: OWN_USER }] }, []), { code: 'NOT_TEST_IDENTITY' });
     const failing = { ...base, results: base.results.map((r) => ({ ...r, status: 'failed' as const })) };
     assert.throws(() => assertPublishable(failing, []), { code: 'EVIDENCE_UNSAFE', message: /failing/ });
+  });
+});
+
+describe('the comment attach posts', () => {
+  it('counts a test that passed only on a retry apart from the passed ones', () => {
+    const { dir, run } = runDir();
+    const base = partialRecord(dir, run);
+    const record = sealEvidence(dir, { ...base, results: [base.results[0]!, { ...base.results[0]!, title: 'b', status: 'flaky', attempts: 2, error: 'tap failed' }] }, []);
+    const body = commentBody(assertPublishable(record, [state(OWN_USER)]));
+    assert.match(body, /, 1 of 2 passed, 1 flaky \(passed only on a retry\)\.$/m);
+    assert.match(body, /^- flaky: `specs\/explored\/a\.e2e\.ts` b$/m);
   });
 });
 

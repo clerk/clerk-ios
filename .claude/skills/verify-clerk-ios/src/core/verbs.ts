@@ -374,6 +374,7 @@ const notRun = (spec: SpecRef, platform: Platform, why: string): SpecResult => (
   platform,
   status: 'failed',
   seconds: 0,
+  attempts: 0,
   error: redact(why),
   skipReason: null,
   skippedBy: null,

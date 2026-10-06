@@ -40,16 +40,17 @@ describe('planE2E', () => {
       agentDeviceSession: 'verify-ios-abc',
       targets: [],
     };
-    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
+    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, retries: 1, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
     assert.deepEqual(plan.args, [
       'run', 'specs/golden/a/b.e2e.ts', '--config', 'e2e.config.ts', '--target', 'ios',
-      '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown',
+      '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown', '--retries', '1',
       '--exclude-tag', 'form-entry,known-bug', '--grep', 'x', '--pass-with-no-tests',
     ]);
     assert.equal(plan.env.VERIFY_CONTEXT, '/skill/.verify/scratch/r20261002-141210-7c1e/context.json');
     assert.equal(plan.env.E2E_TELEMETRY_DISABLED, '1');
-    const later = planE2E(context, [], { verb: 'run', selection: { all: true }, skip: [], include: ['known-bug'], video: true, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 2));
+    const later = planE2E(context, [], { verb: 'run', selection: { all: true }, skip: [], include: ['known-bug'], video: true, retries: 0, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 2));
     assert.equal(later.args[later.args.indexOf('--output') + 1], '.verify/runs/r20261002-141210-7c1e/e2e-3', 'a later group of the run writes beside the first');
+    assert.equal(later.args[later.args.indexOf('--retries') + 1], '0', 'e2e retries once by default when CI is set, so the run always says how many it wants');
     assert.equal(later.args.includes('--pass-with-no-tests'), true, 'every invocation is one group of a run, and a group with nothing left to run must not fail it');
   });
 
@@ -93,6 +94,41 @@ describe('parseE2EReport', () => {
       ],
     },
   };
+
+  it('keeps the failed attempt of a test that passed on a retry: its error, its failure page, and its screenshot', () => {
+    const dir = e2eOutputDir(mkdtempSync(join(tmpdir(), 'verify-report-')) as EvidencePath, 0);
+    mkdirSync(join(dir, 'failures'), { recursive: true });
+    writeFileSync(join(dir, 'failures', 'specs_golden_auth-start_opens-opens-eeeeeeee.md'), '');
+    mkdirSync(join(dir, 'artifacts', 'ios/o/attempt-0'), { recursive: true });
+    writeFileSync(join(dir, 'artifacts', 'ios/o/attempt-0/screen.txt'), '');
+    const attempt = (path: string) => ({ failure: { screen: 'screen', screenshot: 'shot' }, artifacts: [{ id: 'screen', kind: 'other', path: `${path}/screen.txt` }, { id: 'shot', kind: 'screenshot', path: `${path}/screenshots/001-failure.png` }] });
+    const retried = (status: string, second: object) => ({
+      schemaVersion: 'report-1',
+      run: {
+        results: [
+          {
+            id: 'eeeeeeee55', kind: 'test', titlePath: ['opens'], file: 'specs/golden/auth-start/opens.e2e.ts', platform: 'ios', tags: [], status,
+            attempts: [{ status: 'failed', durationMs: 4000, error: { message: 'tap failed\nthe runner session ended' }, ...attempt('ios/o/attempt-0') }, { durationMs: 6000, ...second }],
+          },
+        ],
+      },
+    });
+
+    const [flaky] = parseE2EReport(retried('flaky', { status: 'passed' }), [], dir);
+    assert.equal(flaky!.status, 'flaky');
+    assert.equal(flaky!.attempts, 2);
+    assert.equal(flaky!.seconds, 10);
+    assert.equal(flaky!.error, 'tap failed; the runner session ended');
+    assert.equal(flaky!.failurePage, join(dir, 'failures', 'specs_golden_auth-start_opens-opens-eeeeeeee.md'));
+    assert.equal(flaky!.failureScreen, join(dir, 'artifacts', 'ios/o/attempt-0/screen.txt'));
+    assert.equal(flaky!.failureScreenshot, join(dir, 'artifacts', 'ios/o/attempt-0/screenshots/001-failure.png'));
+
+    const [failed] = parseE2EReport(retried('failed', { status: 'failed', error: { message: 'tap failed again' }, ...attempt('ios/o/attempt-1') }), [], dir);
+    assert.equal(failed!.status, 'failed');
+    assert.equal(failed!.attempts, 2);
+    assert.equal(failed!.error, 'tap failed again', 'a test that fails every attempt shows its last one');
+    assert.equal(failed!.failureScreenshot, join(dir, 'artifacts', 'ios/o/attempt-1/screenshots/001-failure.png'));
+  });
 
   it('maps statuses, skip reasons, errors, and failure pages, in the directory its invocation wrote to', () => {
     const run = mkdtempSync(join(tmpdir(), 'verify-report-')) as EvidencePath;

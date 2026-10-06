@@ -71,7 +71,7 @@ $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios run --all --skip form-en
 $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen                                # the UI tree that is on screen now; --png adds a screenshot
 ```
 
-`run` also takes `--grep <regex>`, `--no-video`, and `--wait <seconds>`. The wait covers a free lane and another `run` in this worktree that holds the device. A golden spec tagged `known-bug` reproduces an open SDK bug, and `run` leaves it out unless you pass `--include known-bug`.
+`run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free lane and another `run` in this worktree that holds the device. A golden spec tagged `known-bug` reproduces an open SDK bug, and `run` leaves it out unless you pass `--include known-bug`.
 
 ### Sign in with the form or with a ticket
 
@@ -127,6 +127,8 @@ Golden specs under `specs/golden/<feature>/` are committed and cover the feature
 5. When the change adds or changes user-facing behavior, move the spec to `specs/golden/<feature>/`, change its import to `'../../fixtures.ts'`, `git add` it, and update the feature file. Otherwise leave it where it is. The run directory keeps a copy of every spec the run used.
 
 A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
+
+With `--retries`, a test that fails and then passes prints `flaky` and the error of its failed attempt, and a `flaky` line under the results counts such tests. `run.json` records the test as `flaky` with its `attempts`, never as passed, and `run` exits 0. The failure page of the failed attempt and the files of every attempt stay in the run directory. A test that fails on every attempt prints `FAIL`, and `run` exits 1.
 
 Right after `up` the app has no launch arguments, so `screen` shows the host's `error` screen. To look at a real screen, first run a spec that launches it. When a node may be missing, assert `await expect(locator).toBeVisible()` before you tap it. That failure reads `observed: no node (match count 0)`, and a failed tap says only `LOCATOR_NOT_FOUND`.
 

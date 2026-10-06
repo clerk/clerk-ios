@@ -20,7 +20,7 @@ Each check of `doctor --json` has `id`, `ok`, `detail`, and a `fix` when there i
 
 | Code | Meaning |
 | --- | --- |
-| 0 | The verb succeeded. For `run`, no spec failed |
+| 0 | The verb succeeded. For `run`, no spec failed. A spec that passed on a retry is `flaky` and does not fail the run |
 | 1 | `run` finished and at least one spec failed or was interrupted |
 | 2 | The error code is `USAGE` |
 | 3 | Any other error, or `doctor` has a failing check |

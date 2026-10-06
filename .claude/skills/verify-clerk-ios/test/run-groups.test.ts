@@ -139,7 +139,7 @@ function world(options: { readonly specs?: Readonly<Record<string, InstanceSetti
   return { dir, clerk, frontendApi, workspace, lines, hooks, deps, invocations, lastRecord, writes };
 }
 
-const RUN_ALL: Extract<Command, { verb: 'run' }> = { verb: 'run', selection: { all: true }, skip: [], include: [], video: false, waitSeconds: 0 };
+const RUN_ALL: Extract<Command, { verb: 'run' }> = { verb: 'run', selection: { all: true }, skip: [], include: [], video: false, retries: 0, waitSeconds: 0 };
 const statuses = (results: readonly { readonly spec: { readonly path: string }; readonly title: string; readonly status: string }[]) => results.map((result) => `${result.status} ${result.spec.path.split('/').at(-1)}${result.title === 'not run' ? ' (not run)' : ''}`);
 
 describe('a run whose spec files declare different settings', () => {

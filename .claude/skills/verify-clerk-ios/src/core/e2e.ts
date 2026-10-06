@@ -139,6 +139,8 @@ export function planE2E(
     output,
     '--reporter',
     'list,markdown',
+    '--retries',
+    String(command.retries),
     ...excludedTags(command),
     ...(command.grep === undefined ? [] : ['--grep', command.grep]),
     '--pass-with-no-tests',
@@ -245,15 +247,15 @@ export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], o
       const file = r.file ?? '';
       const spec = specs.find((s) => s.path === file) ?? { kind: 'explored', path: file, feature: null };
       const attempts = r.attempts ?? [];
-      const last = attempts.at(-1);
+      const shown = attempts.findLast((attempt) => attempt.error !== undefined) ?? attempts.at(-1);
       const notRun = r.status === 'skipped' && r.skip?.cause !== 'filtered' && r.skip?.cause !== 'platform-unavailable';
       const status = notRun ? 'failed' : (STATUS[r.status ?? ''] ?? 'failed');
       const page = r.id === undefined ? undefined : pages.find((p) => p.endsWith(`-${r.id!.slice(0, 8)}.md`));
       const artifactPath = (id: string | undefined): EvidencePath | null => {
-        const path = id === undefined ? undefined : last?.artifacts?.find((a) => a.id === id)?.path;
+        const path = id === undefined ? undefined : shown?.artifacts?.find((a) => a.id === id)?.path;
         return path === undefined ? null : (join(outputDir, 'artifacts', path) as EvidencePath);
       };
-      const screenPath = artifactPath(last?.failure?.screen);
+      const screenPath = artifactPath(shown?.failure?.screen);
       const excludedBy = (tag: OptInTag) => excluded.includes(tag) && (r.tags ?? []).includes(tag);
       let skipReason: string | null = null;
       let skippedBy: SpecResult['skippedBy'] = null;
@@ -269,20 +271,21 @@ export function parseE2EReport(reportJson: unknown, specs: readonly SpecRef[], o
                 ? `skipped by --skip ${FORM_ENTRY_TAG}`
                 : `${r.skip?.cause ?? 'skipped'}: ${r.skip?.reason ?? ''}`.trim();
       }
-      const message = notRun ? `not run: ${r.skip?.cause ?? 'skipped'} ${r.skip?.reason ?? ''}`.trim() : last?.error?.message;
+      const message = notRun ? `not run: ${r.skip?.cause ?? 'skipped'} ${r.skip?.reason ?? ''}`.trim() : shown?.error?.message;
       return {
         spec,
         title: (r.titlePath ?? []).join(' > '),
         platform: r.platform === 'android' ? 'android' : 'ios',
         status,
         seconds: Math.round(attempts.reduce((sum, a) => sum + (a.durationMs ?? 0), 0) / 100) / 10,
+        attempts: attempts.length,
         error: message === undefined ? null : redact(message.split('\n').filter((line) => line.trim().length > 0).join('; ')),
         skipReason,
         skippedBy,
         tags: r.tags ?? [],
         failurePage: page === undefined ? null : (join(failuresDir, page) as EvidencePath),
         failureScreen: screenPath !== null && existsSync(screenPath) ? (screenPath as EvidencePath) : null,
-        failureScreenshot: artifactPath(last?.failure?.screenshot),
+        failureScreenshot: artifactPath(shown?.failure?.screenshot),
       };
     });
 }

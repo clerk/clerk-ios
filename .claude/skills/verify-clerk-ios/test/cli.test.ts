@@ -6,7 +6,7 @@ import { describe, it } from 'node:test';
 import { createOutput, exitCodeFor, parseArgv } from '../src/core/cli.ts';
 import { Secret } from '../src/core/secret.ts';
 import { featureMapCheck, supportsNode } from '../src/core/verbs.ts';
-import { VerifyFailure, type Command, type DoctorReport, type DownResult } from '../src/core/types.ts';
+import { VerifyFailure, type Command, type DoctorReport, type DownResult, type EvidencePath, type EvidenceRecord, type RunResult, type SpecResult } from '../src/core/types.ts';
 
 function usageError(argv: readonly string[]): VerifyFailure {
   try {
@@ -31,6 +31,7 @@ describe('parseArgv', () => {
       skip: [],
       include: [],
       video: true,
+      retries: 0,
       waitSeconds: 0,
     });
     assert.deepEqual(parseArgv(['run', '--all', '--no-video', '--grep', 'profile']).command, {
@@ -40,9 +41,12 @@ describe('parseArgv', () => {
       include: [],
       grep: 'profile',
       video: false,
+      retries: 0,
       waitSeconds: 0,
     });
     assert.equal((parseArgv(['run', 'auth-start', '--wait', '300']).command as { waitSeconds: number }).waitSeconds, 300);
+    assert.equal((parseArgv(['run', '--all', '--retries', '1']).command as Extract<Command, { verb: 'run' }>).retries, 1);
+    for (const bad of ['11', '-1', 'once']) assert.throws(() => parseArgv(['run', '--all', '--retries', bad]), { code: 'USAGE' }, bad);
     assert.deepEqual((parseArgv(['run', 'auth-start', '--include', 'known-bug']).command as Extract<Command, { verb: 'run' }>).include, ['known-bug']);
     assert.throws(() => parseArgv(['run', 'auth-start', '--include', 'form-entry']), { code: 'USAGE' });
     assert.deepEqual(parseArgv(['screen', '--png']).command, { verb: 'screen', png: true });
@@ -121,6 +125,50 @@ describe('Output', () => {
     assert.equal(parsed.ok, false);
     assert.equal(parsed.checks.length, 1);
     assert.equal(exitCodeFor(report), 3);
+  });
+});
+
+describe('run output', () => {
+  const result = (status: SpecResult['status'], error: string): RunResult => ({
+    verb: 'run',
+    dir: '/tmp/runs/r20261002-141210-7c1e' as EvidencePath,
+    next: 'next',
+    record: {
+      results: [
+        { spec: { kind: 'golden', path: 'specs/golden/auth-start/opens.e2e.ts', feature: null }, title: 'opens', platform: 'ios', status: 'passed', seconds: 5, attempts: 1, error: null, skipReason: null, skippedBy: null, tags: [], failurePage: null, failureScreen: null, failureScreenshot: null },
+        { spec: { kind: 'golden', path: 'specs/golden/sign-up/complete.e2e.ts', feature: null }, title: 'completes', platform: 'ios', status, seconds: 41.5, attempts: 2, error, skipReason: null, skippedBy: null, tags: [], failurePage: '/tmp/failures/complete.md' as EvidencePath, failureScreen: null, failureScreenshot: null },
+      ],
+      videos: [],
+      screenshots: [],
+      lastState: null,
+      appLog: null,
+      tainted: [],
+    } as unknown as EvidenceRecord,
+  });
+  const printed = (value: RunResult): string => {
+    let out = '';
+    createOutput(false, '/tmp', 'bin/control-x', { write: (t: string) => (out += t) }, { write: () => {} }).result(value);
+    return out;
+  };
+
+  it('prints a test that passed on a retry as flaky with the failed attempt, counts it, and does not fail the run', () => {
+    const flaky = result('flaky', 'tap failed');
+    const out = printed(flaky);
+    assert.match(out, /^  flaky sign-up\/complete\.e2e\.ts +completes  41\.5s$/m);
+    assert.match(out, /^ +passed on attempt 2; the attempt before it failed: tap failed$/m);
+    assert.match(out, /^ +failure page  .*complete\.md$/m);
+    assert.match(out, /^flaky     1 test passed only on a retry, and the run does not fail for it$/m);
+    assert.doesNotMatch(out, /^  pass  sign-up/m);
+    assert.equal(exitCodeFor(flaky), 0);
+  });
+
+  it('fails the run for a test that failed on every attempt', () => {
+    const failed = result('failed', 'tap failed again');
+    const out = printed(failed);
+    assert.match(out, /^  FAIL  sign-up\/complete\.e2e\.ts +completes  41\.5s$/m);
+    assert.match(out, /^ +tap failed again$/m);
+    assert.doesNotMatch(out, /^flaky/m);
+    assert.equal(exitCodeFor(failed), 1);
   });
 });
 

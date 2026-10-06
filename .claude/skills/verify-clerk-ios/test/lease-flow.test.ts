@@ -60,7 +60,7 @@ function setup(buildMs: number, runtime?: HostAdapter['runtime']) {
   return { deps, events, progress };
 }
 
-const runCommand: Extract<Command, { verb: 'run' }> = { verb: 'run', selection: { all: true }, skip: [], include: [], video: false, waitSeconds: 0 };
+const runCommand: Extract<Command, { verb: 'run' }> = { verb: 'run', selection: { all: true }, skip: [], include: [], video: false, retries: 0, waitSeconds: 0 };
 
 async function until(holds: () => boolean, what: string): Promise<void> {
   const deadline = Date.now() + 15_000;

@@ -31,7 +31,7 @@ const VERBS: readonly Verb[] = ['doctor', 'up', 'run', 'screen', 'attach', 'down
 const USAGE_FIX = [
   '{cli} doctor [--platform p] [--live]',
   '{cli} up [--platform p] [--wait <seconds>]',
-  '{cli} run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--skip form-entry] [--include known-bug] [--grep re] [--no-video] [--wait <seconds>]',
+  '{cli} run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--skip form-entry] [--include known-bug] [--grep re] [--retries <n>] [--no-video] [--wait <seconds>]',
   '{cli} screen [--platform p] [--png]',
   '{cli} attach <run-id> --pr <n> [--screenshot label]...',
   '{cli} down [--platform p] [--stale] [--dry-run]',
@@ -45,7 +45,7 @@ type FlagSpec = Readonly<Record<string, 'value' | 'bool' | 'list'>>;
 const FLAGS: Readonly<Record<Verb, FlagSpec>> = {
   doctor: { platform: 'value', live: 'bool' },
   up: { platform: 'value', wait: 'value' },
-  run: { platform: 'value', all: 'bool', skip: 'list', include: 'list', grep: 'value', 'no-video': 'bool', wait: 'value' },
+  run: { platform: 'value', all: 'bool', skip: 'list', include: 'list', grep: 'value', retries: 'value', 'no-video': 'bool', wait: 'value' },
   screen: { platform: 'value', png: 'bool' },
   attach: { pr: 'value', screenshot: 'list' },
   down: { platform: 'value', stale: 'bool', 'dry-run': 'bool' },
@@ -56,6 +56,8 @@ function platformFlag(value: string | undefined): Platform | undefined {
   if (value === 'ios' || value === 'android') return value;
   throw usage(`--platform must be ios or android, not ${value}`);
 }
+
+const MAX_RETRIES = 10;
 
 function positiveInt(flag: string, value: string | undefined, fallback: number | undefined): number {
   if (value === undefined) {
@@ -130,6 +132,8 @@ export function parseArgv(argv: readonly string[]): Invocation {
       const skip = tags('skip', FORM_ENTRY_TAG);
       const include = tags('include', KNOWN_BUG_TAG);
       const grep = values.get('grep');
+      const retries = positiveInt('retries', values.get('retries'), 0);
+      if (retries > MAX_RETRIES) throw usage(`--retries must be 0 to ${MAX_RETRIES}, not ${retries}`);
       command = {
         verb,
         ...base,
@@ -138,6 +142,7 @@ export function parseArgv(argv: readonly string[]): Invocation {
         include,
         ...(grep === undefined ? {} : { grep }),
         video: !bools.has('no-video'),
+        retries,
         waitSeconds: positiveInt('wait', values.get('wait'), 0),
       };
       break;
@@ -189,11 +194,13 @@ function renderRun(result: RunResult, skillDir: string): string[] {
     const name = x.spec.path.replace(/^specs\/(golden\/)?/, '');
     const tail = x.status === 'skipped' ? (x.skipReason ?? '') : `${x.seconds}s`;
     lines.push(`  ${pad(label, 5)} ${pad(name, width)}  ${x.title}  ${tail}`);
-    if (x.error !== null) lines.push(`        ${x.error}`);
+    if (x.error !== null) lines.push(`        ${x.status === 'flaky' ? `passed on attempt ${x.attempts}; the attempt before it failed: ` : ''}${x.error}`);
     if (x.status === 'passed' && x.tags.includes(KNOWN_BUG_TAG)) lines.push('        passed with --include known-bug: the bug may be fixed; drop the tag');
     if (x.failurePage !== null) lines.push(`        failure page  ${rel(skillDir, x.failurePage)}`);
     if (x.failureScreenshot !== null) lines.push(`        screenshot    ${rel(skillDir, x.failureScreenshot)}`);
   }
+  const flaky = r.results.filter((x) => x.status === 'flaky').length;
+  if (flaky > 0) lines.push(`flaky     ${count(flaky, 'test')} passed only on a retry, and the run does not fail for ${flaky === 1 ? 'it' : 'them'}`);
   lines.push(`evidence  ${rel(process.cwd(), result.dir)}`);
   if (r.videos.length > 0) lines.push(`  video        ${r.videos.map((v) => basename(v)).join(', ')}`);
   if (r.screenshots.length > 0) lines.push(`  screenshots  ${r.screenshots.map((s) => basename(s.path)).join(', ')}`);

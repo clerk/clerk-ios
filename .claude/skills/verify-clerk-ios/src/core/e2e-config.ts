@@ -45,7 +45,6 @@ export function composeE2EConfig(context: RunContext): E2EConfig {
     tests: ['specs/**/*.e2e.ts'],
     targets,
     workers: 1,
-    retries: 0,
     assertionTimeout: ASSERTION_TIMEOUT_MS,
     trace: 'off',
   };

@@ -105,6 +105,7 @@ export type Command =
       readonly include: readonly OptInTag[];
       readonly grep?: string;
       readonly video: boolean;
+      readonly retries: number;
       readonly waitSeconds: number;
     }
   | { readonly verb: 'screen'; readonly platform?: Platform; readonly png: boolean }
@@ -305,6 +306,7 @@ export interface SpecResult {
   readonly platform: Platform;
   readonly status: SpecStatus;
   readonly seconds: number;
+  readonly attempts: number;
   readonly error: string | null;
   readonly skipReason: string | null;
   readonly skippedBy: 'tag' | 'platform' | null;
