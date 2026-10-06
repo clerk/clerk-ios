@@ -26,7 +26,7 @@ Preconditions:
 ## Gotchas
 
 - Sign-up mode still uses the start screen's `clerk.auth.start.identifier` field for the email.
-- Use `host.tap` and `host.fill` inside AuthView. Plain locator actions refuse there because of the iOS 27 `Toolbar` node.
+- Fill AuthView fields with `host.fill`. A plain `locator.fill()` fails there, because a field shows no text input until it has focus.
 - Always reserve the email with `host.newEmail`. The run finds the user that the form created by that email, and `attach` refuses a run that shows a user it cannot account for.
 - `clerk.auth.signUp.password` matches three nodes once the field has focus: the floating label, the secure field, and the reveal button. Wait on `.first()`, then wait for `screen.getByRole('textbox')` to have a count of 1 before filling it. Two text boxes match for a moment while the code screen is replaced.
 - After a password is submitted, iOS may cover the app with its own "Save Password?" sheet. `host.waitForState` taps "Not Now" when it cannot read the state element and that sheet is up.

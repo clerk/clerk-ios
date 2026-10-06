@@ -34,4 +34,4 @@ Preconditions:
 - Launch with `screen: 'auth'`. The home screen shows the pending session but does not present the task screen without a tap on UserButton.
 - The TOTP code depends on the clock. A failure right at a 30 second boundary can be a clock edge, so rerun once before you debug.
 - `complete-setup-mfa.e2e.ts` is tagged `form-entry`.
-- Task screens live inside AuthView, so use `host.tap` and `host.fill` there.
+- Task screens live inside AuthView, so fill their fields with `host.fill`.

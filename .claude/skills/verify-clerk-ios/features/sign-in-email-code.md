@@ -31,4 +31,4 @@ Preconditions:
 - The screenshot before the code fill shows the code screen. Keep it, because it is the evidence a skipping runtime can still produce.
 - The test code works only for `+clerk_test` emails. Any other address sends a real email.
 - The email-link screen has no code field. A spec that expects `clerk.auth.signIn.code` right after Continue times out with match count 0.
-- AuthView controls sit under an iOS 27 `Toolbar` node that agent-device treats as covering them. Use `host.tap` and `host.fill`, not `locator.tap()` and `locator.fill()`.
+- Fill AuthView fields with `host.fill`, not `locator.fill()`. A field shows no text input until it has focus, and a plain fill fails with "no text input found at the provided coordinates to clear".

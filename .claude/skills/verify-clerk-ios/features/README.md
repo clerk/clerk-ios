@@ -55,7 +55,7 @@ These rules hold for every spec.
 
 - Input reaches the app only through specs. To look at any state past launch, write a spec, `run` it, then run `screen`.
 - Prefer SDK identifiers (`screen.getByTestId('clerk....')`) and the E2EHost ids `e2e.auth.signIn`, `verify.signOut`, `verify.userId`, and `verify.state`. Fall back to visible text only where the SDK has no identifier.
-- Inside AuthView, the profile, and the organization sheets, act with `host.tap(locator)` and `host.fill(locator, text)`. On iOS 27 a SwiftUI toolbar adds a hittable full-screen `Toolbar` node, and agent-device 0.21.18 refuses `locator.tap()` and `locator.fill()` on anything under it with "covered by another visible element".
+- Fill every SDK text field with `host.fill(locator, text)`, which taps the field and types into it. An SDK text field shows no text input until it has focus, and until then its identifier is on the floating label, so a plain `locator.fill()` on an email or name field fails with "no text input found at the provided coordinates to clear". A tap needs no helper: `host.tap(locator)` is `locator.tap()` with the assertion timeout.
 - Prove results from `verify.state` (`host.launch`, `host.state`, `host.waitForState`), not from the screen alone. Every spec keeps at least one exact assertion on `verify.state` or an SDK identifier.
 - `verifyScreen` routes the host: `home`, `auth`, `userProfile`, `orgSwitcher`, `orgList`, `orgProfile`. `state.screen` reports what is on screen: `launching` during a ticket sign-in, `error` for a missing or malformed publishable key, and `home` once an `auth` launch completes.
 

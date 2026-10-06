@@ -10,9 +10,10 @@ describe('specs/fixtures.ts', () => {
     assert.match(source, /import type \{ host as hostAdapter \} from '\.\.\/src\/host\.ts';/);
   });
 
-  it('taps a position inside the node and fills through that tap, because agent-device 0.21.18 refuses a plain tap or fill under the full-screen Toolbar node an iOS 27 SwiftUI toolbar adds', () => {
+  it('taps with a plain locator tap, and fills by tapping the field and typing into the focused input, because a field can show no text input until it has focus', () => {
     const source = readFileSync(join(import.meta.dirname, '..', 'specs', 'fixtures.ts'), 'utf8');
-    assert.match(source, /await target\.tap\(\{ position: \{ x: box\.width \/ 2, y: box\.height \/ 2 \} \}\);/);
+    assert.match(source, /tap: \(target\) => target\.tap\(\{ timeout: ASSERTION_TIMEOUT_MS \}\),/);
+    assert.doesNotMatch(source, /position:/);
     assert.match(source, /async fill\(field, text\) \{\n\s+await host\.tap\(field\);/);
     assert.doesNotMatch(source, /\.fill\(/);
   });

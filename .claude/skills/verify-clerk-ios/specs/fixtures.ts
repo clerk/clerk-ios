@@ -97,16 +97,9 @@ export const test = base.extend<{ host: HostFixture<HostScreen> }>({
       return state;
     }
 
-    async function tapCenter(target: Parameters<HostFixture<HostScreen>['tap']>[0]): Promise<void> {
-      await target.waitFor({ state: 'visible', timeout: ASSERTION_TIMEOUT_MS });
-      const box = await target.boundingBox();
-      if (box === null) throw new Error('tap target has no box on screen');
-      await target.tap({ position: { x: box.width / 2, y: box.height / 2 } });
-    }
-
     async function dismissSavePasswordPrompt(): Promise<void> {
       if ((await screen.getByText('Save Password?').count()) === 0) return;
-      await tapCenter(screen.getByRole('button', { name: 'Not Now' }));
+      await screen.getByRole('button', { name: 'Not Now' }).tap({ timeout: ASSERTION_TIMEOUT_MS });
     }
 
     async function poll(predicate: (state: VerifyState) => boolean, timeoutMs: number, waitingFor: string): Promise<VerifyState> {
@@ -164,7 +157,7 @@ export const test = base.extend<{ host: HostFixture<HostScreen> }>({
       async screenshot(label) {
         await app.screenshot(label);
       },
-      tap: tapCenter,
+      tap: (target) => target.tap({ timeout: ASSERTION_TIMEOUT_MS }),
       async fill(field, text) {
         await host.tap(field);
         await typeIntoFocused(context, target, text);

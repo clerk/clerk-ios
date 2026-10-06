@@ -27,6 +27,6 @@ Preconditions:
 
 - The switcher label has no SDK identifier. The spec taps its visible text, `Personal account`.
 - `verify.state` is not readable while a sheet covers the host. Read state after the sheet closes.
-- Use `host.tap` and `host.fill` inside the sheets, because of the iOS 27 `Toolbar` node.
+- Fill the name with `host.fill`. The field shows no text input until it has focus, so a plain `locator.fill()` fails.
 - The invite step appears only when the organization allows more than one member. The standard settings allow three.
 - `down` deletes the organization with the application it lives in, so a spec never deletes one itself.
