@@ -40,7 +40,7 @@ describe('planE2E', () => {
       agentDeviceSession: 'verify-ios-abc',
       targets: [],
     };
-    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, retries: 1, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
+    const plan = planE2E(context, [{ kind: 'golden', path: 'specs/golden/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, skip: ['form-entry'], include: [], grep: 'x', video: true, retries: 1, githubReport: false, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
     assert.deepEqual(plan.args, [
       'run', 'specs/golden/a/b.e2e.ts', '--config', 'e2e.config.ts', '--target', 'ios',
       '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown', '--retries', '1',
@@ -48,7 +48,7 @@ describe('planE2E', () => {
     ]);
     assert.equal(plan.env.VERIFY_CONTEXT, '/skill/.verify/scratch/r20261002-141210-7c1e/context.json');
     assert.equal(plan.env.E2E_TELEMETRY_DISABLED, '1');
-    const later = planE2E(context, [], { verb: 'run', selection: { all: true }, skip: [], include: ['known-bug'], video: true, retries: 0, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 2));
+    const later = planE2E(context, [], { verb: 'run', selection: { all: true }, skip: [], include: ['known-bug'], video: true, retries: 0, githubReport: false, waitSeconds: 0 }, 'ios', '/skill', e2eOutputDir('/skill/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 2));
     assert.equal(later.args[later.args.indexOf('--output') + 1], '.verify/runs/r20261002-141210-7c1e/e2e-3', 'a later group of the run writes beside the first');
     assert.equal(later.args[later.args.indexOf('--retries') + 1], '0', 'e2e retries once by default when CI is set, so the run always says how many it wants');
     assert.equal(later.args.includes('--pass-with-no-tests'), true, 'every invocation is one group of a run, and a group with nothing left to run must not fail it');

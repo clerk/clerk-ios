@@ -139,10 +139,24 @@ function world(options: { readonly specs?: Readonly<Record<string, InstanceSetti
   return { dir, clerk, frontendApi, workspace, lines, hooks, deps, invocations, lastRecord, writes };
 }
 
-const RUN_ALL: Extract<Command, { verb: 'run' }> = { verb: 'run', selection: { all: true }, skip: [], include: [], video: false, retries: 0, waitSeconds: 0 };
+const RUN_ALL: Extract<Command, { verb: 'run' }> = { verb: 'run', selection: { all: true }, skip: [], include: [], video: false, retries: 0, githubReport: false, waitSeconds: 0 };
 const statuses = (results: readonly { readonly spec: { readonly path: string }; readonly title: string; readonly status: string }[]) => results.map((result) => `${result.status} ${result.spec.path.split('/').at(-1)}${result.title === 'not run' ? ' (not run)' : ''}`);
 
 describe('a run whose spec files declare different settings', () => {
+  it('reports to GitHub only when the command asks for it', async () => {
+    const actions = process.env.GITHUB_ACTIONS;
+    delete process.env.GITHUB_ACTIONS;
+    try {
+      const w = world();
+      await runVerb(w.deps(), RUN_ALL);
+      assert.deepEqual(w.lines.filter((line) => line.startsWith('github')), []);
+      await runVerb(w.deps(), { ...RUN_ALL, githubReport: true });
+      assert.deepEqual(w.lines.filter((line) => line.startsWith('github')), ['github    not posted: not running on GitHub Actions']);
+    } finally {
+      if (actions !== undefined) process.env.GITHUB_ACTIONS = actions;
+    }
+  });
+
   it('drives each group on one application, in one e2e invocation each, and records what it did', async () => {
     const w = world();
     const result = await runVerb(w.deps(), RUN_ALL);

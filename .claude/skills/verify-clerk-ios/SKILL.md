@@ -48,7 +48,7 @@ Run it first, and again whenever anything looks off. Without `--live` it only re
 
 | Checks | Pass when |
 | --- | --- |
-| `node`, `xcode`, `e2e-pins` | Node is 24.8.0 or newer on 24, `xcodebuild` runs, and the installed `e2e` and `@e2e-dev/mobile` are the versions that `package.json` pins |
+| `node`, `xcode`, `e2e-pins` | Node is 24.8.0 or newer on 24, `xcodebuild` runs, and the installed `e2e`, `@e2e-dev/mobile`, and `@e2e-dev/github` are the versions that `package.json` pins |
 | `template`, `proxy-trust`, `lane-ports` | `Clerk Verify Template iOS` exists and is shut down. It trusts a custom CA if macOS has a system HTTPS proxy. Every booted `verify-ios-<n>` simulator has a live claim |
 | `instances`, `clerk-api`, `settings` | A Platform API credential reaches the verification workspace. Clerk's Backend API accepts the secret key of the application this worktree holds. That application shows the settings recorded for it, and every declaration under `specs/` is well formed |
 | `build` | An E2EHost build matches the current tree |
@@ -72,6 +72,8 @@ $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios screen                  
 ```
 
 `run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free lane and another `run` in this worktree that holds the device. A golden spec tagged `known-bug` reproduces an open SDK bug, and `run` leaves it out unless you pass `--include known-bug`.
+
+`--github-report` is for a CI job, not for your own runs. After the run is sealed, `run` hands the results of every settings group to `@e2e-dev/github` as one report. The reporter writes that report to the job summary. When the event of the job names a pull request and the step has a `GITHUB_TOKEN` that may write pull request comments, it also posts one comment and updates that same comment on later runs. When the event names no pull request, as when a status event started PR CI, `--github-pr <n>` names it, and the comment links each test to its source at the commit under test. `run` prints one `github` line that says what the reporter did, the reporter never changes the exit code, and nothing is reported for a run with a tainted file. Without the flag, `run` reports nothing to GitHub.
 
 ### Sign in with the form or with a ticket
 
@@ -149,7 +151,7 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path.
 
 A proof drives the real user path. It captures the action and the resulting state, which the video and `states.jsonl` give you. It checks side effects in `states.jsonl` (`userId`, `orgId`, `pendingTasks`), not only the final screen.
 
-After a run, the CLI searches the run directory for every secret the run used: the Platform API key, the instance's secret key, and sign-in tickets. A hit marks the file as tainted in `run.json`. The ids in the footer are not secrets, because a session id cannot sign anyone in.
+After a run, the CLI searches the run directory for every secret the run used: the Platform API key, the instance's secret key, sign-in tickets, and a GitHub token in `GITHUB_TOKEN` or `GH_TOKEN`. A hit marks the file as tainted in `run.json`. The ids in the footer are not secrets, because a session id cannot sign anyone in.
 
 ```console
 $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>                       # the video and every screenshot

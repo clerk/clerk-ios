@@ -31,7 +31,7 @@ const VERBS: readonly Verb[] = ['doctor', 'up', 'run', 'screen', 'attach', 'down
 const USAGE_FIX = [
   '{cli} doctor [--platform p] [--live]',
   '{cli} up [--platform p] [--wait <seconds>]',
-  '{cli} run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--skip form-entry] [--include known-bug] [--grep re] [--retries <n>] [--no-video] [--wait <seconds>]',
+  '{cli} run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--skip form-entry] [--include known-bug] [--grep re] [--retries <n>] [--github-report [--github-pr <n>]] [--no-video] [--wait <seconds>]',
   '{cli} screen [--platform p] [--png]',
   '{cli} attach <run-id> --pr <n> [--screenshot label]...',
   '{cli} down [--platform p] [--stale] [--dry-run]',
@@ -45,7 +45,7 @@ type FlagSpec = Readonly<Record<string, 'value' | 'bool' | 'list'>>;
 const FLAGS: Readonly<Record<Verb, FlagSpec>> = {
   doctor: { platform: 'value', live: 'bool' },
   up: { platform: 'value', wait: 'value' },
-  run: { platform: 'value', all: 'bool', skip: 'list', include: 'list', grep: 'value', retries: 'value', 'no-video': 'bool', wait: 'value' },
+  run: { platform: 'value', all: 'bool', skip: 'list', include: 'list', grep: 'value', retries: 'value', 'github-report': 'bool', 'github-pr': 'value', 'no-video': 'bool', wait: 'value' },
   screen: { platform: 'value', png: 'bool' },
   attach: { pr: 'value', screenshot: 'list' },
   down: { platform: 'value', stale: 'bool', 'dry-run': 'bool' },
@@ -133,6 +133,8 @@ export function parseArgv(argv: readonly string[]): Invocation {
       const include = tags('include', KNOWN_BUG_TAG);
       const grep = values.get('grep');
       const retries = positiveInt('retries', values.get('retries'), 0);
+      const githubPullRequest = values.has('github-pr') ? positiveInt('github-pr', values.get('github-pr'), undefined) : undefined;
+      if (githubPullRequest !== undefined && !bools.has('github-report')) throw usage('--github-pr names the pull request for --github-report; add --github-report or drop --github-pr');
       if (retries > MAX_RETRIES) throw usage(`--retries must be 0 to ${MAX_RETRIES}, not ${retries}`);
       command = {
         verb,
@@ -143,6 +145,8 @@ export function parseArgv(argv: readonly string[]): Invocation {
         ...(grep === undefined ? {} : { grep }),
         video: !bools.has('no-video'),
         retries,
+        githubReport: bools.has('github-report'),
+        ...(githubPullRequest === undefined ? {} : { githubPullRequest }),
         waitSeconds: positiveInt('wait', values.get('wait'), 0),
       };
       break;

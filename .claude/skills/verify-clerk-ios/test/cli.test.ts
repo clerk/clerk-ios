@@ -32,6 +32,7 @@ describe('parseArgv', () => {
       include: [],
       video: true,
       retries: 0,
+      githubReport: false,
       waitSeconds: 0,
     });
     assert.deepEqual(parseArgv(['run', '--all', '--no-video', '--grep', 'profile']).command, {
@@ -42,10 +43,14 @@ describe('parseArgv', () => {
       grep: 'profile',
       video: false,
       retries: 0,
+      githubReport: false,
       waitSeconds: 0,
     });
     assert.equal((parseArgv(['run', 'auth-start', '--wait', '300']).command as { waitSeconds: number }).waitSeconds, 300);
     assert.equal((parseArgv(['run', '--all', '--retries', '1']).command as Extract<Command, { verb: 'run' }>).retries, 1);
+    assert.equal((parseArgv(['run', '--all', '--github-report']).command as Extract<Command, { verb: 'run' }>).githubReport, true);
+    assert.equal((parseArgv(['run', '--all', '--github-report', '--github-pr', '635']).command as Extract<Command, { verb: 'run' }>).githubPullRequest, 635);
+    assert.throws(() => parseArgv(['run', '--all', '--github-pr', '635']), { code: 'USAGE' }, 'a pull request with no report to post');
     for (const bad of ['11', '-1', 'once']) assert.throws(() => parseArgv(['run', '--all', '--retries', bad]), { code: 'USAGE' }, bad);
     assert.deepEqual((parseArgv(['run', 'auth-start', '--include', 'known-bug']).command as Extract<Command, { verb: 'run' }>).include, ['known-bug']);
     assert.throws(() => parseArgv(['run', 'auth-start', '--include', 'form-entry']), { code: 'USAGE' });

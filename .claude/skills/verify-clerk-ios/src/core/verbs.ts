@@ -12,6 +12,7 @@ import { backendFor, computeBuildKey, ensureLease, leaseLine, leaseView, readBui
 import { assertSomethingRan, collectScreenshots, contextFile, e2eOutputDir, excludedTagNames, invokeE2E, parseE2EReport, planE2E, resolveSpecs, writeRunContext } from './e2e.ts';
 import { startBroker } from './broker.ts';
 import { assertPublishable, readRecord, readStates, sealEvidence } from './evidence.ts';
+import { protectGitHubTokens, reportToGitHub } from './github-report.ts';
 import { isRunning, type Runner } from './exec.ts';
 import { ledgerAgentDeviceDaemon, processesIn, readDaemonInfo, stopProcesses, type ProcessEntry } from './ledgers.ts';
 import { manifestDrift } from './manifest.ts';
@@ -166,7 +167,7 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
   const pkg = readJson(join(skill, 'package.json'));
   const pins = (pkg?.devDependencies ?? {}) as Record<string, string>;
   const installed = (name: string) => readJson(join(skill, 'node_modules', name, 'package.json'))?.version as string | undefined;
-  const pinned = ['e2e', '@e2e-dev/mobile'].map((name) => ({ name, want: pins[name], have: installed(name) }));
+  const pinned = ['e2e', '@e2e-dev/mobile', '@e2e-dev/github'].map((name) => ({ name, want: pins[name], have: installed(name) }));
   checks.push(
     check(
       'e2e-pins',
@@ -482,6 +483,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
   const { host, workspace } = deps;
   const platform = platformOf(host, command.platform);
   const specs = resolveSpecs(workspace.skillDir, command.selection);
+  protectGitHubTokens(deps.env);
   const recorded = deps.instances.recordedKey();
   const sources = specs.map((spec) => ({ spec, source: readFileSync(join(workspace.skillDir, spec.path), 'utf8') }));
   const groups = planGroups(sources, recorded ?? STANDARD.key);
@@ -561,10 +563,13 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         instances: [...instances.values()],
         settings: outcomes.map((done) => done.record),
       });
-      const failed = outcomes.flatMap((done) => (done.failure === null ? [] : [done.failure]));
+      const failed = outcomes.flatMap((done) => (done.failure === null ? [] : [{ label: done.record.label, failure: done.failure }]));
+      if (command.githubReport) {
+        for (const line of await reportToGitHub({ record, failures: failed, skillDir: workspace.skillDir, ...(command.githubPullRequest === undefined ? {} : { pullRequest: command.githubPullRequest }) })) deps.progress(`github    ${line}`);
+      }
       if (failed[0] !== undefined) {
         deps.progress(`evidence  ${dir}  sealed; ${count(failed.length, 'group')} of ${groups.length} did not run in full, and run.json has a failed result for each of their spec files`);
-        throw failed[0];
+        throw failed[0].failure;
       }
       const next = nextStep(run, dir, results, 'all' in command.selection ? '--all' : command.selection.selectors.join(' '));
       return { verb: 'run', dir, record, next };

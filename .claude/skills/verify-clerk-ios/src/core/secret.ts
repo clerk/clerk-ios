@@ -6,6 +6,10 @@ export function usedSecretValues(): readonly string[] {
   return [...knownValues];
 }
 
+export function protect(value: string): void {
+  knownValues.add(value);
+}
+
 export function redact(text: string): string {
   let out = text;
   for (const value of knownValues) {
@@ -20,7 +24,7 @@ export class Secret<Name extends string> {
   constructor(name: Name, value: string) {
     this.name = name;
     this.#value = value;
-    knownValues.add(value);
+    protect(value);
   }
   toString(): string {
     return `<secret:${this.name}>`;

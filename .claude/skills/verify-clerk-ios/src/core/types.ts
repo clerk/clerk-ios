@@ -106,6 +106,8 @@ export type Command =
       readonly grep?: string;
       readonly video: boolean;
       readonly retries: number;
+      readonly githubReport: boolean;
+      readonly githubPullRequest?: number;
       readonly waitSeconds: number;
     }
   | { readonly verb: 'screen'; readonly platform?: Platform; readonly png: boolean }
