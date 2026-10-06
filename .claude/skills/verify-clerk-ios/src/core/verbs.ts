@@ -146,6 +146,11 @@ export function featureMapCheck(skillDir: string, features: readonly string[]): 
   );
 }
 
+export function supportsNode(version: string): boolean {
+  const [major, minor] = version.split('.').map(Number);
+  return major === 24 && minor !== undefined && minor >= 8;
+}
+
 export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doctor' }>): Promise<DoctorReport> {
   const { host, workspace, runner } = deps;
   const platform = platformOf(host, command.platform);
@@ -154,7 +159,7 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
   const checks: DoctorCheck[] = [];
 
   const node = process.versions.node;
-  checks.push(check('node', node.startsWith('24.'), node, 'install Node 24 (nvm install 24)'));
+  checks.push(check('node', supportsNode(node), node, 'install Node 24.8.0 or newer on 24 (nvm install 24)'));
   const backendChecks = await backend.doctorChecks();
   checks.push(...backendChecks.toolchain);
 

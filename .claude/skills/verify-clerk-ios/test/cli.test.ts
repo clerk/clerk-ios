@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { createOutput, exitCodeFor, parseArgv } from '../src/core/cli.ts';
 import { Secret } from '../src/core/secret.ts';
-import { featureMapCheck } from '../src/core/verbs.ts';
+import { featureMapCheck, supportsNode } from '../src/core/verbs.ts';
 import { VerifyFailure, type Command, type DoctorReport, type DownResult } from '../src/core/types.ts';
 
 function usageError(argv: readonly string[]): VerifyFailure {
@@ -147,6 +147,19 @@ describe('doctor output', () => {
     let out = '';
     createOutput(true, '/tmp', 'bin/control-x', { write: (t: string) => (out += t) }, { write: () => true }).result(report);
     assert.deepEqual((JSON.parse(out) as DoctorReport).checks.map((c) => c.state ?? null), [null, 'warning', 'not-run']);
+  });
+});
+
+describe('doctor node check', () => {
+  it('accepts Node 24 from 24.8, which is the oldest 24 that the pinned e2e runs on', () => {
+    assert.deepEqual(
+      ['24.8.0', '24.15.0', '24.21.0'].map(supportsNode),
+      [true, true, true],
+    );
+    assert.deepEqual(
+      ['24.7.9', '24.0.0', '22.22.3', '25.0.0', '26.1.0'].map(supportsNode),
+      [false, false, false, false, false],
+    );
   });
 });
 

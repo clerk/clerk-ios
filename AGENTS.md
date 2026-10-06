@@ -11,7 +11,7 @@ Don't leave commented-out code.
 
 Prove every change to ClerkKit, ClerkKitUI, or E2EHost on a real simulator before calling it done. The verification skill is `.claude/skills/verify-clerk-ios/` (Cursor also sees it as `.cursor/skills/verify-clerk-ios`). It needs a Mac with Xcode. Read its `SKILL.md`, then `features/README.md` for the feature you touched.
 
-From the repo root, with Node 24, after `npm ci --prefix .claude/skills/verify-clerk-ios`:
+From the repo root, with Node 24.8 or newer, after `npm ci --prefix .claude/skills/verify-clerk-ios`:
 
 1. `.claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor` checks the machine. Fix what it reports. `SKILL.md` under Launch lists what each machine needs once.
 2. `.claude/skills/verify-clerk-ios/bin/control-clerk-ios up` builds E2EHost, leases a simulator, and creates one Clerk application for this worktree. Every spec runs on that application's development instance. Creating it needs the team's Clerk Platform API key, and `doctor` says whether this machine has it.

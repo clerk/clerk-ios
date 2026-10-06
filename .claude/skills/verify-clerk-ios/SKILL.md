@@ -5,7 +5,7 @@ description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, 
 
 # verify-clerk-ios
 
-`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.15.2 and `@e2e-dev/mobile` 0.9.0. It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence. It needs a Mac with Xcode.
+`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e) 0.18.0 and `@e2e-dev/mobile` 0.10.0. It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence. It needs a Mac with Xcode.
 
 No change to clerk-ios UI or auth behavior is done until a `run` on the real host shows the changed behavior.
 
@@ -15,7 +15,7 @@ Run every command from the repo root. In the prose below, `doctor`, `up`, `run`,
 
 Set up each machine once.
 
-1. Install Node 24 and Xcode with an iOS simulator runtime.
+1. Install Node 24, at 24.8.0 or newer, and Xcode with an iOS simulator runtime.
 2. Create the template simulator, which the CLI clones to make each simulator it drives, for example with `xcrun simctl clone "iPhone Air" "Clerk Verify Template iOS"`. If this Mac sends HTTPS through a debugging proxy, boot the template once, install and trust the proxy's CA in it, and shut it down.
 3. Give the machine the team's Clerk Platform API key. Set `CLERK_PLATFORM_API_KEY`, or set `CLERK_PLATFORM_API_KEY_FILE` to a file that only you can read (mode 0600). To keep the key in 1Password instead, install the 1Password CLI, turn on its desktop app integration, and put the key's secret reference in `VERIFY_PLATFORM_KEY_REFERENCE` or as the one line of `~/.verify/clerk-platform-key-reference`. The reference has the shape `op://<vault>/<item>/credential`, and the team's private setup note has the real one. Never put the key or the reference in a file inside a repository.
 
@@ -48,7 +48,7 @@ Run it first, and again whenever anything looks off. Without `--live` it only re
 
 | Checks | Pass when |
 | --- | --- |
-| `node`, `xcode`, `e2e-pins` | Node is 24.x, `xcodebuild` runs, and the installed `e2e` and `@e2e-dev/mobile` are the versions that `package.json` pins |
+| `node`, `xcode`, `e2e-pins` | Node is 24.8.0 or newer on 24, `xcodebuild` runs, and the installed `e2e` and `@e2e-dev/mobile` are the versions that `package.json` pins |
 | `template`, `proxy-trust`, `lane-ports` | `Clerk Verify Template iOS` exists and is shut down. It trusts a custom CA if macOS has a system HTTPS proxy. Every booted `verify-ios-<n>` simulator has a live claim |
 | `instances`, `clerk-api`, `settings` | A Platform API credential reaches the verification workspace. Clerk's Backend API accepts the secret key of the application this worktree holds. That application shows the settings recorded for it, and every declaration under `specs/` is well formed |
 | `build` | An E2EHost build matches the current tree |
