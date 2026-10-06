@@ -45,7 +45,6 @@ struct ClerkPhoneCountry: Equatable, Hashable {
 }
 
 extension PhoneNumberKit.PhoneNumberUtility {
-  /// Shared instance, since each `PhoneNumberUtility` decodes the full metadata JSON on init.
   @MainActor static let shared = PhoneNumberUtility()
 
   var allCountries: [ClerkPhoneCountry] {
