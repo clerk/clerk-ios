@@ -45,6 +45,8 @@ struct ClerkPhoneCountry: Equatable, Hashable {
 }
 
 extension PhoneNumberKit.PhoneNumberUtility {
+  @MainActor static let shared = PhoneNumberUtility()
+
   var allCountries: [ClerkPhoneCountry] {
     self
       .allCountries()

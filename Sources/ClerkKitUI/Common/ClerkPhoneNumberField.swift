@@ -12,7 +12,7 @@ extension ClerkPhoneNumberField {
   @Observable
   @MainActor
   final class PhoneNumberModel {
-    private let utility = PhoneNumberUtility()
+    private let utility = PhoneNumberUtility.shared
     let partialFormatter: PartialFormatter
 
     let defaultCountry: ClerkPhoneCountry

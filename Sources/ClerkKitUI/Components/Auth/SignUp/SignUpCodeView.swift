@@ -44,6 +44,7 @@ struct SignUpCodeView: View {
       }
     }
 
+    @MainActor
     var identityPreviewString: String {
       switch self {
       case let .email(emailAddress):
