@@ -1,0 +1,4 @@
+{
+  "config": { "auth_multi_factor": { "required_for_sign_up": true } },
+  "environment": { "user_settings.sign_up.mfa.required": true }
+}

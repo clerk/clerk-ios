@@ -1,0 +1,4 @@
+{
+  "config": { "organization_settings": { "force_organization_selection": true } },
+  "environment": { "organization_settings.force_organization_selection": true }
+}
