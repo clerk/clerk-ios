@@ -646,6 +646,44 @@ struct OrganizationMembersDataSourceTests {
   }
 
   @Test
+  func cancelledInvitationRefreshThatFailsDoesNotReportItsError() async throws {
+    let dataSource = try await dataSourceWithMoreInvitations()
+    stubInvitations { _ in
+      await gate.wait("refresh")
+      throw URLError(.badServerResponse)
+    }
+
+    let refresh = Task { await dataSource.loadInvitations(organization: .mock) }
+    try await waitUntil { invitationRequests.count == 1 }
+    refresh.cancel()
+    gate.open("refresh")
+    await refresh.value
+
+    #expect(dataSource.error == nil)
+    #expect(dataSource.invitationsPager.items.map(\.id) == ["inv_1", "inv_2"])
+    #expect(!dataSource.isLoadingInvitations)
+  }
+
+  @Test
+  func cancelledInvitationLoadMoreThatFailsDoesNotReportItsError() async throws {
+    let dataSource = try await dataSourceWithMoreInvitations()
+    stubInvitations { _ in
+      await gate.wait("loadMore")
+      throw URLError(.badServerResponse)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreInvitations(organization: .mock) }
+    try await waitUntil { invitationRequests.count == 1 }
+    loadMore.cancel()
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.error == nil)
+    #expect(dataSource.invitationsPager.items.map(\.id) == ["inv_1", "inv_2"])
+    #expect(!dataSource.invitationsPager.isLoadingMore)
+  }
+
+  @Test
   func membershipRequestLoadMoreThatFinishesAfterARefreshIsNotAppended() async throws {
     let dataSource = try await dataSourceWithMoreMembershipRequests()
     stubMembershipRequests { offset in

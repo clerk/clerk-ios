@@ -31,7 +31,7 @@ extension OrganizationPaginatedDataSource {
         self[keyPath: pager].replace(with: page)
       }
     } catch {
-      if requestID == self[keyPath: pager].requestID, !error.isCancellationError {
+      if requestID == self[keyPath: pager].requestID, !Task.isCancelled, !error.isCancellationError {
         self.error = error
         ClerkLogger.error("Failed to load organization \(listName)", error: error)
       }
@@ -76,7 +76,7 @@ extension OrganizationPaginatedDataSource {
 
       self[keyPath: pager].append(page)
     } catch {
-      guard requestID == self[keyPath: pager].requestID, !error.isCancellationError else { return }
+      guard requestID == self[keyPath: pager].requestID, !Task.isCancelled, !error.isCancellationError else { return }
 
       self.error = error
       ClerkLogger.error("Failed to load more organization \(listName)", error: error)

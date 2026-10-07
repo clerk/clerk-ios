@@ -435,6 +435,82 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   }
 
   @MainActor
+  func testCancelledLoadThatFailsDoesNotReportItsError() async throws {
+    let gate = ResponseGate()
+    let (model, transport) = try await modelWithMoreInvitations()
+    transport.stubOrganizationInvitations { _, _, _ in
+      await gate.wait("reload")
+      throw URLError(.badServerResponse)
+    }
+
+    let reload = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    try await waitUntil { model.isLoading }
+    reload.cancel()
+    gate.open("reload")
+    await reload.value
+
+    XCTAssertNil(model.error)
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
+  }
+
+  @MainActor
+  func testDeferredLoadMoresStopOnceAReloadReplacesTheList() async throws {
+    configureClerkForTesting()
+
+    let gate = ResponseGate()
+    let reloads = LockIsolated(0)
+    let membershipPageTwoRequests = LockIsolated(0)
+    let invitationPageTwoRequests = LockIsolated(0)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { offset, _ in
+      if offset > 0 {
+        membershipPageTwoRequests.withValue { $0 += 1 }
+        if membershipPageTwoRequests.value == 1 {
+          await gate.wait("deferredMemberships")
+        }
+        return ClerkPaginatedResponse(data: [membership(id: "mem_3", organizationId: "org_3")], totalCount: 3)
+      }
+      reloads.withValue { $0 += 1 }
+      if reloads.value == 2 {
+        await gate.wait("firstReload")
+      }
+      return ClerkPaginatedResponse(data: ["mem_1", "mem_2"].map { membership(id: $0, organizationId: $0) }, totalCount: 3)
+    }
+    transport.stubOrganizationInvitations { offset, _, _ in
+      if offset > 0 {
+        invitationPageTwoRequests.withValue { $0 += 1 }
+        return ClerkPaginatedResponse(data: ["inv_3", "inv_4"].map { invitation(id: $0, organizationId: $0) }, totalCount: 4)
+      }
+      return ClerkPaginatedResponse(data: ["inv_1", "inv_2"].map { invitation(id: $0, organizationId: $0) }, totalCount: 4)
+    }
+    transport.stubOrganizationSuggestions { _, _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource(pageSize: 2)
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let firstReload = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    try await waitUntil { model.isLoading }
+    await model.loadMoreMemberships(user: .mock)
+    await model.loadMoreInvitations(user: .mock)
+    gate.open("firstReload")
+    await firstReload.value
+    try await waitUntil { membershipPageTwoRequests.value == 1 }
+
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    try await waitUntil { model.membershipsPager.items.count == 3 && !model.isLoadingMore }
+    gate.open("deferredMemberships")
+    for _ in 0 ..< 100 {
+      await Task.yield()
+    }
+
+    XCTAssertEqual(invitationPageTwoRequests.value, 0)
+    XCTAssertEqual(model.membershipsPager.items.map(\.id), ["mem_1", "mem_2", "mem_3"])
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
+  }
+
+  @MainActor
   func testAcceptSuggestionReplacesSuggestionWithAcceptedVersion() async {
     configureClerkForTesting()
 

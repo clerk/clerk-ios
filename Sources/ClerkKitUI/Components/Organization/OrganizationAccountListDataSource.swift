@@ -67,7 +67,7 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
         creationDefaults = defaults
       }
     } catch {
-      if requestIDs == currentRequestIDs, !error.isCancellationError {
+      if requestIDs == currentRequestIDs, !Task.isCancelled, !error.isCancellationError {
         self.error = error
       }
     }
@@ -135,11 +135,11 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
     invitationsPager.loadMoreIsDeferred = false
     suggestionsPager.loadMoreIsDeferred = false
     Task { [weak self] in
-      guard let self, requestIDs == currentRequestIDs else { return }
+      guard let self else { return }
 
-      if loadMemberships { await loadMoreMemberships(user: user) }
-      if loadInvitations { await loadMoreInvitations(user: user) }
-      if loadSuggestions { await loadMoreSuggestions(user: user) }
+      if loadMemberships, requestIDs == currentRequestIDs { await loadMoreMemberships(user: user) }
+      if loadInvitations, requestIDs == currentRequestIDs { await loadMoreInvitations(user: user) }
+      if loadSuggestions, requestIDs == currentRequestIDs { await loadMoreSuggestions(user: user) }
     }
   }
 
