@@ -78,8 +78,15 @@ struct SignInFactorCodeView: View {
     #endif
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
-    .taskOnce {
-      if signIn != nil, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) {
+    .task {
+      guard let signIn else { return }
+
+      let currentVerification = mode.usesSecondFactorAPI ? signIn.secondFactorVerification : signIn.firstFactorVerification
+      if Self.needsPrepare(
+        factorStrategy: factor.strategy,
+        isFirstRequest: codeLimiter.isFirstRequest(for: codeLimiterIdentifier),
+        currentVerificationStrategy: currentVerification?.strategy
+      ) {
         await prepare()
       }
     }
@@ -208,6 +215,19 @@ extension SignInFactorCodeView {
     guard let signIn else { return "" }
     return signIn.id + (factor.safeIdentifier ?? factor.strategy.rawValue)
   }
+
+  static func needsPrepare(
+    factorStrategy: FactorStrategy,
+    isFirstRequest: Bool,
+    currentVerificationStrategy: FactorStrategy?
+  ) -> Bool {
+    switch factorStrategy {
+    case .emailCode, .phoneCode, .resetPasswordEmailCode, .resetPasswordPhoneCode:
+      isFirstRequest || currentVerificationStrategy != factorStrategy
+    default:
+      isFirstRequest
+    }
+  }
 }
 
 // MARK: - Actions
@@ -256,6 +276,8 @@ extension SignInFactorCodeView {
 
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
+      guard !error.isCancellationError else { return }
+
       otpFieldIsFocused = false
       self.error = error
       ClerkLogger.error("Failed to prepare factor for sign in", error: error)
