@@ -44,7 +44,7 @@ struct SignInFactorCodeView: View {
     case .resetPasswordEmailCode, .resetPasswordPhoneCode:
       false
     default:
-      true
+      mode.showsUseAnotherMethod(signIn: signIn, currentFactor: factor)
     }
   }
 

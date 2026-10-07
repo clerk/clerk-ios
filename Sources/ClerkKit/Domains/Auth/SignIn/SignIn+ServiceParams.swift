@@ -129,15 +129,24 @@ extension SignIn {
     let strategy: FactorStrategy
     let phoneNumberId: String?
     let emailAddressId: String?
+    let redirectUri: String?
+    let codeChallenge: String?
+    let codeChallengeMethod: String?
 
     init(
       strategy: FactorStrategy,
       phoneNumberId: String? = nil,
-      emailAddressId: String? = nil
+      emailAddressId: String? = nil,
+      redirectUri: String? = nil,
+      codeChallenge: String? = nil,
+      codeChallengeMethod: String? = nil
     ) {
       self.strategy = strategy
       self.phoneNumberId = phoneNumberId
       self.emailAddressId = emailAddressId
+      self.redirectUri = redirectUri
+      self.codeChallenge = codeChallenge
+      self.codeChallengeMethod = codeChallengeMethod
     }
   }
 

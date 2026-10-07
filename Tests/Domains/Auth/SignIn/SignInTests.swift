@@ -307,6 +307,83 @@ struct SignInTests {
   }
 
   @Test
+  func sendMfaEmailLinkPreparesSecondFactor() async throws {
+    let keychain = InMemoryKeychain()
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsClientTrust,
+      identifier: "test@example.com",
+      supportedSecondFactors: [
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+        Factor(
+          strategy: .emailLink,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+      ]
+    )
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareSecondFactor { id, params in
+      captured.setValue((id, params))
+      return signIn
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport,
+      keychain: keychain
+    )
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+
+    _ = try await signIn.sendMfaEmailLink()
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailLink)
+    #expect(params.1?["email_address_id"]?.stringValue == "ema_123")
+    #expect(params.1?["redirect_uri"]?.stringValue == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(params.1?["code_challenge_method"]?.stringValue == PKCE.codeChallengeMethod)
+    #expect(params.1?["code_challenge"]?.stringValue?.isEmpty == false)
+
+    let pendingFlow = try #require(magicLinkStore.load())
+    #expect(pendingFlow.kind == .signIn)
+    #expect(pendingFlow.flowId == signIn.id)
+    #expect(pendingFlow.codeVerifier.isEmpty == false)
+  }
+
+  @Test
+  func sendMfaEmailLinkThrowsWithoutAnEmailLinkSecondFactor() async throws {
+    let prepareWasCalled = LockIsolated(false)
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsClientTrust,
+      identifier: "test@example.com",
+      supportedSecondFactors: [
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+      ]
+    )
+    transport.stubSignInPrepareSecondFactor { _, _ in
+      prepareWasCalled.setValue(true)
+      return signIn
+    }
+
+    configureTransport()
+
+    await #expect(throws: ClerkClientError.self) {
+      try await signIn.sendMfaEmailLink()
+    }
+    #expect(prepareWasCalled.value == false)
+  }
+
+  @Test
   func sendPhoneCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, JSON?)?>(nil)
