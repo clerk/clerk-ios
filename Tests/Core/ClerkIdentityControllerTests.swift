@@ -90,6 +90,28 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func signOutThatChangesTheTokenReplacesALegacyCachedClient() async throws {
+    let clientKeychain = StalledWriteKeychain()
+    try clientKeychain.seed(
+      JSONEncoder.clerkEncoder.encode(makeClient(id: "client")),
+      forKey: ClerkKeychainKey.cachedClient.rawValue
+    )
+    let (clerk, keychain) = makeClerk(clientKeychain: clientKeychain)
+    try keychain.set("old-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+    clerk.identityController.hydrate()
+    #expect(clerk.client?.id == "client")
+
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) { clientKeychain.release() }
+    try await clerk.identityController.applyNetworkResponse(
+      context(.client(signedOut(makeClient(id: "client"))), token: .set("new-token"), requestToken: "old-token", clerk: clerk, date: 200)
+    )
+
+    let persisted = try #require(try clerk.dependencies.identityStore.load())
+    #expect(persisted.deviceToken == "new-token")
+    #expect(persisted.client?.sessions.isEmpty == true)
+  }
+
+  @Test
   func clearKeepingASharedTokenWaitsForARunningClientWrite() async throws {
     let clientKeychain = StalledWriteKeychain()
     let (clerk, _) = makeClerk(clientKeychain: clientKeychain, identityIsInAccessGroup: true)

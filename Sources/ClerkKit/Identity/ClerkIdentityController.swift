@@ -192,7 +192,7 @@ extension ClerkIdentityController {
       if tokenChanged {
         try store.saveDeviceToken(identity.deviceToken)
       }
-      if !tokenChanged, endsSignedInSession(identity.client) {
+      if endsSignedInSession(identity.client) {
         store.cacheClientNow(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)
       } else {
         store.cacheClient(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)

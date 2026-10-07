@@ -151,6 +151,10 @@ final class StalledWriteKeychain: @unchecked Sendable, KeychainStorage {
     try storage.hasItem(forKey: key)
   }
 
+  func seed(_ data: Data, forKey key: String) throws {
+    try storage.set(data, forKey: key)
+  }
+
   func waitUntilWriteStarts() async {
     let writeStarted = writeStarted
     await withCheckedContinuation { continuation in
