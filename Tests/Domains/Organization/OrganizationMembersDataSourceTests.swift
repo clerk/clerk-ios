@@ -688,6 +688,49 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipRequestsPager.items.map(\.id) == ["req_2"])
   }
 
+  @Test(arguments: [false, true])
+  func membershipRequestLoadMoreFromThePreviousOrganizationIsIgnoredAfterAReset(fails: Bool) async throws {
+    let dataSource = try await dataSourceWithMoreMembershipRequests()
+    stubMembershipRequests { offset in
+      if offset > 0 {
+        await gate.wait("oldLoadMore")
+        if fails {
+          throw URLError(.badServerResponse)
+        }
+        return membershipRequestPage(ids: ["req_3", "req_4"], totalCount: 4)
+      }
+      return membershipRequestPage(ids: ["new_1"], totalCount: 1)
+    }
+    stubInvitations { _ in invitationPage(ids: [], totalCount: 0) }
+    transport.stub(OrganizationAPI.getRoles(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0)) { [gate] _ in
+      await gate.wait("roles")
+      return ClientResponse(response: ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1), client: nil)
+    }
+
+    let oldLoadMore = Task { await dataSource.loadMoreMembershipRequests(organization: .mock) }
+    try await waitUntil { membershipRequestRequests.count == 1 }
+    let initialLoad = Task {
+      await dataSource.loadInitial(
+        organization: .mock,
+        includeMembers: false,
+        includeInvitations: true,
+        includeMembershipRequests: true
+      )
+    }
+    try await waitUntil { dataSource.membershipRequestsPager.items.isEmpty }
+    gate.open("oldLoadMore")
+    await oldLoadMore.value
+
+    #expect(dataSource.membershipRequestsPager.items.isEmpty)
+    #expect(dataSource.error == nil)
+
+    gate.open("roles")
+    await initialLoad.value
+
+    #expect(dataSource.membershipRequestsPager.items.map(\.id) == ["new_1"])
+    #expect(!dataSource.membershipRequestsPager.isLoadingMore)
+  }
+
   @Test
   func membershipRequestsPaginateAfterARefreshAbandonsALoadMore() async throws {
     let dataSource = try await dataSourceWithMoreMembershipRequests()
