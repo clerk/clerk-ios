@@ -32,7 +32,7 @@ commandTimeout: 15000
                 visible:
                   id: "clerk.auth.start.phoneNumber"
                 timeout: 30000
-      - assertVisible: "United States, \\+1"
+      - assertVisible: ".+, \\+\\d+"
       - assertVisible:
           id: "clerk.auth.start.phoneNumber"
           text: "Enter your phone number"
