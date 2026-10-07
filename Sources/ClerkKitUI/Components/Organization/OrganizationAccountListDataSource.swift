@@ -39,6 +39,7 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
       isLoading = false
       return
     }
+    guard !Task.isCancelled else { return }
 
     let requestIDs = [
       membershipsPager.startFirstPageLoad(),
@@ -59,14 +60,14 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
       let suggestionsResult = try await fetchedSuggestions
       let defaults = await fetchedDefaults
 
-      if requestIDs == currentRequestIDs {
+      if requestIDs == currentRequestIDs, !Task.isCancelled {
         membershipsPager.replace(with: membershipsResult)
         invitationsPager.replace(with: invitationsResult)
         suggestionsPager.replace(with: suggestionsResult)
         creationDefaults = defaults
       }
     } catch {
-      if requestIDs == currentRequestIDs {
+      if requestIDs == currentRequestIDs, !error.isCancellationError {
         self.error = error
       }
     }

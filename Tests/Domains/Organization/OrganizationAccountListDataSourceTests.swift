@@ -388,6 +388,53 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   }
 
   @MainActor
+  func testCancelledReloadDoesNotSupersedeARunningOne() async throws {
+    let gate = ResponseGate()
+    let reloadRequests = LockIsolated(0)
+    let (model, transport) = try await modelWithMoreInvitations()
+    transport.stubOrganizationInvitations { _, _, _ in
+      reloadRequests.withValue { $0 += 1 }
+      if reloadRequests.value > 1 {
+        try await Task.sleep(for: .seconds(60))
+      }
+      await gate.wait("reload")
+      return ClerkPaginatedResponse(data: [invitation(id: "new_1", organizationId: "org_new")], totalCount: 1)
+    }
+
+    let runningReload = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    try await waitUntil { model.isLoading }
+    let cancelledReload = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    cancelledReload.cancel()
+    gate.open("reload")
+    await cancelledReload.value
+    await runningReload.value
+
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["new_1"])
+    XCTAssertFalse(model.isLoading)
+    XCTAssertNil(model.error)
+  }
+
+  @MainActor
+  func testCancelledLoadDoesNotReportAnError() async throws {
+    let (model, transport) = try await modelWithMoreInvitations()
+    transport.stubOrganizationInvitations { _, _, _ in
+      try await Task.sleep(for: .seconds(60))
+      return ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+
+    let reload = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    try await waitUntil { model.isLoading }
+    for _ in 0 ..< 100 {
+      await Task.yield()
+    }
+    reload.cancel()
+    await reload.value
+
+    XCTAssertNil(model.error)
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
+  }
+
+  @MainActor
   func testAcceptSuggestionReplacesSuggestionWithAcceptedVersion() async {
     configureClerkForTesting()
 
