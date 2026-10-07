@@ -232,6 +232,16 @@ extension ClerkIdentityController {
 
 extension ClerkIdentityController {
   func applyNetworkResponse(_ context: ClientSyncResponseContext) async throws {
+    if let clerk, let store,
+       let incoming = try? context.resolvedIdentityPayload(
+         currentDeviceToken: currentDeviceToken,
+         currentClient: clerk.client,
+         currentServerDate: lastServerDate
+       ),
+       endsSignedInSession(incoming.client)
+    {
+      await store.cacheWrites.waitForPendingWrites()
+    }
     guard let clerk else { throw CancellationError() }
     adoptStoredDeviceToken()
 

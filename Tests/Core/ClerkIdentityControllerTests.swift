@@ -90,6 +90,31 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func signOutWaitsForARunningWriteWithoutBlockingTheMainActor() async throws {
+    let clientKeychain = StalledWriteKeychain()
+    let (clerk, _) = makeClerk(clientKeychain: clientKeychain)
+    try clerk.seedIdentity(deviceToken: "token")
+    try await clerk.identityController.applyNetworkResponse(
+      context(.client(makeClient(id: "client")), token: .absent, requestToken: "token", clerk: clerk, date: 100)
+    )
+    await clientKeychain.waitUntilWriteStarts()
+    DispatchQueue.global().asyncAfter(deadline: .now() + 2) { clientKeychain.release() }
+
+    let signOut = Task {
+      try await clerk.identityController.applyNetworkResponse(
+        context(.client(signedOut(makeClient(id: "client"))), token: .absent, requestToken: "token", clerk: clerk, date: 200, sequence: 2)
+      )
+    }
+    try await Task.sleep(for: .milliseconds(100))
+
+    #expect(clerk.session != nil)
+    clientKeychain.release()
+    try await signOut.value
+    #expect(clerk.session == nil)
+    #expect(try clerk.dependencies.identityStore.load()?.client?.sessions.isEmpty == true)
+  }
+
+  @Test
   func signOutThatChangesTheTokenReplacesALegacyCachedClient() async throws {
     let clientKeychain = StalledWriteKeychain()
     try clientKeychain.seed(
