@@ -240,7 +240,9 @@ extension ClerkIdentityController {
        ),
        endsSignedInSession(incoming.client)
     {
+      let runtime = clerk.runtime
       await store.cacheWrites.waitForPendingWrites()
+      guard clerk.runtime === runtime, runtime.isCurrent else { throw CancellationError() }
     }
     guard let clerk else { throw CancellationError() }
     adoptStoredDeviceToken()
