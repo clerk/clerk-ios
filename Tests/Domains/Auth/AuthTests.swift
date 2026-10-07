@@ -140,9 +140,14 @@ struct AuthTests {
   func signInWithEnterpriseSSOCreatesSignIn() async throws {
     let signUpCalled = LockIsolated(false)
     let signInParams = LockIsolated<JSON?>(nil)
+    let prepareParams = LockIsolated<JSON?>(nil)
     let transport = FakeTransport.mockDefaults()
     transport.stubSignInCreate { params in
       signInParams.setValue(params)
+      return .mock
+    }
+    transport.stubSignInPrepareFirstFactor { _, params in
+      prepareParams.setValue(params)
       return .mock
     }
     transport.stubSignUpCreate { _ in
@@ -153,13 +158,21 @@ struct AuthTests {
     configureDependencies(transport: transport)
 
     let error = await #expect(throws: ClerkClientError.self) {
-      try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+      try await Clerk.shared.auth.signInWithEnterpriseSSO(
+        emailAddress: "user@enterprise.com",
+        enterpriseConnectionId: "ent_123"
+      )
     }
     #expect(error?.messageLocalizationValue == "Redirect URL is missing or invalid. Unable to start external authentication flow.")
 
     #expect(signUpCalled.value == false)
     let params = try #require(signInParams.value)
     #expect(params["identifier"]?.stringValue == "user@enterprise.com")
+    #expect(params["strategy"] == nil)
+
+    let prepared = try #require(prepareParams.value)
+    #expect(prepared["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .enterpriseSSO)
+    #expect(prepared["enterprise_connection_id"]?.stringValue == "ent_123")
   }
 
   @Test
@@ -180,18 +193,39 @@ struct AuthTests {
 
     _ = try await Clerk.shared.auth.startEnterpriseSSO(
       emailAddress: "user@enterprise.com",
+      enterpriseConnectionId: "ent_123",
       redirectUrl: "myapp://callback"
     )
 
     let params = try #require(signInParams.value)
     #expect(params["identifier"]?.stringValue == "user@enterprise.com")
-    #expect(params["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .enterpriseSSO)
-    #expect(params["redirect_url"]?.stringValue == "myapp://callback")
+    #expect(params["strategy"] == nil)
+    #expect(params["redirect_url"] == nil)
 
     let prepared = try #require(prepareParams.value)
     #expect(prepared.0 == SignIn.mock.id)
     #expect(prepared.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .enterpriseSSO)
     #expect(prepared.1?["redirect_url"]?.stringValue == "myapp://callback")
+    #expect(prepared.1?["enterprise_connection_id"]?.stringValue == "ent_123")
+  }
+
+  @Test
+  func startEnterpriseSSOOmitsTheConnectionIdWhenNoneIsGiven() async throws {
+    let prepareParams = LockIsolated<JSON?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in .mock }
+    transport.stubSignInPrepareFirstFactor { _, params in
+      prepareParams.setValue(params)
+      return .mock
+    }
+
+    configureDependencies(transport: transport)
+
+    _ = try await Clerk.shared.auth.startEnterpriseSSO(emailAddress: "user@enterprise.com")
+
+    let prepared = try #require(prepareParams.value)
+    #expect(prepared["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .enterpriseSSO)
+    #expect(prepared["enterprise_connection_id"] == nil)
   }
 
   @Test
@@ -1247,6 +1281,7 @@ struct AuthTests {
     let metadata: JSON = ["plan": "pro"]
     let signInCalled = LockIsolated(false)
     let signUpParams = LockIsolated<JSON?>(nil)
+    let updateParams = LockIsolated<(String, JSON?)?>(nil)
     let transport = FakeTransport.mockDefaults()
     transport.stubSignInCreate { _ in
       signInCalled.setValue(true)
@@ -1256,12 +1291,17 @@ struct AuthTests {
       signUpParams.setValue(params)
       return .mock
     }
+    transport.stubSignUpUpdate { id, params in
+      updateParams.setValue((id, params))
+      return .mock
+    }
 
     configureDependencies(transport: transport)
 
     let error = await #expect(throws: ClerkClientError.self) {
       try await Clerk.shared.auth.signUpWithEnterpriseSSO(
         emailAddress: "user@enterprise.com",
+        enterpriseConnectionId: "ent_123",
         unsafeMetadata: metadata
       )
     }
@@ -1271,6 +1311,13 @@ struct AuthTests {
     let params = try #require(signUpParams.value)
     #expect(params["email_address"]?.stringValue == "user@enterprise.com")
     #expect(params["unsafe_metadata"] == metadata)
+    #expect(params["strategy"] == nil)
+
+    let updated = try #require(updateParams.value)
+    #expect(updated.0 == SignUp.mock.id)
+    #expect(updated.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .enterpriseSSO)
+    #expect(updated.1?["redirect_url"]?.stringValue == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(updated.1?["enterprise_connection_id"]?.stringValue == "ent_123")
   }
 
   @Test
