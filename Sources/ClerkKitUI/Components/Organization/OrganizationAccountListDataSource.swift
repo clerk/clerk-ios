@@ -74,7 +74,7 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
     guard requestIDs == currentRequestIDs else { return }
 
     isLoading = false
-    runDeferredLoadMore(user: user)
+    runDeferredLoadMore(user: user, requestIDs: requestIDs)
   }
 
   func loadMoreMemberships(user: User?) async {
@@ -124,7 +124,7 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
     [membershipsPager.requestID, invitationsPager.requestID, suggestionsPager.requestID]
   }
 
-  private func runDeferredLoadMore(user: User) {
+  private func runDeferredLoadMore(user: User, requestIDs: [Int]) {
     let loadMemberships = membershipsPager.loadMoreIsDeferred
     let loadInvitations = invitationsPager.loadMoreIsDeferred
     let loadSuggestions = suggestionsPager.loadMoreIsDeferred
@@ -134,9 +134,11 @@ final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
     invitationsPager.loadMoreIsDeferred = false
     suggestionsPager.loadMoreIsDeferred = false
     Task { [weak self] in
-      if loadMemberships { await self?.loadMoreMemberships(user: user) }
-      if loadInvitations { await self?.loadMoreInvitations(user: user) }
-      if loadSuggestions { await self?.loadMoreSuggestions(user: user) }
+      guard let self, requestIDs == currentRequestIDs else { return }
+
+      if loadMemberships { await loadMoreMemberships(user: user) }
+      if loadInvitations { await loadMoreInvitations(user: user) }
+      if loadSuggestions { await loadMoreSuggestions(user: user) }
     }
   }
 

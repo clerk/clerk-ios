@@ -44,7 +44,9 @@ extension OrganizationPaginatedDataSource {
 
     self[keyPath: pager].loadMoreIsDeferred = false
     Task { [weak self] in
-      await self?.loadNextPage(pager, isLoading: isLoading, listName: listName, fetch: fetch)
+      guard let self, requestID == self[keyPath: pager].requestID else { return }
+
+      await loadNextPage(pager, isLoading: isLoading, listName: listName, fetch: fetch)
     }
   }
 
