@@ -15,9 +15,7 @@ struct EnvironmentAttributeAvailabilityTests {
     usedForSecondFactor: Bool = false
   ) -> Clerk.Environment {
     var environment = Clerk.Environment.mock
-    for identifierKey in Self.identifierKeys {
-      environment.userSettings.attributes[identifierKey] = nil
-    }
+    environment.userSettings.attributes = [:]
     environment.userSettings.attributes[key] = .init(
       enabled: enabled,
       required: false,
