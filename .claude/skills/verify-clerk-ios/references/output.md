@@ -14,6 +14,8 @@ On failure the object is `{ "ok": false, "error": { "code", "message", "fix", "r
 
 Each check of `doctor --json` has `id`, `ok`, `detail`, and a `fix` when there is one. A warning has `ok: true` and `state: "warning"`. A check that did not run has `ok: true` and `state: "not-run"`.
 
+`attach --json` prints one of two shapes. With `via: "gh"`, this machine edited the description, and the keys are `prUrl`, `posted`, and `alreadyPosted`. With `via: "runner"`, the evidence was handed to the session's runner, and the keys are `pr`, `handedOff`, `because`, `sessionRun`, and `sessionRunUrl`.
+
 `down --json` and `down --dry-run --json` print different keys. A dry run prints `dryRun: true`, `wouldRelease`, `wouldDelete`, `wouldStop`, and `keptRuns`. A real `down` prints `dryRun: false`, `released`, `deletedApplications`, `stoppedProcesses`, and `keptRuns`. Each entry of `wouldDelete` is `{ "kind": "application", "name" }`, and each entry of `deletedApplications` is `{ "name" }`. Neither lists users or organizations.
 
 ## Exit codes
@@ -36,7 +38,7 @@ Each check of `doctor --json` has `id`, `ok`, `detail`, and a `fix` when there i
 | `POOL_FULL` | All four `verify-ios-<n>` simulators on this Mac are in use |
 | `DEVICE_BUSY` | Another command in this worktree is driving the device |
 | `LEASE_LOST` | The leased device is gone |
-| `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. |
+| `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that the app sources have uncommitted changes or that GitHub does not have HEAD |
 | `KEYS_MISSING` | No Platform API credential works on this machine, or `AI_GATEWAY_API_KEY_FILE` names a file that is missing, empty, or readable by other users |
 | `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs |
 | `NOT_TEST_IDENTITY` | A spec used an email, phone number, or user that the run did not create |
