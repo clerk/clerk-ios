@@ -451,6 +451,8 @@ extension SignIn {
   /// is handled automatically.
   ///
   /// - Parameters:
+  ///   - enterpriseConnectionId: The enterprise connection to use when more than one matches the email address.
+  ///     Pass the ``Factor/enterpriseConnectionId`` of one of the `enterpriseSSO` factors in ``supportedFirstFactors``.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
@@ -460,6 +462,7 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithEnterpriseSSO(
+    enterpriseConnectionId: String? = nil,
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
@@ -468,6 +471,7 @@ extension SignIn {
       signInId: id,
       params: .init(
         strategy: .enterpriseSSO,
+        enterpriseConnectionId: enterpriseConnectionId,
         redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
       )
     )).value.response

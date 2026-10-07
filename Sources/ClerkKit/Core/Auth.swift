@@ -306,24 +306,24 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - emailAddress: The user's enterprise email address.
+  ///   - enterpriseConnectionId: The enterprise connection to use when more than one matches the email address.
+  ///     Pass the ``Factor/enterpriseConnectionId`` of one of the sign-in's `enterpriseSSO` supported first factors.
   ///   - redirectUrl: Optional callback URL to override the global Clerk redirect configuration.
   /// - Returns: A prepared `SignIn` object configured for Enterprise SSO.
   /// - Throws: An error if creating or preparing the Enterprise SSO sign-in fails.
   @discardableResult
   public func startEnterpriseSSO(
     emailAddress: String,
+    enterpriseConnectionId: String? = nil,
     redirectUrl: String? = nil
   ) async throws -> SignIn {
     let resolvedRedirectUrl = redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl
-    let signIn = try await transport.send(SignInAPI.create(params: .init(
-      identifier: emailAddress,
-      strategy: .enterpriseSSO,
-      redirectUrl: resolvedRedirectUrl
-    ))).value.response
+    let signIn = try await transport.send(SignInAPI.create(params: .init(identifier: emailAddress))).value.response
     return try await transport.send(SignInAPI.prepareFirstFactor(
       signInId: signIn.id,
       params: .init(
         strategy: .enterpriseSSO,
+        enterpriseConnectionId: enterpriseConnectionId,
         redirectUrl: resolvedRedirectUrl
       )
     )).value.response
@@ -336,6 +336,8 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - emailAddress: The user's enterprise email address.
+  ///   - enterpriseConnectionId: The enterprise connection to use when more than one matches the email address.
+  ///     Pass the ``Factor/enterpriseConnectionId`` of one of the sign-in's `enterpriseSSO` supported first factors.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
@@ -345,16 +347,14 @@ public struct Auth {
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
+    enterpriseConnectionId: String? = nil,
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await transport.send(SignInAPI.create(params: .init(
-      identifier: emailAddress,
-      strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
-    ))).value.response
+    let signIn = try await transport.send(SignInAPI.create(params: .init(identifier: emailAddress))).value.response
     return try await signIn.authenticateWithEnterpriseSSO(
+      enterpriseConnectionId: enterpriseConnectionId,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable,
       unsafeMetadata: unsafeMetadata
@@ -521,6 +521,7 @@ public struct Auth {
   ///
   /// - Parameters:
   ///   - emailAddress: The user's enterprise email address.
+  ///   - enterpriseConnectionId: The enterprise connection to use when more than one matches the email address.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
@@ -528,14 +529,18 @@ public struct Auth {
   @discardableResult
   public func signUpWithEnterpriseSSO(
     emailAddress: String,
+    enterpriseConnectionId: String? = nil,
     prefersEphemeralWebBrowserSession: Bool = false,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signUp = try await transport.send(SignUpAPI.create(params: .init(
+    let createdSignUp = try await transport.send(SignUpAPI.create(params: .init(
       emailAddress: emailAddress,
-      unsafeMetadata: unsafeMetadata,
+      unsafeMetadata: unsafeMetadata
+    ))).value.response
+    let signUp = try await transport.send(SignUpAPI.update(signUpId: createdSignUp.id, params: .init(
       strategy: .enterpriseSSO,
-      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
+      redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl,
+      enterpriseConnectionId: enterpriseConnectionId
     ))).value.response
 
     guard
