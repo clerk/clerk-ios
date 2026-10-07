@@ -130,6 +130,10 @@ final class StalledWriteKeychain: @unchecked Sendable, KeychainStorage {
     lock.withLock { setValues }
   }
 
+  var hasBeenReleased: Bool {
+    lock.withLock { isReleased }
+  }
+
   func set(_ data: Data, forKey key: String) throws {
     if !lock.withLock({ isReleased }) {
       writeStarted.signal()

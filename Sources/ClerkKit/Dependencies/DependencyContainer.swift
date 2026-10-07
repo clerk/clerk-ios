@@ -19,6 +19,7 @@ final class DependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
+  let cacheWrites: KeychainWriteQueue
   let identityIsInAccessGroup: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
@@ -75,8 +76,11 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
+    let cacheWrites = KeychainWriteQueue()
+    self.cacheWrites = cacheWrites
     let keychainStorages = Self.makeKeychainStorages(
       options: options,
+      cacheWrites: cacheWrites,
       ownerIdentifier: ownerIdentifierProvider()?.trimmingCharacters(in: .whitespacesAndNewlines),
       probesAccessGroup: probesAccessGroupOverride
         ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests),
@@ -117,6 +121,7 @@ final class DependencyContainer: Dependencies {
 
   private static func makeKeychainStorages(
     options: Clerk.Options,
+    cacheWrites: KeychainWriteQueue,
     ownerIdentifier: String?,
     probesAccessGroup: Bool,
     keychainStorageOverride: (any KeychainStorage)?
@@ -125,7 +130,7 @@ final class DependencyContainer: Dependencies {
       return KeychainStorages(
         shared: keychainStorageOverride,
         appLocal: keychainStorageOverride,
-        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride),
+        identityStore: ClerkIdentityStore(keychain: keychainStorageOverride, cacheWrites: cacheWrites),
         identityIsInAccessGroup: false
       )
     }
@@ -136,7 +141,7 @@ final class DependencyContainer: Dependencies {
       return KeychainStorages(
         shared: configured,
         appLocal: configured,
-        identityStore: ClerkIdentityStore(keychain: configured),
+        identityStore: ClerkIdentityStore(keychain: configured, cacheWrites: cacheWrites),
         identityIsInAccessGroup: false
       )
     }
@@ -152,7 +157,11 @@ final class DependencyContainer: Dependencies {
     return KeychainStorages(
       shared: configured,
       appLocal: appLocal,
-      identityStore: ClerkIdentityStore(keychain: isInGroup ? configured : allGroups, clientKeychain: appLocal),
+      identityStore: ClerkIdentityStore(
+        keychain: isInGroup ? configured : allGroups,
+        clientKeychain: appLocal,
+        cacheWrites: cacheWrites
+      ),
       identityIsInAccessGroup: isInGroup
     )
   }

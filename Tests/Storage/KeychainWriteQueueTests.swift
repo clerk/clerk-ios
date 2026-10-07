@@ -111,6 +111,39 @@ struct KeychainWriteQueueTests {
     #expect(keychain.writtenValues.isEmpty)
   }
 
+  @Test
+  func aWriteScheduledBeforePausingWaitsForResume() async {
+    let keychain = StalledWriteKeychain()
+    let writes = KeychainWriteQueue()
+
+    enqueue("running", into: keychain, on: writes)
+    await keychain.waitUntilWriteStarts()
+    enqueue("scheduled", into: keychain, on: writes)
+    writes.pauseWrites()
+    keychain.release()
+    await writes.waitForPendingWrites()
+    #expect(keychain.writtenValues == [Data("running".utf8)])
+
+    writes.resumeWrites()
+    await writes.waitForPendingWrites()
+    #expect(keychain.writtenValues == [Data("running".utf8), Data("scheduled".utf8)])
+  }
+
+  @Test
+  func writingNowDropsAPendingWriteForTheSameKey() async {
+    let keychain = StalledWriteKeychain()
+    let writes = KeychainWriteQueue()
+
+    enqueue("running", into: keychain, on: writes)
+    await keychain.waitUntilWriteStarts()
+    enqueue("pending", into: keychain, on: writes)
+    DispatchQueue.global().asyncAfter(deadline: .now() + 0.1) { keychain.release() }
+    writes.writeNow(.cachedClient) { try? keychain.set(Data("now".utf8), forKey: "client") }
+    await writes.waitForPendingWrites()
+
+    #expect(keychain.writtenValues == [Data("running".utf8), Data("now".utf8)])
+  }
+
   private func enqueue(_ value: String, into keychain: StalledWriteKeychain, on writes: KeychainWriteQueue) {
     writes.enqueue(.cachedClient) { try? keychain.set(Data(value.utf8), forKey: "client") }
   }

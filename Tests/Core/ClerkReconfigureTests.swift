@@ -486,6 +486,7 @@ struct ClerkReconfigureTests {
     defer { clerk.cleanupManagers() }
     clerk.applyResponseClient(.mock)
     await clientKeychain.waitUntilWriteStarts()
+    DispatchQueue.global().asyncAfter(deadline: .now() + 2) { clientKeychain.release() }
 
     let clearTask = Task { @MainActor in try await Clerk.clearAllKeychainItemsAndWait() }
     try await Task.sleep(for: .milliseconds(50))
@@ -507,6 +508,61 @@ struct ClerkReconfigureTests {
 
     #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(try clerk.dependencies.identityStore.load() == nil)
+  }
+
+  @Test
+  func reconfigureWaitsForARunningCacheWriteWithoutBlockingTheMainActor() async throws {
+    let clientKeychain = try await configureWithRunningCacheWrite()
+    let targetService = "com.clerk.tests.running-cache-write.\(UUID().uuidString)"
+    let targetKeychain = SystemKeychain(service: targetService)
+    defer {
+      for key in ClerkKeychainKey.allCases {
+        try? targetKeychain.deleteItem(forKey: key.rawValue)
+      }
+    }
+
+    let reconfigure = Task { @MainActor in
+      try await Clerk.reconfigure(
+        publishableKey: publishableKey(for: "running-cache-write.clerk.example.com"),
+        options: Clerk.Options(keychainConfig: .init(service: targetService))
+      )
+    }
+    try await Task.sleep(for: .milliseconds(100))
+
+    #expect(!clientKeychain.hasBeenReleased)
+    clientKeychain.release()
+    let reconfigured = try await reconfigure.value
+    defer { reconfigured.cleanupManagers() }
+  }
+
+  @Test
+  func keychainClearAndWaitWaitsForARunningCacheWriteWithoutBlockingTheMainActor() async throws {
+    let clientKeychain = try await configureWithRunningCacheWrite()
+    defer { Clerk.shared.cleanupManagers() }
+
+    let clear = Task { @MainActor in try await Clerk.clearAllKeychainItemsAndWait() }
+    try await Task.sleep(for: .milliseconds(100))
+
+    #expect(!clientKeychain.hasBeenReleased)
+    clientKeychain.release()
+    try await clear.value
+    #expect(Clerk.shared.identityController.currentDeviceToken == nil)
+    #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
+  }
+
+  private func configureWithRunningCacheWrite() async throws -> StalledWriteKeychain {
+    let clientKeychain = StalledWriteKeychain()
+    Clerk.shared.performConfiguration(dependencies: MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: Clerk.shared.runtimeScope),
+      keychain: InMemoryKeychain(),
+      clientKeychain: clientKeychain,
+      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
+    ))
+    try Clerk.shared.seedIdentity(deviceToken: "device-token")
+    Clerk.shared.applyResponseClient(.mock)
+    await clientKeychain.waitUntilWriteStarts()
+    DispatchQueue.global().asyncAfter(deadline: .now() + 2) { clientKeychain.release() }
+    return clientKeychain
   }
 
   @Test

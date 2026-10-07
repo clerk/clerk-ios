@@ -21,7 +21,7 @@ struct ClerkIdentityStore {
   init(
     keychain: any KeychainStorage,
     clientKeychain: (any KeychainStorage)? = nil,
-    cacheWrites: KeychainWriteQueue = KeychainWriteQueue()
+    cacheWrites: KeychainWriteQueue
   ) {
     self.keychain = keychain
     self.clientKeychain = clientKeychain ?? keychain

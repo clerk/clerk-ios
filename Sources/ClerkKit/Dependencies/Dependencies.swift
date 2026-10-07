@@ -19,6 +19,8 @@ protocol Dependencies: AnyObject {
 
   var identityStore: ClerkIdentityStore { get }
 
+  var cacheWrites: KeychainWriteQueue { get }
+
   var identityIsInAccessGroup: Bool { get }
 
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }
@@ -35,10 +37,6 @@ protocol Dependencies: AnyObject {
 }
 
 extension Dependencies {
-  var cacheWrites: KeychainWriteQueue {
-    identityStore.cacheWrites
-  }
-
   var watchSyncKeychain: any KeychainStorage {
     MigratingKeychainStorage(primary: appLocalKeychain, fallback: keychain)
   }

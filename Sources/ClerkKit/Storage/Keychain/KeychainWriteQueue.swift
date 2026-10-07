@@ -8,14 +8,14 @@ import Foundation
 /// Keychain calls wait on `securityd` over XPC and can take seconds, so they must stay off
 /// the main thread.
 final class KeychainWriteQueue: @unchecked Sendable {
-  private let queue = DispatchQueue(label: "com.clerk.keychain-writes", qos: .utility)
+  private let queue = DispatchQueue(label: "com.clerk.keychain-writes", qos: .userInitiated)
   private let lock = NSLock()
   private var pendingWrites: [ClerkKeychainKey: @Sendable () -> Void] = [:]
   private var pauseCount = 0
 
   func enqueue(_ key: ClerkKeychainKey, _ write: @escaping @Sendable () -> Void) {
     let shouldSchedule = lock.withLock {
-      pendingWrites.updateValue(write, forKey: key) == nil && pauseCount == 0
+      pendingWrites.updateValue(write, forKey: key) == nil
     }
     if shouldSchedule {
       schedule(key)

@@ -7,7 +7,7 @@ struct ClerkIdentityStoreTests {
   private let clientKeychain = InMemoryKeychain()
 
   private var store: ClerkIdentityStore {
-    ClerkIdentityStore(keychain: keychain, clientKeychain: clientKeychain)
+    ClerkIdentityStore(keychain: keychain, clientKeychain: clientKeychain, cacheWrites: KeychainWriteQueue())
   }
 
   @Test
