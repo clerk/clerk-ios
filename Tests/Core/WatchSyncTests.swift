@@ -5,9 +5,14 @@ import Testing
 @MainActor
 final class RecordingWatchSyncTransport: WatchSyncTransport {
   private(set) var sent: [WatchSyncChange] = []
+  private(set) var isStopped = false
 
   func send(_ change: WatchSyncChange) {
     sent.append(change)
+  }
+
+  func stop() {
+    isStopped = true
   }
 }
 
@@ -251,6 +256,16 @@ struct WatchConnectivityCoordinatorTests {
 
     #expect(clerk.deviceToken == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.watchSyncLastChange.rawValue) == false)
+  }
+
+  @Test
+  func stoppingStopsTheTransport() {
+    let transport = RecordingWatchSyncTransport()
+    let coordinator = WatchConnectivityCoordinator(transport: transport)
+
+    coordinator.stopAcceptingIdentityUpdates()
+
+    #expect(transport.isStopped)
   }
 
   private func makeClerk(

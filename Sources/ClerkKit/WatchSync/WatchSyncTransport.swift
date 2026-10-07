@@ -8,6 +8,7 @@ import Foundation
 @MainActor
 protocol WatchSyncTransport: AnyObject {
   func send(_ change: WatchSyncChange)
+  func stop()
 }
 
 @MainActor
@@ -74,6 +75,16 @@ final class WatchConnectivityTransport: NSObject, WatchSyncTransport {
   func send(_ change: WatchSyncChange) {
     pendingChange = change
     sendPendingChangeIfPossible()
+  }
+
+  /// Hands the session back to the app's delegate, because `WCSession` holds its delegate
+  /// weakly and would otherwise be left with none once this transport is released.
+  @MainActor
+  func stop() {
+    pendingChange = nil
+    if session.delegate === self {
+      session.delegate = appDelegate
+    }
   }
 
   @MainActor

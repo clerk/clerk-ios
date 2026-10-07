@@ -42,6 +42,24 @@ struct WatchConnectivityTransportTests {
     #expect(WCSession.default.delegate === second)
     #expect(appDelegate.receivedContexts.count == 1)
   }
+
+  @Test
+  func replacingAStoppedTransportKeepsForwardingToTheAppsDelegate() throws {
+    try #require(WCSession.isSupported())
+    let appDelegate = AppSessionDelegate()
+    WCSession.default.delegate = appDelegate
+    var first: WatchConnectivityTransport? = WatchConnectivityTransport(onReceive: { _ in }, onActivate: {})
+
+    first?.stop()
+    first = nil
+    #expect(WCSession.default.delegate === appDelegate)
+
+    let second = WatchConnectivityTransport(onReceive: { _ in }, onActivate: {})
+    second.session(WCSession.default, didReceiveApplicationContext: ["context": 1])
+
+    #expect(WCSession.default.delegate === second)
+    #expect(appDelegate.receivedContexts.count == 1)
+  }
 }
 
 private final class AppSessionDelegate: NSObject, WCSessionDelegate {
