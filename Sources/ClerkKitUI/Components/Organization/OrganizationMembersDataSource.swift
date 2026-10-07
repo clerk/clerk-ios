@@ -32,10 +32,6 @@ final class OrganizationMembersDataSource {
   private var requestedMembershipQuery = ""
   private var hasLoadedMembers = false
   private var loadMoreMembersIsDeferred = false
-  var invitationsRequestID = 0
-  var loadMoreInvitationsIsDeferred = false
-  var membershipRequestsRequestID = 0
-  var loadMoreMembershipRequestsIsDeferred = false
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
@@ -95,6 +91,30 @@ final class OrganizationMembersDataSource {
       roles = []
       hasRoleSetMigration = false
       ClerkLogger.error("Failed to load organization roles", error: error)
+    }
+  }
+
+  func loadInvitations(organization: Organization) async {
+    await loadFirstPage(\.invitationsPager, isLoading: \.isLoadingInvitations, listName: "invitations") { [pageSize] offset in
+      try await organization.getInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
+    }
+  }
+
+  func loadMoreInvitations(organization: Organization) async {
+    await loadNextPage(\.invitationsPager, isLoading: \.isLoadingInvitations, listName: "invitations") { [pageSize] offset in
+      try await organization.getInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
+    }
+  }
+
+  func loadMembershipRequests(organization: Organization) async {
+    await loadFirstPage(\.membershipRequestsPager, isLoading: \.isLoadingMembershipRequests, listName: "membership requests") { [pageSize] offset in
+      try await organization.getMembershipRequests(offset: offset, pageSize: pageSize, status: "pending")
+    }
+  }
+
+  func loadMoreMembershipRequests(organization: Organization) async {
+    await loadNextPage(\.membershipRequestsPager, isLoading: \.isLoadingMembershipRequests, listName: "membership requests") { [pageSize] offset in
+      try await organization.getMembershipRequests(offset: offset, pageSize: pageSize, status: "pending")
     }
   }
 
@@ -288,15 +308,11 @@ extension OrganizationMembersDataSource {
     includeMembershipRequests: Bool
   ) {
     membershipsPager = OrganizationAccountListPager()
-    invitationsPager = OrganizationAccountListPager()
-    membershipRequestsPager = OrganizationAccountListPager()
+    invitationsPager.reset()
+    membershipRequestsPager.reset()
     membersRequestID += 1
-    invitationsRequestID += 1
-    membershipRequestsRequestID += 1
     hasLoadedMembers = false
     loadMoreMembersIsDeferred = false
-    loadMoreInvitationsIsDeferred = false
-    loadMoreMembershipRequestsIsDeferred = false
     isLoadingMembers = includeMembers
     isLoadingInvitations = includeInvitations
     isLoadingMembershipRequests = includeMembershipRequests

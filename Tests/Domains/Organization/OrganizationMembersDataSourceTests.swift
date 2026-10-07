@@ -609,6 +609,43 @@ struct OrganizationMembersDataSourceTests {
   }
 
   @Test
+  func invitationLoadMoreFromThePreviousOrganizationIsNotAppendedAfterAReset() async throws {
+    let dataSource = try await dataSourceWithMoreInvitations()
+    stubInvitations { offset in
+      if offset > 0 {
+        await gate.wait("oldLoadMore")
+        return invitationPage(ids: ["inv_3", "inv_4"], totalCount: 4)
+      }
+      return invitationPage(ids: ["new_1"], totalCount: 1)
+    }
+    transport.stub(OrganizationAPI.getRoles(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0)) { [gate] _ in
+      await gate.wait("roles")
+      return ClientResponse(response: ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1), client: nil)
+    }
+
+    let oldLoadMore = Task { await dataSource.loadMoreInvitations(organization: .mock) }
+    try await waitUntil { invitationRequests.count == 1 }
+    let initialLoad = Task {
+      await dataSource.loadInitial(
+        organization: .mock,
+        includeMembers: false,
+        includeInvitations: true,
+        includeMembershipRequests: false
+      )
+    }
+    try await waitUntil { dataSource.invitationsPager.items.isEmpty }
+    gate.open("oldLoadMore")
+    await oldLoadMore.value
+
+    #expect(dataSource.invitationsPager.items.isEmpty)
+
+    gate.open("roles")
+    await initialLoad.value
+
+    #expect(dataSource.invitationsPager.items.map(\.id) == ["new_1"])
+  }
+
+  @Test
   func membershipRequestLoadMoreThatFinishesAfterARefreshIsNotAppended() async throws {
     let dataSource = try await dataSourceWithMoreMembershipRequests()
     stubMembershipRequests { offset in

@@ -9,6 +9,8 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
   private(set) var totalCount = 0
   private(set) var offset = 0
   var isLoadingMore = false
+  private(set) var requestID = 0
+  var loadMoreIsDeferred = false
 
   var hasNextPage: Bool {
     offset < totalCount
@@ -19,6 +21,19 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
     let loadedItemCount = max(offset, 1)
     let loadedPageCount = max(1, (loadedItemCount + pageSize - 1) / pageSize)
     return (0 ..< loadedPageCount).map { $0 * pageSize }
+  }
+
+  mutating func reset() {
+    let nextRequestID = requestID + 1
+    self = Self()
+    requestID = nextRequestID
+  }
+
+  mutating func startFirstPageLoad() -> Int {
+    requestID += 1
+    loadMoreIsDeferred = loadMoreIsDeferred || isLoadingMore
+    isLoadingMore = false
+    return requestID
   }
 
   mutating func replace(with page: ClerkPaginatedResponse<Item>) {
