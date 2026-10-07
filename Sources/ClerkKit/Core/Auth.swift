@@ -708,8 +708,12 @@ extension Auth {
       }
     }
 
+    let organizationId = Clerk.shared.client?.sessions
+      .first(where: { $0.id == sessionId })?
+      .lastActiveOrganizationId
+
     do {
-      try await setActive(sessionId: sessionId)
+      try await setActive(sessionId: sessionId, organizationId: organizationId)
     } catch {
       if Clerk.shared.client?.lastActiveSessionId != sessionId {
         throw error
