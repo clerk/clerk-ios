@@ -2,10 +2,12 @@ import { cpSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run } from './core/exec.ts';
+import { remoteBackend } from './core/remote/backend.ts';
 import { VerifyFailure, type HostAdapter, type ScratchPath } from './core/types.ts';
 import { localIosBackend } from './platform/ios/local.ts';
 import { APP_ID, BUILD_HOST, builtHost } from './host-app.ts';
 
+const SKILL_DIR = fileURLToPath(new URL('../', import.meta.url));
 const WORKTREE = fileURLToPath(new URL('../../../../', import.meta.url));
 const GITHUB_REPO = 'clerk/clerk-ios';
 
@@ -29,5 +31,19 @@ export const host: HostAdapter = {
     return { platform, key, appId: APP_ID, path, source: 'local' };
   },
   entry: () => ({ kind: 'binary' }),
-  backends: [localIosBackend()],
+  backends: [
+    localIosBackend(),
+    remoteBackend({
+      platform: 'ios',
+      repo: GITHUB_REPO,
+      workflow: 'verify-remote.yml',
+      sessionsDir: join(SKILL_DIR, '.verify', 'remote'),
+      runner: 'xcode-27',
+      plumbingRunner: 'ubuntu-latest',
+      device: 'iPhone Air',
+      idleMinutes: 15,
+      capMinutes: 60,
+      requirement: 'a pushed branch and access to GitHub Actions on clerk/clerk-ios',
+    }),
+  ],
 };
