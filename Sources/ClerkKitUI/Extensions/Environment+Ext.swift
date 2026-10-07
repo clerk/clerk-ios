@@ -109,10 +109,6 @@ extension Clerk.Environment {
     }
   }
 
-  var deleteSelfIsEnabled: Bool {
-    userSettings.actions.deleteSelf
-  }
-
   var emailIsEnabled: Bool {
     userSettings.attributes.contains { key, value in
       key == "email_address" && value.enabled
