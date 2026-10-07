@@ -184,6 +184,35 @@ struct OrganizationMembersDataSourceTests {
   }
 
   @Test
+  func cancelledRefreshDuringASearchDoesNotDropTheSearch() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { query, _ in
+      if query == "sam" {
+        await gate.wait("sam")
+        return page(ids: ["mem_sam"], totalCount: 1)
+      }
+      return page(ids: ["mem_1", "mem_2"], totalCount: 2)
+    }
+    await dataSource.loadMembers(organization: .mock)
+    membershipRequests.count = 0
+
+    let search = Task { await dataSource.searchMembers(organization: .mock, query: "sam") }
+    try await waitUntil { membershipRequests.count == 1 }
+    let refresh = Task { await dataSource.refreshMembers(organization: .mock) }
+    for _ in 0 ..< 1000 where membershipRequests.count < 2 {
+      await Task.yield()
+    }
+    refresh.cancel()
+    gate.open("sam")
+    await refresh.value
+    await search.value
+
+    #expect(dataSource.membershipSearchQuery == "sam")
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_sam"])
+    #expect(!dataSource.isLoadingMembers)
+  }
+
+  @Test
   func cancelledSearchThatStillReturnsIsNotApplied() async throws {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in

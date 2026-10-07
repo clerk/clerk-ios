@@ -70,7 +70,7 @@ final class OrganizationMembersDataSource {
 
   func refreshMembers(organization: Organization) async {
     async let rolesLoad: Void = loadRoles(organization: organization)
-    async let membersLoad: Void = loadMembers(organization: organization)
+    async let membersLoad: Void = isLoadingMembers ? () : loadMembers(organization: organization)
     _ = await (rolesLoad, membersLoad)
   }
 
