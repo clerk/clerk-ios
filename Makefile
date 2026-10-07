@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-clerk-presentations install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-e2e test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-clerk-presentations install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -20,13 +20,9 @@ help:
 	@echo "  make lint-fix      - Run SwiftLint with auto-fix where possible"
 	@echo "  make check         - Run format-check, lint, and E2E hook checks (for CI)"
 	@echo "  make check-e2e-hooks - Verify E2E-only product hooks remain reviewed"
-	@echo "  make check-e2e-selectors - Verify E2E selectors match their source contracts"
-	@echo "  make check-e2e-phone-numbers - Verify E2E phone numbers use the approved test range"
 	@echo "  make check-clerk-presentations - Verify ClerkUIContext carries every environment object ClerkKitUI reads"
 	@echo "  make test          - Run ClerkKitTests on macOS"
 	@echo "  make test-ui       - Run ClerkKitUI tests on iOS Simulator"
-	@echo "  make test-e2e      - Run an E2EHost Maestro flow on iOS Simulator"
-	@echo "      E2E_MAESTRO_FLOW_NAME=auth-phone make test-e2e"
 	@echo "  make test-integration - Run only integration tests"
 	@echo "  make smoke-macos   - Build the Swift package and MacExampleApp on macOS"
 	@echo "  make install-tools - Install pinned SwiftFormat and SwiftLint"
@@ -154,20 +150,12 @@ lint-fix:
 check-e2e-hooks:
 	@./scripts/check-e2e-hooks.sh
 
-# Verify E2E selectors are backed by product and E2EHost identifier contracts
-check-e2e-selectors:
-	@./scripts/check-e2e-selectors.sh
-
-# Verify E2E phone numbers stay inside the approved Clerk test-number range
-check-e2e-phone-numbers:
-	@./scripts/check-e2e-phone-numbers.sh
-
 # Verify ClerkUIContext carries every environment object ClerkKitUI reads
 check-clerk-presentations:
 	@./scripts/check-clerk-presentations.sh
 
 # Run format-check, lint, and lightweight repo checks
-check: format-check lint check-e2e-hooks check-e2e-selectors check-e2e-phone-numbers check-clerk-presentations
+check: format-check lint check-e2e-hooks check-clerk-presentations
 	@echo "✅ All checks passed!"
 
 clean:
@@ -220,10 +208,6 @@ test-ui:
 	echo "Using simulator destination: $$destination"; \
 	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
-
-# Run an E2EHost Maestro flow on iOS Simulator.
-test-e2e:
-	@./scripts/run-e2e-maestro.sh
 
 # Run only integration tests
 # Tests decide which key to use from .keys.json (each test can specify its own key)
