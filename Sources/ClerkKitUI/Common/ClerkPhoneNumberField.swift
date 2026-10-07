@@ -175,6 +175,8 @@ struct ClerkPhoneNumberField: View {
         Image("icon-up-down", bundle: .module)
           .foregroundStyle(theme.colors.mutedForeground)
       }
+      .accessibilityElement(children: .ignore)
+      .accessibilityLabel(Text(verbatim: "\(phoneNumberModel.currentCountry.name), \(phoneNumberModel.currentCountry.prefix)"))
       .padding(.horizontal, 10)
       .padding(.vertical, 13)
       .background(theme.colors.muted)
@@ -195,10 +197,12 @@ struct ClerkPhoneNumberField: View {
             .foregroundStyle(theme.colors.foreground)
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(0)
+            .accessibilityHidden(true)
 
           HStack(spacing: 4) {
             if isFocusedOrFilled {
               Text(phoneNumberModel.currentCountry.prefix)
+                .accessibilityHidden(true)
                 .transition(
                   .asymmetric(
                     insertion: .opacity.animation(.default.delay(0.1)),
@@ -208,14 +212,14 @@ struct ClerkPhoneNumberField: View {
             }
 
             TextField("", text: $displayText)
+              .accessibilityLabel(Text(titleKey, bundle: .module))
               .focused($isFocused)
               .textContentType(.telephoneNumber)
               #if os(iOS)
               .keyboardType(.numberPad)
               #endif
-              .tint(theme.colors.primary)
               .animation(.default.delay(0.2)) {
-                $0.opacity(isFocusedOrFilled ? 1 : 0)
+                $0.tint(isFocusedOrFilled ? theme.colors.primary : .clear)
               }
               .onChange(of: displayText) { _, newValue in
                 textDidUpdate(text: newValue)
@@ -239,6 +243,7 @@ struct ClerkPhoneNumberField: View {
           .foregroundStyle(theme.colors.mutedForeground)
           .frame(maxWidth: .infinity, alignment: .leading)
           .allowsHitTesting(false)
+          .accessibilityHidden(true)
           .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
           .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
           .animation(.default, value: isFocusedOrFilled)

@@ -8852,6 +8852,9 @@
         }
       }
     },
+    "Edit profile photo" : {
+
+    },
     "Email address" : {
       "localizations" : {
         "ar" : {
@@ -28446,6 +28449,9 @@
           }
         }
       }
+    },
+    "Verification code" : {
+
     },
     "Verification codes from this authenticator will no longer be required when signing in." : {
       "localizations" : {
