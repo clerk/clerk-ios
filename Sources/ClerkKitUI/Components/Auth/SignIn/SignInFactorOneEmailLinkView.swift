@@ -5,6 +5,9 @@
 
 #if os(iOS) || os(macOS)
 
+#if os(macOS)
+import AppKit
+#endif
 import ClerkKit
 import SwiftUI
 
@@ -244,6 +247,20 @@ extension EmailLinkVerificationView {
       return
     }
 
+    #if os(macOS)
+    guard let mailAppURL = NSWorkspace.shared.urlForApplication(toOpen: url) else {
+      error = ClerkClientError(message: "No email app is available on this device.", localizationBundle: .module)
+      return
+    }
+
+    NSWorkspace.shared.openApplication(at: mailAppURL, configuration: NSWorkspace.OpenConfiguration()) { _, openError in
+      if openError != nil {
+        Task { @MainActor in
+          error = ClerkClientError(message: "No email app is available on this device.", localizationBundle: .module)
+        }
+      }
+    }
+    #else
     openURL(url) { accepted in
       if !accepted {
         Task { @MainActor in
@@ -251,6 +268,7 @@ extension EmailLinkVerificationView {
         }
       }
     }
+    #endif
   }
 }
 
