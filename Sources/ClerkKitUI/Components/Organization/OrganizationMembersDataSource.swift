@@ -323,19 +323,22 @@ extension OrganizationMembersDataSource {
     guard requestID == membersRequestID else { return }
 
     isLoadingMembers = false
-    if loadMoreMembersIsDeferred, !Task.isCancelled {
-      loadMoreMembersIsDeferred = false
-      await loadMoreMembers(organization: organization)
+    runDeferredLoadMore(organization: organization)
+  }
+
+  private func runDeferredLoadMore(organization: Organization) {
+    guard loadMoreMembersIsDeferred else { return }
+
+    loadMoreMembersIsDeferred = false
+    Task { [weak self] in
+      await self?.loadMoreMembers(organization: organization)
     }
   }
 
   func searchMembers(organization: Organization, query: String) async {
     requestedMembershipQuery = query
     guard !hasLoadedMembers || membershipSearchQuery != query || isLoadingMembers else {
-      if loadMoreMembersIsDeferred {
-        loadMoreMembersIsDeferred = false
-        await loadMoreMembers(organization: organization)
-      }
+      runDeferredLoadMore(organization: organization)
       return
     }
 

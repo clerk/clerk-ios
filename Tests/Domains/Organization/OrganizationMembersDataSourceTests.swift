@@ -307,6 +307,7 @@ struct OrganizationMembersDataSourceTests {
 
     gate.open("refresh")
     await refresh.value
+    try await waitUntil { dataSource.membershipsPager.items.count == 4 }
 
     #expect(membershipRequests.count == 2)
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
@@ -338,6 +339,7 @@ struct OrganizationMembersDataSourceTests {
 
     gate.open("oldLoadMore")
     await oldLoadMore.value
+    try await waitUntil { dataSource.membershipsPager.items.count == 4 && !dataSource.membershipsPager.isLoadingMore }
 
     #expect(dataSource.membershipsPager.items.map(\.id) == ["john_1", "john_2", "john_3", "john_4"])
     #expect(!dataSource.membershipsPager.isLoadingMore)
@@ -404,6 +406,7 @@ struct OrganizationMembersDataSourceTests {
     await abandonedLoadMore.value
     gate.open("refresh")
     await refresh.value
+    try await waitUntil { dataSource.membershipsPager.items.count == 4 }
 
     #expect(membershipRequests.count == 3)
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
@@ -437,8 +440,43 @@ struct OrganizationMembersDataSourceTests {
     await abandonedLoadMore.value
 
     await dataSource.searchMembers(organization: .mock, query: "")
+    try await waitUntil { dataSource.membershipsPager.items.count == 4 }
 
     #expect(pageTwoRequests.count == 2)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
+  }
+
+  @Test
+  func deferredLoadMoreSurvivesCancellingTheSearchThatRanIt() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    let pageTwoRequests = RequestCounter()
+    stubMemberships { [pageTwoRequests] query, offset in
+      if query == "john" {
+        try await Task.sleep(for: .seconds(60))
+      }
+      if offset > 0 {
+        pageTwoRequests.count += 1
+        await gate.wait(pageTwoRequests.count == 1 ? "abandonedLoadMore" : "deferredLoadMore")
+        return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+      }
+      return page(ids: ["mem_1", "mem_2"], totalCount: 4)
+    }
+
+    let abandonedLoadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    let cancelledSearch = Task { await dataSource.searchMembers(organization: .mock, query: "john") }
+    try await waitUntil { membershipRequests.count == 2 }
+    cancelledSearch.cancel()
+    await cancelledSearch.value
+    let replacedSearch = Task { await dataSource.searchMembers(organization: .mock, query: "") }
+    try await waitUntil { pageTwoRequests.count == 2 }
+    replacedSearch.cancel()
+    gate.open("abandonedLoadMore")
+    gate.open("deferredLoadMore")
+    await abandonedLoadMore.value
+    await replacedSearch.value
+
+    try await waitUntil { dataSource.membershipsPager.items.count == 4 }
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
   }
 
