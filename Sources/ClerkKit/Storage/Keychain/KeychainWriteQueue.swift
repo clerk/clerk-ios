@@ -6,7 +6,9 @@
 import Foundation
 
 /// Keychain calls wait on `securityd` over XPC and can take seconds, so they must stay off
-/// the main thread.
+/// the main thread. The exception is the file-based macOS keychain, which deadlocks when two
+/// threads call it at once; there `writesOnCallingThread` keeps writes on the caller's thread
+/// (see `DependencyContainer.makeCacheWrites()`).
 final class KeychainWriteQueue: @unchecked Sendable {
   private let queue = DispatchQueue(label: "com.clerk.keychain-writes", qos: .userInitiated)
   private let lock = NSLock()
