@@ -9,7 +9,7 @@ Don't leave commented-out code.
 
 ## Verifying changes
 
-Prove every change to ClerkKit, ClerkKitUI, or E2EHost on a real simulator before calling it done. The verification skill is `.claude/skills/verify-clerk-ios/` (Cursor also sees it as `.cursor/skills/verify-clerk-ios`). Read its `SKILL.md`, then `features/README.md` for the feature you touched.
+Prove every change to ClerkKit, ClerkKitUI, or E2EHost on a real simulator before calling it done. The verification skill is `.claude/skills/verify-clerk-ios/` (Cursor also sees it as `.cursor/skills/verify-clerk-ios`). On a Mac the simulator is local, and on Linux the same commands lease one on a CI runner. Read its `SKILL.md`, then `features/README.md` for the feature you touched.
 
 `.claude/skills/verify-clerk-ios/bin/control-clerk-ios` has the verbs `doctor`, `up`, `run`, `down`, and `attach`, and `SKILL.md` has the steps.
 

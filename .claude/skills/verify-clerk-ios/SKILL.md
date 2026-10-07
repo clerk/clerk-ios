@@ -1,11 +1,11 @@
 ---
 name: verify-clerk-ios
-description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
 ---
 
 # verify-clerk-ios
 
-`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e). It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence.
+`.claude/skills/verify-clerk-ios/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e). It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence. On a Mac the simulator is local. On any other machine the CLI leases one on a GitHub Actions runner, with the same verbs, specs, and evidence.
 
 No change to clerk-ios UI or auth behavior is done until a `run` in E2EHost shows the changed behavior.
 
@@ -37,6 +37,22 @@ The Clerk application is this worktree's own. `up` creates it through Clerk's Pl
 
 The CLI drives only `verify-ios-<n>`, which it creates. A Mac has four of these simulators, shared by every worktree on it. When all four are taken, `up` and `run` fail with `POOL_FULL`, and `--wait <seconds>` on either verb waits for one.
 
+A machine that is not a Mac cannot run the simulator, so there the CLI leases one on a GitHub Actions runner and drives it through a tunnel. That machine needs Node 24, the Platform API key, and access to GitHub, and `doctor` checks each. The session builds a pushed commit, never your working tree, so commit and push app changes before `up` or `run`.
+
+```console
+$ git push
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios up --backend remote
+backend remote  forced by --backend remote
+device  remote ios  starting session <session> on xcode-27 (idle stop 15 min, cap 60 min)
+build   <build key>  github-actions  <commit> built in 552s on xcode-27
+device  iPhone Air on xcode-27  remote  leased by this worktree  installed <build key>
+$ .claude/skills/verify-clerk-ios/bin/control-clerk-ios down  # ends the runner job
+```
+
+The `backend` line says which backend the CLI chose and why. On a machine that is not a Mac, `up` needs no flag, and the `backend` line says why the local backend is out. `--backend local` or `--backend remote` on `doctor`, `up`, or `run` forces a backend, and a worktree that holds a lease keeps its backend until `down`. `--runner <label>` on `up` or `run` names another runner label for a new session.
+
+A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and the golden set to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
+
 ## Doctor
 
 ```console
@@ -46,6 +62,8 @@ $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios doctor
 Run it first, and again whenever anything looks off. Without `--live` it only reads. It creates no file, no simulator, and no Clerk application. Each line starts with `ok`, `warn`, `skip`, or `FAIL`, then has the id of the check and what the check found. `skip` marks a check that did not run, and its text starts with `not run:`. A failing check also prints a `fix:` line with the command to run, and `doctor` exits 3. A warning does not change the exit code.
 
 After the once-per-machine setup and before the first `up`, `build` is the one failing check, and its fix is `up`. A machine with no Platform API credential fails `instances`, and the fix line says how to supply one. `doctor --live` also proves that the credential can create, configure, and delete an application. It creates one application, configures it, compares it with the standard file, and deletes it, and reports that in a `live-instance` line.
+
+With the remote backend, plain `doctor` starts nothing, and `doctor --live` starts one short session to prove the path. There `build` fails until a session holds the current build, and `remote-commit` fails until HEAD is pushed.
 
 ## Drive
 
@@ -136,7 +154,7 @@ A proof drives the real user path. The video and the screenshots show the action
 
 After a run, the CLI searches the run directory for every secret the run used: the Platform API key, the instance's secret key, sign-in tickets, and a GitHub token in `GITHUB_TOKEN` or `GH_TOKEN`. A hit marks the file as tainted in `run.json`. The user ID and the session ID on the home are not secrets, because neither can sign anyone in.
 
-A machine with no `gh` can still run and keep evidence. Name the run id in the PR and say that the evidence was not attached.
+A remote run writes the same files. The runner records the video, and the CLI downloads it into the run directory. `run.json` also has `remote`, with `provider`, `runner`, and `builtSha`, the commit the session built. A machine with no `gh` can still run and keep evidence. Name the run id in the PR and say that the evidence was not attached.
 
 ```console
 $ .claude/skills/verify-clerk-ios/bin/control-clerk-ios attach <run-id> --pr <n>                       # the video and every screenshot
@@ -171,9 +189,12 @@ The `deleted` line names the application. Its users and organizations go with it
 
 If a worktree is removed without `down`, the next `up` or `run` in any worktree on the same Mac finishes for it. That command deletes the removed worktree's simulator and application, stops its daemon, and prints a `reap` line for each.
 
+For a remote simulator, `down` ends the runner job, and `down --stale` also ends a session that a crashed run of this checkout left running. No other checkout cleans up a remote session. If its checkout is deleted, the session's own idle stop ends it.
+
 ## For maintainers of the skill
 
 - The Android and Expo verification skills share `src/core/`, and it is copied to them. After a change under `src/core/`, `node .claude/skills/verify-clerk-ios/src/core/manifest.ts --write` rewrites `src/core/MANIFEST`.
 - `npm test --prefix .claude/skills/verify-clerk-ios` runs the CLI's unit tests, with no network, key, or simulator. `npm run typecheck --prefix .claude/skills/verify-clerk-ios` runs `tsc`. The `Run verify skill tests` job in `.github/workflows/shared-checks.yml` runs both on Linux.
 - `.github/workflows/verify-e2e.yml` runs `up`, `run --all --retries 1 --github-report`, and `down` on a simulator on a CI runner. It needs the repository secret `MOBILE_VERIFICATION_PLATFORM_API_KEY`. It runs on the `xcode-27` label unless the repository variable `VERIFY_CI_RUNNER` names another. `gh workflow run verify-e2e.yml --ref <branch>` starts it by hand.
+- `.github/workflows/verify-remote.yml` is the workflow that a remote session runs in, and `src/core/remote/` is the code on both ends of it. A session keeps the `src/core/` of the commit it started on, so after a change under `src/core/`, commit, push, `down`, then `up`.
 - `run --github-report` hands the results of a run to `@e2e-dev/github`, which writes them to the job summary and to one pull request comment.
