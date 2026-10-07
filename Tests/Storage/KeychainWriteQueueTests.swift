@@ -144,6 +144,17 @@ struct KeychainWriteQueueTests {
     #expect(keychain.writtenValues == [Data("running".utf8), Data("now".utf8)])
   }
 
+  @Test
+  func writesOnTheCallingThreadFinishBeforeEnqueueReturns() throws {
+    let keychain = ThreadRecordingKeychain()
+    let writes = KeychainWriteQueue(writesOnCallingThread: true)
+
+    writes.enqueue(.cachedClient) { try? keychain.set(Data("client".utf8), forKey: "client") }
+
+    #expect(try keychain.data(forKey: "client") == Data("client".utf8))
+    #expect(keychain.mainThreadWrites == ["client"])
+  }
+
   private func enqueue(_ value: String, into keychain: StalledWriteKeychain, on writes: KeychainWriteQueue) {
     writes.enqueue(.cachedClient) { try? keychain.set(Data(value.utf8), forKey: "client") }
   }

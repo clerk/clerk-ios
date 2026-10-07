@@ -76,7 +76,7 @@ final class DependencyContainer: Dependencies {
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
       .appendingResponseMiddleware(options.middleware.response)
-    let cacheWrites = KeychainWriteQueue()
+    let cacheWrites = Self.makeCacheWrites()
     self.cacheWrites = cacheWrites
     let keychainStorages = Self.makeKeychainStorages(
       options: options,
@@ -113,6 +113,16 @@ final class DependencyContainer: Dependencies {
       publishableKey: configurationManager.publishableKey,
       options: options
     )
+  }
+
+  private static func makeCacheWrites() -> KeychainWriteQueue {
+    #if os(macOS)
+    // The caches use the file-based macOS keychain, which deadlocks when two threads call it at
+    // once. The host app may call it from the main thread, so Clerk's writes stay there too.
+    KeychainWriteQueue(writesOnCallingThread: true)
+    #else
+    KeychainWriteQueue()
+    #endif
   }
 
   private static func makeKeychainStorage(config: Clerk.Options.KeychainConfig) -> any KeychainStorage {

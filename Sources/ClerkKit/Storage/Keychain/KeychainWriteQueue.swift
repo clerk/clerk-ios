@@ -12,8 +12,17 @@ final class KeychainWriteQueue: @unchecked Sendable {
   private let lock = NSLock()
   private var pendingWrites: [ClerkKeychainKey: @Sendable () -> Void] = [:]
   private var pauseCount = 0
+  let writesOnCallingThread: Bool
+
+  init(writesOnCallingThread: Bool = false) {
+    self.writesOnCallingThread = writesOnCallingThread
+  }
 
   func enqueue(_ key: ClerkKeychainKey, _ write: @escaping @Sendable () -> Void) {
+    guard !writesOnCallingThread else {
+      write()
+      return
+    }
     let shouldSchedule = lock.withLock {
       pendingWrites.updateValue(write, forKey: key) == nil
     }
