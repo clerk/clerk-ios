@@ -29,7 +29,7 @@ struct UserProfileUpdateProfileView: View {
   }
 
   private var usernameIsEditable: Bool {
-    environment?.usernameIsEnabled == true && environment?.usernameIsImmutable != true
+    environment?.usernameIsAvailable == true && environment?.usernameIsImmutable != true
   }
 
   private var showSaveButton: Bool {
