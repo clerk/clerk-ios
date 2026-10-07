@@ -5,6 +5,7 @@ struct WatchSyncChange: Codable, Equatable {
     static let deviceToken = "clerkWatchSyncDeviceToken"
     static let clientId = "clerkWatchSyncClientId"
     static let changedAt = "clerkWatchSyncChangedAt"
+    static let all: Set = [deviceToken, clientId, changedAt]
   }
 
   let deviceToken: String?
@@ -29,5 +30,13 @@ struct WatchSyncChange: Codable, Equatable {
     context[Key.deviceToken] = deviceToken
     context[Key.clientId] = clientId
     return context
+  }
+
+  /// Replaces only Clerk's keys, because `updateApplicationContext` replaces the whole
+  /// dictionary that the app shares with its paired device.
+  func applicationContext(mergedInto existing: [String: Any]) -> [String: Any] {
+    existing
+      .filter { !Key.all.contains($0.key) }
+      .merging(applicationContext) { _, clerkValue in clerkValue }
   }
 }

@@ -25,6 +25,23 @@ struct WatchSyncChangeTests {
   func contextWithoutAChangeTimeCarriesNoChange() {
     #expect(WatchSyncChange(applicationContext: ["clerkWatchSyncDeviceToken": "token"]) == nil)
   }
+
+  @Test
+  func mergingKeepsTheAppsKeysAndReplacesClerksKeys() {
+    let existing: [String: Any] = [
+      "appKey": "value",
+      "clerkWatchSyncDeviceToken": "token",
+      "clerkWatchSyncClientId": "client",
+      "clerkWatchSyncChangedAt": 100.0,
+    ]
+    let signedOut = WatchSyncChange(deviceToken: nil, changedAt: date(200))
+
+    let merged = signedOut.applicationContext(mergedInto: existing)
+
+    #expect(merged["appKey"] as? String == "value")
+    #expect(Set(merged.keys) == ["appKey", "clerkWatchSyncChangedAt"])
+    #expect(WatchSyncChange(applicationContext: merged) == signedOut)
+  }
 }
 
 @MainActor
