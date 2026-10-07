@@ -331,7 +331,13 @@ extension OrganizationMembersDataSource {
 
   func searchMembers(organization: Organization, query: String) async {
     requestedMembershipQuery = query
-    guard !hasLoadedMembers || membershipSearchQuery != query || isLoadingMembers else { return }
+    guard !hasLoadedMembers || membershipSearchQuery != query || isLoadingMembers else {
+      if loadMoreMembersIsDeferred {
+        loadMoreMembersIsDeferred = false
+        await loadMoreMembers(organization: organization)
+      }
+      return
+    }
 
     await loadMembers(organization: organization, query: query)
   }

@@ -409,6 +409,39 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
   }
 
+  @Test
+  func returningToTheAppliedQueryRunsLoadMoreDeferredByACancelledSearch() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    let pageTwoRequests = RequestCounter()
+    stubMemberships { [pageTwoRequests] query, offset in
+      if query == "john" {
+        try await Task.sleep(for: .seconds(60))
+      }
+      if offset > 0 {
+        pageTwoRequests.count += 1
+        if pageTwoRequests.count == 1 {
+          await gate.wait("abandonedLoadMore")
+        }
+        return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+      }
+      return page(ids: ["mem_1", "mem_2"], totalCount: 4)
+    }
+
+    let abandonedLoadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    let cancelledSearch = Task { await dataSource.searchMembers(organization: .mock, query: "john") }
+    try await waitUntil { membershipRequests.count == 2 }
+    cancelledSearch.cancel()
+    await cancelledSearch.value
+    gate.open("abandonedLoadMore")
+    await abandonedLoadMore.value
+
+    await dataSource.searchMembers(organization: .mock, query: "")
+
+    #expect(pageTwoRequests.count == 2)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }
