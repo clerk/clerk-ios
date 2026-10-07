@@ -155,87 +155,94 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 
   public var body: some View {
-    if let user = clerk.user {
-      Group {
-        if navigationPath == nil {
-          NavigationStack(path: $internalPath) {
+    ZStack {
+      if let user = clerk.user {
+        Group {
+          if navigationPath == nil {
+            NavigationStack(path: $internalPath) {
+              profileContent(user: user)
+                .navigationDestination(for: Route.self) { route in
+                  view(for: route)
+                    .environment(sheetNavigation)
+                    .environment(codeLimiter)
+                    .environment(
+                      UserProfileNavigator(
+                        push: navigateToCustom,
+                        popToRoot: { dismissAction(.popToRoot) }
+                      )
+                    )
+                    .environment(
+                      UserProfileBuiltInRouter(
+                        push: navigateToBuiltIn,
+                        dismissAction: dismissAction
+                      )
+                    )
+                }
+            }
+            #if os(macOS)
+            .frame(
+              width: isDismissible ? 560 : nil,
+              height: isDismissible ? 620 : nil,
+              alignment: .topLeading
+            )
+            #endif
+          } else {
             profileContent(user: user)
-              .navigationDestination(for: Route.self) { route in
-                view(for: route)
-                  .environment(sheetNavigation)
-                  .environment(codeLimiter)
-                  .environment(
-                    UserProfileNavigator(
-                      push: navigateToCustom,
-                      popToRoot: { dismissAction(.popToRoot) }
-                    )
-                  )
-                  .environment(
-                    UserProfileBuiltInRouter(
-                      push: navigateToBuiltIn,
-                      dismissAction: dismissAction
-                    )
-                  )
-              }
           }
-          #if os(macOS)
-          .frame(
-            width: isDismissible ? 560 : nil,
-            height: isDismissible ? 620 : nil,
-            alignment: .topLeading
-          )
-          #endif
-        } else {
-          profileContent(user: user)
         }
-      }
-      .tint(theme.colors.primary)
-      .presentationBackground(theme.colors.background)
-      .background(theme.colors.background)
-      .onFirstAppear {
-        initialPathCount = navigationPath?.wrappedValue.count ?? 0
-      }
-      .clerkErrorPresenting($error)
-      .clerkSheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
-        UserButtonAccountSwitcher()
-      }
-      .clerkSheet(isPresented: $updateProfileIsPresented) {
-        UserProfileUpdateProfileView(user: user)
-      }
-      .clerkSheet(isPresented: $sheetNavigation.authViewIsPresented) {
-        // The add-account sheet is modal over the host, so it dismisses itself
-        // rather than showing the host's back button.
-        AuthView()
-          .environment(\.clerkHostBackAction, nil)
-      }
-      .task(id: user) {
-        await getSessionsOnAllDevices()
-      }
-      .task {
-        _ = try? await clerk.refreshEnvironment()
-      }
-      .task {
-        _ = try? await clerk.refreshClient()
-      }
-      .taskOnce {
-        await clerk.telemetry.record(
-          TelemetryEvents.viewDidAppear(
-            "UserProfileView",
-            payload: [
-              "isDismissible": .bool(isDismissible),
-              "isEmbedded": .bool(navigationPath != nil),
-            ]
+        .tint(theme.colors.primary)
+        .presentationBackground(theme.colors.background)
+        .background(theme.colors.background)
+        .onFirstAppear {
+          initialPathCount = navigationPath?.wrappedValue.count ?? 0
+        }
+        .clerkErrorPresenting($error)
+        .clerkSheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
+          UserButtonAccountSwitcher()
+        }
+        .clerkSheet(isPresented: $updateProfileIsPresented) {
+          UserProfileUpdateProfileView(user: user)
+        }
+        .clerkSheet(isPresented: $sheetNavigation.authViewIsPresented) {
+          // The add-account sheet is modal over the host, so it dismisses itself
+          // rather than showing the host's back button.
+          AuthView()
+            .environment(\.clerkHostBackAction, nil)
+        }
+        .task(id: user) {
+          await getSessionsOnAllDevices()
+        }
+        .task {
+          _ = try? await clerk.refreshEnvironment()
+        }
+        .task {
+          _ = try? await clerk.refreshClient()
+        }
+        .taskOnce {
+          await clerk.telemetry.record(
+            TelemetryEvents.viewDidAppear(
+              "UserProfileView",
+              payload: [
+                "isDismissible": .bool(isDismissible),
+                "isEmbedded": .bool(navigationPath != nil),
+              ]
+            )
+          )
+        }
+        .environment(sheetNavigation)
+        .environment(codeLimiter)
+        .environment(
+          UserProfileBuiltInRouter(
+            push: navigateToBuiltIn,
+            dismissAction: dismissAction
           )
         )
       }
-      .environment(sheetNavigation)
-      .environment(codeLimiter)
-      .environment(
-        UserProfileBuiltInRouter(
-          push: navigateToBuiltIn,
-          dismissAction: dismissAction
-        )
-      )
+    }
+    .onChange(of: clerk.user == nil) { _, userIsGone in
+      if userIsGone {
+        dismissAction(.exitUserProfile)
+      }
     }
   }
 
@@ -264,6 +271,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       navigationPath.wrappedValue.removeLast(entriesToRemove)
     } else {
       internalPath = NavigationPath()
+      if action == .exitUserProfile {
+        dismiss()
+      }
     }
   }
 
