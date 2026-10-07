@@ -109,6 +109,27 @@ struct OrganizationMembersDataSourceTests {
   }
 
   @Test
+  func loadMoreThatFailsAfterANewerSearchDoesNotReportItsError() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    stubMemberships { _, offset in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        throw URLError(.badServerResponse)
+      }
+      return page(ids: ["mem_john"], totalCount: 1)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    await dataSource.searchMembers(organization: .mock, query: "john")
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.error == nil)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_john"])
+  }
+
+  @Test
   func refreshThatFinishesAfterANewerSearchDoesNotOverwriteIt() async throws {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { query, _ in
