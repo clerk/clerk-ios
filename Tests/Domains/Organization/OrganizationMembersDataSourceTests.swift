@@ -9,6 +9,8 @@ struct OrganizationMembersDataSourceTests {
   private let transport = FakeTransport.mockDefaults()
   private let gate = ResponseGate()
   private let membershipRequests = RequestCounter()
+  private let invitationRequests = RequestCounter()
+  private let membershipRequestRequests = RequestCounter()
 
   init() {
     configureClerkForTesting()
@@ -530,6 +532,158 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
   }
 
+  @Test
+  func invitationLoadMoreThatFinishesAfterARefreshIsNotAppended() async throws {
+    let dataSource = try await dataSourceWithMoreInvitations()
+    stubInvitations { offset in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        return invitationPage(ids: ["inv_3", "inv_4"], totalCount: 4)
+      }
+      return invitationPage(ids: ["new_1", "new_2"], totalCount: 2)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreInvitations(organization: .mock) }
+    try await waitUntil { invitationRequests.count == 1 }
+    await dataSource.refreshInvitations(organization: .mock)
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.invitationsPager.items.map(\.id) == ["new_1", "new_2"])
+    #expect(dataSource.invitationsPager.totalCount == 2)
+    #expect(!dataSource.invitationsPager.isLoadingMore)
+  }
+
+  @Test
+  func invitationLoadMoreThatFailsAfterARevokeReloadDoesNotReportItsError() async throws {
+    let dataSource = try await dataSourceWithMoreInvitations()
+    stubInvitations { offset in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        throw URLError(.badServerResponse)
+      }
+      return invitationPage(ids: ["inv_2"], totalCount: 1)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreInvitations(organization: .mock) }
+    try await waitUntil { invitationRequests.count == 1 }
+    await dataSource.revokeInvitation(.mock, organization: .mock)
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.error == nil)
+    #expect(dataSource.invitationsPager.items.map(\.id) == ["inv_2"])
+  }
+
+  @Test
+  func invitationsPaginateAfterARefreshAbandonsALoadMore() async throws {
+    let dataSource = try await dataSourceWithMoreInvitations()
+    let pageTwoRequests = RequestCounter()
+    stubInvitations { [pageTwoRequests] offset in
+      switch offset {
+      case 0:
+        return invitationPage(ids: ["new_1", "new_2"], totalCount: 6)
+      case 2:
+        pageTwoRequests.count += 1
+        if pageTwoRequests.count == 1 {
+          await gate.wait("abandonedLoadMore")
+          return invitationPage(ids: ["inv_3", "inv_4"], totalCount: 6)
+        }
+        return invitationPage(ids: ["new_3", "new_4"], totalCount: 6)
+      default:
+        return invitationPage(ids: ["new_5", "new_6"], totalCount: 6)
+      }
+    }
+
+    let abandonedLoadMore = Task { await dataSource.loadMoreInvitations(organization: .mock) }
+    try await waitUntil { invitationRequests.count == 1 }
+    await dataSource.refreshInvitations(organization: .mock)
+    try await waitUntil { dataSource.invitationsPager.items.count == 4 && !dataSource.invitationsPager.isLoadingMore }
+    await dataSource.loadMoreInvitations(organization: .mock)
+    gate.open("abandonedLoadMore")
+    await abandonedLoadMore.value
+
+    #expect(dataSource.invitationsPager.items.map(\.id) == ["new_1", "new_2", "new_3", "new_4", "new_5", "new_6"])
+    #expect(!dataSource.invitationsPager.hasNextPage)
+    #expect(!dataSource.invitationsPager.isLoadingMore)
+  }
+
+  @Test
+  func membershipRequestLoadMoreThatFinishesAfterARefreshIsNotAppended() async throws {
+    let dataSource = try await dataSourceWithMoreMembershipRequests()
+    stubMembershipRequests { offset in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        return membershipRequestPage(ids: ["req_3", "req_4"], totalCount: 4)
+      }
+      return membershipRequestPage(ids: ["new_1", "new_2"], totalCount: 2)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreMembershipRequests(organization: .mock) }
+    try await waitUntil { membershipRequestRequests.count == 1 }
+    await dataSource.loadMembershipRequests(organization: .mock)
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.membershipRequestsPager.items.map(\.id) == ["new_1", "new_2"])
+    #expect(dataSource.membershipRequestsPager.totalCount == 2)
+    #expect(!dataSource.membershipRequestsPager.isLoadingMore)
+  }
+
+  @Test
+  func membershipRequestLoadMoreThatFailsAfterARejectReloadDoesNotReportItsError() async throws {
+    let dataSource = try await dataSourceWithMoreMembershipRequests()
+    stubMembershipRequests { offset in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        throw URLError(.badServerResponse)
+      }
+      return membershipRequestPage(ids: ["req_2"], totalCount: 1)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreMembershipRequests(organization: .mock) }
+    try await waitUntil { membershipRequestRequests.count == 1 }
+    await dataSource.rejectMembershipRequest(.mock, organization: .mock)
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.error == nil)
+    #expect(dataSource.membershipRequestsPager.items.map(\.id) == ["req_2"])
+  }
+
+  @Test
+  func membershipRequestsPaginateAfterARefreshAbandonsALoadMore() async throws {
+    let dataSource = try await dataSourceWithMoreMembershipRequests()
+    let pageTwoRequests = RequestCounter()
+    stubMembershipRequests { [pageTwoRequests] offset in
+      switch offset {
+      case 0:
+        return membershipRequestPage(ids: ["new_1", "new_2"], totalCount: 6)
+      case 2:
+        pageTwoRequests.count += 1
+        if pageTwoRequests.count == 1 {
+          await gate.wait("abandonedLoadMore")
+          return membershipRequestPage(ids: ["req_3", "req_4"], totalCount: 6)
+        }
+        return membershipRequestPage(ids: ["new_3", "new_4"], totalCount: 6)
+      default:
+        return membershipRequestPage(ids: ["new_5", "new_6"], totalCount: 6)
+      }
+    }
+
+    let abandonedLoadMore = Task { await dataSource.loadMoreMembershipRequests(organization: .mock) }
+    try await waitUntil { membershipRequestRequests.count == 1 }
+    await dataSource.loadMembershipRequests(organization: .mock)
+    try await waitUntil { dataSource.membershipRequestsPager.items.count == 4 && !dataSource.membershipRequestsPager.isLoadingMore }
+    await dataSource.loadMoreMembershipRequests(organization: .mock)
+    gate.open("abandonedLoadMore")
+    await abandonedLoadMore.value
+
+    #expect(dataSource.membershipRequestsPager.items.map(\.id) == ["new_1", "new_2", "new_3", "new_4", "new_5", "new_6"])
+    #expect(!dataSource.membershipRequestsPager.hasNextPage)
+    #expect(!dataSource.membershipRequestsPager.isLoadingMore)
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }
@@ -557,6 +711,54 @@ struct OrganizationMembersDataSourceTests {
     }
   }
 
+  private func dataSourceWithMoreInvitations() async throws -> OrganizationMembersDataSource {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubInvitations { _ in invitationPage(ids: ["inv_1", "inv_2"], totalCount: 4) }
+    await dataSource.loadInvitations(organization: .mock)
+    try #require(dataSource.invitationsPager.hasNextPage)
+    invitationRequests.count = 0
+    return dataSource
+  }
+
+  private func dataSourceWithMoreMembershipRequests() async throws -> OrganizationMembersDataSource {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMembershipRequests { _ in membershipRequestPage(ids: ["req_1", "req_2"], totalCount: 4) }
+    await dataSource.loadMembershipRequests(organization: .mock)
+    try #require(dataSource.membershipRequestsPager.hasNextPage)
+    membershipRequestRequests.count = 0
+    return dataSource
+  }
+
+  private func stubInvitations(
+    _ respond: @escaping @MainActor (_ offset: Int) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
+  ) {
+    transport.stub(OrganizationAPI.getInvitations(
+      organizationId: FakeTransport.anyPathSegment,
+      offset: 0,
+      pageSize: 0,
+      status: []
+    )) { [invitationRequests] call in
+      invitationRequests.count += 1
+      let offset = call.query.first { $0.name == "offset" }?.value.flatMap(Int.init) ?? 0
+      return try await ClientResponse(response: respond(offset), client: nil)
+    }
+  }
+
+  private func stubMembershipRequests(
+    _ respond: @escaping @MainActor (_ offset: Int) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>
+  ) {
+    transport.stub(OrganizationAPI.getMembershipRequests(
+      organizationId: FakeTransport.anyPathSegment,
+      offset: 0,
+      pageSize: 0,
+      status: nil
+    )) { [membershipRequestRequests] call in
+      membershipRequestRequests.count += 1
+      let offset = call.query.first { $0.name == "offset" }?.value.flatMap(Int.init) ?? 0
+      return try await ClientResponse(response: respond(offset), client: nil)
+    }
+  }
+
   private func waitUntil(_ condition: () -> Bool) async throws {
     for _ in 0 ..< 1000 where !condition() {
       await Task.yield()
@@ -571,6 +773,28 @@ private func page(ids: [String], totalCount: Int) -> ClerkPaginatedResponse<Orga
       var membership = OrganizationMembership.mockWithUserData
       membership.id = id
       return membership
+    },
+    totalCount: totalCount
+  )
+}
+
+private func invitationPage(ids: [String], totalCount: Int) -> ClerkPaginatedResponse<OrganizationInvitation> {
+  ClerkPaginatedResponse(
+    data: ids.map { id in
+      var invitation = OrganizationInvitation.mock
+      invitation.id = id
+      return invitation
+    },
+    totalCount: totalCount
+  )
+}
+
+private func membershipRequestPage(ids: [String], totalCount: Int) -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
+  ClerkPaginatedResponse(
+    data: ids.map { id in
+      var request = OrganizationMembershipRequest.mock
+      request.id = id
+      return request
     },
     totalCount: totalCount
   )

@@ -32,6 +32,10 @@ final class OrganizationMembersDataSource {
   private var requestedMembershipQuery = ""
   private var hasLoadedMembers = false
   private var loadMoreMembersIsDeferred = false
+  var invitationsRequestID = 0
+  var loadMoreInvitationsIsDeferred = false
+  var membershipRequestsRequestID = 0
+  var loadMoreMembershipRequestsIsDeferred = false
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
@@ -91,78 +95,6 @@ final class OrganizationMembersDataSource {
       roles = []
       hasRoleSetMigration = false
       ClerkLogger.error("Failed to load organization roles", error: error)
-    }
-  }
-
-  func loadInvitations(organization: Organization) async {
-    isLoadingInvitations = true
-    defer { isLoadingInvitations = false }
-
-    do {
-      let page = try await organization.getInvitations(page: 1, pageSize: pageSize, status: ["pending"])
-      invitationsPager.replace(with: page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization invitations", error: error)
-    }
-  }
-
-  func loadMoreInvitations(organization: Organization) async {
-    guard !invitationsPager.isLoadingMore, invitationsPager.hasNextPage else { return }
-
-    invitationsPager.isLoadingMore = true
-    defer { invitationsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getInvitations(
-        offset: invitationsPager.offset,
-        pageSize: pageSize,
-        status: ["pending"]
-      )
-      invitationsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization invitations", error: error)
-    }
-  }
-
-  func loadMembershipRequests(organization: Organization) async {
-    isLoadingMembershipRequests = true
-    defer { isLoadingMembershipRequests = false }
-
-    do {
-      let page = try await organization.getMembershipRequests(page: 1, pageSize: pageSize, status: "pending")
-      membershipRequestsPager.replace(with: page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization membership requests", error: error)
-    }
-  }
-
-  func loadMoreMembershipRequests(organization: Organization) async {
-    guard !membershipRequestsPager.isLoadingMore, membershipRequestsPager.hasNextPage else { return }
-
-    membershipRequestsPager.isLoadingMore = true
-    defer { membershipRequestsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getMembershipRequests(
-        offset: membershipRequestsPager.offset,
-        pageSize: pageSize,
-        status: "pending"
-      )
-      membershipRequestsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization membership requests", error: error)
     }
   }
 
@@ -359,8 +291,12 @@ extension OrganizationMembersDataSource {
     invitationsPager = OrganizationAccountListPager()
     membershipRequestsPager = OrganizationAccountListPager()
     membersRequestID += 1
+    invitationsRequestID += 1
+    membershipRequestsRequestID += 1
     hasLoadedMembers = false
     loadMoreMembersIsDeferred = false
+    loadMoreInvitationsIsDeferred = false
+    loadMoreMembershipRequestsIsDeferred = false
     isLoadingMembers = includeMembers
     isLoadingInvitations = includeInvitations
     isLoadingMembershipRequests = includeMembershipRequests
