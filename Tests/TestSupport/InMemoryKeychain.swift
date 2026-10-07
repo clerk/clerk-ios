@@ -80,3 +80,89 @@ struct MissingEntitlementKeychain: KeychainStorage {
     throw error
   }
 }
+
+final class ThreadRecordingKeychain: @unchecked Sendable, KeychainStorage {
+  private let storage = InMemoryKeychain()
+  private let lock = NSLock()
+  private var writes: [(key: String, isMainThread: Bool)] = []
+
+  var mainThreadWrites: [String] {
+    lock.withLock { writes.filter(\.isMainThread).map(\.key) }
+  }
+
+  var backgroundWrites: [String] {
+    lock.withLock { writes.filter { !$0.isMainThread }.map(\.key) }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    record(key)
+    try storage.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try storage.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    record(key)
+    try storage.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try storage.hasItem(forKey: key)
+  }
+
+  private func record(_ key: String) {
+    let isMainThread = Thread.isMainThread
+    lock.withLock { writes.append((key, isMainThread)) }
+  }
+}
+
+final class StalledWriteKeychain: @unchecked Sendable, KeychainStorage {
+  private let storage = InMemoryKeychain()
+  private let writeStarted = DispatchSemaphore(value: 0)
+  private let gate = DispatchSemaphore(value: 0)
+  private let lock = NSLock()
+  private var isReleased = false
+  private var setValues: [Data] = []
+
+  var writtenValues: [Data] {
+    lock.withLock { setValues }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    if !lock.withLock({ isReleased }) {
+      writeStarted.signal()
+      gate.wait()
+    }
+    lock.withLock { setValues.append(data) }
+    try storage.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try storage.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try storage.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try storage.hasItem(forKey: key)
+  }
+
+  func waitUntilWriteStarts() async {
+    let writeStarted = writeStarted
+    await withCheckedContinuation { continuation in
+      DispatchQueue.global().async {
+        writeStarted.wait()
+        continuation.resume()
+      }
+    }
+  }
+
+  func release() {
+    lock.withLock { isReleased = true }
+    gate.signal()
+  }
+}

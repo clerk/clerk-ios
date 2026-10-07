@@ -27,49 +27,67 @@ final class MockCacheCoordinator: CacheCoordinator {
 @Suite(.serialized)
 struct CacheManagerTests {
   @Test
-  func savedEnvironmentLoadsOnNextLaunch() {
+  func savedEnvironmentLoadsOnNextLaunch() async {
     let keychain = InMemoryKeychain()
-    CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain).saveEnvironment(.mock)
+    let writes = KeychainWriteQueue()
+    CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain, writes: writes).saveEnvironment(.mock)
+    await writes.waitForPendingWrites()
 
     let coordinator = MockCacheCoordinator()
-    CacheManager(coordinator: coordinator, keychain: keychain).loadCachedData()
+    CacheManager(coordinator: coordinator, keychain: keychain, writes: writes).loadCachedData()
 
     #expect(coordinator.environment == .mock)
   }
 
   @Test
-  func cachedEnvironmentDoesNotReplaceAFreshOne() {
+  func cachedEnvironmentDoesNotReplaceAFreshOne() async {
     let keychain = InMemoryKeychain()
-    CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain).saveEnvironment(.mock)
+    let writes = KeychainWriteQueue()
+    CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain, writes: writes).saveEnvironment(.mock)
+    await writes.waitForPendingWrites()
     var fresh = Clerk.Environment.mock
     fresh.displayConfig.applicationName = "Fresh"
 
     let coordinator = MockCacheCoordinator(environment: fresh)
-    CacheManager(coordinator: coordinator, keychain: keychain).loadCachedData()
+    CacheManager(coordinator: coordinator, keychain: keychain, writes: writes).loadCachedData()
 
     #expect(coordinator.environment?.displayConfig.applicationName == "Fresh")
   }
 
   @Test
-  func shutdownIgnoresLaterSaves() throws {
+  func shutdownIgnoresLaterSaves() async throws {
     let keychain = InMemoryKeychain()
-    let cacheManager = CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain)
+    let writes = KeychainWriteQueue()
+    let cacheManager = CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain, writes: writes)
 
     cacheManager.shutdown()
     cacheManager.saveEnvironment(.mock)
+    await writes.waitForPendingWrites()
 
     #expect(try keychain.data(forKey: ClerkKeychainKey.cachedEnvironment.rawValue) == nil)
   }
 
   @Test
+  func savingTheEnvironmentDoesNotWriteOnTheMainThread() async {
+    let keychain = ThreadRecordingKeychain()
+    let writes = KeychainWriteQueue()
+    CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain, writes: writes).saveEnvironment(.mock)
+    await writes.waitForPendingWrites()
+
+    #expect(keychain.mainThreadWrites.isEmpty)
+    #expect(keychain.backgroundWrites == [ClerkKeychainKey.cachedEnvironment.rawValue])
+  }
+
+  @Test
   func missingOrCorruptCacheIsIgnored() throws {
     let keychain = InMemoryKeychain()
+    let writes = KeychainWriteQueue()
     let coordinator = MockCacheCoordinator()
-    CacheManager(coordinator: coordinator, keychain: keychain).loadCachedData()
+    CacheManager(coordinator: coordinator, keychain: keychain, writes: writes).loadCachedData()
     #expect(coordinator.environment == nil)
 
     try keychain.set(Data("not json".utf8), forKey: ClerkKeychainKey.cachedEnvironment.rawValue)
-    CacheManager(coordinator: coordinator, keychain: keychain).loadCachedData()
+    CacheManager(coordinator: coordinator, keychain: keychain, writes: writes).loadCachedData()
     #expect(coordinator.environment == nil)
   }
 }

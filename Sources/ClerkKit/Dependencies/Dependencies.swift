@@ -35,6 +35,10 @@ protocol Dependencies: AnyObject {
 }
 
 extension Dependencies {
+  var cacheWrites: KeychainWriteQueue {
+    identityStore.cacheWrites
+  }
+
   var watchSyncKeychain: any KeychainStorage {
     MigratingKeychainStorage(primary: appLocalKeychain, fallback: keychain)
   }

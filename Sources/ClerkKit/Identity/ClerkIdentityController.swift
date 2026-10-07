@@ -192,14 +192,21 @@ extension ClerkIdentityController {
       if tokenChanged {
         try store.saveDeviceToken(identity.deviceToken)
       }
-      do {
-        try store.saveClient(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to cache the Clerk client")
+      if !tokenChanged, endsSignedInSession(identity.client) {
+        store.cacheClientNow(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)
+      } else {
+        store.cacheClient(identity.client, serverDate: identity.serverDate, for: identity.deviceToken)
       }
     }
     invalidatedSessionTokens.subtract(reconciled.reusableSessionIds.subtracting(invalidatedSessionIds))
     apply(identity, fenceResponses: fenceResponses || tokenChanged, authFlowUpdate: authFlowUpdate)
+  }
+
+  private func endsSignedInSession(_ incoming: Client?) -> Bool {
+    func signedInSessionIds(_ client: Client?) -> Set<String> {
+      Set((client?.sessions ?? []).filter { $0.status == .active || $0.status == .pending }.map(\.id))
+    }
+    return !signedInSessionIds(clerk?.client).isSubset(of: signedInSessionIds(incoming))
   }
 
   private func apply(

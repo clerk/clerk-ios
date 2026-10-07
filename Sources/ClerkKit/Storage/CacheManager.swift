@@ -16,11 +16,13 @@ protocol CacheCoordinator: AnyObject, Sendable {
 final class CacheManager {
   private weak var coordinator: (any CacheCoordinator)?
   private let keychain: any KeychainStorage
+  private let writes: KeychainWriteQueue
   private var isShutdown = false
 
-  init(coordinator: any CacheCoordinator, keychain: any KeychainStorage) {
+  init(coordinator: any CacheCoordinator, keychain: any KeychainStorage, writes: KeychainWriteQueue) {
     self.coordinator = coordinator
     self.keychain = keychain
+    self.writes = writes
   }
 
   func loadCachedData() {
@@ -40,16 +42,19 @@ final class CacheManager {
 
   func saveEnvironment(_ environment: Clerk.Environment) {
     guard !isShutdown else { return }
-    do {
-      try keychain.set(
-        JSONEncoder.clerkEncoder.encode(environment),
-        forKey: ClerkKeychainKey.cachedEnvironment.rawValue
-      )
-    } catch {
-      ClerkLogger.logError(
-        error,
-        message: "Failed to save environment to keychain. This is non-critical but may affect offline functionality."
-      )
+    let keychain = keychain
+    writes.enqueue(.cachedEnvironment) {
+      do {
+        try keychain.set(
+          JSONEncoder.clerkEncoder.encode(environment),
+          forKey: ClerkKeychainKey.cachedEnvironment.rawValue
+        )
+      } catch {
+        ClerkLogger.logError(
+          error,
+          message: "Failed to save environment to keychain. This is non-critical but may affect offline functionality."
+        )
+      }
     }
   }
 

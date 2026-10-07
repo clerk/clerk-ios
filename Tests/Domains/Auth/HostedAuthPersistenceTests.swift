@@ -5,7 +5,7 @@ import Testing
 
 extension HostedAuthFlowTests {
   @Test
-  func redeemPersistsIdentityBeforeActivation() async throws {
+  func redeemPersistsTheTokenBeforeActivation() async throws {
     let createParams = LockIsolated<JSON?>(nil)
     let persistedBeforeActivation = LockIsolated(false)
     let redeemedClient = makeHostedAuthPersistenceClient(
@@ -21,12 +21,8 @@ extension HostedAuthFlowTests {
     let keychain = FailableIdentityKeychain()
     let transport = hostedAuthTransport(createParams: createParams, redeemedClient: redeemedClient)
     transport.stubSetActive { sessionId, _ in
-      let persisted = try Clerk.shared.dependencies.identityStore.load()
-      persistedBeforeActivation.setValue(
-        persisted?.deviceToken == "redeemed-token"
-          && persisted?.client?.id == redeemedClient.id
-          && persisted?.serverDate == Date(timeIntervalSince1970: 200)
-      )
+      let persistedToken = try Clerk.shared.dependencies.identityStore.deviceToken()
+      persistedBeforeActivation.setValue(persistedToken == "redeemed-token")
       #expect(sessionId == Session.mock2.id)
       Clerk.shared.client = activatedClient
     }
@@ -39,6 +35,7 @@ extension HostedAuthFlowTests {
 
     #expect(persistedBeforeActivation.value)
     #expect(session.id == Session.mock2.id)
+    await Clerk.shared.waitForCacheWrites()
     let persisted = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(persisted.deviceToken == "redeemed-token")
     #expect(persisted.client?.id == redeemedClient.id)
@@ -97,6 +94,7 @@ extension HostedAuthFlowTests {
 
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client?.id == initialClient.id)
+    await Clerk.shared.waitForCacheWrites()
     #expect(try Clerk.shared.dependencies.identityStore.load()?.client?.id == initialClient.id)
   }
 
@@ -141,6 +139,7 @@ extension HostedAuthFlowTests {
     #expect(!redeemCalled.value)
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.client?.id == initialClient.id)
+    await Clerk.shared.waitForCacheWrites()
     #expect(try Clerk.shared.dependencies.identityStore.load()?.client?.id == initialClient.id)
   }
 
@@ -186,6 +185,7 @@ extension HostedAuthFlowTests {
     #expect(!setActiveCalled.value)
     #expect(Clerk.shared.identityController.currentDeviceToken == "other-app-token")
     #expect(Clerk.shared.client?.id == otherAppClient.id)
+    await Clerk.shared.waitForCacheWrites()
     #expect(try Clerk.shared.dependencies.identityStore.load()?.client?.id == otherAppClient.id)
   }
 }

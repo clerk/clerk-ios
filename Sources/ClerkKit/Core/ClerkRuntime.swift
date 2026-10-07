@@ -67,7 +67,11 @@ final class ClerkRuntime {
 
     clerk.identityController.hydrate()
 
-    let cacheManager = CacheManager(coordinator: clerk, keychain: dependencies.appLocalKeychain)
+    let cacheManager = CacheManager(
+      coordinator: clerk,
+      keychain: dependencies.appLocalKeychain,
+      writes: dependencies.cacheWrites
+    )
     self.cacheManager = cacheManager
     internalStateChanges.addObserver(cacheManager)
     cacheManager.loadCachedData()
@@ -94,6 +98,7 @@ final class ClerkRuntime {
     cancelRefreshes()
     stopManagers()
     await tasks.cancelAllAndWait()
+    await dependencies.cacheWrites.waitForPendingWrites()
 
     let telemetry = dependencies.telemetryCollector
     Task(priority: .utility) {

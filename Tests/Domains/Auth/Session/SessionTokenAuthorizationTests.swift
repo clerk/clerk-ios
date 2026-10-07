@@ -38,6 +38,7 @@ struct SessionTokenAuthorizationTests {
     #expect(didChange.value)
     session.lastActiveToken = refreshed
     #expect(clerk.session == session)
+    await clerk.waitForCacheWrites()
     #expect(try clerk.dependencies.identityStore.load()?.client?.currentSession == session)
     #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 100))
   }
@@ -329,6 +330,7 @@ struct SessionTokenAuthorizationTests {
     #expect(clerk.has(feature: "widgets"))
     #expect(clerk.user?.firstName == "Updated profile")
     #expect(clerk.lastClientServerFetchDate == Date(timeIntervalSince1970: 200))
+    await clerk.waitForCacheWrites()
     #expect(try clerk.dependencies.identityStore.load()?.client?.currentSession?.lastActiveToken == refreshed)
   }
 

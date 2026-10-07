@@ -472,6 +472,44 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func keychainClearWaitingOnACacheWriteRechecksReconfiguration() async throws {
+    let clerk = Clerk.shared
+    let clientKeychain = StalledWriteKeychain()
+    let dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope),
+      keychain: InMemoryKeychain(),
+      clientKeychain: clientKeychain,
+      telemetryCollector: clerk.dependencies.telemetryCollector
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    try clerk.seedIdentity(deviceToken: "device-token")
+    defer { clerk.cleanupManagers() }
+    clerk.applyResponseClient(.mock)
+    await clientKeychain.waitUntilWriteStarts()
+
+    let clearTask = Task { @MainActor in try await Clerk.clearAllKeychainItemsAndWait() }
+    try await Task.sleep(for: .milliseconds(50))
+    try Clerk.beginRuntimeReconfiguration()
+    var endedReconfiguration = false
+    defer {
+      if !endedReconfiguration {
+        Clerk.endRuntimeReconfiguration()
+      }
+    }
+    clientKeychain.release()
+    try await Task.sleep(for: .milliseconds(100))
+
+    #expect(clerk.identityController.currentDeviceToken == "device-token")
+
+    Clerk.endRuntimeReconfiguration()
+    endedReconfiguration = true
+    try await clearTask.value
+
+    #expect(clerk.identityController.currentDeviceToken == nil)
+    #expect(try clerk.dependencies.identityStore.load() == nil)
+  }
+
+  @Test
   func reconfigureDrainsPendingCacheWritesBeforeClearingOldKeychain() async throws {
     let oldKeychain = SlowKeychain(delay: 0.5)
     let dependencies = MockDependencyContainer(
