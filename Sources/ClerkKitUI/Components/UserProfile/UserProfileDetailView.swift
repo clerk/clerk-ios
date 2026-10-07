@@ -29,11 +29,11 @@ struct UserProfileDetailView: View {
   }
 
   private var showEmailSection: Bool {
-    clerk.environment?.emailIsEnabled == true && (canAddEmailAddress || !sortedEmails.isEmpty)
+    clerk.environment?.emailIsAvailable == true && (canAddEmailAddress || !sortedEmails.isEmpty)
   }
 
   private var showPhoneNumberSection: Bool {
-    clerk.environment?.phoneNumberIsEnabled == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
+    clerk.environment?.phoneNumberIsAvailable == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
   }
 
   var sortedEmails: [EmailAddress] {

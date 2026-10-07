@@ -159,13 +159,13 @@ extension LastUsedAuth {
 
   fileprivate static func canShowLastUsedBadge(in environment: Clerk.Environment?) -> Bool {
     let hasEmail = environment?.userSettings.attributes.contains { key, value in
-      key == "email_address" && value.enabled && value.usedForFirstFactor
+      key == "email_address" && value.usedForFirstFactor
     } ?? false
     let hasPhone = environment?.userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled && value.usedForFirstFactor
+      key == "phone_number" && value.usedForFirstFactor
     } ?? false
     let hasUsername = environment?.userSettings.attributes.contains { key, value in
-      key == "username" && value.enabled && value.usedForFirstFactor
+      key == "username" && value.usedForFirstFactor
     } ?? false
 
     if hasPhone, hasEmail || hasUsername {
