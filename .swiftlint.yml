@@ -28,6 +28,7 @@ excluded:
   - build-docs
   - build-docs-test
   - Tests
+  - e2e-tests
 
 # Reporter type
 reporter: "xcode"
