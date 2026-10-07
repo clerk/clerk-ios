@@ -219,6 +219,52 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2"])
   }
 
+  @Test
+  func refreshAfterAbandoningAFailedSearchReloadsTheFieldsQuery() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { query, _ in
+      if query == "john" {
+        throw URLError(.badServerResponse)
+      }
+      return page(ids: ["mem_1"], totalCount: 1)
+    }
+
+    await dataSource.loadMembers(organization: .mock)
+    await dataSource.searchMembers(organization: .mock, query: "john")
+    try #require(dataSource.error != nil)
+    await dataSource.searchMembers(organization: .mock, query: "")
+    await dataSource.loadMembers(organization: .mock)
+
+    #expect(membershipRequests.queries == [nil, "john", nil])
+    #expect(dataSource.membershipSearchQuery == "")
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1"])
+  }
+
+  @Test
+  func resumingAfterTheInitialLoadWasSupersededAndCancelledLoadsAgain() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { _, _ in
+      await gate.wait("load")
+      return page(ids: ["mem_1"], totalCount: 1)
+    }
+
+    let initialLoad = Task { await dataSource.loadMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    let resumedSearch = Task { await dataSource.resumeSearchIfNeeded(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 2 }
+    resumedSearch.cancel()
+    gate.open("load")
+    await initialLoad.value
+    await resumedSearch.value
+
+    #expect(dataSource.membershipsPager.items.isEmpty)
+
+    await dataSource.resumeSearchIfNeeded(organization: .mock)
+
+    #expect(membershipRequests.count == 3)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1"])
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }

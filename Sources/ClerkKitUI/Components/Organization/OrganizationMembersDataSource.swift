@@ -30,6 +30,7 @@ final class OrganizationMembersDataSource {
   var error: Error?
   private var membersRequestID = 0
   private var requestedMembershipQuery = ""
+  private var hasLoadedMembers = false
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
@@ -112,6 +113,7 @@ final class OrganizationMembersDataSource {
       guard requestID == membersRequestID, !Task.isCancelled else { return }
 
       membershipSearchQuery = query
+      hasLoadedMembers = true
       membershipsPager.replace(with: page)
     } catch {
       guard requestID == membersRequestID, !error.isCancellationError else { return }
@@ -304,14 +306,6 @@ final class OrganizationMembersDataSource {
       ClerkLogger.error("Failed to reject organization membership request", error: error)
     }
   }
-
-  func roleName(for membership: OrganizationMembership) -> String {
-    roleName(for: membership.role, fallback: membership.roleName)
-  }
-
-  func roleName(for invitation: OrganizationInvitation) -> String {
-    roleName(for: invitation.role)
-  }
 }
 
 extension OrganizationMembersDataSource {
@@ -320,7 +314,8 @@ extension OrganizationMembersDataSource {
   }
 
   func searchMembers(organization: Organization, query: String) async {
-    guard membershipSearchQuery != query || isLoadingMembers else { return }
+    requestedMembershipQuery = query
+    guard !hasLoadedMembers || membershipSearchQuery != query || isLoadingMembers else { return }
 
     await loadMembers(organization: organization, query: query)
   }
@@ -338,6 +333,7 @@ extension OrganizationMembersDataSource {
     membershipsPager = OrganizationAccountListPager()
     invitationsPager = OrganizationAccountListPager()
     membershipRequestsPager = OrganizationAccountListPager()
+    hasLoadedMembers = false
     isLoadingMembers = includeMembers
     isLoadingInvitations = includeInvitations
     isLoadingMembershipRequests = includeMembershipRequests
@@ -348,6 +344,14 @@ extension OrganizationMembersDataSource {
     acceptingMembershipRequestIds = []
     rejectingMembershipRequestIds = []
     error = nil
+  }
+
+  func roleName(for membership: OrganizationMembership) -> String {
+    roleName(for: membership.role, fallback: membership.roleName)
+  }
+
+  func roleName(for invitation: OrganizationInvitation) -> String {
+    roleName(for: invitation.role)
   }
 
   fileprivate func roleName(for roleKey: String, fallback: String? = nil) -> String {
