@@ -62,7 +62,6 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
-          RUN_INTEGRATION_TESTS: ${{ inputs.run_integration_tests }}
         run: |
           set -euo pipefail
 
@@ -83,15 +82,6 @@ jobs:
             "$CHECK_RUN_NAME_PREFIX / Build visionOS"
             "$CHECK_RUN_NAME_PREFIX / Run verify skill tests"
           )
-
-          if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
-            check_run_names+=(
-              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (auth-email)"
-              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (auth-phone)"
-              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (user-profile)"
-              "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (session-task-setup-mfa)"
-            )
-          fi
 
           check_runs_json="$(jq -cn '{}')"
           started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -233,194 +223,6 @@ jobs:
       - name: Run ClerkKitUI tests
         run: make test-ui
 
-  test-e2e:
-    name: Run required E2EHost Maestro tests on iOS (${{ matrix.shard }})
-    needs: format-and-lint
-    if: inputs.run_integration_tests
-    runs-on: blacksmith-6vcpu-macos-26
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - shard: auth-email
-            key_name: auth-email-code-password
-          - shard: auth-phone
-            key_name: auth-phone-code
-          - shard: user-profile
-            key_name: auth-email-code-password
-          - shard: session-task-setup-mfa
-            key_name: session-task-setup-mfa
-    # The approved fictional phone range has only 100 values, so phone sign-up
-    # must not race another workflow run that may select the same number.
-    concurrency:
-      group: ${{ matrix.shard == 'auth-phone' && 'e2ehost-maestro-auth-phone' || format('e2ehost-maestro-{0}-{1}', github.run_id, matrix.shard) }}
-      cancel-in-progress: false
-      queue: max
-    env:
-      MAESTRO_RUNNER_VERSION: "1.1.21"
-      MAESTRO_RUNNER_DARWIN_AMD64_SHA256: c69cc36f85fb639ff799bc00775c45ae98b6e4c50455ef08f6d594000253bc83
-      MAESTRO_RUNNER_DARWIN_ARM64_SHA256: 192038da519ddaf817c43c94735662942ffc69a58fa467c1d9ff7f948323a4a8
-      E2E_MAESTRO_REPORT_PATH: build/reports/maestro-${{ matrix.shard }}
-      IOS_SIMULATOR_DESTINATION: platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          repository: ${{ inputs.checkout_repository || github.repository }}
-          ref: ${{ inputs.checkout_ref || github.sha }}
-          persist-credentials: false
-
-      - name: Verify macOS and Xcode version
-        run: |
-          sw_vers
-          xcodebuild -version
-
-      - name: Cache Xcode Swift package checkouts
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: build/xcode-source-packages
-          key: swiftpm-e2e-${{ hashFiles('Package.swift') }}
-          restore-keys: swiftpm-e2e-
-
-      - name: Cache maestro-runner archive and compiled WDA
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
-        with:
-          path: |
-            ~/Library/Caches/clerk-maestro-runner
-            ~/.maestro-runner/cache
-          key: maestro-runner-${{ runner.os }}-${{ runner.arch }}-${{ env.MAESTRO_RUNNER_VERSION }}
-
-      - name: Install maestro-runner
-        run: |
-          set -euo pipefail
-
-          case "$(uname -m)" in
-            arm64)
-              release_arch="arm64"
-              expected_sha="$MAESTRO_RUNNER_DARWIN_ARM64_SHA256"
-              ;;
-            x86_64)
-              release_arch="amd64"
-              expected_sha="$MAESTRO_RUNNER_DARWIN_AMD64_SHA256"
-              ;;
-            *)
-              echo "::error::Unsupported maestro-runner architecture: $(uname -m)"
-              exit 1
-              ;;
-          esac
-
-          archive_name="maestro-runner-${MAESTRO_RUNNER_VERSION}-darwin-${release_arch}.tar.gz"
-          archive_cache_dir="$HOME/Library/Caches/clerk-maestro-runner"
-          archive_path="$archive_cache_dir/$archive_name"
-          download_url="https://github.com/devicelab-dev/maestro-runner/releases/download/v${MAESTRO_RUNNER_VERSION}/${archive_name}"
-          mkdir -p "$archive_cache_dir"
-
-          archive_is_valid() {
-            [ -f "$archive_path" ] || return 1
-            actual_sha="$(shasum -a 256 "$archive_path" | awk '{print $1}')"
-            [ "$actual_sha" = "$expected_sha" ]
-          }
-
-          if archive_is_valid; then
-            echo "Using cached, verified maestro-runner archive"
-          else
-            rm -f "$archive_path"
-            downloaded=0
-            for attempt in 1 2 3; do
-              download_path="$archive_path.download"
-              rm -f "$download_path"
-              if curl -fsSL --retry 3 --retry-delay 5 -o "$download_path" "$download_url"; then
-                actual_sha="$(shasum -a 256 "$download_path" | awk '{print $1}')"
-                if [ "$actual_sha" = "$expected_sha" ]; then
-                  mv "$download_path" "$archive_path"
-                  downloaded=1
-                  break
-                fi
-                echo "::warning::maestro-runner checksum mismatch on attempt $attempt"
-              fi
-              echo "maestro-runner download attempt $attempt failed; retrying"
-              sleep 5
-            done
-            if [ "$downloaded" != "1" ]; then
-              echo "::error::maestro-runner download or checksum verification failed after 3 attempts"
-              exit 1
-            fi
-          fi
-
-          extract_dir="$(mktemp -d "$RUNNER_TEMP/maestro-runner.XXXXXX")"
-          trap 'rm -rf "$extract_dir"' EXIT
-          tar -xzf "$archive_path" -C "$extract_dir"
-          [ -x "$extract_dir/maestro-runner/bin/maestro-runner" ] || {
-            echo "::error::Verified maestro-runner archive has an unexpected layout"
-            exit 1
-          }
-
-          mkdir -p "$HOME/.maestro-runner"
-          cp -R "$extract_dir/maestro-runner/." "$HOME/.maestro-runner/"
-          chmod +x "$HOME/.maestro-runner/bin/maestro-runner"
-          echo "$HOME/.maestro-runner/bin" >> "$GITHUB_PATH"
-          "$HOME/.maestro-runner/bin/maestro-runner" --version
-
-      - name: Setup E2E test keys
-        env:
-          CLERK_TEST_KEYS_JSON: ${{ secrets.CLERK_TEST_KEYS_JSON }}
-        run: |
-          set +x
-          if [ -z "$CLERK_TEST_KEYS_JSON" ]; then
-            echo "❌ Error: CLERK_TEST_KEYS_JSON secret is not set"
-            echo "   Please configure CLERK_TEST_KEYS_JSON secret in repository settings"
-            exit 1
-          fi
-
-          printf '%s\n' "$CLERK_TEST_KEYS_JSON" > .keys.json
-          chmod 600 .keys.json
-          echo "✅ Created .keys.json from CLERK_TEST_KEYS_JSON secret"
-
-      - name: Run required E2EHost Maestro test
-        id: run_e2e
-        env:
-          CLERK_E2E_KEY_NAME: ${{ matrix.key_name }}
-          E2E_MAESTRO_FLOW_NAME: ${{ matrix.shard }}
-        run: |
-          set -euo pipefail
-
-          test_password="ClerkIOS2026E2E$(openssl rand -hex 16)!"
-          echo "::add-mask::$test_password"
-          printf 'TEST_PASSWORD=%s\n' "$test_password" >> "$GITHUB_ENV"
-          CLERK_TEST_PASSWORD="$test_password" make test-e2e
-
-      - name: Scrub credentials from Maestro reports
-        if: always() && steps.run_e2e.outcome == 'failure'
-        run: |
-          set -euo pipefail
-
-          report_path="$E2E_MAESTRO_REPORT_PATH"
-          [ -d "$report_path" ] || exit 0
-          if [ -z "${TEST_PASSWORD:-}" ]; then
-            echo "::warning::Skipping Maestro report scrubbing because TEST_PASSWORD is unavailable"
-            exit 0
-          fi
-          # shellcheck disable=SC2016
-          find "$report_path" -type f \
-            \( -name '*.html' -o -name '*.json' -o -name '*.log' -o -name '*.txt' -o -name '*.xml' -o -name '*.yaml' \) \
-            -exec perl -pi -e 's/\Q$ENV{TEST_PASSWORD}\E/[REDACTED]/g' {} +
-
-      - name: Upload Maestro failure reports
-        if: always() && steps.run_e2e.outcome == 'failure'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: E2EHost-maestro-${{ matrix.shard }}-artifacts
-          path: ${{ env.E2E_MAESTRO_REPORT_PATH }}
-          retention-days: 7
-          if-no-files-found: ignore
-
-      - name: Cleanup E2E test keys
-        if: always()
-        run: |
-          rm -f .keys.json
-          echo "✅ Cleaned up .keys.json"
-
   build:
     name: Build ${{ matrix.platform }}
     needs: [test, test-ui]
@@ -493,7 +295,6 @@ jobs:
       - format-and-lint
       - test
       - test-ui
-      - test-e2e
       - build
       - verify-skill
     if: always() && inputs.report_check_runs && inputs.check_run_sha != ''
@@ -508,7 +309,6 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUNS_JSON: ${{ needs.prepare-manual-ci-check-runs.outputs.check_runs_json }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
-          RUN_INTEGRATION_TESTS: ${{ inputs.run_integration_tests }}
         run: |
           set -euo pipefail
 
@@ -583,10 +383,3 @@ jobs:
           update_check_run "$CHECK_RUN_NAME_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run verify skill tests" "$(job_result "Run verify skill tests")"
-
-          if [ "$RUN_INTEGRATION_TESTS" = "true" ]; then
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (auth-email)" "$(job_result "Run required E2EHost Maestro tests on iOS (auth-email)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (auth-phone)" "$(job_result "Run required E2EHost Maestro tests on iOS (auth-phone)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (user-profile)" "$(job_result "Run required E2EHost Maestro tests on iOS (user-profile)")"
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Run required E2EHost Maestro tests on iOS (session-task-setup-mfa)" "$(job_result "Run required E2EHost Maestro tests on iOS (session-task-setup-mfa)")"
-          fi
