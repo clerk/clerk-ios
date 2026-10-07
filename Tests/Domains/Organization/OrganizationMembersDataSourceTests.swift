@@ -265,6 +265,53 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1"])
   }
 
+  @Test
+  func cancelledLoadDoesNotSupersedeANewerRequest() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { _, _ in
+      await gate.wait("load")
+      return page(ids: ["mem_1"], totalCount: 1)
+    }
+
+    let newerLoad = Task { await dataSource.loadMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    let cancelledLoad = Task { await dataSource.loadMembers(organization: .mock) }
+    cancelledLoad.cancel()
+    gate.open("load")
+    await cancelledLoad.value
+    await newerLoad.value
+
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1"])
+    #expect(!dataSource.isLoadingMembers)
+  }
+
+  @Test(arguments: [false, true])
+  func loadMoreRequestedDuringARefreshRunsAfterIt(refreshFails: Bool) async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    stubMemberships { _, offset in
+      if offset > 0 {
+        return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+      }
+      await gate.wait("refresh")
+      if refreshFails {
+        throw URLError(.badServerResponse)
+      }
+      return page(ids: ["mem_1", "mem_2"], totalCount: 4)
+    }
+
+    let refresh = Task { await dataSource.loadMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    await dataSource.loadMoreMembers(organization: .mock)
+
+    #expect(membershipRequests.count == 1)
+
+    gate.open("refresh")
+    await refresh.value
+
+    #expect(membershipRequests.count == 2)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }

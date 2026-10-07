@@ -31,6 +31,7 @@ final class OrganizationMembersDataSource {
   private var membersRequestID = 0
   private var requestedMembershipQuery = ""
   private var hasLoadedMembers = false
+  private var loadMoreMembersIsDeferred = false
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
@@ -90,60 +91,6 @@ final class OrganizationMembersDataSource {
       roles = []
       hasRoleSetMigration = false
       ClerkLogger.error("Failed to load organization roles", error: error)
-    }
-  }
-
-  private func loadMembers(organization: Organization, query: String) async {
-    membersRequestID += 1
-    let requestID = membersRequestID
-    requestedMembershipQuery = query
-    isLoadingMembers = true
-    defer {
-      if requestID == membersRequestID {
-        isLoadingMembers = false
-      }
-    }
-
-    do {
-      let page = try await organization.getMemberships(
-        query: query.isEmpty ? nil : query,
-        page: 1,
-        pageSize: pageSize
-      )
-      guard requestID == membersRequestID, !Task.isCancelled else { return }
-
-      membershipSearchQuery = query
-      hasLoadedMembers = true
-      membershipsPager.replace(with: page)
-    } catch {
-      guard requestID == membersRequestID, !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization members", error: error)
-    }
-  }
-
-  func loadMoreMembers(organization: Organization) async {
-    guard !isLoadingMembers, !membershipsPager.isLoadingMore, membershipsPager.hasNextPage else { return }
-
-    let requestID = membersRequestID
-    membershipsPager.isLoadingMore = true
-    defer { membershipsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getMemberships(
-        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery,
-        offset: membershipsPager.offset,
-        pageSize: pageSize
-      )
-      guard requestID == membersRequestID, !Task.isCancelled else { return }
-
-      membershipsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization members", error: error)
     }
   }
 
@@ -313,6 +260,69 @@ extension OrganizationMembersDataSource {
     await loadMembers(organization: organization, query: requestedMembershipQuery)
   }
 
+  func loadMoreMembers(organization: Organization) async {
+    guard !membershipsPager.isLoadingMore, membershipsPager.hasNextPage else { return }
+    guard !isLoadingMembers else {
+      loadMoreMembersIsDeferred = true
+      return
+    }
+
+    let requestID = membersRequestID
+    membershipsPager.isLoadingMore = true
+    defer { membershipsPager.isLoadingMore = false }
+
+    do {
+      let page = try await organization.getMemberships(
+        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery,
+        offset: membershipsPager.offset,
+        pageSize: pageSize
+      )
+      guard requestID == membersRequestID, !Task.isCancelled else { return }
+
+      membershipsPager.append(page)
+    } catch {
+      guard !error.isCancellationError else { return }
+
+      self.error = error
+      ClerkLogger.error("Failed to load more organization members", error: error)
+    }
+  }
+
+  private func loadMembers(organization: Organization, query: String) async {
+    guard !Task.isCancelled else { return }
+
+    membersRequestID += 1
+    let requestID = membersRequestID
+    requestedMembershipQuery = query
+    isLoadingMembers = true
+
+    do {
+      let page = try await organization.getMemberships(
+        query: query.isEmpty ? nil : query,
+        page: 1,
+        pageSize: pageSize
+      )
+      if requestID == membersRequestID, !Task.isCancelled {
+        membershipSearchQuery = query
+        hasLoadedMembers = true
+        membershipsPager.replace(with: page)
+      }
+    } catch {
+      if requestID == membersRequestID, !error.isCancellationError {
+        self.error = error
+        ClerkLogger.error("Failed to load organization members", error: error)
+      }
+    }
+
+    guard requestID == membersRequestID else { return }
+
+    isLoadingMembers = false
+    if loadMoreMembersIsDeferred, !Task.isCancelled {
+      loadMoreMembersIsDeferred = false
+      await loadMoreMembers(organization: organization)
+    }
+  }
+
   func searchMembers(organization: Organization, query: String) async {
     requestedMembershipQuery = query
     guard !hasLoadedMembers || membershipSearchQuery != query || isLoadingMembers else { return }
@@ -334,6 +344,7 @@ extension OrganizationMembersDataSource {
     invitationsPager = OrganizationAccountListPager()
     membershipRequestsPager = OrganizationAccountListPager()
     hasLoadedMembers = false
+    loadMoreMembersIsDeferred = false
     isLoadingMembers = includeMembers
     isLoadingInvitations = includeInvitations
     isLoadingMembershipRequests = includeMembershipRequests
