@@ -19,6 +19,8 @@ protocol Dependencies: AnyObject {
 
   var identityStore: ClerkIdentityStore { get }
 
+  var cacheWrites: KeychainWriteQueue { get }
+
   var identityIsInAccessGroup: Bool { get }
 
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }
