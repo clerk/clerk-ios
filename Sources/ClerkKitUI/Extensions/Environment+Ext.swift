@@ -110,10 +110,6 @@ extension Clerk.Environment {
     userSettings.attributes["backup_code"]?.usedForSecondFactor == true
   }
 
-  var deleteSelfIsEnabled: Bool {
-    userSettings.actions.deleteSelf
-  }
-
   var emailIsAvailable: Bool {
     attributeIsAvailable("email_address")
   }

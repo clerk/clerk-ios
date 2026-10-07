@@ -92,8 +92,8 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable {
     /// The display name of the enterprise connection.
     public let name: String
 
-    /// The public URL of the provider's logo.
-    public let logoPublicUrl: String
+    /// The public URL of the provider's logo, or `nil` if the connection has no logo.
+    public let logoPublicUrl: String?
 
     /// The domain associated with the enterprise connection (e.g., example.com).
     public let domain: String
@@ -124,7 +124,7 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable {
       protocol: String,
       provider: String,
       name: String,
-      logoPublicUrl: String,
+      logoPublicUrl: String? = nil,
       domain: String,
       active: Bool,
       syncUserAttributes: Bool,

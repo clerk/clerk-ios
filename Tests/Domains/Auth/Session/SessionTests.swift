@@ -31,6 +31,36 @@ struct SessionTests {
     #expect(captured.value == session.id)
   }
 
+  @Test(arguments: [
+    ["sub": "user_123", "iss": "https://dashboard.clerk.com"],
+    ["sub": "agent_123", "type": "agent", "task_id": "task_123"],
+  ])
+  func clientDecodesSessionWithActor(actor: [String: String]) throws {
+    let client = try decodeClient(withFirstSessionActor: actor)
+
+    let decodedActor = try #require(client.sessions.first?.actor)
+    for (key, value) in actor {
+      #expect(decodedActor[key]?.stringValue == value)
+    }
+  }
+
+  @Test
+  func clientDecodesSessionWithoutActor() throws {
+    let client = try decodeClient(withFirstSessionActor: NSNull())
+
+    #expect(client.sessions.first?.actor == nil)
+  }
+
+  private func decodeClient(withFirstSessionActor actor: Any) throws -> Client {
+    var client = try #require(
+      JSONSerialization.jsonObject(with: JSONEncoder.clerkEncoder.encode(Client.mock)) as? [String: Any]
+    )
+    var sessions = try #require(client["sessions"] as? [[String: Any]])
+    sessions[0]["actor"] = actor
+    client["sessions"] = sessions
+    return try JSONDecoder.clerkDecoder.decode(Client.self, from: JSONSerialization.data(withJSONObject: client))
+  }
+
   @Test
   func taskKeyParsesSetupMfa() {
     let task = Session.Task(key: "setup-mfa")

@@ -105,7 +105,7 @@ struct UserProfileSecurityView: View {
               UserProfileDevicesSection()
             }
 
-            if environment?.deleteSelfIsEnabled == true {
+            if user.deleteSelfEnabled {
               UserProfileDeleteAccountSection()
             }
           }

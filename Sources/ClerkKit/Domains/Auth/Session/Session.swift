@@ -43,8 +43,8 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The last active organization identifier.
   public var lastActiveOrganizationId: String?
 
-  /// The JWT actor for the session.
-  public var actor: String?
+  /// The actor for an impersonation or agent session, such as `{"sub": "user_123"}`, or `nil` for a session the user started.
+  public var actor: JSON?
 
   /// The user associated with the session.
   public var user: User?
@@ -80,7 +80,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     lastActiveAt: Date,
     latestActivity: SessionActivity? = nil,
     lastActiveOrganizationId: String? = nil,
-    actor: String? = nil,
+    actor: JSON? = nil,
     user: User? = nil,
     publicUserData: PublicUserData? = nil,
     createdAt: Date,
