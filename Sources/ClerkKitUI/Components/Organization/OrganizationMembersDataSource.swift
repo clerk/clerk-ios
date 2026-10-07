@@ -269,7 +269,11 @@ extension OrganizationMembersDataSource {
 
     let requestID = membersRequestID
     membershipsPager.isLoadingMore = true
-    defer { membershipsPager.isLoadingMore = false }
+    defer {
+      if requestID == membersRequestID {
+        membershipsPager.isLoadingMore = false
+      }
+    }
 
     do {
       let page = try await organization.getMemberships(
@@ -295,6 +299,7 @@ extension OrganizationMembersDataSource {
     let requestID = membersRequestID
     requestedMembershipQuery = query
     isLoadingMembers = true
+    membershipsPager.isLoadingMore = false
 
     do {
       let page = try await organization.getMemberships(
@@ -343,6 +348,7 @@ extension OrganizationMembersDataSource {
     membershipsPager = OrganizationAccountListPager()
     invitationsPager = OrganizationAccountListPager()
     membershipRequestsPager = OrganizationAccountListPager()
+    membersRequestID += 1
     hasLoadedMembers = false
     loadMoreMembersIsDeferred = false
     isLoadingMembers = includeMembers

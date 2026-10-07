@@ -312,6 +312,74 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
   }
 
+  @Test
+  func loadMoreInFlightWhenASearchStartsDoesNotBlockPaginationAfterIt() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    stubMemberships { query, offset in
+      switch (query, offset) {
+      case (nil, 0):
+        return page(ids: ["mem_1", "mem_2"], totalCount: 4)
+      case (nil, _):
+        await gate.wait("oldLoadMore")
+        return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+      case (_, 0):
+        return page(ids: ["john_1", "john_2"], totalCount: 4)
+      default:
+        return page(ids: ["john_3", "john_4"], totalCount: 4)
+      }
+    }
+
+    let oldLoadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    await dataSource.searchMembers(organization: .mock, query: "john")
+    await dataSource.loadMoreMembers(organization: .mock)
+
+    #expect(membershipRequests.count == 3)
+
+    gate.open("oldLoadMore")
+    await oldLoadMore.value
+
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["john_1", "john_2", "john_3", "john_4"])
+    #expect(!dataSource.membershipsPager.isLoadingMore)
+  }
+
+  @Test
+  func loadMoreFromThePreviousOrganizationIsNotAppendedAfterAReset() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    stubMemberships { _, offset in
+      if offset > 0 {
+        await gate.wait("oldLoadMore")
+        return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+      }
+      return page(ids: ["new_1"], totalCount: 1)
+    }
+    transport.stub(OrganizationAPI.getRoles(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0)) { [gate] _ in
+      await gate.wait("roles")
+      return ClientResponse(response: ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1), client: nil)
+    }
+
+    let oldLoadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    let initialLoad = Task {
+      await dataSource.loadInitial(
+        organization: .mock,
+        includeMembers: true,
+        includeInvitations: false,
+        includeMembershipRequests: false
+      )
+    }
+    try await waitUntil { dataSource.membershipsPager.items.isEmpty }
+    gate.open("oldLoadMore")
+    await oldLoadMore.value
+
+    #expect(dataSource.membershipsPager.items.isEmpty)
+
+    gate.open("roles")
+    await initialLoad.value
+
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["new_1"])
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }
