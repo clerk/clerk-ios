@@ -68,6 +68,9 @@ struct OrganizationMembersTabView: View {
     .onChange(of: dataSource.membershipSearchText) { _, newValue in
       scheduleSearch(newValue)
     }
+    .task {
+      await resumeSearch()
+    }
     .onDisappear {
       searchDebounceTask?.cancel()
     }
@@ -165,6 +168,12 @@ extension OrganizationMembersTabView {
       guard !Task.isCancelled else { return }
       await search(query: trimmedValue)
     }
+  }
+
+  @MainActor
+  private func resumeSearch() async {
+    guard canReadMemberships, let organization else { return }
+    await dataSource.resumeSearchIfNeeded(organization: organization)
   }
 
   @MainActor
