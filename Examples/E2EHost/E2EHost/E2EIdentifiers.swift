@@ -12,10 +12,6 @@ enum E2EIdentifiers {
     static let signOut = "e2e.auth.signOut"
     static let userId = "e2e.auth.userId"
     static let sessionId = "e2e.auth.sessionId"
-    static let sessionActive = "e2e.auth.sessionActive"
-    static let sessionPending = "e2e.auth.sessionPending"
-    static let pendingTasks = "e2e.auth.pendingTasks"
-    static let deleteAccount = "e2e.auth.deleteAccount"
   }
 
   enum Launch {
