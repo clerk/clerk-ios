@@ -29,7 +29,7 @@ struct AuthFieldAccessibilityTests {
   }
 
   @Test
-  func revealingThePasswordExposesOnlyThePlainTextField() async throws {
+  func togglingThePasswordExposesOnlyTheVisibleTextField() async throws {
     let host = try await AccessibilityHost(ClerkTextField("Password", text: .constant(""), isSecure: true))
     defer { host.close() }
 
@@ -41,6 +41,15 @@ struct AuthFieldAccessibilityTests {
     #expect(textFields.count == 1)
     #expect(textFields.first?.isSecureTextEntry == false)
     #expect(host.labelsOfNonTextFieldElements() == ["Hide password"])
+
+    let hidePassword = try #require(host.element(labeled: "Hide password"))
+    #expect(hidePassword.accessibilityActivate())
+    try await host.settle()
+
+    let hiddenTextFields = host.elements().compactMap { $0 as? UITextField }
+    #expect(hiddenTextFields.count == 1)
+    #expect(hiddenTextFields.first?.isSecureTextEntry == true)
+    #expect(host.labelsOfNonTextFieldElements() == ["Show password"])
   }
 
   private struct Fields: View {
