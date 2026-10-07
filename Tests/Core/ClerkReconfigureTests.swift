@@ -550,6 +550,34 @@ struct ClerkReconfigureTests {
     #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
   }
 
+  @Test
+  func signOutWaitingOnACacheWriteIsDroppedIfReconfigurationStarts() async throws {
+    let clientKeychain = try await configureWithRunningCacheWrite()
+    defer { Clerk.shared.cleanupManagers() }
+    var signedOut = Client.mock
+    signedOut.sessions = []
+    signedOut.lastActiveSessionId = nil
+    let response = ClientSyncResponseContext(
+      update: .client(signedOut),
+      deviceTokenUpdate: .absent,
+      requestDeviceToken: "device-token",
+      serverDate: Date(timeIntervalSince1970: 200),
+      isCanonicalClientRequest: true,
+      clientResponseGeneration: Clerk.shared.clientResponseGeneration,
+      responseSequence: 2
+    )
+
+    let signOut = Task { @MainActor in try await Clerk.shared.identityController.applyNetworkResponse(response) }
+    await Task.yield()
+    #expect(Clerk.shared.session != nil)
+    try Clerk.beginRuntimeReconfiguration()
+    defer { Clerk.endRuntimeReconfiguration() }
+    clientKeychain.release()
+
+    await #expect(throws: CancellationError.self) { try await signOut.value }
+    #expect(Clerk.shared.session != nil)
+  }
+
   private func configureWithRunningCacheWrite() async throws -> StalledWriteKeychain {
     let clientKeychain = StalledWriteKeychain()
     Clerk.shared.performConfiguration(dependencies: MockDependencyContainer(
