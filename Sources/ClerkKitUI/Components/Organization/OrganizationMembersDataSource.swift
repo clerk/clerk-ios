@@ -330,8 +330,11 @@ extension OrganizationMembersDataSource {
     guard loadMoreMembersIsDeferred else { return }
 
     loadMoreMembersIsDeferred = false
+    let requestID = membersRequestID
     Task { [weak self] in
-      await self?.loadMoreMembers(organization: organization)
+      guard let self, requestID == membersRequestID else { return }
+
+      await loadMoreMembers(organization: organization)
     }
   }
 
