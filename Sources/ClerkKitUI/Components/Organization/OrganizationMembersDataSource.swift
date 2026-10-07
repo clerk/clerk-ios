@@ -29,6 +29,7 @@ final class OrganizationMembersDataSource {
   var membershipSearchQuery = ""
   var error: Error?
   private var membersRequestID = 0
+  private var requestedMembershipQuery = ""
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
@@ -91,13 +92,10 @@ final class OrganizationMembersDataSource {
     }
   }
 
-  func loadMembers(organization: Organization) async {
-    await loadMembers(organization: organization, query: membershipSearchQuery)
-  }
-
   private func loadMembers(organization: Organization, query: String) async {
     membersRequestID += 1
     let requestID = membersRequestID
+    requestedMembershipQuery = query
     isLoadingMembers = true
     defer {
       if requestID == membersRequestID {
@@ -111,7 +109,7 @@ final class OrganizationMembersDataSource {
         page: 1,
         pageSize: pageSize
       )
-      guard requestID == membersRequestID else { return }
+      guard requestID == membersRequestID, !Task.isCancelled else { return }
 
       membershipSearchQuery = query
       membershipsPager.replace(with: page)
@@ -136,7 +134,7 @@ final class OrganizationMembersDataSource {
         offset: membershipsPager.offset,
         pageSize: pageSize
       )
-      guard requestID == membersRequestID else { return }
+      guard requestID == membersRequestID, !Task.isCancelled else { return }
 
       membershipsPager.append(page)
     } catch {
@@ -317,8 +315,12 @@ final class OrganizationMembersDataSource {
 }
 
 extension OrganizationMembersDataSource {
+  func loadMembers(organization: Organization) async {
+    await loadMembers(organization: organization, query: requestedMembershipQuery)
+  }
+
   func searchMembers(organization: Organization, query: String) async {
-    guard membershipSearchQuery != query else { return }
+    guard membershipSearchQuery != query || isLoadingMembers else { return }
 
     await loadMembers(organization: organization, query: query)
   }

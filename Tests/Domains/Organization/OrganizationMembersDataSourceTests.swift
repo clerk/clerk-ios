@@ -133,6 +133,92 @@ struct OrganizationMembersDataSourceTests {
     #expect(!dataSource.isLoadingMembers)
   }
 
+  @Test
+  func searchingAnEmptyQueryWhileAnotherSearchLoadsReplacesIt() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { query, _ in
+      if query == "john" {
+        await gate.wait("john")
+        return page(ids: ["mem_john"], totalCount: 1)
+      }
+      return page(ids: ["mem_1"], totalCount: 1)
+    }
+
+    let search = Task { await dataSource.searchMembers(organization: .mock, query: "john") }
+    try await waitUntil { membershipRequests.count == 1 }
+    await dataSource.searchMembers(organization: .mock, query: "")
+
+    #expect(membershipRequests.count == 2)
+
+    gate.open("john")
+    await search.value
+
+    #expect(dataSource.membershipSearchQuery == "")
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1"])
+  }
+
+  @Test
+  func refreshDuringAPendingSearchReloadsThatSearch() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { query, _ in
+      if query == "john" {
+        await gate.wait("john")
+        return page(ids: ["mem_john"], totalCount: 1)
+      }
+      return page(ids: ["mem_1"], totalCount: 1)
+    }
+
+    let search = Task { await dataSource.searchMembers(organization: .mock, query: "john") }
+    try await waitUntil { membershipRequests.count == 1 }
+    let refresh = Task { await dataSource.loadMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 2 }
+
+    #expect(membershipRequests.queries == ["john", "john"])
+
+    gate.open("john")
+    await search.value
+    await refresh.value
+
+    #expect(dataSource.membershipSearchQuery == "john")
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_john"])
+  }
+
+  @Test
+  func cancelledSearchThatStillReturnsIsNotApplied() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { _, _ in
+      await gate.wait("john")
+      return page(ids: ["mem_john"], totalCount: 1)
+    }
+
+    let search = Task { await dataSource.searchMembers(organization: .mock, query: "john") }
+    try await waitUntil { membershipRequests.count == 1 }
+    search.cancel()
+    gate.open("john")
+    await search.value
+
+    #expect(dataSource.membershipSearchQuery == "")
+    #expect(dataSource.membershipsPager.items.isEmpty)
+    #expect(!dataSource.isLoadingMembers)
+  }
+
+  @Test
+  func cancelledLoadMoreThatStillReturnsIsNotAppended() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    stubMemberships { _, _ in
+      await gate.wait("loadMore")
+      return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    loadMore.cancel()
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2"])
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }
@@ -153,6 +239,7 @@ struct OrganizationMembersDataSourceTests {
       pageSize: 0
     )) { [membershipRequests] call in
       membershipRequests.count += 1
+      membershipRequests.queries.append(call.query.first { $0.name == "query" }?.value)
       let query = call.query.first { $0.name == "query" }?.value
       let offset = call.query.first { $0.name == "offset" }?.value.flatMap(Int.init) ?? 0
       return try await ClientResponse(response: respond(query, offset), client: nil)
@@ -199,6 +286,7 @@ private final class ResponseGate {
 @MainActor
 private final class RequestCounter {
   var count = 0
+  var queries: [String?] = []
 }
 
 @MainActor

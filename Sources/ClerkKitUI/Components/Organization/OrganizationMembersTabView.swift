@@ -68,8 +68,9 @@ struct OrganizationMembersTabView: View {
     .onChange(of: dataSource.membershipSearchText) { _, newValue in
       scheduleSearch(newValue)
     }
-    .task {
-      await resumeSearch()
+    .onAppear {
+      searchDebounceTask?.cancel()
+      searchDebounceTask = Task { await resumeSearch() }
     }
     .onDisappear {
       searchDebounceTask?.cancel()
