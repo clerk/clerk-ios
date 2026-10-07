@@ -299,6 +299,7 @@ extension OrganizationMembersDataSource {
     let requestID = membersRequestID
     requestedMembershipQuery = query
     isLoadingMembers = true
+    loadMoreMembersIsDeferred = loadMoreMembersIsDeferred || membershipsPager.isLoadingMore
     membershipsPager.isLoadingMore = false
 
     do {

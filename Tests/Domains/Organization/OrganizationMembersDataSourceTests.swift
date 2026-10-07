@@ -380,6 +380,35 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.membershipsPager.items.map(\.id) == ["new_1"])
   }
 
+  @Test
+  func loadMoreAbandonedByARefreshRunsAfterIt() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    let pageTwoRequests = RequestCounter()
+    stubMemberships { [pageTwoRequests] _, offset in
+      if offset == 0 {
+        await gate.wait("refresh")
+        return page(ids: ["mem_1", "mem_2"], totalCount: 4)
+      }
+      pageTwoRequests.count += 1
+      if pageTwoRequests.count == 1 {
+        await gate.wait("abandonedLoadMore")
+      }
+      return page(ids: ["mem_3", "mem_4"], totalCount: 4)
+    }
+
+    let abandonedLoadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    let refresh = Task { await dataSource.loadMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 2 }
+    gate.open("abandonedLoadMore")
+    await abandonedLoadMore.value
+    gate.open("refresh")
+    await refresh.value
+
+    #expect(membershipRequests.count == 3)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
+  }
+
   private func dataSourceWithMorePages() async throws -> OrganizationMembersDataSource {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, _ in page(ids: ["mem_1", "mem_2"], totalCount: 4) }
