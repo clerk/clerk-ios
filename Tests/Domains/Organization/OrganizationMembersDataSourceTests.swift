@@ -270,6 +270,43 @@ struct OrganizationMembersDataSourceTests {
   }
 
   @Test
+  func cancelledSearchThatFailsDoesNotReportItsError() async throws {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { _, _ in
+      await gate.wait("john")
+      throw URLError(.badServerResponse)
+    }
+
+    let search = Task { await dataSource.searchMembers(organization: .mock, query: "john") }
+    try await waitUntil { membershipRequests.count == 1 }
+    search.cancel()
+    gate.open("john")
+    await search.value
+
+    #expect(dataSource.error == nil)
+    #expect(!dataSource.isLoadingMembers)
+  }
+
+  @Test
+  func cancelledLoadMoreThatFailsDoesNotReportItsError() async throws {
+    let dataSource = try await dataSourceWithMorePages()
+    stubMemberships { _, _ in
+      await gate.wait("loadMore")
+      throw URLError(.badServerResponse)
+    }
+
+    let loadMore = Task { await dataSource.loadMoreMembers(organization: .mock) }
+    try await waitUntil { membershipRequests.count == 1 }
+    loadMore.cancel()
+    gate.open("loadMore")
+    await loadMore.value
+
+    #expect(dataSource.error == nil)
+    #expect(dataSource.membershipsPager.items.map(\.id) == ["mem_1", "mem_2"])
+    #expect(!dataSource.membershipsPager.isLoadingMore)
+  }
+
+  @Test
   func refreshAfterAbandoningAFailedSearchReloadsTheFieldsQuery() async throws {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { query, _ in

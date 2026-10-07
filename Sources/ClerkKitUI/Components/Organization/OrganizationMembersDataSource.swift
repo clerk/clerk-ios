@@ -285,7 +285,7 @@ extension OrganizationMembersDataSource {
 
       membershipsPager.append(page)
     } catch {
-      guard requestID == membersRequestID, !error.isCancellationError else { return }
+      guard requestID == membersRequestID, !Task.isCancelled, !error.isCancellationError else { return }
 
       self.error = error
       ClerkLogger.error("Failed to load more organization members", error: error)
@@ -314,7 +314,7 @@ extension OrganizationMembersDataSource {
         membershipsPager.replace(with: page)
       }
     } catch {
-      if requestID == membersRequestID, !error.isCancellationError {
+      if requestID == membersRequestID, !Task.isCancelled, !error.isCancellationError {
         self.error = error
         ClerkLogger.error("Failed to load organization members", error: error)
       }
