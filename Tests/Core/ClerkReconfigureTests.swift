@@ -568,7 +568,8 @@ struct ClerkReconfigureTests {
     )
 
     let signOut = Task { @MainActor in try await Clerk.shared.identityController.applyNetworkResponse(response) }
-    try await Task.sleep(for: .milliseconds(50))
+    await Task.yield()
+    #expect(Clerk.shared.session != nil)
     try Clerk.beginRuntimeReconfiguration()
     defer { Clerk.endRuntimeReconfiguration() }
     clientKeychain.release()
