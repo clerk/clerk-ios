@@ -10,7 +10,7 @@ import Observation
 
 @MainActor
 @Observable
-final class OrganizationMembersDataSource {
+final class OrganizationMembersDataSource: OrganizationPaginatedDataSource {
   let pageSize: Int
 
   var membershipsPager = OrganizationAccountListPager<OrganizationMembership>()

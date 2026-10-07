@@ -838,24 +838,6 @@ private func membershipRequestPage(ids: [String], totalCount: Int) -> ClerkPagin
 }
 
 @MainActor
-private final class ResponseGate {
-  private var continuations: [String: [CheckedContinuation<Void, Never>]] = [:]
-  private var opened: Set<String> = []
-
-  func wait(_ key: String) async {
-    guard !opened.contains(key) else { return }
-    await withCheckedContinuation { continuations[key, default: []].append($0) }
-  }
-
-  func open(_ key: String) {
-    opened.insert(key)
-    for continuation in continuations.removeValue(forKey: key) ?? [] {
-      continuation.resume()
-    }
-  }
-}
-
-@MainActor
 private final class RequestCounter {
   var count = 0
   var queries: [String?] = []

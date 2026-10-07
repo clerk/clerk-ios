@@ -1,19 +1,22 @@
 //
-//  OrganizationMembersDataSource+Pagination.swift
+//  OrganizationPaginatedDataSource.swift
 //
-
-#if os(iOS) || os(macOS)
 
 import ClerkKit
 import Foundation
 
-extension OrganizationMembersDataSource {
-  typealias ListPager<Item: Codable & Sendable> = ReferenceWritableKeyPath<OrganizationMembersDataSource, OrganizationAccountListPager<Item>>
+@MainActor
+protocol OrganizationPaginatedDataSource: AnyObject {
+  var error: Error? { get set }
+}
+
+extension OrganizationPaginatedDataSource {
+  typealias ListPager<Item: Codable & Sendable> = ReferenceWritableKeyPath<Self, OrganizationAccountListPager<Item>>
   typealias PageFetch<Item: Codable & Sendable> = @MainActor (_ offset: Int) async throws -> ClerkPaginatedResponse<Item>
 
   func loadFirstPage<Item>(
     _ pager: ListPager<Item>,
-    isLoading: ReferenceWritableKeyPath<OrganizationMembersDataSource, Bool>,
+    isLoading: ReferenceWritableKeyPath<Self, Bool>,
     listName: String,
     fetch: @escaping PageFetch<Item>
   ) async {
@@ -47,7 +50,7 @@ extension OrganizationMembersDataSource {
 
   func loadNextPage<Item>(
     _ pager: ListPager<Item>,
-    isLoading: ReferenceWritableKeyPath<OrganizationMembersDataSource, Bool>,
+    isLoading: KeyPath<Self, Bool>,
     listName: String,
     fetch: PageFetch<Item>
   ) async {
@@ -78,5 +81,3 @@ extension OrganizationMembersDataSource {
     }
   }
 }
-
-#endif

@@ -118,6 +118,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 4)
+    model.isLoading = false
     model.membershipsPager.replace(with: ClerkPaginatedResponse(
       data: [membership(id: "mem_1", organizationId: "org_member_1")],
       totalCount: 2
@@ -253,6 +254,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 2)
+    model.isLoading = false
     let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
     let secondInvitation = invitation(id: "inv_2", organizationId: "org_2")
     model.invitationsPager.replace(with: ClerkPaginatedResponse(
@@ -279,6 +281,110 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertEqual(model.invitationsPager.offset, 2)
     XCTAssertEqual(model.invitationsPager.totalCount, 2)
     XCTAssertFalse(model.invitationsPager.hasNextPage)
+  }
+
+  @MainActor
+  func testLoadMoreThatFinishesAfterAReloadIsNotAppended() async throws {
+    let gate = ResponseGate()
+    let (model, transport) = try await modelWithMoreInvitations()
+    transport.stubOrganizationInvitations { offset, _, _ in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        return ClerkPaginatedResponse(data: [invitation(id: "inv_3", organizationId: "org_3")], totalCount: 3)
+      }
+      return ClerkPaginatedResponse(data: [invitation(id: "new_1", organizationId: "org_new")], totalCount: 1)
+    }
+
+    let loadMore = Task { await model.loadMoreInvitations(user: .mock) }
+    try await waitUntil { model.isLoadingMore }
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    gate.open("loadMore")
+    await loadMore.value
+
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["new_1"])
+    XCTAssertEqual(model.invitationsPager.totalCount, 1)
+    XCTAssertFalse(model.isLoadingMore)
+  }
+
+  @MainActor
+  func testLoadMoreThatFailsAfterAReloadDoesNotReportItsError() async throws {
+    let gate = ResponseGate()
+    let (model, transport) = try await modelWithMoreInvitations()
+    transport.stubOrganizationInvitations { offset, _, _ in
+      if offset > 0 {
+        await gate.wait("loadMore")
+        throw URLError(.badServerResponse)
+      }
+      return ClerkPaginatedResponse(data: [invitation(id: "new_1", organizationId: "org_new")], totalCount: 1)
+    }
+
+    let loadMore = Task { await model.loadMoreInvitations(user: .mock) }
+    try await waitUntil { model.isLoadingMore }
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    gate.open("loadMore")
+    await loadMore.value
+
+    XCTAssertNil(model.error)
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["new_1"])
+  }
+
+  @MainActor
+  func testPaginationContinuesAfterAReloadAbandonsALoadMore() async throws {
+    let gate = ResponseGate()
+    let pageTwoRequests = LockIsolated(0)
+    let (model, transport) = try await modelWithMoreInvitations(totalCount: 6)
+    transport.stubOrganizationInvitations { offset, _, _ in
+      switch offset {
+      case 0:
+        return ClerkPaginatedResponse(data: ["new_1", "new_2"].map { invitation(id: $0, organizationId: $0) }, totalCount: 6)
+      case 2:
+        pageTwoRequests.withValue { $0 += 1 }
+        if pageTwoRequests.value == 1 {
+          await gate.wait("abandonedLoadMore")
+          return ClerkPaginatedResponse(data: ["inv_3", "inv_4"].map { invitation(id: $0, organizationId: $0) }, totalCount: 6)
+        }
+        return ClerkPaginatedResponse(data: ["new_3", "new_4"].map { invitation(id: $0, organizationId: $0) }, totalCount: 6)
+      default:
+        return ClerkPaginatedResponse(data: ["new_5", "new_6"].map { invitation(id: $0, organizationId: $0) }, totalCount: 6)
+      }
+    }
+
+    let abandonedLoadMore = Task { await model.loadMoreInvitations(user: .mock) }
+    try await waitUntil { model.isLoadingMore }
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    try await waitUntil { model.invitationsPager.items.count == 4 && !model.isLoadingMore }
+    await model.loadMoreInvitations(user: .mock)
+    gate.open("abandonedLoadMore")
+    await abandonedLoadMore.value
+
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["new_1", "new_2", "new_3", "new_4", "new_5", "new_6"])
+    XCTAssertFalse(model.invitationsPager.hasNextPage)
+    XCTAssertFalse(model.isLoadingMore)
+  }
+
+  @MainActor
+  func testLoadMoreRequestedDuringAReloadRunsAfterIt() async throws {
+    let gate = ResponseGate()
+    let (model, transport) = try await modelWithMoreInvitations()
+    transport.stubOrganizationInvitations { offset, _, _ in
+      if offset > 0 {
+        return ClerkPaginatedResponse(data: ["inv_3", "inv_4"].map { invitation(id: $0, organizationId: $0) }, totalCount: 4)
+      }
+      await gate.wait("reload")
+      return ClerkPaginatedResponse(data: ["inv_1", "inv_2"].map { invitation(id: $0, organizationId: $0) }, totalCount: 4)
+    }
+
+    let reload = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    try await waitUntil { model.isLoading }
+    await model.loadMoreInvitations(user: .mock)
+
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
+
+    gate.open("reload")
+    await reload.value
+    try await waitUntil { model.invitationsPager.items.count == 4 }
+
+    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2", "inv_3", "inv_4"])
   }
 
   @MainActor
@@ -313,6 +419,37 @@ private func setDependencies(transport: FakeTransport) {
     apiClient: createMockAPIClient(),
     transport: transport
   )
+}
+
+@MainActor
+private func modelWithMoreInvitations(totalCount: Int = 4) async throws -> (OrganizationAccountListDataSource, FakeTransport) {
+  configureClerkForTesting()
+
+  let transport = FakeTransport.mockDefaults()
+  transport.stubOrganizationMemberships { _, _ in
+    ClerkPaginatedResponse(data: [], totalCount: 0)
+  }
+  transport.stubOrganizationSuggestions { _, _, _ in
+    ClerkPaginatedResponse(data: [], totalCount: 0)
+  }
+  transport.stubOrganizationInvitations { _, _, _ in
+    ClerkPaginatedResponse(data: ["inv_1", "inv_2"].map { invitation(id: $0, organizationId: $0) }, totalCount: totalCount)
+  }
+  setDependencies(transport: transport)
+
+  let model = OrganizationAccountListDataSource(pageSize: 2)
+  await model.loadInitial(user: .mock, includeCreationDefaults: false)
+  XCTAssertTrue(model.invitationsPager.hasNextPage)
+  return (model, transport)
+}
+
+@MainActor
+private func waitUntil(_ condition: () -> Bool, file: StaticString = #filePath, line: UInt = #line) async throws {
+  for _ in 0 ..< 1000 where !condition() {
+    await Task.yield()
+  }
+  XCTAssertTrue(condition(), file: file, line: line)
+  try XCTSkipUnless(condition(), "Timed out waiting for condition")
 }
 
 @MainActor

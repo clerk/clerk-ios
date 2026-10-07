@@ -8,7 +8,7 @@ import Observation
 
 @MainActor
 @Observable
-final class OrganizationAccountListDataSource {
+final class OrganizationAccountListDataSource: OrganizationPaginatedDataSource {
   let pageSize: Int
 
   var membershipsPager = OrganizationAccountListPager<OrganizationMembership>()
@@ -40,9 +40,12 @@ final class OrganizationAccountListDataSource {
       return
     }
 
+    let requestIDs = [
+      membershipsPager.startFirstPageLoad(),
+      invitationsPager.startFirstPageLoad(),
+      suggestionsPager.startFirstPageLoad(),
+    ]
     isLoading = true
-    defer { isLoading = false }
-
     error = nil
 
     do {
@@ -54,55 +57,47 @@ final class OrganizationAccountListDataSource {
       let membershipsResult = try await fetchedMemberships
       let invitationsResult = try await fetchedInvitations
       let suggestionsResult = try await fetchedSuggestions
+      let defaults = await fetchedDefaults
 
-      membershipsPager.replace(with: membershipsResult)
-      invitationsPager.replace(with: invitationsResult)
-      suggestionsPager.replace(with: suggestionsResult)
-      creationDefaults = await fetchedDefaults
+      if requestIDs == currentRequestIDs {
+        membershipsPager.replace(with: membershipsResult)
+        invitationsPager.replace(with: invitationsResult)
+        suggestionsPager.replace(with: suggestionsResult)
+        creationDefaults = defaults
+      }
     } catch {
-      self.error = error
+      if requestIDs == currentRequestIDs {
+        self.error = error
+      }
     }
+
+    guard requestIDs == currentRequestIDs else { return }
+
+    isLoading = false
+    runDeferredLoadMore(user: user)
   }
 
   func loadMoreMemberships(user: User?) async {
-    guard let user, !isLoadingMore, membershipsPager.hasNextPage else { return }
+    guard let user, !isLoadingMore else { return }
 
-    membershipsPager.isLoadingMore = true
-    defer { membershipsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationMemberships(offset: membershipsPager.offset, pageSize: pageSize)
-      membershipsPager.append(result)
-    } catch {
-      self.error = error
+    await loadNextPage(\.membershipsPager, isLoading: \.isLoading, listName: "memberships") { [pageSize] offset in
+      try await user.getOrganizationMemberships(offset: offset, pageSize: pageSize)
     }
   }
 
   func loadMoreInvitations(user: User?) async {
-    guard let user, !isLoadingMore, invitationsPager.hasNextPage else { return }
+    guard let user, !isLoadingMore else { return }
 
-    invitationsPager.isLoadingMore = true
-    defer { invitationsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationInvitations(offset: invitationsPager.offset, pageSize: pageSize, status: ["pending"])
-      invitationsPager.append(result)
-    } catch {
-      self.error = error
+    await loadNextPage(\.invitationsPager, isLoading: \.isLoading, listName: "invitations") { [pageSize] offset in
+      try await user.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
     }
   }
 
   func loadMoreSuggestions(user: User?) async {
-    guard let user, !isLoadingMore, suggestionsPager.hasNextPage else { return }
+    guard let user, !isLoadingMore else { return }
 
-    suggestionsPager.isLoadingMore = true
-    defer { suggestionsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationSuggestions(offset: suggestionsPager.offset, pageSize: pageSize, status: ["pending", "accepted"])
-      suggestionsPager.append(result)
-    } catch {
-      self.error = error
+    await loadNextPage(\.suggestionsPager, isLoading: \.isLoading, listName: "suggestions") { [pageSize] offset in
+      try await user.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: ["pending", "accepted"])
     }
   }
 
@@ -122,6 +117,26 @@ final class OrganizationAccountListDataSource {
       suggestionsPager.replace(accepted)
     } catch {
       self.error = error
+    }
+  }
+
+  private var currentRequestIDs: [Int] {
+    [membershipsPager.requestID, invitationsPager.requestID, suggestionsPager.requestID]
+  }
+
+  private func runDeferredLoadMore(user: User) {
+    let loadMemberships = membershipsPager.loadMoreIsDeferred
+    let loadInvitations = invitationsPager.loadMoreIsDeferred
+    let loadSuggestions = suggestionsPager.loadMoreIsDeferred
+    guard loadMemberships || loadInvitations || loadSuggestions else { return }
+
+    membershipsPager.loadMoreIsDeferred = false
+    invitationsPager.loadMoreIsDeferred = false
+    suggestionsPager.loadMoreIsDeferred = false
+    Task { [weak self] in
+      if loadMemberships { await self?.loadMoreMemberships(user: user) }
+      if loadInvitations { await self?.loadMoreInvitations(user: user) }
+      if loadSuggestions { await self?.loadMoreSuggestions(user: user) }
     }
   }
 
