@@ -13,4 +13,8 @@ enum E2EIdentifiers {
     static let pendingTasks = "e2e.auth.pendingTasks"
     static let deleteAccount = "e2e.auth.deleteAccount"
   }
+
+  enum UserProfile {
+    static let open = "e2e.userProfile.open"
+  }
 }

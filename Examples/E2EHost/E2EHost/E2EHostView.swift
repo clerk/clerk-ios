@@ -13,6 +13,7 @@ struct E2EHostView: View {
   let configuration: E2EConfiguration
 
   @State private var authViewIsPresented = false
+  @State private var userProfileIsPresented = false
 
   init(configuration: E2EConfiguration) {
     self.configuration = configuration
@@ -33,6 +34,9 @@ struct E2EHostView: View {
       AuthView(mode: configuration.authMode)
         .persistsIdentifiers(false)
     }
+    .sheet(isPresented: $userProfileIsPresented) {
+      UserProfileView()
+    }
   }
 
   @ViewBuilder
@@ -46,6 +50,11 @@ struct E2EHostView: View {
       }
 
       sessionState
+
+      Button("Open profile") {
+        userProfileIsPresented = true
+      }
+      .accessibilityIdentifier(E2EIdentifiers.UserProfile.open)
 
       Button("Sign out") {
         signOut()

@@ -21,8 +21,26 @@ commandTimeout: 15000
     visible:
       id: "e2e.auth.sessionActive"
     timeout: 45000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "clerk.userButton.profile"
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.userProfile.row.security"
+          timeout: 15000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "clerk.dismissButton"
+      - extendedWaitUntil:
+          notVisible:
+            id: "clerk.userProfile.row.security"
+          timeout: 15000
 - tapOn:
-    id: "clerk.userButton.profile"
+    id: "e2e.userProfile.open"
 - extendedWaitUntil:
     visible:
       id: "clerk.userProfile.row.security"
@@ -52,3 +70,12 @@ commandTimeout: 15000
     visible:
       id: "e2e.auth.signedOut"
     timeout: 45000
+- retry:
+    maxRetries: 2
+    commands:
+      - tapOn:
+          id: "e2e.auth.signIn"
+      - extendedWaitUntil:
+          visible:
+            id: "clerk.auth.start.identifier"
+          timeout: 10000

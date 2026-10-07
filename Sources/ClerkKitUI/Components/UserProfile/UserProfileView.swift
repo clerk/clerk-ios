@@ -264,6 +264,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       navigationPath.wrappedValue.removeLast(entriesToRemove)
     } else {
       internalPath = NavigationPath()
+      if action == .exitUserProfile {
+        dismiss()
+      }
     }
   }
 
