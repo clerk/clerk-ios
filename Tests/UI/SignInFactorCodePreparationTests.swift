@@ -9,8 +9,9 @@ struct SignInFactorCodePreparationTests {
   func sendsTheFirstCode() {
     #expect(SignInFactorCodeView.needsPrepare(
       factorStrategy: .emailCode,
+      currentVerification: nil,
       isFirstRequest: true,
-      currentVerificationStrategy: nil
+      lastCodeWasSentHere: false
     ))
   }
 
@@ -18,22 +19,39 @@ struct SignInFactorCodePreparationTests {
   func resendsAfterSwitchingToEmailLinkAndBack() {
     #expect(SignInFactorCodeView.needsPrepare(
       factorStrategy: .emailCode,
+      currentVerification: Verification(status: .unverified, strategy: .emailLink),
       isFirstRequest: false,
-      currentVerificationStrategy: .emailLink
+      lastCodeWasSentHere: true
     ))
   }
 
   @Test
-  func doesNotResendWhenTheCurrentVerificationMatches() {
+  func resendsAfterSwitchingToAnotherFactorWithTheSameStrategyAndBack() {
+    #expect(SignInFactorCodeView.needsPrepare(
+      factorStrategy: .phoneCode,
+      currentVerification: Verification(status: .unverified, strategy: .phoneCode),
+      isFirstRequest: false,
+      lastCodeWasSentHere: false
+    ))
+  }
+
+  @Test
+  func doesNotResendWhenThisFactorHasTheCurrentCode() {
     #expect(!SignInFactorCodeView.needsPrepare(
       factorStrategy: .emailCode,
+      currentVerification: Verification(status: .unverified, strategy: .emailCode),
       isFirstRequest: false,
-      currentVerificationStrategy: .emailCode
+      lastCodeWasSentHere: true
     ))
+  }
+
+  @Test
+  func doesNotResendAfterTheStepIsVerified() {
     #expect(!SignInFactorCodeView.needsPrepare(
-      factorStrategy: .phoneCode,
+      factorStrategy: .emailCode,
+      currentVerification: Verification(status: .verified, strategy: .emailCode),
       isFirstRequest: false,
-      currentVerificationStrategy: .phoneCode
+      lastCodeWasSentHere: false
     ))
   }
 
@@ -41,8 +59,9 @@ struct SignInFactorCodePreparationTests {
   func sendsAResetCodeAfterAnEmailCodeForTheSameAddress() {
     #expect(SignInFactorCodeView.needsPrepare(
       factorStrategy: .resetPasswordEmailCode,
+      currentVerification: Verification(status: .unverified, strategy: .emailCode),
       isFirstRequest: false,
-      currentVerificationStrategy: .emailCode
+      lastCodeWasSentHere: true
     ))
   }
 
@@ -50,8 +69,9 @@ struct SignInFactorCodePreparationTests {
   func doesNotPrepareTotpAgain() {
     #expect(!SignInFactorCodeView.needsPrepare(
       factorStrategy: .totp,
+      currentVerification: Verification(status: .unverified, strategy: .phoneCode),
       isFirstRequest: false,
-      currentVerificationStrategy: .emailCode
+      lastCodeWasSentHere: false
     ))
   }
 }

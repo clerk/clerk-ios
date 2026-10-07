@@ -81,11 +81,11 @@ struct SignInFactorCodeView: View {
     .task {
       guard let signIn else { return }
 
-      let currentVerification = mode.usesSecondFactorAPI ? signIn.secondFactorVerification : signIn.firstFactorVerification
       if Self.needsPrepare(
         factorStrategy: factor.strategy,
+        currentVerification: mode.usesSecondFactorAPI ? signIn.secondFactorVerification : signIn.firstFactorVerification,
         isFirstRequest: codeLimiter.isFirstRequest(for: codeLimiterIdentifier),
-        currentVerificationStrategy: currentVerification?.strategy
+        lastCodeWasSentHere: codeLimiter.lastCodeSentIdentifier == codeLimiterIdentifier
       ) {
         await prepare()
       }
@@ -218,14 +218,21 @@ extension SignInFactorCodeView {
 
   static func needsPrepare(
     factorStrategy: FactorStrategy,
+    currentVerification: Verification?,
     isFirstRequest: Bool,
-    currentVerificationStrategy: FactorStrategy?
+    lastCodeWasSentHere: Bool
   ) -> Bool {
     switch factorStrategy {
     case .emailCode, .phoneCode, .resetPasswordEmailCode, .resetPasswordPhoneCode:
-      isFirstRequest || currentVerificationStrategy != factorStrategy
+      if isFirstRequest {
+        return true
+      }
+      if currentVerification?.status == .verified {
+        return false
+      }
+      return currentVerification?.strategy != factorStrategy || !lastCodeWasSentHere
     default:
-      isFirstRequest
+      return isFirstRequest
     }
   }
 }
