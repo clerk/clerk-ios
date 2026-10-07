@@ -228,7 +228,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 
 ### E2EHost Tests
 
-E2E tests live in `Examples/E2EHost/Maestro/` and run a dedicated SwiftUI test host app on an iOS Simulator. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, `make test-e2e` runs the email-code sign-up flow with the `auth-email-code-password` mobile integration test instance.
+E2E tests live in `Examples/E2EHost/Maestro/` and run a dedicated SwiftUI test host app on an iOS Simulator. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. The device tests in `e2e-tests/` drive the same host app to prove SDK changes on a simulator. They are an ordinary e2e project, and `e2e-tests/README.md` has the commands to run one by hand. By default, `make test-e2e` runs the email-code sign-up flow with the `auth-email-code-password` mobile integration test instance.
 
 **Running E2E tests (Clerk employees only):**
 ```bash
