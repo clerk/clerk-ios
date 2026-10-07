@@ -17,6 +17,8 @@ struct SignInClientTrustView: View {
       SignInFactorCodeView(factor: factor, mode: .clientTrust)
     case .passkey:
       SignInPasskeyView(factor: factor, mode: .clientTrust)
+    case .emailLink:
+      EmailLinkVerificationView(mode: .signInClientTrust(factor))
     default:
       GetHelpView(context: .signIn)
     }

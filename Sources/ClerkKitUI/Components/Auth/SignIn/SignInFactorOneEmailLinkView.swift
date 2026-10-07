@@ -26,7 +26,7 @@ struct EmailLinkVerificationView: View {
 
   private var emailAddress: String? {
     switch mode {
-    case .signIn(let factor):
+    case .signIn(let factor), .signInClientTrust(let factor):
       factor.safeIdentifier
     case .signUp:
       clerk.auth.currentSignUp?.emailAddress
@@ -37,6 +37,12 @@ struct EmailLinkVerificationView: View {
     ScrollView {
       VStack(spacing: 0) {
         headerSection
+
+        if case .signInClientTrust = mode {
+          SignInClientTrustWarningView()
+            .padding(.bottom, 32)
+        }
+
         inputSection
 
         SecuredByClerkView()
@@ -59,6 +65,7 @@ struct EmailLinkVerificationView: View {
 extension EmailLinkVerificationView {
   enum Mode {
     case signIn(Factor)
+    case signInClientTrust(Factor)
     case signUp
   }
 
@@ -105,8 +112,19 @@ extension EmailLinkVerificationView {
 
       resendSection
 
-      if case .signIn(let factor) = mode {
-        useAnotherMethodButton(factor: factor)
+      switch mode {
+      case .signIn(let factor):
+        useAnotherMethodButton(
+          destination: SignInFactorMode.firstFactor.alternativeMethodsDestination(currentFactor: factor)
+        )
+      case .signInClientTrust(let factor):
+        if SignInFactorMode.clientTrust.showsUseAnotherMethod(signIn: clerk.auth.currentSignIn, currentFactor: factor) {
+          useAnotherMethodButton(
+            destination: SignInFactorMode.clientTrust.alternativeMethodsDestination(currentFactor: factor)
+          )
+        }
+      case .signUp:
+        EmptyView()
       }
     }
   }
@@ -154,13 +172,9 @@ extension EmailLinkVerificationView {
     .simultaneousGesture(TapGesture())
   }
 
-  private func useAnotherMethodButton(factor: Factor) -> some View {
+  private func useAnotherMethodButton(destination: AuthView.Destination) -> some View {
     Button {
-      navigation.path.append(
-        AuthView.Destination.signInFactorOneUseAnotherMethod(
-          currentFactor: factor
-        )
-      )
+      navigation.path.append(destination)
     } label: {
       Text("Use another method", bundle: .module)
     }
@@ -197,6 +211,9 @@ extension EmailLinkVerificationView {
     case .signIn:
       clerk.auth.currentSignIn?.firstFactorVerification?.strategy == .emailLink
         && clerk.auth.currentSignIn?.firstFactorVerification?.status == .unverified
+    case .signInClientTrust:
+      clerk.auth.currentSignIn?.secondFactorVerification?.strategy == .emailLink
+        && clerk.auth.currentSignIn?.secondFactorVerification?.status == .unverified
     case .signUp:
       clerk.auth.currentSignUp?.emailVerification?.strategy == .emailLink
         && clerk.auth.currentSignUp?.emailVerification?.status == .unverified
@@ -223,6 +240,14 @@ extension EmailLinkVerificationView {
           return
         }
         try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+
+      case .signInClientTrust(let factor):
+        guard let signIn = clerk.auth.currentSignIn else {
+          deliveryState = .idle
+          navigation.path = []
+          return
+        }
+        try await signIn.sendMfaEmailLink(emailAddressId: factor.emailAddressId)
 
       case .signUp:
         guard let signUp = clerk.auth.currentSignUp else {
@@ -275,6 +300,19 @@ extension EmailLinkVerificationView {
 #Preview("Sign In") {
   EmailLinkVerificationView(
     mode: .signIn(
+      Factor(
+        strategy: .emailLink,
+        emailAddressId: "ema_123",
+        safeIdentifier: "sam@clerk.dev"
+      )
+    )
+  )
+  .clerkPreview()
+}
+
+#Preview("Client Trust") {
+  EmailLinkVerificationView(
+    mode: .signInClientTrust(
       Factor(
         strategy: .emailLink,
         emailAddressId: "ema_123",

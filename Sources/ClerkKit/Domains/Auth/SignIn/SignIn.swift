@@ -87,6 +87,24 @@ extension SignIn {
     }
   }
 
+  @MainActor
+  private func startNativeMagicLink(redirectUri: String?) throws -> (redirectUri: String, codeChallenge: String) {
+    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
+    guard !resolvedRedirectUri.isEmpty else {
+      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
+    }
+
+    let pkcePair = try PKCE.generatePair()
+    try magicLinkStore.save(
+      kind: .signIn,
+      flowId: id,
+      codeVerifier: pkcePair.verifier,
+      authFlowOwnerId: AuthFlowRequestScope.ownerId
+    )
+
+    return (resolvedRedirectUri, pkcePair.challenge)
+  }
+
   // MARK: - First Factor Verification
 
   /// Sends a verification code to the specified email address.
@@ -131,26 +149,15 @@ extension SignIn {
       throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
     }
 
-    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
-    guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
-    }
-
-    let pkcePair = try PKCE.generatePair()
-    try magicLinkStore.save(
-      kind: .signIn,
-      flowId: id,
-      codeVerifier: pkcePair.verifier,
-      authFlowOwnerId: AuthFlowRequestScope.ownerId
-    )
+    let magicLink = try startNativeMagicLink(redirectUri: redirectUri)
 
     return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .emailLink,
         emailAddressId: emailId,
-        redirectUri: resolvedRedirectUri,
-        codeChallenge: pkcePair.challenge,
+        redirectUri: magicLink.redirectUri,
+        codeChallenge: magicLink.codeChallenge,
         codeChallengeMethod: PKCE.codeChallengeMethod
       )
     )).value.response
@@ -326,6 +333,47 @@ extension SignIn {
     return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
+    )).value.response
+  }
+
+  /// Sends a native magic link to the specified email address as the second factor.
+  ///
+  /// Use this when the sign-in needs client trust and `supportedSecondFactors` offers
+  /// `email_link`. This prepares the `email_link` second factor using PKCE and stores the
+  /// verifier locally so the callback can be completed inside the app. Only one pending native
+  /// magic-link flow is stored locally at a time; starting a new flow replaces
+  /// the previously stored verifier.
+  ///
+  /// - Parameters:
+  ///   - emailAddressId: Optional email address ID. If not provided, uses the email-link second factor.
+  ///   - redirectUri: Optional redirect URI override. Defaults to the Clerk redirect configuration.
+  /// - Returns: An updated `SignIn` object with the email-link verification started.
+  /// - Throws: An error if email-link verification is unavailable or preparation fails.
+  @discardableResult
+  @MainActor
+  public func sendMfaEmailLink(
+    emailAddressId: String? = nil,
+    redirectUri: String? = nil
+  ) async throws -> SignIn {
+    let emailId =
+      emailAddressId
+        ?? supportedSecondFactors?.first(where: { $0.strategy == .emailLink })?.emailAddressId
+
+    guard let emailId else {
+      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
+    }
+
+    let magicLink = try startNativeMagicLink(redirectUri: redirectUri)
+
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
+      signInId: id,
+      params: .init(
+        strategy: .emailLink,
+        emailAddressId: emailId,
+        redirectUri: magicLink.redirectUri,
+        codeChallenge: magicLink.codeChallenge,
+        codeChallengeMethod: PKCE.codeChallengeMethod
+      )
     )).value.response
   }
 
