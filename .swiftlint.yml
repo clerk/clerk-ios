@@ -28,6 +28,8 @@ excluded:
   - build-docs
   - build-docs-test
   - Tests
+  - .claude
+  - .cursor
 
 # Reporter type
 reporter: "xcode"
