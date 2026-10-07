@@ -51,9 +51,9 @@ async function deleteSimulators(match: (device: Simulator) => boolean): Promise<
   }
 }
 
-export function localIosBackend(): DeviceBackend<LocalLease> {
+export function localIosBackend(options: { readonly os?: NodeJS.Platform } = {}): DeviceBackend<LocalLease> {
   const claimsDir = defaultClaimsDir();
-  const os = process.platform;
+  const os = options.os ?? process.platform;
 
   async function claimSlot(request: AcquireRequest): Promise<Claim> {
     const deadline = Date.now() + request.waitSeconds * 1000;
@@ -145,6 +145,7 @@ export function localIosBackend(): DeviceBackend<LocalLease> {
     },
 
     async install(lease, app) {
+      if (app.path === null) throw new VerifyFailure('BUILD_FAILED', `build ${app.key} was made on another machine, so there is no app here to install on ${lease.deviceName}`, '{cli} down, then {cli} up');
       await simctl(['install', lease.deviceId, app.path], `simctl install on ${lease.deviceName}`);
       return lease;
     },
