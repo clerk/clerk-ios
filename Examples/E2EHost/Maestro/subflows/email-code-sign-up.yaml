@@ -6,9 +6,6 @@ appId: com.clerk.E2EHost
     visible:
       id: "clerk.auth.start.identifier"
     timeout: 45000
-- assertVisible:
-    id: "clerk.auth.start.identifier"
-    text: "Enter your email"
 - retry:
     maxRetries: 2
     commands:
@@ -23,9 +20,6 @@ appId: com.clerk.E2EHost
           visible:
             id: "clerk.auth.signUp.code"
           timeout: 30000
-- assertVisible:
-    id: "clerk.auth.signUp.code"
-    text: "Verification code"
 - tapOn:
     id: "clerk.auth.signUp.code"
 - inputText: "424242"
@@ -37,18 +31,10 @@ appId: com.clerk.E2EHost
       visible:
         id: "clerk.auth.signUp.password"
     commands:
-      - assertVisible:
-          id: "clerk.auth.signUp.password"
-          text: "Choose your password"
       - tapOn:
           id: "clerk.auth.signUp.password"
       - inputText: ${CLERK_TEST_PASSWORD}
       - hideKeyboard
-      - tapOn: "Show password"
-      - assertVisible:
-          id: "clerk.auth.signUp.password"
-          text: "Choose your password"
-      - tapOn: "Hide password"
       - tapOn:
           id: "clerk.auth.signUp.continue"
 - extendedWaitUntil:

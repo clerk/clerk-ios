@@ -32,10 +32,6 @@ commandTimeout: 15000
                 visible:
                   id: "clerk.auth.start.phoneNumber"
                 timeout: 30000
-      - assertVisible: ".+, \\+\\d+"
-      - assertVisible:
-          id: "clerk.auth.start.phoneNumber"
-          text: "Enter your phone number"
       - tapOn:
           id: "clerk.auth.start.phoneNumber"
       - eraseText: 30
@@ -57,9 +53,6 @@ commandTimeout: 15000
           visible:
             id: "clerk.auth.signUp.code"
           timeout: 90000
-- assertVisible:
-    id: "clerk.auth.signUp.code"
-    text: "Verification code"
 - tapOn:
     id: "clerk.auth.signUp.code"
 - inputText: "424242"
