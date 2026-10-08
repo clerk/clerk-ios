@@ -110,6 +110,27 @@ extension Clerk.Environment {
     userSettings.attributes["backup_code"]?.usedForSecondFactor == true
   }
 
+  var mfaIsRequired: Bool {
+    userSettings.signUp.mfa?.required == true
+  }
+
+  /// Whether removing the authenticator app leaves the user another two-step method.
+  /// When MFA is required, the server rejects removing the last TOTP or SMS factor;
+  /// backup codes don't count.
+  func allowsRemovingAuthenticatorApp(for user: User) -> Bool {
+    guard mfaIsRequired, mfaAuthenticatorAppIsEnabled else { return true }
+
+    return mfaPhoneCodeIsEnabled && !user.phoneNumbersReservedForMfa.isEmpty
+  }
+
+  /// Whether removing `phoneNumber` from two-step verification leaves the user another method.
+  func allowsRemovingMfaPhoneNumber(_ phoneNumber: PhoneNumber, for user: User) -> Bool {
+    guard mfaIsRequired, mfaPhoneCodeIsEnabled else { return true }
+
+    return (mfaAuthenticatorAppIsEnabled && user.totpEnabled)
+      || user.phoneNumbersReservedForMfa.contains { $0.id != phoneNumber.id }
+  }
+
   enum MfaMethod {
     case phoneCode
     case authenticatorApp
