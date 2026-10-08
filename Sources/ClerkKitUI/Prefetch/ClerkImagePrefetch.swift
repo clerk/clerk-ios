@@ -10,11 +10,16 @@ import Nuke
 import SwiftUI
 
 extension Clerk {
+  private static let imagePrefetcher = ImagePrefetcher()
+
   /// Prefetches environment images (OAuth logos and app brand logo) into the image cache.
   ///
   /// Call this method after Clerk is configured and the environment is loaded
   /// to ensure images are cached before they're displayed in the UI.
   /// Both light and dark mode variants of OAuth provider logos are prefetched when available.
+  ///
+  /// Clerk prefetches through the `ImagePipeline.shared` that is set when it first prefetches.
+  /// If your app replaces `ImagePipeline.shared`, do so before calling this method.
   ///
   /// Example:
   /// ```swift
@@ -37,8 +42,7 @@ extension Clerk {
 
     guard !urls.isEmpty else { return }
 
-    let prefetcher = ImagePrefetcher()
-    prefetcher.startPrefetching(with: Array(urls))
+    Self.imagePrefetcher.startPrefetching(with: Array(urls))
   }
 }
 
