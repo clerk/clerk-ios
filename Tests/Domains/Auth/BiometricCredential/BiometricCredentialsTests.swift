@@ -944,6 +944,66 @@ struct BiometricCredentialsTests {
   }
 
   @Test
+  func revokeCurrentDeviceCredentialRevokesWhenBiometricsAreUnavailable() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    Clerk.shared.client = .mock
+    let revokedBiometricCredentialIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, _ in
+      revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      return .mock
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      transport: transport,
+      keyManager: MockBiometricCredentialKeyManager(isSupported: false)
+    )
+
+    let biometricCredential = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
+
+    #expect(biometricCredential == .mock)
+    #expect(revokedBiometricCredentialIds.value == ["tdc_123"])
+    #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+  }
+
+  @Test
+  func revokeCurrentDeviceCredentialRevokesWhenLocalKeyIsMissing() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    Clerk.shared.client = .mock
+    let revokedBiometricCredentialIds = LockIsolated<[String]>([])
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { biometricCredentialId, _ in
+      revokedBiometricCredentialIds.withValue { $0.append(biometricCredentialId) }
+      return .mock
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(
+      transport: transport,
+      keyManager: MockBiometricCredentialKeyManager(hasKey: { _ in false })
+    )
+
+    let biometricCredential = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
+
+    #expect(biometricCredential == .mock)
+    #expect(revokedBiometricCredentialIds.value == ["tdc_123"])
+    #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+  }
+
+  @Test
+  func revokeCurrentDeviceCredentialForgetsCredentialAlreadyRevokedOnServer() async throws {
+    Clerk.shared.environment = enabledBiometricCredentialEnvironment()
+    Clerk.shared.client = .mock
+    let transport = FakeTransport.mockDefaults()
+    transport.stubBiometricCredentialRevoke { _, _ in
+      throw ClerkAPIError(code: "resource_not_found", message: "not found", longMessage: "Resource not found", clerkTraceId: nil)
+    }
+    let setup = try makeBiometricCredentialsWithLocalCredential(transport: transport)
+
+    let biometricCredential = try await setup.biometricCredentials.revokeCurrentDeviceCredential()
+
+    #expect(biometricCredential == nil)
+    #expect(try setup.credentialStore.credential(id: "tdc_123") == nil)
+  }
+
+  @Test
   func revokeCurrentDeviceCredentialRequiresActiveOrPendingSession() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut
