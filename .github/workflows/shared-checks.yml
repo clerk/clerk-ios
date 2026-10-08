@@ -288,6 +288,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Run the verify-attach script tests
+        run: node --test ../.github/scripts/verify-attach.test.mjs
+
   report-manual-ci-check-runs:
     name: Report manual CI check runs
     needs:
