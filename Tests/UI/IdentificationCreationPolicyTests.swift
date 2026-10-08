@@ -13,14 +13,17 @@ struct IdentificationCreationPolicyTests {
     return environment
   }
 
-  private func user(enterpriseAccounts: [(accountActive: Bool, disableAdditionalIdentifications: Bool)]) -> User {
+  private func user(
+    enterpriseAccounts: [(accountActive: Bool, disableAdditionalIdentifications: Bool)],
+    provider: String = "saml_okta"
+  ) -> User {
     var user = User.mock
     user.enterpriseAccounts = enterpriseAccounts.enumerated().map { index, account in
       EnterpriseAccount(
         id: "eac_\(index)",
         object: "enterprise_account",
         protocol: "saml",
-        provider: "saml_okta",
+        provider: provider,
         active: account.accountActive,
         emailAddress: "user@acme.com",
         publicMetadata: [:],
@@ -69,6 +72,22 @@ struct IdentificationCreationPolicyTests {
     let user = user(enterpriseAccounts: [(accountActive: true, disableAdditionalIdentifications: true)])
 
     #expect(environment(enterpriseSSOEnabled: enterpriseSSOEnabled).allowsAddingIdentifications(for: user))
+  }
+
+  @Test(arguments: ["oauth_google", "oauth_microsoft"])
+  func easieAccountsStillAllowAddingEmailAddressesAndPhoneNumbers(provider: String) {
+    let environment = environment(enterpriseSSOEnabled: true)
+    let user = user(enterpriseAccounts: [(accountActive: true, disableAdditionalIdentifications: true)], provider: provider)
+
+    #expect(environment.allowsAddingEmailAddressesAndPhoneNumbers(for: user))
+    #expect(!environment.allowsAddingIdentifications(for: user))
+  }
+
+  @Test
+  func otherEnterpriseAccountsBlockAddingEmailAddressesAndPhoneNumbers() {
+    let user = user(enterpriseAccounts: [(accountActive: true, disableAdditionalIdentifications: true)])
+
+    #expect(!environment(enterpriseSSOEnabled: true).allowsAddingEmailAddressesAndPhoneNumbers(for: user))
   }
 
   @Test

@@ -25,12 +25,17 @@ struct UserProfileDetailView: View {
     return environment.allowsAddingIdentifications(for: user)
   }
 
+  private var canAddEmailAddressesAndPhoneNumbers: Bool {
+    guard let user, let environment = clerk.environment else { return false }
+    return environment.allowsAddingEmailAddressesAndPhoneNumbers(for: user)
+  }
+
   private var canAddEmailAddress: Bool {
-    canAddIdentifications && clerk.environment?.emailIsImmutable != true
+    canAddEmailAddressesAndPhoneNumbers && clerk.environment?.emailIsImmutable != true
   }
 
   private var canAddPhoneNumber: Bool {
-    canAddIdentifications && clerk.environment?.phoneNumberIsImmutable != true
+    canAddEmailAddressesAndPhoneNumbers && clerk.environment?.phoneNumberIsImmutable != true
   }
 
   private var showEmailSection: Bool {

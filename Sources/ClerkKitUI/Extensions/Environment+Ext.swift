@@ -132,8 +132,19 @@ extension Clerk.Environment {
   }
 
   func allowsAddingIdentifications(for user: User) -> Bool {
-    guard userSettings.enterpriseSSO?.enabled == true else { return true }
-    return !(user.enterpriseAccounts ?? []).contains { account in
+    enterpriseAccountsDisallowingIdentifications(for: user).isEmpty
+  }
+
+  /// The backend exempts EASIE connections from this restriction for email addresses and phone numbers.
+  func allowsAddingEmailAddressesAndPhoneNumbers(for user: User) -> Bool {
+    enterpriseAccountsDisallowingIdentifications(for: user).allSatisfy { account in
+      ["oauth_google", "oauth_microsoft", "oauth_mock"].contains(account.provider)
+    }
+  }
+
+  private func enterpriseAccountsDisallowingIdentifications(for user: User) -> [EnterpriseAccount] {
+    guard userSettings.enterpriseSSO?.enabled == true else { return [] }
+    return (user.enterpriseAccounts ?? []).filter { account in
       account.active && account.enterpriseConnection.disableAdditionalIdentifications
     }
   }
