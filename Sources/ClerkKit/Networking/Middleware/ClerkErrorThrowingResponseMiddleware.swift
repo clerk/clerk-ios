@@ -13,6 +13,7 @@ struct ClerkErrorThrowingResponseMiddleware: ClerkResponseMiddleware {
        var clerkAPIError = clerkErrorResponse.errors.first
     {
       clerkAPIError.clerkTraceId = clerkErrorResponse.clerkTraceId
+      clerkAPIError.statusCode = response.statusCode
       ClerkLogger.logNetworkError(
         clerkAPIError,
         endpoint: response.url?.absoluteString ?? "unknown",

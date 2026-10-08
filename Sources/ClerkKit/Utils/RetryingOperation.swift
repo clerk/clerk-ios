@@ -65,6 +65,10 @@ func retryingOperation<T>(
       return try await operation()
     } catch is CancellationError {
       throw CancellationError()
+    } catch let error as ClerkAPIError where (400 ..< 500).contains(error.statusCode ?? 0) {
+      // A request the server rejected fails the same way again. The network layer
+      // already retries the transient 408, 425, and 429 responses once.
+      throw error
     } catch {
       guard attempt < policy.maxAttempts else {
         throw error
