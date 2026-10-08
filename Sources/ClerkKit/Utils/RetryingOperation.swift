@@ -65,6 +65,10 @@ func retryingOperation<T>(
       return try await operation()
     } catch is CancellationError {
       throw CancellationError()
+    } catch where isClientError(error) {
+      // A request the server rejected fails the same way again. The network layer
+      // already retries the transient 408, 425, and 429 responses once.
+      throw error
     } catch {
       guard attempt < policy.maxAttempts else {
         throw error
@@ -78,6 +82,12 @@ func retryingOperation<T>(
       try await Task.sleep(for: delay)
     }
   }
+}
+
+private func isClientError(_ error: any Error) -> Bool {
+  let statusCode = (error as? ClerkAPIError)?.statusCode
+    ?? (error as? URLError)?.userInfo[URLError.clerkStatusCodeKey] as? Int
+  return (400 ..< 500).contains(statusCode ?? 0)
 }
 
 private func delayMilliseconds(_ duration: Duration) -> Int {
