@@ -59,6 +59,7 @@ let package = Package(
         "ClerkKit",
         "ClerkKitUI",
         .product(name: "Mocker", package: "Mocker"),
+        .product(name: "Nuke", package: "Nuke"),
         .product(name: "ConcurrencyExtras", package: "swift-concurrency-extras"),
       ],
       path: "Tests",
