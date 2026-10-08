@@ -249,15 +249,39 @@ extension UserProfileUpdateProfileView {
     #endif
   }
 
+  static func updateParams(
+    for user: User,
+    username: String?,
+    firstName: String?,
+    lastName: String?
+  ) -> User.UpdateParams? {
+    func changed(_ value: String?, from current: String?) -> String? {
+      guard let value, value != (current ?? "") else { return nil }
+      return value
+    }
+
+    let params = User.UpdateParams(
+      username: changed(username, from: user.username),
+      firstName: changed(firstName, from: user.firstName),
+      lastName: changed(lastName, from: user.lastName)
+    )
+    guard params.username != nil || params.firstName != nil || params.lastName != nil else { return nil }
+    return params
+  }
+
   private func save() async {
+    guard let params = Self.updateParams(
+      for: user,
+      username: usernameIsEditable ? username : nil,
+      firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
+      lastName: environment?.lastNameIsEnabled == true ? lastName : nil
+    ) else {
+      dismiss()
+      return
+    }
+
     do {
-      try await user.update(
-        .init(
-          username: usernameIsEditable ? username : nil,
-          firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
-          lastName: environment?.lastNameIsEnabled == true ? lastName : nil
-        )
-      )
+      try await user.update(params)
       dismiss()
     } catch {
       self.error = error
