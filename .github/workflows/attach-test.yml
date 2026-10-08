@@ -1,0 +1,33 @@
+name: attach-test (throwaway)
+on:
+  push:
+    branches: [mike/trial-do-not-merge-ios]
+    paths: [.github/workflows/attach-test.yml]
+permissions:
+  contents: read
+  pull-requests: write
+jobs:
+  attach:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Install the latest gh
+        run: |
+          gh --version
+          V=$(curl -fsSLI -o /dev/null -w '%{url_effective}' https://github.com/cli/cli/releases/latest | sed -n 's|.*/tag/v||p')
+          curl -fsSL "https://github.com/cli/cli/releases/download/v${V}/gh_${V}_linux_amd64.tar.gz" | tar -xz -C /tmp
+          sudo install -m 0755 "/tmp/gh_${V}_linux_amd64/bin/gh" /usr/local/bin/gh
+          gh --version
+      - name: Make a small image and video
+        run: |
+          python3 -c "import zlib,struct;w=h=32;raw=b''.join(b'\x00'+b'\x33\x99\xff'*w for _ in range(h));c=lambda t,d:struct.pack('>I',len(d))+t+d+struct.pack('>I',zlib.crc32(t+d)&0xffffffff);open('/tmp/attach-test.png','wb').write(b'\x89PNG\r\n\x1a\n'+c(b'IHDR',struct.pack('>IIBBBBB',w,h,8,2,0,0,0))+c(b'IDAT',zlib.compress(raw))+c(b'IEND',b''))"
+          command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg >/dev/null) || true
+          ffmpeg -loglevel error -f lavfi -i testsrc=duration=2:size=160x120:rate=10 -pix_fmt yuv420p /tmp/attach-test.mp4 || true
+          ls -l /tmp/attach-test.*
+      - name: Post an image with the Actions token
+        run: gh pr comment 669 --repo "$GITHUB_REPOSITORY" --body 'Test of `gh pr comment --attach` from a workflow job with the Actions token (image). This pull request is a throwaway.' --attach /tmp/attach-test.png
+      - name: Post a video with the Actions token
+        if: always()
+        run: test -f /tmp/attach-test.mp4 && gh pr comment 669 --repo "$GITHUB_REPOSITORY" --body 'Test of `gh pr comment --attach` from a workflow job with the Actions token (video). This pull request is a throwaway.' --attach /tmp/attach-test.mp4
