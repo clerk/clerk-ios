@@ -7,7 +7,7 @@ import Foundation
 
 /// When the API indicates authentication is invalid, re-sync the client state unless we already attempted it.
 struct ClerkInvalidAuthResponseMiddleware: ClerkResponseMiddleware {
-  let invalidAuthCodes = ["authentication_invalid", "resource_not_found"]
+  let invalidAuthCodes = ["authentication_invalid", "resource_not_found", "signed_out"]
   private let runtimeScope: ClerkRuntimeScope
 
   init(runtimeScope: ClerkRuntimeScope) {
