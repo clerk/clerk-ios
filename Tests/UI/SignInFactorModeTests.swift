@@ -54,6 +54,18 @@ struct SignInFactorModeTests {
   }
 
   @Test
+  func factorsTheAlternativesScreenCannotShowDoNotCountAsAlternatives() {
+    let emailCode = Factor(strategy: .emailCode, emailAddressId: "ema_123", safeIdentifier: "sam@clerk.dev")
+    let web3 = Factor(strategy: .unknown("web3_metamask_signature"))
+    let phoneCodeWithoutIdentifier = Factor(strategy: .phoneCode)
+    let firstFactorSignIn = SignIn(id: "sia_1", status: .needsFirstFactor, supportedFirstFactors: [emailCode, web3, phoneCodeWithoutIdentifier])
+    let secondFactorSignIn = SignIn(id: "sia_2", status: .needsSecondFactor, supportedSecondFactors: [Factor(strategy: .totp), web3])
+
+    #expect(!SignInFactorMode.firstFactor.showsUseAnotherMethod(signIn: firstFactorSignIn, currentFactor: emailCode, socialProviders: []))
+    #expect(!SignInFactorMode.secondFactor.showsUseAnotherMethod(signIn: secondFactorSignIn, currentFactor: Factor(strategy: .totp), socialProviders: []))
+  }
+
+  @Test
   func secondFactorShowsUseAnotherMethodOnlyWhenAnotherFactorIsOffered() {
     let totp = Factor(strategy: .totp)
     let backupCode = Factor(strategy: .backupCode)

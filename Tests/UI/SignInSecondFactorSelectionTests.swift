@@ -28,9 +28,9 @@ struct SignInSecondFactorSelectionTests {
       status: .needsSecondFactor,
       supportedSecondFactors: [
         backupCode,
-        Factor(strategy: .phoneCode),
+        Factor(strategy: .phoneCode, safeIdentifier: "+15555550100"),
         Factor(strategy: .unknown("future_strategy")),
-        Factor(strategy: .emailCode),
+        Factor(strategy: .emailCode, safeIdentifier: "sam@clerk.dev"),
         Factor(strategy: .totp),
         Factor(strategy: .passkey),
       ]
@@ -43,7 +43,6 @@ struct SignInSecondFactorSelectionTests {
       .totp,
       .phoneCode,
       .emailCode,
-      .unknown("future_strategy"),
     ])
   }
 }
