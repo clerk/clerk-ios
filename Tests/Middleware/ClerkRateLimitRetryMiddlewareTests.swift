@@ -461,6 +461,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
     ["Retry-After": "soon"],
     ["Retry-After": "Tue, 14 Nov 2023 22:13:15 GMT"],
     ["Retry-After": "nan"],
+    ["Retry-After": "-1"],
   ])
   func unusableRetryAfterFallsBackToTheDefaultDelay(headers: [String: String]) async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
@@ -481,8 +482,8 @@ struct ClerkRateLimitRetryMiddlewareTests {
     #expect(sleepDelay.value == 500_000_000)
   }
 
-  @Test
-  func unusableRetryAfterFallsBackToTheRateLimitReset() async throws {
+  @Test(arguments: ["soon", "-1"])
+  func unusableRetryAfterFallsBackToTheRateLimitReset(retryAfter: String) async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
     let middleware = ClerkRateLimitRetryMiddleware(
       sleep: { sleepDelay.setValue($0) },
@@ -492,7 +493,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
     let shouldRetry = try await middleware.shouldRetry(
       request: request,
-      response: response(statusCode: 429, for: request, headers: ["Retry-After": "soon", "X-RateLimit-Reset": "1700000030"]),
+      response: response(statusCode: 429, for: request, headers: ["Retry-After": retryAfter, "X-RateLimit-Reset": "1700000030"]),
       error: NSError(domain: "test", code: 0),
       attempts: 1
     )

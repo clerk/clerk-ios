@@ -104,7 +104,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
 
   private func secondsFromRetryAfter(_ value: String) -> TimeInterval? {
     if let seconds = TimeInterval(value) {
-      return seconds.isFinite ? seconds : nil
+      return seconds.isFinite && seconds >= 0 ? seconds : nil
     }
 
     let formatter = DateFormatter()
