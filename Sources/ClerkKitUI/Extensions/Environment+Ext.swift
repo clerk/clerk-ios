@@ -110,6 +110,26 @@ extension Clerk.Environment {
     userSettings.attributes["backup_code"]?.usedForSecondFactor == true
   }
 
+  enum MfaMethod {
+    case phoneCode
+    case authenticatorApp
+    case backupCodes
+  }
+
+  func mfaMethodsAvailableToAdd(for user: User) -> [MfaMethod] {
+    var methods: [MfaMethod] = []
+    if mfaPhoneCodeIsEnabled {
+      methods.append(.phoneCode)
+    }
+    if mfaAuthenticatorAppIsEnabled, !user.totpEnabled {
+      methods.append(.authenticatorApp)
+    }
+    if mfaBackupCodeIsEnabled, user.twoFactorEnabled, !user.backupCodeEnabled {
+      methods.append(.backupCodes)
+    }
+    return methods
+  }
+
   var emailIsAvailable: Bool {
     attributeIsAvailable("email_address")
   }

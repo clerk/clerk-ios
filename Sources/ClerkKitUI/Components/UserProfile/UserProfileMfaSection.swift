@@ -62,11 +62,13 @@ struct UserProfileMfaSection: View {
           }
         }
 
-        UserProfileButtonRow(
-          text: "Add two-step verification",
-          accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Security.addMfa
-        ) {
-          navigation.chooseMfaTypeIsPresented = true
+        if let user, clerk.environment?.mfaMethodsAvailableToAdd(for: user).isEmpty == false {
+          UserProfileButtonRow(
+            text: "Add two-step verification",
+            accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.Security.addMfa
+          ) {
+            navigation.chooseMfaTypeIsPresented = true
+          }
         }
       }
       .background(theme.colors.background)
