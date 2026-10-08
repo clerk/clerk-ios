@@ -384,6 +384,7 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertFalse(model.hasExistingResources)
     XCTAssertNil(model.creationDefaults)
     XCTAssertFalse(model.isLoading)
+    XCTAssertFalse(model.hasFailedLists)
   }
 
   @MainActor

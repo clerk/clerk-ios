@@ -30,7 +30,9 @@ final class OrganizationAccountListDataSource {
 
   /// Whether a list's latest load failed, leaving it missing while the others show.
   var hasFailedLists: Bool {
-    (!memberships.isLoading && !memberships.hasLoaded)
+    guard loadedUserID != nil else { return false }
+
+    return (!memberships.isLoading && !memberships.hasLoaded)
       || (!invitations.isLoading && !invitations.hasLoaded)
       || (!suggestions.isLoading && !suggestions.hasLoaded)
   }
