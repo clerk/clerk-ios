@@ -26,8 +26,8 @@ struct OrganizationInvitationsTabView: View {
 
   var body: some View {
     OrganizationAccountPaginatedList(
-      pager: dataSource.invitationsPager,
-      isLoading: dataSource.isLoadingInvitations,
+      pager: dataSource.invitations.pager,
+      isLoading: dataSource.invitations.isLoading,
       emptyState: {
         ClerkEmptyStateView(
           icon: .asset("icon-invitation"),
@@ -61,8 +61,8 @@ extension OrganizationInvitationsTabView {
 
   @MainActor
   private func loadMore() async {
-    guard canManageMemberships, let organization else { return }
-    await dataSource.loadMoreInvitations(organization: organization)
+    guard canManageMemberships else { return }
+    dataSource.invitations.loadMore()
   }
 
   @MainActor

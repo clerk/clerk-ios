@@ -43,10 +43,10 @@ struct OrganizationAccountListSections: View {
       }
 
       OrganizationPaginatedListSection(
-        items: accountList.membershipsPager.items,
-        hasNextPage: accountList.membershipsPager.hasNextPage,
+        items: accountList.memberships.pager.items,
+        hasNextPage: accountList.memberships.pager.hasNextPage,
         onLoadMore: {
-          await accountList.loadMoreMemberships(user: user)
+          accountList.memberships.loadMore()
         }
       ) { membership in
         OrganizationAccountMembershipRow(
@@ -58,12 +58,12 @@ struct OrganizationAccountListSections: View {
         )
       }
 
-      if !accountList.membershipsPager.hasNextPage {
+      if !accountList.memberships.pager.hasNextPage {
         OrganizationPaginatedListSection(
-          items: accountList.invitationsPager.items,
-          hasNextPage: accountList.invitationsPager.hasNextPage,
+          items: accountList.invitations.pager.items,
+          hasNextPage: accountList.invitations.pager.hasNextPage,
           onLoadMore: {
-            await accountList.loadMoreInvitations(user: user)
+            accountList.invitations.loadMore()
           }
         ) { invitation in
           OrganizationAccountInvitationRow(
@@ -76,12 +76,12 @@ struct OrganizationAccountListSections: View {
         }
       }
 
-      if !accountList.membershipsPager.hasNextPage, !accountList.invitationsPager.hasNextPage {
+      if !accountList.memberships.pager.hasNextPage, !accountList.invitations.pager.hasNextPage {
         OrganizationPaginatedListSection(
-          items: accountList.suggestionsPager.items,
-          hasNextPage: accountList.suggestionsPager.hasNextPage,
+          items: accountList.suggestions.pager.items,
+          hasNextPage: accountList.suggestions.pager.hasNextPage,
           onLoadMore: {
-            await accountList.loadMoreSuggestions(user: user)
+            accountList.suggestions.loadMore()
           }
         ) { suggestion in
           OrganizationAccountSuggestionRow(

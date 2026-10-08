@@ -36,8 +36,8 @@ struct OrganizationMembersTabView: View {
       controls
 
       OrganizationAccountPaginatedList(
-        pager: dataSource.membershipsPager,
-        isLoading: dataSource.isLoadingMembers,
+        pager: dataSource.members.pager,
+        isLoading: dataSource.members.isLoading,
         emptyState: {
           ClerkEmptyStateView(
             icon: .system("magnifyingglass"),
@@ -67,6 +67,9 @@ struct OrganizationMembersTabView: View {
     }
     .onChange(of: dataSource.membershipSearchText) { _, newValue in
       scheduleSearch(newValue)
+    }
+    .onAppear {
+      search()
     }
     .onDisappear {
       searchDebounceTask?.cancel()
@@ -131,8 +134,8 @@ extension OrganizationMembersTabView {
 
   @MainActor
   private func loadMore() async {
-    guard canReadMemberships, let organization else { return }
-    await dataSource.loadMoreMembers(organization: organization)
+    guard canReadMemberships else { return }
+    dataSource.members.loadMore()
   }
 
   @MainActor
@@ -143,7 +146,7 @@ extension OrganizationMembersTabView {
 
   private func submitSearch() {
     searchDebounceTask?.cancel()
-    searchDebounceTask = Task { await search() }
+    search()
   }
 
   private func scheduleSearch(_ value: String) {
@@ -151,7 +154,7 @@ extension OrganizationMembersTabView {
 
     let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
     if trimmedValue.isEmpty {
-      searchDebounceTask = Task { await search(query: "") }
+      search(query: "")
       return
     }
 
@@ -163,16 +166,16 @@ extension OrganizationMembersTabView {
       }
 
       guard !Task.isCancelled else { return }
-      await search(query: trimmedValue)
+      search(query: trimmedValue)
     }
   }
 
   @MainActor
-  private func search(query: String? = nil) async {
+  private func search(query: String? = nil) {
     guard canReadMemberships, let organization else { return }
 
     let query = query ?? dataSource.membershipSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-    await dataSource.searchMembers(organization: organization, query: query)
+    dataSource.searchMembers(organization: organization, query: query)
   }
 }
 

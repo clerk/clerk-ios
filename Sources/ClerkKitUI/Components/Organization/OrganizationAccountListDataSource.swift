@@ -11,106 +11,94 @@ import Observation
 final class OrganizationAccountListDataSource {
   let pageSize: Int
 
-  var membershipsPager = OrganizationAccountListPager<OrganizationMembership>()
-  var invitationsPager = OrganizationAccountListPager<UserOrganizationInvitation>()
-  var suggestionsPager = OrganizationAccountListPager<OrganizationSuggestion>()
+  let memberships = OrganizationPagedList<OrganizationMembership>(name: "memberships")
+  let invitations = OrganizationPagedList<UserOrganizationInvitation>(name: "invitations")
+  let suggestions = OrganizationPagedList<OrganizationSuggestion>(name: "suggestions")
   var creationDefaults: OrganizationCreationDefaults?
-  var isLoading = true
   var error: Error?
+  private var isLoadingCreationDefaults = false
+  @ObservationIgnored private var loadID = 0
+  @ObservationIgnored private var loadedUserID: String?
+
+  var isLoading: Bool {
+    memberships.isLoading || invitations.isLoading || suggestions.isLoading || isLoadingCreationDefaults
+  }
 
   var hasExistingResources: Bool {
-    !membershipsPager.items.isEmpty || !invitationsPager.items.isEmpty || !suggestionsPager.items.isEmpty
+    !memberships.pager.items.isEmpty || !invitations.pager.items.isEmpty || !suggestions.pager.items.isEmpty
+  }
+
+  /// Whether a list's latest load failed, leaving it missing while the others show.
+  var hasFailedLists: Bool {
+    guard loadedUserID != nil else { return false }
+
+    return (!memberships.isLoading && !memberships.hasLoaded)
+      || (!invitations.isLoading && !invitations.hasLoaded)
+      || (!suggestions.isLoading && !suggestions.hasLoaded)
   }
 
   var isLoadingMore: Bool {
-    membershipsPager.isLoadingMore || invitationsPager.isLoadingMore || suggestionsPager.isLoadingMore
+    memberships.pager.isLoadingMore || invitations.pager.isLoadingMore || suggestions.pager.isLoadingMore
   }
 
   var hasNextPage: Bool {
-    membershipsPager.hasNextPage || invitationsPager.hasNextPage || suggestionsPager.hasNextPage
+    memberships.pager.hasNextPage || invitations.pager.hasNextPage || suggestions.pager.hasNextPage
   }
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
+    let reportError: @MainActor (Error) -> Void = { [weak self] error in
+      self?.error = error
+    }
+    memberships.onError = reportError
+    invitations.onError = reportError
+    suggestions.onError = reportError
   }
 
   func loadInitial(user: User?, includeCreationDefaults: Bool) async {
+    loadID += 1
+    let loadID = loadID
     guard let user else {
-      isLoading = false
+      loadedUserID = nil
+      resetLists(isLoading: false)
       return
     }
-
-    isLoading = true
-    defer { isLoading = false }
+    if user.id != loadedUserID {
+      loadedUserID = user.id
+      resetLists(isLoading: true)
+    }
 
     error = nil
-
-    do {
-      async let fetchedMemberships = user.getOrganizationMemberships(page: 1, pageSize: pageSize)
-      async let fetchedInvitations = user.getOrganizationInvitations(page: 1, pageSize: pageSize, status: ["pending"])
-      async let fetchedSuggestions = user.getOrganizationSuggestions(page: 1, pageSize: pageSize, status: ["pending", "accepted"])
-      async let fetchedDefaults = fetchCreationDefaults(user: user, isEnabled: includeCreationDefaults)
-
-      let membershipsResult = try await fetchedMemberships
-      let invitationsResult = try await fetchedInvitations
-      let suggestionsResult = try await fetchedSuggestions
-
-      membershipsPager.replace(with: membershipsResult)
-      invitationsPager.replace(with: invitationsResult)
-      suggestionsPager.replace(with: suggestionsResult)
-      creationDefaults = await fetchedDefaults
-    } catch {
-      self.error = error
+    isLoadingCreationDefaults = true
+    async let fetchedDefaults = fetchCreationDefaults(user: user, isEnabled: includeCreationDefaults)
+    let loads = [
+      memberships.reload { [pageSize] offset in
+        try await user.getOrganizationMemberships(offset: offset, pageSize: pageSize)
+      },
+      invitations.reload { [pageSize] offset in
+        try await user.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
+      },
+      suggestions.reload { [pageSize] offset in
+        try await user.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: ["pending", "accepted"])
+      },
+    ]
+    for load in loads {
+      await load.value
     }
-  }
+    let defaults = await fetchedDefaults
+    guard loadID == self.loadID else { return }
 
-  func loadMoreMemberships(user: User?) async {
-    guard let user, !isLoadingMore, membershipsPager.hasNextPage else { return }
-
-    membershipsPager.isLoadingMore = true
-    defer { membershipsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationMemberships(offset: membershipsPager.offset, pageSize: pageSize)
-      membershipsPager.append(result)
-    } catch {
-      self.error = error
-    }
-  }
-
-  func loadMoreInvitations(user: User?) async {
-    guard let user, !isLoadingMore, invitationsPager.hasNextPage else { return }
-
-    invitationsPager.isLoadingMore = true
-    defer { invitationsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationInvitations(offset: invitationsPager.offset, pageSize: pageSize, status: ["pending"])
-      invitationsPager.append(result)
-    } catch {
-      self.error = error
-    }
-  }
-
-  func loadMoreSuggestions(user: User?) async {
-    guard let user, !isLoadingMore, suggestionsPager.hasNextPage else { return }
-
-    suggestionsPager.isLoadingMore = true
-    defer { suggestionsPager.isLoadingMore = false }
-
-    do {
-      let result = try await user.getOrganizationSuggestions(offset: suggestionsPager.offset, pageSize: pageSize, status: ["pending", "accepted"])
-      suggestionsPager.append(result)
-    } catch {
-      self.error = error
-    }
+    creationDefaults = defaults
+    isLoadingCreationDefaults = false
   }
 
   func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
     do {
       let accepted = try await invitation.accept()
-      invitationsPager.replace(accepted)
-      invitationsPager.removeOneFromPagination()
+      invitations.update {
+        $0.replace(accepted)
+        $0.removeOneFromPagination()
+      }
     } catch {
       self.error = error
     }
@@ -119,10 +107,18 @@ final class OrganizationAccountListDataSource {
   func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
     do {
       let accepted = try await suggestion.accept()
-      suggestionsPager.replace(accepted)
+      suggestions.update { $0.replace(accepted) }
     } catch {
       self.error = error
     }
+  }
+
+  private func resetLists(isLoading: Bool) {
+    memberships.reset(isLoading: isLoading)
+    invitations.reset(isLoading: isLoading)
+    suggestions.reset(isLoading: isLoading)
+    creationDefaults = nil
+    isLoadingCreationDefaults = false
   }
 
   private func fetchCreationDefaults(user: User, isEnabled: Bool) async -> OrganizationCreationDefaults? {
