@@ -21,6 +21,10 @@ struct AuthSensitiveFieldsTests {
     let window = try await show(view)
     defer { hide(window) }
 
+    // AuthView's state persists the identifier to the standard defaults.
+    let storedIdentifier = UserDefaults.standard.string(forKey: AuthState.identifierStorageKey)
+    defer { UserDefaults.standard.set(storedIdentifier, forKey: AuthState.identifierStorageKey) }
+
     navigation.path = [.signInForgotPassword]
     try await layout(window)
     authState.authStartIdentifier = "a@example.com"
