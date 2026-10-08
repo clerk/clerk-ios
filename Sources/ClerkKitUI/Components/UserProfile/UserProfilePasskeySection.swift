@@ -19,6 +19,11 @@ struct UserProfilePasskeySection: View {
     clerk.user
   }
 
+  var canAddPasskey: Bool {
+    guard let user, let environment = clerk.environment else { return false }
+    return environment.allowsAddingIdentifications(for: user)
+  }
+
   var sortedPasskeys: [Passkey] {
     guard let user else { return [] }
     return user.passkeys.sorted { lhs, rhs in
@@ -27,21 +32,25 @@ struct UserProfilePasskeySection: View {
   }
 
   var body: some View {
-    Section {
-      VStack(spacing: 0) {
-        ForEach(sortedPasskeys) {
-          UserProfilePasskeyRow(passkey: $0)
-        }
+    if canAddPasskey || !sortedPasskeys.isEmpty {
+      Section {
+        VStack(spacing: 0) {
+          ForEach(sortedPasskeys) {
+            UserProfilePasskeyRow(passkey: $0)
+          }
 
-        UserProfileButtonRow(text: "Add a passkey") {
-          await createPasskey()
+          if canAddPasskey {
+            UserProfileButtonRow(text: "Add a passkey") {
+              await createPasskey()
+            }
+          }
         }
+        .background(theme.colors.background)
+      } header: {
+        UserProfileSectionHeader(text: "PASSKEYS")
       }
-      .background(theme.colors.background)
-    } header: {
-      UserProfileSectionHeader(text: "PASSKEYS")
+      .clerkErrorPresenting($error)
     }
-    .clerkErrorPresenting($error)
   }
 }
 
