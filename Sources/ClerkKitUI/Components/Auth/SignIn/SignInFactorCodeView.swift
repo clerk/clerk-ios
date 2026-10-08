@@ -44,7 +44,11 @@ struct SignInFactorCodeView: View {
     case .resetPasswordEmailCode, .resetPasswordPhoneCode:
       false
     default:
-      mode.showsUseAnotherMethod(signIn: signIn, currentFactor: factor)
+      mode.showsUseAnotherMethod(
+        signIn: signIn,
+        currentFactor: factor,
+        socialProviders: clerk.environment?.authenticatableSocialProviders ?? []
+      )
     }
   }
 

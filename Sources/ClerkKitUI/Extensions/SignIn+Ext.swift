@@ -64,8 +64,7 @@ extension SignIn {
 
   func alternativeFirstFactors(currentFactor: Factor?) -> [Factor] {
     let firstFactors = supportedFirstFactors?.filter { factor in
-      if case .oauth = factor.strategy { return false }
-      return factor != currentFactor && factor.isResetFactor == false && factor.strategy != .enterpriseSSO && factor.strategy != .saml
+      factor != currentFactor && Self.isOfferedAsAlternative(factor)
     }
 
     return (firstFactors ?? []).sorted(using: Factor.allStrategiesButtonsComparator)
@@ -92,8 +91,20 @@ extension SignIn {
   }
 
   func alternativeSecondFactors(currentFactor: Factor?) -> [Factor] {
-    (supportedSecondFactors?.filter { $0 != currentFactor } ?? [])
+    (supportedSecondFactors?.filter { $0 != currentFactor && Self.isOfferedAsAlternative($0) } ?? [])
       .sorted(using: Factor.backupCodePrefComparator)
+  }
+
+  /// Whether the alternative methods screens have an option to show for `factor`.
+  private static func isOfferedAsAlternative(_ factor: Factor) -> Bool {
+    switch factor.strategy {
+    case .phoneCode, .emailCode, .emailLink:
+      factor.safeIdentifier != nil
+    case .passkey, .password, .totp, .backupCode:
+      true
+    default:
+      false
+    }
   }
 
   var resetPasswordFactor: Factor? {

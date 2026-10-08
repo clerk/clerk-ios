@@ -114,11 +114,21 @@ extension EmailLinkVerificationView {
 
       switch mode {
       case .signIn(let factor):
-        useAnotherMethodButton(
-          destination: SignInFactorMode.firstFactor.alternativeMethodsDestination(currentFactor: factor)
-        )
+        if SignInFactorMode.firstFactor.showsUseAnotherMethod(
+          signIn: clerk.auth.currentSignIn,
+          currentFactor: factor,
+          socialProviders: clerk.environment?.authenticatableSocialProviders ?? []
+        ) {
+          useAnotherMethodButton(
+            destination: SignInFactorMode.firstFactor.alternativeMethodsDestination(currentFactor: factor)
+          )
+        }
       case .signInClientTrust(let factor):
-        if SignInFactorMode.clientTrust.showsUseAnotherMethod(signIn: clerk.auth.currentSignIn, currentFactor: factor) {
+        if SignInFactorMode.clientTrust.showsUseAnotherMethod(
+          signIn: clerk.auth.currentSignIn,
+          currentFactor: factor,
+          socialProviders: []
+        ) {
           useAnotherMethodButton(
             destination: SignInFactorMode.clientTrust.alternativeMethodsDestination(currentFactor: factor)
           )

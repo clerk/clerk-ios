@@ -30,11 +30,12 @@ extension SignInFactorMode {
     }
   }
 
-  func showsUseAnotherMethod(signIn: SignIn?, currentFactor: Factor) -> Bool {
+  /// Whether the alternative methods screen would offer anything besides `currentFactor`.
+  func showsUseAnotherMethod(signIn: SignIn?, currentFactor: Factor, socialProviders: [OAuthProvider]) -> Bool {
     switch self {
-    case .firstFactor, .secondFactor:
-      true
-    case .clientTrust:
+    case .firstFactor:
+      signIn?.alternativeFirstFactors(currentFactor: currentFactor).isEmpty == false || !socialProviders.isEmpty
+    case .secondFactor, .clientTrust:
       signIn?.alternativeSecondFactors(currentFactor: currentFactor).isEmpty == false
     }
   }
