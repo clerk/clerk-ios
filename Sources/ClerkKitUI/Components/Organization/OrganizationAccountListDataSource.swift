@@ -29,7 +29,9 @@ final class OrganizationAccountListDataSource {
 
   /// Whether a list's latest load failed, leaving it missing while the others show.
   var hasFailedLists: Bool {
-    [memberships.hasLoaded, invitations.hasLoaded, suggestions.hasLoaded].contains(false) && !isLoading
+    (!memberships.isLoading && !memberships.hasLoaded)
+      || (!invitations.isLoading && !invitations.hasLoaded)
+      || (!suggestions.isLoading && !suggestions.hasLoaded)
   }
 
   var isLoadingMore: Bool {

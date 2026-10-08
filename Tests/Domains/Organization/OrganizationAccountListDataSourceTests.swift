@@ -316,6 +316,40 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   }
 
   @MainActor
+  func testFailedListIsRetryableWhileAnotherListIsStillLoading() async {
+    configureClerkForTesting()
+
+    let gate = ResponseGate()
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    }
+    transport.stubOrganizationInvitations { _, _, _ in
+      throw ClerkClientError(message: "Failed to load invitations")
+    }
+    transport.stubOrganizationSuggestions { _, _, _ in
+      await gate.wait("suggestions")
+      return ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource()
+    let load = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    for _ in 0 ..< 1000 where model.error == nil || model.memberships.isLoading {
+      await Task.yield()
+    }
+
+    XCTAssertNotNil(model.error)
+    XCTAssertTrue(model.suggestions.isLoading)
+    XCTAssertTrue(model.hasExistingResources)
+    XCTAssertTrue(model.hasFailedLists)
+
+    gate.open("suggestions")
+    await load.value
+    XCTAssertTrue(model.hasFailedLists)
+  }
+
+  @MainActor
   func testReloadDropsALoadMoreInFlight() async {
     configureClerkForTesting()
 
