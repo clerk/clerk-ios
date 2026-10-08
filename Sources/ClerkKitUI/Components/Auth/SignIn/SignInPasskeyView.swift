@@ -74,7 +74,11 @@ struct SignInPasskeyView: View {
           .disabled(passkeyInProgress)
           .simultaneousGesture(TapGesture())
 
-          if mode.showsUseAnotherMethod(signIn: signIn, currentFactor: factor) {
+          if mode.showsUseAnotherMethod(
+            signIn: signIn,
+            currentFactor: factor,
+            socialProviders: clerk.environment?.authenticatableSocialProviders ?? []
+          ) {
             Button(action: showAlternativeMethods) {
               Text("Use another method", bundle: .module)
             }

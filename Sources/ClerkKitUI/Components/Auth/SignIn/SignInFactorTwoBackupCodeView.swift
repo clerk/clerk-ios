@@ -68,25 +68,27 @@ struct SignInFactorTwoBackupCodeView: View {
         }
         .padding(.bottom, 16)
 
-        Button {
-          navigation.path.append(
-            AuthView.Destination.signInFactorTwoUseAnotherMethod(
-              currentFactor: factor
+        if SignInFactorMode.secondFactor.showsUseAnotherMethod(signIn: signIn, currentFactor: factor, socialProviders: []) {
+          Button {
+            navigation.path.append(
+              AuthView.Destination.signInFactorTwoUseAnotherMethod(
+                currentFactor: factor
+              )
+            )
+          } label: {
+            Text("Use another method", bundle: .module)
+              .frame(maxWidth: .infinity)
+          }
+          .buttonStyle(
+            .primary(
+              config: .init(
+                emphasis: .none,
+                size: .small
+              )
             )
           )
-        } label: {
-          Text("Use another method", bundle: .module)
-            .frame(maxWidth: .infinity)
+          .padding(.bottom, 32)
         }
-        .buttonStyle(
-          .primary(
-            config: .init(
-              emphasis: .none,
-              size: .small
-            )
-          )
-        )
-        .padding(.bottom, 32)
 
         SecuredByClerkView()
       }

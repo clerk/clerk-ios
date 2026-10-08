@@ -36,13 +36,23 @@ struct SignInPasswordActionsViewTests {
     #expect(adaptive.pngData() == compact.pngData())
   }
 
+  @Test
+  func singleActionRendersAtTheHeightOfThePair() throws {
+    let pair = try render(width: 390)
+    let forgotPasswordOnly = try render(width: 390, includesUseAnotherMethod: false)
+
+    #expect(forgotPasswordOnly.size.height == pair.size.height)
+    #expect(forgotPasswordOnly.pngData() != pair.pngData())
+  }
+
   private func render(
     legacySpacing: CGFloat? = nil,
     width: CGFloat,
     direction: LayoutDirection = .leftToRight,
-    dynamicTypeSize: DynamicTypeSize = .large
+    dynamicTypeSize: DynamicTypeSize = .large,
+    includesUseAnotherMethod: Bool = true
   ) throws -> UIImage {
-    let renderer = ImageRenderer(content: PasswordActionsViewFixture(legacySpacing: legacySpacing)
+    let renderer = ImageRenderer(content: PasswordActionsViewFixture(legacySpacing: legacySpacing, includesUseAnotherMethod: includesUseAnotherMethod)
       .environment(\.locale, Locale(identifier: "en"))
       .environment(\.layoutDirection, direction)
       .environment(\.dynamicTypeSize, dynamicTypeSize))
@@ -55,6 +65,7 @@ struct SignInPasswordActionsViewTests {
 private struct PasswordActionsViewFixture: View {
   @Environment(\.clerkTheme) private var theme
   let legacySpacing: CGFloat?
+  let includesUseAnotherMethod: Bool
 
   var body: some View {
     if let legacySpacing {
@@ -75,7 +86,7 @@ private struct PasswordActionsViewFixture: View {
       }
       .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))
     } else {
-      SignInPasswordActionsView(onUseAnotherMethod: {}, onForgotPassword: {})
+      SignInPasswordActionsView(onUseAnotherMethod: includesUseAnotherMethod ? {} : nil, onForgotPassword: {})
     }
   }
 }
