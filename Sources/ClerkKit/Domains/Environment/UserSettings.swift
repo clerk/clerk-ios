@@ -30,6 +30,11 @@ extension Clerk.Environment {
       public var progressive: Bool
       public var mode: String
       public var legalConsentEnabled: Bool
+      public var mfa: MFA?
+
+      public struct MFA: Codable, Equatable, Sendable {
+        public var required: Bool
+      }
     }
 
     public struct SocialConfig: Codable, Equatable, Sendable {
