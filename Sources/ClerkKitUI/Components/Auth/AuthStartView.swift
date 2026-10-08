@@ -433,7 +433,7 @@ extension AuthStartView {
     return AsyncButton {
       await startAuth()
     } label: { isRunning in
-      ContinueButtonLabelView(isActive: isRunning)
+      ContinueButtonLabelView(title: "Next", isActive: isRunning)
     }
     .buttonStyle(.primary())
     .disabled(activeIdentifier.isEmpty)

@@ -14,7 +14,7 @@ test('dismissing AuthView returns to the home, and it opens again', async ({ hos
   await host.expectSignedOut();
   await host.tap(host.app.signIn);
   await expect(identifier).toBeVisible({ timeout: 20_000 });
-  await expect(screen.getByTestId('clerk.auth.start.continue')).toBeVisible();
+  await expect(screen.getByTestId('clerk.auth.start.continue')).toHaveText('Next');
   await host.screenshot('auth-start');
   await host.tap(screen.getByTestId('clerk.dismissButton'));
   await host.expectSignedOut();
