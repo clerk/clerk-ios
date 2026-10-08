@@ -129,7 +129,7 @@ final class OrganizationPagedList<Item: Codable & Sendable> {
       report(error, message: "Failed to load organization \(name)")
     }
 
-    if loadMoreAfterReload {
+    if hasLoaded, loadMoreAfterReload {
       loadMoreAfterReload = false
       loadMore()
     }

@@ -196,6 +196,33 @@ struct OrganizationPagedListTests {
   }
 
   @Test
+  func loadMoreRequestedDuringAFailedReloadRunsAfterASuccessfulRetry() async throws {
+    let list = OrganizationPagedList<Row>(name: "rows")
+    let fails = FailOnce()
+    await list.reload { _ in page(["a", "b"], totalCount: 4) }.value
+    let reload = list.reload { [gate, offsets] offset in
+      offsets.values.append(offset)
+      if offset == 0 {
+        await gate.wait("reload")
+        if fails.take() {
+          throw URLError(.badServerResponse)
+        }
+        return page(["a", "b"], totalCount: 4)
+      }
+      return page(["c", "d"], totalCount: 4)
+    }
+    list.loadMore()
+    gate.open("reload")
+    await reload.value
+
+    await list.refresh()
+    try await waitUntil { list.pager.items.count == 4 }
+
+    #expect(offsets.values == [0, 0, 2])
+    #expect(list.pager.items.map(\.id) == ["a", "b", "c", "d"])
+  }
+
+  @Test
   func resetDropsALoadFromBeforeIt() async {
     let list = OrganizationPagedList<Row>(name: "rows")
     let reload = list.reload { [gate] _ in
@@ -248,6 +275,16 @@ private func page(_ ids: [String], totalCount: Int) -> ClerkPaginatedResponse<Ro
 @MainActor
 private final class OffsetRecorder {
   var values: [Int] = []
+}
+
+@MainActor
+private final class FailOnce {
+  private var shouldFail = true
+
+  func take() -> Bool {
+    defer { shouldFail = false }
+    return shouldFail
+  }
 }
 
 @MainActor
