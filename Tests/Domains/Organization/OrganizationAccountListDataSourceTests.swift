@@ -350,6 +350,43 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   }
 
   @MainActor
+  func testLoadingAnotherUserClearsThePreviousUsersLists() async {
+    configureClerkForTesting()
+
+    let failsForSecondUser = LockIsolated(false)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      if failsForSecondUser.value {
+        throw ClerkClientError(message: "Failed to load memberships")
+      }
+      return ClerkPaginatedResponse(data: [membership(id: "mem_a", organizationId: "org_a")], totalCount: 1)
+    }
+    transport.stub(UserAPI.getOrganizationCreationDefaults()) { _ in
+      ClientResponse(response: organizationCreationDefaults(), client: nil)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource()
+    await model.loadInitial(user: .mock, includeCreationDefaults: true)
+    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_a"])
+    XCTAssertNotNil(model.creationDefaults)
+
+    var otherUser = User.mock
+    otherUser.id = "user_other"
+    failsForSecondUser.setValue(true)
+    await model.loadInitial(user: otherUser, includeCreationDefaults: false)
+
+    XCTAssertTrue(model.memberships.pager.items.isEmpty)
+    XCTAssertNil(model.creationDefaults)
+
+    await model.loadInitial(user: nil, includeCreationDefaults: false)
+
+    XCTAssertFalse(model.hasExistingResources)
+    XCTAssertNil(model.creationDefaults)
+    XCTAssertFalse(model.isLoading)
+  }
+
+  @MainActor
   func testReloadDropsALoadMoreInFlight() async {
     configureClerkForTesting()
 

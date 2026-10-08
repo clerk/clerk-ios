@@ -223,6 +223,27 @@ struct OrganizationPagedListTests {
   }
 
   @Test
+  func loadMoreRequestedDuringAReloadUsesTheReloadedPage() async throws {
+    let list = OrganizationPagedList<Row>(name: "rows")
+    await list.reload { _ in page(["a", "b"], totalCount: 2) }.value
+    let reload = list.reload { [gate, offsets] offset in
+      offsets.values.append(offset)
+      if offset == 0 {
+        await gate.wait("reload")
+        return page(["a", "b"], totalCount: 4)
+      }
+      return page(["c", "d"], totalCount: 4)
+    }
+
+    list.loadMore()
+    gate.open("reload")
+    await reload.value
+    try await waitUntil { list.pager.items.count == 4 }
+
+    #expect(offsets.values == [0, 2])
+  }
+
+  @Test
   func resetDropsALoadFromBeforeIt() async {
     let list = OrganizationPagedList<Row>(name: "rows")
     let reload = list.reload { [gate] _ in

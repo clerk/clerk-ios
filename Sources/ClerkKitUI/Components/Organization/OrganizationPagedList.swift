@@ -70,12 +70,11 @@ final class OrganizationPagedList<Item: Codable & Sendable> {
   /// Loads the next page, once the latest reload has succeeded, so a page never continues rows from another fetch.
   @discardableResult
   func loadMore() -> Task<Void, Never>? {
-    guard pager.hasNextPage, loadMoreTask == nil, let fetch else { return loadMoreTask }
     guard reloadTask == nil else {
       loadMoreAfterReload = true
       return nil
     }
-    guard hasLoaded else { return nil }
+    guard pager.hasNextPage, loadMoreTask == nil, hasLoaded, let fetch else { return loadMoreTask }
 
     let generation = generation
     let offset = pager.offset

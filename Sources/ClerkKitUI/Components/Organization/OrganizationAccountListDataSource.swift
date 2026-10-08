@@ -18,6 +18,7 @@ final class OrganizationAccountListDataSource {
   var error: Error?
   private var isLoadingCreationDefaults = false
   @ObservationIgnored private var loadID = 0
+  @ObservationIgnored private var loadedUserID: String?
 
   var isLoading: Bool {
     memberships.isLoading || invitations.isLoading || suggestions.isLoading || isLoadingCreationDefaults
@@ -53,16 +54,18 @@ final class OrganizationAccountListDataSource {
   }
 
   func loadInitial(user: User?, includeCreationDefaults: Bool) async {
-    guard let user else {
-      memberships.reset(isLoading: false)
-      invitations.reset(isLoading: false)
-      suggestions.reset(isLoading: false)
-      isLoadingCreationDefaults = false
-      return
-    }
-
     loadID += 1
     let loadID = loadID
+    guard let user else {
+      loadedUserID = nil
+      resetLists(isLoading: false)
+      return
+    }
+    if user.id != loadedUserID {
+      loadedUserID = user.id
+      resetLists(isLoading: true)
+    }
+
     error = nil
     isLoadingCreationDefaults = true
     async let fetchedDefaults = fetchCreationDefaults(user: user, isEnabled: includeCreationDefaults)
@@ -106,6 +109,14 @@ final class OrganizationAccountListDataSource {
     } catch {
       self.error = error
     }
+  }
+
+  private func resetLists(isLoading: Bool) {
+    memberships.reset(isLoading: isLoading)
+    invitations.reset(isLoading: isLoading)
+    suggestions.reset(isLoading: isLoading)
+    creationDefaults = nil
+    isLoadingCreationDefaults = false
   }
 
   private func fetchCreationDefaults(user: User, isEnabled: Bool) async -> OrganizationCreationDefaults? {
