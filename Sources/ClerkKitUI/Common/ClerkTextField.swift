@@ -63,9 +63,12 @@ struct ClerkTextField: View {
             .foregroundStyle(theme.colors.foreground)
             .frame(maxWidth: .infinity, alignment: .leading)
             .opacity(0)
+            .accessibilityHidden(true)
 
           ZStack {
             TextField("", text: $text)
+              .accessibilityLabel(Text(titleKey, bundle: .module))
+              .accessibilityHidden(isSecure && !revealText)
               .zIndex(revealText ? 1 : 0)
               .focused($focused, equals: .regular)
               .animation(.default) {
@@ -74,6 +77,8 @@ struct ClerkTextField: View {
 
             if isSecure {
               SecureField("", text: $text)
+                .accessibilityLabel(Text(titleKey, bundle: .module))
+                .accessibilityHidden(revealText)
                 .zIndex(revealText ? 0 : 1)
                 .focused($focused, equals: .secure)
                 .animation(.default) {
@@ -85,9 +90,8 @@ struct ClerkTextField: View {
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.inputForeground)
           .frame(minHeight: 22)
-          .tint(theme.colors.primary)
           .animation(.default.delay(0.2)) {
-            $0.opacity(isFocusedOrFilled ? 1 : 0.0001)
+            $0.tint(isFocusedOrFilled ? theme.colors.primary : .clear)
           }
           .onChange(of: focused) { _, newValue in
             if newValue != nil {
@@ -115,6 +119,7 @@ struct ClerkTextField: View {
           .foregroundStyle(theme.colors.mutedForeground)
           .frame(maxWidth: .infinity, alignment: .leading)
           .allowsHitTesting(false)
+          .accessibilityHidden(true)
           .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
           .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
           .animation(.default, value: isFocusedOrFilled)

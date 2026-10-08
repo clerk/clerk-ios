@@ -201,6 +201,7 @@ struct UserProfileUpdateProfileView: View {
           }
           .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
       }
+      .accessibilityLabel(Text("Edit profile photo", bundle: .module))
     }
   }
 
