@@ -284,6 +284,38 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   }
 
   @MainActor
+  func testPartiallyFailedLoadKeepsLoadedListsAndCanBeRetried() async {
+    configureClerkForTesting()
+
+    let invitationsFail = LockIsolated(true)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    }
+    transport.stubOrganizationInvitations { _, _, _ in
+      if invitationsFail.value {
+        throw ClerkClientError(message: "Failed to load invitations")
+      }
+      return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource()
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+
+    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_1"])
+    XCTAssertNotNil(model.error)
+    XCTAssertTrue(model.hasExistingResources)
+    XCTAssertTrue(model.hasFailedLists)
+
+    invitationsFail.setValue(false)
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+
+    XCTAssertEqual(model.invitations.pager.items.map(\.id), ["inv_1"])
+    XCTAssertFalse(model.hasFailedLists)
+  }
+
+  @MainActor
   func testReloadDropsALoadMoreInFlight() async {
     configureClerkForTesting()
 

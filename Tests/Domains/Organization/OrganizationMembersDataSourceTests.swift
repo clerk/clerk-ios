@@ -93,6 +93,25 @@ struct OrganizationMembersDataSourceTests {
   }
 
   @Test
+  func failedSearchDoesNotPageItsQueryIntoTheShownRows() async {
+    let dataSource = OrganizationMembersDataSource(pageSize: 2)
+    stubMemberships { query, _ in
+      if query == "john" {
+        throw URLError(.badServerResponse)
+      }
+      return page(ids: ["mem_1", "mem_2"], totalCount: 4)
+    }
+    await loadMembers(dataSource)
+
+    dataSource.searchMembers(organization: .mock, query: "john")
+    await dataSource.members.refresh()
+    await dataSource.members.loadMore()?.value
+
+    #expect(memberRequests.queries == [nil, "john"])
+    #expect(dataSource.members.pager.items.map(\.id) == ["mem_1", "mem_2"])
+  }
+
+  @Test
   func loadMoreUsesTheSearchedQuery() async {
     let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, offset in

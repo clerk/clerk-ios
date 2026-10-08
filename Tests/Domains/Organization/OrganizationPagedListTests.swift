@@ -172,6 +172,29 @@ struct OrganizationPagedListTests {
     #expect(list.pager.items.map(\.id) == ["a", "b", "c", "d"])
   }
 
+  @Test(arguments: [false, true])
+  func failedReloadBlocksLoadMoreUntilAReloadSucceeds(requestedDuringReload: Bool) async {
+    let list = OrganizationPagedList<Row>(name: "rows")
+    await list.reload { _ in page(["old_1", "old_2"], totalCount: 4) }.value
+    let reload = list.reload { [gate, offsets] offset in
+      offsets.values.append(offset)
+      await gate.wait("reload")
+      throw URLError(.badServerResponse)
+    }
+    if requestedDuringReload {
+      list.loadMore()
+    }
+    gate.open("reload")
+    await reload.value
+    for _ in 0 ..< 100 {
+      await Task.yield()
+    }
+
+    #expect(list.loadMore() == nil)
+    #expect(offsets.values == [0])
+    #expect(list.pager.items.map(\.id) == ["old_1", "old_2"])
+  }
+
   @Test
   func resetDropsALoadFromBeforeIt() async {
     let list = OrganizationPagedList<Row>(name: "rows")

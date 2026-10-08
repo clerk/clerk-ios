@@ -27,6 +27,11 @@ final class OrganizationAccountListDataSource {
     !memberships.pager.items.isEmpty || !invitations.pager.items.isEmpty || !suggestions.pager.items.isEmpty
   }
 
+  /// Whether a list's latest load failed, leaving it missing while the others show.
+  var hasFailedLists: Bool {
+    [memberships.hasLoaded, invitations.hasLoaded, suggestions.hasLoaded].contains(false) && !isLoading
+  }
+
   var isLoadingMore: Bool {
     memberships.pager.isLoadingMore || invitations.pager.isLoadingMore || suggestions.pager.isLoadingMore
   }
