@@ -62,6 +62,37 @@ struct AuthSensitiveFieldsTests {
     #expect(authState.signInNewPassword == "new-password-for-a")
   }
 
+  @Test
+  func signingOutDuringAPostAuthStepClearsEnteredSecrets() async throws {
+    let clerk = Clerk.mock
+    let view = AuthView()
+    let authState = view.authState
+    let navigation = view.navigation
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+
+    let token = AuthFlowPresentationToken(
+      work: AuthFlowWork(ownerId: UUID(), id: UUID(), sessionId: Session.mock.id),
+      id: UUID(),
+      kind: .biometricCredentialEnrollment
+    )
+    navigation.path = [
+      .signInForgotPassword,
+      .biometricCredentialEnrollment(biometryDisplayName: .init(biometryType: .faceID), token: token),
+    ]
+    try await layout(window)
+    enterSecrets(into: authState)
+
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    try await layout(window)
+
+    #expect(authState.signInPassword.isEmpty)
+    #expect(authState.signInNewPassword.isEmpty)
+    #expect(authState.signInConfirmNewPassword.isEmpty)
+    #expect(authState.signInBackupCode.isEmpty)
+    #expect(authState.signUpPassword.isEmpty)
+  }
+
   private func enterSecrets(into authState: AuthState) {
     authState.signInPassword = "password-for-a"
     authState.signInNewPassword = "new-password-for-a"
@@ -70,8 +101,8 @@ struct AuthSensitiveFieldsTests {
     authState.signUpPassword = "sign-up-password-for-a"
   }
 
-  private func show(_ view: AuthView) async throws -> UIWindow {
-    let host = UIHostingController(rootView: view.environment(Clerk.mockSignedOut))
+  private func show(_ view: AuthView, clerk: Clerk = .mockSignedOut) async throws -> UIWindow {
+    let host = UIHostingController(rootView: view.environment(clerk))
     let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
     window.rootViewController = host
     window.isHidden = false
