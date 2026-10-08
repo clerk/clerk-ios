@@ -249,6 +249,11 @@ public struct AuthView: View {
     .onChange(of: config) { _, newConfig in
       authState.configure(newConfig)
     }
+    .onChange(of: navigation.path.isEmpty) { _, isAtStart in
+      if isAtStart {
+        authState.clearSensitiveFields()
+      }
+    }
     .onOpenURL { url in
       Task {
         do {

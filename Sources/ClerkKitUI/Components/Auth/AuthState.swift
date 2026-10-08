@@ -124,6 +124,14 @@ final class AuthState {
     }
   }
 
+  func clearSensitiveFields() {
+    signInPassword = ""
+    signInNewPassword = ""
+    signInConfirmNewPassword = ""
+    signInBackupCode = ""
+    signUpPassword = ""
+  }
+
   func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {
     guard persistsIdentifiers else { return }
     LastUsedAuth.storeIdentifierType(identifierType, userDefaults: userDefaults)
