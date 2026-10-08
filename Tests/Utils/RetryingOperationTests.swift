@@ -60,6 +60,21 @@ struct RetryingOperationTests {
     #expect(await counter.value == 1)
   }
 
+  @Test(arguments: [404, 500])
+  @MainActor
+  func treatsAnErrorResponseWithoutAClerkBodyByItsStatus(statusCode: Int) async {
+    let policy = RetryPolicy(maxAttempts: 3, initialDelay: .zero, maximumDelay: .zero)
+    let counter = AttemptCounter()
+
+    await #expect(throws: URLError.self) {
+      try await retryingOperation(policy: policy, operationName: "test") {
+        _ = await counter.incrementAndGet()
+        throw URLError(.unknown, userInfo: [URLError.clerkStatusCodeKey: statusCode])
+      }
+    }
+    #expect(await counter.value == (statusCode < 500 ? 1 : 3))
+  }
+
   @Test(arguments: [500, 503, nil] as [Int?])
   @MainActor
   func retriesServerErrorsAndErrorsWithoutAStatus(statusCode: Int?) async {

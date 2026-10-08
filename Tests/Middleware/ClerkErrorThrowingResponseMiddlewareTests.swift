@@ -16,4 +16,17 @@ struct ClerkErrorThrowingResponseMiddlewareTests {
     #expect(error?.statusCode == statusCode)
     #expect(error?.clerkTraceId == "trace_1")
   }
+
+  @Test
+  func errorWithoutAClerkBodyCarriesTheResponseStatus() async throws {
+    let url = try #require(URL(string: "https://example.com/v1/environment"))
+    let response = try #require(HTTPURLResponse(url: url, statusCode: 403, httpVersion: nil, headerFields: nil))
+
+    let error = await #expect(throws: URLError.self) {
+      try await ClerkErrorThrowingResponseMiddleware().validate(response, data: Data("<html>Forbidden</html>".utf8), for: URLRequest(url: url))
+    }
+
+    #expect(error?.code == .unknown)
+    #expect(error?.userInfo[URLError.clerkStatusCodeKey] as? Int == 403)
+  }
 }
