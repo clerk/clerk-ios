@@ -21,9 +21,9 @@ struct ClerkImagePrefetchTests {
       $0.imageCache = ImageCache()
       $0.dataCache = nil
     }
-    let previousPipeline = ImagePipeline.shared
-    ImagePipeline.shared = pipeline
-    defer { ImagePipeline.shared = previousPipeline }
+    let previousPrefetcher = Clerk.imagePrefetcher
+    Clerk.imagePrefetcher = ImagePrefetcher(pipeline: pipeline)
+    defer { Clerk.imagePrefetcher = previousPrefetcher }
 
     let logoUrl = try #require(URL(string: "https://img.clerk.com/prefetch-test-logo.png"))
     var environment = Clerk.Environment.mock

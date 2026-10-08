@@ -10,7 +10,7 @@ import Nuke
 import SwiftUI
 
 extension Clerk {
-  private static let imagePrefetcher = ImagePrefetcher()
+  @MainActor static var imagePrefetcher = ImagePrefetcher()
 
   /// Prefetches environment images (OAuth logos and app brand logo) into the image cache.
   ///
