@@ -131,6 +131,13 @@ extension Clerk.Environment {
       || user.phoneNumbersReservedForMfa.contains { $0.id != phoneNumber.id }
   }
 
+  func allowsAddingIdentifications(for user: User) -> Bool {
+    guard userSettings.enterpriseSSO?.enabled == true else { return true }
+    return !(user.enterpriseAccounts ?? []).contains { account in
+      account.active && account.enterpriseConnection.disableAdditionalIdentifications
+    }
+  }
+
   enum MfaMethod {
     case phoneCode
     case authenticatorApp

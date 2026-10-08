@@ -20,12 +20,17 @@ struct UserProfileDetailView: View {
     clerk.user
   }
 
+  private var canAddIdentifications: Bool {
+    guard let user, let environment = clerk.environment else { return false }
+    return environment.allowsAddingIdentifications(for: user)
+  }
+
   private var canAddEmailAddress: Bool {
-    clerk.environment?.emailIsImmutable != true
+    canAddIdentifications && clerk.environment?.emailIsImmutable != true
   }
 
   private var canAddPhoneNumber: Bool {
-    clerk.environment?.phoneNumberIsImmutable != true
+    canAddIdentifications && clerk.environment?.phoneNumberIsImmutable != true
   }
 
   private var showEmailSection: Bool {
@@ -115,14 +120,14 @@ struct UserProfileDetailView: View {
               }
             }
 
-            if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
+            if !(clerk.environment?.allSocialProviders ?? []).isEmpty, canAddIdentifications || !sortedExternalAccounts.isEmpty {
               Section {
                 Group {
                   ForEach(sortedExternalAccounts) { externalAccount in
                     UserProfileExternalAccountRow(externalAccount: externalAccount)
                   }
 
-                  if !user.unconnectedProviders.isEmpty {
+                  if canAddIdentifications, !user.unconnectedProviders.isEmpty {
                     UserProfileButtonRow(text: "Connect account") {
                       addConnectedAccountIsPresented = true
                     }
