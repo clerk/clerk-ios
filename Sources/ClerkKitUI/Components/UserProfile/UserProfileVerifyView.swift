@@ -79,11 +79,16 @@ struct UserProfileVerifyView: View {
   }
 
   private var codeLimiterIdentifier: String {
+    Self.codeLimiterIdentifier(for: mode)
+  }
+
+  /// Keyed by the record, so an address that is removed and added again gets its own first code.
+  static func codeLimiterIdentifier(for mode: Mode) -> String {
     switch mode {
     case let .email(emailAddress):
-      emailAddress.emailAddress
+      emailAddress.id
     case let .phone(phoneNumber):
-      phoneNumber.phoneNumber
+      phoneNumber.id
     case .totp:
       ""
     }
@@ -237,11 +242,11 @@ extension UserProfileVerifyView {
       case let .email(emailAddress):
         try await emailAddress.verifyCode(code)
         backupCodes = nil
-        codeLimiterIdentifier = emailAddress.emailAddress
+        codeLimiterIdentifier = Self.codeLimiterIdentifier(for: verificationMode)
       case let .phone(phoneNumber):
         try await phoneNumber.verifyCode(code)
         backupCodes = nil
-        codeLimiterIdentifier = phoneNumber.phoneNumber
+        codeLimiterIdentifier = Self.codeLimiterIdentifier(for: verificationMode)
       case .totp:
         guard let user else {
           verificationState = .default
