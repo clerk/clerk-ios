@@ -725,6 +725,72 @@ struct SignInTests {
     #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .resetPasswordPhoneCode)
   }
 
+  enum UsernameSignInCodeScenario: String, CaseIterable, Codable {
+    case emailCode
+    case phoneCode
+    case resetPasswordEmailCode
+    case resetPasswordPhoneCode
+
+    var strategy: FactorStrategy {
+      switch self {
+      case .emailCode: .emailCode
+      case .phoneCode: .phoneCode
+      case .resetPasswordEmailCode: .resetPasswordEmailCode
+      case .resetPasswordPhoneCode: .resetPasswordPhoneCode
+      }
+    }
+
+    var usesPhone: Bool {
+      self == .phoneCode || self == .resetPasswordPhoneCode
+    }
+
+    @MainActor
+    func send(_ signIn: SignIn) async throws {
+      switch self {
+      case .emailCode: try await signIn.sendEmailCode()
+      case .phoneCode: try await signIn.sendPhoneCode()
+      case .resetPasswordEmailCode: try await signIn.sendResetPasswordEmailCode()
+      case .resetPasswordPhoneCode: try await signIn.sendResetPasswordPhoneCode()
+      }
+    }
+  }
+
+  @Test(arguments: UsernameSignInCodeScenario.allCases)
+  func sendingACodeForAUsernameSignInUsesTheStrategysFactor(_ scenario: UsernameSignInCodeScenario) async throws {
+    // A username never equals an email or phone factor's safe identifier.
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "sean_user",
+      supportedFirstFactors: [
+        Factor(strategy: .password),
+        Factor(
+          strategy: scenario.strategy,
+          emailAddressId: scenario.usesPhone ? nil : "ema_123",
+          phoneNumberId: scenario.usesPhone ? "idn_123" : nil,
+          safeIdentifier: scenario.usesPhone ? "+1******0000" : "s***@example.com"
+        ),
+      ]
+    )
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stubSignInPrepareFirstFactor { _, params in
+      captured.setValue(params)
+      return signIn
+    }
+
+    configureTransport()
+
+    try await scenario.send(signIn)
+
+    let params = try #require(captured.value)
+    #expect(params["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == scenario.strategy)
+    if scenario.usesPhone {
+      #expect(params["phone_number_id"]?.stringValue == "idn_123")
+    } else {
+      #expect(params["email_address_id"]?.stringValue == "ema_123")
+    }
+  }
+
   @Test
   func resetPasswordPostsNewPassword() async throws {
     let signIn = SignIn.mock

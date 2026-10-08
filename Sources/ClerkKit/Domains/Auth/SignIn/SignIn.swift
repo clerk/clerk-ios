@@ -109,13 +109,16 @@ extension SignIn {
 
   /// Sends a verification code to the specified email address.
   ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
+  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor, or the first email code factor when none matches the identifier (such as a username sign-in).
   /// - Returns: An updated `SignIn` object with the verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
+    let emailId =
+      emailAddressId
+        ?? identifyingFirstFactor(for: FactorStrategy.emailCode.rawValue)?.emailAddressId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .emailCode })?.emailAddressId
     return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
@@ -165,13 +168,16 @@ extension SignIn {
 
   /// Sends a verification code to the specified phone number.
   ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
+  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor, or the first phone code factor when none matches the identifier (such as a username sign-in).
   /// - Returns: An updated `SignIn` object with the verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
+    let phoneId =
+      phoneNumberId
+        ?? identifyingFirstFactor(for: FactorStrategy.phoneCode.rawValue)?.phoneNumberId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .phoneCode })?.phoneNumberId
     return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
@@ -397,13 +403,16 @@ extension SignIn {
 
   /// Sends a password reset code to the specified email address.
   ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
+  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor, or the first reset password email code factor when none matches the identifier.
   /// - Returns: An updated `SignIn` object with the password reset process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
+    let emailId =
+      emailAddressId
+        ?? identifyingFirstFactor(for: FactorStrategy.resetPasswordEmailCode.rawValue)?.emailAddressId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .resetPasswordEmailCode })?.emailAddressId
     return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .resetPasswordEmailCode, emailAddressId: emailId)
@@ -412,13 +421,16 @@ extension SignIn {
 
   /// Sends a password reset code to the specified phone number.
   ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
+  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor, or the first reset password phone code factor when none matches the identifier.
   /// - Returns: An updated `SignIn` object with the password reset process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
+    let phoneId =
+      phoneNumberId
+        ?? identifyingFirstFactor(for: FactorStrategy.resetPasswordPhoneCode.rawValue)?.phoneNumberId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .resetPasswordPhoneCode })?.phoneNumberId
     return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneId)
