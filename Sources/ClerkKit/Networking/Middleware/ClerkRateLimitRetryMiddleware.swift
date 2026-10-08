@@ -34,7 +34,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
     if let response,
        shouldRetry(statusCode: response.statusCode, isSafeMethod: isSafeMethod)
     {
-      let delay = retryDelay(for: response)
+      guard let delay = retryDelay(for: response) else { return false }
       await sleep(delay)
       await logRetry(
         reason: "HTTP \(response.statusCode)",
@@ -63,6 +63,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
   // MARK: - Helpers
 
   private static let safeMethods: Set<String> = ["GET", "HEAD"]
+  private static let maxRetryDelay: TimeInterval = 5
 
   private func shouldRetry(statusCode: Int, isSafeMethod: Bool) -> Bool {
     switch statusCode {
@@ -90,25 +91,20 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
     }
   }
 
-  private func retryDelay(for response: HTTPURLResponse) -> UInt64 {
-    if let header = response.value(forHTTPHeaderField: "Retry-After"),
-       let fromHeader = retryDelayFromRetryAfter(header)
-    {
-      return fromHeader
-    }
+  /// The delay before retrying, or `nil` when the server asks to wait longer than `maxRetryDelay`,
+  /// since an earlier retry would only get the same response.
+  private func retryDelay(for response: HTTPURLResponse) -> UInt64? {
+    let requestedSeconds = response.value(forHTTPHeaderField: "Retry-After").flatMap(secondsFromRetryAfter)
+      ?? response.value(forHTTPHeaderField: "X-RateLimit-Reset").flatMap(secondsFromReset)
+    guard let requestedSeconds else { return defaultBackoffDelay() }
+    guard requestedSeconds <= Self.maxRetryDelay else { return nil }
 
-    if let header = response.value(forHTTPHeaderField: "X-RateLimit-Reset"),
-       let fromReset = retryDelayFromReset(header)
-    {
-      return fromReset
-    }
-
-    return defaultBackoffDelay()
+    return nanosecondsFrom(seconds: requestedSeconds)
   }
 
-  private func retryDelayFromRetryAfter(_ value: String) -> UInt64? {
+  private func secondsFromRetryAfter(_ value: String) -> TimeInterval? {
     if let seconds = TimeInterval(value) {
-      return nanosecondsFrom(seconds: seconds)
+      return seconds.isFinite && seconds >= 0 ? seconds : nil
     }
 
     let formatter = DateFormatter()
@@ -118,17 +114,17 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
     if let date = formatter.date(from: value) {
       let interval = date.timeIntervalSince(currentDate())
       guard interval > 0 else { return nil }
-      return nanosecondsFrom(seconds: interval)
+      return interval
     }
 
     return nil
   }
 
-  private func retryDelayFromReset(_ value: String) -> UInt64? {
-    guard let resetInterval = TimeInterval(value) else { return nil }
+  private func secondsFromReset(_ value: String) -> TimeInterval? {
+    guard let resetInterval = TimeInterval(value), resetInterval.isFinite else { return nil }
     let interval = resetInterval - currentDate().timeIntervalSince1970
     guard interval > 0 else { return nil }
-    return nanosecondsFrom(seconds: interval)
+    return interval
   }
 
   private func defaultBackoffDelay() -> UInt64 {
@@ -136,7 +132,7 @@ struct ClerkRateLimitRetryMiddleware: NetworkRetryMiddleware {
   }
 
   private func nanosecondsFrom(seconds: TimeInterval) -> UInt64 {
-    let clamped = min(max(seconds, 0.1), 5.0)
+    let clamped = min(max(seconds, 0.1), Self.maxRetryDelay)
     return UInt64(clamped * 1_000_000_000)
   }
 
