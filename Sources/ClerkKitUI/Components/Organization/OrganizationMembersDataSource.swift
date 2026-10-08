@@ -13,12 +13,9 @@ import Observation
 final class OrganizationMembersDataSource {
   let pageSize: Int
 
-  var membershipsPager = OrganizationAccountListPager<OrganizationMembership>()
-  var invitationsPager = OrganizationAccountListPager<OrganizationInvitation>()
-  var membershipRequestsPager = OrganizationAccountListPager<OrganizationMembershipRequest>()
-  var isLoadingMembers = true
-  var isLoadingInvitations = true
-  var isLoadingMembershipRequests = true
+  let members = OrganizationPagedList<OrganizationMembership>(name: "members")
+  let invitations = OrganizationPagedList<OrganizationInvitation>(name: "invitations")
+  let membershipRequests = OrganizationPagedList<OrganizationMembershipRequest>(name: "membership requests")
   var roles: [RoleResource] = []
   var hasRoleSetMigration = false
   var mutatingMembershipIds: Set<String> = []
@@ -26,11 +23,20 @@ final class OrganizationMembersDataSource {
   var acceptingMembershipRequestIds: Set<String> = []
   var rejectingMembershipRequestIds: Set<String> = []
   var membershipSearchText = ""
-  var membershipSearchQuery = ""
+  /// The query of the latest members load.
+  private(set) var membershipSearchQuery = ""
   var error: Error?
+
+  @ObservationIgnored private var organizationLoadID = 0
 
   init(pageSize: Int = 10) {
     self.pageSize = pageSize
+    let reportError: @MainActor (Error) -> Void = { [weak self] error in
+      self?.error = error
+    }
+    members.onError = reportError
+    invitations.onError = reportError
+    membershipRequests.onError = reportError
   }
 
   func loadInitial(
@@ -39,173 +45,78 @@ final class OrganizationMembersDataSource {
     includeInvitations: Bool,
     includeMembershipRequests: Bool
   ) async {
+    organizationLoadID += 1
+    let loadID = organizationLoadID
     reset(
-      includeMembers: includeMembers,
-      includeInvitations: includeInvitations,
-      includeMembershipRequests: includeMembershipRequests
+      includeMembers: includeMembers && organization != nil,
+      includeInvitations: includeInvitations && organization != nil,
+      includeMembershipRequests: includeMembershipRequests && organization != nil
     )
 
-    guard let organization, includeMembers || includeInvitations || includeMembershipRequests else {
-      isLoadingMembers = false
-      isLoadingInvitations = false
-      isLoadingMembershipRequests = false
-      return
-    }
+    guard let organization else { return }
 
-    let shouldLoadRoles = includeMembers || includeInvitations
-    if shouldLoadRoles {
+    if includeMembers || includeInvitations {
       await loadRoles(organization: organization)
     }
+    guard loadID == organizationLoadID else { return }
 
-    async let membersLoad: Void = includeMembers ? loadMembers(organization: organization) : ()
-    async let invitationsLoad: Void = includeInvitations ? loadInvitations(organization: organization) : ()
-    async let membershipRequestsLoad: Void = includeMembershipRequests ? loadMembershipRequests(organization: organization) : ()
-
-    _ = await (membersLoad, invitationsLoad, membershipRequestsLoad)
+    var loads: [Task<Void, Never>] = []
+    if includeMembers {
+      let query = membershipSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+      loads.append(reloadMembers(organization: organization, query: query))
+    }
+    if includeInvitations {
+      loads.append(invitations.reload(invitationsFetch(organization: organization)))
+    }
+    if includeMembershipRequests {
+      loads.append(membershipRequests.reload(membershipRequestsFetch(organization: organization)))
+    }
+    for load in loads {
+      await load.value
+    }
   }
 
   func refreshMembers(organization: Organization) async {
     async let rolesLoad: Void = loadRoles(organization: organization)
-    async let membersLoad: Void = loadMembers(organization: organization)
+    async let membersLoad: Void = members.refresh()
     _ = await (rolesLoad, membersLoad)
   }
 
   func refreshInvitations(organization: Organization) async {
     async let rolesLoad: Void = loadRoles(organization: organization)
-    async let invitationsLoad: Void = loadInvitations(organization: organization)
+    async let invitationsLoad: Void = invitations.refresh()
     _ = await (rolesLoad, invitationsLoad)
   }
 
-  func searchMembers(organization: Organization, query: String) async {
-    guard membershipSearchQuery != query else { return }
+  func refreshMembershipRequests() async {
+    await membershipRequests.refresh()
+  }
 
-    membershipSearchQuery = query
-    await loadMembers(organization: organization)
+  /// Loads members matching `query`, unless the latest load already uses it and didn't fail.
+  func searchMembers(organization: Organization, query: String) {
+    guard query != membershipSearchQuery || (!members.isLoading && !members.hasLoaded) else { return }
+
+    reloadMembers(organization: organization, query: query)
+  }
+
+  func loadInvitations(organization: Organization) async {
+    await invitations.reload(invitationsFetch(organization: organization)).value
   }
 
   func loadRoles(organization: Organization) async {
+    let loadID = organizationLoadID
     do {
       let page = try await organization.getRoles(page: 1, pageSize: 20)
+      guard loadID == organizationLoadID else { return }
+
       roles = page.data
       hasRoleSetMigration = page.hasRoleSetMigration ?? false
     } catch {
-      guard !error.isCancellationError else { return }
+      guard loadID == organizationLoadID, !error.isCancellationError else { return }
 
       roles = []
       hasRoleSetMigration = false
       ClerkLogger.error("Failed to load organization roles", error: error)
-    }
-  }
-
-  func loadMembers(organization: Organization) async {
-    isLoadingMembers = true
-    defer { isLoadingMembers = false }
-
-    do {
-      let page = try await organization.getMemberships(
-        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery,
-        page: 1,
-        pageSize: pageSize
-      )
-      membershipsPager.replace(with: page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization members", error: error)
-    }
-  }
-
-  func loadMoreMembers(organization: Organization) async {
-    guard !membershipsPager.isLoadingMore, membershipsPager.hasNextPage else { return }
-
-    membershipsPager.isLoadingMore = true
-    defer { membershipsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getMemberships(
-        query: membershipSearchQuery.isEmpty ? nil : membershipSearchQuery,
-        offset: membershipsPager.offset,
-        pageSize: pageSize
-      )
-      membershipsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization members", error: error)
-    }
-  }
-
-  func loadInvitations(organization: Organization) async {
-    isLoadingInvitations = true
-    defer { isLoadingInvitations = false }
-
-    do {
-      let page = try await organization.getInvitations(page: 1, pageSize: pageSize, status: ["pending"])
-      invitationsPager.replace(with: page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization invitations", error: error)
-    }
-  }
-
-  func loadMoreInvitations(organization: Organization) async {
-    guard !invitationsPager.isLoadingMore, invitationsPager.hasNextPage else { return }
-
-    invitationsPager.isLoadingMore = true
-    defer { invitationsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getInvitations(
-        offset: invitationsPager.offset,
-        pageSize: pageSize,
-        status: ["pending"]
-      )
-      invitationsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization invitations", error: error)
-    }
-  }
-
-  func loadMembershipRequests(organization: Organization) async {
-    isLoadingMembershipRequests = true
-    defer { isLoadingMembershipRequests = false }
-
-    do {
-      let page = try await organization.getMembershipRequests(page: 1, pageSize: pageSize, status: "pending")
-      membershipRequestsPager.replace(with: page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization membership requests", error: error)
-    }
-  }
-
-  func loadMoreMembershipRequests(organization: Organization) async {
-    guard !membershipRequestsPager.isLoadingMore, membershipRequestsPager.hasNextPage else { return }
-
-    membershipRequestsPager.isLoadingMore = true
-    defer { membershipRequestsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getMembershipRequests(
-        offset: membershipRequestsPager.offset,
-        pageSize: pageSize,
-        status: "pending"
-      )
-      membershipRequestsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization membership requests", error: error)
     }
   }
 
@@ -219,7 +130,7 @@ final class OrganizationMembersDataSource {
 
     do {
       let updatedMembership = try await membership.update(role: role.key)
-      membershipsPager.replace(updatedMembership)
+      members.update { $0.replace(updatedMembership) }
     } catch {
       self.error = error
       ClerkLogger.error("Failed to update organization member role", error: error)
@@ -234,7 +145,7 @@ final class OrganizationMembersDataSource {
 
     do {
       try await membership.destroy()
-      membershipsPager.remove(membership)
+      members.update { $0.remove(membership) }
     } catch {
       self.error = error
       ClerkLogger.error("Failed to remove organization member", error: error)
@@ -271,9 +182,11 @@ final class OrganizationMembersDataSource {
     do {
       try await request.accept()
 
-      async let requestsLoad: Void = loadMembershipRequests(organization: organization)
-      async let membersLoad: Void = reloadMembers ? loadMembers(organization: organization) : ()
-      _ = await (requestsLoad, membersLoad)
+      let requestsLoad = membershipRequests.reload(membershipRequestsFetch(organization: organization))
+      if reloadMembers {
+        await self.reloadMembers(organization: organization, query: membershipSearchQuery).value
+      }
+      await requestsLoad.value
     } catch {
       self.error = error
       ClerkLogger.error("Failed to accept organization membership request", error: error)
@@ -290,7 +203,7 @@ final class OrganizationMembersDataSource {
 
     do {
       try await request.reject()
-      await loadMembershipRequests(organization: organization)
+      await membershipRequests.reload(membershipRequestsFetch(organization: organization)).value
     } catch {
       self.error = error
       ClerkLogger.error("Failed to reject organization membership request", error: error)
@@ -307,17 +220,34 @@ final class OrganizationMembersDataSource {
 }
 
 extension OrganizationMembersDataSource {
+  @discardableResult
+  fileprivate func reloadMembers(organization: Organization, query: String) -> Task<Void, Never> {
+    membershipSearchQuery = query
+    return members.reload { [pageSize] offset in
+      try await organization.getMemberships(query: query.isEmpty ? nil : query, offset: offset, pageSize: pageSize)
+    }
+  }
+
+  fileprivate func invitationsFetch(organization: Organization) -> OrganizationPagedList<OrganizationInvitation>.Fetch {
+    { [pageSize] offset in
+      try await organization.getInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
+    }
+  }
+
+  fileprivate func membershipRequestsFetch(organization: Organization) -> OrganizationPagedList<OrganizationMembershipRequest>.Fetch {
+    { [pageSize] offset in
+      try await organization.getMembershipRequests(offset: offset, pageSize: pageSize, status: "pending")
+    }
+  }
+
   fileprivate func reset(
     includeMembers: Bool,
     includeInvitations: Bool,
     includeMembershipRequests: Bool
   ) {
-    membershipsPager = OrganizationAccountListPager()
-    invitationsPager = OrganizationAccountListPager()
-    membershipRequestsPager = OrganizationAccountListPager()
-    isLoadingMembers = includeMembers
-    isLoadingInvitations = includeInvitations
-    isLoadingMembershipRequests = includeMembershipRequests
+    members.reset(isLoading: includeMembers)
+    invitations.reset(isLoading: includeInvitations)
+    membershipRequests.reset(isLoading: includeMembershipRequests)
     roles = []
     hasRoleSetMigration = false
     mutatingMembershipIds = []
