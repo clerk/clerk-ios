@@ -97,8 +97,8 @@ final class ConfigurationManager {
 
   /// Validates a proxy URL the app passed.
   ///
-  /// Requests would otherwise skip a proxy URL that has no http or https scheme or no host, and go straight to the
-  /// Frontend API. An omitted or blank value means no proxy.
+  /// Requests skip a proxy URL that `ProxyConfiguration` can't build from, such as one without an http or https scheme
+  /// or with an encoded space in its host, and go straight to the Frontend API. An omitted or blank value means no proxy.
   ///
   /// - Throws: `ClerkInitializationError.invalidProxyUrl` if the proxy URL can't route requests.
   private func validateProxyUrl(in options: Clerk.Options) throws {
@@ -109,7 +109,8 @@ final class ConfigurationManager {
     guard let url = options.proxyUrl,
           let scheme = url.scheme?.lowercased(),
           scheme == "http" || scheme == "https",
-          url.host?.isEmpty == false
+          url.host?.isEmpty == false,
+          ProxyConfiguration(url: url) != nil
     else {
       throw ClerkInitializationError.invalidProxyUrl(Self.redactedProxyUrl(input))
     }

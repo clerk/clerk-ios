@@ -278,6 +278,8 @@ struct ConfigurationManagerTests {
     "not a url",
     "ftp://proxy.example.com/__clerk",
     "https://",
+    "https://proxy%20example.com/__clerk",
+    "https://proxy%2Fexample.com/__clerk",
   ])
   func configureRejectsAProxyUrlThatCantRouteRequests(proxyUrl: String) {
     let manager = ConfigurationManager()
