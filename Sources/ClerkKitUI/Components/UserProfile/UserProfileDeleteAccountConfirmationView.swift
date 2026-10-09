@@ -12,6 +12,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.locale) private var locale
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(UserProfileBuiltInRouter.self) private var builtInRouter
 
@@ -24,7 +25,8 @@ struct UserProfileDeleteAccountConfirmationView: View {
   }
 
   private var buttonIsDisabled: Bool {
-    deleteAccount != String(localized: "DELETE", bundle: .module)
+    // Matches the word in the translated instruction above.
+    deleteAccount != String(localizedInClerkUI: "DELETE", locale: locale)
   }
 
   var body: some View {

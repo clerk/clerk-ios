@@ -9,6 +9,16 @@ import Foundation
 import PhoneNumberKit
 
 extension String {
+  /// Looks `key` up in ClerkKitUI's strings in `locale`'s language, the way SwiftUI `Text` does.
+  ///
+  /// `String(localized:bundle:locale:)` uses `locale` only to format interpolated values, and picks the
+  /// app's language. When an app overrides the environment locale, it disagrees with the text on screen.
+  init(localizedInClerkUI key: String.LocalizationValue, locale: Locale) {
+    var resource = LocalizedStringResource(key, bundle: .atURL(Bundle.module.bundleURL))
+    resource.locale = locale
+    self.init(localized: resource)
+  }
+
   @MainActor
   var formattedAsPhoneNumberIfPossible: String {
     let partialFormatter = PartialFormatter(utility: .shared, withPrefix: true)
