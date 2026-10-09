@@ -707,6 +707,75 @@ struct SignInTests {
     #expect(captured.value == nil)
   }
 
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @Test
+  func appleAuthenticationKeepsTheAppleNameWhenItTransfersToSignUp() async throws {
+    let metadata: JSON = ["plan": "pro"]
+    var transferableSignIn = SignIn.mock
+    transferableSignIn.firstFactorVerification = Verification(status: .transferable)
+
+    let attemptParams = LockIsolated<JSON?>(nil)
+    transport.stubSignInAttemptFirstFactor { _, params in
+      attemptParams.setValue(params)
+      return transferableSignIn
+    }
+    let signUpParams = LockIsolated<JSON?>(nil)
+    transport.stubSignUpCreate { params in
+      signUpParams.setValue(params)
+      return .mock
+    }
+
+    configureTransport()
+
+    let result = try await SignIn.mock.completeAppleAuthentication(
+      idToken: "apple_token",
+      firstName: "Jane",
+      lastName: "Doe",
+      transferable: true,
+      unsafeMetadata: metadata
+    )
+
+    guard case .signUp = result else {
+      Issue.record("Expected a sign-up result")
+      return
+    }
+    let attempt = try #require(attemptParams.value)
+    #expect(attempt["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .idToken(.apple))
+    #expect(attempt["token"]?.stringValue == "apple_token")
+    let signUp = try #require(signUpParams.value)
+    #expect(signUp["transfer"]?.boolValue == true)
+    #expect(signUp["first_name"]?.stringValue == "Jane")
+    #expect(signUp["last_name"]?.stringValue == "Doe")
+    #expect(signUp["unsafe_metadata"] == metadata)
+  }
+
+  @Test
+  func appleAuthenticationSignsInAnExistingUserWithoutASignUp() async throws {
+    transport.stubSignInAttemptFirstFactor { _, _ in .mock }
+    let signUpCalled = LockIsolated(false)
+    transport.stubSignUpCreate { _ in
+      signUpCalled.setValue(true)
+      return .mock
+    }
+
+    configureTransport()
+
+    let result = try await SignIn.mock.completeAppleAuthentication(
+      idToken: "apple_token",
+      firstName: "Jane",
+      lastName: "Doe",
+      transferable: true,
+      unsafeMetadata: nil
+    )
+
+    guard case .signIn = result else {
+      Issue.record("Expected a sign-in result")
+      return
+    }
+    #expect(signUpCalled.value == false)
+  }
+  #endif
+
   @Test
   func sendResetPasswordPhoneCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock

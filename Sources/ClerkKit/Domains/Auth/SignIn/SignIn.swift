@@ -292,16 +292,35 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+    // Shares Auth.signInWithApple's scope handling, so instances without name fields aren't sent a name.
+    let credential = try await Auth.appleCredential(
+      requestedScopes,
+      environment: Clerk.shared.environment
+    )
+    return try await completeAppleAuthentication(
+      idToken: credential.tokenString,
+      firstName: credential.fullName?.givenName,
+      lastName: credential.fullName?.familyName,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
+  }
 
-    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
-    }
-
+  /// Apple returns the user's name only on the first authorization, so a transfer to sign-up carries it.
+  @MainActor
+  func completeAppleAuthentication(
+    idToken: String,
+    firstName: String?,
+    lastName: String?,
+    transferable: Bool,
+    unsafeMetadata: JSON?
+  ) async throws -> TransferFlowResult {
     let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
     let result = try await signIn.handleTransferFlow(
       transferable: transferable,
-      unsafeMetadata: unsafeMetadata
+      unsafeMetadata: unsafeMetadata,
+      firstName: firstName,
+      lastName: lastName
     )
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
@@ -777,11 +796,15 @@ extension SignIn {
   @MainActor
   func handleTransferFlow(
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    unsafeMetadata: JSON? = nil,
+    firstName: String? = nil,
+    lastName: String? = nil
   ) async throws -> TransferFlowResult {
     if needsTransferToSignUp == true, transferable {
       let transport = try Clerk.currentDependencies.transport
       let signUp = try await transport.send(SignUpAPI.create(params: .init(
+        firstName: firstName,
+        lastName: lastName,
         unsafeMetadata: unsafeMetadata,
         transfer: true
       ))).value.response
