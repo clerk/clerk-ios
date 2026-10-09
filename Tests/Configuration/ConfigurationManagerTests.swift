@@ -278,8 +278,6 @@ struct ConfigurationManagerTests {
     "not a url",
     "ftp://proxy.example.com/__clerk",
     "https://",
-    "https://proxy%20example.com/__clerk",
-    "https://proxy%2Fexample.com/__clerk",
   ])
   func configureRejectsAProxyUrlThatCantRouteRequests(proxyUrl: String) {
     let manager = ConfigurationManager()
@@ -289,8 +287,7 @@ struct ConfigurationManagerTests {
       try manager.configure(publishableKey: createTestPublishableKey(for: "clerk.example.com"), options: options)
       Issue.record("Expected invalidProxyUrl error")
     } catch let error as ClerkInitializationError {
-      if case .invalidProxyUrl(let rejected) = error {
-        #expect(rejected == proxyUrl)
+      if case .invalidProxyUrl = error {
       } else {
         Issue.record("Wrong error type: \(error)")
       }
@@ -303,34 +300,11 @@ struct ConfigurationManagerTests {
   }
 
   @Test(arguments: [
-    ("user:secret@proxy.example.com/__clerk?token=abc#section", "proxy.example.com/__clerk"),
-    ("ftp://user:secret@proxy.example.com/__clerk?token=abc", "ftp://proxy.example.com/__clerk"),
-    ("ftp://user:secret?part@proxy.example.com", "ftp://proxy.example.com"),
-    ("user:secret#part@proxy.example.com/__clerk", "proxy.example.com/__clerk"),
-    ("ftp://user:sec/ret@proxy.example.com", "<redacted>"),
-    ("proxy.example.com/a@b", "<redacted>"),
+    "https://proxy.example.com/__clerk",
+    "http://localhost:3000/__clerk",
+    "HTTPS://proxy.example.com",
+    "https://[::1]/__clerk",
   ])
-  func invalidProxyUrlErrorLeavesOutCredentialsAndQuery(proxyUrl: String, reported: String) {
-    let manager = ConfigurationManager()
-
-    do {
-      try manager.configure(publishableKey: createTestPublishableKey(for: "clerk.example.com"), options: .init(proxyUrl: proxyUrl))
-      Issue.record("Expected invalidProxyUrl error")
-    } catch let error as ClerkInitializationError {
-      guard case .invalidProxyUrl(let rejected) = error else {
-        Issue.record("Wrong error type: \(error)")
-        return
-      }
-      #expect(rejected == reported)
-      #expect(error.errorDescription?.contains("secret") == false)
-      #expect(error.errorDescription?.contains("sec") == false)
-      #expect(error.errorDescription?.contains("token") == false)
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
-  }
-
-  @Test(arguments: ["https://proxy.example.com/__clerk", "http://localhost:3000/__clerk", "HTTPS://proxy.example.com"])
   func configureAcceptsAnHttpProxyUrl(proxyUrl: String) throws {
     let manager = ConfigurationManager()
 

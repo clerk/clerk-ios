@@ -32,7 +32,7 @@ final class ConfigurationManager {
     let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
     try validatePublishableKey(normalizedPublishableKey)
-    try validateProxyUrl(in: options)
+    let proxyConfiguration = try makeProxyConfiguration(for: options)
 
     state.publishableKey = normalizedPublishableKey
     state.options = options
@@ -40,7 +40,7 @@ final class ConfigurationManager {
     state.frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
 
     state.proxyUrl = options.proxyUrl
-    state.proxyConfiguration = ProxyConfiguration(url: state.proxyUrl)
+    state.proxyConfiguration = proxyConfiguration
 
     state.isConfigured = true
   }
@@ -95,45 +95,21 @@ final class ConfigurationManager {
     }
   }
 
-  /// Validates a proxy URL the app passed.
+  /// Builds the proxy configuration for the proxy URL the app passed.
   ///
-  /// Requests skip a proxy URL that `ProxyConfiguration` can't build from, such as one without an http or https scheme
-  /// or with an encoded space in its host, and go straight to the Frontend API. An omitted or blank value means no proxy.
+  /// Requests would skip a proxy URL that `ProxyConfiguration` can't build from and go straight to the
+  /// Frontend API, so an explicit one fails configuration instead. An omitted or blank value means no proxy.
   ///
-  /// - Throws: `ClerkInitializationError.invalidProxyUrl` if the proxy URL can't route requests.
-  private func validateProxyUrl(in options: Clerk.Options) throws {
+  /// - Throws: `ClerkInitializationError.invalidProxyUrl` if the proxy URL isn't an http or https URL with a host.
+  private func makeProxyConfiguration(for options: Clerk.Options) throws -> ProxyConfiguration? {
     guard let input = options.proxyUrlInput,
           !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    else { return }
+    else { return nil }
 
-    guard let url = options.proxyUrl,
-          let scheme = url.scheme?.lowercased(),
-          scheme == "http" || scheme == "https",
-          url.host?.isEmpty == false,
-          ProxyConfiguration(url: url) != nil
-    else {
-      throw ClerkInitializationError.invalidProxyUrl(Self.redactedProxyUrl(input))
+    guard let configuration = ProxyConfiguration(url: options.proxyUrl) else {
+      throw ClerkInitializationError.invalidProxyUrl
     }
-  }
-
-  /// The proxy URL without user info, query or fragment, since configuration errors reach the app's logger.
-  ///
-  /// Malformed input can hide where user info ends, so any `@` left after redacting reports a generic value instead.
-  static func redactedProxyUrl(_ input: String) -> String {
-    var value = input
-
-    // Strip user info before the query, because a malformed password can contain `?` or `#`.
-    let authorityStart = value.range(of: "://")?.upperBound ?? value.startIndex
-    let authorityEnd = value[authorityStart...].firstIndex(of: "/") ?? value.endIndex
-    if let userInfoEnd = value[authorityStart ..< authorityEnd].lastIndex(of: "@") {
-      value.removeSubrange(authorityStart ... userInfoEnd)
-    }
-
-    if let end = value.firstIndex(where: { $0 == "?" || $0 == "#" }) {
-      value = String(value[..<end])
-    }
-
-    return value.contains("@") ? "<redacted>" : value
+    return configuration
   }
 
   /// Extracts the frontend API URL from a publishable key.
