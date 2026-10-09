@@ -217,7 +217,8 @@ private struct OrganizationAccountSuggestionRow: View {
       OrganizationRow(
         name: suggestion.publicOrganizationData.name,
         imageUrl: suggestion.publicOrganizationData.imageUrl,
-        subtitle: "Pending approval"
+        // A bare literal would pick the untranslated `String?` overload.
+        subtitle: LocalizedStringKey("Pending approval")
       )
     } else {
       OrganizationRow(

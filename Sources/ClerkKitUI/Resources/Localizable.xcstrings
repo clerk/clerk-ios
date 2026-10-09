@@ -2818,6 +2818,107 @@
         }
       }
     },
+    "An organization already exists for the detected company name (%@) and %@. Join by invitation." : {
+      "comment" : "Warning shown when creating an organization if one already exists for the company name and email domain detected from the user's email address. The first argument is the company name, the second is the domain.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "توجد منظمة بالفعل لاسم الشركة المكتشف (%1$@) و %2$@. انضم عن طريق الدعوة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für den erkannten Firmennamen (%1$@) und %2$@ existiert bereits eine Organisation. Treten Sie per Einladung bei."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Υπάρχει ήδη οργανισμός για το ανιχνευμένο όνομα εταιρείας (%1$@) και %2$@. Εγγραφείτε μέσω πρόσκλησης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya existe una organización para el nombre de empresa detectado (%1$@) y %2$@. Únete por invitación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Une organisation existe déjà pour le nom d'entreprise détecté (%1$@) et %2$@. Rejoignez-la sur invitation."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "पता लगाई गई कंपनी के नाम (%1$@) और %2$@ के लिए एक संगठन पहले से मौजूद है। आमंत्रण द्वारा शामिल हों।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un'organizzazione esiste già per il nome dell'azienda rilevato (%1$@) e %2$@. Unisciti tramite invito."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検出された会社名 (%1$@) と %2$@ に対応する組織は既に存在します。招待を受けて参加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "감지된 회사 이름(%1$@) 및 %2$@에 해당하는 조직이 이미 있습니다. 초대를 받아 참여하세요."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Organizacja już istnieje dla wykrytej nazwy firmy (%1$@) i %2$@. Dołącz przez zaproszenie."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uma organização já existe para o nome da empresa detectado (%1$@) e %2$@. Entre por convite."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Există deja o organizație pentru numele companiei detectate (%1$@) și %2$@. Alătură-te prin invitație."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Организация уже существует для обнаруженного названия компании (%1$@) и %2$@. Присоединяйтесь по приглашению."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tespit edilen şirket adı (%1$@) ve %2$@ için bir organizasyon zaten mevcut. Davetiye ile katılın."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Організація вже існує для виявленої назви компанії (%1$@) та %2$@. Приєднуйтесь за запрошенням."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检测到的公司名称 (%1$@) 和 %2$@ 已存在一个组织。请通过邀请加入。"
+          }
+        }
+      }
+    },
     "Application" : {
       "extractionState" : "stale",
       "localizations" : {
