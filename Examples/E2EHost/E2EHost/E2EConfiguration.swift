@@ -10,7 +10,12 @@ import Foundation
 struct E2EConfiguration {
   let publishableKey: String
   let authMode: AuthView.Mode
+  let initialIdentifier: String?
   let keychainService: String?
+  let runId: String?
+  let launchId: String?
+  let signInTicket: String?
+  let logLevel: LogLevel
 
   init(
     publishableKey: String,
@@ -19,27 +24,65 @@ struct E2EConfiguration {
   ) {
     self.publishableKey = publishableKey
     self.authMode = authMode
+    initialIdentifier = nil
     self.keychainService = keychainService
+    runId = nil
+    launchId = nil
+    signInTicket = nil
+    logLevel = .error
   }
 
-  init(processInfo: ProcessInfo = .processInfo) {
+  init(processInfo: ProcessInfo = .processInfo, defaults: UserDefaults = .standard) {
     let environment = processInfo.environment
+    let argument = { (key: String) in Self.normalized(defaults.string(forKey: key)) }
 
-    publishableKey = Self.normalized(environment["CLERK_PUBLISHABLE_KEY"])
+    publishableKey = argument("verifyPublishableKey")
+      ?? Self.normalized(environment["CLERK_PUBLISHABLE_KEY"])
       ?? Self.normalized(environment["CLERK_E2E_PUBLISHABLE_KEY"])
       ?? ""
-    authMode = Self.authMode(from: environment["CLERK_E2E_AUTH_MODE"])
-    keychainService = Self.normalized(environment["CLERK_E2E_KEYCHAIN_SERVICE"])
+    authMode = Self.authMode(from: argument("verifyAuthMode") ?? environment["CLERK_E2E_AUTH_MODE"])
+    initialIdentifier = argument("verifyInitialIdentifier")
+    keychainService = argument("verifyStorageScope").map { "verify.\($0)" }
+      ?? Self.normalized(environment["CLERK_E2E_KEYCHAIN_SERVICE"])
+    runId = argument("verifyRunId")
+    launchId = argument("verifyLaunchId")
+    signInTicket = argument("verifySignInTicket")
+    logLevel = argument("verifyLogLevel") == "debug" ? .debug : .error
   }
 
   var clerkOptions: Clerk.Options {
-    guard let keychainService else {
-      return Clerk.Options()
+    Clerk.Options(
+      logLevel: logLevel,
+      keychainConfig: keychainService.map { .init(service: $0) } ?? .init()
+    )
+  }
+
+  var publishableKeyFailure: VerifyState.Failure? {
+    let payload = ["pk_test_", "pk_live_"]
+      .first { publishableKey.hasPrefix($0) }
+      .map { publishableKey.dropFirst($0.count) }
+
+    guard let payload, !payload.isEmpty, Self.decodesAsBase64URL(payload) else {
+      return .init(
+        code: "invalid_publishable_key",
+        message: "The publishable key is missing or is not a pk_test_ or pk_live_ key."
+      )
     }
 
-    return Clerk.Options(
-      keychainConfig: .init(service: keychainService)
-    )
+    return nil
+  }
+
+  private static func decodesAsBase64URL(_ value: Substring) -> Bool {
+    var base64 = value
+      .replacingOccurrences(of: "-", with: "+")
+      .replacingOccurrences(of: "_", with: "/")
+    base64 += String(repeating: "=", count: (4 - base64.count % 4) % 4)
+
+    guard let data = Data(base64Encoded: base64) else {
+      return false
+    }
+
+    return String(data: data, encoding: .utf8) != nil
   }
 
   private static func authMode(from value: String?) -> AuthView.Mode {
