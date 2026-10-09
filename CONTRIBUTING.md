@@ -152,6 +152,29 @@ active after they land there. Run its regression tests locally with Node.js 22 o
 node --test .github/scripts/pr-ci.test.cjs
 ```
 
+`.github/workflows/verify-attach.yml` runs a second trusted script from the default branch,
+`.github/scripts/verify-attach.mjs`. It puts the video and screenshots that a borrowed-device
+verify session handed off into the description of that session's pull request. GitHub starts it
+only when it and `.github/workflows/verify-remote.yml` are both on the default branch. It needs a
+bot token, and without one the workflow publishes nothing. To set it up:
+
+1. Create an environment named `verify-evidence` in the repository settings.
+2. Limit the environment's deployment branches to the default branch.
+3. Store the token in that environment as the secret `VERIFY_EVIDENCE_TOKEN`. It is a
+   fine-grained personal access token of a machine account with write access, limited to this
+   repository, with the permission "Pull requests: read and write".
+4. Do not create a repository secret named `VERIFY_EVIDENCE_TOKEN`.
+
+A repository secret can be read by a workflow that anyone with write access adds on any branch.
+A secret of an environment that allows only the default branch cannot.
+
+The `Run E2E runner tests` job of `shared-checks.yml` runs the script's tests. Run them locally
+with Node.js 24 or later:
+
+```sh
+node --test .github/scripts/verify-attach.test.mjs
+```
+
 ### Test suites
 
 This project uses **Swift Testing** for package unit and integration tests, and the device tests in `e2e-tests/` for app-level E2E tests on an iOS Simulator. Tests are organized into three categories:
