@@ -12,6 +12,8 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
 
   case invalidPublishableKeyFormat(key: String)
 
+  case invalidProxyUrl(String)
+
   case clientLoadFailed(underlyingError: Error)
 
   case environmentLoadFailed(underlyingError: Error)
@@ -41,6 +43,8 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
       ["key": key]
     case let .apiClientInitializationFailed(reason):
       ["reason": reason]
+    case let .invalidProxyUrl(proxyUrl):
+      ["proxyUrl": proxyUrl]
     default:
       nil
     }
@@ -54,6 +58,9 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
     case let .invalidPublishableKeyFormat(key):
       let maskedKey = key.isEmpty ? "empty" : (key.count > 10 ? String(key.prefix(10)) + "..." : key)
       return "Invalid publishable key format: '\(maskedKey)'. Publishable keys must start with 'pk_test_' or 'pk_live_'."
+
+    case let .invalidProxyUrl(proxyUrl):
+      return "Invalid proxy URL: '\(proxyUrl)'. The proxy URL must be a full http or https URL, such as https://proxy.example.com/__clerk."
 
     case let .clientLoadFailed(underlyingError):
       return "Failed to load client data: \(underlyingError.localizedDescription)"
@@ -76,6 +83,9 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
 
     case let .invalidPublishableKeyFormat(key):
       "The provided key '\(key)' does not match the expected format (pk_test_... or pk_live_...)."
+
+    case let .invalidProxyUrl(proxyUrl):
+      "'\(proxyUrl)' has no http or https scheme or no host, so requests can't be sent through it."
 
     case let .clientLoadFailed(underlyingError):
       "The underlying error was: \(underlyingError)"

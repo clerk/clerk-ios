@@ -32,6 +32,7 @@ final class ConfigurationManager {
     let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
     try validatePublishableKey(normalizedPublishableKey)
+    try validateProxyUrl(in: options)
 
     state.publishableKey = normalizedPublishableKey
     state.options = options
@@ -91,6 +92,26 @@ final class ConfigurationManager {
 
     guard key.starts(with: "pk_test_") || key.starts(with: "pk_live_") else {
       throw ClerkInitializationError.invalidPublishableKeyFormat(key: key)
+    }
+  }
+
+  /// Validates a proxy URL the app passed.
+  ///
+  /// Requests would otherwise skip a proxy URL that has no http or https scheme or no host, and go straight to the
+  /// Frontend API. An omitted or blank value means no proxy.
+  ///
+  /// - Throws: `ClerkInitializationError.invalidProxyUrl` if the proxy URL can't route requests.
+  private func validateProxyUrl(in options: Clerk.Options) throws {
+    guard let input = options.proxyUrlInput,
+          !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else { return }
+
+    guard let url = options.proxyUrl,
+          let scheme = url.scheme?.lowercased(),
+          scheme == "http" || scheme == "https",
+          url.host?.isEmpty == false
+    else {
+      throw ClerkInitializationError.invalidProxyUrl(input)
     }
   }
 
