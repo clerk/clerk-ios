@@ -207,8 +207,10 @@ struct UserProfileUpdateProfileView: View {
 
   @ViewBuilder
   private var menuContent: some View {
-    Button("Choose from photo library") {
+    Button {
       photosPickerIsPresented = true
+    } label: {
+      Text("Choose from photo library", bundle: .module)
     }
 
     if user.hasImage == true {
