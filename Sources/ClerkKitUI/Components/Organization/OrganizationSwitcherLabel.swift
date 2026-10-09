@@ -10,6 +10,7 @@ import SwiftUI
 
 struct OrganizationSwitcherLabel: View {
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.locale) private var locale
 
   let organization: Organization?
   let user: User?
@@ -103,9 +104,9 @@ struct OrganizationSwitcherLabel: View {
     if let organization {
       organization.name
     } else if user != nil {
-      String(localized: "Personal account", bundle: .module)
+      String(localizedInClerkUI: "Personal account", locale: locale)
     } else {
-      String(localized: "Select organization", bundle: .module)
+      String(localizedInClerkUI: "Select organization", locale: locale)
     }
   }
 }
