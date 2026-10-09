@@ -271,7 +271,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       navigationPath.wrappedValue.removeLast(entriesToRemove)
     } else {
       internalPath = NavigationPath()
-      if action == .exitUserProfile {
+      if action == .exitUserProfile, isDismissible {
         dismiss()
       }
     }
@@ -592,9 +592,6 @@ extension UserProfileView {
   fileprivate func signOut(sessionId: String) async {
     do {
       try await clerk.auth.signOut(sessionId: sessionId)
-      if clerk.session == nil {
-        dismiss()
-      }
     } catch {
       self.error = error
       ClerkLogger.error("Failed to sign out", error: error)

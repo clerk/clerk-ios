@@ -30,6 +30,22 @@ struct UserProfileSignOutDismissTests {
   }
 
   @Test
+  func signingOutLeavesANonDismissibleProfileToItsHost() async throws {
+    let clerk = Clerk.mock
+    let presentation = PresentationState()
+    let host = UIHostingController(rootView: SheetHost(presentation: presentation, isDismissible: false).environment(clerk))
+    let window = show(host)
+    defer { hide(window) }
+    try await layout(window, host) { presentation.profileAppeared }
+    #expect(presentation.profileAppeared)
+
+    clerk.setClientFromIdentityController(.mockSignedOut)
+
+    try await layout(window, host)
+    #expect(presentation.isPresented)
+  }
+
+  @Test
   func switchingAccountsKeepsTheProfilePresented() async throws {
     let clerk = Clerk.mock
     let presentation = PresentationState()
@@ -106,13 +122,14 @@ private final class PresentationState {
 
 private struct SheetHost: View {
   let presentation: PresentationState
+  var isDismissible = true
 
   @State private var profileIsPresented = true
 
   var body: some View {
     Color.clear
       .sheet(isPresented: $profileIsPresented) {
-        UserProfileView()
+        UserProfileView(isDismissible: isDismissible)
           .onAppear { presentation.profileAppeared = true }
       }
       .onChange(of: profileIsPresented) { _, isPresented in
