@@ -112,35 +112,43 @@ struct ClerkLoggingMiddlewareTests {
   }
 
   @Test
-  func requestBodiesAreLoggedWithoutPasswords() async throws {
+  func requestsAreLoggedWithoutSecrets() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .verbose))
     let (lines, restoreSink) = captureLogLines()
     defer { restoreSink() }
 
-    var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client/sign_ins")))
+    var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client/sign_ins?ticket=tkt_secret")))
     request.httpMethod = "POST"
     request.httpBody = Data("identifier=user%40example.com&password=hunter2".utf8)
     try await ClerkRequestLoggingMiddleware().prepare(&request)
 
-    let line = try await #require(lines.firstLine(containing: "Request Body:"))
-    #expect(line.hasSuffix("identifier=user%40example.com&password=\(ClerkLogRedaction.placeholder)"))
-    #expect(!line.contains("hunter2"))
+    let urlLine = try await #require(lines.firstLine(containing: "Request: POST"))
+    #expect(urlLine.hasSuffix("/v1/client/sign_ins?ticket=\(ClerkLogRedaction.placeholder)"))
+    #expect(!urlLine.contains("tkt_secret"))
+
+    let bodyLine = try await #require(lines.firstLine(containing: "Request Body:"))
+    #expect(bodyLine.hasSuffix("identifier=user%40example.com&password=\(ClerkLogRedaction.placeholder)"))
+    #expect(!bodyLine.contains("hunter2"))
   }
 
   @Test
-  func responseBodiesAreLoggedWithoutSessionJWTs() async throws {
+  func responsesAreLoggedWithoutSecrets() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .verbose))
     let (lines, restoreSink) = captureLogLines()
     defer { restoreSink() }
 
-    let url = try #require(URL(string: "https://clerk.example.com/v1/client"))
+    let url = try #require(URL(string: "https://clerk.example.com/v1/client?token=tok_secret"))
     let response = try #require(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
     let body = Data(#"{"last_active_token":{"jwt":"eyJhbGciOi.payload.sig"}}"#.utf8)
     try await ClerkResponseLoggingMiddleware().validate(response, data: body, for: URLRequest(url: url))
 
-    let line = try await #require(lines.firstLine(containing: "Response Body:"))
-    #expect(line.hasSuffix(#"{"last_active_token":{"jwt":"\#(ClerkLogRedaction.placeholder)"}}"#))
-    #expect(!line.contains("eyJhbGciOi"))
+    let urlLine = try await #require(lines.firstLine(containing: "Response: 200"))
+    #expect(urlLine.hasSuffix("/v1/client?token=\(ClerkLogRedaction.placeholder)"))
+    #expect(!urlLine.contains("tok_secret"))
+
+    let bodyLine = try await #require(lines.firstLine(containing: "Response Body:"))
+    #expect(bodyLine.hasSuffix(#"{"last_active_token":{"jwt":"\#(ClerkLogRedaction.placeholder)"}}"#))
+    #expect(!bodyLine.contains("eyJhbGciOi"))
   }
 }
 
