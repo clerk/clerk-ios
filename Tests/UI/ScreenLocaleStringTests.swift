@@ -24,6 +24,15 @@ struct ScreenLocaleStringTests {
   }
 
   @Test
+  func deleteConfirmationAcceptsTheWordInTheScreenLocale() {
+    let spanish = Locale(identifier: "es")
+
+    #expect(UserProfileDeleteAccountConfirmationView.isConfirmed("ELIMINAR", locale: spanish))
+    #expect(!UserProfileDeleteAccountConfirmationView.isConfirmed("DELETE", locale: spanish))
+    #expect(UserProfileDeleteAccountConfirmationView.isConfirmed("DELETE", locale: Locale(identifier: "en")))
+  }
+
+  @Test
   func removeConfirmationsUseTheScreenLocale() {
     let spanish = Locale(identifier: "es")
     let email = EmailAddress.mock

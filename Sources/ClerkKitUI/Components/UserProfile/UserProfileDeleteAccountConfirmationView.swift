@@ -25,8 +25,12 @@ struct UserProfileDeleteAccountConfirmationView: View {
   }
 
   private var buttonIsDisabled: Bool {
-    // Matches the word in the translated instruction above.
-    deleteAccount != String(localizedInClerkUI: "DELETE", locale: locale)
+    !Self.isConfirmed(deleteAccount, locale: locale)
+  }
+
+  /// Whether `input` is the word the instruction asks for, translated into `locale`'s language.
+  static func isConfirmed(_ input: String, locale: Locale) -> Bool {
+    input == String(localizedInClerkUI: "DELETE", locale: locale)
   }
 
   var body: some View {
