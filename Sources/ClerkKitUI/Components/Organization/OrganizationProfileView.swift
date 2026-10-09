@@ -127,20 +127,7 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   }
 
   private var actionRows: [OrganizationProfileRow] {
-    var rows: [OrganizationProfileRow] = []
-
-    if organizationMembership != nil {
-      rows.append(.leaveOrganization)
-    }
-
-    if clerk.environment?.organizationSettings.actions.adminDelete == true,
-       organization?.adminDeleteEnabled == true,
-       organizationMembership?.canDeleteOrganization == true
-    {
-      rows.append(.deleteOrganization)
-    }
-
-    return rows
+    OrganizationProfileRow.actionRows(organization: organization, membership: organizationMembership)
   }
 
   init(
@@ -538,6 +525,26 @@ extension OrganizationProfileView {
           ClerkLogger.error("No destination registered for custom organization route \(route). Use .organizationProfileDestination to provide one.")
         }
     }
+  }
+}
+
+extension OrganizationProfileRow {
+  /// The built-in rows for the actions section.
+  ///
+  /// Delete follows the organization's own setting, which is what the server checks. The instance's
+  /// `actions.adminDelete` only sets the default for organizations created later.
+  static func actionRows(organization: Organization?, membership: OrganizationMembership?) -> [OrganizationProfileRow] {
+    var rows: [OrganizationProfileRow] = []
+
+    if membership != nil {
+      rows.append(.leaveOrganization)
+    }
+
+    if organization?.adminDeleteEnabled == true, membership?.canDeleteOrganization == true {
+      rows.append(.deleteOrganization)
+    }
+
+    return rows
   }
 }
 
