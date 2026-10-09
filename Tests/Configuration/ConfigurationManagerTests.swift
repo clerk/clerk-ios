@@ -300,6 +300,30 @@ struct ConfigurationManagerTests {
     #expect(manager.proxyConfiguration == nil)
   }
 
+  @Test(arguments: [
+    ("user:secret@proxy.example.com/__clerk?token=abc#section", "proxy.example.com/__clerk"),
+    ("ftp://user:secret@proxy.example.com/__clerk?token=abc", "ftp://proxy.example.com/__clerk"),
+    ("proxy.example.com/a@b", "proxy.example.com/a@b"),
+  ])
+  func invalidProxyUrlErrorLeavesOutCredentialsAndQuery(proxyUrl: String, reported: String) {
+    let manager = ConfigurationManager()
+
+    do {
+      try manager.configure(publishableKey: createTestPublishableKey(for: "clerk.example.com"), options: .init(proxyUrl: proxyUrl))
+      Issue.record("Expected invalidProxyUrl error")
+    } catch let error as ClerkInitializationError {
+      guard case .invalidProxyUrl(let rejected) = error else {
+        Issue.record("Wrong error type: \(error)")
+        return
+      }
+      #expect(rejected == reported)
+      #expect(error.errorDescription?.contains("secret") == false)
+      #expect(error.errorDescription?.contains("token") == false)
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+  }
+
   @Test(arguments: ["https://proxy.example.com/__clerk", "http://localhost:3000/__clerk", "HTTPS://proxy.example.com"])
   func configureAcceptsAnHttpProxyUrl(proxyUrl: String) throws {
     let manager = ConfigurationManager()

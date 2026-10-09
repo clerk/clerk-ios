@@ -111,8 +111,23 @@ final class ConfigurationManager {
           scheme == "http" || scheme == "https",
           url.host?.isEmpty == false
     else {
-      throw ClerkInitializationError.invalidProxyUrl(input)
+      throw ClerkInitializationError.invalidProxyUrl(Self.redactedProxyUrl(input))
     }
+  }
+
+  /// The proxy URL without user info, query or fragment, since configuration errors reach the app's logger.
+  static func redactedProxyUrl(_ input: String) -> String {
+    var value = input
+    if let end = value.firstIndex(where: { $0 == "?" || $0 == "#" }) {
+      value = String(value[..<end])
+    }
+
+    let authorityStart = value.range(of: "://")?.upperBound ?? value.startIndex
+    let authorityEnd = value[authorityStart...].firstIndex(of: "/") ?? value.endIndex
+    if let userInfoEnd = value[authorityStart ..< authorityEnd].lastIndex(of: "@") {
+      value.removeSubrange(authorityStart ... userInfoEnd)
+    }
+    return value
   }
 
   /// Extracts the frontend API URL from a publishable key.
