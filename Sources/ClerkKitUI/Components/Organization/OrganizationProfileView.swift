@@ -499,7 +499,7 @@ extension OrganizationProfileView {
       navigationPath.wrappedValue.removeLast(entriesToRemove)
     } else {
       internalPath = NavigationPath()
-      if action == .exitOrganizationProfile {
+      if action == .exitOrganizationProfile, isDismissible {
         dismiss()
       }
     }
