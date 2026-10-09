@@ -116,18 +116,23 @@ final class ConfigurationManager {
   }
 
   /// The proxy URL without user info, query or fragment, since configuration errors reach the app's logger.
+  ///
+  /// Malformed input can hide where user info ends, so any `@` left after redacting reports a generic value instead.
   static func redactedProxyUrl(_ input: String) -> String {
     var value = input
-    if let end = value.firstIndex(where: { $0 == "?" || $0 == "#" }) {
-      value = String(value[..<end])
-    }
 
+    // Strip user info before the query, because a malformed password can contain `?` or `#`.
     let authorityStart = value.range(of: "://")?.upperBound ?? value.startIndex
     let authorityEnd = value[authorityStart...].firstIndex(of: "/") ?? value.endIndex
     if let userInfoEnd = value[authorityStart ..< authorityEnd].lastIndex(of: "@") {
       value.removeSubrange(authorityStart ... userInfoEnd)
     }
-    return value
+
+    if let end = value.firstIndex(where: { $0 == "?" || $0 == "#" }) {
+      value = String(value[..<end])
+    }
+
+    return value.contains("@") ? "<redacted>" : value
   }
 
   /// Extracts the frontend API URL from a publishable key.

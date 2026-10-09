@@ -303,7 +303,10 @@ struct ConfigurationManagerTests {
   @Test(arguments: [
     ("user:secret@proxy.example.com/__clerk?token=abc#section", "proxy.example.com/__clerk"),
     ("ftp://user:secret@proxy.example.com/__clerk?token=abc", "ftp://proxy.example.com/__clerk"),
-    ("proxy.example.com/a@b", "proxy.example.com/a@b"),
+    ("ftp://user:secret?part@proxy.example.com", "ftp://proxy.example.com"),
+    ("user:secret#part@proxy.example.com/__clerk", "proxy.example.com/__clerk"),
+    ("ftp://user:sec/ret@proxy.example.com", "<redacted>"),
+    ("proxy.example.com/a@b", "<redacted>"),
   ])
   func invalidProxyUrlErrorLeavesOutCredentialsAndQuery(proxyUrl: String, reported: String) {
     let manager = ConfigurationManager()
@@ -318,6 +321,7 @@ struct ConfigurationManagerTests {
       }
       #expect(rejected == reported)
       #expect(error.errorDescription?.contains("secret") == false)
+      #expect(error.errorDescription?.contains("sec") == false)
       #expect(error.errorDescription?.contains("token") == false)
     } catch {
       Issue.record("Wrong error type: \(error)")
