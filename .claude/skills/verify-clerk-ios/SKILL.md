@@ -1,11 +1,11 @@
 ---
 name: verify-clerk-ios
-description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
 ---
 
 # verify-clerk-ios
 
-`e2e-tests/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e). It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence.
+`e2e-tests/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e). It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence. On a Mac the simulator is local. On any other machine the CLI leases one on a GitHub Actions runner, with the same verbs, specs, and evidence.
 
 The tests are an ordinary e2e project. `e2e.config.ts` and `specs/` run under `npx e2e run` when the environment names a device, a build of the test app, and a development instance's keys. The CLI sits on top: it makes those three for a run and keeps the evidence. [The package README](../../../e2e-tests/README.md) has the commands for a run by hand and what such a run leaves out.
 
@@ -39,6 +39,22 @@ The Clerk application is this worktree's own. `up` creates it through Clerk's Pl
 
 The CLI drives only `verify-ios-<n>`, which it creates. A Mac has four of these simulators, shared by every worktree on it. When all four are taken, `up` and `run` fail with `POOL_FULL`, and `--wait <seconds>` on either verb waits for one.
 
+A machine that is not a Mac cannot run the simulator, so there the CLI leases one on a GitHub Actions runner and drives it through a tunnel. That machine needs Node 24, the Platform API key, and access to GitHub, and `doctor` checks each. The session builds a pushed commit, never your working tree, so commit and push app changes before `up` or `run`.
+
+```console
+$ git push
+$ e2e-tests/bin/control-clerk-ios up --backend remote
+backend remote  forced by --backend remote
+device  remote ios  starting session <session> on xcode-27 (idle stop 15 min, cap 60 min)
+build   <build key>  github-actions  <commit> built in 552s on xcode-27
+device  iPhone Air on xcode-27  remote  leased by this worktree  installed <build key>
+$ e2e-tests/bin/control-clerk-ios down  # ends the runner job
+```
+
+The `backend` line says which backend the CLI chose and why. On a machine that is not a Mac, `up` needs no flag, and the `backend` line says why the local backend is out. `--backend local` or `--backend remote` on `doctor`, `up`, or `run` forces a backend, and a worktree that holds a lease keeps its backend until `down`. `--runner <label>` on `up` or `run` names another runner label for a new session.
+
+A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and the golden set to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
+
 ## Doctor
 
 ```console
@@ -48,6 +64,8 @@ $ e2e-tests/bin/control-clerk-ios doctor
 Run it first, and again whenever anything looks off. Without `--live` it only reads. It creates no file, no simulator, and no Clerk application. Each line starts with `ok`, `warn`, `skip`, or `FAIL`, then has the id of the check and what the check found. `skip` marks a check that did not run, and its text starts with `not run:`. A failing check also prints a `fix:` line with the command to run, and `doctor` exits 3. A warning does not change the exit code.
 
 After the once-per-machine setup and before the first `up`, `build` is the one failing check, and its fix is `up`. A machine with no Platform API credential fails `instances`, and the fix line says how to supply one. `doctor --live` also proves that the credential can create, configure, and delete an application. It creates one application, configures it, compares it with the standard file, and deletes it, and reports that in a `live-instance` line.
+
+With the remote backend, plain `doctor` starts nothing, and `doctor --live` starts one short session to prove the path. There `build` fails until a session holds the current build, and `remote-commit` fails until HEAD is pushed.
 
 ## Drive
 
@@ -139,14 +157,24 @@ A proof drives the real user path. The video and the screenshots show the action
 
 After a run, the CLI searches the run directory for every secret the run used: the Platform API key, the instance's secret key, sign-in tickets, the passwords the tests typed, and a GitHub token in `GITHUB_TOKEN` or `GH_TOKEN`. It also searches for any token shaped like a JWT. A hit marks the file as tainted in `run.json`. The user ID and the session ID on the home are not secrets, because neither can sign anyone in.
 
-A machine with no `gh` can still run and keep evidence. Name the run id in the PR and say that the evidence was not attached.
+A remote run writes the same files. The runner records the video, and the CLI downloads it into the run directory. `run.json` also has `remote`, with `provider`, `runner`, and `builtSha`, the commit the session built.
 
 ```console
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n>                       # the video and every screenshot
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot profile  # the video and one screenshot
 ```
 
-`attach` posts one comment per run and PR with `gh pr comment --attach`. It needs a `gh` whose `gh pr comment` has that flag, and it fails with a fix when the flag is missing. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create.
+`attach` puts the video and the screenshots in the description of the pull request with `gh pr edit --attach`. It writes one block: a line that names the run, the device, and the commit, then the files, between the comments `<!-- verify-evidence:ios -->` and `<!-- /verify-evidence:ios -->`. The first `attach` adds the block after the description. A later `attach` replaces the block, so the description holds the latest run and the media does not pile up. `attach` changes nothing outside the block. Keep both comments or remove both: `attach` refuses a description that has one without the other, or either one twice. A comment counts only when it is a whole line outside a code fence, so a description can quote one in a sentence or show a whole block as an example.
+
+`attach` reads the description again just before it writes, and builds on the newer text once if it changed. It cannot see an edit that someone saves while the files upload, and that edit is lost, so do not edit the description while `attach` runs.
+
+On a machine whose `gh` can attach, `attach` edits the description itself and prints `posted`. That needs gh 2.99.0 or newer, whose `gh pr edit` has `--attach`. It uploads a run to a PR once, and a second `attach` of the same run and PR prints `already posted`.
+
+`attach` always tries `gh pr edit --attach` itself first, on every kind of machine, and hands off only when that cannot work. On a machine whose `gh` cannot attach, such as a cloud sandbox, it hands the files of a remote run to the session's runner and prints `handed off`. Run it before `down`. The evidence reaches the description after `down` ends the session, when the `verify-attach` workflow publishes it. Its line says that the session reported the result, links the session's run, and names the account that started the session and the commit the run was made at. That workflow publishes only to the open pull request of the session's branch, and only when the commit the session started on and the commit of the run are both commits of that pull request. So open the pull request before `up`. A later push does not lose the evidence: the line then says that the pull request has newer commits. To show the newer commit, `run` and `attach` again, which replaces the block. `attach` checks the pull request first, and fails with the reason when the workflow would refuse it.
+
+When this machine cannot attach and there is no session to hand the files to, or the hand-off fails, `attach` fails and says which. Then name the run id in the PR and say that the evidence was not attached. A run on a local simulator has no session, so its fix is a newer `gh`. [Remote devices](references/remote.md) has what the repository needs before a hand-off can be published, and its limits.
+
+`attach` refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create.
 
 Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the PR video shows only the behavior the change is about. If you ran other golden specs too, cite that run's id in the PR.
 
@@ -174,9 +202,13 @@ The `deleted` line names the application. Its users and organizations go with it
 
 If a worktree is removed without `down`, the next `up` or `run` in any worktree on the same Mac finishes for it. That command deletes the removed worktree's simulator and application, stops its daemon, and prints a `reap` line for each.
 
+For a remote simulator, `down` ends the runner job, and `down --stale` also ends a session that a crashed run of this checkout left running. No other checkout cleans up a remote session. If its checkout is deleted, the session's own idle stop ends it.
+
 ## For maintainers of the tests and the CLI
 
 - clerk-android and clerk/javascript have the same package, and `src/core/`, `specs/support/`, `specs/fixtures.ts`, and `e2e.config.ts` are copied to them. After a change to any of them, `node e2e-tests/src/core/manifest.ts --write` rewrites `src/core/MANIFEST`. Nothing under `specs/` or `e2e.config.ts` imports the CLI, and `test/seam.test.ts` fails when a file does.
 - `npm test --prefix e2e-tests` runs the CLI's unit tests, with no network, key, or simulator. `npm run typecheck --prefix e2e-tests` runs `tsc`. The `Run E2E runner tests` job in `.github/workflows/shared-checks.yml` runs both on Linux.
 - `.github/workflows/verify-e2e.yml` runs `up`, `run --all --retries 1 --github-report`, and `down` on a simulator on a CI runner. It needs the repository secret `MOBILE_VERIFICATION_PLATFORM_API_KEY`. It runs on the `xcode-27` label unless the repository variable `VERIFY_CI_RUNNER` names another. `gh workflow run verify-e2e.yml --ref <branch>` starts it by hand.
+- `.github/workflows/verify-remote.yml` is the workflow that a remote session runs in, and `src/core/remote/` is the code on both ends of it. A session keeps the `src/core/` of the commit it started on, so after a change to a file that `src/core/MANIFEST` lists, commit, push, `down`, then `up`.
+- `.github/workflows/verify-attach.yml` publishes the evidence that `attach` hands to a session's runner, with `.github/scripts/verify-attach.mjs`. It reads the manifest that `src/core/remote/handoff.ts` writes. It and `src/core/publish.ts` each replace the block the other wrote, and each applies the same rules to the comments and to the start of the line. So a change to the manifest, the comments, or those rules is a change in both places. `node --test .github/scripts/verify-attach.test.mjs` runs its tests.
 - `run --github-report` hands the results of a run to `@e2e-dev/github`, which writes them to the job summary and to one pull request comment.
