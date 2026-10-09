@@ -18,7 +18,7 @@ final class OrganizationAccountListDataSource {
   var error: Error?
   private var isLoadingCreationDefaults = false
   @ObservationIgnored private var loadID = 0
-  @ObservationIgnored private var loadedUserID: String?
+  @ObservationIgnored private(set) var loadedUserID: String?
 
   var isLoading: Bool {
     memberships.isLoading || invitations.isLoading || suggestions.isLoading || isLoadingCreationDefaults
