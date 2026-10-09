@@ -101,7 +101,7 @@ enum ClerkLogRedaction {
       "$1[\"\(placeholder)\"]"
     ),
     (
-      regex(#"otpauth://[^"\s]*"#),
+      regex(#"otpauth:[^"\s]*"#),
       placeholder
     ),
   ]

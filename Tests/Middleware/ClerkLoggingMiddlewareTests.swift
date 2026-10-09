@@ -88,6 +88,15 @@ struct ClerkLogRedactionTests {
   }
 
   @Test
+  func totpURIsWithEscapedSlashesAreRedacted() throws {
+    let data = try JSONEncoder().encode(["uri": "otpauth://totp/Clerk:user?secret=JBSWY3DPEHPK3PXP"])
+    let body = try #require(String(data: data, encoding: .utf8))
+    #expect(body.contains(#"otpauth:\/\/"#))
+
+    #expect(ClerkLogRedaction.redactingSecrets(in: body) == #"{"uri":"\#(redacted)"}"#)
+  }
+
+  @Test
   func errorCodesAndSimilarlyNamedKeysStayReadable() {
     let body = #"{"errors":[{"code":"form_password_incorrect","message":"Password is incorrect."}],"token_type":"bearer"}"#
 
