@@ -49,6 +49,28 @@ struct ClerkTests {
   }
 
   @Test
+  func failedConfigurationReportsTheErrorToTheAppsLogger() async throws {
+    let entries = LockIsolated<[LogEntry]>([])
+    let options = Clerk.Options(
+      proxyUrl: "proxy.example.com/__clerk",
+      loggerHandler: { entry in entries.withValue { $0.append(entry) } }
+    )
+    let clerk = Clerk()
+
+    // `Clerk.configure` calls this and, in release builds, returns an unconfigured instance after it throws.
+    #expect(throws: ClerkInitializationError.self) {
+      try clerk.performConfiguration(publishableKey: testPublishableKey, options: options)
+    }
+
+    for _ in 0 ..< 200 where entries.value.isEmpty {
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    let entry = try #require(entries.value.first)
+    #expect(entry.level == .error)
+    #expect(entry.error is ClerkInitializationError)
+  }
+
+  @Test
   func callbackContinuationReturnsPendingAuthResult() {
     let signIn = SignIn(
       id: "sign_in_pending",

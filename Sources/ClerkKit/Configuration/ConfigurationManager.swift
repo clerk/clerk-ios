@@ -32,6 +32,7 @@ final class ConfigurationManager {
     let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
     try validatePublishableKey(normalizedPublishableKey)
+    let proxyConfiguration = try makeProxyConfiguration(for: options)
 
     state.publishableKey = normalizedPublishableKey
     state.options = options
@@ -39,7 +40,7 @@ final class ConfigurationManager {
     state.frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
 
     state.proxyUrl = options.proxyUrl
-    state.proxyConfiguration = ProxyConfiguration(url: state.proxyUrl)
+    state.proxyConfiguration = proxyConfiguration
 
     state.isConfigured = true
   }
@@ -92,6 +93,23 @@ final class ConfigurationManager {
     guard key.starts(with: "pk_test_") || key.starts(with: "pk_live_") else {
       throw ClerkInitializationError.invalidPublishableKeyFormat(key: key)
     }
+  }
+
+  /// Builds the proxy configuration for the proxy URL the app passed.
+  ///
+  /// Requests would skip a proxy URL that `ProxyConfiguration` can't build from and go straight to the
+  /// Frontend API, so an explicit one fails configuration instead. An omitted or blank value means no proxy.
+  ///
+  /// - Throws: `ClerkInitializationError.invalidProxyUrl` if the proxy URL isn't an http or https URL with a host.
+  private func makeProxyConfiguration(for options: Clerk.Options) throws -> ProxyConfiguration? {
+    guard let input = options.proxyUrlInput,
+          !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else { return nil }
+
+    guard let configuration = ProxyConfiguration(url: options.proxyUrl) else {
+      throw ClerkInitializationError.invalidProxyUrl
+    }
+    return configuration
   }
 
   /// Extracts the frontend API URL from a publishable key.
