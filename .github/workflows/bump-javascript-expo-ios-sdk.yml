@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: iOS SDK version to pin in @clerk/expo
+        description: iOS SDK version to pin in @clerk/expo-native-components (or @clerk/expo before the split)
         required: true
         type: string
 
@@ -73,7 +73,7 @@ jobs:
           path: javascript
           token: ${{ secrets.OPEN_EXPO_PR_GH_TOKEN }}
 
-      - name: Update @clerk/expo iOS SDK pin
+      - name: Update Expo iOS SDK pin
         id: update
         working-directory: javascript
         env:
@@ -83,7 +83,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          podspec_file="packages/expo/ios/ClerkExpo.podspec"
+          # Native components moved from @clerk/expo to @clerk/expo-native-components; support both layouts.
+          if [ -f packages/expo-native-components/ios/ClerkExpo.podspec ]; then
+            podspec_file="packages/expo-native-components/ios/ClerkExpo.podspec"
+            package_name="@clerk/expo-native-components"
+            commit_scope="expo-native-components"
+          else
+            podspec_file="packages/expo/ios/ClerkExpo.podspec"
+            package_name="@clerk/expo"
+            commit_scope="expo"
+          fi
+          echo "podspec_file=$podspec_file" >> "$GITHUB_OUTPUT"
+          echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
+          echo "commit_scope=$commit_scope" >> "$GITHUB_OUTPUT"
           current_version="$(sed -nE "s/.*clerk_ios_version[[:space:]]*=[[:space:]]*['\"]([^'\"]+)['\"].*/\1/p" "$podspec_file" | head -n 1)"
 
           if [ -z "$current_version" ]; then
@@ -94,15 +106,15 @@ jobs:
           echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
 
           if [ "$current_version" = "$IOS_VERSION" ]; then
-            echo "@clerk/expo already pins clerk-ios $IOS_VERSION; no PR needed."
+            echo "$package_name already pins clerk-ios $IOS_VERSION; no PR needed."
             echo "should_open=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          node <<'NODE'
+          PODSPEC_FILE="$podspec_file" node <<'NODE'
           const fs = require('fs');
 
-          const podspecFile = 'packages/expo/ios/ClerkExpo.podspec';
+          const podspecFile = process.env.PODSPEC_FILE;
           const iosVersion = process.env.IOS_VERSION;
           const source = fs.readFileSync(podspecFile, 'utf8');
           const updated = source.replace(
@@ -120,7 +132,7 @@ jobs:
           mkdir -p .changeset
           cat > ".changeset/$CHANGESET_FILE" <<EOF
           ---
-          '@clerk/expo': patch
+          '$package_name': patch
           ---
 
           Bump the bundled \`clerk-ios\` SDK from \`$current_version\` to \`$IOS_VERSION\`. See the Clerk iOS release: $RELEASE_URL.
@@ -139,6 +151,9 @@ jobs:
           RELEASE_URL: ${{ steps.version.outputs.release_url }}
           CHANGESET_FILE: ${{ steps.version.outputs.changeset_file }}
           CURRENT_VERSION: ${{ steps.update.outputs.current_version }}
+          PODSPEC_FILE: ${{ steps.update.outputs.podspec_file }}
+          PACKAGE_NAME: ${{ steps.update.outputs.package_name }}
+          COMMIT_SCOPE: ${{ steps.update.outputs.commit_scope }}
           JAVASCRIPT_REPO: ${{ env.JAVASCRIPT_REPO }}
         run: |
           set -euo pipefail
@@ -146,22 +161,22 @@ jobs:
           git config user.name "clerk-cookie"
           git config user.email "cookie@clerk.dev"
           git checkout -B "$BRANCH_NAME"
-          git add packages/expo/ios/ClerkExpo.podspec ".changeset/$CHANGESET_FILE"
+          git add "$PODSPEC_FILE" ".changeset/$CHANGESET_FILE"
 
           if git diff --cached --quiet; then
             echo "No changes to commit; no PR needed."
             exit 0
           fi
 
-          git commit -m "chore(expo): bump clerk-ios to $IOS_VERSION"
+          git commit -m "chore($COMMIT_SCOPE): bump clerk-ios to $IOS_VERSION"
           git push --force-with-lease origin "$BRANCH_NAME"
 
-          pr_title="chore(expo): bump clerk-ios to $IOS_VERSION"
+          pr_title="chore($COMMIT_SCOPE): bump clerk-ios to $IOS_VERSION"
           pr_body="$(mktemp)"
           cat > "$pr_body" <<EOF
           ## Description
 
-          Bumps the bundled \`clerk-ios\` SDK in \`@clerk/expo\` from \`$CURRENT_VERSION\` to \`$IOS_VERSION\`.
+          Bumps the bundled \`clerk-ios\` SDK in \`$PACKAGE_NAME\` from \`$CURRENT_VERSION\` to \`$IOS_VERSION\`.
 
           Release: $RELEASE_URL
 
