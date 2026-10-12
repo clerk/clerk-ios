@@ -51,17 +51,47 @@ struct UserProfileMfaRow: View {
     }
   }
 
+  private var canRemove: Bool {
+    guard let user, let environment = clerk.environment else { return true }
+
+    switch style {
+    case .authenticatorApp:
+      return environment.allowsRemovingAuthenticatorApp(for: user)
+    case let .sms(phoneNumber):
+      return environment.allowsRemovingMfaPhoneNumber(phoneNumber, for: user)
+    case .backupCodes:
+      return false
+    }
+  }
+
+  private func canSetAsDefault(_ phoneNumber: PhoneNumber) -> Bool {
+    user?.totpEnabled != true && !phoneNumber.defaultSecondFactor
+  }
+
+  private var hasMenuItems: Bool {
+    switch style {
+    case .authenticatorApp:
+      canRemove
+    case let .sms(phoneNumber):
+      canRemove || canSetAsDefault(phoneNumber)
+    case .backupCodes:
+      true
+    }
+  }
+
   @ViewBuilder
   private var menuItems: some View {
     switch style {
     case .authenticatorApp:
-      Button(role: .destructive) {
-        removeResource = .totp
-      } label: {
-        Text("Remove", bundle: .module)
+      if canRemove {
+        Button(role: .destructive) {
+          removeResource = .totp
+        } label: {
+          Text("Remove", bundle: .module)
+        }
       }
     case let .sms(phoneNumber):
-      if user?.totpEnabled != true, !phoneNumber.defaultSecondFactor {
+      if canSetAsDefault(phoneNumber) {
         AsyncButton {
           await makeDefaultSecondFactor(phoneNumber: phoneNumber)
         } label: { _ in
@@ -70,10 +100,12 @@ struct UserProfileMfaRow: View {
         .onIsRunningChanged { isLoading = $0 }
       }
 
-      Button(role: .destructive) {
-        removeResource = .secondFactorPhoneNumber(phoneNumber)
-      } label: {
-        Text("Remove", bundle: .module)
+      if canRemove {
+        Button(role: .destructive) {
+          removeResource = .secondFactorPhoneNumber(phoneNumber)
+        } label: {
+          Text("Remove", bundle: .module)
+        }
       }
     case .backupCodes:
       AsyncButton {
@@ -115,13 +147,15 @@ struct UserProfileMfaRow: View {
 
       Spacer(minLength: 0)
 
-      Menu {
-        menuItems
-      } label: {
-        ThreeDotsMenuLabel()
+      if hasMenuItems {
+        Menu {
+          menuItems
+        } label: {
+          ThreeDotsMenuLabel()
+        }
+        .frame(width: 30, height: 30)
+        .menuIndicator(.hidden)
       }
-      .frame(width: 30, height: 30)
-      .menuIndicator(.hidden)
     }
     .padding(.horizontal, 24)
     .padding(.vertical, 16)

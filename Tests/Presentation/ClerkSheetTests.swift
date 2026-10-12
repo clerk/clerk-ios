@@ -24,7 +24,7 @@ struct ClerkSheetTests {
     )
     defer { window.close() }
 
-    runMainLoop { probe.reads != nil }
+    runMainLoop { probe.reads != nil && !window.sheets.isEmpty }
 
     #expect(window.sheets.count == 1)
     #expect(probe.reads == context.expectedReads(themePrimary: .red))
@@ -62,7 +62,7 @@ struct ClerkSheetTests {
     let window = hostOffscreen(PushedSheetPresenter(context: context, probe: probe))
     defer { window.close() }
 
-    runMainLoop { probe.reads != nil }
+    runMainLoop { probe.reads != nil && !window.sheets.isEmpty }
 
     #expect(window.sheets.count == 1)
     #expect(probe.reads == context.expectedReads(themePrimary: .red))
@@ -75,7 +75,7 @@ struct ClerkSheetTests {
     let window = hostOffscreen(SheetOwnedContextPresenter(context: context, probe: probe))
     defer { window.close() }
 
-    runMainLoop { probe.reads != nil }
+    runMainLoop { probe.reads != nil && !window.sheets.isEmpty }
 
     #expect(window.sheets.count == 1)
     #expect(probe.reads == context.expectedReads(themePrimary: ClerkTheme.default.colors.primary))
@@ -88,7 +88,7 @@ struct ClerkSheetTests {
     let window = hostOffscreen(SheetPresenter(probe: probe).environment(clerk))
     defer { window.close() }
 
-    runMainLoop { probe.reads != nil }
+    runMainLoop { probe.reads != nil && !window.sheets.isEmpty }
 
     #expect(window.sheets.count == 1)
     #expect(probe.reads == ContextReads(clerk: ObjectIdentifier(clerk), themePrimary: ClerkTheme.default.colors.primary))

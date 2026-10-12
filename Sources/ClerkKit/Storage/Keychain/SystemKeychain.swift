@@ -38,7 +38,7 @@ struct SystemKeychain: KeychainStorage {
     addQuery[kSecAttrAccessible as String] = accessibility.secValue
     addQuery[kSecValueData as String] = data
 
-    let status = secItemClient.add(addQuery as CFDictionary, nil)
+    let status = withSecItemAccess { secItemClient.add(addQuery as CFDictionary, nil) }
 
     switch status {
     case errSecSuccess:
@@ -49,7 +49,9 @@ struct SystemKeychain: KeychainStorage {
         kSecValueData as String: data,
         kSecAttrAccessible as String: accessibility.secValue,
       ]
-      let updateStatus = secItemClient.update(updateQuery as CFDictionary, attributes as CFDictionary)
+      let updateStatus = withSecItemAccess {
+        secItemClient.update(updateQuery as CFDictionary, attributes as CFDictionary)
+      }
       guard updateStatus == errSecSuccess else {
         throw KeychainError.unexpectedStatus(updateStatus)
       }
@@ -64,7 +66,7 @@ struct SystemKeychain: KeychainStorage {
     query[kSecMatchLimit as String] = kSecMatchLimitOne
 
     var result: CFTypeRef?
-    let status = secItemClient.copyMatching(query as CFDictionary, &result)
+    let status = withSecItemAccess { secItemClient.copyMatching(query as CFDictionary, &result) }
 
     switch status {
     case errSecSuccess:
@@ -77,7 +79,7 @@ struct SystemKeychain: KeychainStorage {
   }
 
   func deleteItem(forKey key: String) throws {
-    let status = secItemClient.delete(baseQuery(for: key) as CFDictionary)
+    let status = withSecItemAccess { secItemClient.delete(baseQuery(for: key) as CFDictionary) }
     switch status {
     case errSecSuccess, errSecItemNotFound:
       return
@@ -92,7 +94,7 @@ struct SystemKeychain: KeychainStorage {
     query[kSecReturnAttributes as String] = false
     query[kSecReturnData as String] = false
 
-    let status = secItemClient.copyMatching(query as CFDictionary, nil)
+    let status = withSecItemAccess { secItemClient.copyMatching(query as CFDictionary, nil) }
     switch status {
     case errSecSuccess:
       return true
@@ -104,6 +106,21 @@ struct SystemKeychain: KeychainStorage {
   }
 
   // MARK: - Helpers
+
+  #if os(macOS)
+  /// The file-based macOS keychain can deadlock when two threads call it at once: a read and a
+  /// write take its keychain and item locks in opposite orders.
+  private static let fileKeychainLock = NSLock()
+  #endif
+
+  private func withSecItemAccess(_ body: () -> OSStatus) -> OSStatus {
+    #if os(macOS)
+    if !useDataProtectionKeychain {
+      return Self.fileKeychainLock.withLock(body)
+    }
+    #endif
+    return body()
+  }
 
   private func baseQuery(for key: String) -> [String: Any] {
     var query: [String: Any] = [

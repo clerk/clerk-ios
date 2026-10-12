@@ -24,6 +24,22 @@ struct DependencyContainerKeychainTests {
 
   @Test
   @MainActor
+  func cacheWritesStayOnTheCallingThreadOnlyOnMacOS() throws {
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: .init(keychainConfig: .init(service: "service")),
+      runtimeScope: ClerkRuntimeScope()
+    )
+
+    #if os(macOS)
+    #expect(container.cacheWrites.writesOnCallingThread)
+    #else
+    #expect(!container.cacheWrites.writesOnCallingThread)
+    #endif
+  }
+
+  @Test
+  @MainActor
   func identityIsStoredInTheConfiguredKeychain() throws {
     let container = try DependencyContainer(
       publishableKey: testPublishableKey,

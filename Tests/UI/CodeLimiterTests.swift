@@ -25,6 +25,17 @@ struct CodeLimiterTests {
     #expect(tick == nil)
   }
 
+  @Test
+  func remembersWhichIdentifierWasSentLast() {
+    let limiter = CodeLimiter(startTicking: { _ in {} })
+    #expect(limiter.lastCodeSentIdentifier == nil)
+
+    limiter.recordCodeSent(for: "phone_a")
+    limiter.recordCodeSent(for: "phone_b")
+
+    #expect(limiter.lastCodeSentIdentifier == "phone_b")
+  }
+
   private func publishesUpdate(when change: () -> Void, _ read: () -> Int) -> Bool {
     let didChange = OSAllocatedUnfairLock(initialState: false)
     _ = withObservationTracking(read) {

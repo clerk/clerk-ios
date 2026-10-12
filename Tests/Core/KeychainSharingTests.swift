@@ -38,6 +38,8 @@ struct KeychainSharingTests {
     let second = makeApp()
     try await first.respond(.client(signedIn("first")), token: .set("token"), date: 100)
     try await second.respond(.client(signedIn("second")), date: 200)
+    await first.clerk.waitForCacheWrites()
+    await second.clerk.waitForCacheWrites()
 
     #expect(try first.store.load()?.client?.id == "first")
     #expect(try second.store.load()?.client?.id == "second")
@@ -66,6 +68,7 @@ struct KeychainSharingTests {
 
     try await first.respond(.client(signedIn("new")), token: .set("new-token"), date: 200)
     try await second.respond(.client(signedIn("stale")), date: 300, request: staleRequest)
+    await first.clerk.waitForCacheWrites()
 
     #expect(second.clerk.deviceToken == "new-token")
     #expect(second.clerk.client == nil)
@@ -138,6 +141,7 @@ struct KeychainSharingTests {
 
     #expect(accepted == refreshed)
     #expect(first.clerk.session?.lastActiveToken == refreshed)
+    await first.clerk.waitForCacheWrites()
     #expect(try first.store.load()?.client?.currentSession?.lastActiveToken == refreshed)
     #expect(secondRefreshes.value == 0)
   }

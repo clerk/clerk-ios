@@ -60,7 +60,7 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     .clerkErrorPresenting($accountList.error, onDismiss: { _ in
-      guard !accountList.hasExistingResources, user != nil else { return }
+      guard !accountList.hasExistingResources || accountList.hasFailedLists, user != nil else { return }
       Task { await fetchOrganizationResources() }
     })
     .taskOnce {

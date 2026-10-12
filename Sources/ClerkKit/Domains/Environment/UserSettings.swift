@@ -12,6 +12,16 @@ extension Clerk.Environment {
     public var social: [String: SocialConfig]
     public var actions: Actions
     public var passkeySettings: PasskeySettings?
+    public var enterpriseSSO: EnterpriseSSO?
+
+    private enum CodingKeys: String, CodingKey {
+      case attributes
+      case signUp
+      case social
+      case actions
+      case passkeySettings
+      case enterpriseSSO = "enterpriseSso"
+    }
 
     public struct AttributesConfig: Codable, Equatable, Sendable {
       public var enabled: Bool
@@ -30,6 +40,11 @@ extension Clerk.Environment {
       public var progressive: Bool
       public var mode: String
       public var legalConsentEnabled: Bool
+      public var mfa: MFA?
+
+      public struct MFA: Codable, Equatable, Sendable {
+        public var required: Bool
+      }
     }
 
     public struct SocialConfig: Codable, Equatable, Sendable {
@@ -50,6 +65,10 @@ extension Clerk.Environment {
     public struct PasskeySettings: Codable, Equatable, Sendable {
       public var allowAutofill: Bool
       public var showSignInButton: Bool
+    }
+
+    public struct EnterpriseSSO: Codable, Equatable, Sendable {
+      public var enabled: Bool
     }
   }
 }

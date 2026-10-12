@@ -20,20 +20,30 @@ struct UserProfileDetailView: View {
     clerk.user
   }
 
+  private var canAddIdentifications: Bool {
+    guard let user, let environment = clerk.environment else { return false }
+    return environment.allowsAddingIdentifications(for: user)
+  }
+
+  private var canAddEmailAddressesAndPhoneNumbers: Bool {
+    guard let user, let environment = clerk.environment else { return false }
+    return environment.allowsAddingEmailAddressesAndPhoneNumbers(for: user)
+  }
+
   private var canAddEmailAddress: Bool {
-    clerk.environment?.emailIsImmutable != true
+    canAddEmailAddressesAndPhoneNumbers && clerk.environment?.emailIsImmutable != true
   }
 
   private var canAddPhoneNumber: Bool {
-    clerk.environment?.phoneNumberIsImmutable != true
+    canAddEmailAddressesAndPhoneNumbers && clerk.environment?.phoneNumberIsImmutable != true
   }
 
   private var showEmailSection: Bool {
-    clerk.environment?.emailIsEnabled == true && (canAddEmailAddress || !sortedEmails.isEmpty)
+    clerk.environment?.emailIsAvailable == true && (canAddEmailAddress || !sortedEmails.isEmpty)
   }
 
   private var showPhoneNumberSection: Bool {
-    clerk.environment?.phoneNumberIsEnabled == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
+    clerk.environment?.phoneNumberIsAvailable == true && (canAddPhoneNumber || !sortedPhoneNumbers.isEmpty)
   }
 
   var sortedEmails: [EmailAddress] {
@@ -115,14 +125,14 @@ struct UserProfileDetailView: View {
               }
             }
 
-            if !(clerk.environment?.allSocialProviders ?? []).isEmpty {
+            if !(clerk.environment?.allSocialProviders ?? []).isEmpty, canAddIdentifications || !sortedExternalAccounts.isEmpty {
               Section {
                 Group {
                   ForEach(sortedExternalAccounts) { externalAccount in
                     UserProfileExternalAccountRow(externalAccount: externalAccount)
                   }
 
-                  if !user.unconnectedProviders.isEmpty {
+                  if canAddIdentifications, !user.unconnectedProviders.isEmpty {
                     UserProfileButtonRow(text: "Connect account") {
                       addConnectedAccountIsPresented = true
                     }

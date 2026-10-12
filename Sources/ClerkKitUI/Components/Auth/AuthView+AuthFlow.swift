@@ -132,6 +132,7 @@ extension AuthView {
   }
 
   func dismissAuthView() {
+    authState.clearSensitiveFields()
     authFlowRegistrationIsTerminated = true
     authFlowRegistration?.cancel()
     authFlowRegistration = nil

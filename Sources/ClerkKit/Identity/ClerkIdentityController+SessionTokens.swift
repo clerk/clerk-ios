@@ -95,11 +95,7 @@ extension ClerkIdentityController {
 
   private func applyClientWithoutIdentityChange(_ client: Client) {
     if let store = clerk?.dependencies.identityStore, let currentDeviceToken {
-      do {
-        try store.saveClient(client, serverDate: lastServerDate, for: currentDeviceToken)
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to cache the refreshed session token")
-      }
+      store.cacheClient(client, serverDate: lastServerDate, for: currentDeviceToken)
     }
     clerk?.setClientFromIdentityController(client)
   }

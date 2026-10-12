@@ -222,6 +222,56 @@ struct HostedAuthFlowTests {
   }
 
   @Test
+  func successKeepsTheOrganizationTheCreatedSessionStartedIn() async throws {
+    let createParams = LockIsolated<JSON?>(nil)
+    let setActiveCall = LockIsolated<HostedAuthSetActiveCall?>(nil)
+
+    var createdSession = Session.mock2
+    createdSession.lastActiveOrganizationId = "org_123"
+    var redeemedClient = Client.mock
+    redeemedClient.sessions = [.mock, createdSession]
+    redeemedClient.lastActiveSessionId = Session.mock.id
+    var activatedClient = redeemedClient
+    activatedClient.lastActiveSessionId = createdSession.id
+
+    let transport = FakeTransport.mockDefaults()
+    transport.stubHostedAuthCreate { body in
+      createParams.setValue(body)
+      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
+    }
+    transport.stubHostedAuthRedeem { _ in
+      hostedAuthRedeemReply(client: redeemedClient)
+    }
+    transport.stubSetActive { sessionId, body in
+      setActiveCall.setValue(HostedAuthSetActiveCall(sessionId: sessionId, organizationId: body?["active_organization_id"]?.stringValue))
+      Clerk.shared.client = activatedClient
+    }
+    configureHostedAuthForTesting(
+      transport: transport,
+      initialClient: .mockSignedOut
+    )
+
+    _ = try await Clerk.shared.auth.performHostedAuth(
+      mode: .signIn,
+      redirectUrl: "myapp:///hosted-auth-callback",
+      prefersEphemeralWebBrowserSession: false,
+      webAuthentication: { _, _, _ in
+        guard let state = createParams.value?["state"]?.stringValue else {
+          throw ClerkClientError(message: "Missing state in test.")
+        }
+        return try makeHostedAuthCallbackUrl(
+          redirectUrl: "myapp:///hosted-auth-callback",
+          state: state,
+          rotatingTokenNonce: "nonce_123",
+          createdSessionId: createdSession.id
+        )
+      }
+    )
+
+    #expect(setActiveCall.value == HostedAuthSetActiveCall(sessionId: createdSession.id, organizationId: "org_123"))
+  }
+
+  @Test
   func overlappingStartIsRejectedBeforeCreatingAnotherTransfer() async throws {
     let createCalls = LockIsolated(0)
     let createParams = LockIsolated<JSON?>(nil)

@@ -64,12 +64,23 @@ extension Clerk {
   /// - Throws: An error naming the items that could not be deleted.
   @MainActor
   public static func clearAllKeychainItemsAndWait() async throws {
-    await waitForRuntimeReconfigurationIfNeeded()
-    try Clerk.shared.clearKeychainItems()
+    while true {
+      await waitForRuntimeReconfigurationIfNeeded()
+      let runtime = Clerk.shared.runtime
+      let cacheWrites = runtime.dependencies.cacheWrites
+      cacheWrites.pauseWrites()
+      defer { cacheWrites.resumeWrites() }
+      await cacheWrites.waitForPendingWrites()
+      if runtime === Clerk.shared.runtime, runtime.isCurrent {
+        try Clerk.shared.clearKeychainItems()
+        return
+      }
+    }
   }
 
   @MainActor
   func clearKeychainItems() throws {
+    dependencies.cacheWrites.discardPendingWrites()
     let configuration = ClerkLogger.Configuration(options: options)
     var failures = Self.clearIdentity(configuration: configuration) {
       try identityController.clearIdentity()
@@ -91,6 +102,7 @@ extension Clerk {
 
   @MainActor
   static func clearLocalClerkStorageStrictly(in dependencies: any Dependencies) throws {
+    dependencies.cacheWrites.discardPendingWrites()
     let configuration = ClerkLogger.Configuration(options: dependencies.configurationManager.options)
     let keepsIdentity = dependencies.identityIsInAccessGroup
     var failures = clearIdentity(configuration: configuration) {

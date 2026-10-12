@@ -12,6 +12,7 @@ final class MockDependencyContainer: Dependencies {
   let keychain: any KeychainStorage
   let appLocalKeychain: any KeychainStorage
   let identityStore: ClerkIdentityStore
+  let cacheWrites: KeychainWriteQueue
   let identityIsInAccessGroup: Bool
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
@@ -41,7 +42,13 @@ final class MockDependencyContainer: Dependencies {
     let resolvedAppLocalKeychain = appLocalKeychain ?? resolvedKeychain
     self.keychain = resolvedKeychain
     self.appLocalKeychain = resolvedAppLocalKeychain
-    identityStore = ClerkIdentityStore(keychain: identityKeychain ?? resolvedKeychain, clientKeychain: clientKeychain)
+    let cacheWrites = KeychainWriteQueue()
+    self.cacheWrites = cacheWrites
+    identityStore = ClerkIdentityStore(
+      keychain: identityKeychain ?? resolvedKeychain,
+      clientKeychain: clientKeychain,
+      cacheWrites: cacheWrites
+    )
     self.identityIsInAccessGroup = identityIsInAccessGroup
     self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
     self.biometricCredentialStore =

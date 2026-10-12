@@ -12,6 +12,7 @@ struct UserProfileDeleteAccountConfirmationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  @Environment(\.locale) private var locale
   @Environment(UserProfileSheetNavigation.self) private var navigation
   @Environment(UserProfileBuiltInRouter.self) private var builtInRouter
 
@@ -24,7 +25,12 @@ struct UserProfileDeleteAccountConfirmationView: View {
   }
 
   private var buttonIsDisabled: Bool {
-    deleteAccount != String(localized: "DELETE", bundle: .module)
+    !Self.isConfirmed(deleteAccount, locale: locale)
+  }
+
+  /// Whether `input` is the word the instruction asks for, translated into `locale`'s language.
+  static func isConfirmed(_ input: String, locale: Locale) -> Bool {
+    input == String(localizedInClerkUI: "DELETE", locale: locale)
   }
 
   var body: some View {

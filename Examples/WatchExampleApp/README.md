@@ -56,6 +56,8 @@ Clerk.configure(
 )
 ```
 
+If your app uses `WCSession` itself, set your delegate before calling `Clerk.configure`. Clerk becomes the session's delegate and forwards every callback to yours. When you call `updateApplicationContext`, start from `WCSession.default.applicationContext` so you keep the keys Clerk adds.
+
 ## Running the Example
 
 **Important:** Both apps must be installed for Watch Connectivity to work.

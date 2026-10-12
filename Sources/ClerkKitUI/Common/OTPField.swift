@@ -36,6 +36,7 @@ struct OTPField: View {
         otpFieldInput(index: index)
       }
     }
+    .accessibilityHidden(true)
     .phaseAnimator(
       [0, 10, -10, 10, -5, 5, 0], trigger: errorTrigger,
       content: { content, offset in
@@ -49,6 +50,7 @@ struct OTPField: View {
     .sensoryFeedback(.error, trigger: errorTrigger)
     .overlay {
       TextField("", text: $code)
+        .accessibilityLabel(Text("Verification code", bundle: .module))
         .focused($isFocused)
         .textContentType(.oneTimeCode)
         #if os(iOS)

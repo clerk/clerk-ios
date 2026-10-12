@@ -68,6 +68,13 @@ extension FakeTransport {
     }
   }
 
+  /// Answers sign-up updates with `update`'s sign-up, given the sign-up id and the request body.
+  func stubSignUpUpdate(_ update: @escaping @MainActor (_ signUpId: String, _ body: JSON?) async throws -> SignUp) {
+    stub(SignUpAPI.update(signUpId: FakeTransport.anyPathSegment, params: .init())) { call in
+      try await ClientResponse(response: update(String(call.path.split(separator: "/")[3]), call.body), client: nil)
+    }
+  }
+
   /// Answers sign-in creation with `create`'s sign-in, given the request body.
   func stubSignInCreate(_ create: @escaping @MainActor (JSON?) async throws -> SignIn) {
     stub(SignInAPI.create(params: .init())) { call in

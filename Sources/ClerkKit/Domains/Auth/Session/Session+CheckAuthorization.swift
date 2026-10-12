@@ -87,32 +87,37 @@ extension Session {
 
 extension Clerk {
   /// Returns whether the signed-in user has `role` in the Active Organization. Returns `false` when
-  /// no user is signed in. See ``Session/checkAuthorization(role:reverification:)``.
+  /// no user is signed in or the session isn't active. See ``Session/checkAuthorization(role:reverification:)``.
   public func has(role: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.checkAuthorization(role: role, reverification: reverification) ?? false
+    activeSession?.checkAuthorization(role: role, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user has `permission` in the Active Organization. Returns `false`
-  /// when no user is signed in. See ``Session/checkAuthorization(permission:reverification:)``.
+  /// when no user is signed in or the session isn't active. See ``Session/checkAuthorization(permission:reverification:)``.
   public func has(permission: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.checkAuthorization(permission: permission, reverification: reverification) ?? false
+    activeSession?.checkAuthorization(permission: permission, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user or Active Organization has the Billing `feature`. Returns
-  /// `false` when no user is signed in. See ``Session/checkAuthorization(feature:reverification:)``.
+  /// `false` when no user is signed in or the session isn't active. See ``Session/checkAuthorization(feature:reverification:)``.
   public func has(feature: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.checkAuthorization(feature: feature, reverification: reverification) ?? false
+    activeSession?.checkAuthorization(feature: feature, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user or Active Organization is subscribed to the Billing `plan`.
-  /// Returns `false` when no user is signed in. See ``Session/checkAuthorization(plan:reverification:)``.
+  /// Returns `false` when no user is signed in or the session isn't active. See ``Session/checkAuthorization(plan:reverification:)``.
   public func has(plan: String, reverification: ReverificationConfig? = nil) -> Bool {
-    session?.checkAuthorization(plan: plan, reverification: reverification) ?? false
+    activeSession?.checkAuthorization(plan: plan, reverification: reverification) ?? false
   }
 
   /// Returns whether the signed-in user reverified within `reverification`. Returns `false` when no
-  /// user is signed in. See ``Session/checkAuthorization(reverification:)``.
+  /// user is signed in or the session isn't active. See ``Session/checkAuthorization(reverification:)``.
   public func has(reverification: ReverificationConfig) -> Bool {
-    session?.checkAuthorization(reverification: reverification) ?? false
+    activeSession?.checkAuthorization(reverification: reverification) ?? false
+  }
+
+  private var activeSession: Session? {
+    guard let session, session.status == .active else { return nil }
+    return session
   }
 }

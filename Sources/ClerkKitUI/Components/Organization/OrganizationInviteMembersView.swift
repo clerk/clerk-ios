@@ -293,6 +293,7 @@ private struct OrganizationInviteEmailAddressField: View {
         .font(theme.fonts.caption)
         .foregroundStyle(theme.colors.mutedForeground)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityHidden(true)
 
       WrappingHStack(alignment: .leading, spacing: 6, lineSpacing: 6) {
         ForEach(emailAddressTags, id: \.self) { emailAddress in
@@ -302,6 +303,7 @@ private struct OrganizationInviteEmailAddressField: View {
         }
 
         TextField("", text: $emailAddressDraft)
+          .accessibilityLabel(Text("Enter email addresses", bundle: .module))
           .font(theme.fonts.body)
           .foregroundStyle(theme.colors.inputForeground)
           .tint(theme.colors.primary)

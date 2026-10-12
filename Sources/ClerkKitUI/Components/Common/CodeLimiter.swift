@@ -13,6 +13,7 @@ final class CodeLimiter {
   static let defaultCooldown: TimeInterval = 30
 
   private var cooldownEndsAt: [String: Date] = [:]
+  private(set) var lastCodeSentIdentifier: String?
   private var now: Date
   private var stopTicking: (() -> Void)?
   private let currentDate: () -> Date
@@ -37,6 +38,7 @@ final class CodeLimiter {
   func recordCodeSent(for identifier: String, cooldown: TimeInterval = defaultCooldown) {
     now = currentDate()
     cooldownEndsAt[identifier] = now.addingTimeInterval(cooldown)
+    lastCodeSentIdentifier = identifier
     startTimerIfNeeded()
   }
 

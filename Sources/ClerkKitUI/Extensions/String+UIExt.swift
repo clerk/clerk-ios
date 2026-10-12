@@ -9,16 +9,26 @@ import Foundation
 import PhoneNumberKit
 
 extension String {
+  /// Looks `key` up in ClerkKitUI's strings in `locale`'s language, the way SwiftUI `Text` does.
+  ///
+  /// `String(localized:bundle:locale:)` uses `locale` only to format interpolated values, and picks the
+  /// app's language. When an app overrides the environment locale, it disagrees with the text on screen.
+  init(localizedInClerkUI key: String.LocalizationValue, locale: Locale) {
+    var resource = LocalizedStringResource(key, bundle: .atURL(Bundle.module.bundleURL))
+    resource.locale = locale
+    self.init(localized: resource)
+  }
+
+  @MainActor
   var formattedAsPhoneNumberIfPossible: String {
-    let utility = PhoneNumberUtility()
-    let partialFormatter = PartialFormatter(utility: utility, withPrefix: true)
+    let partialFormatter = PartialFormatter(utility: .shared, withPrefix: true)
     return partialFormatter.formatPartial(self).nonBreaking
   }
 
   /// Strict phone number validation using PhoneNumberKit.
+  @MainActor
   var isPhoneNumber: Bool {
-    let utility = PhoneNumberUtility()
-    return utility.isValidPhoneNumber(self)
+    PhoneNumberUtility.shared.isValidPhoneNumber(self)
   }
 
   /// Loose phone number detection using NSDataDetector.

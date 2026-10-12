@@ -74,18 +74,24 @@ struct SignInPasskeyView: View {
           .disabled(passkeyInProgress)
           .simultaneousGesture(TapGesture())
 
-          Button(action: showAlternativeMethods) {
-            Text("Use another method", bundle: .module)
-          }
-          .buttonStyle(
-            .primary(
-              config: .init(
-                emphasis: .none,
-                size: .small
+          if mode.showsUseAnotherMethod(
+            signIn: signIn,
+            currentFactor: factor,
+            socialProviders: clerk.environment?.authenticatableSocialProviders ?? []
+          ) {
+            Button(action: showAlternativeMethods) {
+              Text("Use another method", bundle: .module)
+            }
+            .buttonStyle(
+              .primary(
+                config: .init(
+                  emphasis: .none,
+                  size: .small
+                )
               )
             )
-          )
-          .simultaneousGesture(TapGesture())
+            .simultaneousGesture(TapGesture())
+          }
         }
         .padding(.bottom, 32)
 

@@ -9,6 +9,11 @@ let testPublishableKey = "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk"
 
 extension Clerk {
   @MainActor
+  func waitForCacheWrites() async {
+    await dependencies.cacheWrites.waitForPendingWrites()
+  }
+
+  @MainActor
   func seedIdentity(deviceToken: String?, client: Client? = nil, serverDate: Date? = nil) throws {
     try dependencies.identityStore.save(ClerkIdentitySnapshot(
       state: client == nil ? .cleared : .present,

@@ -395,11 +395,37 @@ struct BillingTests {
 
   @Test
   func decodesBillingCreditLedger() throws {
-    let ledger = try decoder.decode(BillingCreditLedger.self, from: Data(creditLedgerJSON.utf8))
+    let ledger = try decoder.decode(BillingCreditLedger.self, from: Data(creditLedgerJSON().utf8))
     #expect(ledger.id == "led_1")
     #expect(ledger.sourceType == "payment")
     #expect(ledger.sourceId == "pay_1")
     #expect(ledger.amount.currencySymbol == "$")
+    #expect(ledger.createdAt == Date(timeIntervalSince1970: 1_782_223_512.5))
+  }
+
+  @Test(arguments: [
+    (#""2026-06-23T14:05:12Z""#, 1_782_223_512.0),
+    (#""2026-06-23T14:05:12.5Z""#, 1_782_223_512.5),
+    (#""2026-06-23T14:05:12.123456789Z""#, 1_782_223_512.123457),
+    (#""2026-06-23T10:05:12.5-04:00""#, 1_782_223_512.5),
+    ("1782223512500", 1_782_223_512.5),
+  ])
+  func decodesBillingCreditLedgerCreatedAt(rawCreatedAt: String, expectedSeconds: TimeInterval) throws {
+    let ledger = try decoder.decode(
+      BillingCreditLedger.self,
+      from: Data(creditLedgerJSON(createdAt: rawCreatedAt).utf8)
+    )
+    #expect(abs(ledger.createdAt.timeIntervalSince1970 - expectedSeconds) < 0.000_001)
+  }
+
+  @Test
+  func rejectsBillingCreditLedgerWithInvalidCreatedAt() {
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(
+        BillingCreditLedger.self,
+        from: Data(creditLedgerJSON(createdAt: #""not a date""#).utf8)
+      )
+    }
   }
 
   @Test
@@ -774,13 +800,16 @@ private let creditBalanceJSON = """
 }
 """
 
-private let creditLedgerJSON = """
-{
-  "object": "commerce_credit_ledger",
-  "id": "led_1",
-  "amount": \(moneyJSON),
-  "source_type": "payment",
-  "source_id": "pay_1",
-  "created_at": 1700000000000
+private func creditLedgerJSON(createdAt: String = #""2026-06-23T14:05:12.5Z""#) -> String {
+  """
+  {
+    "object": "commerce_credit_ledger",
+    "id": "led_1",
+    "payer_id": "payer_1",
+    "amount": \(moneyJSON),
+    "source_type": "payment",
+    "source_id": "pay_1",
+    "created_at": \(createdAt)
+  }
+  """
 }
-"""

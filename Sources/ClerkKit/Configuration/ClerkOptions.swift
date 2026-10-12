@@ -99,6 +99,8 @@ extension Clerk {
     public let redirectConfig: RedirectConfig
 
     /// Keeps the iOS app and its watchOS companion signed in as the same user: a sign-in, sign-out or clear on either reaches the other. Defaults to false.
+    ///
+    /// Clerk becomes the delegate of `WCSession.default` and forwards every callback to the delegate your app set before configuring Clerk, so set yours first. If your app calls `updateApplicationContext`, start from `WCSession.default.applicationContext` so you keep the keys Clerk adds.
     public let watchConnectivityEnabled: Bool
 
     /// A closure that receives callbacks when Clerk logs errors.

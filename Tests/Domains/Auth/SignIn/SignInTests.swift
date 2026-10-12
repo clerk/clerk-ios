@@ -307,6 +307,83 @@ struct SignInTests {
   }
 
   @Test
+  func sendMfaEmailLinkPreparesSecondFactor() async throws {
+    let keychain = InMemoryKeychain()
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsClientTrust,
+      identifier: "test@example.com",
+      supportedSecondFactors: [
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+        Factor(
+          strategy: .emailLink,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+      ]
+    )
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stubSignInPrepareSecondFactor { id, params in
+      captured.setValue((id, params))
+      return signIn
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport,
+      keychain: keychain
+    )
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+
+    _ = try await signIn.sendMfaEmailLink()
+
+    let params = try #require(captured.value)
+    #expect(params.0 == signIn.id)
+    #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailLink)
+    #expect(params.1?["email_address_id"]?.stringValue == "ema_123")
+    #expect(params.1?["redirect_uri"]?.stringValue == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(params.1?["code_challenge_method"]?.stringValue == PKCE.codeChallengeMethod)
+    #expect(params.1?["code_challenge"]?.stringValue?.isEmpty == false)
+
+    let pendingFlow = try #require(magicLinkStore.load())
+    #expect(pendingFlow.kind == .signIn)
+    #expect(pendingFlow.flowId == signIn.id)
+    #expect(pendingFlow.codeVerifier.isEmpty == false)
+  }
+
+  @Test
+  func sendMfaEmailLinkThrowsWithoutAnEmailLinkSecondFactor() async throws {
+    let prepareWasCalled = LockIsolated(false)
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsClientTrust,
+      identifier: "test@example.com",
+      supportedSecondFactors: [
+        Factor(
+          strategy: .emailCode,
+          emailAddressId: "ema_123",
+          safeIdentifier: "test@example.com"
+        ),
+      ]
+    )
+    transport.stubSignInPrepareSecondFactor { _, _ in
+      prepareWasCalled.setValue(true)
+      return signIn
+    }
+
+    configureTransport()
+
+    await #expect(throws: ClerkClientError.self) {
+      try await signIn.sendMfaEmailLink()
+    }
+    #expect(prepareWasCalled.value == false)
+  }
+
+  @Test
   func sendPhoneCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
     let captured = LockIsolated<(String, JSON?)?>(nil)
@@ -630,6 +707,75 @@ struct SignInTests {
     #expect(captured.value == nil)
   }
 
+  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @Test
+  func appleAuthenticationKeepsTheAppleNameWhenItTransfersToSignUp() async throws {
+    let metadata: JSON = ["plan": "pro"]
+    var transferableSignIn = SignIn.mock
+    transferableSignIn.firstFactorVerification = Verification(status: .transferable)
+
+    let attemptParams = LockIsolated<JSON?>(nil)
+    transport.stubSignInAttemptFirstFactor { _, params in
+      attemptParams.setValue(params)
+      return transferableSignIn
+    }
+    let signUpParams = LockIsolated<JSON?>(nil)
+    transport.stubSignUpCreate { params in
+      signUpParams.setValue(params)
+      return .mock
+    }
+
+    configureTransport()
+
+    let result = try await SignIn.mock.completeAppleAuthentication(
+      idToken: "apple_token",
+      firstName: "Jane",
+      lastName: "Doe",
+      transferable: true,
+      unsafeMetadata: metadata
+    )
+
+    guard case .signUp = result else {
+      Issue.record("Expected a sign-up result")
+      return
+    }
+    let attempt = try #require(attemptParams.value)
+    #expect(attempt["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .idToken(.apple))
+    #expect(attempt["token"]?.stringValue == "apple_token")
+    let signUp = try #require(signUpParams.value)
+    #expect(signUp["transfer"]?.boolValue == true)
+    #expect(signUp["first_name"]?.stringValue == "Jane")
+    #expect(signUp["last_name"]?.stringValue == "Doe")
+    #expect(signUp["unsafe_metadata"] == metadata)
+  }
+
+  @Test
+  func appleAuthenticationSignsInAnExistingUserWithoutASignUp() async throws {
+    transport.stubSignInAttemptFirstFactor { _, _ in .mock }
+    let signUpCalled = LockIsolated(false)
+    transport.stubSignUpCreate { _ in
+      signUpCalled.setValue(true)
+      return .mock
+    }
+
+    configureTransport()
+
+    let result = try await SignIn.mock.completeAppleAuthentication(
+      idToken: "apple_token",
+      firstName: "Jane",
+      lastName: "Doe",
+      transferable: true,
+      unsafeMetadata: nil
+    )
+
+    guard case .signIn = result else {
+      Issue.record("Expected a sign-in result")
+      return
+    }
+    #expect(signUpCalled.value == false)
+  }
+  #endif
+
   @Test
   func sendResetPasswordPhoneCodePreparesFirstFactor() async throws {
     let signIn = SignIn.mock
@@ -646,6 +792,72 @@ struct SignInTests {
     let params = try #require(captured.value)
     #expect(params.0 == signIn.id)
     #expect(params.1?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .resetPasswordPhoneCode)
+  }
+
+  enum UsernameSignInCodeScenario: String, CaseIterable, Codable {
+    case emailCode
+    case phoneCode
+    case resetPasswordEmailCode
+    case resetPasswordPhoneCode
+
+    var strategy: FactorStrategy {
+      switch self {
+      case .emailCode: .emailCode
+      case .phoneCode: .phoneCode
+      case .resetPasswordEmailCode: .resetPasswordEmailCode
+      case .resetPasswordPhoneCode: .resetPasswordPhoneCode
+      }
+    }
+
+    var usesPhone: Bool {
+      self == .phoneCode || self == .resetPasswordPhoneCode
+    }
+
+    @MainActor
+    func send(_ signIn: SignIn) async throws {
+      switch self {
+      case .emailCode: try await signIn.sendEmailCode()
+      case .phoneCode: try await signIn.sendPhoneCode()
+      case .resetPasswordEmailCode: try await signIn.sendResetPasswordEmailCode()
+      case .resetPasswordPhoneCode: try await signIn.sendResetPasswordPhoneCode()
+      }
+    }
+  }
+
+  @Test(arguments: UsernameSignInCodeScenario.allCases)
+  func sendingACodeForAUsernameSignInUsesTheStrategysFactor(_ scenario: UsernameSignInCodeScenario) async throws {
+    // A username never equals an email or phone factor's safe identifier.
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "sean_user",
+      supportedFirstFactors: [
+        Factor(strategy: .password),
+        Factor(
+          strategy: scenario.strategy,
+          emailAddressId: scenario.usesPhone ? nil : "ema_123",
+          phoneNumberId: scenario.usesPhone ? "idn_123" : nil,
+          safeIdentifier: scenario.usesPhone ? "+1******0000" : "s***@example.com"
+        ),
+      ]
+    )
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stubSignInPrepareFirstFactor { _, params in
+      captured.setValue(params)
+      return signIn
+    }
+
+    configureTransport()
+
+    try await scenario.send(signIn)
+
+    let params = try #require(captured.value)
+    #expect(params["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == scenario.strategy)
+    if scenario.usesPhone {
+      #expect(params["phone_number_id"]?.stringValue == "idn_123")
+    } else {
+      #expect(params["email_address_id"]?.stringValue == "ema_123")
+    }
   }
 
   @Test

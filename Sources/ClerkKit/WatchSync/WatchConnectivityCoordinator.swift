@@ -54,6 +54,7 @@ final class WatchConnectivityCoordinator: ClerkInternalStateChangeObserver {
 
   func stopAcceptingIdentityUpdates() {
     isActive = false
+    transport?.stop()
     refreshTask?.cancel()
     refreshTask = nil
   }

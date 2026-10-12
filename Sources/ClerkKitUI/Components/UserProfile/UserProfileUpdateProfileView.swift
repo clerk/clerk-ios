@@ -29,7 +29,7 @@ struct UserProfileUpdateProfileView: View {
   }
 
   private var usernameIsEditable: Bool {
-    environment?.usernameIsEnabled == true && environment?.usernameIsImmutable != true
+    environment?.usernameIsAvailable == true && environment?.usernameIsImmutable != true
   }
 
   private var showSaveButton: Bool {
@@ -201,13 +201,16 @@ struct UserProfileUpdateProfileView: View {
           }
           .shadow(color: theme.colors.buttonBorder, radius: 1, x: 0, y: 1)
       }
+      .accessibilityLabel(Text("Edit profile photo", bundle: .module))
     }
   }
 
   @ViewBuilder
   private var menuContent: some View {
-    Button("Choose from photo library") {
+    Button {
       photosPickerIsPresented = true
+    } label: {
+      Text("Choose from photo library", bundle: .module)
     }
 
     if user.hasImage == true {
@@ -249,15 +252,39 @@ extension UserProfileUpdateProfileView {
     #endif
   }
 
+  static func updateParams(
+    for user: User,
+    username: String?,
+    firstName: String?,
+    lastName: String?
+  ) -> User.UpdateParams? {
+    func changed(_ value: String?, from current: String?) -> String? {
+      guard let value, value != (current ?? "") else { return nil }
+      return value
+    }
+
+    let params = User.UpdateParams(
+      username: changed(username, from: user.username),
+      firstName: changed(firstName, from: user.firstName),
+      lastName: changed(lastName, from: user.lastName)
+    )
+    guard params.username != nil || params.firstName != nil || params.lastName != nil else { return nil }
+    return params
+  }
+
   private func save() async {
+    guard let params = Self.updateParams(
+      for: user,
+      username: usernameIsEditable ? username : nil,
+      firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
+      lastName: environment?.lastNameIsEnabled == true ? lastName : nil
+    ) else {
+      dismiss()
+      return
+    }
+
     do {
-      try await user.update(
-        .init(
-          username: usernameIsEditable ? username : nil,
-          firstName: environment?.firstNameIsEnabled == true ? firstName : nil,
-          lastName: environment?.lastNameIsEnabled == true ? lastName : nil
-        )
-      )
+      try await user.update(params)
       dismiss()
     } catch {
       self.error = error

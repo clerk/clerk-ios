@@ -55,6 +55,7 @@ extension SignIn {
     let strategy: FactorStrategy
     let emailAddressId: String?
     let phoneNumberId: String?
+    let enterpriseConnectionId: String?
     let redirectUrl: String?
     let redirectUri: String?
     let codeChallenge: String?
@@ -64,6 +65,7 @@ extension SignIn {
       strategy: FactorStrategy,
       emailAddressId: String? = nil,
       phoneNumberId: String? = nil,
+      enterpriseConnectionId: String? = nil,
       redirectUrl: String? = nil,
       redirectUri: String? = nil,
       codeChallenge: String? = nil,
@@ -72,6 +74,7 @@ extension SignIn {
       self.strategy = strategy
       self.emailAddressId = emailAddressId
       self.phoneNumberId = phoneNumberId
+      self.enterpriseConnectionId = enterpriseConnectionId
       self.redirectUrl = redirectUrl
       self.redirectUri = redirectUri
       self.codeChallenge = codeChallenge
@@ -129,15 +132,24 @@ extension SignIn {
     let strategy: FactorStrategy
     let phoneNumberId: String?
     let emailAddressId: String?
+    let redirectUri: String?
+    let codeChallenge: String?
+    let codeChallengeMethod: String?
 
     init(
       strategy: FactorStrategy,
       phoneNumberId: String? = nil,
-      emailAddressId: String? = nil
+      emailAddressId: String? = nil,
+      redirectUri: String? = nil,
+      codeChallenge: String? = nil,
+      codeChallengeMethod: String? = nil
     ) {
       self.strategy = strategy
       self.phoneNumberId = phoneNumberId
       self.emailAddressId = emailAddressId
+      self.redirectUri = redirectUri
+      self.codeChallenge = codeChallenge
+      self.codeChallengeMethod = codeChallengeMethod
     }
   }
 

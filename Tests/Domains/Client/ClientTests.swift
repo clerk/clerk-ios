@@ -61,6 +61,7 @@ struct ClientTests {
     try Clerk.shared.seedIdentity(deviceToken: "current-token", client: Client.mock, serverDate: Date(timeIntervalSince1970: 100))
 
     let client = try await Clerk.shared.refreshClient()
+    await Clerk.shared.waitForCacheWrites()
 
     let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(client?.id == Client.mock.id)
@@ -156,6 +157,7 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(skipClientIdValues(transport) == ["1"])
+    await Clerk.shared.waitForCacheWrites()
     let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
@@ -192,6 +194,7 @@ struct ClientTests {
     #expect(Clerk.shared.client?.id == expectedClient.id)
     #expect(Clerk.shared.deviceToken == "new-token")
     #expect(skipClientIdValues(transport) == ["1"])
+    await Clerk.shared.waitForCacheWrites()
     let stored = try #require(try Clerk.shared.dependencies.identityStore.load())
     #expect(stored.deviceToken == "new-token")
     #expect(stored.client?.id == expectedClient.id)
@@ -276,6 +279,7 @@ struct ClientTests {
     let previousGeneration = clerk.clientResponseGeneration
 
     let didSet = try await clerk.setDeviceToken(" new-token\n", expected: "old-token")
+    await clerk.waitForCacheWrites()
 
     let stored = try #require(try clerk.dependencies.identityStore.load())
     #expect(didSet)

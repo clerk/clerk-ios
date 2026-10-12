@@ -16,10 +16,16 @@ struct ClerkIdentityStore {
 
   let keychain: any KeychainStorage
   let clientKeychain: any KeychainStorage
+  let cacheWrites: KeychainWriteQueue
 
-  init(keychain: any KeychainStorage, clientKeychain: (any KeychainStorage)? = nil) {
+  init(
+    keychain: any KeychainStorage,
+    clientKeychain: (any KeychainStorage)? = nil,
+    cacheWrites: KeychainWriteQueue
+  ) {
     self.keychain = keychain
     self.clientKeychain = clientKeychain ?? keychain
+    self.cacheWrites = cacheWrites
   }
 
   func deviceToken() throws -> String? {
@@ -60,6 +66,41 @@ struct ClerkIdentityStore {
   }
 
   func saveClient(_ client: Client?, serverDate: Date?, for token: String?) throws {
+    try Self.saveClient(client, serverDate: serverDate, for: token, in: clientKeychain)
+  }
+
+  func cacheClient(_ client: Client?, serverDate: Date?, for token: String?) {
+    let clientKeychain = clientKeychain
+    cacheWrites.enqueue(.cachedClient) {
+      Self.cacheClient(client, serverDate: serverDate, for: token, in: clientKeychain)
+    }
+  }
+
+  func cacheClientNow(_ client: Client?, serverDate: Date?, for token: String?) {
+    cacheWrites.writeNow(.cachedClient) {
+      Self.cacheClient(client, serverDate: serverDate, for: token, in: clientKeychain)
+    }
+  }
+
+  private static func cacheClient(
+    _ client: Client?,
+    serverDate: Date?,
+    for token: String?,
+    in clientKeychain: any KeychainStorage
+  ) {
+    do {
+      try saveClient(client, serverDate: serverDate, for: token, in: clientKeychain)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to cache the Clerk client")
+    }
+  }
+
+  private static func saveClient(
+    _ client: Client?,
+    serverDate: Date?,
+    for token: String?,
+    in clientKeychain: any KeychainStorage
+  ) throws {
     guard let client, let token else {
       try clientKeychain.deleteItem(forKey: ClerkKeychainKey.cachedClient.rawValue)
       return

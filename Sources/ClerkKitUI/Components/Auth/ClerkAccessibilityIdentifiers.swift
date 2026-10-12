@@ -58,6 +58,7 @@ enum ClerkAccessibilityIdentifiers {
     enum Mfa {
       static let smsCode = "clerk.userProfile.mfa.smsCode"
       static let authenticatorApp = "clerk.userProfile.mfa.authenticatorApp"
+      static let backupCodes = "clerk.userProfile.mfa.backupCodes"
       static let smsPhoneNumberRow = "clerk.userProfile.mfa.sms.phoneNumber"
       static let smsContinue = "clerk.userProfile.mfa.sms.continue"
       static let smsAddPhone = "clerk.userProfile.mfa.sms.addPhone"

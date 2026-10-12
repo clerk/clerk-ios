@@ -189,20 +189,22 @@ public struct BiometricCredentials {
   /// revoked credential.
   ///
   /// - Returns: The revoked biometric credential, or `nil` when this app installation has no
-  ///   available local credential for the current user.
+  ///   local credential for the current user.
   @discardableResult
   public func revokeCurrentDeviceCredential() async throws -> BiometricCredential? {
     guard Clerk.shared.session?.status.allowsBiometricCredentialEnrollment == true else {
       throw ClerkClientError(message: "Unable to revoke a biometric credential without an active or pending Clerk session.")
     }
-    guard let userID = Clerk.shared.user?.id else {
+    guard let userID = Clerk.shared.user?.id,
+          let localCredential = try candidateLocalCredentials(id: nil, identifierHint: nil, userID: userID).first
+    else {
       return nil
     }
 
-    switch try await selectedLocalCredential(id: nil, identifierHint: nil, userID: userID) {
-    case let .available(localCredential):
+    do {
       return try await revoke(id: localCredential.id)
-    case .unavailable:
+    } catch let error as ClerkAPIError where error.code == BiometricCredentialAPIError.resourceNotFoundCode {
+      try? deleteLocalCredential(localCredential)
       return nil
     }
   }
@@ -641,6 +643,7 @@ extension Error {
 
 private enum BiometricCredentialAPIError {
   static let formResourceNotFoundCode = "form_resource_not_found"
+  static let resourceNotFoundCode = "resource_not_found"
   static let biometricCredentialNotRegisteredCode = "trusted_device_not_registered"
   static let biometricCredentialIDParamName = "trusted_device_id"
   static let nativeAPIDisabledCode = "native_api_disabled"

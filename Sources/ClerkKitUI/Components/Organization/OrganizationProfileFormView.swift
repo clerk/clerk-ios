@@ -108,8 +108,8 @@ struct OrganizationProfileFormView: View {
         }
 
         if mode.isCreate {
-          if let advisory = creationDefaults?.advisory, let advisoryMessage = advisoryMessage(for: advisory) {
-            WarningText(verbatim: advisoryMessage)
+          if let advisory = creationDefaults?.advisory, let advisoryMessage = Self.advisoryMessage(for: advisory) {
+            WarningText(advisoryMessage, bundle: .module)
               .padding(.bottom, 16)
           }
         }
@@ -556,7 +556,7 @@ extension OrganizationProfileFormView {
 // MARK: - Helpers
 
 extension OrganizationProfileFormView {
-  private func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> String? {
+  static func advisoryMessage(for advisory: OrganizationCreationDefaults.Advisory) -> LocalizedStringKey? {
     switch advisory.code {
     case "organization_already_exists":
       let orgName = advisory.meta["organization_name"] ?? ""
