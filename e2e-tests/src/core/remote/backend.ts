@@ -10,11 +10,11 @@ import { HANDOFF_VERSION, HandoffRefused, describeFile, parseHandoffManifest, pu
 import { coreVersion } from '../manifest.ts';
 import { withEvidenceBlock } from '../publish.ts';
 import { remoteDoctorChecks } from './preflight.ts';
-import { STEP, type SessionHealth } from './protocol.ts';
+import { BUILD_TIMEOUT_MINUTES, STEP, type SessionHealth } from './protocol.ts';
 import { firstHealth, sendEvidence, sessionCall, sessionHealth, tunnelUrl, type SessionRef } from './session.ts';
 import { forgetSession, newSessionRequest, saveToken, savedDriverId, type RemoteDeps, type RemoteSettings } from './settings.ts';
 
-const READY_DEADLINE_MS = 40 * 60_000;
+const READY_DEADLINE_MS = (BUILD_TIMEOUT_MINUTES + 5) * 60_000;
 const EXPIRING_MS = 2 * 60_000;
 
 const COMMITS_PER_PAGE = 100;
@@ -64,6 +64,13 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
       } else {
         if (health.build.state === 'failed' && health.build.sha === sha) {
           throw new VerifyFailure('BUILD_FAILED', `the session could not build ${sha.slice(0, 12)}:\n${health.build.tail}`, 'fix the build error above, commit, push, then rerun {cli} up');
+        }
+        if (health.build.state === 'timed-out' && health.build.sha === sha) {
+          throw new VerifyFailure(
+            'NOT_READY',
+            `the session stopped the build of ${sha.slice(0, 12)} after ${BUILD_TIMEOUT_MINUTES} minutes on ${lease.runner}, the longest it lets one build run. The build reported no error before that. Its last lines:\n${health.build.tail}`,
+            'rerun {cli} up, and the same session builds again from what the stopped build left; if that build is stopped too, {cli} down, then {cli} up --runner <a faster runner label>',
+          );
         }
         if (health.build.state === 'built' && health.build.sha === sha && health.device?.ready === true && health.daemon) return health.build;
         const line = `wait    ${describeBuild(health)}; device ${health.device?.ready === true ? 'ready' : 'booting'}; agent-device ${health.daemon ? 'up' : 'starting'}`;

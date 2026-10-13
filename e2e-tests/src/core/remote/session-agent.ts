@@ -5,6 +5,7 @@ import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  BUILD_TIMEOUT_MINUTES,
   RequestError,
   matchesToken,
   parseRequest,
@@ -24,7 +25,6 @@ import { TUNNEL } from './tunnel.ts';
 const AGENT_ROUTES = ['/agent-device', '/health', '/rpc', '/upload', '/artifacts'];
 const DAEMON_GRACE_MS = 60_000;
 const COMMAND_TIMEOUT_MS = 30_000;
-const BUILD_TIMEOUT_MINUTES = 30;
 const PUBLIC_RESOLVERS = ['1.1.1.1', '8.8.8.8'];
 const RECIPE = fileURLToPath(new URL('./recipe.ts', import.meta.url));
 const PINNED_AGENT_DEVICE = fileURLToPath(new URL('../../../node_modules/.bin/agent-device', import.meta.url));
@@ -282,7 +282,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
 
   function startBuild(sha: string): void {
     if (device === null) return;
-    if (build.state !== 'none' && build.sha === sha && build.state !== 'failed') return;
+    if ((build.state === 'building' || build.state === 'built') && build.sha === sha) return;
     buildGeneration += 1;
     stopGroup(buildChild);
     const generation = buildGeneration;
@@ -290,9 +290,10 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
     const began = buildBegan;
     const incremental = builtOnce;
     const tail: string[] = [];
+    let timedOut = false;
     const timeout = setTimeout(() => {
       if (generation !== buildGeneration) return;
-      tail.push(`the build did not finish in ${BUILD_TIMEOUT_MINUTES} minutes and was stopped`);
+      timedOut = true;
       stopGroup(buildChild);
     }, BUILD_TIMEOUT_MINUTES * minuteMs);
     build = { state: 'building', sha, seconds: 0 };
@@ -324,7 +325,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         builtOnce = true;
         build = { state: 'built', sha, seconds, incremental };
       } else {
-        build = { state: 'failed', sha, seconds, tail: scrub(tail.join('\n')) };
+        build = { state: timedOut ? 'timed-out' : 'failed', sha, seconds, tail: scrub(tail.join('\n')) };
       }
     });
   }
