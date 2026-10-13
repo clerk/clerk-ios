@@ -78,7 +78,7 @@ function setup() {
     writeFileSync(join(dir, 'app.swift'), text);
     sha = newSha.repeat(40);
   };
-  return { deps, events, progress, edit, lose: () => (health = 'lost'), unpush: () => (pushed = false), stick: () => (stuck = true), finished, inputsAskedFor };
+  return { deps, events, progress, edit, commit: (newSha: string) => (sha = newSha.repeat(40)), lose: () => (health = 'lost'), unpush: () => (pushed = false), stick: () => (stuck = true), finished, inputsAskedFor };
 }
 
 describe('lease flow with a backend that builds the app', () => {
@@ -114,6 +114,26 @@ describe('lease flow with a backend that builds the app', () => {
     assert.deepEqual(events.slice(2), ['release s1', 'acquire sha=a runner=default', 'install s2 sha=a']);
     assert.ok(progress.some((line) => line.startsWith('lost    iPhone Air on mac-runner')));
     assert.equal(result.leases[0]!.renewed, true);
+  });
+
+  it('asks the new session for the commit the branch has now when a commit that left the app alone was pushed after the lost one built', async () => {
+    const { deps, events, commit, lose } = setup();
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    commit('b');
+    lose();
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    assert.deepEqual(events.slice(2), ['release s1', 'acquire sha=b runner=default', 'install s2 sha=b']);
+    assert.equal((deps.workspace.readLease('ios') as RemoteLease).builtSha, 'b'.repeat(40));
+  });
+
+  it('asks the new session for the commit the lost one built when the newer commit left the app alone and is not pushed', async () => {
+    const { deps, events, commit, lose, unpush } = setup();
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    commit('b');
+    unpush();
+    lose();
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    assert.deepEqual(events.slice(2), ['release s1', 'acquire sha=a runner=default', 'install s2 sha=a']);
   });
 
   it('passes --runner to the session and refuses a different label while a session is held', async () => {
