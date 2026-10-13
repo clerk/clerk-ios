@@ -130,6 +130,19 @@ jobs:
             "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --udid "$udid" --timeout 900000 \
             || echo "::warning::prepare ios-runner failed; the run starts its own agent-device daemon, and the first test waits for the XCTest runner"
 
+      # The first boot of a simulator runs minutes of setup work. Until it ends, simctl on a three-core runner can take longer than the 15 to 20 seconds agent-device waits for it.
+      - name: Wait for the simulator to finish its first-boot work
+        timeout-minutes: 15
+        run: |
+          limit=$(( $(sysctl -n hw.ncpu) * 20 ))
+          for waited in $(seq 0 5 720); do
+            load="$(sysctl -n vm.loadavg | awk '{ print int($2) }')"
+            [ "$load" -lt "$limit" ] && break
+            sleep 5
+          done
+          echo "the 1-minute load average is $load after $waited seconds, and the tests start below $limit"
+          [ "$load" -lt "$limit" ] || echo "::warning::the first-boot work of the simulator had not ended after 12 minutes; the tests start anyway"
+
       - name: Run the golden specs
         timeout-minutes: 45
         env:
