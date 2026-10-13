@@ -537,6 +537,7 @@ describe('the remote backend before it sends evidence', () => {
     readonly health?: unknown;
     readonly files?: EvidenceBundle['files'];
     readonly before?: string;
+    readonly compared?: { readonly status: number; readonly json: unknown };
   }
 
   async function handOff(options: Case = {}) {
@@ -560,6 +561,7 @@ describe('the remote backend before it sends evidence', () => {
         asked.push(path);
         const page = /^\/pulls\/669\/commits\?per_page=100&page=(\d+)$/.exec(path);
         if (page !== null) return { status: 200, json: commits.slice((Number(page[1]) - 1) * 100, Number(page[1]) * 100).map((sha) => ({ sha })), headers: new Headers() };
+        if (path.startsWith('/compare/')) return { ...(options.compared ?? { status: 200, json: { status: 'ahead' } }), headers: new Headers() };
         return { status: 200, json: path.startsWith('/pulls/') ? (options.pull ?? OPEN) : { head_branch: 'feature/change', head_sha: STARTED_ON }, headers: new Headers() };
       },
     };
@@ -599,8 +601,9 @@ describe('the remote backend before it sends evidence', () => {
   });
 
   it('sends the before run in the manifest and its files after the files of the run, though its commit is the one the branch started from and no commit of the pull request', async () => {
-    const { error, sent, manifests } = await handOff({ before: BEFORE_COMMIT });
+    const { error, sent, manifests, asked } = await handOff({ before: BEFORE_COMMIT });
     assert.equal(error, null);
+    assert.deepEqual(asked.filter((path) => path.startsWith('/compare/')), [`/compare/${BEFORE_COMMIT}...${COMMIT}?per_page=1`]);
     assert.deepEqual(sent, ['/__sim/evidence/begin', '/__sim/evidence/chunk', '/__sim/evidence/chunk', '/__sim/evidence/commit']);
     assert.deepEqual(manifests, [
       {
@@ -609,6 +612,20 @@ describe('the remote backend before it sends evidence', () => {
         before: { run: goodBefore.run, commit: BEFORE_COMMIT, passed: 0, flaky: 0, total: 3, files: [goodBefore.files[0]] },
       },
     ]);
+  });
+
+  it('sends nothing when the commit of the before run is not the commit of the run or one before it in its history, as the workflow would refuse it', async () => {
+    const message = `${wouldNot}the before run ${goodBefore.run} was made at 5e1263750651, which is not the commit of the run or a commit before it in its history`;
+    const fix = '{cli} run the spec at a commit that 0f50b597b1c2 still has in its history and does not hold the change, and pass that run as --before, or attach without --before and name the before run in the PR';
+    for (const compared of [{ status: 200, json: { status: 'behind' } }, { status: 200, json: { status: 'diverged' } }, { status: 200, json: null }, { status: 404, json: { message: 'Not Found' } }]) {
+      const refused = await refusal({ before: BEFORE_COMMIT, compared });
+      assert.deepEqual({ code: refused.error.code, message: refused.error.message, fix: refused.error.fix, sent: refused.sent }, { code: 'NOT_READY', message, fix, sent: [] }, JSON.stringify(compared));
+    }
+    assert.equal((await handOff({ before: COMMIT, compared: { status: 200, json: { status: 'identical' } } })).error, null);
+    const unread = await refusal({ before: BEFORE_COMMIT, compared: { status: 502, json: { message: 'Bad Gateway' } } });
+    assert.match(unread.error.message, new RegExp(`^could not compare the commit of run ${goodBefore.run} with the commit of run ${good.run}: `));
+    assert.deepEqual(unread.sent, []);
+    assert.deepEqual((await handOff()).asked.filter((path) => path.startsWith('/compare/')), [], 'a run with no before run asks for no comparison');
   });
 
   it('sends a run whose pull request has moved on to newer commits', async () => {

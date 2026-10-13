@@ -251,6 +251,18 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
         { repo: settings.repo, headBranch: started.head_branch, startedOn: started.head_sha, runCommit: bundle.summary.commit },
       );
       if (mismatch !== null) throw wouldNot(mismatch.why, mismatch.fix);
+      if (bundle.before !== null) {
+        const was = bundle.before.summary;
+        const compared = await hub.api('GET', `/compare/${was.commit}...${bundle.summary.commit}?per_page=1`);
+        if (compared.status !== 200 && compared.status !== 404) throw new VerifyFailure('NOT_READY', `could not compare the commit of run ${was.run} with the commit of run ${run}: ${apiMessage(compared)}`, 'retry {cli} attach');
+        const status = (compared.json as { readonly status?: string } | null)?.status;
+        if (status !== 'ahead' && status !== 'identical') {
+          throw wouldNot(
+            `the before run ${was.run} was made at ${was.commit.slice(0, 12)}, which is not the commit of the run or a commit before it in its history`,
+            `{cli} run the spec at a commit that ${bundle.summary.commit.slice(0, 12)} still has in its history and does not hold the change, and pass that run as --before, or attach without --before and name the before run in the PR`,
+          );
+        }
+      }
       const place = withEvidenceBlock(pr.body ?? '', bundle.summary.platform, '');
       if (!place.ok) throw wouldNot(`its description ${place.why}, so the evidence has no one place to go`, `${place.fix}, then rerun {cli} attach`);
       let manifest: HandoffManifest;

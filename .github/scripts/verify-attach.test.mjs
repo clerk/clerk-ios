@@ -1018,6 +1018,7 @@ const ENV = {
   HEAD_SHA: COMMIT,
   RUN_ACTOR: 'octocat',
 };
+const beforeIsInTheHistory = () => Promise.resolve(Response.json({ status: 'ahead' }));
 
 describe('the step that fetches the evidence', () => {
   const artifact = (id, change = {}) => ({
@@ -1097,7 +1098,7 @@ describe('the step that fetches the evidence', () => {
     assert.deepEqual(fs.readFileSync(path.join(work, 'files', 'video.mp4')), MP4);
     const withBefore = workDir();
     fs.writeFileSync(zipFile, bundle(WITH_BEFORE, [...MEDIA, ...WAS_MEDIA]));
-    await fetchStep({ env: { ...ENV, WORK: withBefore }, say: () => undefined, zipFile });
+    await fetchStep({ env: { ...ENV, WORK: withBefore }, say: () => undefined, fetch: beforeIsInTheHistory, zipFile });
     assert.deepEqual(fs.readdirSync(path.join(withBefore, 'files')).sort(), [
       'before-profile.png',
       'before-video.mp4',
@@ -1108,6 +1109,46 @@ describe('the step that fetches the evidence', () => {
     assert.deepEqual(said, [
       'notice: Run 37731397352 handed off the evidence of verify run r20261008-052713-253e for pull request #669: 2 files.',
     ]);
+  });
+
+  it('takes a before run only when GitHub says its commit is the commit of the run or one before it in its history', async () => {
+    const zipFile = path.join(path.dirname(workDir()), 'evidence.zip');
+    const attempt = async (answer, media = [...MEDIA, ...WAS_MEDIA], manifest = WITH_BEFORE) => {
+      fs.writeFileSync(zipFile, bundle(manifest, media));
+      const work = workDir();
+      const asked = [];
+      const fetch = (url, init) => {
+        asked.push(`${init.headers.Authorization} ${url}`);
+        return Promise.resolve(answer());
+      };
+      const env = { ...ENV, WORK: work, GITHUB_TOKEN: 'actions-token', GITHUB_API_URL: 'https://api.github.test/' };
+      const outcome = await fetchStep({ env, say: () => undefined, fetch, zipFile }).then(
+        found => `found ${found}`,
+        error => `${error instanceof Refused ? 'refused' : 'failed'}: ${error.message}`,
+      );
+      return { outcome, asked, wrote: fs.existsSync(work) };
+    };
+    const compared = status => () => Response.json({ status });
+    const comparison =
+      'Bearer actions-token https://api.github.test/repos/clerk/clerk-ios/compare/5e126375065188df5bec4e4e75d61db03834f395...0f50b597b1c2d3e4f5a60718293a4b5c6d7e8f90?per_page=1';
+
+    assert.deepEqual(await attempt(compared('ahead')), { outcome: 'found true', asked: [comparison], wrote: true });
+    assert.deepEqual(await attempt(compared('identical')), { outcome: 'found true', asked: [comparison], wrote: true });
+    const outside = 'refused: the commit of before is not the commit of the run or a commit before it in its history';
+    for (const answer of [compared('behind'), compared('diverged'), compared(undefined), () => Response.json(null)]) {
+      assert.deepEqual(await attempt(answer), { outcome: outside, asked: [comparison], wrote: false });
+    }
+    assert.deepEqual(await attempt(() => Response.json({ message: 'Not Found' }, { status: 404 })), {
+      outcome: 'refused: the commit of before, or the commit of the run, is not a commit of this repository',
+      asked: [comparison],
+      wrote: false,
+    });
+    assert.deepEqual(await attempt(() => Response.json({ status: 'ahead' }, { status: 502 })), {
+      outcome: 'failed: GitHub answered 502 to the comparison of the commit of before with the commit of the run',
+      asked: [comparison],
+      wrote: false,
+    });
+    assert.deepEqual(await attempt(compared('behind'), MEDIA, GOOD), { outcome: 'found true', asked: [], wrote: true });
   });
 
   it('writes only into a directory that is new or empty', async () => {
@@ -1165,7 +1206,7 @@ describe('the step that edits the description', () => {
     const work = workDir();
     const zipFile = path.join(path.dirname(work), 'evidence.zip');
     fs.writeFileSync(zipFile, bundle(manifest, media));
-    await fetchStep({ env: { ...ENV, WORK: work }, say: () => undefined, zipFile });
+    await fetchStep({ env: { ...ENV, WORK: work }, say: () => undefined, fetch: beforeIsInTheHistory, zipFile });
     return { ...ENV, WORK: work };
   }
 

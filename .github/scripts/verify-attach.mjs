@@ -566,13 +566,15 @@ function settings(env) {
   return { repo, runId, work, filesDir: path.join(work, 'files'), manifestFile: path.join(work, MANIFEST_FILE) };
 }
 
+const apiHeaders = token => ({
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
+  'User-Agent': 'verify-attach',
+  Authorization: `Bearer ${token}`,
+});
+
 async function downloadArtifact({ fetch, api, token, repo, runId }) {
-  const headers = {
-    Accept: 'application/vnd.github+json',
-    'X-GitHub-Api-Version': '2022-11-28',
-    'User-Agent': 'verify-attach',
-    Authorization: `Bearer ${token}`,
-  };
+  const headers = apiHeaders(token);
   const listed = await fetch(`${api}/repos/${repo}/actions/runs/${runId}/artifacts?name=${ARTIFACT}&per_page=100`, {
     headers,
   });
@@ -605,6 +607,24 @@ async function downloadArtifact({ fetch, api, token, repo, runId }) {
   return Buffer.concat(chunks);
 }
 
+async function assertBeforeCommitInHistory({ fetch, api, token, repo }, { before, commit }) {
+  const compared = await fetch(`${api}/repos/${repo}/compare/${before.commit}...${commit}?per_page=1`, {
+    headers: apiHeaders(token),
+  });
+  if (compared.status === 404) {
+    refuse('the commit of before, or the commit of the run, is not a commit of this repository');
+  }
+  if (compared.status !== 200) {
+    throw new Failed(
+      `GitHub answered ${compared.status} to the comparison of the commit of before with the commit of the run`,
+    );
+  }
+  const status = (await compared.json())?.status;
+  if (status !== 'ahead' && status !== 'identical') {
+    refuse('the commit of before is not the commit of the run or a commit before it in its history');
+  }
+}
+
 async function fetchStep({ env, say, fetch, zipFile }) {
   const { repo, runId, work, filesDir, manifestFile } = settings(env);
   const mismatch = sessionRunMismatch({ event: env.RUN_EVENT, path: env.RUN_PATH, headRepo: env.RUN_HEAD_REPO }, repo);
@@ -615,21 +635,21 @@ async function fetchStep({ env, say, fetch, zipFile }) {
     );
     return false;
   }
-  const zip =
-    zipFile !== undefined
-      ? fs.readFileSync(zipFile)
-      : await downloadArtifact({
-          fetch,
-          api: (env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/$/, ''),
-          token: env.GITHUB_TOKEN ?? '',
-          repo,
-          runId,
-        });
+  const github = {
+    fetch,
+    api: (env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/$/, ''),
+    token: env.GITHUB_TOKEN ?? '',
+    repo,
+  };
+  const zip = zipFile !== undefined ? fs.readFileSync(zipFile) : await downloadArtifact({ ...github, runId });
   if (zip === null) {
     say('notice', `Run ${runId} handed off no evidence.`);
     return false;
   }
   const { manifest, files } = validateBundle(zip);
+  if (manifest.before !== null) {
+    await assertBeforeCommitInHistory(github, manifest);
+  }
   if (fs.existsSync(work) && fs.readdirSync(work).length > 0) {
     throw new Failed('WORK must be a new or empty directory');
   }
