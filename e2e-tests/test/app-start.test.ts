@@ -56,13 +56,13 @@ describe('appStart', () => {
         void calls.push(options === undefined ? `openApp ${appId}` : `openApp ${appId} relaunch ${options.launchArguments.join(' ')}`),
       adb: async (args: readonly string[]) => void calls.push(`adb ${args.join(' ')}`),
     };
-    await performAppStart(appStart('android', 'com.clerk.expo', devClient, []), 'com.clerk.expo', driver);
+    await performAppStart(async () => appStart('android', 'com.clerk.expo', devClient, []), 'com.clerk.expo', driver);
     assert.equal(calls.length, 3);
     assert.match(calls[0]!, /^adb shell am force-stop/);
     assert.match(calls[1]!, /^adb shell 'am' 'start'/);
     assert.equal(calls[2], 'openApp com.clerk.expo');
     calls.length = 0;
-    await performAppStart(appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, ['-verifyAuthMode', 'signUp']), 'com.clerk.E2EHost', driver);
+    await performAppStart(async () => appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, ['-verifyAuthMode', 'signUp']), 'com.clerk.E2EHost', driver);
     assert.deepEqual(calls, ['openApp com.clerk.E2EHost relaunch -verifyAuthMode signUp']);
   });
 
@@ -81,13 +81,13 @@ describe('appStart', () => {
       };
     };
     const once = failing(1);
-    await performAppStart(appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', once.driver);
+    await performAppStart(async () => appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', once.driver);
     assert.equal(once.opens(), 2);
     const twice = failing(2);
-    await assert.rejects(performAppStart(appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', twice.driver), /xcrun timed out/);
+    await assert.rejects(performAppStart(async () => appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', twice.driver), /xcrun timed out/);
     assert.equal(twice.opens(), 2);
     const android = failing(1);
-    await performAppStart(appStart('android', 'com.clerk.expo', devClient, []), 'com.clerk.expo', android.driver);
+    await performAppStart(async () => appStart('android', 'com.clerk.expo', devClient, []), 'com.clerk.expo', android.driver);
     assert.equal(android.opens(), 2);
   });
 
@@ -95,7 +95,7 @@ describe('appStart', () => {
     const errors = ['open com.clerk.E2EHost failed: xcrun timed out after 15000ms', 'device.openApp exceeded its timeout of 30000ms'];
     let opens = 0;
     const driver = { openApp: async () => Promise.reject(new Error(errors[(opens += 1) - 1])), adb: async () => {} };
-    await assert.rejects(performAppStart(appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', driver), (error: Error) => {
+    await assert.rejects(performAppStart(async () => appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', driver), (error: Error) => {
       assert.equal(error.message, `the app did not open in two tries. The first failed with: ${errors[0]}. The second failed with: ${errors[1]}`);
       assert.equal((error.cause as Error).message, errors[1]);
       return true;
@@ -107,7 +107,7 @@ describe('appStart', () => {
     const ticket = new Secret('ticket', 'ticket_that_an_error_echoes');
     const echo = ticket.use('launch-argument', (plain) => `simctl launch -verifySignInTicket ${plain} failed`);
     const driver = { openApp: async () => Promise.reject(new Error(echo)), adb: async () => {} };
-    await assert.rejects(performAppStart(appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', driver), (error: Error) => {
+    await assert.rejects(performAppStart(async () => appStart('ios', 'com.clerk.E2EHost', { kind: 'binary' }, []), 'com.clerk.E2EHost', driver), (error: Error) => {
       assert.equal(error.message, 'the app did not open in two tries. The first failed with: simctl launch -verifySignInTicket <redacted> failed. The second failed with: simctl launch -verifySignInTicket <redacted> failed');
       return true;
     });
@@ -165,6 +165,32 @@ describe('a launch the host fixture starts', () => {
     const { calls, launch } = device();
     await launch({ signedInAs: user });
     assert.deepEqual(calls, ['ticket for user_1', `open com.clerk.E2EHost ${always} -verifyStorageScope id1 -verifyLaunchId id2 -verifySignInTicket ticket_of_user_1`]);
+  });
+
+  it('retries a failed open with a new sign-in ticket, storage scope, and launch id, and returns the launch id of the retry', async () => {
+    const calls: string[] = [];
+    let ids = 0;
+    let tickets = 0;
+    let opens = 0;
+    const launch = appLauncher(
+      E2E_HOST,
+      {
+        installApp: async () => {},
+        signInTicket: async () => new Secret('ticket', `ticket_${(tickets += 1)}`),
+        openApp: async (appId, options) => {
+          calls.push(`open ${appId} ${options?.launchArguments.join(' ')}`);
+          if ((opens += 1) === 1) throw new Error('xcrun timed out');
+        },
+        adb: async () => {},
+      },
+      new Set<string>(),
+      () => `id${(ids += 1)}`,
+    );
+    assert.equal(await launch({ signedInAs: user }), 'id4');
+    assert.deepEqual(calls, [
+      `open com.clerk.E2EHost ${always} -verifyStorageScope id1 -verifyLaunchId id2 -verifySignInTicket ticket_1`,
+      `open com.clerk.E2EHost ${always} -verifyStorageScope id3 -verifyLaunchId id4 -verifySignInTicket ticket_2`,
+    ]);
   });
 
   it('installs the build the settings name before the first launch of a worker, and not again', async () => {
