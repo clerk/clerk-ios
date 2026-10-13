@@ -1,6 +1,7 @@
 import net from 'node:net';
 import { arch, platform as osPlatform, release } from 'node:os';
 import type { Runner } from '../exec.ts';
+import { proxyPort } from '../launch.mjs';
 import { VerifyFailure, type DoctorCheck, type DoctorCheckId, type DoctorOptions } from '../types.ts';
 import { CLOUD_GITHUB_ACCESS, apiMessage, currentBranch, endSession, gitFailure, liveRuns, startRun, viewJobs, waitForStep, waitReporter, type ApiResponse, type GitHub } from './github.ts';
 import { STEP } from './protocol.ts';
@@ -36,7 +37,7 @@ function proxyOf(env: RemoteDeps['env']): URL | null {
 
 export function connectThroughProxy(proxy: URL, host: string, timeoutMs = 10_000): Promise<{ readonly status: number; readonly line: string }> {
   return new Promise((resolve) => {
-    const socket = net.connect(Number(proxy.port || (proxy.protocol === 'https:' ? 443 : 80)), proxy.hostname);
+    const socket = net.connect(proxyPort(proxy), proxy.hostname);
     const authorization = proxy.username === '' || proxy.password === '' ? '' : `Proxy-Authorization: Basic ${Buffer.from(`${decodeURIComponent(proxy.username)}:${decodeURIComponent(proxy.password)}`).toString('base64')}\r\n`;
     let seen = '';
     const finish = (status: number, line: string) => {
