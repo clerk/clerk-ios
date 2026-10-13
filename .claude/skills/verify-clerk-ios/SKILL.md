@@ -115,19 +115,19 @@ The home is E2EHost's own screen. With no active session it shows `Signed out` (
 
 E2EHost has a small flow of its own only where the SDK has no view for one. `Sign out` calls `clerk.auth.signOut()`. When a change needs a fact or a flow that no SDK view covers, add it to the home the way a real app would show it, and assert on that.
 
-Locate nodes with `screen.getByTestId(...)`. The SDK's identifiers start with `clerk.`, and `Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift` lists them. E2EHost's own identifiers start with `e2e.`, and `Examples/E2EHost/E2EHost/E2EIdentifiers.swift` lists them. All of these identifiers are internal test hooks, not public API, and they can change. Every spec keeps at least one exact assertion on an identifier or on visible text.
+Locate nodes with `screen.getByTestId(...)`. The SDK's identifiers start with `clerk.`, and `Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift` lists them. E2EHost's own identifiers start with `e2e.`, and `Examples/E2EHost/E2EHost/E2EIdentifiers.swift` lists them. All of these identifiers are internal test hooks, not public API, and they can change. Every spec keeps at least one exact assertion on an identifier or on visible text. To assert on the text of a node, use `await expect(locator).toHaveText('...')`.
 
 A spec file that needs other settings than the standard ones declares them in a JSON file beside it, which has the name of the spec with `.settings.json` in place of `.e2e.ts`. `run` puts the application on those settings before the tests in that spec file start. [Test instances](references/instances.md) has the rules for a declaration.
 
 ### Check your work
 
-Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
+Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
 
 1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
 2. Run it by path.
 3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique.
 4. Fix the locators from that output until the spec passes.
-5. When the change adds or changes user-facing behavior, move the spec to `specs/golden/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` both, and update the feature file. Otherwise leave it where it is. The run directory keeps a copy of every spec the run used.
+5. When the change adds or changes what the SDK does, move the spec to `specs/golden/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a golden spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
 
 A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
 
@@ -146,7 +146,7 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path.
 | File | What it holds |
 | --- | --- |
 | `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build`, `device`, `identities`, `settings`, and `tainted` |
-| `video.mp4` | `simctl io recordVideo` of the whole run |
+| `video.mp4` | `simctl io recordVideo` of the whole run. It can open with a moment of the screen the run before it left |
 | `screenshots/<label>.png` | Every `host.screenshot(label)` |
 | `app.log` | The `com.clerk.verify` and `com.clerk.sdk` log lines of the run. E2EHost writes one `com.clerk.verify` line each time its screen, user, session, or launch error changes, with the `launchId` that a failed `host.launch` names. No spec reads these lines. They are for diagnosing a failure that the screen does not explain. The SDK logs errors only, unless the launch passes `debugLogs: true` |
 | `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |
@@ -178,6 +178,8 @@ When this machine cannot attach and there is no session to hand the files to, or
 
 Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the PR video shows only the behavior the change is about. If you ran other golden specs too, cite that run's id in the PR.
 
+On a local simulator, work in this order: commit, `run` the spec of your change, `git push`, open the pull request, `attach`, then `down`. Commit first, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
+
 ## Cleanup
 
 ```console
@@ -186,7 +188,7 @@ $ e2e-tests/bin/control-clerk-ios down            # release the simulator, delet
 $ e2e-tests/bin/control-clerk-ios down --stale    # also release a simulator that a crashed run here, or a deleted worktree, left claimed
 ```
 
-`down` removes only what this worktree created: its simulator, its Clerk application with every user and organization in it, the video recorder, and its agent-device daemon. It releases the simulator before it deletes the application. Deleting the application needs the same credential as `up`. If Clerk refuses the delete, `down` fails, and its fix is to run `down` again. Run `down` after a failed iteration too, so that no simulator or application stays behind.
+`down` removes only what this worktree created: its simulator, its Clerk application with every user and organization in it, the video recorder, and its agent-device daemon. It releases the simulator before it deletes the application. Deleting the application needs the same credential as `up`. If Clerk refuses the delete, `down` fails, and its fix is to run `down` again. Run `down` after a failed iteration too, so that no simulator or application stays behind. The XCTest runner that agent-device started, an `xcodebuild test-without-building` process, can outlive `down` for a minute or so. It exits by itself, so do not wait for it and do not stop it.
 
 `down` does not stop an agent-device daemon that a by-hand `npx e2e run` left running, because the CLI did not start it. `npx agent-device daemon stop --clean` stops it, as `e2e-tests/README.md` says.
 

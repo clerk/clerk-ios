@@ -22,7 +22,7 @@ Preconditions:
 
 - `e2e-tests/bin/control-clerk-ios doctor` fails no check other than `build`.
 - The spec declares no settings, so it runs on the standard settings.
-- The first three tests need no user. The fourth seeds one with `host.seedUser({ phone: true, password: true })`.
+- The first two tests need no user. The third seeds one with `host.seedUser({ phone: true, password: true })`.
 
 - **Full screen.** Run `e2e-tests/bin/control-clerk-ios run auth-start`. The first test taps `e2e.auth.signInFullScreen` and expects `clerk.auth.start.identifier` and no `clerk.dismissButton`, because E2EHost shows that AuthView with `isDismissible: false`. Screenshot `auth-full-screen`.
 - **Home button and dismiss.** The second test launches the app, expects `Signed out` on the home, taps `e2e.auth.signIn`, and expects `clerk.auth.start.identifier` and `clerk.auth.start.continue`. Screenshot `auth-start`. It then taps `clerk.dismissButton`, waits for the home to show `Signed out`, and expects no `clerk.auth.start.identifier`. Screenshot `auth-dismissed`. It then taps `e2e.auth.signIn` again and expects the identifier field.
