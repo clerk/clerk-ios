@@ -27448,84 +27448,84 @@
         }
       }
     },
-    "Use email address or username" : {
+    "Use email or username" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استخدام عنوان البريد الإلكتروني أو اسم المستخدم"
+            "value" : "استخدام البريد الإلكتروني أو اسم المستخدم"
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geben Sie Ihre E-Mail-Adresse oder Ihren Benutzernamen ein"
+            "value" : "E-Mail oder Benutzernamen verwenden"
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Χρήση διεύθυνσης email ή ονόματος χρήστη"
+            "value" : "Χρήση email ή ονόματος χρήστη"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usar dirección de correo electrónico o nombre de usuario"
+            "value" : "Usar correo electrónico o nombre de usuario"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utiliser l'adresse e-mail ou le nom d'utilisateur"
+            "value" : "Utiliser l'e-mail ou le nom d'utilisateur"
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ईमेल पता या यूजरनेम का उपयोग करें"
+            "value" : "ईमेल या यूजरनेम का उपयोग करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa indirizzo email o nome utente"
+            "value" : "Usa email o nome utente"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "メールアドレスまたはユーザー名を使用"
+            "value" : "メールまたはユーザー名を使用"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이메일 주소 또는 사용자 이름 사용"
+            "value" : "이메일 또는 사용자 이름 사용"
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Użyj adresu e-mail lub nazwy użytkownika"
+            "value" : "Użyj e-maila lub nazwy użytkownika"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usar endereço de e-mail ou nome de usuário"
+            "value" : "Usar e-mail ou nome de usuário"
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Folosește adresa de email sau numele de utilizator"
+            "value" : "Folosește emailul sau numele de utilizator"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Использовать адрес электронной почты или имя пользователя"
+            "value" : "Использовать эл. почту или имя пользователя"
           }
         },
         "tr" : {
@@ -27537,7 +27537,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Використовувати адресу електронної пошти або ім'я користувача"
+            "value" : "Використовувати ел. пошту або ім'я користувача"
           }
         },
         "zh-Hans" : {
