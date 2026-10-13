@@ -1,7 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
-import type { ClerkAccess, ClerkInstance } from './inputs.ts';
+import { runIdParts, type ClerkAccess, type ClerkInstance } from './inputs.ts';
 import { SHORTEST_SECRET, Secret, protect } from './secret.ts';
 import { commandsFor } from './typing.ts';
 import type { RunId, SecretLike, SeedOptions, SeededUser, TestEmail, TestPhone } from './types.ts';
@@ -25,10 +25,13 @@ net.setDefaultAutoSelectFamilyAttemptTimeout(CONNECT_ATTEMPT_MS);
 
 const notTestIdentity = (value: string, kind: string): Error => new Error(`${value} is not a ${kind}; use an address with +clerk_test or a 555-0100..0199 phone that this run created`);
 
-export const runEmailPrefix = (run: RunId): string => `verify_${run.toLowerCase().replace(/[^a-z0-9]/g, '_')}_`;
+export function runEmailPrefix(run: RunId): string {
+  const { time, tag } = runIdParts(run);
+  return `${time}${tag}`;
+}
 
 export function newTestEmail(run: RunId): TestEmail {
-  return parseTestEmail(`${runEmailPrefix(run)}${randomBytes(4).toString('hex')}+clerk_test@example.com`);
+  return parseTestEmail(`${runEmailPrefix(run)}${randomBytes(2).toString('hex')}+clerk_test@example.com`);
 }
 
 const TEST_EMAIL = /^[a-z0-9._-]+\+clerk_test@[a-z0-9.-]+\.[a-z]+$/;

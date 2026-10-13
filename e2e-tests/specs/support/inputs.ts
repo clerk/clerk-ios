@@ -123,9 +123,15 @@ export function readClerk(env: Env): ClerkInstance {
   return { publishableKey: publishableKey as PublishableKey, access: { kind: 'stand-in', url, tokenFile } };
 }
 
-const RUN_ID = /^r\d{8}-\d{6}-[0-9a-f]{4}$/;
+const RUN_ID = /^r\d{8}-(?<time>\d{6})-(?<tag>[0-9a-f]{4})$/;
 
 export const isRunId = (value: string): value is RunId => RUN_ID.test(value);
+
+export function runIdParts(run: string): { readonly time: string; readonly tag: string } {
+  const parts = RUN_ID.exec(run)?.groups;
+  if (parts === undefined) throw new Error(`${run} is not a run id like r20261002-141210-7c1e`);
+  return { time: parts.time!, tag: parts.tag! };
+}
 
 export function newRunId(): RunId {
   const now = new Date();
