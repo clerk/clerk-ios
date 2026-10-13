@@ -1,7 +1,7 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -9,7 +9,8 @@ import { run } from '../src/core/exec.ts';
 import { remoteBackend } from '../src/core/remote/backend.ts';
 import type { GitHub } from '../src/core/remote/github.ts';
 import { driverId, newSessionRequest, type RemoteSettings } from '../src/core/remote/settings.ts';
-import { VerifyFailure } from '../src/core/types.ts';
+import { BUILD_TIMEOUT_MINUTES, type SessionHealth } from '../src/core/remote/protocol.ts';
+import { VerifyFailure, type BuildKey, type BuiltApp, type RemoteLease } from '../src/core/types.ts';
 
 function repo(): { dir: string; git: (...args: string[]) => string } {
   const dir = mkdtempSync(join(tmpdir(), 'verify-remote-'));
@@ -74,6 +75,53 @@ describe('the remote backend owns the build', () => {
       remoteBackend(settings(dir), { env: {}, runner: run, github: async () => hub }).sourceCommit!(input(dir)),
       (error: VerifyFailure) => error.code === 'BUILD_FAILED' && error.fix.startsWith('git push'),
     );
+  });
+});
+
+describe('the remote backend waits for the session to build', () => {
+  const SHA = 'a'.repeat(40);
+  const realFetch = globalThis.fetch;
+
+  async function installOnASessionWhoseBuildIs(build: SessionHealth['build']): Promise<{ failure: VerifyFailure; asked: string[] }> {
+    const { dir } = repo();
+    const session = join(dir, '.verify', 'remote', 'ios0000cc');
+    mkdirSync(session, { recursive: true });
+    writeFileSync(join(session, 'token'), 'f'.repeat(64));
+    const lease: RemoteLease = { backend: 'remote', provider: 'github-actions', platform: 'ios', session: 'ios0000cc', providerRef: '7', baseUrl: 'https://quick-fox.trycloudflare.com', tokenFile: join(session, 'token'), deviceId: 'UDID-1', deviceName: 'iPhone Air', runner: 'free-mac', expiresAt: '2026-10-13T18:00:00.000Z', builtSha: null, acquiredAt: '2026-10-13T17:00:00.000Z', installedBuild: null };
+    const app: BuiltApp = { platform: 'ios', key: 'ios-k1' as BuildKey, appId: 'com.example.app', path: null, source: 'github-actions', sourceSha: SHA };
+    const health: SessionHealth = { core: 'unread', device: { id: 'UDID-1', name: 'iPhone Air', ready: true }, daemon: true, build, capAt: '2026-10-13T18:00:00.000Z', ending: null };
+    const asked: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = new URL(String(input));
+      asked.push(`${init?.method ?? 'GET'} ${url.pathname}${url.search}`);
+      return url.pathname === '/__sim/build' ? Response.json(health, { status: 202 }) : Response.json(health);
+    }) as typeof fetch;
+    try {
+      const { hub } = github(() => ({ status: 200, json: {} }));
+      const failure = await remoteBackend(settings(dir), { env: {}, runner: run, github: async () => hub }).install(lease, app, () => undefined).then(
+        () => assert.fail('the install did not fail'),
+        (error: VerifyFailure) => error,
+      );
+      return { failure, asked };
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+
+  it('says a build that the session stopped at its limit ran out of time, and to run up again', { timeout: 20_000 }, async () => {
+    const { failure, asked } = await installOnASessionWhoseBuildIs({ state: 'timed-out', sha: SHA, seconds: BUILD_TIMEOUT_MINUTES * 60, tail: 'build   pnpm install took 412s\nbuild   xcodebuild Release (JS embedded)' });
+    assert.deepEqual(asked, [`POST /__sim/build?sha=${SHA}`, 'GET /__sim/health']);
+    assert.equal(failure.code, 'NOT_READY');
+    assert.equal(
+      failure.message,
+      'the session stopped the build of aaaaaaaaaaaa after 45 minutes on free-mac, the longest it lets one build run. The build reported no error before that. Its last lines:\nbuild   pnpm install took 412s\nbuild   xcodebuild Release (JS embedded)',
+    );
+    assert.equal(failure.fix, 'rerun {cli} up, and the same session builds again from what the stopped build left; if that build is stopped too, {cli} down, then {cli} up --runner <a faster runner label>');
+  });
+
+  it('says a build that exited with an error failed, and to fix the error', async () => {
+    const { failure } = await installOnASessionWhoseBuildIs({ state: 'failed', sha: SHA, seconds: 61, tail: 'error: no such module' });
+    assert.deepEqual([failure.code, failure.message, failure.fix], ['BUILD_FAILED', 'the session could not build aaaaaaaaaaaa:\nerror: no such module', 'fix the build error above, commit, push, then rerun {cli} up']);
   });
 });
 
