@@ -659,6 +659,39 @@ describe('the manifest', () => {
     });
   }
 
+  it('refuses a run id or a commit, of the run or of the before run, with any character of markup in any place', () => {
+    const MARKUP = ['|', '"', '<', '>', "'", '&', '`', '@', ':', ';', '$', '{', '}', '[', ']', '(', ')', '*', '_', '!'];
+    const OTHER = [' ', '\n', '\r', '\t', '\0', '\\', '/', '#', '.', 'é', 'G', 'R'];
+    const fields = [
+      ['run', GOOD.run, run => parse({ run })],
+      ['commit', GOOD.commit, commit => parse({ commit })],
+      ['the run of before', WITH_BEFORE.before.run, run => before({ run })],
+      ['the commit of before', WITH_BEFORE.before.commit, commit => before({ commit })],
+    ];
+    for (const [what, good, attempt] of fields) {
+      assert.equal(
+        refusal(() => attempt(good)),
+        null,
+        what,
+      );
+      for (const char of [...MARKUP, ...OTHER]) {
+        const hostile = [
+          ...Array.from(good, (_, at) => `${good.slice(0, at)}${char}${good.slice(at + 1)}`),
+          `${good}${char}`,
+          `${char}${good}`,
+          `${good}-->`,
+        ];
+        for (const value of hostile) {
+          assert.equal(
+            refusal(() => attempt(value)),
+            `${what} is missing or malformed`,
+            JSON.stringify(value),
+          );
+        }
+      }
+    }
+  });
+
   it('counts the files of the before run toward the cap on files and the cap on bytes', () => {
     const shots = (prefix, count, bytes = 1) =>
       Array.from({ length: count }, (_, i) => ({ name: `${prefix}${i}.png`, bytes, sha256: sha256('x') }));
@@ -1385,6 +1418,88 @@ describe('the step that edits the description', () => {
     assert.equal(await published([...CLIP, ...SHOT]), laidOut(SAID, ...AFTER_ONLY));
   });
 
+  const ASCII = Array.from({ length: 128 }, (_, code) => String.fromCharCode(code));
+  const ADDRESS = 'https://github\\.com/user-attachments/assets/[0-9a-f-]{36}';
+  const LABEL = '[A-Za-z0-9._-]+';
+  const COUNTS = '\\d+ of \\d+ passed(, \\d+ flaky \\(passed only on a retry\\))?';
+  const CELL = `(${ADDRESS}|<img src="${ADDRESS}" width="280" alt="((Before|After): )?${LABEL}">)`;
+  const TEMPLATE = [
+    /^$/,
+    /^<!-- \/?verify-evidence:ios -->$/,
+    new RegExp(
+      `^\\*\\*Verified on an iOS simulator\\*\\*, as reported by \\[the session\\]\\(https://github\\.com/clerk/clerk-ios/actions/runs/\\d+\\) that \`[A-Za-z0-9_-]+\` started\\. Run \`r[0-9a-f-]+\` on \`[A-Za-z0-9 ._()-]+\` at \`[0-9a-f]{12}\`, ${COUNTS}\\.( The session reports the before as run \`r[0-9a-f-]+\` at \\[\`[0-9a-f]{12}\`\\]\\(https://github\\.com/clerk/clerk-ios/commit/[0-9a-f]{40}\\), ${COUNTS}\\.)?$`,
+    ),
+    new RegExp(`^\\| (Before \\| After|\`${LABEL}\`( \\| \`${LABEL}\`)?) \\|$`),
+    /^\| :---: (\| :---: )?\|$/,
+    new RegExp(`^\\| ${CELL}( \\| ${CELL})? \\|$`),
+  ];
+  const outsideTheTemplate = body => body.split('\n').filter(line => !TEMPLATE.some(pattern => pattern.test(line)));
+  const publishedWith = async (manifest, media) => {
+    let env;
+    try {
+      env = await fetched(manifest, media);
+    } catch (error) {
+      if (error instanceof Refused) {
+        return null;
+      }
+      throw error;
+    }
+    const fake = fakeGh({ ...PULL, body: '' });
+    assert.equal(publish(env, fake).outcome, 'published');
+    return fake.state.pull.body;
+  };
+
+  it('writes nothing but its template around a file name, and takes in a name only letters, digits, a dot, an underscore and a dash', async () => {
+    const taken = [];
+    for (const char of ASCII) {
+      const media = [
+        [`a${char}b.png`, PNG],
+        [`c${char}d.mp4`, MP4],
+      ];
+      const wasMedia = media.map(([name, data]) => [`before-${name}`, data]);
+      const alone = await publishedWith(manifestFor(media), media);
+      const paired = await publishedWith(manifestFor(media, { before: beforeFor(wasMedia) }), [...media, ...wasMedia]);
+      assert.equal(alone === null, paired === null, JSON.stringify(char));
+      if (alone !== null) {
+        taken.push(char);
+        assert.deepEqual(outsideTheTemplate(alone), [], JSON.stringify(char));
+        assert.deepEqual(outsideTheTemplate(paired), [], JSON.stringify(char));
+        assert.ok(
+          alone.includes(`| \`a${char}b\` |`) && paired.includes(`alt="Before: a${char}b">`),
+          JSON.stringify(char),
+        );
+      }
+    }
+    assert.equal(taken.join(''), '-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz');
+  });
+
+  it('writes nothing but its template around a device, and takes in a device only letters, digits, a space, a dot, an underscore, parentheses and a dash', async () => {
+    const taken = [];
+    for (const char of ASCII) {
+      const body = await publishedWith(manifestFor(MEDIA, { device: `a${char}b` }), MEDIA);
+      if (body !== null) {
+        taken.push(char);
+        assert.deepEqual(outsideTheTemplate(body), [], JSON.stringify(char));
+        assert.ok(body.includes(` on \`a${char}b\` at `), JSON.stringify(char));
+      }
+    }
+    assert.equal(taken.join(''), ' ()-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz');
+  });
+
+  it('counts as outside its template a line that markup in a name or a device would make', () => {
+    const made = [
+      '| `a|b` |',
+      '| a |',
+      '| www.evil.example |',
+      '| <img src="https://github.com/user-attachments/assets/00000000-0000-4000-8000-000000000001" width="280" alt="a" onerror="alert(1)"> |',
+      '| <img src="https://evil.example/user-attachments/assets/00000000-0000-4000-8000-000000000001" width="280" alt="a"> |',
+      SAID.replace('`iPhone Air on xcode-27`', '`iPhone` [approved](https://evil.example) `Air`'),
+      '<!-- /verify-evidence:ios --> text after the marker',
+    ];
+    assert.deepEqual(outsideTheTemplate(made.join('\n')), made);
+    assert.deepEqual(outsideTheTemplate(laidOut(`${SAID}${WAS}`, ...AFTER_ONLY)), []);
+  });
+
   it('attaches the files of the before run after the files of the run, under the same unguessable names, though the commit of the before run is no commit of the pull request', async () => {
     const env = await fetched(WITH_BEFORE, [...MEDIA, ...WAS_MEDIA]);
     const fake = fakeGh();
@@ -1419,6 +1534,16 @@ describe('the step that edits the description', () => {
       state =>
         void (state.pull.body = state.pull.body.replace(asset(2), 'https://example.com/x.png" onerror="alert(1)')),
     ],
+    ...[
+      ['on another host', asset(2).replace('github.com', 'evil.example')],
+      ['on a host that only starts like GitHub', asset(2).replace('github.com', 'github.com.evil.example')],
+      ['under another path of GitHub', asset(2).replace('user-attachments/assets', 'evil/user-attachments/assets')],
+      ['with an id one character short', asset(2).slice(0, -1)],
+      ['with a capital in its id', asset(2).replace('4000', 'A000')],
+    ].map(([how, address]) => [
+      `the block shows an upload address ${how}`,
+      state => void (state.pull.body = state.pull.body.replace(asset(2), address)),
+    ]),
     ['the markers are broken', state => void (state.pull.body += '\n<!-- verify-evidence:ios -->\n')],
     ['the pull request is closed', state => void (state.pull.state = 'closed')],
   ];
@@ -1434,6 +1559,37 @@ describe('the step that edits the description', () => {
       ]);
     });
   }
+
+  it('writes an upload address as its 36 characters of id and nothing that follows them', async () => {
+    for (const tail of ['f', '-0', '" onerror="alert(1)', '?download=1', '/../../evil', '#x']) {
+      const fake = fakeGh(
+        PULL,
+        state =>
+          void (state.reads === 3 && (state.pull.body = state.pull.body.replace(asset(2), `${asset(2)}${tail}`))),
+      );
+      assert.equal(publish(await fetched(), fake).outcome, 'published', tail);
+      assert.equal(
+        fake.state.laidOutBody,
+        `${PULL.body}\r\n${laidOut(SAID, ...AFTER_ONLY).replaceAll('\n', '\r\n')}`,
+        tail,
+      );
+    }
+  });
+
+  it('keeps an edit that someone saves outside the block between the upload and the layout', async () => {
+    const fake = fakeGh(
+      PULL,
+      state =>
+        void (
+          state.reads === 3 && (state.pull.body = `Reviewed.\r\n\r\n${state.pull.body}\r\nA note under the block.`)
+        ),
+    );
+    assert.equal(publish(await fetched(), fake).outcome, 'published');
+    assert.equal(
+      fake.state.laidOutBody,
+      `Reviewed.\r\n\r\n${PULL.body}\r\n${laidOut(SAID, ...AFTER_ONLY).replaceAll('\n', '\r\n')}\r\nA note under the block.`,
+    );
+  });
 
   it('fails with what gh said when the write that lays the files out fails', async () => {
     const env = await fetched();
