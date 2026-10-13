@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
 import { runIdParts, type ClerkAccess, type ClerkInstance } from './inputs.ts';
@@ -31,7 +31,7 @@ export function runEmailPrefix(run: RunId): string {
 }
 
 export function newTestEmail(run: RunId): TestEmail {
-  return parseTestEmail(`${runEmailPrefix(run)}${randomBytes(2).toString('hex')}+clerk_test@example.com`);
+  return parseTestEmail(`${runEmailPrefix(run)}${randomInt(36 ** 4).toString(36).padStart(4, '0')}+clerk_test@example.com`);
 }
 
 const TEST_EMAIL = /^[a-z0-9._-]+\+clerk_test@[a-z0-9.-]+\.[a-z]+$/;

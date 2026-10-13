@@ -38,7 +38,7 @@ The tests expect the settings in `src/core/instances/base.json`, which the CLI p
 
 An instance left at Clerk's defaults passes only part of the suite. The tests that sign in with a ticket, or sign up with an email address and a password, pass. The tests that need a phone number, an email code at sign-in, organizations, or a second account on the device fail, because a new instance has none of those turned on.
 
-Every run creates users with addresses like `1412107c1e0dab+clerk_test@example.com` and never deletes them. The address starts with the time and the last four characters of the run id, here `r20261002-141210-7c1e`, and ends in four random characters. A development instance holds 100 users. Use an instance that you can empty.
+Every run creates users with addresses like `1412107c1ek3x9+clerk_test@example.com` and never deletes them. The address starts with the time and the last four characters of the run id, here `r20261002-141210-7c1e`, and ends in four random characters. A development instance holds 100 users. Use an instance that you can empty.
 
 ## Test files that need the CLI
 
