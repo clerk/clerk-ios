@@ -10,7 +10,7 @@ import SwiftUI
 struct E2EHostView: View {
   private enum Launch: Equatable {
     case loading
-    case ready
+    case ready(VerifyState.Ticket)
     case failed(VerifyState.Failure)
   }
 
@@ -149,14 +149,10 @@ struct E2EHostView: View {
   }
 
   private var verifyState: VerifyState {
-    let ticket: VerifyState.Ticket = if configuration.signInTicket == nil {
-      .none
-    } else {
-      switch launch {
-      case .loading: .pending
-      case .ready: .succeeded
-      case .failed: .failed
-      }
+    let ticket: VerifyState.Ticket = switch launch {
+    case .loading: configuration.signInTicket == nil ? .none : .pending
+    case .ready(let outcome): outcome
+    case .failed: configuration.signInTicket == nil ? .none : .failed
     }
     let lastError: VerifyState.Failure? = if case .failed(let failure) = launch { failure } else { nil }
 
@@ -181,16 +177,19 @@ struct E2EHostView: View {
       return
     }
 
-    if let signInTicket = configuration.signInTicket {
-      do {
-        _ = try await clerk.auth.signInWithTicket(signInTicket)
-      } catch {
-        launch = .failed(.init(error, fallbackCode: "ticket_sign_in_failed"))
-        return
-      }
+    guard let signInTicket = configuration.signInTicket, clerk.session == nil else {
+      launch = .ready(.none)
+      return
     }
 
-    launch = .ready
+    do {
+      _ = try await clerk.auth.signInWithTicket(signInTicket)
+    } catch {
+      launch = .failed(.init(error, fallbackCode: "ticket_sign_in_failed"))
+      return
+    }
+
+    launch = .ready(.succeeded)
   }
 }
 
