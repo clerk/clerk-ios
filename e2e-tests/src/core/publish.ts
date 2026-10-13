@@ -181,9 +181,12 @@ function uploadedIn(body: string, platform: Platform): readonly string[] {
 }
 
 async function readDescription(runner: Runner, repo: string, pr: number): Promise<{ readonly body: string; readonly url: string }> {
-  const viewed = await runner('gh', ['pr', 'view', String(pr), '--repo', repo, '--json', 'body,url']);
+  const viewed = await runner('gh', ['pr', 'view', String(pr), '--repo', repo, '--json', 'body,url,state']);
   if (viewed.code !== 0) throw new CannotPostHere('gh pr view failed', `gh pr view failed: ${viewed.stderr.trim()}`, 'check `gh auth status` and that the PR exists');
-  const parsed = JSON.parse(viewed.stdout) as { readonly body?: string | null; readonly url?: string };
+  const parsed = JSON.parse(viewed.stdout) as { readonly body?: string | null; readonly url?: string; readonly state?: string };
+  if (parsed.state !== 'OPEN') {
+    throw new VerifyFailure('USAGE', `PR #${pr} of ${repo} is ${parsed.state?.toLowerCase() ?? 'not known to be open'}, and attach writes only to an open pull request`, `pass the number of an open pull request as --pr, or reopen PR #${pr}, then rerun {cli} attach`);
+  }
   return { body: parsed.body ?? '', url: parsed.url ?? '' };
 }
 

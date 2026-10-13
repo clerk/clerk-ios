@@ -374,7 +374,7 @@ describe('attach on a machine whose gh cannot attach', () => {
     ]);
   });
 
-  const ghThatHasAttach = (edit: { readonly code: number; readonly stdout: string; readonly stderr: string }, view = { code: 0, stdout: JSON.stringify({ body: 'A description.\n', url: 'https://github.com/clerk/clerk-ios/pull/669' }), stderr: '' }) => (args: readonly string[]) => {
+  const ghThatHasAttach = (edit: { readonly code: number; readonly stdout: string; readonly stderr: string }, view = { code: 0, stdout: JSON.stringify({ body: 'A description.\n', url: 'https://github.com/clerk/clerk-ios/pull/669', state: 'OPEN' }), stderr: '' }) => (args: readonly string[]) => {
     if (args.includes('--help')) return { code: 0, stdout: '      --attach file   Attach a file\n', stderr: '' };
     return args[1] === 'view' ? view : edit;
   };
@@ -383,7 +383,7 @@ describe('attach on a machine whose gh cannot attach', () => {
     let body = 'A description.\n';
     const gh = (args: readonly string[]) => {
       if (args.includes('--help')) return { code: 0, stdout: '      --attach file   Attach a file\n', stderr: '' };
-      if (args[1] === 'view') return { code: 0, stdout: JSON.stringify({ body, url: 'https://github.com/clerk/clerk-ios/pull/669' }), stderr: '' };
+      if (args[1] === 'view') return { code: 0, stdout: JSON.stringify({ body, url: 'https://github.com/clerk/clerk-ios/pull/669', state: 'OPEN' }), stderr: '' };
       body = readFileSync(args[args.indexOf('--body-file') + 1]!, 'utf8').replace(/\(\.\/[^)]+\)/g, '(https://github.com/user-attachments/assets/00000000-0000-4000-8000-000000000001)');
       return { code: 0, stdout: 'https://github.com/clerk/clerk-ios/pull/669\n', stderr: '' };
     };

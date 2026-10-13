@@ -302,8 +302,8 @@ describe('attach', () => {
     readonly attached: readonly string[];
   }
 
-  function fakeGh(options: { readonly attachFlag?: boolean; readonly body?: string; readonly onView?: (views: number, pr: { body: string }) => void; readonly upload?: (reference: string, address: string) => string } = {}) {
-    const pr = { body: options.body ?? DESCRIPTION };
+  function fakeGh(options: { readonly attachFlag?: boolean; readonly body?: string; readonly onView?: (views: number, pr: { body: string; state: string }) => void; readonly upload?: (reference: string, address: string) => string } = {}) {
+    const pr = { body: options.body ?? DESCRIPTION, state: 'OPEN' };
     const edits: Edit[] = [];
     let views = 0;
     let uploads = 0;
@@ -313,7 +313,7 @@ describe('attach', () => {
       if (args[1] === 'view') {
         views += 1;
         options.onView?.(views, pr);
-        return { code: 0, stdout: JSON.stringify({ body: pr.body, url: PR_URL }), stderr: '' };
+        return { code: 0, stdout: JSON.stringify({ body: pr.body, url: PR_URL, state: pr.state }), stderr: '' };
       }
       const bodyFile = readFileSync(args[args.indexOf('--body-file') + 1]!, 'utf8');
       const attached = args.filter((_, i) => args[i - 1] === '--attach').map((file) => readFileSync(join(runOptions!.cwd!, file), 'utf8'));
@@ -609,6 +609,22 @@ describe('attach', () => {
       assert.ok(gh.pr.body.includes(later.run));
       assert.ok(gh.pr.body.startsWith(`${DESCRIPTION}\n<!-- verify-evidence:ios -->`));
       assert.ok(gh.pr.body.endsWith('<!-- /verify-evidence:ios -->\nReviewer note added below the block.\n'));
+    }
+  });
+
+  it('writes nothing to a pull request that is closed or merged, whether it was so before attach started or became so before the write, and says what to do', async () => {
+    const refusal = (state: string) => ({
+      code: 'USAGE',
+      message: `PR #9 of clerk/clerk-ios is ${state}, and attach writes only to an open pull request`,
+      fix: 'pass the number of an open pull request as --pr, or reopen PR #9, then rerun {cli} attach',
+    });
+    for (const [state, closesAtView] of [['CLOSED', 1], ['MERGED', 1], ['CLOSED', 2]] as const) {
+      const gh = fakeGh({ onView: (views, pr) => void (views === closesAtView && (pr.state = state)) });
+      const { deps, sealed } = checkout(gh);
+      const { run, dir } = sealed({ called: 'after' });
+      await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null }), refusal(state.toLowerCase()));
+      assert.deepEqual(gh.edits, []);
+      assert.equal(existsSync(join(dir, 'posted-9.json')), false);
     }
   });
 

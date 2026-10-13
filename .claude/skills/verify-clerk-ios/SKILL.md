@@ -188,7 +188,7 @@ On a machine whose `gh` can attach, `attach` edits the description itself and pr
 
 When this machine cannot attach and there is no session to hand the files to, or the hand-off fails, `attach` fails and says which. Then name the run id in the PR and say that the evidence was not attached. A run on a local simulator has no session, so its fix is a newer `gh`. [Remote devices](references/remote.md) has what the repository needs before a hand-off can be published, and its limits.
 
-`attach` refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create. A before run can have failing specs. `attach` refuses a before run that is tainted, that was never sealed, or whose `app.log` names a user that the run did not create.
+`attach` writes only to an open pull request, and fails on one that is closed or merged. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create. A before run can have failing specs. `attach` refuses a before run that is tainted, that was never sealed, or whose `app.log` names a user that the run did not create.
 
 Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other golden specs too, cite that run's id in the PR.
 
