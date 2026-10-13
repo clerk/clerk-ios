@@ -7,12 +7,13 @@ import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { exitCodeFor } from '../src/core/cli.ts';
 import { assertPublishable, readRecord } from '../src/core/evidence.ts';
+import type { Runner } from '../src/core/exec.ts';
 import { createInstances } from '../src/core/instances/instances.ts';
 import { SettingsRefused, settingsFileOf } from '../src/core/instances/settings.ts';
 import { summarize } from '../src/core/publish.ts';
 import { runVerb, type Deps } from '../src/core/verbs.ts';
 import { openWorkspace } from '../src/core/workspace.ts';
-import { VerifyFailure, type BuildKey, type Command, type DeviceBackend, type HostAdapter, type InstanceSettings, type LocalLease, type ScratchPath } from '../src/core/types.ts';
+import { VerifyFailure, type BuildKey, type Command, type DeviceBackend, type EvidencePath, type HostAdapter, type InstanceSettings, type LocalLease, type ScratchPath } from '../src/core/types.ts';
 import { PLATFORM_KEY, fakeClerk, type FakeClerkOptions } from '../testing/fake-clerk.ts';
 import { LEFT_OUT, linesLeftOut, watchDriver } from '../src/core/driver.ts';
 import { readAgent } from '../specs/support/agent.ts';
@@ -215,6 +216,30 @@ describe('a run whose spec files declare different settings', () => {
     } finally {
       if (actions !== undefined) process.env.GITHUB_ACTIONS = actions;
     }
+  });
+
+  it('closes the app before it starts the recording, so the video opens on the app being launched and not on the screen the run before it left', async () => {
+    const w = world({ specs: { 'specs/golden/auth-start/auth-start.e2e.ts': null } });
+    const deps = w.deps();
+    const order: string[] = [];
+    const backend = deps.host.backends[0] as { startRecording: DeviceBackend['startRecording'] };
+    backend.startRecording = async (_lease, into) => (order.push('record'), { process: null, stop: async () => join(into, 'video.mp4') as EvidencePath });
+    const runner: Runner = async (command, args) => {
+      if (command === join(w.dir, 'node_modules', '.bin', 'agent-device')) order.push(args.join(' '));
+      return { code: 0, stdout: '', stderr: '' };
+    };
+    await runVerb({ ...deps, runner }, { ...RUN_ALL, video: true });
+    assert.deepEqual(order, [`close com.clerk.E2EHost --platform ios --udid UDID-1 --session verify-ios-${w.workspace.worktreeId}`, 'record']);
+    assert.deepEqual(w.lines.filter((line) => line.startsWith('video')), []);
+
+    order.length = 0;
+    await runVerb({ ...deps, runner }, RUN_ALL);
+    assert.deepEqual(order, [], 'a run with no video leaves the app as it is');
+
+    const refusing: Runner = async (command, args) => (command.endsWith('agent-device') ? { code: 1, stdout: '', stderr: 'DEVICE_IN_USE\n' } : runner(command, args));
+    await runVerb({ ...deps, runner: refusing }, { ...RUN_ALL, video: true });
+    assert.deepEqual(order, ['record'], 'the run goes on');
+    assert.deepEqual(w.lines.filter((line) => line.startsWith('video')), ['video   the app could not be closed before the recording, so the video may open on the screen the run before it left: DEVICE_IN_USE']);
   });
 
   it('drives each group on one application, in one e2e invocation each, and records what it did', async () => {

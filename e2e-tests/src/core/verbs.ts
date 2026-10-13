@@ -180,6 +180,12 @@ async function startRuntime(deps: Deps, lease: Lease): Promise<string | null> {
 
 const agentDeviceSession = (workspace: Workspace, platform: Platform) => `verify-${platform}-${workspace.worktreeId}`;
 
+function agentDeviceFor(deps: Deps, lease: Lease, platform: Platform) {
+  const target = agentDeviceOn(deviceOf(lease), platform);
+  const env = { ...withoutClerkKeys(deps.env), AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env };
+  return { selector: target.selector, call: (args: readonly string[]) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env }) };
+}
+
 const targetOf = (deps: Deps, outcome: RuntimeOutcome): Target => ({
   platform: outcome.lease.platform,
   device: deviceOf(outcome.lease),
@@ -446,6 +452,9 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       let endFailure: unknown = null;
       try {
         if (command.video) {
+          const device = agentDeviceFor(deps, lease, platform);
+          const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)]);
+          if (closed.code !== 0) deps.progress(`video   the app could not be closed before the recording, so the video may open on the screen the run before it left: ${redact(closed.stderr.trim() || closed.stdout.trim())}`);
           recording = await backend.startRecording(lease, dir);
           if (recording.process !== null) {
             recorderEntry = newEntryId();
@@ -547,13 +556,9 @@ async function screen(deps: Deps, command: Extract<Command, { verb: 'screen' }>)
   const platform = platformOf(deps.host, command.platform);
   const { lease, backend } = heldLease(deps, platform);
   if ((await backend.check(lease)) === 'lost') throw new VerifyFailure('LEASE_LOST', `${backend.describe(lease)} is gone`, '{cli} up');
-  const env = withoutClerkKeys(deps.env);
-  const target = agentDeviceOn(deviceOf(lease), platform);
-  const agentDevice = (args: readonly string[]) =>
-    deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env: { ...env, AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env } });
+  const { selector, call: agentDevice } = agentDeviceFor(deps, lease, platform);
   const screenWait = { seconds: 10, busyFix: 'let the run in this worktree finish, then rerun {cli} screen' };
   return deps.workspace.withDevice(platform, screenWait, async () => {
-    const selector = target.selector;
     const session = ['--session', `${agentDeviceSession(deps.workspace, platform)}-screen`];
     const attachedWithoutRelaunch = await agentDevice(['open', deps.host.appId(platform), '--json', ...selector, ...session]);
     if (attachedWithoutRelaunch.code !== 0) throw new VerifyFailure('NOT_READY', `agent-device open failed: ${redact(attachedWithoutRelaunch.stdout.trim() || attachedWithoutRelaunch.stderr.trim())}`, '{cli} up, then retry');
