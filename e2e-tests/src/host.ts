@@ -2,6 +2,7 @@ import { cpSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { run } from './core/exec.ts';
+import { withoutClerkKeys } from './core/keys.ts';
 import { remoteBackend } from './core/remote/backend.ts';
 import { VerifyFailure, type HostAdapter, type ScratchPath } from './core/types.ts';
 import { localIosBackend } from './platform/ios/local.ts';
@@ -21,7 +22,7 @@ export const host: HostAdapter = {
   buildInputs: () => ['Sources', 'Examples/E2EHost', 'Examples/Quickstart/Quickstart.xcodeproj', 'Package.swift', 'Clerk.xcworkspace'],
   async build(platform, key, into) {
     const derived = join(into, '..', 'derived');
-    const result = await run('xcodebuild', [...BUILD_HOST, derived], { cwd: WORKTREE });
+    const result = await run('xcodebuild', [...BUILD_HOST, derived], { cwd: WORKTREE, env: withoutClerkKeys(process.env) });
     if (result.code !== 0) {
       const tail = `${result.stdout}\n${result.stderr}`.split('\n').filter((line) => line.trim().length > 0).slice(-15).join('\n');
       throw new VerifyFailure('BUILD_FAILED', `xcodebuild exited ${result.code}:\n${tail}`, 'fix the build error above, then rerun {cli} up');

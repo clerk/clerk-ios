@@ -79,7 +79,6 @@ jobs:
       PACKAGE: e2e-tests
       CLI: e2e-tests/bin/control-clerk-ios
       IOS_RUNTIME: iOS-27-0
-      # A cancelled job can end before it deletes its Clerk application. A later run of the CLI deletes it after this many hours, and two is the minimum.
       VERIFY_THROWAWAY_HOURS: "2"
     steps:
       - name: Checkout repository

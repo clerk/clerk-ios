@@ -1,12 +1,13 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { delimiter, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { selectBackend } from '../src/core/devices.ts';
 import { resolveSpecs } from '../src/core/e2e.ts';
 import { STANDARD, declaredIn, planGroups, readSpecText, settingsOf } from '../src/core/instances/settings.ts';
-import type { InstanceSettings } from '../src/core/types.ts';
+import type { BuildKey, InstanceSettings, ScratchPath } from '../src/core/types.ts';
 import { host } from '../src/host.ts';
 import { localIosBackend } from '../src/platform/ios/local.ts';
 import sessionDevice from '../src/platform/ios/session-device.ts';
@@ -21,6 +22,35 @@ describe('the clerk-ios build inputs', () => {
     assert.match(readFileSync(join(WORKTREE, project), 'utf8'), /E2EHost/);
     assert.ok(inputs.some((input) => project === input || project.startsWith(`${input}/`)), `${project} is under none of ${inputs.join(', ')}`);
     for (const input of inputs) assert.ok(existsSync(join(WORKTREE, input)), input);
+  });
+});
+
+describe('the clerk-ios host build', () => {
+  it('runs xcodebuild without the Clerk and agent keys of the environment, and with the rest of it', async () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'verify-host-build-'));
+    mkdirSync(join(scratch, 'bin'));
+    writeFileSync(join(scratch, 'bin', 'xcodebuild'), '#!/bin/sh\nfor derived; do :; done\nmkdir -p "$derived/Build/Products/Debug-iphonesimulator/E2EHost.app"\nenv > "$derived/env"\n', { mode: 0o755 });
+    const before = { ...process.env };
+    const set = {
+      CLERK_PLATFORM_API_KEY: 'ak_platform',
+      CLERK_PLATFORM_API_KEY_FILE: '/home/x/key',
+      VERIFY_PLATFORM_KEY_REFERENCE: 'op://vault/item',
+      CLERK_SECRET_KEY: 'sk_test_instance',
+      AI_GATEWAY_API_KEY: 'vck_gateway',
+      AI_GATEWAY_API_KEY_FILE: '/home/x/gateway',
+      VERIFY_HOST_BUILD_MARK: 'kept',
+    };
+    Object.assign(process.env, set, { PATH: `${join(scratch, 'bin')}${delimiter}${process.env.PATH}` });
+    try {
+      const built = await host.build('ios', 'ios-0000' as BuildKey, join(scratch, 'build') as ScratchPath, () => {});
+      assert.equal(built.path, join(scratch, 'build', 'E2EHost.app'));
+      const seen = readFileSync(join(scratch, 'derived', 'env'), 'utf8').split('\n');
+      assert.deepEqual(seen.filter((line) => Object.keys(set).includes(line.split('=')[0]!)), ['VERIFY_HOST_BUILD_MARK=kept']);
+    } finally {
+      for (const name of Object.keys(process.env)) if (!(name in before)) delete process.env[name];
+      Object.assign(process.env, before);
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 });
 
