@@ -262,10 +262,10 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
     if (Date.now() - Math.max(daemonOkAt, proxyStartedAt) > DAEMON_GRACE_MS) proxy?.kill('SIGTERM');
   }
 
-  function runCommands(commands: readonly CommandLine[], generation: number, tail: string[]): Promise<number> {
+  function runCommands(commands: readonly CommandLine[], stopped: () => boolean, tail: string[]): Promise<number> {
     return commands.reduce<Promise<number>>(async (previous, step) => {
       const code = await previous;
-      if (code !== 0 || generation !== buildGeneration) return code === 0 ? 1 : code;
+      if (code !== 0 || stopped()) return code === 0 ? 1 : code;
       log('build', `\n$ ${step.command} ${step.args.join(' ')}\n`);
       const child = spawn(step.command, [...step.args], { cwd: step.cwd, stdio: ['ignore', 'pipe', 'pipe'], detached: true });
       buildChild = child;
@@ -291,6 +291,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
     const incremental = builtOnce;
     const tail: string[] = [];
     let timedOut = false;
+    const stopped = (): boolean => timedOut || generation !== buildGeneration;
     const timeout = setTimeout(() => {
       if (generation !== buildGeneration) return;
       timedOut = true;
@@ -308,10 +309,10 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         tail.push(`this session builds ${dispatched}, the commit it was started on, and later commits of ${dispatchedRef}. GitHub does not show ${sha} as one. Push it to that branch, or run down and then up to start a session on it.`);
         return 1;
       }
-      const checkedOut = await runCommands(checkout, generation, tail);
+      const checkedOut = await runCommands(checkout, stopped, tail);
       if (checkedOut !== 0) return checkedOut;
       try {
-        return await runCommands(await recipe(target, { op: 'build', work }), generation, tail);
+        return await runCommands(await recipe(target, { op: 'build', work }), stopped, tail);
       } catch (error) {
         tail.push((error as Error).message);
         return 1;
@@ -321,7 +322,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
       clearTimeout(timeout);
       if (generation !== buildGeneration) return;
       const seconds = Math.round((Date.now() - began) / 1000);
-      if (code === 0) {
+      if (code === 0 && !timedOut) {
         builtOnce = true;
         build = { state: 'built', sha, seconds, incremental };
       } else {

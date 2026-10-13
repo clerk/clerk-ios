@@ -30,12 +30,19 @@ async function freePort(): Promise<number> {
 }
 
 const SLOW_UNTIL_STARTED_ONCE = `const fs = require('fs'); const mark = require('path').join(process.argv[1], 'started'); if (fs.existsSync(mark)) { console.log('finished what the stopped build left'); } else { fs.writeFileSync(mark, ''); console.log('build   xcodebuild Release'); setInterval(() => {}, 1000); }`;
+const NEVER_ENDS_THE_FIRST_TIME = `export default () => ({ build: (work) => [{ command: process.execPath, args: ['-e', ${JSON.stringify(SLOW_UNTIL_STARTED_ONCE)}, work] }] });\n`;
 
-function repoWhoseFirstBuildNeverEnds(): { dir: string; sha: string } {
+const LEAVE_A_FILE = `require('fs').writeFileSync(require('path').join(process.argv[1], 'ran-after-the-limit'), '');`;
+const ANSWERS_AFTER_THE_LIMIT = `await new Promise((done) => setTimeout(done, 6000));\nexport default () => ({ build: (work) => [{ command: process.execPath, args: ['-e', ${JSON.stringify(LEAVE_A_FILE)}, work] }] });\n`;
+
+const EXIT_ZERO_WHEN_STOPPED = `process.on('SIGTERM', () => process.exit(0)); console.log('build   gradle assembleDebug'); setInterval(() => {}, 1000);`;
+const EXITS_ZERO_WHEN_STOPPED = `export default () => ({ build: () => [{ command: process.execPath, args: ['-e', ${JSON.stringify(EXIT_ZERO_WHEN_STOPPED)}] }] });\n`;
+
+function repoWithDevice(deviceModule: string): { dir: string; sha: string } {
   const dir = mkdtempSync(join(tmpdir(), 'verify-build-limit-'));
   const git = (...args: string[]) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: dir, encoding: 'utf8' }).trim();
   git('init', '-q');
-  writeFileSync(join(dir, 'device.ts'), `export default () => ({ build: (work) => [{ command: process.execPath, args: ['-e', ${JSON.stringify(SLOW_UNTIL_STARTED_ONCE)}, work] }] });\n`);
+  writeFileSync(join(dir, 'device.ts'), deviceModule);
   git('add', '-A');
   git('commit', '-q', '-m', 'one');
   git('remote', 'add', 'origin', dir);
@@ -80,12 +87,12 @@ async function startAgent(repo: { readonly dir: string; readonly sha: string }, 
     }
     throw new Error('the build did not settle in 60 seconds');
   };
-  return { call, settledBuild, exited };
+  return { call, settledBuild, exited, work };
 }
 
 describe('the longest a session lets one build run', () => {
   it('stops a build at the limit, reports that as its own state with the last lines, and builds again when asked', async () => {
-    const repo = repoWhoseFirstBuildNeverEnds();
+    const repo = repoWithDevice(NEVER_ENDS_THE_FIRST_TIME);
     const agent = await startAgent(repo, 100);
 
     const stopped = await agent.settledBuild();
@@ -96,6 +103,28 @@ describe('the longest a session lets one build run', () => {
     assert.equal((await agent.call(`/__sim/build?sha=${repo.sha}`, 'POST')).status, 202);
     const again = await agent.settledBuild();
     assert.deepEqual([again.state, again.state === 'built' && again.sha], ['built', repo.sha]);
+
+    await agent.call('/__sim/stop', 'POST');
+    assert.equal(await agent.exited, 0);
+  });
+
+  it('starts no further command once the limit has passed while none was running', async () => {
+    const agent = await startAgent(repoWithDevice(ANSWERS_AFTER_THE_LIMIT), 100);
+
+    const stopped = await agent.settledBuild();
+    assert.equal(stopped.state, 'timed-out');
+    assert.equal(existsSync(join(agent.work, 'ran-after-the-limit')), false);
+
+    await agent.call('/__sim/stop', 'POST');
+    assert.equal(await agent.exited, 0);
+  });
+
+  it('reports the limit, not a finished build, when the stopped command exits 0', async () => {
+    const agent = await startAgent(repoWithDevice(EXITS_ZERO_WHEN_STOPPED), 100);
+
+    const stopped = await agent.settledBuild();
+    assert.equal(stopped.state, 'timed-out');
+    assert.equal(stopped.state === 'timed-out' && stopped.tail.split('\n').at(-1), 'build   gradle assembleDebug');
 
     await agent.call('/__sim/stop', 'POST');
     assert.equal(await agent.exited, 0);
