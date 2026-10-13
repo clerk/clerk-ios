@@ -8,6 +8,7 @@ A signed-out user opens AuthView and sees the start screen, where they enter an 
 - `auth-start-full-screen` opens AuthView as the root of the window from the home's full-screen sign-in button.
 - `auth-start-dismiss` closes the sheet with its close button, shows the home again, and opens the sheet again.
 - `auth-start-initial-identifier` opens AuthView on the phone field, holding the number the app passed to `initialIdentifier(_:)`.
+- `auth-start-identifier-switcher` switches the start screen between the email or username field and the phone field, and back.
 
 ## How to get to it (user POV)
 
@@ -15,6 +16,7 @@ A signed-out user opens AuthView and sees the start screen, where they enter an 
 - Tap the `Sign in full screen` button on the home screen, which shows AuthView the way an app shows it as its root.
 - Tap the close button of the sheet to go back to the home screen.
 - Open the sign-in screen from an app that already knows the phone number. The screen opens with that number in it.
+- Tap `Use phone number` under Continue to get the phone field, then `Use email or username` to go back.
 
 ## Driving it with verify
 
@@ -27,7 +29,8 @@ Preconditions:
 - **Full screen.** Run `e2e-tests/bin/control-clerk-ios run auth-start`. The first test taps `e2e.auth.signInFullScreen` and expects `clerk.auth.start.identifier` and no `clerk.dismissButton`, because E2EHost shows that AuthView with `isDismissible: false`. Screenshot `auth-full-screen`.
 - **Home button and dismiss.** The second test launches the app, expects `Signed out` on the home, taps `e2e.auth.signIn`, and expects `clerk.auth.start.identifier` and `clerk.auth.start.continue`. Screenshot `auth-start`. It then taps `clerk.dismissButton`, waits for the home to show `Signed out`, and expects no `clerk.auth.start.identifier`. Screenshot `auth-dismissed`. It then taps `e2e.auth.signIn` again and expects the identifier field.
 - **Initial identifier.** The third test launches in `signIn` mode with the user's phone as `initialIdentifier` and taps `e2e.auth.signInFullScreen`, and E2EHost shows `AuthView().initialIdentifier(<that phone>)`. AuthView then opens on the phone field and shows no `clerk.auth.start.identifier`. The text field is the one node that carries `clerk.auth.start.phoneNumber`, and its name is `Enter your phone number`. The country control is named `United States, +1`, and its role differs by iOS version (`button` on some, `pop-up-button` on others), so the test does not locate it. The test expects the text field to hold the national part of the number as `(201) 555-01xx`, and `clerk.auth.start.identifier` to be absent. It then taps `clerk.auth.start.continue` and expects `clerk.auth.signIn.password`. Screenshots `auth-initial-identifier` and `auth-initial-identifier-accepted`.
-- **Proof.** `specs/golden/auth-start/auth-start.e2e.ts` passes. The run directory holds `video.mp4` and the five screenshots.
+- **Identifier switcher.** `specs/golden/auth-start/identifier-switcher.e2e.ts` launches in `signIn` mode, taps `e2e.auth.signIn`, and expects `clerk.auth.start.identifierSwitcher` to read `Use phone number`. It taps the switcher, expects `clerk.auth.start.phoneNumber`, and expects the switcher to read `Use email or username`. Screenshot `switcher-on-phone-field`. It taps the switcher again and expects `clerk.auth.start.identifier`, no `clerk.auth.start.phoneNumber`, and `Use phone number`. Screenshot `switcher-on-identifier-field`. Run it alone with `e2e-tests/bin/control-clerk-ios run auth-start/identifier-switcher`.
+- **Proof.** `specs/golden/auth-start/auth-start.e2e.ts` and `specs/golden/auth-start/identifier-switcher.e2e.ts` pass. The run directory holds `video.mp4` and the seven screenshots.
 
 ## Gotchas
 
@@ -37,3 +40,4 @@ Preconditions:
 - AuthView remembers identifiers between launches by default. E2EHost turns that off with `persistsIdentifiers(false)`, so the field starts empty on every launch that passes no `initialIdentifier`.
 - The identifier is a launch input, `verifyInitialIdentifier`. E2EHost has no element of its own for it. The full-screen AuthView reads it, and the AuthView in the home's sheet does not.
 - The phone text field reports the number as its value and has no text, so assert on it with `toHaveValue`.
+- The switcher's label depends on the instance. `Use email or username` needs both email and username on, as the standard settings have. With one of them off it reads `Use email address` or `Use username`.

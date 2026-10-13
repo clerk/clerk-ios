@@ -208,7 +208,7 @@ struct AuthStartView: View {
   private var identifierSwitcherString: LocalizedStringKey {
     if phoneNumberFieldIsActive {
       if emailIsEnabled, usernameIsEnabled {
-        "Use email address or username"
+        "Use email or username"
       } else if emailIsEnabled {
         "Use email address"
       } else if usernameIsEnabled {
