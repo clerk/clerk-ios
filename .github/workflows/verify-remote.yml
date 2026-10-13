@@ -128,7 +128,7 @@ jobs:
             pgrep -f 'session-agent.ts serve' > /dev/null || { echo "::error::the session agent ended before a tunnel came up"; break; }
             sleep 1
           done
-          [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
+          [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -n 20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
           echo "host=$(cat "$WORK/tunnel")" >> "$GITHUB_OUTPUT"
 
       # GitHub's jobs API returns a step's name while the job still runs, so the tunnel host travels in this name.
