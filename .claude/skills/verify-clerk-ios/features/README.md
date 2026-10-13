@@ -32,7 +32,7 @@ Clerk's test mode makes these identities safe to type into the real app.
 | Sign-in code field | `clerk.auth.signIn.code` |
 | Sign-in password field | `clerk.auth.signIn.password` |
 | Try another method on a code or password screen | `clerk.auth.signIn.useAnotherMethod` |
-| Try another method on the email link screen, which has no identifier | `screen.getByRole('button', { name: 'Use another method' })` |
+| Try another method on the email link screen, which has no identifier and is off on the standard settings | `screen.getByRole('button', { name: 'Use another method' })` |
 | Pick a method from the list | `clerk.auth.signIn.alternativeMethod.<strategy>`, for example `clerk.auth.signIn.alternativeMethod.email_code` |
 | Sign-up email, password, continue | `clerk.auth.signUp.emailAddress`, `clerk.auth.signUp.password`, `clerk.auth.signUp.continue` |
 | Sign-up code field | `clerk.auth.signUp.code` |
@@ -41,7 +41,7 @@ Clerk's test mode makes these identities safe to type into the real app.
 
 The source of truth for these names is `Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift`. Keep this table in sync with it. The identifiers are internal test hooks, not public API, and they can change.
 
-On the standard settings an email sign-in starts on the email-link screen, so a spec switches to the email code through `Use another method`. Sign-up mode uses the start screen's `clerk.auth.start.identifier` field for the email.
+On the standard settings an email sign-in for a user with no password goes straight to the email code screen. The email link is off there. Sign-up mode uses the start screen's `clerk.auth.start.identifier` field for the email.
 
 ## Driving conventions
 
