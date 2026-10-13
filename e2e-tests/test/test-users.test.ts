@@ -70,7 +70,7 @@ describe('the users a test asks for', () => {
   it('have an address of this run, a new one each time, and no Clerk call for an address alone', async () => {
     const { sent, users } = byHand(created);
     const [one, two] = [users.newEmail(), users.newEmail()];
-    assert.match(one, /^1412107c1e[0-9a-f]{4}\+clerk_test@example\.com$/);
+    assert.match(one, /^1412107c1e[0-9a-z]{4}\+clerk_test@example\.com$/);
     assert.notEqual(one, two);
     assert.equal(one.startsWith(runEmailPrefix(SAMPLE_RUN)), true);
     assert.deepEqual(sent, []);
@@ -82,6 +82,11 @@ describe('the users a test asks for', () => {
     for (const id of ['r20261002-141210', 'R20261002-141210-7C1E', 'r20261002_141210_7c1e', '20261002-141210-7c1e', '']) {
       assert.throws(() => newTestEmail(id as RunId), new RegExp(`^Error: ${id} is not a run id like r20261002-141210-7c1e$`), id);
     }
+  });
+
+  it('have an address that ends in four characters drawn from all of 0-9 and a-z', () => {
+    const drawn = new Set(Array.from({ length: 500 }, () => newTestEmail(SAMPLE_RUN).slice(10, 14)).join(''));
+    assert.equal([...drawn].sort().join(''), '0123456789abcdefghijklmnopqrstuvwxyz');
   });
 
   it('get a password of their own only when asked, and it never shows', async () => {
