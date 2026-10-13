@@ -8,7 +8,7 @@ The application serves one run at a time, because a run changes its settings. Wh
 
 `src/core/instances/base.json` defines the settings every new application gets. It has two parts.
 
-- `config` is the whole body of the Platform API request that puts an instance on the standard settings. Everything that can coexist is switched on: email code, email link, phone code, password, username, authenticator app, backup codes, and organizations.
+- `config` is the whole body of the Platform API request that puts an instance on the standard settings. Everything that can coexist is switched on except the email link: email code, phone code, password, username, authenticator app, backup codes, and organizations. The email link is off so that an email sign-in opens on the code screen.
 - `environment` lists the settings of the instance's public `/v1/environment` that a spec cannot run without.
 
 After the CLI configures a new application, it reads that public environment. A difference in one of those settings fails with `INSTANCE_MISCONFIGURED` and names the setting. Run `down`, then `up` once more. If it fails again, Clerk changed what a setting does. Say so in your report.

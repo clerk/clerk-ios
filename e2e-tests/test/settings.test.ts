@@ -32,7 +32,7 @@ describe('the standard file', () => {
     const pinned = configLeaves(standardFile().config);
     assert.equal(pinned['auth_multi_factor.required_for_sign_up'], false);
     assert.equal(pinned['organization_settings.force_organization_selection'], false);
-    assert.deepEqual(pinned['auth_email.sign_in_strategies'], ['email_code', 'email_link'], 'a list is one leaf');
+    assert.deepEqual(pinned['auth_email.sign_in_strategies'], ['email_code'], 'a list is one leaf');
   });
 });
 
