@@ -19,7 +19,9 @@ Don't leave commented-out code.
 
 ## Verifying changes
 
-Prove every change to ClerkKit, ClerkKitUI, or E2EHost on a real simulator before calling it done. The verification skill is `.claude/skills/verify-clerk-ios/` (Cursor also sees it as `.cursor/skills/verify-clerk-ios`). The tests and the CLI that runs them are in `e2e-tests/`. Read the skill's `SKILL.md`, then `.claude/skills/verify-clerk-ios/features/README.md` for the feature you touched. The skill needs a Clerk Platform API key, which Clerk team members have. Without one, say in the pull request that the change was not run on a device.
+Prove every change to ClerkKit, ClerkKitUI, or E2EHost on a simulator before calling it done, and put the screenshots or video on the pull request. How you prove it is up to you. The verification skill in this repository is one way. An app of your own that exercises the change is just as good. If you could not run it on a device at all, say so in the pull request.
+
+The verification skill is `.claude/skills/verify-clerk-ios/` (Cursor also sees it as `.cursor/skills/verify-clerk-ios`). The tests and the CLI that runs them are in `e2e-tests/`. Read the skill's `SKILL.md`, then `.claude/skills/verify-clerk-ios/features/README.md` for the feature you touched. The skill needs a Clerk Platform API key, which Clerk team members have.
 
 `e2e-tests/bin/control-clerk-ios` has the verbs `doctor`, `up`, `run`, `down`, and `attach`, and `SKILL.md` has the steps.
 

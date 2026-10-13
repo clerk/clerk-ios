@@ -41,10 +41,6 @@ struct E2EHostApp: App {
     WindowGroup {
       if let configurationFailure {
         LaunchErrorView(failure: configurationFailure)
-      } else if configuration.launchId == nil {
-        MaestroHomeView(configuration: configuration)
-          .prefetchClerkImages()
-          .environment(Clerk.shared)
       } else {
         E2EHostView(configuration: configuration)
           .prefetchClerkImages()

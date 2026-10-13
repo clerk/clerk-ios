@@ -9,7 +9,7 @@ description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, 
 
 The tests are an ordinary e2e project. `e2e.config.ts` and `specs/` run under `npx e2e run` when the environment names a device, a build of the test app, and a development instance's keys. The CLI sits on top: it makes those three for a run and keeps the evidence. [The package README](../../../e2e-tests/README.md) has the commands for a run by hand and what such a run leaves out.
 
-No change to clerk-ios UI or auth behavior is done until a `run` in E2EHost shows the changed behavior.
+No change to clerk-ios UI or auth behavior is done until a simulator shows the changed behavior. A `run` in E2EHost is one way to show it. An app of your own that exercises the change is just as good.
 
 Run every command from the repo root. In the prose below, `doctor`, `up`, `run`, `screen`, `attach`, and `down` are verbs of that CLI. The tests and the CLI are the Node package `e2e-tests/`, and paths that begin `specs/`, `src/`, or `.verify/` are inside it. `features/` and `references/` are beside this file. Every error prints a `fix` line. Every verb takes `--json`, and [CLI output](references/output.md) has its shape and the exit codes.
 
@@ -103,7 +103,7 @@ A spec file that needs other settings than the standard ones declares them in a 
 
 ### Check your work
 
-Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Run the features your change touches. For new work:
+Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
 
 1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
 2. Run it by path.
@@ -148,7 +148,7 @@ $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot profile 
 
 `attach` posts one comment per run and PR with `gh pr comment --attach`. It needs a `gh` whose `gh pr comment` has that flag, and it fails with a fix when the flag is missing. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create.
 
-Attach the focused run, not the regression run. Run your new or changed spec on its own and attach that run, so the PR video shows only the behavior the change is about. Run the golden specs for every feature you touched in a separate `run`, and cite its run id in the PR as regression evidence.
+Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the PR video shows only the behavior the change is about. If you ran other golden specs too, cite that run's id in the PR.
 
 ## Cleanup
 
@@ -180,4 +180,5 @@ If a worktree is removed without `down`, the next `up` or `run` in any worktree 
 
 - clerk-android and clerk/javascript have the same package, and `src/core/`, `specs/support/`, `specs/fixtures.ts`, and `e2e.config.ts` are copied to them. After a change to any of them, `node e2e-tests/src/core/manifest.ts --write` rewrites `src/core/MANIFEST`. Nothing under `specs/` or `e2e.config.ts` imports the CLI, and `test/seam.test.ts` fails when a file does.
 - `npm test --prefix e2e-tests` runs the CLI's unit tests, with no network, key, or simulator. `npm run typecheck --prefix e2e-tests` runs `tsc`. The `Run E2E runner tests` job in `.github/workflows/shared-checks.yml` runs both on Linux.
+- `.github/workflows/verify-e2e.yml` runs `up`, `run --all --retries 1 --github-report`, and `down` on a simulator on a CI runner. It needs the repository secret `MOBILE_VERIFICATION_PLATFORM_API_KEY`. It runs on the `xcode-27` label unless the repository variable `VERIFY_CI_RUNNER` names another. `gh workflow run verify-e2e.yml --ref <branch>` starts it by hand.
 - `run --github-report` hands the results of a run to `@e2e-dev/github`, which writes them to the job summary and to one pull request comment.

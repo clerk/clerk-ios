@@ -17,33 +17,16 @@ struct E2EConfiguration {
   let signInTicket: String?
   let logLevel: LogLevel
 
-  init(
-    publishableKey: String,
-    authMode: AuthView.Mode,
-    keychainService: String?
-  ) {
-    self.publishableKey = publishableKey
-    self.authMode = authMode
-    initialIdentifier = nil
-    self.keychainService = keychainService
-    runId = nil
-    launchId = nil
-    signInTicket = nil
-    logLevel = .error
-  }
-
   init(processInfo: ProcessInfo = .processInfo, defaults: UserDefaults = .standard) {
     let environment = processInfo.environment
     let argument = { (key: String) in Self.normalized(defaults.string(forKey: key)) }
 
     publishableKey = argument("verifyPublishableKey")
       ?? Self.normalized(environment["CLERK_PUBLISHABLE_KEY"])
-      ?? Self.normalized(environment["CLERK_E2E_PUBLISHABLE_KEY"])
       ?? ""
-    authMode = Self.authMode(from: argument("verifyAuthMode") ?? environment["CLERK_E2E_AUTH_MODE"])
+    authMode = Self.authMode(from: argument("verifyAuthMode"))
     initialIdentifier = argument("verifyInitialIdentifier")
     keychainService = argument("verifyStorageScope").map { "verify.\($0)" }
-      ?? Self.normalized(environment["CLERK_E2E_KEYCHAIN_SERVICE"])
     runId = argument("verifyRunId")
     launchId = argument("verifyLaunchId")
     signInTicket = argument("verifySignInTicket")
@@ -100,12 +83,4 @@ struct E2EConfiguration {
 
     return value
   }
-}
-
-extension E2EConfiguration {
-  static let mock = E2EConfiguration(
-    publishableKey: "",
-    authMode: .signInOrUp,
-    keychainService: nil
-  )
 }

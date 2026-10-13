@@ -17,7 +17,7 @@ Clerk's test mode makes these identities safe to type into the real app.
 
 | Identity | What to use |
 | --- | --- |
-| Email | Any address that contains `+clerk_test@`. Clerk sends no mail to it and accepts the code below. `host.seedUser()` and `host.newEmail()` mint `verify_<runId>_<n>+clerk_test@example.com`, new for each run |
+| Email | Any address that contains `+clerk_test@`. Clerk sends no mail to it and accepts the code below. `host.seedUser()` and `host.newEmail()` mint an address such as `1412107c1ek3x9+clerk_test@example.com`, new for each run |
 | Phone | A US number from 555-0100 to 555-0199, typed as ten digits such as `2015550142`. Get one from `host.seedUser({ phone: true })`, or from `host.newPhone()` for a sign-up, instead of picking one by hand. Both give `+1` and the ten digits |
 | One-time code | `424242` verifies every email code and SMS code for a test address or number. Specs use the constant `CLERK_TEST_CODE` |
 | Password | The standard settings require a password at sign-up. Use a throwaway one per run, such as `Verify-<runId>-Pw1!`. For a password sign-in, seed the user with `host.seedUser({ password: true })` and fill the field with `host.fill(field, user.password!)` |
