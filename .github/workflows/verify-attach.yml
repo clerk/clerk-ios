@@ -74,8 +74,6 @@ jobs:
           tar -xzf "$RUNNER_TEMP/gh.tar.gz" -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/gh_${GH_VERSION}_linux_amd64/bin" >> "$GITHUB_PATH"
 
-      # The one step that holds the token. It reads the pull request, checks that it is the pull request
-      # of the session's branch and commit, and edits the description with `gh pr edit --attach`.
       - name: Put the evidence in the pull request description
         if: steps.evidence.outputs.found == 'true'
         env:
