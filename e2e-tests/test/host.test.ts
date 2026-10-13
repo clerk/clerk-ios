@@ -1,13 +1,17 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { describe, it } from 'node:test';
+import { selectBackend } from '../src/core/devices.ts';
 import { resolveSpecs } from '../src/core/e2e.ts';
 import { STANDARD, declaredIn, planGroups, readSpecText, settingsOf } from '../src/core/instances/settings.ts';
 import type { BuildKey, InstanceSettings, ScratchPath } from '../src/core/types.ts';
 import { host } from '../src/host.ts';
+import { localIosBackend } from '../src/platform/ios/local.ts';
+import sessionDevice from '../src/platform/ios/session-device.ts';
 
 const PACKAGE_DIR = join(import.meta.dirname, '..');
 const WORKTREE = join(PACKAGE_DIR, '..');
@@ -73,5 +77,38 @@ describe('the clerk-ios golden specs', () => {
     assert.equal(plan[0]!.settings, STANDARD);
     assert.deepEqual(plan.flatMap((group) => group.specs.map((spec) => spec.path)).sort(), golden.map(({ spec }) => spec.path).sort(), 'every spec is in one group, once');
     for (const group of plan.slice(1)) assert.equal(group.settings.askedBy, group.specs[0]!.path);
+  });
+});
+
+describe('the clerk-ios host with a remote device', () => {
+  it('runs the simulator locally on a Mac and remotely anywhere else', () => {
+    const remote = host.backends.find((b) => b.kind === 'remote')!;
+    const on = (os: NodeJS.Platform) => selectBackend({ ...host, backends: [localIosBackend({ os }), remote] }, 'ios', undefined, null);
+    assert.deepEqual(host.backends.map((b) => b.kind), ['local', 'remote']);
+    assert.equal(on('darwin').backend.kind, 'local');
+    const onLinux = on('linux');
+    assert.equal(onLinux.backend.kind, 'remote');
+    assert.match(onLinux.why, /^local is out: the iOS simulator needs macOS and this machine runs linux; /);
+  });
+
+  it('has a session build E2EHost, wait for the simulator to boot, then install the app it built', () => {
+    const steps = sessionDevice({ id: 'UDID-1', platform: 'ios' }).build('/work');
+    assert.deepEqual(steps.map((step) => step.command), ['xcodebuild', 'xcrun', 'xcrun']);
+    assert.deepEqual(steps[0]!.args.slice(-2), ['-derivedDataPath', '/work/derived']);
+    assert.deepEqual(steps[1]!.args, ['simctl', 'bootstatus', 'UDID-1', '-b']);
+    assert.deepEqual(steps[2]!.args, ['simctl', 'install', 'UDID-1', '/work/derived/Build/Products/Debug-iphonesimulator/E2EHost.app']);
+  });
+
+  it('has the session workflow start on the three runner labels this repository uses, and fail for any other', () => {
+    const lines = readFileSync(join(WORKTREE, '.github', 'workflows', 'verify-remote.yml'), 'utf8').split('\n').map((line) => line.trim());
+    const first = lines.indexOf('case "$RUNNER_LABEL" in');
+    const check = lines.slice(first, lines.indexOf('esac', first) + 1).join('\n');
+    const checked = (label: string) => {
+      const ran = spawnSync('bash', ['-c', check], { env: { PATH: process.env.PATH, RUNNER_LABEL: label }, encoding: 'utf8' });
+      return { status: ran.status, stdout: ran.stdout };
+    };
+    assert.ok(first > 0, 'the label check is in the workflow');
+    for (const label of ['xcode-27', 'ubuntu-latest', 'blacksmith-6vcpu-macos-27']) assert.deepEqual(checked(label), { status: 0, stdout: '' }, label);
+    assert.deepEqual(checked('macos-15-xlarge'), { status: 1, stdout: '::error title=verify-remote::no session started: the runner label macos-15-xlarge is not xcode-27, ubuntu-latest, or blacksmith-6vcpu-macos-27\n' });
   });
 });

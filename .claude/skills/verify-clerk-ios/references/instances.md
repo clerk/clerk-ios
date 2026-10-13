@@ -8,7 +8,7 @@ The application serves one run at a time, because a run changes its settings. Wh
 
 `src/core/instances/base.json` defines the settings every new application gets. It has two parts.
 
-- `config` is the whole body of the Platform API request that puts an instance on the standard settings. Everything that can coexist is switched on: email code, email link, phone code, password, username, authenticator app, backup codes, and organizations.
+- `config` is the whole body of the Platform API request that puts an instance on the standard settings. Everything that can coexist is switched on except the email link: email code, phone code, password, username, authenticator app, backup codes, and organizations. The email link is off so that an email sign-in opens on the code screen.
 - `environment` lists the settings of the instance's public `/v1/environment` that a spec cannot run without.
 
 After the CLI configures a new application, it reads that public environment. A difference in one of those settings fails with `INSTANCE_MISCONFIGURED` and names the setting. Run `down`, then `up` once more. If it fails again, Clerk changed what a setting does. Say so in your report.
@@ -53,7 +53,7 @@ Any other failure to apply settings stops the run, and the groups that did not r
 
 One team key creates, changes, and deletes the application, and reads its secret key. The key needs four scopes: `applications:read`, `applications:manage`, `applications:delete`, and `application_secret_keys:read`. The CLI reads `CLERK_PLATFORM_API_KEY` first, then the file that `CLERK_PLATFORM_API_KEY_FILE` names. A variable that is set and does not work is an error. With neither variable set, the CLI reads the key's 1Password secret reference from `VERIFY_PLATFORM_KEY_REFERENCE` and asks the 1Password CLI for the key. The 1Password app then asks a person to approve, and a refused or unanswered request is an error.
 
-Before it asks 1Password, the CLI sends one request with no key. In a cloud environment that holds the key as an API credential for `api.clerk.com`, the environment adds the key after the request leaves the machine, so that request succeeds and no key is ever in the session.
+Before it asks 1Password, the CLI sends one request with no key. In a cloud environment that holds the key as an API credential for `api.clerk.com`, the environment adds the key after the request leaves the machine, so that request succeeds and no key is ever in the session. [Remote devices](remote.md) has the setup.
 
 `doctor`, `up`, and `run` use the credential every time, and `down` uses it when the worktree holds an application. `screen` and `attach` never use it. With 1Password each of those commands asks once.
 
