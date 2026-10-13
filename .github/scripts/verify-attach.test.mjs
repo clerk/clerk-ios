@@ -779,14 +779,16 @@ describe('the evidence block of a pull request description', () => {
     );
   });
 
-  it('says which run and commit the before is and how that run went, ahead of the note about newer commits', () => {
-    assert.match(
-      blockOf(WITH_BEFORE),
-      / at `0f50b597b1c2`, 3 of 3 passed\. Before is run `r20261008-051500-0a1b` at `5e1263750651`, 0 of 3 passed\.$/m,
+  it('says that the before run is what the session reports, links its commit so a reader can open it, and says how that run went, ahead of the note about newer commits', () => {
+    const line = block => block.split('\n')[2];
+    assert.equal(
+      line(blockOf(WITH_BEFORE)),
+      '**Verified on an iOS simulator**, as reported by [the session](https://github.com/clerk/clerk-ios/actions/runs/37731397352) that `octocat` started. Run `r20261008-052713-253e` on `iPhone Air on xcode-27` at `0f50b597b1c2`, 3 of 3 passed. The session reports the before as run `r20261008-051500-0a1b` at [`5e1263750651`](https://github.com/clerk/clerk-ios/commit/5e126375065188df5bec4e4e75d61db03834f395), 0 of 3 passed.',
     );
-    assert.match(
-      evidenceBlock(WITH_BEFORE, { ...SESSION, pullHead: 'b'.repeat(40) }),
-      / Before is run `r20261008-051500-0a1b` at `5e1263750651`, 0 of 3 passed\. The pull request has newer commits\.$/m,
+    assert.ok(
+      line(evidenceBlock(WITH_BEFORE, { ...SESSION, repo: 'clerk/clerk-android', pullHead: 'b'.repeat(40) })).endsWith(
+        ' The session reports the before as run `r20261008-051500-0a1b` at [`5e1263750651`](https://github.com/clerk/clerk-android/commit/5e126375065188df5bec4e4e75d61db03834f395), 0 of 3 passed. The pull request has newer commits.',
+      ),
     );
   });
 
@@ -1187,7 +1189,8 @@ describe('the step that edits the description', () => {
   const COMMITS = [{ sha: 'a'.repeat(40) }, { sha: COMMIT }];
   const SAID =
     '**Verified on an iOS simulator**, as reported by [the session](https://github.com/clerk/clerk-ios/actions/runs/37731397352) that `octocat` started. Run `r20261008-052713-253e` on `iPhone Air on xcode-27` at `0f50b597b1c2`, 3 of 3 passed.';
-  const WAS = ' Before is run `r20261008-051500-0a1b` at `5e1263750651`, 0 of 3 passed.';
+  const WAS =
+    ' The session reports the before as run `r20261008-051500-0a1b` at [`5e1263750651`](https://github.com/clerk/clerk-ios/commit/5e126375065188df5bec4e4e75d61db03834f395), 0 of 3 passed.';
   const laidOut = (...lines) =>
     ['<!-- verify-evidence:ios -->', '', ...lines, '', '<!-- /verify-evidence:ios -->'].join('\n');
   const AFTER_ONLY = [

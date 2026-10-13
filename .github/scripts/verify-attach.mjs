@@ -406,6 +406,7 @@ const IMAGE_WIDTH = 280;
 const ACROSS = 2;
 
 const sessionRunUrl = (repo, runId) => `https://github.com/${repo}/actions/runs/${runId}`;
+const commitUrl = (repo, commit) => `https://github.com/${repo}/commit/${commit}`;
 
 const stem = name => name.replace(/\.[a-z0-9]+$/, '');
 const counted = run =>
@@ -454,7 +455,9 @@ function evidenceBlock(manifest, session, onDisk = file => file.name, uploaded =
   const { start, end } = evidenceMarkers(manifest.platform);
   const { before } = manifest;
   const was =
-    before === null ? '' : ` Before is run \`${before.run}\` at \`${before.commit.slice(0, 12)}\`, ${counted(before)}.`;
+    before === null
+      ? ''
+      : ` The session reports the before as run \`${before.run}\` at [\`${before.commit.slice(0, 12)}\`](${commitUrl(session.repo, before.commit)}), ${counted(before)}.`;
   const since = session.pullHead === manifest.commit ? '' : ` ${NEWER_COMMITS}`;
   const line = `${BLOCK_LINE_START}${WHERE[manifest.platform]}**, as reported by [the session](${sessionRunUrl(session.repo, session.runId)}) that \`${session.actor}\` started. Run \`${manifest.run}\` on \`${manifest.device}\` at \`${manifest.commit.slice(0, 12)}\`, ${counted(manifest)}.${was}${since}`;
   const media =
