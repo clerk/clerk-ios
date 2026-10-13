@@ -4,6 +4,7 @@ import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
+import net from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
@@ -30,7 +31,19 @@ async function until<T>(read: () => Promise<T | null> | T | null, what: string, 
   }
 }
 
-let nextPort = 43190 + Math.floor(Math.random() * 400);
+let nextPort = 21000 + Math.floor(Math.random() * 4000);
+async function freePort(): Promise<number> {
+  for (let tries = 0; tries < 200; tries += 1) {
+    const candidate = (nextPort += 1);
+    const free = await new Promise<boolean>((done) => {
+      const probe = net.createServer();
+      probe.once('error', () => done(false));
+      probe.listen(candidate, '127.0.0.1', () => probe.close(() => done(true)));
+    });
+    if (free) return candidate;
+  }
+  throw new Error('no free port for a session agent in 200 tries');
+}
 
 function repoWithCommit(): { dir: string; sha: string; commit(text: string): string; git(...args: string[]): string; comesBefore(earlier: string, later: string): boolean; knownOnlyToGitHub(sha: string): string } {
   const dir = mkdtempSync(join(tmpdir(), 'verify-agent-repo-'));
@@ -96,7 +109,8 @@ async function gitHubWith(repo: { readonly sha: string; comesBefore(earlier: str
 
 async function startAgent(request: SessionRequest, options: { readonly cwd?: string; readonly device?: boolean; readonly deviceModule?: string; readonly minuteMs?: number; readonly agentDevice?: boolean; readonly env?: Readonly<Record<string, string>> } = {}) {
   const work = mkdtempSync(join(tmpdir(), 'verify-agent-'));
-  const port = (nextPort += 2);
+  const port = await freePort();
+  const agentPort = await freePort();
   const bin = join(work, 'bin');
   mkdirSync(bin);
   const script = (name: string, file: string) => writeFileSync(join(bin, name), `#!/bin/sh\nexec "${process.execPath}" "${join(here, '..', 'testing', file)}" "$@"\n`, { mode: 0o755 });
@@ -109,7 +123,7 @@ async function startAgent(request: SessionRequest, options: { readonly cwd?: str
       VERIFY_SESSION_REQUEST: JSON.stringify(request),
       VERIFY_SESSION_WORK: work,
       VERIFY_SESSION_PORT: String(port),
-      VERIFY_SESSION_AGENT_PORT: String(port + 1),
+      VERIFY_SESSION_AGENT_PORT: String(agentPort),
       VERIFY_SESSION_CLOUDFLARED: join(bin, 'cloudflared'),
       VERIFY_SESSION_AGENT_DEVICE: join(bin, 'agent-device'),
       VERIFY_SESSION_SKIP_DNS: '1',
