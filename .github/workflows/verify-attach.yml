@@ -1,14 +1,5 @@
 name: verify-attach
 
-# Puts the evidence that a borrowed-device session handed off into the description of its pull request.
-# GitHub runs this file from the default branch, whatever branch the session ran on. The session's
-# artifact was written by branch code, so the job never checks out, installs, or runs anything from
-# the branch or from the artifact, and .github/scripts/verify-attach.mjs treats the artifact as data.
-# `contents: read` is for the checkout of that script.
-#
-# The bot token is a secret of the environment `verify-evidence`, never a repository secret. A
-# repository secret can be read by a workflow that anyone with write access adds on any branch. The
-# environment allows the default branch only, and a `workflow_run` job runs on the default branch.
 on:
   workflow_run:
     workflows:
