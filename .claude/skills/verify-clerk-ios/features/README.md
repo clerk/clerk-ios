@@ -51,7 +51,7 @@ On the standard settings an email sign-in starts on the email-link screen, so a 
 ## Proof
 
 - A proof is a passing `run` whose run directory holds `video.mp4`, `screenshots/`, `app.log`, and `e2e/report.json`.
-- Name the run id and the specs in the PR. Attach with `e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n>`.
+- Name the run id and the specs in the PR. Attach with `e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n>` and `--screenshot <label>` for a still change or `--video` for behavior or a flow. Add `--before <run-id>` when the change is to something that exists. `SKILL.md` has the choice under Evidence.
 - Report an unreachable path with the attempted command and the unmet precondition.
 
 ## Feature entry contract
