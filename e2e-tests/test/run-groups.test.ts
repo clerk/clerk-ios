@@ -287,6 +287,20 @@ describe('a run whose spec files declare different settings', () => {
       assert.deepEqual(r.videoLines(), ['video   the app could not be closed before the recording, so the video may open on the screen it was showing: DEVICE_IN_USE']);
     });
 
+    it('gives the close before the recording 30 seconds, and records all the same when it runs out', async () => {
+      const r = recorded({ launches: true });
+      const limits: (number | undefined)[] = [];
+      const hanging: Runner = async (command, args, options) => {
+        if (!command.endsWith('agent-device')) return r.deps.runner(command, args, options);
+        limits.push(options?.timeoutMs);
+        return { code: 124, stdout: '', stderr: 'timed out after 30000ms\n' };
+      };
+      await runVerb({ ...r.deps, runner: hanging }, { ...RUN_ALL, video: true });
+      assert.deepEqual(limits, [30_000]);
+      assert.deepEqual(r.order(), ['e2e opens the app with no arguments', 'recorder starts', 'launches for auth-start.e2e.ts']);
+      assert.deepEqual(r.videoLines(), ['video   the app could not be closed before the recording, so the video may open on the screen it was showing: timed out after 30000ms']);
+    });
+
     it('launches nothing when the recorder cannot start: each test that would launch fails with the reason and the fix, and the recorder is tried once', async () => {
       const r = recorded({ launches: true }, { [AUTH_START]: null, [SIGN_UP]: null });
       let tries = 0;

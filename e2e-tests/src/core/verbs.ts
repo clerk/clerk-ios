@@ -179,11 +179,12 @@ async function startRuntime(deps: Deps, lease: Lease): Promise<string | null> {
 }
 
 const agentDeviceSession = (workspace: Workspace, platform: Platform) => `verify-${platform}-${workspace.worktreeId}`;
+const CLOSE_BEFORE_RECORDING_MS = 30_000;
 
 function agentDeviceFor(deps: Deps, lease: Lease, platform: Platform) {
   const target = agentDeviceOn(deviceOf(lease), platform);
   const env = { ...withoutClerkKeys(deps.env), AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env };
-  return { selector: target.selector, call: (args: readonly string[]) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env }) };
+  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, ...limit }) };
 }
 
 const targetOf = (deps: Deps, outcome: RuntimeOutcome): Target => ({
@@ -452,7 +453,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       let recorder = null as Promise<Recorder> | null;
       const startRecorder = async (): Promise<Recorder> => {
         const device = agentDeviceFor(deps, lease, platform);
-        const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)]);
+        const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)], { timeoutMs: CLOSE_BEFORE_RECORDING_MS });
         if (closed.code !== 0) deps.progress(`video   the app could not be closed before the recording, so the video may open on the screen it was showing: ${redact(closed.stderr.trim() || closed.stdout.trim())}`);
         const recording = await backend.startRecording(lease, dir);
         if (recording.process === null) return { recording, recorderEntry: null };
