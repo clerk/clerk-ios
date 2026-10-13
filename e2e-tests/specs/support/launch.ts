@@ -75,23 +75,32 @@ export interface AppStartDriver {
 
 const messageOf = (error: unknown): string => redact(error instanceof Error ? error.message : String(error));
 
-async function openTwiceAtMost(open: () => Promise<void>): Promise<void> {
+async function openTwiceAtMost(first: () => Promise<void>, second: () => Promise<void>): Promise<void> {
   try {
-    await open();
-  } catch (first) {
-    await open().catch((second: unknown) => {
-      throw new Error(`the app did not open in two tries. The first failed with: ${messageOf(first)}. The second failed with: ${messageOf(second)}`, { cause: second });
+    await first();
+  } catch (firstError) {
+    await second().catch((secondError: unknown) => {
+      throw new Error(`the app did not open in two tries. The first failed with: ${messageOf(firstError)}. The second failed with: ${messageOf(secondError)}`, { cause: secondError });
     });
   }
 }
 
-export async function performAppStart(start: AppStart, appId: string, driver: AppStartDriver): Promise<void> {
-  if (start.kind === 'open-app') {
-    await openTwiceAtMost(() => driver.openApp(appId, { relaunch: true, launchArguments: start.launchArguments }));
+export async function performAppStart(nextStart: () => Promise<AppStart>, appId: string, driver: AppStartDriver): Promise<void> {
+  const start = await nextStart();
+  if (start.kind === 'adb') {
+    for (const command of start.commands) await driver.adb(command);
+    await openTwiceAtMost(
+      () => driver.openApp(appId),
+      () => driver.openApp(appId),
+    );
     return;
   }
-  for (const command of start.commands) await driver.adb(command);
-  await openTwiceAtMost(() => driver.openApp(appId));
+  const relaunch = (again: AppStart): Promise<void> =>
+    again.kind === 'open-app' ? driver.openApp(appId, { relaunch: true, launchArguments: again.launchArguments }) : Promise.reject(new Error(`a retried app start changed from open-app to ${again.kind}`));
+  await openTwiceAtMost(
+    () => relaunch(start),
+    async () => relaunch(await nextStart()),
+  );
 }
 
 export interface LaunchedApp {
@@ -115,20 +124,26 @@ export function appLauncher(app: LaunchedApp, driver: LaunchDriver, installedBui
       await driver.installApp(app.buildPath);
       installedBuilds.add(app.buildPath);
     }
-    const ticket = options.signedInAs === undefined ? undefined : await driver.signInTicket(options.signedInAs);
-    scope = options.keepStorage === true && scope !== null ? scope : (newId() as StorageScope);
-    const launchId = newId() as LaunchId;
-    const launchArguments = encodeLaunchArguments(app.platform, {
-      verifyPublishableKey: app.publishableKey,
-      verifyRunId: app.run,
-      verifyStorageScope: scope,
-      verifyLaunchId: launchId,
-      ...(options.authMode === undefined ? {} : { verifyAuthMode: options.authMode }),
-      ...(options.initialIdentifier === undefined ? {} : { verifyInitialIdentifier: options.initialIdentifier }),
-      ...(options.debugLogs === true ? { verifyLogLevel: 'debug' as const } : {}),
-      ...(ticket === undefined ? {} : { verifySignInTicket: ticket }),
-    });
-    await performAppStart(appStart(app.platform, app.id, app.entry, launchArguments), app.id, driver);
-    return launchId;
+    const latest: { launchId?: LaunchId } = {};
+    const nextStart = async (): Promise<AppStart> => {
+      const ticket = options.signedInAs === undefined ? undefined : await driver.signInTicket(options.signedInAs);
+      scope = options.keepStorage === true && scope !== null ? scope : (newId() as StorageScope);
+      const launchId = newId() as LaunchId;
+      latest.launchId = launchId;
+      const launchArguments = encodeLaunchArguments(app.platform, {
+        verifyPublishableKey: app.publishableKey,
+        verifyRunId: app.run,
+        verifyStorageScope: scope,
+        verifyLaunchId: launchId,
+        ...(options.authMode === undefined ? {} : { verifyAuthMode: options.authMode }),
+        ...(options.initialIdentifier === undefined ? {} : { verifyInitialIdentifier: options.initialIdentifier }),
+        ...(options.debugLogs === true ? { verifyLogLevel: 'debug' as const } : {}),
+        ...(ticket === undefined ? {} : { verifySignInTicket: ticket }),
+      });
+      return appStart(app.platform, app.id, app.entry, launchArguments);
+    };
+    await performAppStart(nextStart, app.id, driver);
+    if (latest.launchId === undefined) throw new Error('the app start never minted a launch id');
+    return latest.launchId;
   };
 }
