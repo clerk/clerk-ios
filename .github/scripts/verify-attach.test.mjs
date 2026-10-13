@@ -56,7 +56,6 @@ const MEDIA = [
 ];
 const GOOD = manifestFor(MEDIA);
 
-// A zip writer that can also write what an honest tool never would. `entry.central` and `entry.local` replace header fields by name.
 function zip(entries, { trailing = Buffer.alloc(0), count, disk = 0 } = {}) {
   const locals = [];
   const centrals = [];
