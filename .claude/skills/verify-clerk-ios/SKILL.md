@@ -9,7 +9,7 @@ description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, 
 
 The tests are an ordinary e2e project. `e2e.config.ts` and `specs/` run under `npx e2e run` when the environment names a device, a build of the test app, and a development instance's keys. The CLI sits on top: it makes those three for a run and keeps the evidence. [The package README](../../../e2e-tests/README.md) has the commands for a run by hand and what such a run leaves out.
 
-No change to clerk-ios UI or auth behavior is done until a `run` in E2EHost shows the changed behavior.
+No change to clerk-ios UI or auth behavior is done until a simulator shows the changed behavior. A `run` in E2EHost is one way to show it. An app of your own that exercises the change is just as good.
 
 Run every command from the repo root. In the prose below, `doctor`, `up`, `run`, `screen`, `attach`, and `down` are verbs of that CLI. The tests and the CLI are the Node package `e2e-tests/`, and paths that begin `specs/`, `src/`, or `.verify/` are inside it. `features/` and `references/` are beside this file. Every error prints a `fix` line. Every verb takes `--json`, and [CLI output](references/output.md) has its shape and the exit codes.
 

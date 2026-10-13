@@ -9,6 +9,7 @@ import { inspect } from 'node:util';
 import { CONNECT_ATTEMPT_MS, TEST_PHONES, newTestEmail, parseTestEmail, parseTestPhone, runEmailPrefix, runPassword, testUsers } from '../specs/support/clerk.ts';
 import { newRunId, readClerk } from '../specs/support/inputs.ts';
 import { redact, usedSecretValues } from '../specs/support/secret.ts';
+import type { RunId } from '../specs/support/types.ts';
 import { SAMPLE_PUBLISHABLE_KEY, SAMPLE_RUN } from '../testing/sample-inputs.ts';
 
 const SECRET_KEY = 'sk_test_testUsersUnitTest0123456789';
@@ -69,11 +70,18 @@ describe('the users a test asks for', () => {
   it('have an address of this run, a new one each time, and no Clerk call for an address alone', async () => {
     const { sent, users } = byHand(created);
     const [one, two] = [users.newEmail(), users.newEmail()];
-    assert.match(one, /^verify_r20261002_141210_7c1e_[0-9a-f]{8}\+clerk_test@example\.com$/);
+    assert.match(one, /^1412107c1e[0-9a-f]{4}\+clerk_test@example\.com$/);
     assert.notEqual(one, two);
     assert.equal(one.startsWith(runEmailPrefix(SAMPLE_RUN)), true);
     assert.deepEqual(sent, []);
     assert.equal((await users.seed()).email.startsWith(runEmailPrefix(SAMPLE_RUN)), true);
+  });
+
+  it('have an address that starts with the time of day and the four characters of the run id, and none for an id of another shape', () => {
+    assert.equal(runEmailPrefix(SAMPLE_RUN), '1412107c1e');
+    for (const id of ['r20261002-141210', 'R20261002-141210-7C1E', 'r20261002_141210_7c1e', '20261002-141210-7c1e', '']) {
+      assert.throws(() => newTestEmail(id as RunId), new RegExp(`^Error: ${id} is not a run id like r20261002-141210-7c1e$`), id);
+    }
   });
 
   it('get a password of their own only when asked, and it never shows', async () => {
