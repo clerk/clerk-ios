@@ -738,7 +738,7 @@ const localBlock = line =>
     '',
     line,
     '',
-    '| profile |',
+    '| `profile` |',
     '| :---: |',
     '| <img src="https://github.com/user-attachments/assets/1" width="280" alt="profile"> |',
     '',
@@ -1195,11 +1195,11 @@ describe('the step that edits the description', () => {
     ['<!-- verify-evidence:ios -->', '', ...lines, '', '<!-- /verify-evidence:ios -->'].join('\n');
   const AFTER_ONLY = [
     '',
-    '| profile |',
+    '| `profile` |',
     '| :---: |',
     `| <img src="${asset(2)}" width="280" alt="profile"> |`,
     '',
-    '| video |',
+    '| `video` |',
     '| :---: |',
     `| ${asset(1)} |`,
   ];
@@ -1345,11 +1345,11 @@ describe('the step that edits the description', () => {
       laidOut(
         SAID,
         '',
-        '| start | profile |',
+        '| `start` | `profile` |',
         '| :---: | :---: |',
         `| <img src="${asset(1)}" width="280" alt="start"> | <img src="${asset(2)}" width="280" alt="profile"> |`,
         '',
-        '| security |',
+        '| `security` |',
         '| :---: |',
         `| <img src="${asset(3)}" width="280" alt="security"> |`,
       ),
@@ -1364,7 +1364,7 @@ describe('the step that edits the description', () => {
   });
 
   it('lays out a flow that is new as its video alone, in a table that keeps it from the full width', async () => {
-    assert.equal(await published(CLIP), laidOut(SAID, '', '| video |', '| :---: |', `| ${asset(1)} |`));
+    assert.equal(await published(CLIP), laidOut(SAID, '', '| `video` |', '| :---: |', `| ${asset(1)} |`));
   });
 
   it('lays out both kinds when the hand-off holds both: the screenshots first, then the video, each as it is alone', async () => {
@@ -1480,7 +1480,10 @@ describe('the step that edits the description', () => {
       fake.state.writtenBody,
       / at `0f50b597b1c2`, 3 of 3 passed\. The pull request has newer commits\.\r\n/,
     );
-    assert.match(fake.state.laidOutBody, /, 3 of 3 passed\. The pull request has newer commits\.\r\n\r\n\| profile \|/);
+    assert.match(
+      fake.state.laidOutBody,
+      /, 3 of 3 passed\. The pull request has newer commits\.\r\n\r\n\| `profile` \|/,
+    );
   });
 
   it('says that the pull request has newer commits when its head moves while the evidence is being placed', async () => {
@@ -1509,7 +1512,10 @@ describe('the step that edits the description', () => {
       fake.state.writtenBody,
       / at `0f50b597b1c2`, 3 of 3 passed\. The pull request has newer commits\.\r\n/,
     );
-    assert.match(fake.state.laidOutBody, /, 3 of 3 passed\. The pull request has newer commits\.\r\n\r\n\| profile \|/);
+    assert.match(
+      fake.state.laidOutBody,
+      /, 3 of 3 passed\. The pull request has newer commits\.\r\n\r\n\| `profile` \|/,
+    );
   });
 
   it('adds that the pull request has newer commits to a run it already published, and uploads nothing again', async () => {

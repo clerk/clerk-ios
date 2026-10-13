@@ -443,7 +443,7 @@ function mediaTables(files, hasBefore, uploaded) {
     );
     return rows.map(row =>
       table(
-        row.map(item => item.label),
+        row.map(item => `\`${item.label}\``),
         [row.map(item => item.after)],
       ),
     );

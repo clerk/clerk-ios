@@ -396,11 +396,11 @@ describe('attach', () => {
       block(
         `**Verified on an iOS simulator.** Run \`${run}\` on \`verify-ios-1\` at \`606639a63448\`, 1 of 1 passed.`,
         '',
-        '| start | profile |',
+        '| `start` | `profile` |',
         '| :---: | :---: |',
         `| <img src="${asset(1)}" width="280" alt="start"> | <img src="${asset(2)}" width="280" alt="profile"> |`,
         '',
-        '| security |',
+        '| `security` |',
         '| :---: |',
         `| <img src="${asset(3)}" width="280" alt="security"> |`,
       ),
@@ -432,7 +432,7 @@ describe('attach', () => {
     const { deps, sealed } = checkout(gh);
     const { run } = sealed({ called: 'after' });
     await attach(deps, { verb: 'attach', run, pr: 9, media: flow, before: null });
-    assert.equal(gh.pr.body, block(`**Verified on an iOS simulator.** Run \`${run}\` on \`verify-ios-1\` at \`606639a63448\`, 1 of 1 passed.`, '', '| video |', '| :---: |', `| ${asset(1)} |`));
+    assert.equal(gh.pr.body, block(`**Verified on an iOS simulator.** Run \`${run}\` on \`verify-ios-1\` at \`606639a63448\`, 1 of 1 passed.`, '', '| `video` |', '| :---: |', `| ${asset(1)} |`));
     assert.deepEqual(gh.edits[0]!.attached, ['after video']);
   });
 
@@ -465,11 +465,11 @@ describe('attach', () => {
       block(
         `**Verified on an iOS simulator.** Run \`${after.run}\` on \`verify-ios-1\` at \`606639a63448\`, 1 of 1 passed.`,
         '',
-        '| profile |',
+        '| `profile` |',
         '| :---: |',
         `| <img src="${asset(5)}" width="280" alt="profile"> |`,
         '',
-        '| video |',
+        '| `video` |',
         '| :---: |',
         `| ${asset(6)} |`,
       ),

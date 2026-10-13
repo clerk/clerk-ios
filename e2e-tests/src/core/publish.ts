@@ -65,7 +65,7 @@ export function mediaTables(files: readonly string[], hasBefore: boolean, upload
     if (some.length === 0) return [];
     if (hasBefore) return [table(['Before', 'After'], some.map((item) => [item.before, item.after]))];
     const rows = Array.from({ length: Math.ceil(some.length / ACROSS) }, (_, row) => some.slice(row * ACROSS, (row + 1) * ACROSS));
-    return rows.map((row) => table(row.map((item) => item.label), [row.map((item) => item.after)]));
+    return rows.map((row) => table(row.map((item) => `\`${item.label}\``), [row.map((item) => item.after)]));
   });
 }
 
