@@ -59,7 +59,7 @@ export async function ensureRuntime() {
   }
   const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
   const choice = chooseEgress({
-    proxyListens: await accepts(url.hostname, Number(url.port || 80)),
+    proxyListens: await accepts(url.hostname, proxyPort(url)),
     directConnects: await accepts('api.github.com', 443),
     tokenStatusDirect: token ? await fetch('https://api.github.com/rate_limit', { headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'verify-remote' }, signal: AbortSignal.timeout(5000) }).then((response) => response.status, () => 0) : null,
   });
@@ -68,6 +68,10 @@ export async function ensureRuntime() {
   const local = 'localhost,127.0.0.1,::1';
   const noProxy = process.env.NO_PROXY || process.env.no_proxy;
   process.exit(await rerun(process.execPath, process.argv.slice(1), { ...process.env, NODE_USE_ENV_PROXY: '1', NO_PROXY: noProxy ? `${noProxy},${local}` : local }));
+}
+
+export function proxyPort(proxy) {
+  return Number(proxy.port || (proxy.protocol === 'https:' ? 443 : 80));
 }
 
 export function chooseEgress({ proxyListens, directConnects, tokenStatusDirect }) {

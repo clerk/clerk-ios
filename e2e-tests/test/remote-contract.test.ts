@@ -10,7 +10,7 @@ import { composeE2EConfig, engineDevice } from '../specs/support/config.ts';
 import { agentDevice } from '../specs/support/device.ts';
 import { inputsEnv, readTarget } from '../specs/support/inputs.ts';
 import { deviceOf } from '../src/core/devices.ts';
-import { chooseEgress } from '../src/core/launch.mjs';
+import { chooseEgress, proxyPort } from '../src/core/launch.mjs';
 import { usedSecretValues } from '../specs/support/secret.ts';
 import type { ApiResponse, GitHub } from '../src/core/remote/github.ts';
 import { HANDOFF } from '../src/core/remote/handoff.ts';
@@ -148,6 +148,13 @@ describe('choosing between a direct connection and HTTPS_PROXY', () => {
     const choice = chooseEgress({ proxyListens: true, directConnects: true, tokenStatusDirect: 401 });
     assert.equal(choice.proxy, true);
     assert.match(choice.why, /rejects this machine's token on a direct connection/);
+  });
+
+  it('probes an https proxy on 443 and an http proxy on 80 when the URL names no port', () => {
+    assert.equal(proxyPort(new URL('https://proxy.example')), 443);
+    assert.equal(proxyPort(new URL('http://proxy.example')), 80);
+    assert.equal(proxyPort(new URL('https://proxy.example:8443')), 8443);
+    assert.equal(proxyPort(new URL('http://proxy.example:3128')), 3128);
   });
 
   it('uses the proxy when it is the only way out', () => {
