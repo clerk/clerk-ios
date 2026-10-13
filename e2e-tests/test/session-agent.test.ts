@@ -410,7 +410,7 @@ describe('session agent', () => {
     writeFileSync(join(dir, 'token'), token);
     const sha256 = (data: Buffer) => createHash('sha256').update(data).digest('hex');
     const manifest = parseHandoffManifest(
-      JSON.stringify({ v: 1, pr: 669, run: 'r20261008-052713-253e', platform: 'ios', device: 'Test Phone on test-runner', commit: 'a'.repeat(40), passed: 1, flaky: 0, total: 1, files: [{ name: 'video.mp4', bytes: video.length, sha256: sha256(video) }, { name: 'profile.png', bytes: shot.length, sha256: sha256(shot) }] }),
+      JSON.stringify({ v: 2, before: null, pr: 669, run: 'r20261008-052713-253e', platform: 'ios', device: 'Test Phone on test-runner', commit: 'a'.repeat(40), passed: 1, flaky: 0, total: 1, files: [{ name: 'video.mp4', bytes: video.length, sha256: sha256(video) }, { name: 'profile.png', bytes: shot.length, sha256: sha256(shot) }] }),
     );
     for (const step of ['begin', 'chunk', 'commit']) assert.equal((await agent.call(`/__sim/evidence/${step}`, { method: 'POST', bearer: null, body: '{}' })).status, 403, step);
     assert.equal((await agent.call('/__sim/evidence/begin', { method: 'POST', body: JSON.stringify({ ...manifest, run: 'nope' }) })).status, 400);

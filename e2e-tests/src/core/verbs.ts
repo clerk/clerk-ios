@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { basename, dirname, join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { isOrphaned, readClaims } from './claims.ts';
 import { check, type AppliedInstance, type Instances } from './instances/instances.ts';
 import { STANDARD, SettingsRefused, planGroups, readSpecText, settingsFileOf, sourceHash, straySettingsFile, type SettingsGroup } from './instances/settings.ts';
@@ -15,17 +15,18 @@ import { backendFor, computeBuildKey, describeChoice, deviceOf, ensureLease, lea
 import { assertSomethingRan, collectScreenshots, e2eOutputDir, invokeE2E, parseE2EReport, planE2E, resolveSpecs } from './e2e.ts';
 import { startBroker, type Broker } from './broker.ts';
 import { watchDriver, type DriverWatch } from './driver.ts';
-import { assertPublishable, loggedUserIds, readRecord, sealEvidence } from './evidence.ts';
+import { assertPublishable, assertShowable, loggedUserIds, readRecord, sealEvidence, type Showable } from './evidence.ts';
 import { protectGitHubTokens, reportToGitHub } from './github-report.ts';
 import { isRunning, type Runner } from './exec.ts';
 import { ledgerAgentDeviceDaemon, processesIn, readDaemonInfo, stopProcesses, type ProcessEntry } from './ledgers.ts';
 import { SHARED_ROOTS, manifestDrift } from './manifest.ts';
-import { CannotPostHere, chooseFiles, missingAttach, postToPullRequest, summarize } from './publish.ts';
+import { CannotPostHere, chooseEvidence, missingAttach, postToPullRequest } from './publish.ts';
 import { redact } from '../../specs/support/secret.ts';
 import { count } from './state.ts';
 import { newEntryId, parseRunId, type Workspace } from './workspace.ts';
 import {
   VerifyFailure,
+  everyFile,
   type AttachResult,
   type BackendKind,
   type Command,
@@ -246,7 +247,7 @@ export function nextStep(run: RunId, dir: EvidencePath, results: readonly SpecRe
   const failed = results.filter((r) => r.status === 'failed' || r.status === 'interrupted');
   if (failed.length > 0) return failed[0]?.failurePage ?? join(dir, 'e2e.log');
   if (ran === 'all-left-out') return 'nothing ran: every selected spec was left out by platform, so the run proves nothing to post';
-  return `{cli} attach ${run} --pr <n>`;
+  return `{cli} attach ${run} --pr <n> --screenshot <label> for a still change, or --video for behavior or a flow; add --before <run-id> when the change is to something that exists`;
 }
 
 export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>, instances: { readonly willChange: boolean }, drive: (outcome: RuntimeOutcome) => Promise<T>): Promise<T> {
@@ -580,23 +581,34 @@ export async function attach(deps: Deps, command: Extract<Command, { verb: 'atta
   if (!existsSync(dir)) throw new VerifyFailure('USAGE', `no run ${run} in ${deps.workspace.root}/runs`, 'pass a run id that `{cli} run` printed');
   const record = readRecord(dir);
   const publishable = assertPublishable(record, loggedUserIds(dir));
+  const bundle = chooseEvidence(command.pr, publishable, command.before === null ? null : beforeRun(deps, command.before, record), command.media);
   try {
-    return await postToPullRequest(publishable, dir, deps.host, command.pr, command.screenshots, deps.runner);
+    return await postToPullRequest(bundle, dir, deps.host, deps.runner);
   } catch (error) {
     if (!(error instanceof CannotPostHere) || record.backend !== 'remote') throw error;
     const unattached = `name run ${run} in the PR and say that the evidence was not attached`;
     const session = sessionToHandOffTo(deps, record);
     if (typeof session === 'string') throw new VerifyFailure('NOT_READY', `${error.message}, and ${session}`, `${unattached}; to attach it, {cli} run again and {cli} attach before {cli} down`);
-    const { videos, shots } = chooseFiles(publishable, command.screenshots);
-    const files = [...videos, ...shots.map((shot) => shot.path)];
     try {
-      const receipt = await session.handOff({ pr: command.pr, summary: summarize(publishable), files: files.map((path) => ({ name: basename(path), path })) }, deps.progress);
-      return { verb: 'attach', via: 'runner', pr: command.pr, handedOff: files, because: error.why, ...receipt };
+      const receipt = await session.handOff(bundle, deps.progress);
+      return { verb: 'attach', via: 'runner', pr: command.pr, handedOff: everyFile(bundle).map((file) => file.path), because: error.why, ...receipt };
     } catch (failure) {
       if (!(failure instanceof VerifyFailure)) throw failure;
       throw new VerifyFailure(failure.code, `${error.message}, and ${failure.message}`, `${failure.fix}; until then, ${unattached}`);
     }
   }
+}
+
+function beforeRun(deps: Deps, run: RunId, after: EvidenceRecord): Showable {
+  const dir = deps.workspace.runDir(run);
+  const without = 'attach without --before, and name the before run in the PR';
+  if (run === after.run) throw new VerifyFailure('USAGE', `--before names run ${run} itself`, `pass the run of the same spec on the build without the change, or ${without}`);
+  if (!existsSync(dir)) {
+    throw new VerifyFailure('USAGE', `no run ${run} in ${deps.workspace.root}/runs, so its files cannot be shown as the before`, `pass a run that \`{cli} run\` made in this checkout, whose directory is still there, or ${without}`);
+  }
+  const record = readRecord(dir);
+  if (record.platform !== after.platform) throw new VerifyFailure('USAGE', `run ${run} is an ${record.platform} run and run ${after.run} is an ${after.platform} run`, `pass a before run of the same platform, or ${without}`);
+  return assertShowable(record, loggedUserIds(dir));
 }
 
 function sessionToHandOffTo(deps: Deps, record: EvidenceRecord): { readonly handOff: (bundle: EvidenceBundle, progress: (line: string) => void) => Promise<HandOffReceipt> } | string {

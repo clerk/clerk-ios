@@ -1,7 +1,7 @@
 import { closeSync, openSync, readFileSync, readSync } from 'node:fs';
 import { sleep } from '../exec.ts';
 import { Secret } from '../../../specs/support/secret.ts';
-import { VerifyFailure } from '../types.ts';
+import { VerifyFailure, everyFile } from '../types.ts';
 import { HANDOFF_LIMITS, type HandoffManifest } from './handoff.ts';
 import type { SessionHealth } from './protocol.ts';
 import { TUNNEL, isTunnelHost } from './tunnel.ts';
@@ -81,7 +81,7 @@ export async function sendEvidence(ref: SessionRef, manifest: HandoffManifest, p
 
   const began = await post('begin', manifest);
   if (began.status !== 200) throw refused('the manifest', began);
-  for (const file of manifest.files) {
+  for (const file of everyFile(manifest)) {
     const fd = openSync(paths.get(file.name)!, 'r');
     try {
       const buffer = Buffer.alloc(HANDOFF_LIMITS.chunkBytes);

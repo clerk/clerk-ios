@@ -23,7 +23,7 @@ const VIDEO = Buffer.from('a video that is longer than one chunk of five bytes')
 const SHOT = Buffer.from('png bytes');
 
 const good: HandoffManifest = {
-  v: 1,
+  v: 2,
   pr: 669,
   run: 'r20261008-052713-253e',
   platform: 'ios',
@@ -36,7 +36,24 @@ const good: HandoffManifest = {
     { name: 'video.mp4', bytes: VIDEO.length, sha256: sha256(VIDEO) },
     { name: 'profile.png', bytes: SHOT.length, sha256: sha256(SHOT) },
   ],
+  before: null,
 };
+
+const BEFORE_COMMIT = '5e126375065188df5bec4e4e75d61db03834f395';
+const WAS_VIDEO = Buffer.from('the video of the run before the change');
+const WAS_SHOT = Buffer.from('png bytes before');
+const goodBefore = {
+  run: 'r20261008-051500-0a1b',
+  commit: BEFORE_COMMIT,
+  passed: 0,
+  flaky: 0,
+  total: 3,
+  files: [
+    { name: 'before-video.mp4', bytes: WAS_VIDEO.length, sha256: sha256(WAS_VIDEO) },
+    { name: 'before-profile.png', bytes: WAS_SHOT.length, sha256: sha256(WAS_SHOT) },
+  ],
+};
+const withBefore: HandoffManifest = { ...good, before: goodBefore };
 
 describe('the hand-off manifest', () => {
   const parse = (change: Record<string, unknown>) => parseHandoffManifest(JSON.stringify({ ...good, ...change }));
@@ -54,7 +71,7 @@ describe('the hand-off manifest', () => {
     const refused: readonly [string, () => unknown][] = [
       ['text that is not JSON', () => parseHandoffManifest('{')],
       ['a list', () => parseHandoffManifest('[]')],
-      ['another version', () => parse({ v: 2 })],
+      ['another version', () => parse({ v: 1 })],
       ['a key the schema does not have', () => parse({ note: 'free text' })],
       ['a missing key', () => parseHandoffManifest(JSON.stringify({ ...good, device: undefined }))],
       ['a run id of another shape', () => parse({ run: 'r20261008-052713-253e; rm -rf /' })],
@@ -87,6 +104,41 @@ describe('the hand-off manifest', () => {
       ['a manifest over its size cap', () => parseHandoffManifest(JSON.stringify(good).padEnd(HANDOFF_LIMITS.manifestBytes + 1, ' '))],
     ];
     for (const [what, attempt] of refused) assert.throws(attempt, HandoffRefused, what);
+  });
+
+  it('accepts a before run, which may have passed nothing, with one file of the same kind for each file of the run', () => {
+    assert.deepEqual(parseHandoffManifest(JSON.stringify(withBefore)), withBefore);
+  });
+
+  it('refuses a before run that is malformed, is the run itself, or does not pair with the files of the run', () => {
+    const before = (change: Record<string, unknown>) => parse({ before: { ...goodBefore, ...change } });
+    const refused: readonly [string, () => unknown, RegExp][] = [
+      ['a missing before', () => parseHandoffManifest(JSON.stringify({ ...good, before: undefined })), /the manifest must have exactly the keys/],
+      ['a before that is text', () => parse({ before: goodBefore.run }), /before is not an object/],
+      ['a before with a key the schema does not have', () => before({ device: 'iPhone Air' }), /before must have exactly the keys run, commit, passed, flaky, total, files/],
+      ['a before run id of another shape', () => before({ run: 'the run before' }), /the run of before is missing or malformed/],
+      ['a before that is the run itself', () => before({ run: good.run }), /before is the run itself/],
+      ['a short before commit', () => before({ commit: 'abc1234' }), /the commit of before is missing or malformed/],
+      ['more passing before tests than tests', () => before({ passed: 3, flaky: 1 }), /passed and flaky of before must count at most total/],
+      ['a before count that is not whole', () => before({ total: 1.5 }), /total of before must be a whole number from 1 to 10000/],
+      ['a before with no files', () => before({ files: [] }), /the files of before must be a list of 1 to 50/],
+      ['a before with fewer files than the run', () => before({ files: [goodBefore.files[0]] }), /before must have one file for each file, of the same kind/],
+      ['a before screenshot where the run has a video', () => before({ files: [goodBefore.files[1], goodBefore.files[0]] }), /before must have one file for each file, of the same kind/],
+      ['a before file named as a file of the run is', () => before({ files: [goodBefore.files[0], { ...goodBefore.files[1], name: 'Profile.png' }] }), /two files have the same name/],
+      ['a before file with a path in its name', () => before({ files: [goodBefore.files[0], { ...goodBefore.files[1], name: '../before-profile.png' }] }), /the name of file 2 is missing or malformed/],
+      ['a before image over its cap', () => before({ files: [goodBefore.files[0], { ...goodBefore.files[1], bytes: HANDOFF_LIMITS.imageBytes + 1 }] }), /the size of before-profile\.png must be a whole number/],
+    ];
+    for (const [what, attempt, why] of refused) assert.throws(attempt, (error: unknown) => error instanceof HandoffRefused && why.test(error.message), what);
+  });
+
+  it('counts the files of the before run toward the cap on files and the cap on bytes', () => {
+    const shots = (prefix: string, count: number, bytes = 1) => Array.from({ length: count }, (_, i) => ({ name: `${prefix}${i}.png`, bytes, sha256: sha256('x') }));
+    const half = HANDOFF_LIMITS.files / 2;
+    assert.equal(parse({ files: shots('s', half), before: { ...goodBefore, files: shots('before-s', half) } }).before?.files.length, half);
+    assert.throws(() => parse({ files: shots('s', half + 1), before: { ...goodBefore, files: shots('before-s', half + 1) } }), /at most 50 files in all/);
+    assert.throws(() => parse({ files: shots('s', 8, HANDOFF_LIMITS.imageBytes), before: { ...goodBefore, files: shots('before-s', 8, HANDOFF_LIMITS.imageBytes) } }), /over 157286400 bytes in all/);
+    const video = (name: string) => ({ name, bytes: HANDOFF_LIMITS.videoBytes, sha256: sha256('x') });
+    assert.throws(() => parse({ files: [video('video.mp4')], before: { ...goodBefore, files: [video('before-video.mp4')] } }), /over 157286400 bytes in all/);
   });
 
   it('refuses files that are within their own caps and over the total', () => {
@@ -167,6 +219,21 @@ describe('the receiver in the session job', () => {
     assert.deepEqual(readFileSync(join(work, 'evidence', 'video.mp4')), VIDEO);
     assert.deepEqual(JSON.parse(readFileSync(join(work, 'evidence', 'manifest.json'), 'utf8')), good);
     assert.equal(receiver.held(), good.run);
+  });
+
+  it('takes the files of a before run beside the files of the run, and keeps nothing until each of them is whole', () => {
+    const work = mkdtempSync(join(tmpdir(), 'verify-handoff-'));
+    const receiver = evidenceReceiver(work);
+    receiver.begin(JSON.stringify(withBefore));
+    receiver.chunk(chunk('video.mp4', 0, VIDEO));
+    receiver.chunk(chunk('profile.png', 0, SHOT));
+    receiver.chunk(chunk('before-video.mp4', 0, WAS_VIDEO));
+    assert.throws(() => receiver.commit(), (error: HandoffRefused) => error.status === 409 && error.message === `before-profile.png has 0 of ${WAS_SHOT.length} bytes`);
+    receiver.chunk(chunk('before-profile.png', 0, WAS_SHOT));
+    assert.deepEqual(receiver.commit(), { ok: true, run: good.run, files: 4, bytes: VIDEO.length + SHOT.length + WAS_VIDEO.length + WAS_SHOT.length });
+    assert.deepEqual(readdirSync(join(work, 'evidence')).sort(), ['before-profile.png', 'before-video.mp4', 'manifest.json', 'profile.png', 'video.mp4']);
+    assert.deepEqual(readFileSync(join(work, 'evidence', 'before-profile.png')), WAS_SHOT);
+    assert.deepEqual(JSON.parse(readFileSync(join(work, 'evidence', 'manifest.json'), 'utf8')), withBefore);
   });
 
   it('refuses a chunk for a file the manifest does not name, so no request chooses a path', () => {
@@ -272,26 +339,29 @@ function remoteRun(options: { readonly backend?: EvidenceRecord['backend']; read
   return { deps, run, dir, bundles, ghCalls };
 }
 
+const BOTH = { screenshots: ['profile'], video: true };
+
 describe('attach on a machine whose gh cannot attach', () => {
   it('hands the sealed files of a borrowed-device run to the session, and says what happens next', async () => {
     const { deps, run, dir, bundles, ghCalls } = remoteRun();
-    const result = await attach(deps, { verb: 'attach', run, pr: 669, screenshots: 'all' });
+    const result = await attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: null });
     assert.deepEqual(ghCalls, ['pr edit --help'], 'gh was asked first, and it cannot attach');
     assert.deepEqual(bundles, [
       {
         pr: 669,
         summary: { run, platform: 'ios', device: 'iPhone Air on xcode-27', commit: COMMIT, passed: 1, flaky: 0, total: 1 },
         files: [
-          { name: 'video.mp4', path: join(dir, 'video.mp4') },
           { name: 'profile.png', path: join(dir, 'screenshots', 'profile.png') },
+          { name: 'video.mp4', path: join(dir, 'video.mp4') },
         ],
+        before: null,
       },
     ]);
     assert.deepEqual(result, {
       verb: 'attach',
       via: 'runner',
       pr: 669,
-      handedOff: [join(dir, 'video.mp4'), join(dir, 'screenshots', 'profile.png')],
+      handedOff: [join(dir, 'screenshots', 'profile.png'), join(dir, 'video.mp4')],
       because: 'this gh has no `gh pr edit --attach`',
       sessionRun: '37731397352',
       sessionRunUrl: 'https://github.com/clerk/clerk-ios/actions/runs/37731397352',
@@ -299,7 +369,7 @@ describe('attach on a machine whose gh cannot attach', () => {
     let out = '';
     createOutput(false, '/tmp', 'bin/control-x', { write: (text: string) => (out += text) }, { write: () => true }).result(result);
     assert.deepEqual(out.trimEnd().split('\n'), [
-      "handed off  video.mp4, profile.png  to the session's runner (https://github.com/clerk/clerk-ios/actions/runs/37731397352), because this gh has no `gh pr edit --attach`",
+      "handed off  profile.png, video.mp4  to the session's runner (https://github.com/clerk/clerk-ios/actions/runs/37731397352), because this gh has no `gh pr edit --attach`",
       'next        bin/control-x down ends the session; the verify-attach workflow then puts the evidence in the description of PR #669',
     ]);
   });
@@ -310,10 +380,17 @@ describe('attach on a machine whose gh cannot attach', () => {
   };
 
   it('tries gh pr edit --attach itself first for a borrowed-device run, and hands nothing off when that works', async () => {
-    const { deps, run, dir, bundles, ghCalls } = remoteRun({ gh: ghThatHasAttach({ code: 0, stdout: 'https://github.com/clerk/clerk-ios/pull/669\n', stderr: '' }) });
-    const result = await attach(deps, { verb: 'attach', run, pr: 669, screenshots: 'all' });
-    assert.deepEqual(result, { verb: 'attach', via: 'gh', prUrl: 'https://github.com/clerk/clerk-ios/pull/669', posted: [join(dir, 'video.mp4'), join(dir, 'screenshots', 'profile.png')], alreadyPosted: false });
-    assert.deepEqual(ghCalls, ['pr edit --help', 'pr view 669', 'pr view 669', 'pr edit --attach']);
+    let body = 'A description.\n';
+    const gh = (args: readonly string[]) => {
+      if (args.includes('--help')) return { code: 0, stdout: '      --attach file   Attach a file\n', stderr: '' };
+      if (args[1] === 'view') return { code: 0, stdout: JSON.stringify({ body, url: 'https://github.com/clerk/clerk-ios/pull/669' }), stderr: '' };
+      body = readFileSync(args[args.indexOf('--body-file') + 1]!, 'utf8').replace(/\(\.\/[^)]+\)/g, '(https://github.com/user-attachments/assets/00000000-0000-4000-8000-000000000001)');
+      return { code: 0, stdout: 'https://github.com/clerk/clerk-ios/pull/669\n', stderr: '' };
+    };
+    const { deps, run, dir, bundles, ghCalls } = remoteRun({ gh });
+    const result = await attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: null });
+    assert.deepEqual(result, { verb: 'attach', via: 'gh', prUrl: 'https://github.com/clerk/clerk-ios/pull/669', posted: [join(dir, 'screenshots', 'profile.png'), join(dir, 'video.mp4')], alreadyPosted: false });
+    assert.deepEqual(ghCalls, ['pr edit --help', 'pr view 669', 'pr view 669', 'pr edit --attach', 'pr view 669', 'pr edit --attach']);
     assert.deepEqual(bundles, [], 'nothing went to the session');
   });
 
@@ -324,7 +401,7 @@ describe('attach on a machine whose gh cannot attach', () => {
       gh: (args) => (order.push(args.includes('--attach') ? 'gh pr edit --attach' : 'gh'), refusedUpload(args)),
       handOff: async () => (order.push('hand-off'), { sessionRun: '1', sessionRunUrl: 'https://github.com/clerk/clerk-ios/actions/runs/1' }),
     });
-    const result = await attach(deps, { verb: 'attach', run, pr: 669, screenshots: 'all' });
+    const result = await attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: null });
     assert.equal(result.via === 'runner' && result.because, 'gh pr edit failed');
     assert.equal(ghCalls.at(-1), 'pr edit --attach');
     assert.deepEqual(order.slice(-2), ['gh pr edit --attach', 'hand-off']);
@@ -332,21 +409,62 @@ describe('attach on a machine whose gh cannot attach', () => {
 
   it('hands off when gh cannot read the pull request, as it cannot where GraphQL is blocked', async () => {
     const { deps, run, bundles, ghCalls } = remoteRun({ gh: ghThatHasAttach({ code: 0, stdout: '', stderr: '' }, { code: 1, stdout: '', stderr: 'GraphQL: blocked\n' }) });
-    const result = await attach(deps, { verb: 'attach', run, pr: 669, screenshots: 'all' });
+    const result = await attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: null });
     assert.equal(result.via === 'runner' && result.because, 'gh pr view failed');
     assert.deepEqual(ghCalls, ['pr edit --help', 'pr view 669']);
     assert.equal(bundles.length, 1);
   });
 
-  it('hands off only the screenshots that were asked for', async () => {
+  it('hands off only the kind of file that was asked for', async () => {
     const { deps, run, bundles } = remoteRun();
-    await attach(deps, { verb: 'attach', run, pr: 669, screenshots: [] });
-    assert.deepEqual(bundles[0]!.files.map((file) => file.name), ['video.mp4']);
+    await attach(deps, { verb: 'attach', run, pr: 669, media: { screenshots: [], video: true }, before: null });
+    await attach(deps, { verb: 'attach', run, pr: 669, media: { screenshots: ['profile'], video: false }, before: null });
+    assert.deepEqual(bundles.map((bundle) => bundle.files.map((file) => file.name)), [['video.mp4'], ['profile.png']]);
+  });
+
+  it('hands off the files of a before run from its directory in this checkout, whichever session made that run', async () => {
+    const { deps, run, dir, bundles } = remoteRun();
+    const before = deps.workspace.newRun();
+    mkdirSync(join(before.dir, 'screenshots'));
+    writeFileSync(join(before.dir, 'video.mp4'), WAS_VIDEO);
+    writeFileSync(join(before.dir, 'screenshots', 'profile.png'), WAS_SHOT);
+    const record = JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8')) as EvidenceRecord;
+    writeFileSync(
+      join(before.dir, 'run.json'),
+      JSON.stringify({
+        ...record,
+        run: before.run,
+        startedAt: '2026-10-08T04:00:00.000Z',
+        gitHead: BEFORE_COMMIT,
+        results: record.results.map((result) => ({ ...result, status: 'failed' })),
+        videos: [join(before.dir, 'video.mp4')],
+        screenshots: [{ label: 'profile', path: join(before.dir, 'screenshots', 'profile.png') }],
+      }),
+    );
+    const result = await attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: before.run });
+    assert.deepEqual(bundles[0]!.before, {
+      summary: { run: before.run, platform: 'ios', device: 'iPhone Air on xcode-27', commit: BEFORE_COMMIT, passed: 0, flaky: 0, total: 1 },
+      files: [
+        { name: 'before-profile.png', path: join(before.dir, 'screenshots', 'profile.png') },
+        { name: 'before-video.mp4', path: join(before.dir, 'video.mp4') },
+      ],
+    });
+    assert.deepEqual(result.via === 'runner' && result.handedOff, [join(dir, 'screenshots', 'profile.png'), join(dir, 'video.mp4'), join(before.dir, 'screenshots', 'profile.png'), join(before.dir, 'video.mp4')]);
+  });
+
+  it('hands nothing off when the directory of the before run is not in this checkout, and says what to do', async () => {
+    const { deps, run, bundles, ghCalls } = remoteRun();
+    await assert.rejects(attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: 'r20261008-040000-0000' as RunId }), {
+      code: 'USAGE',
+      message: `no run r20261008-040000-0000 in ${deps.workspace.root}/runs, so its files cannot be shown as the before`,
+      fix: 'pass a run that `{cli} run` made in this checkout, whose directory is still there, or attach without --before, and name the before run in the PR',
+    });
+    assert.deepEqual([bundles, ghCalls], [[], []]);
   });
 
   const failure = async (deps: Deps, run: RunId): Promise<VerifyFailure> => {
     try {
-      await attach(deps, { verb: 'attach', run, pr: 669, screenshots: 'all' });
+      await attach(deps, { verb: 'attach', run, pr: 669, media: BOTH, before: null });
     } catch (error) {
       if (error instanceof VerifyFailure) return error;
       throw error;
@@ -401,16 +519,19 @@ describe('the remote backend before it sends evidence', () => {
     readonly commits?: readonly string[];
     readonly health?: unknown;
     readonly files?: EvidenceBundle['files'];
+    readonly before?: string;
   }
 
   async function handOff(options: Case = {}) {
     const dir = mkdtempSync(join(tmpdir(), 'verify-handoff-backend-'));
     writeFileSync(join(dir, 'token'), 'b'.repeat(64));
     writeFileSync(join(dir, 'video.mp4'), VIDEO);
+    writeFileSync(join(dir, 'before.mp4'), WAS_VIDEO);
     const bundle: EvidenceBundle = {
       pr: 669,
       summary: { run: good.run as RunId, platform: 'ios', device: good.device, commit: COMMIT, passed: 3, flaky: 0, total: 3 },
       files: options.files ?? [{ name: 'video.mp4', path: join(dir, 'video.mp4') as EvidencePath }],
+      before: options.before === undefined ? null : { summary: { run: goodBefore.run as RunId, platform: 'ios', device: good.device, commit: options.before, passed: 0, flaky: 0, total: 3 }, files: [{ name: 'before-video.mp4', path: join(dir, 'before.mp4') as EvidencePath }] },
     };
     const commits = options.commits ?? [STARTED_ON, COMMIT];
     const asked: string[] = [];
@@ -428,17 +549,19 @@ describe('the remote backend before it sends evidence', () => {
     const sent: string[] = [];
     const health = options.health === undefined ? { ending: null } : options.health;
     const realFetch = globalThis.fetch;
-    globalThis.fetch = async (input) => {
+    const manifests: unknown[] = [];
+    globalThis.fetch = async (input, init) => {
       const path = new URL(String(input)).pathname;
       if (path === '/__sim/health') return health === null ? new Response('gone', { status: 502 }) : Response.json(health);
       sent.push(path);
+      if (path === '/__sim/evidence/begin') manifests.push(JSON.parse(String(init?.body)));
       return Response.json({ ok: true });
     };
     try {
       const receipt = await remoteBackend(settings, { env: {}, runner: realRunner, github: async () => hub }).handOffEvidence!({ ...LEASE, tokenFile: join(dir, 'token') }, bundle, () => undefined);
-      return { receipt, error: null, sent, asked };
+      return { receipt, error: null, sent, asked, manifests };
     } catch (error) {
-      if (error instanceof VerifyFailure) return { receipt: null, error, sent, asked };
+      if (error instanceof VerifyFailure) return { receipt: null, error, sent, asked, manifests };
       throw error;
     } finally {
       globalThis.fetch = realFetch;
@@ -456,6 +579,19 @@ describe('the remote backend before it sends evidence', () => {
     const { receipt, sent } = await handOff();
     assert.deepEqual(sent, ['/__sim/evidence/begin', '/__sim/evidence/chunk', '/__sim/evidence/commit']);
     assert.deepEqual(receipt, { sessionRun: '37731397352', sessionRunUrl: 'https://github.com/clerk/clerk-ios/actions/runs/37731397352' });
+  });
+
+  it('sends the before run in the manifest and its files after the files of the run, though its commit is the one the branch started from and no commit of the pull request', async () => {
+    const { error, sent, manifests } = await handOff({ before: BEFORE_COMMIT });
+    assert.equal(error, null);
+    assert.deepEqual(sent, ['/__sim/evidence/begin', '/__sim/evidence/chunk', '/__sim/evidence/chunk', '/__sim/evidence/commit']);
+    assert.deepEqual(manifests, [
+      {
+        ...good,
+        files: [good.files[0]],
+        before: { run: goodBefore.run, commit: BEFORE_COMMIT, passed: 0, flaky: 0, total: 3, files: [goodBefore.files[0]] },
+      },
+    ]);
   });
 
   it('sends a run whose pull request has moved on to newer commits', async () => {

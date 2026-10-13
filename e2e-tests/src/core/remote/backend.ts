@@ -4,7 +4,7 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream } from 'node:stream/web';
 import { run, sleep } from '../exec.ts';
-import { VerifyFailure, type AcquireRequest, type DeviceBackend, type EvidencePath, type Recording, type RemoteLease } from '../types.ts';
+import { VerifyFailure, everyFile, type AcquireRequest, type DeviceBackend, type EvidenceFile, type EvidencePath, type Recording, type RemoteLease } from '../types.ts';
 import { apiMessage, currentBranch, endSession, liveRuns, openGitHub, startRun, viewRun, waitForStep, waitReporter, type GitHub } from './github.ts';
 import { HANDOFF_VERSION, HandoffRefused, describeFile, parseHandoffManifest, pullRequestMismatch, type HandoffManifest } from './handoff.ts';
 import { coreVersion } from '../manifest.ts';
@@ -248,13 +248,15 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
       if (!place.ok) throw wouldNot(`its description ${place.why}, so the evidence has no one place to go`, `${place.fix}, then rerun {cli} attach`);
       let manifest: HandoffManifest;
       try {
-        manifest = parseHandoffManifest(JSON.stringify({ v: HANDOFF_VERSION, pr: bundle.pr, ...bundle.summary, files: bundle.files.map((file) => describeFile(file.name, file.path)) }));
+        const described = (files: readonly EvidenceFile[]) => files.map((file) => describeFile(file.name, file.path));
+        const was = bundle.before === null ? null : { run: bundle.before.summary.run, commit: bundle.before.summary.commit, passed: bundle.before.summary.passed, flaky: bundle.before.summary.flaky, total: bundle.before.summary.total, files: described(bundle.before.files) };
+        manifest = parseHandoffManifest(JSON.stringify({ v: HANDOFF_VERSION, pr: bundle.pr, ...bundle.summary, files: described(bundle.files), before: was }));
       } catch (error) {
         if (!(error instanceof HandoffRefused)) throw error;
-        throw new VerifyFailure('NOT_READY', `the evidence of run ${run} cannot be handed to the runner: ${error.message}`, 'attach fewer or smaller files with --screenshot, or rerun with --no-video');
+        throw new VerifyFailure('NOT_READY', `the evidence of run ${run} cannot be handed to the runner: ${error.message}`, 'attach fewer or smaller files: fewer --screenshot labels, or no --video');
       }
       try {
-        await sendEvidence(lease, manifest, new Map(bundle.files.map((file) => [file.name, file.path])), progress);
+        await sendEvidence(lease, manifest, new Map(everyFile(bundle).map((file) => [file.name, file.path])), progress);
       } catch (error) {
         if (error instanceof VerifyFailure) throw error;
         throw new VerifyFailure('NOT_READY', `the hand-off of run ${run} failed: ${(error as Error).message}`, 'run {cli} attach again while the session is up');
