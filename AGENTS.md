@@ -1,3 +1,11 @@
+## Strings
+
+User-facing text is in `Sources/ClerkKitUI/Resources/Localizable.xcstrings`. The English text is the key, and each key holds a translation for every language the SDK ships.
+
+When you change English text, rename its key in the catalog and update the translation in every language to say what the new text says. A Swift literal with no key in the catalog shows in English in every language. Old translations kept under a new key still say what the old text said.
+
+When you add text, add its key with a translation in every language.
+
 ## Comments
 
 Don't write comments unless they explain a constraint from a platform, library,
