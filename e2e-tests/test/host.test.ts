@@ -1,5 +1,6 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
@@ -96,5 +97,18 @@ describe('the clerk-ios host with a remote device', () => {
     assert.deepEqual(steps[0]!.args.slice(-2), ['-derivedDataPath', '/work/derived']);
     assert.deepEqual(steps[1]!.args, ['simctl', 'bootstatus', 'UDID-1', '-b']);
     assert.deepEqual(steps[2]!.args, ['simctl', 'install', 'UDID-1', '/work/derived/Build/Products/Debug-iphonesimulator/E2EHost.app']);
+  });
+
+  it('has the session workflow start on the three runner labels this repository uses, and fail for any other', () => {
+    const lines = readFileSync(join(WORKTREE, '.github', 'workflows', 'verify-remote.yml'), 'utf8').split('\n').map((line) => line.trim());
+    const first = lines.indexOf('case "$RUNNER_LABEL" in');
+    const check = lines.slice(first, lines.indexOf('esac', first) + 1).join('\n');
+    const checked = (label: string) => {
+      const ran = spawnSync('bash', ['-c', check], { env: { PATH: process.env.PATH, RUNNER_LABEL: label }, encoding: 'utf8' });
+      return { status: ran.status, stdout: ran.stdout };
+    };
+    assert.ok(first > 0, 'the label check is in the workflow');
+    for (const label of ['xcode-27', 'ubuntu-latest', 'blacksmith-6vcpu-macos-27']) assert.deepEqual(checked(label), { status: 0, stdout: '' }, label);
+    assert.deepEqual(checked('macos-15-xlarge'), { status: 1, stdout: '::error title=verify-remote::no session started: the runner label macos-15-xlarge is not xcode-27, ubuntu-latest, or blacksmith-6vcpu-macos-27\n' });
   });
 });
