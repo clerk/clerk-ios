@@ -38,7 +38,8 @@ const plan = JSON.parse(fs.readFileSync('fake-e2e.json', 'utf8'));
 fs.appendFileSync('invocations.jsonl', JSON.stringify({ specs, output, args }) + '\\n');
 (async () => {
   const token = fs.readFileSync(process.env.CLERK_E2E_API_TOKEN_FILE, 'utf8');
-  const emailOf = () => 'verify_' + process.env.CLERK_E2E_RUN_ID.toLowerCase().replace(/[^a-z0-9]/g, '_') + '_' + require('node:crypto').randomBytes(4).toString('hex') + '+clerk_test@example.com';
+  const [, runTime, runTag] = process.env.CLERK_E2E_RUN_ID.split('-');
+  const emailOf = () => runTime + runTag + require('node:crypto').randomBytes(2).toString('hex') + '+clerk_test@example.com';
   const stateDir = process.env.AGENT_DEVICE_STATE_DIR;
   const driver = plan.driver;
   if (driver) {
@@ -242,7 +243,7 @@ describe('a run whose spec files declare different settings', () => {
     assert.equal(record.identities.length, 5);
     assert.ok(record.identities.every((identity) => identity.userId?.startsWith(`user_${application.id}_`)));
     assert.equal(w.workspace.unclosedEntries().filter((entry) => entry.kind === 'user' && entry.run === record.run).length, 5, 'each spec made one user, and the run ledgered it');
-    assert.deepEqual(record.identities.map((identity) => identity.email.startsWith(`verify_${record.run.replace(/-/g, '_')}_`)), [true, true, true, true, true]);
+    assert.deepEqual(record.identities.map((identity) => identity.email.startsWith(record.run.split('-').slice(1).join(''))), [true, true, true, true, true]);
 
     const log = readFileSync(join(dir, 'e2e.log'), 'utf8').split('\n');
     assert.deepEqual(log.filter((line) => line.startsWith('settings ')), [`settings ${ORG_LABEL}: 1 spec file`, `settings ${MFA_LABEL}: 2 spec files`]);
