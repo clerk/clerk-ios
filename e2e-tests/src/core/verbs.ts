@@ -600,7 +600,7 @@ export async function attach(deps: Deps, command: Extract<Command, { verb: 'atta
   const publishable = assertPublishable(record, loggedUserIds(dir));
   const bundle = chooseEvidence(command.pr, publishable, command.before === null ? null : beforeRun(deps, command.before, record), command.media);
   try {
-    return await postToPullRequest(bundle, dir, deps.host, deps.runner);
+    return await postToPullRequest(bundle, deps.host, deps.runner);
   } catch (error) {
     if (!(error instanceof CannotPostHere) || record.backend !== 'remote') throw error;
     const unattached = `name run ${run} in the PR and say that the evidence was not attached`;

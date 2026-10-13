@@ -1,17 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import { constants, copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { constants, copyFileSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, extname, join } from 'node:path';
 import { run as defaultRunner, type Runner } from './exec.ts';
 import type { Publishable, Showable } from './evidence.ts';
 import { VerifyFailure, everyFile, type AttachResult, type EvidenceBundle, type EvidencePath, type EvidenceSummary, type HostAdapter, type MediaChoice, type Platform } from './types.ts';
-
-interface Posted {
-  readonly pr: number;
-  readonly prUrl: string;
-  readonly posted: readonly EvidencePath[];
-  readonly asked?: string;
-}
 
 export function summarize(evidence: Showable): EvidenceSummary {
   return {
@@ -173,11 +166,17 @@ export function chooseEvidence(pr: number, evidence: Publishable, before: Showab
 
 const UPLOADED = /https:\/\/github\.com\/user-attachments\/assets\/[0-9a-f-]{36}/g;
 
-function uploadedIn(body: string, platform: Platform): readonly string[] {
+function blockIn(body: string, platform: Platform): string | null {
   const { start, end } = evidenceMarkers(platform);
-  const from = linesThatAre(body, start)[0];
-  const to = linesThatAre(body, end)[0];
-  return from === undefined || to === undefined ? [] : (body.slice(from, to).match(UPLOADED) ?? []);
+  const starts = linesThatAre(body, start);
+  const ends = linesThatAre(body, end);
+  if (starts.length !== 1 || ends.length !== 1 || ends[0]! < starts[0]!) return null;
+  return body.slice(starts[0]!, ends[0]! + end.length).replaceAll('\r\n', '\n');
+}
+
+function uploadedIn(body: string, platform: Platform, run: string): readonly string[] {
+  const block = blockIn(body, platform);
+  return block === null || !block.includes(`\`${run}\``) ? [] : (block.match(UPLOADED) ?? []);
 }
 
 async function readDescription(runner: Runner, repo: string, pr: number): Promise<{ readonly body: string; readonly url: string }> {
@@ -190,26 +189,24 @@ async function readDescription(runner: Runner, repo: string, pr: number): Promis
   return { body: parsed.body ?? '', url: parsed.url ?? '' };
 }
 
-export async function postToPullRequest(bundle: EvidenceBundle, dir: EvidencePath, host: HostAdapter, runner: Runner = defaultRunner): Promise<AttachResult> {
+export async function postToPullRequest(bundle: EvidenceBundle, host: HostAdapter, runner: Runner = defaultRunner): Promise<AttachResult> {
   const { pr, summary } = bundle;
   const { run, platform } = summary;
   const before = bundle.before?.summary ?? null;
   const files = everyFile(bundle);
   const paths = files.map((file) => file.path);
-  const asked = JSON.stringify([bundle.files.map((file) => file.name), before?.run ?? null]);
-  const postedFile = join(dir, `posted-${pr}.json`);
-  if (existsSync(postedFile)) {
-    const previous = JSON.parse(readFileSync(postedFile, 'utf8')) as Posted;
-    if (previous.asked === asked) return { verb: 'attach', via: 'gh', prUrl: previous.prUrl, posted: previous.posted, alreadyPosted: true };
-  }
   const missing = await missingAttach(runner);
   if (missing !== null) throw new CannotPostHere(missing.why, `${missing.why}, so the video and screenshots of run ${run} cannot be posted`, missing.fix);
 
   const prefix = `evidence-${randomBytes(8).toString('hex')}`;
   const onDisk = files.map((file, at) => `${prefix}-${at + 1}${extname(file.name)}`);
   const listed = evidenceBlock(summary, before, mediaList(files.map((file) => file.name), onDisk));
+  const laidOutWith = (uploaded: readonly string[]): string => evidenceBlock(summary, before, mediaTables(bundle.files.map((file) => file.name), before !== null, uploaded));
 
   let current = await readDescription(runner, host.githubRepo, pr);
+  const there = blockIn(current.body, platform);
+  const uploadedThere = there?.match(UPLOADED) ?? [];
+  if (uploadedThere.length === files.length && there === laidOutWith(uploadedThere)) return { verb: 'attach', via: 'gh', prUrl: current.url, posted: paths, alreadyPosted: true };
   let next: string | null = null;
   for (let attempt = 0; attempt < 2 && next === null; attempt += 1) {
     const edit = withEvidenceBlock(current.body, platform, listed);
@@ -241,15 +238,13 @@ export async function postToPullRequest(bundle: EvidenceBundle, dir: EvidencePat
     const notLaidOut = (why: string): VerifyFailure =>
       new VerifyFailure('NOT_READY', `the files of run ${run} are in the description of PR #${pr} as a list, one under the other, and were not laid out: ${why}`, 'rerun {cli} attach once nobody is editing the description');
     const listedNow = (await readDescription(runner, host.githubRepo, pr)).body;
-    const uploaded = uploadedIn(listedNow, platform);
-    if (uploaded.length !== files.length) throw notLaidOut(`the block there now does not show the ${files.length} addresses GitHub gave them`);
-    const laidOut = withEvidenceBlock(listedNow, platform, evidenceBlock(summary, before, mediaTables(bundle.files.map((file) => file.name), before !== null, uploaded)));
+    const uploaded = uploadedIn(listedNow, platform, run);
+    if (uploaded.length !== files.length) throw notLaidOut(`the block there now does not show run ${run} with the ${files.length} addresses GitHub gave its files`);
+    const laidOut = withEvidenceBlock(listedNow, platform, laidOutWith(uploaded));
     if (!laidOut.ok) throw notLaidOut(`the description ${laidOut.why}`);
     const arranged = await edit(laidOut.body, []);
     if (arranged.code !== 0) throw notLaidOut(`gh pr edit failed: ${arranged.stderr.trim()}`);
 
-    const posted: Posted = { pr, prUrl, posted: paths, asked };
-    writeFileSync(postedFile, `${JSON.stringify(posted, null, 2)}\n`);
     return { verb: 'attach', via: 'gh', prUrl, posted: paths, alreadyPosted: false };
   } finally {
     rmSync(scratch, { recursive: true, force: true });

@@ -565,33 +565,62 @@ describe('attach', () => {
     assert.deepEqual(result, { verb: 'attach', via: 'gh', prUrl: PR_URL, posted: [join(dir, 'screenshots', 'profile.png'), join(dir, 'video.mp4')], alreadyPosted: false });
   });
 
-  it('leaves the list in the description and says so when the addresses of the files cannot be read back', async () => {
+  it('leaves the list in the description and says so when the addresses of the files cannot be read back, or the block names another run by then', async () => {
     const gh = fakeGh({ upload: (reference) => reference });
     const { deps, sealed } = checkout(gh);
-    const { run, dir } = sealed({ called: 'after' });
-    await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null }), {
+    const { run } = sealed({ called: 'after' });
+    const notLaidOut = {
       code: 'NOT_READY',
-      message: `the files of run ${run} are in the description of PR #9 as a list, one under the other, and were not laid out: the block there now does not show the 1 addresses GitHub gave them`,
+      message: `the files of run ${run} are in the description of PR #9 as a list, one under the other, and were not laid out: the block there now does not show run ${run} with the 1 addresses GitHub gave its files`,
       fix: 'rerun {cli} attach once nobody is editing the description',
-    });
+    };
+    await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null }), notLaidOut);
     assert.equal(gh.edits.length, 1);
-    assert.equal(existsSync(join(dir, 'posted-9.json')), false);
+
+    const renamed = { run: '' };
+    const otherRun = fakeGh({ onView: (views, pr) => void (views === 3 && (pr.body = pr.body.replace(renamed.run, 'r20261009-020202-bbbb'))) });
+    const elsewhere = checkout(otherRun);
+    renamed.run = elsewhere.sealed({ called: 'after' }).run;
+    await assert.rejects(attach(elsewhere.deps, { verb: 'attach', run: renamed.run as RunId, pr: 9, media: still, before: null }), { code: 'NOT_READY', message: notLaidOut.message.replaceAll(run, renamed.run) });
+    assert.equal(otherRun.edits.length, 1);
+    assert.ok(otherRun.pr.body.endsWith(`Run \`r20261009-020202-bbbb\` on \`verify-ios-1\` at \`606639a63448\`, 1 of 1 passed.\n\n![profile](${asset(1)})\n\n<!-- /verify-evidence:ios -->`), 'the list that names another run is left as it is');
   });
 
-  it('uploads a run to a pull request once for one choice of what to show, and again for another', async () => {
+  it('says already posted only while the description holds the block it would write, and writes when the block there is another one or is gone', async () => {
     const gh = fakeGh();
     const { deps, sealed } = checkout(gh);
     const before = sealed({ called: 'before', failed: true });
     const { run } = sealed({ called: 'after' });
-    const first = await attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null });
-    const second = await attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null });
+    const stills = () => attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null });
+    const shows = (n: number) => block(`**Verified on an iOS simulator.** Run \`${run}\` on \`verify-ios-1\` at \`606639a63448\`, 1 of 1 passed.`, '', '| `profile` |', '| :---: |', `| <img src="${asset(n)}" width="280" alt="profile"> |`);
+
+    const first = await stills();
+    assert.equal(first.via === 'gh' && first.alreadyPosted, false);
+    assert.equal(gh.pr.body, shows(1));
+    assert.deepEqual(await stills(), { ...first, alreadyPosted: true });
+    gh.pr.body = gh.pr.body.replaceAll('\n', '\r\n');
+    assert.deepEqual(await stills(), { ...first, alreadyPosted: true }, 'the same block with the line endings of the web editor');
     assert.equal(gh.edits.length, 2);
-    assert.deepEqual(second, { ...first, alreadyPosted: true });
+    assert.equal(gh.pr.body, shows(1).replaceAll('\n', '\r\n'));
+
     await attach(deps, { verb: 'attach', run, pr: 9, media: still, before: before.run });
-    await attach(deps, { verb: 'attach', run, pr: 9, media: flow, before: before.run });
+    assert.equal(gh.edits.length, 4);
+    assert.deepEqual(await stills(), { ...first, alreadyPosted: false }, 'the block of another choice replaced it');
     assert.equal(gh.edits.length, 6);
-    await attach(deps, { verb: 'attach', run, pr: 10, media: flow, before: before.run });
-    assert.equal(gh.edits[6]!.args[2], '10');
+    assert.equal(gh.pr.body, shows(4).replaceAll('\n', '\r\n'));
+
+    gh.pr.body = DESCRIPTION;
+    assert.deepEqual(await stills(), { ...first, alreadyPosted: false }, 'the block is gone');
+    assert.equal(gh.pr.body, shows(5));
+
+    gh.pr.body = gh.pr.body.replace(`<img src="${asset(5)}" width="280" alt="profile">`, `![profile](${asset(5)})`);
+    assert.deepEqual(await stills(), { ...first, alreadyPosted: false }, 'the block was never laid out');
+    assert.equal(gh.pr.body, shows(6));
+
+    gh.pr.body = gh.pr.body.replace(asset(6), 'https://example.com/other.png');
+    assert.deepEqual(await stills(), { ...first, alreadyPosted: false }, 'the block does not show an upload');
+    assert.equal(gh.pr.body, shows(7));
+    assert.equal(gh.edits.length, 12);
   });
 
   it('replaces the block of an earlier run, in the layout of this version or of the one before it, so a second run does not pile up media', async () => {
@@ -621,10 +650,9 @@ describe('attach', () => {
     for (const [state, closesAtView] of [['CLOSED', 1], ['MERGED', 1], ['CLOSED', 2]] as const) {
       const gh = fakeGh({ onView: (views, pr) => void (views === closesAtView && (pr.state = state)) });
       const { deps, sealed } = checkout(gh);
-      const { run, dir } = sealed({ called: 'after' });
+      const { run } = sealed({ called: 'after' });
       await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null }), refusal(state.toLowerCase()));
       assert.deepEqual(gh.edits, []);
-      assert.equal(existsSync(join(dir, 'posted-9.json')), false);
     }
   });
 
@@ -638,7 +666,6 @@ describe('attach', () => {
       fix: 'install gh 2.99.0 or newer, whose `gh pr edit` has --attach',
     });
     assert.deepEqual(gh.edits, []);
-    assert.equal(existsSync(join(dir, 'posted-9.json')), false);
   });
 
   it('builds on the newer description when someone edits it between the read and the write', async () => {
@@ -658,7 +685,6 @@ describe('attach', () => {
       message: `the description of PR #9 changed twice while the evidence of run ${run} was being placed, so nothing was written`,
     });
     assert.deepEqual(gh.edits, []);
-    assert.equal(existsSync(join(dir, 'posted-9.json')), false);
   });
 
   it('writes nothing to a description whose markers are broken, and says which', async () => {
