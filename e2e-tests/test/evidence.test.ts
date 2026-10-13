@@ -502,10 +502,15 @@ describe('attach', () => {
     const noVideo = sealed({ called: 'before', failed: true, video: false });
     await assert.rejects(attach(deps, { verb: 'attach', run: after.run, pr: 9, media: flow, before: noVideo.run }), {
       code: 'USAGE',
-      message: `run ${noVideo.run} has no video`,
+      message: `run ${noVideo.run} has no video: a run records one from the first time a test launches the app, unless it has --no-video`,
       fix: '{cli} run it again without --no-video, or attach without --video or without --before',
     });
-    await assert.rejects(attach(deps, { verb: 'attach', run: sealed({ called: 'after', video: false }).run, pr: 9, media: flow, before: null }), { code: 'USAGE', message: /^run r\S+ has no video$/, fix: '{cli} run again without --no-video, or attach with --screenshot <label>' });
+    const neverLaunched = sealed({ called: 'after', video: false });
+    await assert.rejects(attach(deps, { verb: 'attach', run: neverLaunched.run, pr: 9, media: flow, before: null }), {
+      code: 'USAGE',
+      message: `run ${neverLaunched.run} has no video: a run records one from the first time a test launches the app, unless it has --no-video`,
+      fix: '{cli} run a spec that calls host.launch, without --no-video, and attach that run, or attach this one with --screenshot <label>',
+    });
     assert.deepEqual(gh.edits, []);
   });
 

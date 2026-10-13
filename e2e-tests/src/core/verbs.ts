@@ -280,6 +280,11 @@ export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Ex
   );
 }
 
+interface Recorder {
+  readonly recording: Recording;
+  readonly recorderEntry: string | null;
+}
+
 interface GroupRun {
   readonly run: RunId;
   readonly dir: EvidencePath;
@@ -444,33 +449,40 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         if (declaration !== null) writeFileSync(join(dir, settingsFileOf(spec.path)), declaration);
       }
 
-      const broker = await startBroker(run, workspace, scratch, { keys: () => deps.instances.keys(), fetch: deps.fetch ?? fetch });
+      let recorder = null as Promise<Recorder> | null;
+      const startRecorder = async (): Promise<Recorder> => {
+        const device = agentDeviceFor(deps, lease, platform);
+        const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)]);
+        if (closed.code !== 0) deps.progress(`video   the app could not be closed before the recording, so the video may open on the screen it was showing: ${redact(closed.stderr.trim() || closed.stdout.trim())}`);
+        const recording = await backend.startRecording(lease, dir);
+        if (recording.process === null) return { recording, recorderEntry: null };
+        const recorderEntry = newEntryId();
+        workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString(), platform });
+        return { recording, recorderEntry };
+      };
+      const broker = await startBroker(run, workspace, scratch, {
+        keys: () => deps.instances.keys(),
+        fetch: deps.fetch ?? fetch,
+        beforeLaunch: async () => {
+          if (command.video) await (recorder ??= startRecorder());
+        },
+      });
 
-      let recording: Recording | null = null;
-      let recorderEntry: string | null = null;
       const outcomes: GroupOutcome[] = [];
       let endFailure: unknown = null;
       try {
-        if (command.video) {
-          const device = agentDeviceFor(deps, lease, platform);
-          const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)]);
-          if (closed.code !== 0) deps.progress(`video   the app could not be closed before the recording, so the video may open on the screen the run before it left: ${redact(closed.stderr.trim() || closed.stdout.trim())}`);
-          recording = await backend.startRecording(lease, dir);
-          if (recording.process !== null) {
-            recorderEntry = newEntryId();
-            workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString(), platform });
-          }
-        }
         const the: GroupRun = { run, dir, log: join(dir, 'e2e.log') as EvidencePath, target: targetOf(deps, outcome), broker, driver, command, agent };
         for (const [index, group] of groups.entries()) {
           const stopped = outcomes.find((done) => done.stopsTheRun)?.failure ?? null;
           outcomes.push(await runGroup(deps, the, group, index, outcomes.flatMap((done) => done.identities), stopped));
         }
       } finally {
-        await endRun(workspace, { recording, recorderEntry, broker, scratch })
+        const started = (await recorder?.catch(() => null)) ?? { recording: null, recorderEntry: null };
+        await endRun(workspace, { ...started, broker, scratch })
           .catch((error: unknown) => void (endFailure = error))
           .finally(() => deps.instances.stopDriving());
       }
+      if (command.video && recorder === null) deps.progress('video   no test launched the app, so this run has no video');
 
       driver.collect();
       const appLog = join(dir, 'app.log') as EvidencePath;

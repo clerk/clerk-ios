@@ -146,7 +146,7 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path.
 | File | What it holds |
 | --- | --- |
 | `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build`, `device`, `identities`, `settings`, and `tainted` |
-| `video.mp4` | `simctl io recordVideo` of the whole run. `run` closes the app before it starts the recorder, so the video opens on the simulator's home screen. e2e then opens the app once with no launch arguments, which shows the host's error screen for a moment, and the first `host.launch` relaunches it |
+| `video.mp4` | `simctl io recordVideo` of the run, from the first `host.launch` to the end. Just before that launch, `run` closes the app and starts the recorder, so the video opens on the simulator's home screen for a moment and then on the app being launched. A run in which no test calls `host.launch` has no video, and `run` prints a `video` line that says so |
 | `screenshots/<label>.png` | Every `host.screenshot(label)` |
 | `app.log` | The `com.clerk.verify` and `com.clerk.sdk` log lines of the run. E2EHost writes one `com.clerk.verify` line each time its screen, user, session, or launch error changes, with the `launchId` that a failed `host.launch` names. No spec reads these lines. They are for diagnosing a failure that the screen does not explain. The SDK logs errors only, unless the launch passes `debugLogs: true` |
 | `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |

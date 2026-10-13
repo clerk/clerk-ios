@@ -152,7 +152,8 @@ export function chooseEvidence(pr: number, evidence: Publishable, before: Showab
   const shots = media.screenshots.map(
     (label) => evidence.screenshots.find((s) => s.label === label) ?? missing(`run ${evidence.run} has no screenshot labelled ${label}`, `use one of: ${evidence.screenshots.map((s) => s.label).join(', ') || '(none)'}`),
   );
-  const video = media.video ? [evidence.videos[0] ?? missing(`run ${evidence.run} has no video`, '{cli} run again without --no-video, or attach with --screenshot <label>')] : [];
+  const noVideo = (run: string): string => `run ${run} has no video: a run records one from the first time a test launches the app, unless it has --no-video`;
+  const video = media.video ? [evidence.videos[0] ?? missing(noVideo(evidence.run), '{cli} run a spec that calls host.launch, without --no-video, and attach that run, or attach this one with --screenshot <label>')] : [];
   const files = [...shots.map((shot) => shot.path), ...video].map((path) => ({ name: basename(path), path }));
   const summary = summarize(evidence);
   if (before === null) return { pr, summary, files, before: null };
@@ -165,7 +166,7 @@ export function chooseEvidence(pr: number, evidence: Publishable, before: Showab
         failure ??
         missing(`run ${before.run} has no screenshot labelled ${label}, and no failure screenshot to show in its place`, `call host.screenshot('${label}') in the spec and run it on the build without the change, or attach without --before`),
     ),
-    ...video.map(() => before.videos[0] ?? missing(`run ${before.run} has no video`, '{cli} run it again without --no-video, or attach without --video or without --before')),
+    ...video.map(() => before.videos[0] ?? missing(noVideo(before.run), '{cli} run it again without --no-video, or attach without --video or without --before')),
   ];
   return { pr, summary, files, before: { summary: summarize(before), files: was.map((path, at) => ({ name: `before-${files[at]!.name}`, path })) } };
 }
