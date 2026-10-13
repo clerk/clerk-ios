@@ -89,7 +89,10 @@ export type BuildState =
   | { readonly state: 'none' }
   | { readonly state: 'building'; readonly sha: string; readonly seconds: number }
   | { readonly state: 'built'; readonly sha: string; readonly seconds: number; readonly incremental: boolean }
-  | { readonly state: 'failed'; readonly sha: string; readonly seconds: number; readonly tail: string };
+  | { readonly state: 'failed'; readonly sha: string; readonly seconds: number; readonly tail: string }
+  | { readonly state: 'timed-out'; readonly sha: string; readonly seconds: number; readonly tail: string };
+
+export const BUILD_TIMEOUT_MINUTES = 45;
 
 export type EndReason = 'stop' | 'idle' | 'cap' | 'tunnel-lost' | 'signal';
 

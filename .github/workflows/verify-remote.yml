@@ -125,6 +125,7 @@ jobs:
           disown
           for _ in $(seq 1 600); do
             [ -s "$WORK/tunnel" ] && break
+            pgrep -f 'session-agent.ts serve' > /dev/null || { echo "::error::the session agent ended before a tunnel came up"; break; }
             sleep 1
           done
           [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
@@ -174,7 +175,6 @@ jobs:
           pkill -f 'session-agent.ts serve' || true
           if [ -n "$UDID" ]; then xcrun simctl shutdown "$UDID" || true; fi
 
-      # Only the directory that `attach` filled over the tunnel. verify-attach.yml on the default branch reads this artifact and nothing else of the run.
       - name: Keep the evidence that attach handed off
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
