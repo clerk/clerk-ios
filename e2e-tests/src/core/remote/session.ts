@@ -80,6 +80,9 @@ export async function sendEvidence(ref: SessionRef, manifest: HandoffManifest, p
   const refused = (what: string, answer: EvidenceAnswer) => new Error(`the session did not take ${what}: ${answer.status === 0 ? answer.error : `${answer.status} ${answer.error}`}`);
 
   const began = await post('begin', manifest);
+  if (began.status === 400) {
+    throw new VerifyFailure('NOT_READY', `the session refused the manifest of run ${manifest.run}: ${began.error}`, '{cli} down, then {cli} up, so that the session runs the verify code of this checkout, then {cli} run again and attach');
+  }
   if (began.status !== 200) throw refused('the manifest', began);
   for (const file of everyFile(manifest)) {
     const fd = openSync(paths.get(file.name)!, 'r');

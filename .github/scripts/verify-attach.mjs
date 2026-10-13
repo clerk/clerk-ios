@@ -203,11 +203,15 @@ function readEntry(zip, entry, directoryAt) {
   return data;
 }
 
-function record(value, keys, what) {
+function anObject(value, what) {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     refuse(`${what} is not an object`);
   }
-  const own = Object.keys(value);
+  return value;
+}
+
+function record(value, keys, what) {
+  const own = Object.keys(anObject(value, what));
   if (own.length !== keys.length || own.some(key => !keys.includes(key))) {
     refuse(`${what} must have exactly the keys ${keys.join(', ')}`);
   }
@@ -282,10 +286,12 @@ function parseManifest(text) {
   } catch {
     return refuse('the manifest is not JSON');
   }
-  const raw = record(parsed, MANIFEST_KEYS, 'the manifest');
-  if (raw.v !== MANIFEST_VERSION) {
-    refuse(`the manifest is not version ${MANIFEST_VERSION}`);
+  const { v } = anObject(parsed, 'the manifest');
+  if (v !== MANIFEST_VERSION) {
+    const found = Number.isInteger(v) && v >= 0 && v <= 999 ? `version ${v}` : 'of no version this script knows';
+    refuse(`the manifest is ${found}, and this script publishes only version ${MANIFEST_VERSION}`);
   }
+  const raw = record(parsed, MANIFEST_KEYS, 'the manifest');
   if (raw.platform !== 'ios' && raw.platform !== 'android') {
     refuse('platform must be ios or android');
   }

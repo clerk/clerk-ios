@@ -490,7 +490,6 @@ describe('the manifest', () => {
   const refused = [
     ['text that is not JSON', () => parseManifest('{')],
     ['a list', () => parseManifest('[]')],
-    ['another version', () => parse({ v: 1 })],
     ['a key the schema does not have', () => parse({ note: 'free text for the description' })],
     ['a missing key', () => parseManifest(JSON.stringify({ ...GOOD, device: undefined }))],
     ['a run id of another shape', () => parse({ run: 'r20261008-052713-253e`; rm -rf /' })],
@@ -553,6 +552,29 @@ describe('the manifest', () => {
       assert.throws(attempt, Refused);
     });
   }
+
+  it('refuses a manifest of another version before it reads anything else of it, and names both versions', () => {
+    const { before: _, ...versionOne } = { ...GOOD, v: 1 };
+    assert.equal(
+      refusal(() => parseManifest(JSON.stringify(versionOne))),
+      'the manifest is version 1, and this script publishes only version 2',
+    );
+    assert.equal(
+      refusal(() => parseManifest(JSON.stringify({ ...GOOD, v: 3, layout: 'a key of a later version' }))),
+      'the manifest is version 3, and this script publishes only version 2',
+    );
+    for (const v of ['2', 2.5, -1, 1000, null, '<img src=x>\n::error::pwned']) {
+      assert.equal(
+        refusal(() => parse({ v })),
+        'the manifest is of no version this script knows, and this script publishes only version 2',
+        JSON.stringify(v),
+      );
+    }
+    assert.equal(
+      refusal(() => parseManifest(JSON.stringify({ device: 'x' }))),
+      'the manifest is of no version this script knows, and this script publishes only version 2',
+    );
+  });
 
   it('accepts a before run, which may have passed nothing, with one file of the same kind for each file of the run', () => {
     assert.deepEqual(parseManifest(JSON.stringify(WITH_BEFORE)), WITH_BEFORE);

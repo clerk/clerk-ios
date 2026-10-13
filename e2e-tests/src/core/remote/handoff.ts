@@ -82,11 +82,16 @@ const refuse = (message: string): never => {
   throw new HandoffRefused(400, message);
 };
 
-function record(value: unknown, keys: readonly string[], what: string): Record<string, unknown> {
+function anObject(value: unknown, what: string): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return refuse(`${what} is not an object`);
-  const extra = Object.keys(value).filter((key) => !keys.includes(key));
-  if (extra.length > 0 || Object.keys(value).length !== keys.length) return refuse(`${what} must have exactly the keys ${keys.join(', ')}`);
   return value as Record<string, unknown>;
+}
+
+function record(value: unknown, keys: readonly string[], what: string): Record<string, unknown> {
+  const raw = anObject(value, what);
+  const extra = Object.keys(raw).filter((key) => !keys.includes(key));
+  if (extra.length > 0 || Object.keys(raw).length !== keys.length) return refuse(`${what} must have exactly the keys ${keys.join(', ')}`);
+  return raw;
 }
 
 function whole(value: unknown, min: number, max: number, what: string): number {
@@ -136,8 +141,12 @@ export function parseHandoffManifest(text: string): HandoffManifest {
   } catch {
     return refuse('the manifest is not JSON');
   }
+  const { v } = anObject(parsed, 'the manifest');
+  if (v !== HANDOFF_VERSION) {
+    const found = typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 999 ? `version ${v}` : 'of no version this session knows';
+    refuse(`the manifest is ${found}, and this session takes only version ${HANDOFF_VERSION}`);
+  }
   const raw = record(parsed, MANIFEST_KEYS, 'the manifest');
-  if (raw.v !== HANDOFF_VERSION) refuse(`manifest version ${String(raw.v)} is not ${HANDOFF_VERSION}`);
   if (raw.platform !== 'ios' && raw.platform !== 'android') refuse('platform must be ios or android');
   const files = parseFiles(raw.files, 'files');
   const before = raw.before === null ? null : parseBefore(raw.before, raw.run, files);

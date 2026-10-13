@@ -106,6 +106,23 @@ describe('the hand-off manifest', () => {
     for (const [what, attempt] of refused) assert.throws(attempt, HandoffRefused, what);
   });
 
+  it('refuses a manifest of another version before it reads anything else of it, and names both versions', () => {
+    const refusal = (manifest: unknown): string => {
+      try {
+        parseHandoffManifest(JSON.stringify(manifest));
+      } catch (error) {
+        if (error instanceof HandoffRefused && error.status === 400) return error.message;
+        throw error;
+      }
+      return 'accepted';
+    };
+    const { before: _, ...versionOne } = { ...good, v: 1 };
+    assert.equal(refusal(versionOne), 'the manifest is version 1, and this session takes only version 2');
+    assert.equal(refusal({ ...good, v: 3, layout: 'a key of a later version' }), 'the manifest is version 3, and this session takes only version 2');
+    for (const v of ['2', 2.5, -1, 1000, null, 'x'.repeat(4000)]) assert.equal(refusal({ ...good, v }), 'the manifest is of no version this session knows, and this session takes only version 2', JSON.stringify(v).slice(0, 20));
+    assert.equal(refusal({ device: 'x' }), 'the manifest is of no version this session knows, and this session takes only version 2');
+  });
+
   it('accepts a before run, which may have passed nothing, with one file of the same kind for each file of the run', () => {
     assert.deepEqual(parseHandoffManifest(JSON.stringify(withBefore)), withBefore);
   });
