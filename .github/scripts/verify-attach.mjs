@@ -404,6 +404,7 @@ const NEWER_COMMITS = 'The pull request has newer commits.';
 const UPLOADED = /https:\/\/github\.com\/user-attachments\/assets\/[0-9a-f-]{36}/g;
 const IMAGE_WIDTH = 280;
 const ACROSS = 2;
+const CENTERED = ':---:';
 
 const sessionRunUrl = (repo, runId) => `https://github.com/${repo}/actions/runs/${runId}`;
 const commitUrl = (repo, commit) => `https://github.com/${repo}/commit/${commit}`;
@@ -412,7 +413,8 @@ const stem = name => name.replace(/\.[a-z0-9]+$/, '');
 const counted = run =>
   `${run.passed} of ${run.total} passed${run.flaky === 0 ? '' : `, ${run.flaky} flaky (passed only on a retry)`}`;
 const table = (header, rows) =>
-  [header, header.map(() => ':---:'), ...rows].map(cells => `| ${cells.join(' | ')} |`).join('\n');
+  [header, header.map(() => CENTERED), ...rows].map(cells => `| ${cells.join(' | ')} |`).join('\n');
+const inTables = block => block.includes(CENTERED);
 
 function mediaTables(files, hasBefore, uploaded) {
   const shown = files.map((name, at) => {
@@ -783,7 +785,7 @@ function publishStep({ env, say, gh = realGh, dryRun = false, pullFile, commitsF
     }
     const held =
       edit.old !== null &&
-      !edit.old.includes('](./') &&
+      inTables(edit.old) &&
       edit.old.includes(`\`${manifest.run}\``) &&
       edit.old.includes(`(${sessionRunUrl(repo, runId)})`);
     const lacksTheNote = held && head !== manifest.commit && !edit.old.includes(NEWER_COMMITS);
@@ -842,7 +844,7 @@ function publishStep({ env, say, gh = realGh, dryRun = false, pullFile, commitsF
   if (pullRequestMismatch(pull, session) !== null || uploaded.length !== files.length) {
     say(
       'notice',
-      `Put verify run ${manifest.run} in the description of pull request #${manifest.pr} as a list of ${files.length} files. The pull request changed before they could be laid out.`,
+      `Put verify run ${manifest.run} in the description of pull request #${manifest.pr} as a list of ${files.length} files. The pull request changed before they could be laid out. A rerun of this job uploads them again and lays them out.`,
     );
     return 'listed';
   }

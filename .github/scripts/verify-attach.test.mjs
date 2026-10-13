@@ -1430,7 +1430,7 @@ describe('the step that edits the description', () => {
       assert.equal(fake.state.laidOutBody, null);
       assert.equal(fake.state.calls.filter(call => call.args[0] === 'pr').length, 1);
       assert.deepEqual(said, [
-        'notice: Put verify run r20261008-052713-253e in the description of pull request #669 as a list of 2 files. The pull request changed before they could be laid out.',
+        'notice: Put verify run r20261008-052713-253e in the description of pull request #669 as a list of 2 files. The pull request changed before they could be laid out. A rerun of this job uploads them again and lays them out.',
       ]);
     });
   }
@@ -1520,10 +1520,9 @@ describe('the step that edits the description', () => {
 
   it('adds that the pull request has newer commits to a run it already published, and uploads nothing again', async () => {
     const NEWER = 'b'.repeat(40);
-    const uploaded = blockOf(GOOD).replaceAll('./', 'https://github.com/user-attachments/assets/');
     const moved = {
       ...PULL,
-      body: `intro\r\n\r\n${uploaded.replaceAll('\n', '\r\n')}\r\noutro`,
+      body: `intro\r\n\r\n${laidOut(SAID, ...AFTER_ONLY).replaceAll('\n', '\r\n')}\r\noutro`,
       head: { ...PULL.head, sha: NEWER },
     };
     const fake = fakeGh(moved, undefined, [{ sha: COMMIT }, { sha: NEWER }]);
@@ -1665,17 +1664,29 @@ describe('the step that edits the description', () => {
     assert.equal(fake.state.writtenBody, null);
   });
 
-  it('does not upload a run that the description already holds', async () => {
-    const fake = fakeGh({
-      ...PULL,
-      body: `intro\n\n${blockOf(GOOD).replaceAll('./', 'https://github.com/user-attachments/assets/')}\n`,
-    });
+  it('does not upload a run that the description already holds in its tables', async () => {
+    const fake = fakeGh({ ...PULL, body: `intro\n\n${laidOut(SAID, ...AFTER_ONLY)}\n` });
     const { outcome, said } = publish(await fetched(), fake);
     assert.equal(outcome, 'already there');
     assert.equal(fake.state.writtenBody, null);
     assert.deepEqual(said, [
       'notice: The description of pull request #669 already holds verify run r20261008-052713-253e.',
     ]);
+  });
+
+  it('uploads a run again and lays it out when an earlier publish left its files as a list', async () => {
+    const leftAsAList = fakeGh(PULL, state => void (state.reads === 3 && (state.pull.state = 'closed')));
+    assert.equal(publish(await fetched(), leftAsAList).outcome, 'listed');
+    const list = leftAsAList.state.pull.body;
+    assert.ok(list.endsWith(`\r\n${asset(1)}\r\n\r\n![profile](${asset(2)})\r\n\r\n<!-- /verify-evidence:ios -->`));
+
+    const rerun = fakeGh({ ...PULL, body: list });
+    assert.equal(publish(await fetched(), rerun).outcome, 'published');
+    assert.deepEqual(
+      rerun.state.calls.filter(call => call.args[0] === 'pr').map(call => call.args.includes('--attach')),
+      [true, false],
+    );
+    assert.equal(rerun.state.pull.body, `${PULL.body}\r\n${laidOut(SAID, ...AFTER_ONLY).replaceAll('\n', '\r\n')}`);
   });
 
   it('uploads a run again when an earlier upload left a file reference that was never rewritten', async () => {
