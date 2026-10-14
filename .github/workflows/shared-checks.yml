@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       run_integration_tests:
-        description: Run integration tests as part of shared checks
+        description: Run the integration tests and the macOS smoke build as part of shared checks
         required: false
         type: boolean
         default: false
@@ -173,6 +173,7 @@ jobs:
         run: make test
 
       - name: Run macOS smoke build
+        if: inputs.run_integration_tests
         run: make smoke-macos
 
       - name: Setup integration test keys

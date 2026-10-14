@@ -16,10 +16,23 @@ function passed(caller: string, input: string): string | undefined {
   return new RegExp(`^ {6}${input}: (.+)$`, 'm').exec(job)?.[1];
 }
 
-function buildPlatforms(caller: string): string {
-  const platforms = passed(caller, 'build_platforms')?.replace(/^'(.*)'$/, '$1');
-  const inputs = shared.slice(shared.indexOf('      build_platforms:'), shared.indexOf('    secrets:'));
-  return platforms ?? /^ {8}default: '(.+)'$/m.exec(inputs)?.[1] ?? 'no build_platforms input';
+function input(caller: string, name: string): string {
+  const declared = shared.slice(shared.search(new RegExp(`^ {6}${name}:$`, 'm'))).split(/\n(?= {6}\w+:\n)/)[0]!;
+  return passed(caller, name) ?? /^ {8}default: (.+)$/m.exec(declared)?.[1] ?? `no ${name} input`;
+}
+
+const buildPlatforms = (caller: string): string => input(caller, 'build_platforms').replace(/^'(.*)'$/, '$1');
+
+function macOSTestSteps(caller: string): string[] {
+  const job = shared.slice(shared.indexOf('  test:\n'), shared.indexOf('  test-ui:\n'));
+  return job
+    .split(/\n(?= {6}- name: )/)
+    .slice(1)
+    .filter((step) => {
+      const condition = (/^ {8}if: (.+)$/m.exec(step)?.[1] ?? 'true').replaceAll('always()', 'true').replace(/inputs\.(\w+)/g, (_, name: string) => input(caller, name));
+      return new Function(`return ${condition};`)() as boolean;
+    })
+    .map((step) => /- name: (.+)/.exec(step)![1]!);
 }
 
 function script(step: string, workflow = shared): string {
@@ -99,6 +112,17 @@ describe('the platforms the shared checks build', () => {
   it('come from the one input that the build matrix and both check run steps read', () => {
     assert.match(shared, /^ {8}platform: \$\{\{ fromJSON\(inputs\.build_platforms\) \}\}$/m);
     assert.equal(shared.match(/^ {10}BUILD_PLATFORMS: \$\{\{ inputs\.build_platforms \}\}$/gm)?.length, 2);
+  });
+});
+
+describe('the ClerkKit tests on macOS', () => {
+  it('run the unit tests alone for a pull request and a push to main, and add the macOS smoke build and the integration tests each night and for a release', () => {
+    const unit = ['Checkout repository', 'Verify macOS and Xcode version', 'Cache Swift dependencies', 'Run unit tests'];
+    const full = [...unit, 'Run macOS smoke build', 'Setup integration test keys', 'Run integration tests', 'Cleanup integration test keys'];
+    assert.deepEqual(
+      ['run-pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map(macOSTestSteps),
+      [unit, unit, full, full],
+    );
   });
 });
 
