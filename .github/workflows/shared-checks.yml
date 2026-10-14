@@ -275,15 +275,7 @@ jobs:
       WATCHED: >-
         e2e-tests
         .github/scripts
-        .github/workflows/checks.yml
-        .github/workflows/nightly-checks.yml
-        .github/workflows/release-sdk.yml
-        .github/workflows/run-pr-ci.yml
-        .github/workflows/shared-checks.yml
-        .github/workflows/verify-app-cache.yml
-        .github/workflows/verify-attach.yml
-        .github/workflows/verify-e2e.yml
-        .github/workflows/verify-remote.yml
+        .github/workflows
         Examples/Quickstart/Quickstart.xcodeproj/project.pbxproj
     defaults:
       run:
@@ -335,9 +327,9 @@ jobs:
         if: steps.changed.outputs.run == 'true'
         run: npm run typecheck
 
-      - name: Run the verify-attach script tests
+      - name: Run the tests of the scripts in .github/scripts
         if: steps.changed.outputs.run == 'true'
-        run: node --test ../.github/scripts/verify-attach.test.mjs
+        run: node --test ../.github/scripts/*.test.mjs
 
   report-manual-ci-check-runs:
     name: Report manual CI check runs

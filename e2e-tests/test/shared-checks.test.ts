@@ -152,12 +152,19 @@ describe('the nightly checks', () => {
     return new Function(`return ${expression};`)() as boolean;
   }
 
-  function notified(webhook: string): { status: number | null; stdout: string; posted: unknown } {
+  const RELEASE_JOB = 'Push, tag, and publish release';
+  const NODE_ARGS = ['.github/scripts/nightly-failure-message.mjs', 'nightly-checks.yml', `release-sdk.yml=${RELEASE_JOB}`];
+  const SINCE = 'Merged since the <https://github.com/clerk/clerk-ios/actions/runs/41|last passing run> (2026-10-13 07:17 UTC):\n• <https://github.com/clerk/clerk-ios/pull/705|#705 Add passkeys> · mikepitre';
+  const HEADLINE = ':red_circle: clerk/clerk-ios nightly checks failed · <https://github.com/clerk/clerk-ios/actions/runs/123|View the run>';
+
+  function notified(webhook: string, list: 'lists' | 'fails' = 'lists'): { status: number | null; stdout: string; node: string[]; posted: unknown } {
     const work = mkdtempSync(join(tmpdir(), 'nightly-notify-'));
     mkdirSync(join(work, 'bin'));
     writeFileSync(join(work, 'bin', 'curl'), `#!/bin/sh\nwhile [ "$#" -gt 1 ]; do [ "$1" = --data ] && printf '%s' "$2" > "${work}/posted"; shift; done\necho "$1" > "${work}/url"\n`, { mode: 0o755 });
+    const node = list === 'lists' ? `printf '%s\\n' '${SINCE}'` : `echo 'GET /actions/workflows/nightly-checks.yml/runs answered 403' >&2; exit 1`;
+    writeFileSync(join(work, 'bin', 'node'), `#!/bin/sh\nprintf '%s\\n' "$@" > "${work}/node"\n${node}\n`, { mode: 0o755 });
     const ran = spawnSync('bash', ['-c', script('Notify Slack', nightly)], {
-      env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
+      env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
       encoding: 'utf8',
       timeout: 20_000,
     });
@@ -165,8 +172,12 @@ describe('the nightly checks', () => {
     try {
       posted = { url: readFileSync(join(work, 'url'), 'utf8').trim(), payload: JSON.parse(readFileSync(join(work, 'posted'), 'utf8')) };
     } catch {}
+    let args: string[] = [];
+    try {
+      args = readFileSync(join(work, 'node'), 'utf8').split('\n').slice(0, -1);
+    } catch {}
     rmSync(work, { recursive: true, force: true });
-    return { status: ran.status, stdout: ran.stdout, posted };
+    return { status: ran.status, stdout: ran.stdout, node: args, posted };
   }
 
   it('run every night at 07:17 UTC, off the top of the hour when GitHub may drop scheduled runs', () => {
@@ -198,25 +209,42 @@ describe('the nightly checks', () => {
     );
   });
 
-  it('post a message that names the repository and links the run', () => {
+  it('post a message that names the repository, links the run, and lists the pull requests merged since the last passing run, as the nightly end-to-end alert does', () => {
     assert.deepEqual(notified('https://hooks.slack.test/T/B/x'), {
       status: 0,
       stdout: '',
-      posted: {
-        url: 'https://hooks.slack.test/T/B/x',
-        payload: {
-          text: 'The nightly checks failed in clerk/clerk-ios',
-          blocks: [
-            { type: 'section', text: { type: 'mrkdwn', text: '*The nightly checks failed in clerk/clerk-ios*' } },
-            { type: 'context', elements: [{ type: 'mrkdwn', text: '<https://github.com/clerk/clerk-ios/actions/runs/123|View the run>' }] },
-          ],
-        },
-      },
+      node: NODE_ARGS,
+      posted: { url: 'https://hooks.slack.test/T/B/x', payload: { text: `${HEADLINE}\n${SINCE}`, unfurl_links: false, unfurl_media: false } },
     });
   });
 
+  it('still name the repository and link the run when the list of pull requests cannot be made', () => {
+    assert.deepEqual(notified('https://hooks.slack.test/T/B/x', 'fails'), {
+      status: 0,
+      stdout: '::warning::Could not list the pull requests merged since the last passing run; the message has only its first line\n',
+      node: NODE_ARGS,
+      posted: { url: 'https://hooks.slack.test/T/B/x', payload: { text: HEADLINE, unfurl_links: false, unfurl_media: false } },
+    });
+  });
+
+  it('post even when the checkout of the script fails, and read the runs and pull requests with only read access', () => {
+    const notify = job('notify');
+    const post = notify.split(/\n(?= {6}- name: )/).find((step) => step.includes('- name: Notify Slack')) ?? '';
+    const granted = (/^ {4}permissions:\n((?: {6}[\w-]+: \w+\n)+)/m.exec(notify)?.[1] ?? '').trim().split('\n').map((line) => line.trim());
+    assert.deepEqual(
+      { post: /^ {8}if: (.+)$/m.exec(post)?.[1], token: /^ {10}GITHUB_TOKEN: (.+)$/m.exec(post)?.[1], permissions: granted },
+      { post: 'always()', token: '${{ github.token }}', permissions: ['actions: read', 'contents: read', 'pull-requests: read'] },
+    );
+  });
+
+  it('count a release as the last passing run only when it published, which it does only after its shared checks passed', () => {
+    const release = read('release-sdk.yml').split(/\n(?= {2}[\w-]+:\n)/).find((text) => text.startsWith('  publish:\n')) ?? '';
+    assert.equal(/^ {4}name: (.+)$/m.exec(release)?.[1], RELEASE_JOB);
+    assert.match(release, /^ {4}if: .*\bneeds\.checks\.result == 'success'/m);
+  });
+
   it('skip the Slack message with a warning when the repository has no webhook', () => {
-    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', posted: null });
+    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification\n', node: [], posted: null });
   });
 });
 

@@ -18,7 +18,7 @@ on:
         type: string
         default: ""
     secrets:
-      SLACK_WEBHOOK_URL:
+      SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL:
         required: false
 
 permissions:
@@ -31,15 +31,15 @@ jobs:
     steps:
       - name: Notify Slack
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
           RELEASE_TAG: ${{ inputs.release_tag }}
           RELEASE_URL: ${{ inputs.release_url }}
           EXPO_BUMP_PR_URL: ${{ inputs.expo_bump_pr_url }}
         run: |
           set -euo pipefail
 
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification"
+          if [ -z "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification"
             exit 0
           fi
 
@@ -88,4 +88,4 @@ jobs:
             --request POST \
             --header "Content-type: application/json" \
             --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+            "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL"

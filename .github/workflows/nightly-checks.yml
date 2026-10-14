@@ -30,44 +30,41 @@ jobs:
       (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     steps:
+      - name: Check out the script that lists the merged pull requests
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts/nightly-failure-message.mjs
+          sparse-checkout-cone-mode: false
+
+      # The message goes out without the list when the checkout or the script fails.
       - name: Notify Slack
+        if: always()
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification"
+          if [ -z "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification"
             exit 0
           fi
 
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          message=":red_circle: $GITHUB_REPOSITORY nightly checks failed · <$run_url|View the run>"
+          if since="$(timeout 120 node .github/scripts/nightly-failure-message.mjs nightly-checks.yml 'release-sdk.yml=Push, tag, and publish release')"; then
+            message="$message"$'\n'"$since"
+          else
+            echo "::warning::Could not list the pull requests merged since the last passing run; the message has only its first line"
+          fi
 
-          PAYLOAD=$(jq -n \
-            --arg repo "$GITHUB_REPOSITORY" \
-            --arg run_url "$run_url" \
-            '{
-              text: "The nightly checks failed in \($repo)",
-              blocks: [
-                {
-                  type: "section",
-                  text: {
-                    type: "mrkdwn",
-                    text: "*The nightly checks failed in \($repo)*"
-                  }
-                },
-                {
-                  type: "context",
-                  elements: [
-                    {
-                      type: "mrkdwn",
-                      text: "<\($run_url)|View the run>"
-                    }
-                  ]
-                }
-              ]
-            }')
+          PAYLOAD=$(jq -n --arg text "$message" '{text: $text, unfurl_links: false, unfurl_media: false}')
 
           curl --fail-with-body \
             --connect-timeout 10 \
@@ -79,4 +76,4 @@ jobs:
             --request POST \
             --header "Content-type: application/json" \
             --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+            "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL"

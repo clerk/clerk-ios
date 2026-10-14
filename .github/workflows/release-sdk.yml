@@ -222,8 +222,10 @@ jobs:
     name: Verify end-to-end tests
     needs: prepare-release
     permissions:
+      actions: read
       checks: write
       contents: read
+      pull-requests: read
     uses: ./.github/workflows/verify-e2e.yml
     with:
       checkout_ref: ${{ needs.prepare-release.outputs.release_sha }}
