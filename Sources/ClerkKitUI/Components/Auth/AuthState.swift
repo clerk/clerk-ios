@@ -124,6 +124,17 @@ final class AuthState {
     }
   }
 
+  func switchAuthStartField() {
+    if authStartPhoneNumberFieldIsActive {
+      if !authStartPhoneNumberIsLocked {
+        authStartPhoneNumber = ""
+      }
+    } else if !authStartIdentifierIsLocked {
+      authStartIdentifier = ""
+    }
+    authStartPhoneNumberFieldIsActive.toggle()
+  }
+
   func clearSensitiveFields() {
     signInPassword = ""
     signInNewPassword = ""

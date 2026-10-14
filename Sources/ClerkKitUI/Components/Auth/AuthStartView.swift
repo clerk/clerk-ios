@@ -445,7 +445,7 @@ extension AuthStartView {
     Button {
       cancelAutomaticPasskeySignIn()
       withAnimation(.default.speed(2)) {
-        authState.authStartPhoneNumberFieldIsActive.toggle()
+        authState.switchAuthStartField()
       }
       restartAutomaticPasskeySignInIfNeeded()
     } label: {

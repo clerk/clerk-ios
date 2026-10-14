@@ -312,6 +312,52 @@ struct AuthStateConfigurationTests {
     #expect(LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults) == nil)
   }
 
+  @Test
+  func switchingToPhoneNumberClearsIdentifier() {
+    let authState = AuthState(userDefaults: makeUserDefaults())
+    authState.authStartIdentifier = "typed@example.com"
+
+    authState.switchAuthStartField()
+
+    #expect(authState.authStartPhoneNumberFieldIsActive)
+    #expect(authState.authStartIdentifier.isEmpty)
+
+    authState.switchAuthStartField()
+
+    #expect(!authState.authStartPhoneNumberFieldIsActive)
+    #expect(authState.authStartIdentifier.isEmpty)
+  }
+
+  @Test
+  func switchingToIdentifierClearsPhoneNumber() {
+    let authState = AuthState(userDefaults: makeUserDefaults())
+    authState.authStartPhoneNumberFieldIsActive = true
+    authState.authStartPhoneNumber = "15555550100"
+
+    authState.switchAuthStartField()
+
+    #expect(!authState.authStartPhoneNumberFieldIsActive)
+    #expect(authState.authStartPhoneNumber.isEmpty)
+
+    authState.switchAuthStartField()
+
+    #expect(authState.authStartPhoneNumberFieldIsActive)
+    #expect(authState.authStartPhoneNumber.isEmpty)
+  }
+
+  @Test
+  func switchingAwayFromLockedPrefilledIdentifierKeepsIt() {
+    let authState = AuthState(
+      config: AuthConfig(initialIdentifier: "seed@example.com", prefilledFieldsAreLocked: true),
+      userDefaults: makeUserDefaults()
+    )
+
+    authState.switchAuthStartField()
+    authState.switchAuthStartField()
+
+    #expect(authState.authStartIdentifier == "seed@example.com")
+  }
+
   private func makeUserDefaults() -> UserDefaults {
     let suiteName = "AuthStateConfigurationTests.\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: suiteName)!
