@@ -367,6 +367,18 @@ describe('attach', () => {
     assert.equal(calls.length, 0);
   });
 
+  it('refuses a run on a session build with uncommitted changes, as the run or as its before, calls no gh, and says to commit, push and run again', async () => {
+    const calls: string[] = [];
+    const { deps, sealed } = checkout({ runner: async (command) => (calls.push(command), { code: 0, stdout: '', stderr: '' }) });
+    const onSession = (builtPatch: string | null): Partial<EvidenceRecord> => ({ backend: 'remote', remote: { provider: 'github-actions', runner: 'xcode-27', builtSha: AFTER_COMMIT, builtPatch } });
+    const patched = sealed({ called: 'after', change: onSession('c'.repeat(64)) });
+    const committed = sealed({ called: 'after', change: onSession(null) });
+    const refusal = { code: 'EVIDENCE_UNSAFE', message: `run ${patched.run} ran on a session build of ${AFTER_COMMIT.slice(0, 12)} with uncommitted changes (cccccccccccc), so no commit holds the app it shows`, fix: 'commit and push the changes, {cli} run again, and attach the new run' };
+    await assert.rejects(attach(deps, { verb: 'attach', run: patched.run, pr: 9, media: still, before: null }), refusal);
+    await assert.rejects(attach(deps, { verb: 'attach', run: committed.run, pr: 9, media: still, before: patched.run }), refusal);
+    assert.deepEqual(calls, []);
+  });
+
   it('shows a still change to something that exists as before and after screenshots, side by side at a fixed width, and no video', async () => {
     const gh = fakeGh();
     const { deps, sealed } = checkout(gh);
