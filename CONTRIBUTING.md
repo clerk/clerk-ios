@@ -146,9 +146,10 @@ The first kickoff is recorded in a separate bot comment so pushes, force-pushes,
 reopening the PR do not reset it.
 
 PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
-the iOS and macOS builds. The macCatalyst, watchOS, tvOS, and visionOS builds run on
-`main` every night at 07:00 UTC and before each release. A failed nightly run posts to
-Slack.
+the iOS and macOS builds. On a PR, the E2E runner tests skip when no file they read
+changed. Every night at 07:00 UTC on `main`, and before each release, the checks also
+run the integration tests and the macCatalyst, watchOS, tvOS, and visionOS builds. A
+failed nightly run posts to Slack.
 
 The CI gate runs trusted scripts from the default branch, so workflow changes become
 active after they land there. Run its regression tests locally with Node.js 22 or later:

@@ -1,7 +1,7 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -10,12 +10,16 @@ const WORKFLOWS = join(import.meta.dirname, '..', '..', '.github', 'workflows');
 const read = (file: string): string => readFileSync(join(WORKFLOWS, file), 'utf8');
 const shared = read('shared-checks.yml');
 
-function buildPlatforms(caller: string): string {
+function passed(caller: string, input: string): string | undefined {
   const job = read(caller).split(/\n(?= {2}[\w-]+:\n)/).find((block) => block.includes('uses: ./.github/workflows/shared-checks.yml'));
   assert.ok(job, `${caller} calls shared-checks.yml`);
-  const passed = /^ {6}build_platforms: '(.+)'$/m.exec(job)?.[1];
+  return new RegExp(`^ {6}${input}: (.+)$`, 'm').exec(job)?.[1];
+}
+
+function buildPlatforms(caller: string): string {
+  const platforms = passed(caller, 'build_platforms')?.replace(/^'(.*)'$/, '$1');
   const inputs = shared.slice(shared.indexOf('      build_platforms:'), shared.indexOf('    secrets:'));
-  return passed ?? /^ {8}default: '(.+)'$/m.exec(inputs)?.[1] ?? 'no build_platforms input';
+  return platforms ?? /^ {8}default: '(.+)'$/m.exec(inputs)?.[1] ?? 'no build_platforms input';
 }
 
 function script(step: string, workflow = shared): string {
@@ -202,5 +206,90 @@ describe('the nightly checks', () => {
 
   it('skip the Slack message with a warning when the repository has no webhook', () => {
     assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', posted: null });
+  });
+});
+
+describe('the nightly checks and the release', () => {
+  it('both run the integration tests with the test keys', () => {
+    assert.deepEqual(
+      ['nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'run_integration_tests')),
+      ['true', 'true'],
+    );
+    assert.match(read('nightly-checks.yml'), /^ {6}CLERK_TEST_KEYS_JSON: \$\{\{ secrets\.CLERK_TEST_KEYS_JSON \}\}$/m);
+  });
+});
+
+describe('the E2E runner tests', () => {
+  const job = shared.slice(shared.indexOf('  e2e-runner-tests:'), shared.indexOf('  report-manual-ci-check-runs:'));
+  const watched = (/^ {6}WATCHED: >-\n((?: {8}.+\n)+)/m.exec(job)?.[1] ?? '').split('\n').map((line) => line.trim()).filter(Boolean);
+  const git = (cwd: string, ...args: string[]): string => {
+    const ran = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', '-c', 'init.defaultBranch=main', ...args], { cwd, encoding: 'utf8' });
+    assert.equal(ran.status, 0, ran.stderr);
+    return ran.stdout;
+  };
+  const change = (cwd: string, file: string, text: string): void => {
+    mkdirSync(join(cwd, file, '..'), { recursive: true });
+    writeFileSync(join(cwd, file), text);
+    git(cwd, 'add', '-A');
+    git(cwd, 'commit', '-q', '-m', file);
+  };
+
+  function ran(base: string, changed: string): string {
+    const server = mkdtempSync(join(tmpdir(), 'e2e-runner-tests-'));
+    const upstream = join(server, 'clerk', 'clerk-ios.git');
+    mkdirSync(upstream, { recursive: true });
+    git(upstream, 'init', '-q');
+    for (const file of ['Sources/ClerkKit/Clerk.swift', 'e2e-tests/src/cli.ts', '.github/workflows/verify-remote.yml']) change(upstream, file, 'one\n');
+    const pr = join(server, 'pr');
+    git(server, 'clone', '-q', upstream, pr);
+    git(pr, 'switch', '-q', '-c', 'pr');
+    change(pr, changed, 'two\n');
+    change(upstream, 'e2e-tests/src/cli.ts', 'changed on main after the pull request branched\n');
+    writeFileSync(join(server, 'output'), '');
+    const checked = spawnSync('bash', ['-c', script('Check whether a file the tests read changed')], {
+      cwd: pr,
+      env: { PATH: process.env.PATH, BASE: base, WATCHED: watched.join(' '), GITHUB_OUTPUT: join(server, 'output'), GITHUB_SERVER_URL: server, GITHUB_REPOSITORY: 'clerk/clerk-ios' },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+    assert.equal(checked.status, 0, checked.stderr);
+    const output = readFileSync(join(server, 'output'), 'utf8');
+    rmSync(server, { recursive: true, force: true });
+    return output;
+  }
+
+  it('skip on a pull request that changes no file they read, even when main changed one since the pull request branched', () => {
+    assert.equal(ran('main', 'Sources/ClerkKit/Clerk.swift'), '');
+  });
+
+  it('run on a pull request that changes the test package or a workflow they read', () => {
+    assert.deepEqual([ran('main', 'e2e-tests/src/cli.ts'), ran('main', '.github/workflows/verify-remote.yml')], ['run=true\n', 'run=true\n']);
+  });
+
+  it('run in full when no branch is given to diff against, and only PR CI gives one', () => {
+    assert.equal(ran('', 'Sources/ClerkKit/Clerk.swift'), 'run=true\n');
+    assert.deepEqual(
+      ['run-pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'e2e_runner_tests_base')),
+      ['${{ github.event.repository.default_branch }}', undefined, undefined, undefined],
+    );
+  });
+
+  it('skip each step after the check, so the job still succeeds', () => {
+    const steps = job.split(/\n(?= {6}- name: )/).slice(1);
+    const after = steps.slice(steps.findIndex((step) => step.includes('id: changed')) + 1);
+    assert.deepEqual(
+      after.map((step) => /^ {8}if: (.+)$/m.exec(step)?.[1]),
+      after.map(() => "steps.changed.outputs.run == 'true'"),
+    );
+    assert.equal(after.length, 5);
+  });
+
+  it('watch every workflow a test reads, the scripts, and the test package itself', () => {
+    const tests = join(import.meta.dirname);
+    const named = new Set(readdirSync(tests).flatMap((file) => [...readFileSync(join(tests, file), 'utf8').matchAll(/[\w-]+\.yml/g)].map((match) => match[0])));
+    const workflows = [...named].filter((name) => existsSync(join(WORKFLOWS, name))).map((name) => `.github/workflows/${name}`);
+    assert.deepEqual(workflows.filter((path) => !watched.includes(path)), []);
+    assert.deepEqual(['e2e-tests', '.github/scripts'].filter((path) => !watched.includes(path)), []);
+    assert.deepEqual(watched.filter((path) => !existsSync(join(WORKFLOWS, '..', '..', path))), []);
   });
 });
