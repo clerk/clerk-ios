@@ -48,7 +48,7 @@ function notified(webhook: string, script: 'lists' | 'fails' = 'lists'): { statu
   const node = script === 'lists' ? `printf '%s\\n' '${SINCE}'` : `echo 'GET /actions/workflows/verify-e2e.yml/runs answered 403' >&2; exit 1`;
   writeFileSync(join(work, 'bin', 'node'), `#!/bin/sh\nprintf '%s\\n' "$@" > "${work}/node"\n${node}\n`, { mode: 0o755 });
   const ran = spawnSync('bash', ['-c', step], {
-    env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
+    env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
     encoding: 'utf8',
     timeout: 20_000,
   });
@@ -174,6 +174,6 @@ describe('the Slack message about a failed nightly run', () => {
   });
 
   it('is skipped with a warning when the repository has no Slack webhook', () => {
-    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', node: [], posted: null });
+    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification\n', node: [], posted: null });
   });
 });

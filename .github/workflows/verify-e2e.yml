@@ -15,7 +15,7 @@ on:
     secrets:
       MOBILE_VERIFICATION_PLATFORM_API_KEY:
         required: false
-      SLACK_WEBHOOK_URL:
+      SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL:
         required: false
   workflow_dispatch:
   schedule:
@@ -272,13 +272,13 @@ jobs:
       - name: Notify Slack
         if: always()
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification"
+          if [ -z "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification"
             exit 0
           fi
 
@@ -302,4 +302,4 @@ jobs:
             --request POST \
             --header "Content-type: application/json" \
             --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+            "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL"

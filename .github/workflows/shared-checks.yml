@@ -275,15 +275,7 @@ jobs:
       WATCHED: >-
         e2e-tests
         .github/scripts
-        .github/workflows/checks.yml
-        .github/workflows/nightly-checks.yml
-        .github/workflows/release-sdk.yml
-        .github/workflows/run-pr-ci.yml
-        .github/workflows/shared-checks.yml
-        .github/workflows/verify-app-cache.yml
-        .github/workflows/verify-attach.yml
-        .github/workflows/verify-e2e.yml
-        .github/workflows/verify-remote.yml
+        .github/workflows
         Examples/Quickstart/Quickstart.xcodeproj/project.pbxproj
     defaults:
       run:

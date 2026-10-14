@@ -219,4 +219,4 @@ jobs:
       release_url: ${{ github.event.release.html_url }}
       expo_bump_pr_url: ${{ needs.open-pr.outputs.pr_url }}
     secrets:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
