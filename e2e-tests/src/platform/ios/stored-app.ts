@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { BUILD_HOST, BUILD_INPUTS, WORKSPACE } from '../../host-app.ts';
 
 export interface AppIdentity {
@@ -52,6 +52,8 @@ function output(command: string, args: readonly string[], cwd: string): string {
   return ran.stdout;
 }
 
+const BUILT_WHOLE = ['Sources', 'Examples/E2EHost'] as const;
+
 export function inputTree(worktree: string): InputTree {
   const listed = output('git', ['ls-tree', '-r', '-t', '-z', 'HEAD', '--', ...BUILD_INPUTS], worktree).split('\0').filter((line) => line !== '');
   const entries = listed.map((line) => {
@@ -60,7 +62,9 @@ export function inputTree(worktree: string): InputTree {
   });
   const files = listed.filter((line) => line.split(' ')[1] !== 'tree');
   const changed = output('git', ['status', '--porcelain', '-z', '--', ...BUILD_INPUTS], worktree).split('\0').filter((line) => line !== '').map((line) => line.slice(3));
-  return { head: output('git', ['rev-parse', 'HEAD'], worktree).trim(), hash: sha256(files.join('\0')), entries, changed };
+  // SwiftPM targets and Xcode's synchronized folders compile every file in them, ignored by git or not.
+  const ignored = output('git', ['status', '--porcelain', '--ignored', '-z', '--', ...BUILT_WHOLE], worktree).split('\0').filter((line) => line.startsWith('!! ')).map((line) => line.slice(3)).filter((path) => basename(path) !== '.DS_Store');
+  return { head: output('git', ['rev-parse', 'HEAD'], worktree).trim(), hash: sha256(files.join('\0')), entries, changed: [...changed, ...ignored] };
 }
 
 export function toolchain(cwd: string): Toolchain {

@@ -159,6 +159,23 @@ describe('the key of a stored E2EHost', () => {
     assert.match(stdout, /^::warning title=verify::no stored app is used or kept: the checkout differs from [0-9a-f]{12} in Sources\/ClerkKit\/Clerk\.swift$/m);
     assert.match(stdout, /^key=$/m);
   });
+
+  it('is empty, with the reason, when the host app folder holds a file git ignores', () => {
+    const repo = checkout();
+    commit(repo, '.gitignore', 'Package.resolved\nExamples/**/LocalSecrets.plist\n');
+    writeFileSync(join(repo.dir, 'Examples/E2EHost/E2EHost/LocalSecrets.plist'), 'secrets\n');
+    const { stdout } = sessionBuild(repo, ['name', scratch('verify-stored-app-work-')]);
+    assert.match(stdout, /^::warning title=verify::no stored app is used or kept: the checkout differs from [0-9a-f]{12} in Examples\/E2EHost\/E2EHost\/LocalSecrets\.plist$/m);
+    assert.match(stdout, /^key=$/m);
+  });
+
+  it('stays the same when Finder leaves a .DS_Store in the sources', () => {
+    const repo = checkout();
+    commit(repo, '.gitignore', 'Package.resolved\n.DS_Store\n');
+    const before = named(repo).key;
+    writeFileSync(join(repo.dir, 'Sources/ClerkKit/.DS_Store'), 'finder\n');
+    assert.equal(named(repo).key, before);
+  });
 });
 
 describe('a session build', () => {
@@ -320,6 +337,16 @@ describe('the workflows that store and restore', () => {
   it('build the app on main when any build input changes', () => {
     const paths = main.slice(main.indexOf('paths:'), main.indexOf('workflow_dispatch:')).split('\n').map((line) => line.trim().replace(/^- /, ''));
     for (const input of BUILD_INPUTS) assert.ok(paths.includes(input) || paths.includes(`${input}/**`), `${input} is not a path that starts verify-app-cache.yml`);
+  });
+});
+
+describe('the workflow step that reports the app', () => {
+  const session = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8');
+  const step = session.slice(session.indexOf('- name: Report the app and the stage times'), session.indexOf('- name: Store the app for the next session'));
+
+  it('waits up to 25 minutes for a running build and says so before it reports without it', () => {
+    assert.match(step, /seq 1 1500\b/);
+    assert.ok(step.indexOf('was still running after 25 minutes') < step.indexOf('outcome'), 'the warning comes before the outcome is read');
   });
 });
 
