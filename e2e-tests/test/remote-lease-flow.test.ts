@@ -135,6 +135,16 @@ describe('lease flow with a backend that builds the app', () => {
     assert.deepEqual([held.session, held.builtSha, held.builtPatch], ['s1', 'a'.repeat(40), null]);
   });
 
+  it('says that the build with uncommitted changes is already on the session when it installs nothing', async () => {
+    const { deps, events, progress, edit } = setup();
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    edit('two', 'a', 'p1');
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    const result = await up(deps, { verb: 'up', waitSeconds: 0 });
+    assert.deepEqual(events.slice(2), ['install s1 sha=a patch=p1']);
+    assert.equal(progress.filter((line) => line.startsWith('build   ')).at(-1), `build   ${result.builds[0]!.key}  github-actions  commit ${'a'.repeat(12)} with uncommitted changes p1  already on the session`);
+  });
+
   it('leases a new session when the held one has stopped itself', async () => {
     const { deps, events, progress, lose } = setup();
     await up(deps, { verb: 'up', waitSeconds: 0 });

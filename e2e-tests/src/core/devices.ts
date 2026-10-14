@@ -126,7 +126,8 @@ async function ensureBuild(host: HostAdapter, platform: Platform, workspace: Wor
           })
         : { sha: onSession, patch: null };
     const app: BuiltApp = { platform, key, appId: host.appId(platform), path: null, source: 'github-actions', sourceSha: source.sha, patch: source.patch };
-    return { app, view: { platform, key, source: app.source, reused: onSession !== null, seconds: 0 } };
+    const onTheSession = heldIsAlive && held?.backend === 'remote' && held.installedBuild === key && held.builtSha === source.sha && held.builtPatch === (source.patch?.sha256 ?? null);
+    return { app, view: { platform, key, source: app.source, reused: onTheSession, seconds: 0 } };
   }
   const existing = readBuiltApp(workspace, key);
   if (existing !== null) return { app: existing, view: { platform, key, source: existing.source, reused: true, seconds: 0 } };
