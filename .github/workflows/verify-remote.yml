@@ -87,7 +87,6 @@ jobs:
           WORK="$RUNNER_TEMP/verify-remote"
           mkdir -p "$WORK"
           echo "VERIFY_SESSION_WORK=$WORK" >> "$GITHUB_ENV"
-          echo "AGENT_DEVICE_IOS_RUNNER_DERIVED_PATH=$WORK/xctest-runner" >> "$GITHUB_ENV"
           echo "start $(date +%s)000" >> "$WORK/marks"
 
       - name: Pick the simulator
@@ -155,13 +154,11 @@ jobs:
           restore-keys: verify-derived-${{ steps.app.outputs.toolchain }}-
 
       - name: Install the package's pinned tools
-        id: tools
         timeout-minutes: 10
         run: |
           set -euo pipefail
           npm ci --prefix "$PACKAGE" --no-audit --no-fund
-          "$PACKAGE/node_modules/.bin/agent-device" --version | tee "$VERIFY_SESSION_WORK/agent-device-version"
-          echo "agent_device=$(cat "$VERIFY_SESSION_WORK/agent-device-version")" >> "$GITHUB_OUTPUT"
+          "$PACKAGE/node_modules/.bin/agent-device" --version
           echo "tools-installed $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
 
       - name: Restore the XCTest runner
@@ -169,8 +166,8 @@ jobs:
         if: steps.device.outputs.udid != ''
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ runner.temp }}/verify-remote/xctest-runner
-          key: verify-xctest-runner-${{ steps.tools.outputs.agent_device }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
+          path: ~/.agent-device/apple-runner
+          key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
 
       - name: Start the session agent and tunnel
         id: tunnel
@@ -223,7 +220,7 @@ jobs:
             [ "$idle" -ge 20 ] && break
             sleep 1
           done
-          xcrun simctl bootstatus "$UDID" -b
+          [ -f "$VERIFY_SESSION_WORK/booted" ] || xcrun simctl bootstatus "$UDID" -b
 
       - name: Prepare the XCTest runner
         id: prepare
@@ -233,15 +230,13 @@ jobs:
           set -uo pipefail
           echo "runner-started $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
           log="$VERIFY_SESSION_WORK/prepare.log"
-          "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --timeout 900000 2>&1 | tee "$log"
-          prepared=$?
-          if [ "$prepared" -ne 0 ]; then
-            rm -rf "$AGENT_DEVICE_IOS_RUNNER_DERIVED_PATH"
-            "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --timeout 900000 2>&1 | tee "$log"
-            prepared=$?
-          fi
-          if [ "$prepared" -ne 0 ]; then
-            echo "::warning::prepare ios-runner failed twice; the first snapshot pays for it"
+          prepared=no
+          for attempt in 1 2 3; do
+            "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --timeout 900000 2>&1 | tee -a "$log" && prepared=yes && break
+            echo "prepare ios-runner failed on attempt $attempt of 3"
+          done
+          if [ "$prepared" = no ]; then
+            echo "::warning::prepare ios-runner failed three times; the first snapshot pays for it"
             exit 0
           fi
           if grep -q 'Building Apple runner' "$log"; then how=built; else how=reused; fi
@@ -275,8 +270,8 @@ jobs:
         if: steps.prepare.outputs.how == 'built' && steps.runner.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          path: ${{ runner.temp }}/verify-remote/xctest-runner
-          key: verify-xctest-runner-${{ steps.tools.outputs.agent_device }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
+          path: ~/.agent-device/apple-runner
+          key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
 
       - name: Store the Swift packages
         if: steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)

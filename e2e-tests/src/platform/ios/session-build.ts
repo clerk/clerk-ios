@@ -74,9 +74,10 @@ function decide(work: string, outcome: AppOutcome): void {
 function putOnSimulator(work: string, udid: string, app: string | null): number {
   mark(work, 'boot-started');
   const booted = runShown('xcrun', ['simctl', 'bootstatus', udid, '-b'], SIMULATOR_LIMIT_MS);
+  if (booted !== 0) return booted;
   mark(work, 'booted');
-  writeWhole(join(work, 'booted'), `${booted}\n`);
-  if (booted !== 0 || app === null) return booted;
+  writeWhole(join(work, 'booted'), '');
+  if (app === null) return 0;
   const installed = runShown('xcrun', ['simctl', 'install', udid, app], SIMULATOR_LIMIT_MS);
   mark(work, 'installed');
   return installed;

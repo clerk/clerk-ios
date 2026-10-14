@@ -247,7 +247,7 @@ describe('a session build', () => {
     assert.equal(sessionBuild(repo, ['build', work, 'UDID-1']).status, 65);
     assert.equal(outcomeOf(work).state, 'failed');
     assert.deepEqual(callsOf(repo).filter((line) => line.startsWith('xcrun simctl')), ['xcrun simctl bootstatus UDID-1 -b']);
-    assert.equal(readFileSync(join(work, 'booted'), 'utf8'), '0\n');
+    assert.equal(existsSync(join(work, 'booted')), true);
   });
 
   it('gives a source the time of its last build when its content is the same, and a new time when it changed', () => {
@@ -323,13 +323,13 @@ describe('the workflow step that waits for the simulator', () => {
   const lines = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8').split('\n').map((line) => line.trim());
   const step = lines.indexOf('- name: Wait for the simulator');
   const first = lines.findIndex((line, at) => at > step && line === 'idle=0');
-  const last = lines.findIndex((line, at) => at > first && line.startsWith('xcrun simctl bootstatus'));
+  const last = lines.findIndex((line, at) => at > first && line.endsWith('xcrun simctl bootstatus "$UDID" -b'));
   const wait = lines.slice(first, last + 1).join('\n');
 
   function waited(build: 'running-then-booted' | 'none'): { readonly status: number | null; readonly sleeps: number; readonly booted: string } {
     const work = scratch('verify-simulator-wait-');
     mkdirSync(join(work, 'bin'));
-    writeFileSync(join(work, 'slept'), '');
+    for (const file of ['slept', 'xcrun']) writeFileSync(join(work, file), '');
     writeFileSync(join(work, 'bin', 'pgrep'), `#!/bin/sh\nexit ${build === 'none' ? 1 : 0}\n`, { mode: 0o755 });
     writeFileSync(join(work, 'bin', 'sleep'), `#!/bin/sh\necho x >> "${work}/slept"\n[ "$(wc -l < "${work}/slept")" -ge 40 ] && [ ${build === 'none' ? 0 : 1} = 1 ] && touch "${work}/booted"\nexit 0\n`, { mode: 0o755 });
     writeFileSync(join(work, 'bin', 'xcrun'), `#!/bin/sh\necho "$*" > "${work}/xcrun"\n`, { mode: 0o755 });
@@ -337,12 +337,52 @@ describe('the workflow step that waits for the simulator', () => {
     return { status: ran.status, sleeps: readFileSync(join(work, 'slept'), 'utf8').split('\n').length - 1, booted: readFileSync(join(work, 'xcrun'), 'utf8') };
   }
 
-  it('leaves the boot to a running build, however long the build takes', () => {
+  it('leaves the boot to a running build, however long the build takes, and does not ask the simulator again', () => {
     assert.ok(step > 0 && first > step && last > first, 'the wait loop is in the workflow');
-    assert.deepEqual(waited('running-then-booted'), { status: 0, sleeps: 40, booted: 'simctl bootstatus UDID-1 -b\n' });
+    assert.deepEqual(waited('running-then-booted'), { status: 0, sleeps: 40, booted: '' });
   });
 
   it('boots the simulator itself after 20 seconds with no build running', () => {
     assert.deepEqual(waited('none'), { status: 0, sleeps: 19, booted: 'simctl bootstatus UDID-1 -b\n' });
+  });
+});
+
+describe('the workflow step that prepares the XCTest runner', () => {
+  const lines = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8').split('\n').map((line) => line.trim());
+  const step = lines.indexOf('- name: Prepare the XCTest runner');
+  const first = lines.findIndex((line, at) => at > step && line === 'set -uo pipefail');
+  const last = lines.findIndex((line, at) => at > first && line.startsWith('echo "runner-$how'));
+  const prepare = lines.slice(first, last + 1).join('\n');
+
+  function prepared(attempts: readonly ('fails' | 'builds' | 'reuses')[]): { readonly status: number | null; readonly output: string; readonly marks: string; readonly notes: readonly string[] } {
+    const work = scratch('verify-prepare-');
+    mkdirSync(join(work, 'node_modules', '.bin'), { recursive: true });
+    writeFileSync(join(work, 'attempts'), `${attempts.join('\n')}\n`);
+    writeFileSync(join(work, 'asked'), '');
+    writeFileSync(join(work, 'output'), '');
+    writeFileSync(
+      join(work, 'node_modules', '.bin', 'agent-device'),
+      `#!/bin/sh\necho x >> "${work}/asked"\ncase "$(sed -n "$(wc -l < "${work}/asked" | tr -d ' ')p" "${work}/attempts")" in\n  builds) echo "Building Apple runner..."; echo "Prepared Apple runner: iPhone Air" ;;\n  reuses) echo "Prepared Apple runner: iPhone Air" ;;\n  *) echo "Error (COMMAND_FAILED): Failed to start daemon" >&2; exit 1 ;;\nesac\n`,
+      { mode: 0o755 },
+    );
+    const ran = spawnSync('bash', ['-e', '-c', prepare], { env: { PATH: process.env.PATH, PACKAGE: work, VERIFY_SESSION_WORK: work, GITHUB_OUTPUT: join(work, 'output') }, encoding: 'utf8', timeout: 60_000 });
+    const marks = existsSync(join(work, 'marks')) ? readFileSync(join(work, 'marks'), 'utf8').replace(/ \d+/g, '') : '';
+    return { status: ran.status, output: readFileSync(join(work, 'output'), 'utf8'), marks, notes: ran.stdout.split('\n').filter((line) => line.includes('failed')) };
+  }
+
+  it('says that a restored runner was reused, and that a new one was built', () => {
+    assert.ok(step > 0 && first > step && last > first, 'the step is in the workflow');
+    assert.deepEqual(prepared(['reuses']), { status: 0, output: 'how=reused\n', marks: 'runner-started\nrunner-reused\n', notes: [] });
+    assert.deepEqual(prepared(['builds']), { status: 0, output: 'how=built\n', marks: 'runner-started\nrunner-built\n', notes: [] });
+  });
+
+  it('tries again when agent-device fails, as it does while the simulator is in its first-boot work, in the shell GitHub runs it with', () => {
+    assert.deepEqual(prepared(['fails', 'fails', 'reuses']), { status: 0, output: 'how=reused\n', marks: 'runner-started\nrunner-reused\n', notes: ['prepare ios-runner failed on attempt 1 of 3', 'prepare ios-runner failed on attempt 2 of 3'] });
+  });
+
+  it('goes on to mark the device ready, with a warning, when three attempts fail', () => {
+    const { status, output, marks, notes } = prepared(['fails', 'fails', 'fails']);
+    assert.deepEqual({ status, output, marks }, { status: 0, output: '', marks: 'runner-started\n' });
+    assert.equal(notes.at(-1), '::warning::prepare ios-runner failed three times; the first snapshot pays for it');
   });
 });
