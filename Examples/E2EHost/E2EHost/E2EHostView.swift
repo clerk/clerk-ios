@@ -14,11 +14,17 @@ struct E2EHostView: View {
     case failed(VerifyState.Failure)
   }
 
+  private enum Destination {
+    case authView
+    case customSignIn
+  }
+
   private enum Screen {
     case loading
     case error(VerifyState.Failure)
     case home
     case auth
+    case customSignIn
 
     var name: String {
       switch self {
@@ -26,6 +32,7 @@ struct E2EHostView: View {
       case .error: "error"
       case .home: "home"
       case .auth: "auth"
+      case .customSignIn: "customSignIn"
       }
     }
   }
@@ -36,7 +43,7 @@ struct E2EHostView: View {
 
   @State private var launch = Launch.loading
   @State private var authViewIsPresented = false
-  @State private var authViewIsFullScreen = false
+  @State private var destination: Destination?
 
   init(configuration: E2EConfiguration) {
     self.configuration = configuration
@@ -51,8 +58,8 @@ struct E2EHostView: View {
         verifyState.log()
       }
       .onChange(of: clerk.isAuthFlowComplete) { _, isComplete in
-        if isComplete {
-          authViewIsFullScreen = false
+        if isComplete, destination == .authView {
+          destination = nil
         }
       }
   }
@@ -64,7 +71,11 @@ struct E2EHostView: View {
     case .failed(let failure):
       .error(failure)
     case .ready:
-      authViewIsFullScreen && !clerk.isAuthFlowComplete ? .auth : .home
+      switch destination {
+      case .authView? where !clerk.isAuthFlowComplete: .auth
+      case .customSignIn?: .customSignIn
+      default: .home
+      }
     }
   }
 
@@ -79,6 +90,10 @@ struct E2EHostView: View {
       home
     case .auth:
       authView
+    case .customSignIn:
+      CustomSignInView {
+        destination = nil
+      }
     }
   }
 
@@ -136,9 +151,14 @@ struct E2EHostView: View {
         .accessibilityIdentifier(E2EIdentifiers.Auth.signIn)
 
         Button("Sign in full screen") {
-          authViewIsFullScreen = true
+          destination = .authView
         }
         .accessibilityIdentifier(E2EIdentifiers.Auth.signInFullScreen)
+
+        Button("Custom sign-in") {
+          destination = .customSignIn
+        }
+        .accessibilityIdentifier(E2EIdentifiers.Home.customSignIn)
       }
     }
     .padding()

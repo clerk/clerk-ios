@@ -1,6 +1,7 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
+import { totp } from '../../totp.ts';
 
-test('a sign-up on an MFA-required instance moves straight into the setup-MFA task', async ({ host, screen }) => {
+test('a sign-up on an MFA-required instance moves straight into the setup-MFA task, and an authenticator code finishes it', async ({ host, screen }) => {
   const email = await host.newEmail();
   await host.launch({ authMode: 'signUp' });
   await host.tap(host.app.signInFullScreen);
@@ -12,10 +13,19 @@ test('a sign-up on an MFA-required instance moves straight into the setup-MFA ta
   await expect(password).toBeVisible({ timeout: 20_000 });
   await host.fill(password, `Verify-${host.runId}-Pw1!`);
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
-  await host.expectVisible(screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp'), 'the authenticator app choice of the setup-MFA task', 60_000);
-  await expect(screen.getByTestId('clerk.auth.sessionTask.setupMfa.smsCode')).toBeVisible();
+  const authenticatorApp = screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp');
+  await host.expectVisible(authenticatorApp, 'the authenticator app choice of the setup-MFA task', 60_000);
+  await host.expectVisible(screen.getByTestId('clerk.auth.sessionTask.setupMfa.smsCode'), 'the SMS code choice of the setup-MFA task');
   await host.screenshot('sign-up-session-task');
-  await host.tap(screen.getByTestId('clerk.userButton.profile'));
-  await expect(screen.getByText(email)).toBeVisible({ timeout: 20_000 });
-  await host.screenshot('sign-up-session-task-account');
+  await host.tap(authenticatorApp);
+  const secret = screen.getByTestId('clerk.auth.sessionTask.totp.secret');
+  await expect(secret).toBeVisible({ timeout: 20_000 });
+  const secretText = (await secret.textContent()) ?? '';
+  await host.tap(screen.getByTestId('clerk.auth.sessionTask.totp.continue'));
+  await host.fill(screen.getByTestId('clerk.auth.sessionTask.totp.code'), totp(secretText, Date.now() / 1000));
+  const backupCodesContinue = screen.getByTestId('clerk.auth.sessionTask.backupCodes.continue');
+  await screen.scrollUntilVisible(backupCodesContinue);
+  await host.tap(backupCodesContinue);
+  await host.expectSignedInAs(email, 30_000);
+  await host.screenshot('sign-up-task-complete');
 });
