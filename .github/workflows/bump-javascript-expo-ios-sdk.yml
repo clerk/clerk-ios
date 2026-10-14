@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: iOS SDK version to pin in @clerk/expo-native-components (or @clerk/expo before the split)
+        description: iOS SDK version to pin in @clerk/expo-native-components
         required: true
         type: string
 
@@ -83,16 +83,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Native components moved from @clerk/expo to @clerk/expo-native-components; support both layouts.
-          if [ -f packages/expo-native-components/ios/ClerkExpo.podspec ]; then
-            podspec_file="packages/expo-native-components/ios/ClerkExpo.podspec"
-            package_name="@clerk/expo-native-components"
-            commit_scope="expo-native-components"
-          else
-            podspec_file="packages/expo/ios/ClerkExpo.podspec"
-            package_name="@clerk/expo"
-            commit_scope="expo"
-          fi
+          podspec_file="packages/expo-native-components/ios/ClerkExpo.podspec"
+          package_name="@clerk/expo-native-components"
+          commit_scope="expo-native-components"
           echo "podspec_file=$podspec_file" >> "$GITHUB_OUTPUT"
           echo "package_name=$package_name" >> "$GITHUB_OUTPUT"
           echo "commit_scope=$commit_scope" >> "$GITHUB_OUTPUT"
