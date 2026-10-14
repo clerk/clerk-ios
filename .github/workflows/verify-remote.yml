@@ -71,6 +71,7 @@ jobs:
       AGENT_DEVICE_IOS_RUNNER_IDLE_STOP_MS: "0"
       AGENT_DEVICE_LEASE_TTL_MS: "21600000"
       AGENT_DEVICE_LEASE_MAX_TTL_MS: "21600000"
+      SESSION_BUILD: e2e-tests/src/platform/ios/session-build.ts
     steps:
       - uses: actions/checkout@v4
         with:
@@ -79,6 +80,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+
+      - name: Name the session's directories
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/verify-remote"
+          mkdir -p "$WORK"
+          echo "VERIFY_SESSION_WORK=$WORK" >> "$GITHUB_ENV"
+          echo "start $(date +%s)000" >> "$WORK/marks"
 
       - name: Pick the simulator
         id: device
@@ -107,8 +116,58 @@ jobs:
             console.error(`${match.name} on ${wanted}`);
             process.stdout.write(match.udid);
           ' "$DEVICE" "$IOS_RUNTIME")
-          xcrun simctl boot "$UDID"
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the Swift packages
+        id: packages
+        if: steps.device.outputs.udid != ''
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/packages
+          key: verify-packages-unresolved
+          restore-keys: verify-packages-
+
+      # Xcode treats a file with a new inode as changed, and a new checkout gives every file a new inode. This setting makes it compare contents and times only, so that restored build state still counts as built.
+      - name: Resolve the Swift packages and name the app
+        id: app
+        if: steps.device.outputs.udid != ''
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
+          node "$SESSION_BUILD" name "$VERIFY_SESSION_WORK"
+
+      - name: Restore the app that an earlier build stored
+        id: stored
+        if: steps.app.outputs.key != ''
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/apps/${{ steps.app.outputs.key }}
+          key: verify-e2ehost-${{ steps.app.outputs.key }}
+
+      - name: Restore the build state for an app that is not stored
+        if: steps.device.outputs.udid != '' && steps.stored.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/derived
+          key: verify-derived-${{ steps.app.outputs.toolchain }}-${{ steps.app.outputs.key || github.run_id }}
+          restore-keys: verify-derived-${{ steps.app.outputs.toolchain }}-
+
+      - name: Install the package's pinned tools
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          npm ci --prefix "$PACKAGE" --no-audit --no-fund
+          "$PACKAGE/node_modules/.bin/agent-device" --version
+          echo "tools-installed $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
+
+      - name: Restore the XCTest runner
+        id: runner
+        if: steps.device.outputs.udid != ''
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.agent-device/apple-runner
+          key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
 
       - name: Start the session agent and tunnel
         id: tunnel
@@ -120,9 +179,7 @@ jobs:
           CLOUDFLARED_VERSION: "2026.9.3"
         run: |
           set -euo pipefail
-          WORK="$RUNNER_TEMP/verify-remote"
-          mkdir -p "$WORK"
-          echo "VERIFY_SESSION_WORK=$WORK" >> "$GITHUB_ENV"
+          WORK="$VERIFY_SESSION_WORK"
           case "$(uname -s)-$(uname -m)" in
             Darwin-arm64) ASSET=cloudflared-darwin-arm64.tgz; SUM=587c2cfb1c230fe36c7fa7727da78be459dae028cabe8c001291999350f07095 ;;
             Linux-x86_64) ASSET=cloudflared-linux-amd64; SUM=77e26d8d900e0b8469f416239d14b5f296525fdf79fee6f511ef55609e3fbac2 ;;
@@ -135,46 +192,111 @@ jobs:
           VERIFY_SESSION_WORK="$WORK" VERIFY_SESSION_CLOUDFLARED="$WORK/cloudflared" \
             nohup node "$PACKAGE/src/core/remote/session-agent.ts" serve > "$WORK/agent.log" 2>&1 &
           disown
+          echo "agent-started $(date +%s)000" >> "$WORK/marks"
           for _ in $(seq 1 600); do
             [ -s "$WORK/tunnel" ] && break
             pgrep -f 'session-agent.ts serve' > /dev/null || { echo "::error::the session agent ended before a tunnel came up"; break; }
             sleep 1
           done
           [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -n 20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
+          echo "tunnel-up $(date +%s)000" >> "$WORK/marks"
           echo "host=$(cat "$WORK/tunnel")" >> "$GITHUB_OUTPUT"
 
       # GitHub's jobs API returns a step's name while the job still runs, so the tunnel host travels in this name.
       - name: verify-remote tunnel ${{ steps.tunnel.outputs.host }}
         run: "true"
 
-      - name: Install the package's pinned tools
-        timeout-minutes: 10
-        run: |
-          set -euo pipefail
-          npm ci --prefix "$PACKAGE" --no-audit --no-fund
-          "$PACKAGE/node_modules/.bin/agent-device" --version
-
+      # The session's build boots the simulator once it has an app, because a compile on this runner is three to four times slower during the first boot of a simulator. When no build is running, this step boots it.
       - name: Wait for the simulator
         if: steps.device.outputs.udid != ''
-        timeout-minutes: 10
+        timeout-minutes: 60
         env:
           UDID: ${{ steps.device.outputs.udid }}
-        run: xcrun simctl bootstatus "$UDID" -b
+        run: |
+          idle=0
+          for _ in $(seq 1 3000); do
+            [ -f "$VERIFY_SESSION_WORK/booted" ] && break
+            if pgrep -f 'session-build.ts build' > /dev/null; then idle=0; else idle=$((idle + 1)); fi
+            [ "$idle" -ge 20 ] && break
+            sleep 1
+          done
+          [ -f "$VERIFY_SESSION_WORK/booted" ] || xcrun simctl bootstatus "$UDID" -b
 
       - name: Prepare the XCTest runner
+        id: prepare
         if: steps.device.outputs.udid != ''
         timeout-minutes: 20
         run: |
-          "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --timeout 900000 || echo "::warning::prepare ios-runner failed; the first snapshot pays for it"
+          set -uo pipefail
+          echo "runner-started $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
+          log="$VERIFY_SESSION_WORK/prepare.log"
+          prepared=no
+          for attempt in 1 2 3; do
+            "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --timeout 900000 2>&1 | tee -a "$log" && prepared=yes && break
+            echo "prepare ios-runner failed on attempt $attempt of 3"
+          done
+          if [ "$prepared" = no ]; then
+            echo "::warning::prepare ios-runner failed three times; the first snapshot pays for it"
+            exit 0
+          fi
+          if grep -q 'Building Apple runner' "$log"; then how=built; else how=reused; fi
+          echo "how=$how" >> "$GITHUB_OUTPUT"
+          echo "runner-$how $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
 
       - name: Mark the device ready
-        run: touch "$VERIFY_SESSION_WORK/device-ready"
+        run: |
+          touch "$VERIFY_SESSION_WORK/device-ready"
+          echo "device-ready $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
+
+      - name: Report the app and the stage times
+        id: report
+        if: steps.device.outputs.udid != ''
+        run: |
+          for _ in $(seq 1 1500); do
+            pgrep -f 'session-build.ts build' > /dev/null || break
+            sleep 1
+          done
+          if pgrep -f 'session-build.ts build' > /dev/null; then
+            echo "::warning title=verify::a build was still running after 25 minutes, so nothing it builds is stored"
+          fi
+          node "$SESSION_BUILD" outcome "$VERIFY_SESSION_WORK"
+          node "$SESSION_BUILD" stages "$VERIFY_SESSION_WORK"
+
+      - name: Store the app for the next session with the same sources, packages and Xcode
+        if: steps.report.outputs.store != '' && steps.report.outputs.store == steps.app.outputs.key
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/apps/${{ steps.report.outputs.store }}
+          key: verify-e2ehost-${{ steps.report.outputs.store }}
+
+      - name: Store the XCTest runner
+        if: steps.prepare.outputs.how == 'built' && steps.runner.outputs.cache-hit != 'true'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.agent-device/apple-runner
+          key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
+
+      - name: Store the Swift packages
+        if: steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/packages
+          key: verify-packages-${{ steps.app.outputs.pins }}
 
       - name: Hold the session
+        env:
+          UDID: ${{ steps.device.outputs.udid }}
         run: |
           set -uo pipefail
+          next=0
           while [ ! -f "$VERIFY_SESSION_WORK/ended" ]; do
             pgrep -f 'session-agent.ts serve' > /dev/null || [ -f "$VERIFY_SESSION_WORK/ended" ] || { echo "::error::the session agent died"; tail -30 "$VERIFY_SESSION_WORK/agent.log"; exit 1; }
+            if [ -n "$UDID" ] && [ "$next" -ge 0 ] && [ "$SECONDS" -ge "$next" ]; then
+              limit=$(( $(sysctl -n hw.ncpu) * 20 ))
+              load="$(sysctl -n vm.loadavg | awk '{ print int($2) }')"
+              echo "the 1-minute load average is $load at $SECONDS seconds of the hold; the first-boot work of the simulator is over below $limit"
+              if [ "$load" -lt "$limit" ]; then next=-1; else next=$((SECONDS + 60)); fi
+            fi
             sleep 3
           done
           echo "session ended: $(cat "$VERIFY_SESSION_WORK/ended")"

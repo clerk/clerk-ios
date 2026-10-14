@@ -46,14 +46,14 @@ $ git push
 $ e2e-tests/bin/control-clerk-ios up --backend remote
 backend remote  forced by --backend remote
 device  remote ios  starting session <session> on xcode-27 (idle stop 15 min, cap 60 min)
-build   <build key>  github-actions  <commit> built in 552s on xcode-27
+build   <build key>  github-actions  <commit> built in 302s on xcode-27
 device  iPhone Air on xcode-27  remote  leased by this worktree  installed <build key>
 $ e2e-tests/bin/control-clerk-ios down  # ends the runner job
 ```
 
 The `backend` line says which backend the CLI chose and why. On a machine that is not a Mac, `up` needs no flag, and the `backend` line says why the local backend is out. `--backend local` or `--backend remote` on `doctor`, `up`, or `run` forces a backend, and a worktree that holds a lease keeps its backend until `down`. `--runner <label>` on `up` or `run` names another runner label for a new session.
 
-A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and `run --all` to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
+A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line about 7 minutes after it starts when CI already built E2EHost for your app sources, and about 9 when the session builds it. For a few minutes after that the simulator still does the work of its first boot, so a spec takes about twice as long as it does later. `run --all` takes about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
 
 ## Doctor
 
@@ -229,6 +229,7 @@ For a remote simulator, `down` ends the runner job, and `down --stale` also ends
 - clerk-android and clerk/javascript have the same package, and `src/core/`, `specs/support/`, `specs/fixtures.ts`, and `e2e.config.ts` are copied to them. After a change to any of them, `node e2e-tests/src/core/manifest.ts --write` rewrites `src/core/MANIFEST`. Nothing under `specs/` or `e2e.config.ts` imports the CLI, and `test/seam.test.ts` fails when a file does.
 - `npm test --prefix e2e-tests` runs the CLI's unit tests, with no network, key, or simulator. `npm run typecheck --prefix e2e-tests` runs `tsc`. The `Run E2E runner tests` job in `.github/workflows/shared-checks.yml` runs both on Linux.
 - `.github/workflows/verify-e2e.yml` runs `up`, `run --all --retries 1 --max-failures 5 --github-report`, and `down` on a simulator on a CI runner. It needs the repository secret `MOBILE_VERIFICATION_PLATFORM_API_KEY`. It runs on the `xcode-27` label unless the repository variable `VERIFY_CI_RUNNER` names another. `gh workflow run verify-e2e.yml --ref <branch>` starts it by hand.
+- `.github/workflows/verify-app-cache.yml` builds E2EHost and the XCTest runner on pushes to `main` that change the app sources, and stores them for remote sessions. `src/platform/ios/session-build.ts` is the build step of a session and of that workflow, and `src/platform/ios/stored-app.ts` makes the key a stored app is found by.
 - `.github/workflows/verify-remote.yml` is the workflow that a remote session runs in, and `src/core/remote/` is the code on both ends of it. A session keeps the `src/core/` of the commit it started on, so after a change to a file that `src/core/MANIFEST` lists, commit, push, `down`, then `up`.
 - `.github/workflows/verify-attach.yml` publishes the evidence that `attach` hands to a session's runner, with `.github/scripts/verify-attach.mjs`. It reads the manifest that `src/core/remote/handoff.ts` writes. It and `src/core/publish.ts` each replace the block the other wrote, each applies the same rules to the comments and to the start of the line, and each lays the files out in the same tables. The script is checked out alone, so it imports nothing from the package. So a change to the manifest, the comments, those rules, or the tables is a change in both places. `node --test .github/scripts/verify-attach.test.mjs` runs its tests.
 - `run --github-report` hands the results of a run to `@e2e-dev/github`, which writes them to the job summary and to one pull request comment.
