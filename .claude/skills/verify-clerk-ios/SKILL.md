@@ -1,6 +1,6 @@
 ---
 name: verify-clerk-ios
-description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the e2e tests.
 ---
 
 # verify-clerk-ios
@@ -53,7 +53,7 @@ $ e2e-tests/bin/control-clerk-ios down  # ends the runner job
 
 The `backend` line says which backend the CLI chose and why. On a machine that is not a Mac, `up` needs no flag, and the `backend` line says why the local backend is out. `--backend local` or `--backend remote` on `doctor`, `up`, or `run` forces a backend, and a worktree that holds a lease keeps its backend until `down`. `--runner <label>` on `up` or `run` names another runner label for a new session.
 
-A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and the golden set to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
+A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and `run --all` to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
 
 ## Doctor
 
@@ -73,13 +73,13 @@ Input reaches the app only through specs. A spec is a TypeScript file that uses 
 
 ```console
 $ e2e-tests/bin/control-clerk-ios run auth-start                        # one feature: every spec in specs/features/auth-start/
-$ e2e-tests/bin/control-clerk-ios run sign-up/complete                  # one golden spec
+$ e2e-tests/bin/control-clerk-ios run sign-up/complete                  # one spec
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts      # a spec you wrote
 $ e2e-tests/bin/control-clerk-ios run auth-start sign-up organizations  # several targets in one run, with one video
 $ e2e-tests/bin/control-clerk-ios screen                                # the UI tree that is on screen now; --png adds a screenshot
 ```
 
-`run --all` runs every golden spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free simulator and another `run` in this worktree that holds the device.
+`run --all` runs every committed spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free simulator and another `run` in this worktree that holds the device.
 
 ### Sign in with the form or with a ticket
 
@@ -121,13 +121,13 @@ A spec file that needs other settings than the standard ones declares them in a 
 
 ### Check your work
 
-Golden specs under `specs/features/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
+The specs under `specs/features/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the committed specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a committed spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
 
 1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
 2. Run it by path.
 3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique.
 4. Fix the locators from that output until the spec passes.
-5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a golden spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
+5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a committed spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
 
 A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
 
@@ -137,7 +137,7 @@ Right after `up` the app has no launch arguments, so `screen` shows the host's e
 
 ### Agent steps
 
-e2e has a built-in agent, which a test drives with `agent.act(...)` and `agent.assert(...)`. The CLI configures it only when the machine has a Vercel AI Gateway key. The model is `anthropic/claude-haiku-5.5`, and `openai/gpt-6-luna-fast` is the gateway's backup. Supply the key in `AI_GATEWAY_API_KEY_FILE`, a file that only you can read, or in `AI_GATEWAY_API_KEY`. The `agent` line of `doctor` shows the model and where the key came from. Committed golden specs do not use agent steps.
+e2e has a built-in agent, which a test drives with `agent.act(...)` and `agent.assert(...)`. The CLI configures it only when the machine has a Vercel AI Gateway key. The model is `anthropic/claude-haiku-5.5`, and `openai/gpt-6-luna-fast` is the gateway's backup. Supply the key in `AI_GATEWAY_API_KEY_FILE`, a file that only you can read, or in `AI_GATEWAY_API_KEY`. The `agent` line of `doctor` shows the model and where the key came from. Committed specs do not use agent steps.
 
 ## Evidence
 
@@ -190,7 +190,7 @@ When this machine cannot attach and there is no session to hand the files to, or
 
 `attach` writes only to an open pull request, and fails on one that is closed or merged. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create. A before run can have failing specs. `attach` refuses a before run that is tainted, that was never sealed, or whose `app.log` names a user that the run did not create.
 
-Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other golden specs too, cite that run's id in the PR.
+Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other committed specs too, cite that run's id in the PR.
 
 Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach` with the before run as `--before <run-id>`, `down`. Open the pull request after the last run, so that it is not left open without its evidence. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
 

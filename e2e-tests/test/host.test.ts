@@ -55,7 +55,7 @@ describe('the clerk-ios host build', () => {
   });
 });
 
-describe('the clerk-ios golden specs', () => {
+describe('the clerk-ios committed specs', () => {
   const MFA: InstanceSettings = { config: { auth_multi_factor: { required_for_sign_up: true } }, environment: { 'user_settings.sign_up.mfa.required': true } };
   const FORCED_ORG: InstanceSettings = { config: { organization_settings: { force_organization_selection: true } }, environment: { 'organization_settings.force_organization_selection': true } };
   const committed = resolveSpecs(PACKAGE_DIR, { all: true }).map((spec) => ({ spec, ...readSpecText(PACKAGE_DIR, spec.path) }));

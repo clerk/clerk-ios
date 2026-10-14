@@ -1,6 +1,6 @@
 # clerk-ios verification map
 
-This directory is the maintained source for verifying the user-facing behavior of the clerk-ios SDK UI (ClerkKitUI) through the E2EHost example app. Read this index before driving the app, then use the matching feature file as the recipe. Every recipe runs through the `control-clerk-ios` CLI and the golden specs under `specs/features/<feature>/`.
+This directory is the maintained source for verifying the user-facing behavior of the clerk-ios SDK UI (ClerkKitUI) through the E2EHost example app. Read this index before driving the app, then use the matching feature file as the recipe. Every recipe runs through the `control-clerk-ios` CLI and the specs under `specs/features/<feature>/`.
 
 ## Baseline preconditions
 
@@ -56,7 +56,7 @@ On the standard settings an email sign-in for a user with no password goes strai
 
 ## Feature entry contract
 
-Each feature file starts with an H1 title and one paragraph describing the user-visible behavior, then exactly four H2 sections in this order: `Sub-features`, `How to get to it (user POV)`, `Driving it with verify`, and `Gotchas`. `Driving it with verify` starts with `Preconditions:` and names the golden specs that prove each sub-feature.
+Each feature file starts with an H1 title and one paragraph describing the user-visible behavior, then exactly four H2 sections in this order: `Sub-features`, `How to get to it (user POV)`, `Driving it with verify`, and `Gotchas`. `Driving it with verify` starts with `Preconditions:` and names the specs that prove each sub-feature.
 
 ## Features
 
