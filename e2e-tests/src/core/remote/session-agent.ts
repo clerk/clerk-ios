@@ -352,7 +352,6 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
             tail.push(`the uncommitted changes ${patch.slice(0, 12)} change ${outside}, and a session builds changes only to ${inputs.join(', ')}. Commit and push that change, then run again.`);
             return 1;
           }
-          appendFileSync(join(work, 'patched'), `${patch}\n`);
           const applied = await runCommands([{ command: 'git', args: ['apply', '--binary', '--whitespace=nowarn', patchFile(patch)] }], stopped, tail);
           if (applied !== 0) {
             tail.push(doesNotApply(patch));
@@ -443,6 +442,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
             return json(res, 400, { error: 'the body must be a JSON object with the patch in base64' });
           }
           if (sha256Hex(bytes) !== patch) return json(res, 400, { error: 'the patch that arrived does not have the sha256 it was sent with' });
+          appendFileSync(join(work, 'patched'), `${patch}\n`);
           writeFileSync(patchFile(patch), bytes);
         }
         startBuild(sha, patch);

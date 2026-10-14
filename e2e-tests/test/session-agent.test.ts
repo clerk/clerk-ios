@@ -346,6 +346,27 @@ describe('session agent', () => {
     await agent.exited;
   });
 
+  it('marks the job as soon as it accepts changes, before any of the work that can fail', async () => {
+    const repo = repoWithCommit();
+    const github = await gitHubWith(repo);
+    const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: github.env });
+    await until(async () => ((await agent.health()).build.state === 'built' ? true : null), 'the build of the commit');
+    const client = mkdtempSync(join(tmpdir(), 'verify-agent-client-'));
+    execFileSync('git', ['clone', '-q', repo.dir, client]);
+    writeFileSync(join(client, 'app.txt'), 'edited');
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-am', 'not pushed'], { cwd: client });
+    writeFileSync(join(client, 'app.txt'), 'edited on a commit the session does not have');
+    const changes = workingPatch(client, ['.'])!;
+    const sent = await agent.call(`/__sim/build?sha=${repo.sha}&patch=${changes.sha256}`, { method: 'POST', body: JSON.stringify({ patch: changes.bytes.toString('base64') }) });
+    assert.equal(sent.status, 202);
+    assert.equal(readFileSync(join(agent.work, 'patched'), 'utf8'), `${changes.sha256}\n`, 'marked when the agent answered, before the checkout');
+    const failed = await until(async () => { const b = (await agent.health()).build; return b.state === 'failed' && b.patch === changes.sha256 ? b : null; }, 'the changes to fail');
+    assert.match(failed.state === 'failed' ? failed.tail : '', /do not apply/);
+    assert.equal(readFileSync(join(agent.work, 'patched'), 'utf8'), `${changes.sha256}\n`, 'changes that did not apply keep the mark');
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
   it('builds no uncommitted changes in a session on the default branch, or in one that does not know which branch that is', async () => {
     const repo = repoWithCommit();
     const github = await gitHubWith(repo);
@@ -398,7 +419,7 @@ describe('session agent', () => {
       const refused = await settled(patch.sha256);
       assert.equal(refused.state, 'failed', path);
       assert.equal(refused.state === 'failed' ? refused.tail.split('\n').at(-1) : '', `the uncommitted changes ${patch.sha256.slice(0, 12)} change ${path}, and a session builds changes only to app.txt, extra.txt, Sources. Commit and push that change, then run again.`);
-      assert.deepEqual([repo.git('status', '--porcelain', '--ignored'), readFileSync(join(repo.dir, 'app.txt'), 'utf8'), readFileSync(join(agent.work, 'built'), 'utf8'), existsSync(join(agent.work, 'patched'))], ['', 'two', 'two', false], `nothing of the changes to ${path} was applied or built`);
+      assert.deepEqual([repo.git('status', '--porcelain', '--ignored'), readFileSync(join(repo.dir, 'app.txt'), 'utf8'), readFileSync(join(agent.work, 'built'), 'utf8')], ['', 'two', 'two'], `nothing of the changes to ${path} was applied or built`);
     }
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
