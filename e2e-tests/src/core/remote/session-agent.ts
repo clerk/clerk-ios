@@ -1,6 +1,6 @@
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { Resolver } from 'node:dns/promises';
-import { appendFileSync, createReadStream, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, createReadStream, existsSync, mkdirSync, rmSync, statSync, writeFileSync, type ReadStream } from 'node:fs';
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,6 +33,11 @@ const PUBLIC_RESOLVERS = ['1.1.1.1', '8.8.8.8'];
 const RECIPE = fileURLToPath(new URL('./recipe.ts', import.meta.url));
 const PINNED_AGENT_DEVICE = fileURLToPath(new URL('../../../node_modules/.bin/agent-device', import.meta.url));
 const execFileAsync = promisify(execFile);
+
+function send(stream: ReadStream, res: ServerResponse): void {
+  stream.on('error', () => res.destroy());
+  stream.pipe(res);
+}
 
 function setOutputs(file: string | undefined, values: Readonly<Record<string, string>>): void {
   const text = Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join('');
@@ -460,7 +465,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
           res.end();
           return;
         }
-        createReadStream(file, { start, end: size - 1 }).pipe(res);
+        send(createReadStream(file, { start, end: size - 1 }), res);
         return;
       }
       case 'POST /record/start': {
@@ -480,7 +485,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         const file = join(work, 'recording.mp4');
         if (!existsSync(file)) return json(res, 404, { error: 'no recording' });
         res.writeHead(200, { 'content-type': 'video/mp4', 'content-length': String(statSync(file).size) });
-        createReadStream(file).pipe(res);
+        send(createReadStream(file), res);
         return;
       }
       case 'GET /logs': {
