@@ -292,17 +292,16 @@ jobs:
           UDID: ${{ steps.device.outputs.udid }}
         run: |
           set -uo pipefail
-          held=0
+          next=0
           while [ ! -f "$VERIFY_SESSION_WORK/ended" ]; do
             pgrep -f 'session-agent.ts serve' > /dev/null || [ -f "$VERIFY_SESSION_WORK/ended" ] || { echo "::error::the session agent died"; tail -30 "$VERIFY_SESSION_WORK/agent.log"; exit 1; }
-            if [ -n "$UDID" ] && [ -z "${quiet:-}" ] && [ $((held % 60)) -eq 0 ]; then
+            if [ -n "$UDID" ] && [ "$next" -ge 0 ] && [ "$SECONDS" -ge "$next" ]; then
               limit=$(( $(sysctl -n hw.ncpu) * 20 ))
               load="$(sysctl -n vm.loadavg | awk '{ print int($2) }')"
-              echo "the 1-minute load average is $load, $held seconds after the device was ready; the first-boot work of the simulator is over below $limit"
-              [ "$load" -lt "$limit" ] && quiet=yes
+              echo "the 1-minute load average is $load at $SECONDS seconds of the hold; the first-boot work of the simulator is over below $limit"
+              if [ "$load" -lt "$limit" ]; then next=-1; else next=$((SECONDS + 60)); fi
             fi
             sleep 3
-            held=$((held + 3))
           done
           echo "session ended: $(cat "$VERIFY_SESSION_WORK/ended")"
 
