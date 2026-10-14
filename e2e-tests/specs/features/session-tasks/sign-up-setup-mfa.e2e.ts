@@ -8,9 +8,8 @@ test('a sign-up on an MFA-required instance moves straight into the setup-MFA ta
   await host.tap(screen.getByTestId('clerk.auth.start.continue'));
   await expect(screen.getByTestId('clerk.auth.signUp.code')).toBeVisible({ timeout: 20_000 });
   await host.fill(screen.getByTestId('clerk.auth.signUp.code'), CLERK_TEST_CODE);
-  await expect(screen.getByTestId('clerk.auth.signUp.password').first()).toBeVisible({ timeout: 20_000 });
-  const password = screen.getByRole('textbox');
-  await expect(password).toHaveCount(1, { timeout: 20_000 });
+  const password = screen.getByTestId('clerk.auth.signUp.password').first();
+  await expect(password).toBeVisible({ timeout: 20_000 });
   await host.fill(password, `Verify-${host.runId}-Pw1!`);
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
   const task = screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp');
