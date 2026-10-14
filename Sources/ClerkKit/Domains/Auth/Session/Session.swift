@@ -32,6 +32,9 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   public var expireAt: Date
 
   /// Whether the session has a configured expiration deadline.
+  ///
+  /// This describes the lifetime policy only. A session without a maximum lifetime can still be revoked or ended,
+  /// so check ``status`` to determine whether it is active.
   public var hasMaximumLifetime: Bool {
     expireAt.timeIntervalSince1970 > 0
   }
