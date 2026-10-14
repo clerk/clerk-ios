@@ -195,9 +195,9 @@ jobs:
           disown
           echo "agent-started $(date +%s)000" >> "$WORK/marks"
           for _ in $(seq 1 600); do
+            sleep 1
             [ -s "$WORK/tunnel" ] && break
             pgrep -f 'session-agent.ts serve' > /dev/null || { echo "::error::the session agent ended before a tunnel came up"; break; }
-            sleep 1
           done
           [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -n 20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
           echo "tunnel-up $(date +%s)000" >> "$WORK/marks"
