@@ -51,6 +51,11 @@ describe('the session workflow and the driver agree', () => {
     assert.match(agentStep, /^ {10}GITHUB_TOKEN: \$\{\{ github\.token \}\}$/m);
   });
 
+  it('tells the session agent the default branch of the repository, on which it builds no uncommitted changes', () => {
+    const agentStep = workflow.split(/\n(?= {6}- )/).find((step) => step.includes('session-agent.ts" serve'))!;
+    assert.match(agentStep, /^ {10}VERIFY_SESSION_DEFAULT_BRANCH: \$\{\{ github\.event\.repository\.default_branch \}\}$/m);
+  });
+
   it('gives the agent the files and variables it waits on', () => {
     for (const needle of ['VERIFY_SESSION_REQUEST', 'VERIFY_SESSION_WORK', 'VERIFY_SESSION_DEVICE_ID', 'VERIFY_SESSION_DEVICE_MODULE', 'VERIFY_SESSION_CLOUDFLARED', '$WORK/tunnel', 'device-ready', '$VERIFY_SESSION_WORK/ended', 'persist-credentials: false']) {
       assert.ok(workflow.includes(needle), needle);

@@ -285,6 +285,29 @@ describe('a session build', () => {
     assert.ok(seconds(HOST_APP) > built.host && seconds(HOST_APP) < built.host + 3600, `${seconds(HOST_APP)} is the time of this build`);
   });
 
+  it('builds changes applied on top of the commit, gives the changed sources a new time, and stores nothing', () => {
+    const repo = checkout();
+    const work = scratch('verify-stored-app-work-');
+    sessionBuild(repo, ['build', work, 'UDID-1']);
+    const seconds = (file: string): number => statSync(join(repo.dir, file)).mtimeMs / 1000;
+    const built = { source: seconds(SOURCE), host: seconds(HOST_APP) };
+    for (const file of [SOURCE, HOST_APP]) execFileSync('touch', ['-t', '203001010000', join(repo.dir, file)]);
+    spawnSync('sleep', ['1.1']);
+    writeFileSync(join(repo.dir, SOURCE), 'sdk patched\n');
+    rmSync(join(repo.dir, PROJECT));
+    writeFileSync(join(repo.dir, 'Sources/ClerkKit/New.swift'), 'new\n');
+    assert.equal(sessionBuild(repo, ['build', work, 'UDID-1']).status, 0);
+    assert.equal(builds(repo), 2);
+    assert.equal(installed(repo), 'sdk patched\nhost one\n');
+    const outcome = outcomeOf(work);
+    assert.deepEqual([outcome.state, outcome.key, outcome.storable], ['built', null, false]);
+    assert.match(outcome.why, /^not stored: the checkout differs from [0-9a-f]{12} in /);
+    assert.equal(readdirSync(join(work, 'apps')).length, 1, 'only the app of the commit is stored');
+    assert.match(sessionBuild(repo, ['outcome', work]).stdout, /^store=$/m);
+    assert.equal(seconds(HOST_APP), built.host, 'an unchanged source keeps the time of its last build');
+    assert.ok(seconds(SOURCE) > built.source, 'a changed source gets the time of this build');
+  });
+
   it('reports what to store, and nothing for an app that was already stored', () => {
     const repo = checkout();
     const work = scratch('verify-stored-app-work-');
@@ -337,6 +360,37 @@ describe('the workflows that store and restore', () => {
   it('build the app on main when any build input changes', () => {
     const paths = main.slice(main.indexOf('paths:'), main.indexOf('workflow_dispatch:')).split('\n').map((line) => line.trim().replace(/^- /, ''));
     for (const input of BUILD_INPUTS) assert.ok(paths.includes(input) || paths.includes(`${input}/**`), `${input} is not a path that starts verify-app-cache.yml`);
+  });
+});
+
+describe('a session that built uncommitted changes', () => {
+  const session = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8');
+  const steps = session.split(/\n(?= {6}- )/);
+  const at = (needle: string) => steps.findIndex((step) => step.includes(needle));
+  const check = steps[at('id: patched')] ?? '';
+  const script = check.slice(check.indexOf('run: |') + 'run: |'.length).split('\n').map((line) => line.trim()).join('\n');
+
+  function checked(marked: boolean): string {
+    const work = scratch('verify-patched-');
+    if (marked) writeFileSync(join(work, 'patched'), `${'c'.repeat(64)}\n`);
+    writeFileSync(join(work, 'output'), '');
+    const ran = spawnSync('bash', ['-e', '-c', script], { env: { PATH: process.env.PATH, VERIFY_SESSION_WORK: work, GITHUB_OUTPUT: join(work, 'output') }, encoding: 'utf8', timeout: 20_000 });
+    assert.equal(ran.status, 0);
+    return readFileSync(join(work, 'output'), 'utf8');
+  }
+
+  it('is found from the mark the session agent leaves before it applies the changes', () => {
+    assert.deepEqual([checked(true), checked(false)], ['built=true\n', '']);
+  });
+
+  it('stores no app, XCTest runner or packages for later sessions, and checks for the mark after the build it waits for', () => {
+    const saves = steps.flatMap((step, index) => (step.includes('uses: actions/cache/save@') ? [index] : []));
+    assert.equal(saves.length, 3);
+    for (const index of saves) {
+      assert.match(steps[index]!, /^ {8}if: steps\.patched\.outputs\.built != 'true' && /m, steps[index]!.split('\n')[0]);
+      assert.ok(at('id: patched') < index, 'the check comes before the save');
+    }
+    assert.ok(at('- name: Report the app and the stage times') < at('id: patched'), 'the report waits for a running build, so a build that applied changes has left its mark');
   });
 });
 

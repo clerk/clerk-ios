@@ -163,7 +163,7 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
     checks.push(check('build', built !== null, built === null ? `no ${host.appId(platform)} build for ${key}` : `${key} at ${built.path}`, up));
   } else {
     const onSession = held !== null && held.backend === 'remote' && held.installedBuild === key;
-    checks.push(check('build', onSession, onSession ? `${key} (commit ${held.builtSha?.slice(0, 12) ?? 'unknown'}) is on the session's device` : `no session holds a ${host.appId(platform)} build for ${key}`, `commit and push, then ${up}`));
+    checks.push(check('build', onSession, onSession ? `${key} (commit ${held.builtSha?.slice(0, 12) ?? 'unknown'}${held.builtPatch === null ? '' : ' with uncommitted changes'}) is on the session's device` : `no session holds a ${host.appId(platform)} build for ${key}`, `commit and push, then ${up}`));
   }
 
   checks.push(await ghAttachCheck(runner));
@@ -516,7 +516,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         dirty: git.dirty,
         platform,
         backend: lease.backend,
-        remote: lease.backend === 'remote' ? { provider: lease.provider, runner: lease.runner, builtSha: lease.builtSha } : null,
+        remote: lease.backend === 'remote' ? { provider: lease.provider, runner: lease.runner, builtSha: lease.builtSha, builtPatch: lease.builtPatch } : null,
         device: outcome.view.device,
         build: outcome.app.key,
         results,
