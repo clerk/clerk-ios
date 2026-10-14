@@ -26,7 +26,7 @@ jobs:
     name: Notify Slack of a failed nightly run
     needs: checks
     if: >-
-      !cancelled() && github.event_name == 'schedule' &&
+      always() && github.event_name == 'schedule' &&
       (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-latest
     timeout-minutes: 5

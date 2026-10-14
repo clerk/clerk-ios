@@ -140,6 +140,7 @@ describe('the nightly checks', () => {
   function runs(name: string, context: { event: string; repository?: string; checks?: string; stopped?: boolean }): boolean {
     const condition = (/^ {4}if: >-\n((?: {6}.+\n)+)/m.exec(job(name))?.[1] ?? /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true').replace(/\s+/g, ' ').trim();
     const expression = condition
+      .replaceAll('always()', 'true')
       .replaceAll('cancelled()', String(context.stopped ?? false))
       .replace(/contains\(needs\.\*\.result, '(\w+)'\)/g, (_, result: string) => String(result === (context.checks ?? 'success')))
       .replaceAll('github.event_name', JSON.stringify(context.event))
@@ -181,17 +182,17 @@ describe('the nightly checks', () => {
     );
   });
 
-  it('post to Slack when a scheduled run fails or times out, and not when it passes, a person stops it, or a person started it', () => {
+  it('post to Slack when a scheduled run fails, times out or is cancelled, and not when it passes or a person started it', () => {
     assert.deepEqual(
       [
         runs('notify', { event: 'schedule', checks: 'failure' }),
         runs('notify', { event: 'schedule', checks: 'cancelled' }),
+        runs('notify', { event: 'schedule', checks: 'cancelled', stopped: true }),
         runs('notify', { event: 'schedule', checks: 'success' }),
         runs('notify', { event: 'schedule', checks: 'skipped' }),
-        runs('notify', { event: 'schedule', checks: 'cancelled', stopped: true }),
         runs('notify', { event: 'workflow_dispatch', checks: 'failure' }),
       ],
-      [true, true, false, false, false, false],
+      [true, true, true, false, false, false],
     );
   });
 
