@@ -20,11 +20,12 @@ export function engineDevice(device: Device): readonly string[] | DeviceProvider
   const token = new Secret('session-bearer', readFileSync(device.tokenFile, 'utf8').trim());
   return {
     name: 'borrowed',
-    acquire: async () => ({
+    acquire: async ({ env }) => ({
       id: device.id,
       deviceId: device.id,
       device: device.id,
       daemon: token.use('e2e-provider-lease', (authToken) => ({ baseUrl: device.daemonUrl, authToken })),
+      ...(env.AGENT_DEVICE_STATE_DIR === undefined ? {} : { client: { cwd: env.AGENT_DEVICE_STATE_DIR } }),
     }),
     release: async () => {},
   };
