@@ -20,7 +20,7 @@ export CLERK_E2E_DEVICE=<the id of a booted simulator, from the list above>
 export CLERK_E2E_APP_PATH=/tmp/e2ehost/Build/Products/Debug-iphonesimulator/E2EHost.app
 export CLERK_PUBLISHABLE_KEY=pk_test_...
 export CLERK_SECRET_KEY=sk_test_...
-npx e2e run specs/golden/sign-in-email-code/complete.e2e.ts
+npx e2e run specs/features/sign-in-email-code/complete.e2e.ts
 ```
 
 `--video on`, `--retries`, `--grep`, and `--output` are e2e's own flags. e2e writes its report and its screenshots to `.e2e/`, which git ignores.
@@ -44,10 +44,10 @@ Every run creates users with addresses like `1412107c1ek3x9+clerk_test@example.c
 
 These test files have a `.settings.json` file beside them, and pass only on an instance with those settings:
 
-- `specs/golden/session-tasks/choose-organization.e2e.ts`
-- `specs/golden/session-tasks/complete-setup-mfa.e2e.ts`
-- `specs/golden/session-tasks/setup-mfa.e2e.ts`
-- `specs/golden/session-tasks/sign-up-setup-mfa.e2e.ts`
+- `specs/features/session-tasks/choose-organization.e2e.ts`
+- `specs/features/session-tasks/complete-setup-mfa.e2e.ts`
+- `specs/features/session-tasks/setup-mfa.e2e.ts`
+- `specs/features/session-tasks/sign-up-setup-mfa.e2e.ts`
 
 The CLI's `run` puts the instance on the declared settings before the file starts, and e2e alone does not. Run them through the CLI, for example `e2e-tests/bin/control-clerk-ios run session-tasks` from the repo root.
 
@@ -62,7 +62,7 @@ The CLI's `run` puts the instance on the declared settings before the file start
 
 ## Layout
 
-- `e2e.config.ts` and `specs/` are the e2e project. `specs/golden/` has the tests, `specs/fixtures.ts` has the `host` fixture they use, `specs/app.ts` names the test app, and `specs/support/` is the tests' support code. `specs/support/inputs.ts` is the only file that reads the settings above.
+- `e2e.config.ts` and `specs/` are the e2e project. `specs/features/` has the tests, `specs/fixtures.ts` has the `host` fixture they use, `specs/app.ts` names the test app, and `specs/support/` is the tests' support code. `specs/support/inputs.ts` is the only file that reads the settings above.
 - `bin/` and `src/` are the CLI. Under the CLI the test process gets the same settings, with one difference: in place of the secret key it gets the address and token of a stand-in that the CLI runs on this machine. The stand-in forwards the three Backend API calls the tests make, for this run's test users only, so the test process never holds the key.
 - `test/` and `testing/` are the unit tests of both. `npm test` runs them, with no device, key, or network.
 - `src/core/`, `specs/support/`, `specs/fixtures.ts`, and `e2e.config.ts` are the same files, byte for byte, in clerk-ios, clerk-android, and clerk/javascript. `src/core/MANIFEST` lists them, and the CLI's `doctor` fails when they differ from it.

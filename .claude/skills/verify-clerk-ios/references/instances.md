@@ -17,7 +17,7 @@ The CLI checks those settings and the settings a settings file declares, and no 
 
 ## Declare other settings
 
-A spec file that runs on the standard settings declares nothing. A spec file that needs other settings has a settings file beside it, with the same name and `.settings.json` in place of `.e2e.ts`. For `specs/golden/session-tasks/choose-organization.e2e.ts`, that file is `specs/golden/session-tasks/choose-organization.settings.json`:
+A spec file that runs on the standard settings declares nothing. A spec file that needs other settings has a settings file beside it, with the same name and `.settings.json` in place of `.e2e.ts`. For `specs/features/session-tasks/choose-organization.e2e.ts`, that file is `specs/features/session-tasks/choose-organization.settings.json`:
 
 ```json
 {
