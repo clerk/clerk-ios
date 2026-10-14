@@ -316,6 +316,14 @@ describe('a run whose spec files declare different settings', () => {
       assert.deepEqual(r.videoLines(), ['video   the app could not be closed before the recording, so the video may open on the screen it was showing: DEVICE_IN_USE']);
     });
 
+    it('runs agent-device in its state folder, so a file it writes to its working folder stays out of the checkout', async () => {
+      const r = recorded({ launches: true });
+      const folders: (string | undefined)[] = [];
+      const watching: Runner = async (command, args, options) => (command.endsWith('agent-device') && folders.push(options?.cwd), r.deps.runner(command, args, options));
+      await runVerb({ ...r.deps, runner: watching }, { ...RUN_ALL, video: true });
+      assert.deepEqual(folders, [r.w.workspace.agentDeviceDir]);
+    });
+
     it('gives the close before the recording 30 seconds, and records all the same when it runs out', async () => {
       const r = recorded({ launches: true });
       const limits: (number | undefined)[] = [];

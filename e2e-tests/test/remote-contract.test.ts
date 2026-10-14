@@ -124,11 +124,12 @@ describe('a borrowed device as the tests are told of it', () => {
     assert.equal(JSON.stringify(config).includes('f'.repeat(64)), false, 'the token is not in the composed config');
     const provider = engineDevice(target.device);
     assert.ok(!Array.isArray(provider) && 'acquire' in provider);
-    assert.deepEqual(await provider.acquire({} as unknown as Parameters<typeof provider.acquire>[0]), {
+    assert.deepEqual(await provider.acquire({ env: { AGENT_DEVICE_STATE_DIR: '/state' } } as unknown as Parameters<typeof provider.acquire>[0]), {
       id: 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE',
       deviceId: 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE',
       device: 'AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE',
       daemon: { baseUrl: 'https://x.trycloudflare.com/agent-device', authToken: 'f'.repeat(64) },
+      client: { cwd: '/state' },
     });
     assert.ok(usedSecretValues().includes('f'.repeat(64)));
   });

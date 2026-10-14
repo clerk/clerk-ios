@@ -102,6 +102,24 @@ function readJson(file: string): Record<string, unknown> | null {
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
 }
 
+const GRAPHQL_PROBE_MS = 10_000;
+
+async function ghAttachCheck(runner: Runner): Promise<DoctorCheck> {
+  const cannotPost = "so `{cli} attach` cannot put a run's video and screenshots in a pull request description from this machine";
+  const noAttach = await missingAttach(runner);
+  if (noAttach !== null) return { id: 'gh-attach', ok: true, state: 'warning', detail: `${noAttach.why}, ${cannotPost}`, fix: noAttach.fix };
+  const graphql = await runner('gh', ['api', 'graphql', '-f', 'query={viewer{login}}'], { timeoutMs: GRAPHQL_PROBE_MS });
+  if (graphql.code === 0) return check('gh-attach', true, 'gh pr edit supports --attach, and gh can use the GitHub GraphQL API', '');
+  const why = graphql.code === 124 ? `no answer in ${GRAPHQL_PROBE_MS / 1000} seconds` : redact(graphql.stderr.trim().split('\n')[0] ?? '');
+  return {
+    id: 'gh-attach',
+    ok: true,
+    state: 'warning',
+    detail: `gh cannot use the GitHub GraphQL API (${why}), which \`gh pr view\` and \`gh pr edit\` need, ${cannotPost}`,
+    fix: "attach a remote run before {cli} down, so that attach hands its evidence to the session's runner, or check `gh auth status`",
+  };
+}
+
 export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doctor' }>): Promise<DoctorReport> {
   const { host, workspace, runner } = deps;
   const platform = platformOf(host, command.platform);
@@ -148,12 +166,7 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
     checks.push(check('build', onSession, onSession ? `${key} (commit ${held.builtSha?.slice(0, 12) ?? 'unknown'}${held.builtPatch === null ? '' : ' with uncommitted changes'}) is on the session's device` : `no session holds a ${host.appId(platform)} build for ${key}`, `commit and push, then ${up}`));
   }
 
-  const noAttach = await missingAttach(runner);
-  checks.push(
-    noAttach === null
-      ? check('gh-attach', true, 'gh pr edit supports --attach', '')
-      : { id: 'gh-attach', ok: true, state: 'warning', detail: `${noAttach.why}, so \`{cli} attach\` cannot put a run's video and screenshots in a pull request description from this machine`, fix: noAttach.fix },
-  );
+  checks.push(await ghAttachCheck(runner));
 
   const stale = readClaims(workspace.claimsDir, platform).filter(isOrphaned);
   checks.push(check('stale-claims', stale.length === 0, stale.length === 0 ? 'none' : `${stale.map((c) => c.deviceName).join(', ')} belong to deleted worktrees`, '{cli} down --stale'));
@@ -184,7 +197,8 @@ const CLOSE_BEFORE_RECORDING_MS = 30_000;
 function agentDeviceFor(deps: Deps, lease: Lease, platform: Platform) {
   const target = agentDeviceOn(deviceOf(lease), platform);
   const env = { ...withoutClerkKeys(deps.env), AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env };
-  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, ...limit }) };
+  mkdirSync(deps.workspace.agentDeviceDir, { recursive: true });
+  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, cwd: deps.workspace.agentDeviceDir, ...limit }) };
 }
 
 const targetOf = (deps: Deps, outcome: RuntimeOutcome): Target => ({
