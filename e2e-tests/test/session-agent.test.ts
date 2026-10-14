@@ -343,6 +343,40 @@ describe('session agent', () => {
     await agent.exited;
   });
 
+  it('refuses changes to anything but the app sources, by what git would write, before it applies any of them', async () => {
+    const repo = repoWithCommit();
+    writeFileSync(join(repo.dir, 'outside.txt'), 'kept');
+    const started = repo.commit('two');
+    const github = await gitHubWith({ ...repo, sha: started });
+    const agent = await startAgent({ ...base, sha: started }, { cwd: repo.dir, env: github.env });
+    const settled = (patch: string | null) => until(async () => { const b = (await agent.health()).build; return b.state !== 'building' && b.state !== 'none' && b.patch === patch ? b : null; }, `the build with ${patch ?? 'no changes'}`);
+    const send = (patch: TreePatch) => agent.call(`/__sim/build?sha=${started}&patch=${patch.sha256}`, { method: 'POST', body: JSON.stringify({ patch: patch.bytes.toString('base64') }) });
+    assert.equal((await settled(null)).state, 'built');
+
+    const client = mkdtempSync(join(tmpdir(), 'verify-agent-client-'));
+    execFileSync('git', ['clone', '-q', repo.dir, client]);
+    writeFileSync(join(client, 'app.txt'), 'edited');
+    mkdirSync(join(client, 'e2e-tests'));
+    writeFileSync(join(client, 'e2e-tests', 'recipe.ts'), 'a new file outside the app sources');
+    const added = workingPatch(client, ['.'])!;
+    rmSync(join(client, 'e2e-tests'), { recursive: true });
+    execFileSync('git', ['checkout', '-q', '--', 'app.txt'], { cwd: client });
+    execFileSync('git', ['mv', 'outside.txt', 'extra.txt'], { cwd: client });
+    const renamedBytes = execFileSync('git', ['diff', '--cached', '--binary', '-M', 'HEAD'], { cwd: client });
+    const renamed: TreePatch = { sha256: createHash('sha256').update(renamedBytes).digest('hex'), bytes: renamedBytes };
+    assert.match(renamedBytes.toString(), /^rename from outside\.txt$/m, 'git writes the rename source without the patch naming it as a file');
+
+    for (const [patch, path] of [[added, 'e2e-tests/recipe.ts'], [renamed, 'outside.txt']] as const) {
+      assert.equal((await send(patch)).status, 202);
+      const refused = await settled(patch.sha256);
+      assert.equal(refused.state, 'failed', path);
+      assert.equal(refused.state === 'failed' ? refused.tail.split('\n').at(-1) : '', `the uncommitted changes ${patch.sha256.slice(0, 12)} change ${path}, and a session builds changes only to app.txt, extra.txt, Sources. Commit and push that change, then run again.`);
+      assert.deepEqual([repo.git('status', '--porcelain', '--ignored'), readFileSync(join(repo.dir, 'app.txt'), 'utf8'), readFileSync(join(agent.work, 'built'), 'utf8')], ['', 'two', 'two'], `nothing of the changes to ${path} was applied or built`);
+    }
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
   it('returns the build log from the byte it is asked for, and all of it when that byte is past the end', async () => {
     const repo = repoWithCommit();
     const github = await gitHubWith(repo);

@@ -116,6 +116,7 @@ export interface SessionHealth {
 }
 
 export interface SessionDevice {
+  readonly inputs: readonly string[];
   build(work: string): readonly CommandLine[];
   readonly record: {
     start(file: string): CommandLine;
@@ -131,11 +132,13 @@ export interface SessionDeviceRef {
 export type SessionDeviceFactory = (device: SessionDeviceRef) => SessionDevice;
 
 export type RecipeRequest =
+  | { readonly op: 'inputs' }
   | { readonly op: 'build'; readonly work: string }
   | { readonly op: 'record'; readonly file: string }
   | { readonly op: 'logs'; readonly since: string; readonly predicate: string | null };
 
 export interface RecipeAnswers {
+  readonly inputs: readonly string[];
   readonly build: readonly CommandLine[];
   readonly record: { readonly start: CommandLine; readonly stop: readonly CommandLine[] | null; readonly collect: readonly CommandLine[] };
   readonly logs: CommandLine;

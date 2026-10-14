@@ -1,9 +1,10 @@
-import { spawn, type ChildProcess } from 'node:child_process';
+import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { Resolver } from 'node:dns/promises';
 import { appendFileSync, createReadStream, existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import {
   BUILD_LOG_START,
   BUILD_TIMEOUT_MINUTES,
@@ -31,6 +32,7 @@ const COMMAND_TIMEOUT_MS = 30_000;
 const PUBLIC_RESOLVERS = ['1.1.1.1', '8.8.8.8'];
 const RECIPE = fileURLToPath(new URL('./recipe.ts', import.meta.url));
 const PINNED_AGENT_DEVICE = fileURLToPath(new URL('../../../node_modules/.bin/agent-device', import.meta.url));
+const execFileAsync = promisify(execFile);
 
 function setOutputs(file: string | undefined, values: Readonly<Record<string, string>>): void {
   const text = Object.entries(values).map(([key, value]) => `${key}=${value}\n`).join('');
@@ -285,6 +287,18 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
     }, Promise.resolve(0));
   }
 
+  async function pathsThePatchWrites(sha: string, patch: string): Promise<readonly string[] | null> {
+    const env = { ...process.env, GIT_INDEX_FILE: join(work, 'patch-index') };
+    try {
+      await execFileAsync('git', ['read-tree', sha], { env });
+      await execFileAsync('git', ['apply', '--cached', '--binary', '--whitespace=nowarn', patchFile(patch)], { env });
+      const { stdout } = await execFileAsync('git', ['diff', '--cached', '--no-renames', '--name-only', '-z', sha], { env, maxBuffer: 2 * PATCH_LIMIT_BYTES });
+      return stdout.split('\0').filter((path) => path !== '');
+    } catch {
+      return null;
+    }
+  }
+
   function startBuild(sha: string, patch: string | null): void {
     if (device === null) return;
     if ((build.state === 'building' || build.state === 'built') && build.sha === sha && build.patch === patch) return;
@@ -310,6 +324,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
       { command: 'git', args: ['clean', '-d', '--force'] },
     ];
     const target = device;
+    const doesNotApply = (changes: string): string => `the uncommitted changes ${changes.slice(0, 12)} do not apply to ${sha.slice(0, 12)}. Commit and push them, then run again.`;
     const checkoutThenBuild = async (): Promise<number> => {
       if (sha !== dispatched && !(await isALaterCommitOfTheBranch(sha, dispatched, dispatchedRef, github))) {
         tail.push(`this session builds ${dispatched}, the commit it was started on, and later commits of ${dispatchedRef}. GitHub does not show ${sha} as one. Push it to that branch, or run down and then up to start a session on it.`);
@@ -317,14 +332,25 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
       }
       const checkedOut = await runCommands(cleanCheckout, stopped, tail);
       if (checkedOut !== 0) return checkedOut;
-      if (patch !== null) {
-        const applied = await runCommands([{ command: 'git', args: ['apply', '--binary', '--whitespace=nowarn', patchFile(patch)] }], stopped, tail);
-        if (applied !== 0) {
-          tail.push(`the uncommitted changes ${patch.slice(0, 12)} do not apply to ${sha.slice(0, 12)}. Commit and push them, then run again.`);
-          return applied;
-        }
-      }
       try {
+        if (patch !== null) {
+          const inputs = await recipe(target, { op: 'inputs' });
+          const written = await pathsThePatchWrites(sha, patch);
+          if (written === null) {
+            tail.push(doesNotApply(patch));
+            return 1;
+          }
+          const outside = written.find((path) => !inputs.some((input) => path === input || path.startsWith(`${input}/`)));
+          if (outside !== undefined) {
+            tail.push(`the uncommitted changes ${patch.slice(0, 12)} change ${outside}, and a session builds changes only to ${inputs.join(', ')}. Commit and push that change, then run again.`);
+            return 1;
+          }
+          const applied = await runCommands([{ command: 'git', args: ['apply', '--binary', '--whitespace=nowarn', patchFile(patch)] }], stopped, tail);
+          if (applied !== 0) {
+            tail.push(doesNotApply(patch));
+            return applied;
+          }
+        }
         return await runCommands(await recipe(target, { op: 'build', work }), stopped, tail);
       } catch (error) {
         tail.push((error as Error).message);
