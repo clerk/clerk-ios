@@ -32,10 +32,10 @@ Preconditions:
 
 - Sign-up mode still uses the start screen's `clerk.auth.start.identifier` field for the email.
 - Always take the email from `host.newEmail`. The run finds the user that the form created by the run's prefix in that email, and `attach` refuses a run that shows a user it cannot account for.
-- `clerk.auth.signUp.password` matches three nodes once the field has focus: the floating label, the secure field, and the reveal button. Wait on `.first()`, then wait for `screen.getByRole('textbox')` to have a count of 1 before filling it. Two text boxes match for a moment while the code screen is replaced.
+- `clerk.auth.signUp.password` matches more than one node, because the SDK sets the identifier on the row that holds the secure field and the reveal button. The field comes first. Find it with `.first()`, wait for it to be visible, and fill that locator.
 - The password field is a secure field, and the screen withholds its value. `host.fill` types the password once and cannot confirm that it landed, so assert on what the form does next.
-- After a password is submitted, iOS may cover the app with its own "Save Password?" sheet. `host.expectSignedInAs` and `host.expectSignedOut` tap "Not Now" when that sheet is up.
+- After a password is submitted, iOS may cover the app with its own "Save Password?" sheet. `host.expectSignedInAs`, `host.expectSignedOut`, and `host.expectVisible` tap "Not Now" when that sheet is up, and a plain `expect` does not.
 - The phone field formats the number as it is typed, as in `+1 (201) 555-0142`. `host.fill` types the ten digits and compares only the digits with what the field shows. Type `phone.slice(2)`, because the field already has the `+1` of the US.
 - Both code screens use `clerk.auth.signUp.code`. Their titles tell them apart: `Check your phone` and `Check your email`.
-- The email and password screens focus their field as they appear, so the field's identifier matches the floating label and the text box. Wait on `.first()`, then fill `screen.getByRole('textbox')` once its count is 1.
+- The email and password screens focus their field as they appear. Find each field by its identifier with `.first()`, wait for it to be visible, and fill that locator. Do not fill `screen.getByRole('textbox')`, which is whatever text box the screen has.
 - AuthView verifies what was entered before it asks for what is missing, and asks for the email before the password. That order comes from `SignUp.fieldPriority` in `Sources/ClerkKitUI/Extensions/SignUp+Ext.swift`.
