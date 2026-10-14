@@ -91,7 +91,9 @@ async function gitHubWith(repo: { readonly sha: string; comesBefore(earlier: str
     const path = (req.url ?? '').replace(/^\/repos\/clerk\/sample/, '');
     const [, base, head] = /^\/compare\/([0-9a-f]{40})\.\.\.([0-9a-f]{40})$/.exec(path) ?? [];
     const found =
-      path === '/git/ref/heads/feature/change'
+      path === ''
+        ? { default_branch: 'main' }
+        : path === '/git/ref/heads/feature/change'
         ? { object: { sha: branchHead } }
         : base !== undefined && head !== undefined
           ? { status: base === head ? 'identical' : comesBefore(base, head) ? 'ahead' : comesBefore(head, base) ? 'behind' : 'diverged' }
@@ -367,16 +369,19 @@ describe('session agent', () => {
     await agent.exited;
   });
 
-  it('builds no uncommitted changes in a session on the default branch, or in one that does not know which branch that is', async () => {
+  it('builds no uncommitted changes in a session on the default branch, or in one that does not know its branch or the default branch', async () => {
     const repo = repoWithCommit();
     const github = await gitHubWith(repo);
     const client = mkdtempSync(join(tmpdir(), 'verify-agent-client-'));
     execFileSync('git', ['clone', '-q', repo.dir, client]);
     writeFileSync(join(client, 'app.txt'), 'edited');
     const changes = workingPatch(client, ['.'])!;
+    const onMain = 'this session runs on main, the default branch, so it builds no uncommitted changes. Work on a branch: commit to a new branch and push it, then run down and up from that branch.';
     const refusals = [
-      [{ GITHUB_REF: 'refs/heads/main' }, 'this session runs on main, the default branch, so it builds no uncommitted changes. Work on a branch: commit to a new branch and push it, then run down and up from that branch.'],
-      [{ VERIFY_SESSION_DEFAULT_BRANCH: '' }, 'this session was not told the default branch of the repository, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
+      [{ GITHUB_REF: 'refs/heads/main' }, onMain],
+      [{ GITHUB_REF: 'refs/heads/main', VERIFY_SESSION_DEFAULT_BRANCH: '' }, onMain],
+      [{ VERIFY_SESSION_DEFAULT_BRANCH: '', GITHUB_REPOSITORY: 'clerk/unknown' }, 'this session could not learn the default branch of the repository, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
+      [{ GITHUB_REF: '' }, 'this session does not know the branch it was started on, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
     ] as const;
     for (const [env, error] of refusals) {
       const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: { ...github.env, ...env } });
