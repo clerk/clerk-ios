@@ -230,7 +230,7 @@ jobs:
               ;;
             *)
               conclusion="failure"
-              summary="A test failed, or the end-to-end tests could not run. A failed assertion or a test that ran out of time had two attempts, and a failure of the device driver had one. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
+              summary="A test failed, or the end-to-end tests could not run. A failed assertion, an error the test threw, or a test that ran out of time had two attempts, and a failure of the device driver had one. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
               ;;
           esac
 
