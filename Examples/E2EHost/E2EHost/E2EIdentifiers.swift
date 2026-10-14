@@ -14,6 +14,18 @@ enum E2EIdentifiers {
     static let sessionId = "e2e.auth.sessionId"
   }
 
+  enum Home {
+    static let customSignIn = "e2e.home.customSignIn"
+  }
+
+  enum CustomSignIn {
+    static let phoneNumber = "verify.customSignIn.phoneNumber"
+    static let sendCode = "verify.customSignIn.sendCode"
+    static let code = "verify.customSignIn.code"
+    static let verifyCode = "verify.customSignIn.verifyCode"
+    static let error = "verify.customSignIn.error"
+  }
+
   enum Launch {
     static let error = "e2e.launch.error"
   }
