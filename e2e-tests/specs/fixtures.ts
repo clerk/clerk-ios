@@ -23,7 +23,7 @@ import {
   type SeededUser,
   type TestEmail,
 } from './support/types.ts';
-import { errorScreenElseSavePasswordPrompt, onScreen, signedInAs, signedOut, until, type Sight, type WaitScreen } from './support/waiting.ts';
+import { errorScreenElseSavePasswordPrompt, onScreen, signedInAs, signedOut, until, untilVisible, type Sight, type WaitPace, type WaitScreen } from './support/waiting.ts';
 
 export { expect, CLERK_TEST_CODE };
 
@@ -87,7 +87,8 @@ export const test = base.extend<{ host: HostFixture }>({
       errorScreenElsePrompt: device.locator(errorScreenElseSavePasswordPrompt(APP_ELEMENT_IDS.error)),
       dismissPrompt: () => screen.getByRole('button', { name: 'Not Now' }).tap({ timeout: ASSERTION_TIMEOUT_MS }),
     };
-    const waitFor = (sight: Sight, what: string, timeoutMs: number): Promise<void> => until(sight, what, waitScreen, { timeoutMs, now: Date.now, wait: () => sleep(POLL_MS) });
+    const pace = (timeoutMs: number): WaitPace => ({ timeoutMs, now: Date.now, wait: () => sleep(POLL_MS) });
+    const waitFor = (sight: Sight, what: string, timeoutMs: number): Promise<void> => until(sight, what, waitScreen, pace(timeoutMs));
 
     const describeSignedIn = (who: SeededUser | TestEmail): string =>
       typeof who === 'string' ? `"${signedInText(who)}" with a user ID and a session ID on the home` : `"${signedInText(who.email)}" with user ID ${who.id} and a session ID on the home`;
@@ -119,6 +120,7 @@ export const test = base.extend<{ host: HostFixture }>({
       },
       expectSignedInAs: (who, timeoutMs = ASSERTION_TIMEOUT_MS) => waitFor(signedInAs(app, who), describeSignedIn(who), timeoutMs),
       expectSignedOut: (timeoutMs = ASSERTION_TIMEOUT_MS) => waitFor(signedOut(app), '"Signed out" and no user ID or session ID on the home', timeoutMs),
+      expectVisible: (target, what, timeoutMs = ASSERTION_TIMEOUT_MS) => untilVisible(target, what, waitScreen, pace(timeoutMs)),
       async screenshot(label) {
         await onceTheRunnerIsFree(() => e2eApp.screenshot(label), runnerBusy());
       },
