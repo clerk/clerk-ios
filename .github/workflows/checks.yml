@@ -16,3 +16,5 @@ jobs:
       checks: write
       contents: read
     uses: ./.github/workflows/shared-checks.yml
+    with:
+      build_platforms: '["iOS", "macOS"]'

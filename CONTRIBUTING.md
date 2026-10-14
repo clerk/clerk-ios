@@ -145,6 +145,11 @@ finishes, or CodeRabbit skips a review or is unavailable, use the manual control
 The first kickoff is recorded in a separate bot comment so pushes, force-pushes, and
 reopening the PR do not reset it.
 
+PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
+the iOS and macOS builds. The macCatalyst, watchOS, tvOS, and visionOS builds run on
+`main` every night at 07:00 UTC and before each release. A failed nightly run posts to
+Slack.
+
 The CI gate runs trusted scripts from the default branch, so workflow changes become
 active after they land there. Run its regression tests locally with Node.js 22 or later:
 

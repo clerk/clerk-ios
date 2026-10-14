@@ -1,3 +1,4 @@
+import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -17,8 +18,8 @@ function buildPlatforms(caller: string): string {
   return passed ?? /^ {8}default: '(.+)'$/m.exec(inputs)?.[1] ?? 'no build_platforms input';
 }
 
-function script(step: string): string {
-  const lines = shared.split('\n');
+function script(step: string, workflow = shared): string {
+  const lines = workflow.split('\n');
   const named = lines.findIndex((line) => line.trim() === `- name: ${step}`);
   const run = lines.findIndex((line, at) => at > named && line.trim() === 'run: |');
   const indent = lines[run]!.indexOf('run:');
@@ -82,12 +83,13 @@ esac
 }
 
 describe('the platforms the shared checks build', () => {
-  it('are iOS and macOS for a pull request', () => {
-    assert.equal(buildPlatforms('run-pr-ci.yml'), '["iOS", "macOS"]');
+  it('are iOS and macOS for a pull request and for a push to main', () => {
+    assert.deepEqual([buildPlatforms('run-pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
   });
 
-  it('are all six for a release, so a break on macCatalyst, watchOS, tvOS or visionOS stops the release', () => {
-    assert.equal(buildPlatforms('release-sdk.yml'), '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]');
+  it('are all six each night and for a release, so a break on macCatalyst, watchOS, tvOS or visionOS shows up by the next morning and stops the release', () => {
+    const all = '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]';
+    assert.deepEqual([buildPlatforms('nightly-checks.yml'), buildPlatforms('release-sdk.yml')], [all, all]);
   });
 
   it('come from the one input that the build matrix and both check run steps read', () => {
@@ -124,5 +126,81 @@ describe('the Manual CI check runs of the shared checks', () => {
       'Manual CI / Build tvOS': 'success',
       'Manual CI / Build visionOS': 'cancelled',
     });
+  });
+});
+
+describe('the nightly checks', () => {
+  const nightly = read('nightly-checks.yml');
+  const job = (name: string): string => nightly.split(/\n(?= {2}[\w-]+:\n)/).find((text) => text.startsWith(`  ${name}:\n`)) ?? '';
+
+  function runs(name: string, context: { event: string; repository?: string; failed?: boolean }): boolean {
+    const condition = /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true';
+    const expression = condition
+      .replaceAll('failure()', String(context.failed ?? false))
+      .replaceAll('github.event_name', JSON.stringify(context.event))
+      .replaceAll('github.repository', JSON.stringify(context.repository ?? 'clerk/clerk-ios'))
+      .replaceAll(' != ', ' !== ')
+      .replaceAll(' == ', ' === ');
+    return new Function(`return ${expression};`)() as boolean;
+  }
+
+  function notified(webhook: string): { status: number | null; stdout: string; posted: unknown } {
+    const work = mkdtempSync(join(tmpdir(), 'nightly-notify-'));
+    mkdirSync(join(work, 'bin'));
+    writeFileSync(join(work, 'bin', 'curl'), `#!/bin/sh\nwhile [ "$#" -gt 1 ]; do [ "$1" = --data ] && printf '%s' "$2" > "${work}/posted"; shift; done\necho "$1" > "${work}/url"\n`, { mode: 0o755 });
+    const ran = spawnSync('bash', ['-c', script('Notify Slack', nightly)], {
+      env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+    let posted: unknown = null;
+    try {
+      posted = { url: readFileSync(join(work, 'url'), 'utf8').trim(), payload: JSON.parse(readFileSync(join(work, 'posted'), 'utf8')) };
+    } catch {}
+    rmSync(work, { recursive: true, force: true });
+    return { status: ran.status, stdout: ran.stdout, posted };
+  }
+
+  it('run every night at 07:00 UTC', () => {
+    assert.match(nightly, /^on:\n {2}schedule:\n {4}- cron: "0 7 \* \* \*"$/m);
+  });
+
+  it('run on the schedule only in clerk/clerk-ios, so that the nightly run of a fork does nothing', () => {
+    assert.deepEqual(
+      [
+        runs('checks', { event: 'schedule' }),
+        runs('checks', { event: 'schedule', repository: 'someone/clerk-ios' }),
+        runs('checks', { event: 'workflow_dispatch', repository: 'someone/clerk-ios' }),
+      ],
+      [true, false, true],
+    );
+  });
+
+  it('post to Slack only when a scheduled run fails', () => {
+    assert.deepEqual(
+      [runs('notify', { event: 'schedule', failed: true }), runs('notify', { event: 'schedule', failed: false }), runs('notify', { event: 'workflow_dispatch', failed: true })],
+      [true, false, false],
+    );
+  });
+
+  it('post a message that names the repository and links the run', () => {
+    assert.deepEqual(notified('https://hooks.slack.test/T/B/x'), {
+      status: 0,
+      stdout: '',
+      posted: {
+        url: 'https://hooks.slack.test/T/B/x',
+        payload: {
+          text: 'The nightly checks failed in clerk/clerk-ios',
+          blocks: [
+            { type: 'section', text: { type: 'mrkdwn', text: '*The nightly checks failed in clerk/clerk-ios*' } },
+            { type: 'context', elements: [{ type: 'mrkdwn', text: '<https://github.com/clerk/clerk-ios/actions/runs/123|View the run>' }] },
+          ],
+        },
+      },
+    });
+  });
+
+  it('skip the Slack message with a warning when the repository has no webhook', () => {
+    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', posted: null });
   });
 });
