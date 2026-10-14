@@ -5,6 +5,7 @@ A signed-in user opens their profile from UserButton, sees their own account, an
 ## Sub-features
 
 - `user-button` opens UserProfileView for the signed-in user from the home UserButton.
+- `sections-and-back` opens Manage account and Security from the profile, and returns to the profile with back from each.
 - `add-account` opens AuthView from the profile's `Add account` row while the first session stays signed in.
 - `sign-out` ends the session from the home screen.
 - `sign-out-profile` ends the session from the profile's `Sign out` row.
@@ -13,6 +14,7 @@ A signed-in user opens their profile from UserButton, sees their own account, an
 ## How to get to it (user POV)
 
 - Tap the avatar UserButton on the home screen.
+- In the profile, tap `Manage account` or `Security`, then tap the back button.
 - Tap `Sign out` on the home screen, or the `Sign out` row in the profile.
 - Open the profile, tap `Security`, tap `Delete account`, type `DELETE`, and confirm.
 
@@ -23,9 +25,10 @@ Preconditions:
 - Each test seeds a `+clerk_test` user on the standard settings and signs in with a ticket on the home (`host.launch({ signedInAs })`). The launch lands when the home shows that user's email and user ID.
 
 - **Profile.** Run `e2e-tests/bin/control-clerk-ios run user-button-and-profile`. The first test taps `clerk.userButton.profile`, expects `Edit profile` and `clerk.userProfile.currentUser.<userId>`, taps `clerk.userProfile.row.manageAccount`, and expects the user's email. Screenshots `user-button-profile` and `profile`.
-- **Add account.** The second test opens the profile the same way, taps `clerk.userProfile.row.addAccount`, and expects `clerk.auth.start.identifier` in the sheet. Screenshot `add-account`.
-- **Sign out.** The third test taps `e2e.auth.signOut` and waits for the home to show `Signed out` with no user ID and no session ID, then expects `e2e.auth.signIn`. Screenshot `signed-out`.
-- **Sign out from the profile.** The fourth test opens the profile, taps `clerk.userProfile.row.signOut`, and waits for the same signed-out home. The profile's sheet closes when the user is gone.
+- **Sections and back.** The second test seeds a user with a phone and opens the profile the same way. Screenshot `profile-before-sections`. It taps `clerk.userProfile.row.manageAccount` and expects the user's email, `PHONE NUMBERS`, the user's number as Clerk shows it, and `CONNECTED ACCOUNTS`. Screenshot `manage-account-sections`. It goes back with `device.back()` and expects `Edit profile`. It taps `clerk.userProfile.row.security`, expects `ACTIVE DEVICES`, goes back, and expects `Edit profile` with no `ACTIVE DEVICES`. Screenshot `profile-after-back`.
+- **Add account.** The third test opens the profile the same way, taps `clerk.userProfile.row.addAccount`, and expects `clerk.auth.start.identifier` in the sheet. Screenshot `add-account`.
+- **Sign out.** The fourth test taps `e2e.auth.signOut` and waits for the home to show `Signed out` with no user ID and no session ID, then expects `e2e.auth.signIn`. Screenshot `signed-out`.
+- **Sign out from the profile.** The fifth test opens the profile, taps `clerk.userProfile.row.signOut`, and waits for the same signed-out home. The profile's sheet closes when the user is gone.
 - **Delete account.** Run `e2e-tests/bin/control-clerk-ios run user-button-and-profile/delete-account`. The spec launches with `authMode: 'signIn'`, opens the profile, taps `clerk.userProfile.row.security`, scrolls to `clerk.userProfile.security.deleteAccount` and taps it, types `DELETE` into the one text box of the confirmation sheet, and taps `clerk.userProfile.deleteAccount.confirm`. It waits for the home to show `Signed out`. It then opens the sign-in sheet, enters the deleted user's email, and expects `Couldn't find your account.`. Screenshot `account-deleted`.
 - **Proof.** `specs/features/user-button-and-profile/profile.e2e.ts` and `delete-account.e2e.ts` pass. The video shows the home name the seeded user before each test opens the profile, and `Signed out` after each sign-out.
 
@@ -34,5 +37,9 @@ Preconditions:
 - A new application has reverification on, and the Platform API has no setting for it. Clerk accepts the deletion without another verification because the ticket sign-in happened seconds earlier. A spec that deletes the account long after its sign-in can be asked to verify again.
 - `clerk.userProfile.deleteAccount.confirmation` is the confirmation field, which takes focus as the sheet opens. Find it with `.first()`, wait for it to be visible, and fill that locator.
 - `Signed out` after a deletion looks the same as after a sign-out. The sign-in attempt with the deleted email is what shows that the account is gone. It needs `authMode: 'signIn'`, because the default mode would start a sign-up for an unknown email.
+- Manage account shows the number as `+1 (201) 555‑01xx`, with a non-breaking hyphen (U+2011) before the last four digits. `asShownByClerk` in `specs/phone.ts` builds that text.
+- The section headers of Manage account and Security, and `Edit profile`, have no identifier, so those checks use text.
+- The Security screen lists the active devices with the public IP address of the machine that runs the simulator. No spec takes a screenshot while that list is on screen, and the video of a run shows it.
+- Manage account and Security open inside the profile's sheet, under a navigation bar with a `Back` button. `device.back()` returns from each to the profile.
 - A seeded user has no name, so the profile header shows only the avatar and `Edit profile`. The email appears under `Manage account`.
 - The host shows a spinner while the ticket sign-in runs. `host.launch` returns once the home shows the user, and fails with the reason when the sign-in fails.

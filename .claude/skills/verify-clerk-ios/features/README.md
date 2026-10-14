@@ -21,7 +21,7 @@ Clerk's test mode makes these identities safe to type into the real app.
 | Phone | A US number from 555-0100 to 555-0199, typed as ten digits such as `2015550142`. Get one from `host.seedUser({ phone: true })`, or from `host.newPhone()` for a sign-up, instead of picking one by hand. Both give `+1` and the ten digits |
 | One-time code | `424242` verifies every email code and SMS code for a test address or number. Specs use the constant `CLERK_TEST_CODE` |
 | Password | The standard settings require a password at sign-up. Use a throwaway one per run, such as `Verify-<runId>-Pw1!`. For a password sign-in, seed the user with `host.seedUser({ password: true })` and fill the field with `host.fill(field, user.password!)` |
-| Authenticator code | Read the setup key from `clerk.auth.sessionTask.totp.secret` and compute the 6-digit RFC 6238 code (SHA-1, 30-second step). `specs/features/session-tasks/complete-setup-mfa.e2e.ts` has a helper |
+| Authenticator code | Read the setup key from `clerk.auth.sessionTask.totp.secret` and compute the 6-digit RFC 6238 code (SHA-1, 30-second step). `totp` in `specs/totp.ts` computes it |
 
 | Step | SDK identifier |
 | --- | --- |
@@ -62,11 +62,12 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 
 - [Auth start](./auth-start.md) covers opening AuthView from the home in a sheet and full screen, dismissing it, and opening it with an initial identifier.
 - [Sign in with an email code](./sign-in-email-code.md) covers requesting and entering the email code.
+- [Sign in with an SMS code](./sign-in-phone-code.md) covers requesting and entering the SMS code from the AuthView sheet the home opens.
 - [Custom sign-in flow](./custom-flow-sign-in.md) covers E2EHost's own form on `clerk.auth.signInWithPhoneCode(phoneNumber:)`.
 - [Sign up](./sign-up.md) covers requesting the sign-up code, completing sign-up with a password, and signing up with a phone number.
 - [Session persistence](./session-persistence.md) covers a session that survives a restart of the app.
-- [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, sign-out, and deleting the account.
-- [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in, and the setup-MFA task after sign-up.
+- [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, its Manage account and Security screens, sign-out, and deleting the account.
+- [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in, the setup-MFA task after sign-up, and finishing the setup-MFA task with an authenticator code.
 - [Organizations](./organizations.md) covers creating an organization from OrganizationSwitcher.
 
-Not mapped yet: phone code sign-in, password sign-in, social providers (no real OAuth on simulators), passkeys and biometrics (no associated domains or Secure Enclave on the simulator).
+Not mapped yet: password sign-in, social providers (no real OAuth on simulators), passkeys and biometrics (no associated domains or Secure Enclave on the simulator).
