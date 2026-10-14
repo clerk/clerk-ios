@@ -2,7 +2,7 @@ import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import { tmpdir } from 'node:os';
@@ -10,9 +10,11 @@ import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
 import { coreVersion } from '../src/core/manifest.ts';
 import { HANDOFF_LIMITS, parseHandoffManifest, type HandoffManifest } from '../src/core/remote/handoff.ts';
+import { workingPatch } from '../src/core/remote/backend.ts';
 import { sendEvidence } from '../src/core/remote/session.ts';
 import { plan } from '../src/core/remote/session-agent.ts';
-import { sha256Hex, type SessionHealth, type SessionRequest } from '../src/core/remote/protocol.ts';
+import { BUILD_LOG_START, sha256Hex, type SessionHealth, type SessionRequest } from '../src/core/remote/protocol.ts';
+import type { TreePatch } from '../src/core/types.ts';
 
 const here = import.meta.dirname;
 const token = 'b'.repeat(64);
@@ -293,6 +295,69 @@ describe('session agent', () => {
     const failed = await built(missing);
     assert.equal(failed.state, 'failed');
     assert.doesNotMatch(failed.state === 'failed' ? failed.tail : '', /GitHub does not show/, 'the fetch failed, not the question to GitHub');
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('builds the changes it is sent on a clean checkout of the commit, never on changes it was sent before, and refuses changes that do not apply', async () => {
+    const repo = repoWithCommit();
+    const github = await gitHubWith(repo);
+    const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: github.env });
+    const settled = (patch: string | null) => until(async () => { const b = (await agent.health()).build; return b.state !== 'building' && b.state !== 'none' && b.patch === patch ? b : null; }, `the build with ${patch ?? 'no changes'}`);
+    const send = (patch: TreePatch | null, sha256 = patch?.sha256) =>
+      agent.call(`/__sim/build?sha=${repo.sha}${patch === null ? '' : `&patch=${sha256}`}`, { method: 'POST', ...(patch === null ? {} : { body: JSON.stringify({ patch: patch.bytes.toString('base64') }) }) });
+    const checkout = (file: string) => (existsSync(join(repo.dir, file)) ? readFileSync(join(repo.dir, file), 'utf8') : null);
+    assert.equal((await settled(null)).state, 'built');
+
+    const client = mkdtempSync(join(tmpdir(), 'verify-agent-client-'));
+    execFileSync('git', ['clone', '-q', repo.dir, client]);
+    writeFileSync(join(client, 'app.txt'), 'edited');
+    writeFileSync(join(client, 'extra.txt'), 'added');
+    const first = workingPatch(client, ['.'])!;
+    assert.equal((await send(first)).status, 202);
+    assert.equal((await settled(first.sha256)).state, 'built');
+    assert.deepEqual([readFileSync(join(agent.work, 'built'), 'utf8'), checkout('extra.txt')], ['edited', 'added']);
+
+    rmSync(join(client, 'extra.txt'));
+    writeFileSync(join(client, 'app.txt'), 'edited again');
+    const second = workingPatch(client, ['.'])!;
+    assert.equal((await send(second, 'd'.repeat(64))).status, 400, 'a patch that does not hash to what was sent with it');
+    assert.equal((await send(second)).status, 202);
+    const rebuilt = await settled(second.sha256);
+    assert.equal(rebuilt.state === 'built' && rebuilt.incremental, true);
+    assert.deepEqual([readFileSync(join(agent.work, 'built'), 'utf8'), checkout('extra.txt')], ['edited again', null], 'the file the first changes added is gone');
+
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', 'commit', '-q', '-am', 'not pushed'], { cwd: client });
+    writeFileSync(join(client, 'app.txt'), 'edited on a commit the session does not have');
+    const elsewhere = workingPatch(client, ['.'])!;
+    await send(elsewhere);
+    const refused = await settled(elsewhere.sha256);
+    assert.equal(refused.state, 'failed');
+    assert.match(refused.state === 'failed' ? refused.tail : '', new RegExp(`the uncommitted changes ${elsewhere.sha256.slice(0, 12)} do not apply to ${repo.sha.slice(0, 12)}\\. Commit and push them, then run again\\.$`));
+    assert.deepEqual([repo.git('status', '--porcelain'), checkout('app.txt')], ['', 'one'], 'the checkout is the commit, with nothing half applied');
+
+    await send(null);
+    assert.equal((await settled(null)).state, 'built');
+    assert.equal(readFileSync(join(agent.work, 'built'), 'utf8'), 'one');
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('returns the build log from the byte it is asked for, and all of it when that byte is past the end', async () => {
+    const repo = repoWithCommit();
+    const github = await gitHubWith(repo);
+    const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: github.env });
+    await until(async () => ((await agent.health()).build.state === 'built' ? true : null), 'the build');
+    const log = readFileSync(join(agent.work, 'build.log'));
+    assert.match(log.toString(), /^\n\$ git fetch --no-tags --depth=1 origin /);
+    const read = async (from: number) => {
+      const answer = await agent.call(`/__sim/build/log?from=${from}`);
+      return [answer.status, answer.headers.get(BUILD_LOG_START), Buffer.from(await answer.arrayBuffer()).toString()];
+    };
+    assert.deepEqual(await read(0), [200, '0', log.toString()]);
+    assert.deepEqual(await read(10), [200, '10', log.subarray(10).toString()]);
+    assert.deepEqual(await read(log.length), [200, String(log.length), '']);
+    assert.deepEqual(await read(log.length + 5), [200, '0', log.toString()], 'a log that was started again since the last read');
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
   });

@@ -5,10 +5,13 @@ import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  BUILD_LOG_START,
   BUILD_TIMEOUT_MINUTES,
+  PATCH_LIMIT_BYTES,
   RequestError,
   matchesToken,
   parseRequest,
+  sha256Hex,
   type BuildState,
   type EndReason,
   type RecipeAnswers,
@@ -39,6 +42,7 @@ type Env = Readonly<Record<string, string | undefined>>;
 type GitHubGet = (path: string) => Promise<unknown>;
 
 const COMMIT = /^[0-9a-f]{40}$/;
+const PATCH_HASH = /^[0-9a-f]{64}$/;
 
 function githubOf(env: Env): GitHubGet {
   const base = `${(env.GITHUB_API_URL ?? 'https://api.github.com').replace(/\/$/, '')}/repos/${env.GITHUB_REPOSITORY ?? ''}`;
@@ -211,6 +215,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
   let builtOnce = false;
 
   const logFile = (name: 'agent-device-proxy' | 'build' | 'tunnel') => join(work, `${name}.log`);
+  const patchFile = (patch: string) => join(work, `patch-${patch}.diff`);
   const scrub = (text: string): string => (token === null ? text : text.split(token).join('<token>'));
   const log = (name: Parameters<typeof logFile>[0], chunk: Buffer | string): void => appendFileSync(logFile(name), scrub(chunk.toString()));
 
@@ -280,9 +285,9 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
     }, Promise.resolve(0));
   }
 
-  function startBuild(sha: string): void {
+  function startBuild(sha: string, patch: string | null): void {
     if (device === null) return;
-    if ((build.state === 'building' || build.state === 'built') && build.sha === sha) return;
+    if ((build.state === 'building' || build.state === 'built') && build.sha === sha && build.patch === patch) return;
     buildGeneration += 1;
     stopGroup(buildChild);
     const generation = buildGeneration;
@@ -297,11 +302,12 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
       timedOut = true;
       stopGroup(buildChild);
     }, BUILD_TIMEOUT_MINUTES * minuteMs);
-    build = { state: 'building', sha, seconds: 0 };
+    build = { state: 'building', sha, patch, seconds: 0 };
     rmSync(logFile('build'), { force: true });
-    const checkout: CommandLine[] = [
+    const cleanCheckout: CommandLine[] = [
       { command: 'git', args: ['fetch', '--no-tags', '--depth=1', 'origin', sha] },
       { command: 'git', args: ['checkout', '--force', '--detach', sha] },
+      { command: 'git', args: ['clean', '-d', '--force'] },
     ];
     const target = device;
     const checkoutThenBuild = async (): Promise<number> => {
@@ -309,8 +315,15 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         tail.push(`this session builds ${dispatched}, the commit it was started on, and later commits of ${dispatchedRef}. GitHub does not show ${sha} as one. Push it to that branch, or run down and then up to start a session on it.`);
         return 1;
       }
-      const checkedOut = await runCommands(checkout, stopped, tail);
+      const checkedOut = await runCommands(cleanCheckout, stopped, tail);
       if (checkedOut !== 0) return checkedOut;
+      if (patch !== null) {
+        const applied = await runCommands([{ command: 'git', args: ['apply', '--binary', '--whitespace=nowarn', patchFile(patch)] }], stopped, tail);
+        if (applied !== 0) {
+          tail.push(`the uncommitted changes ${patch.slice(0, 12)} do not apply to ${sha.slice(0, 12)}. Commit and push them, then run again.`);
+          return applied;
+        }
+      }
       try {
         return await runCommands(await recipe(target, { op: 'build', work }), stopped, tail);
       } catch (error) {
@@ -324,9 +337,9 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
       const seconds = Math.round((Date.now() - began) / 1000);
       if (code === 0 && !timedOut) {
         builtOnce = true;
-        build = { state: 'built', sha, seconds, incremental };
+        build = { state: 'built', sha, patch, seconds, incremental };
       } else {
-        build = { state: timedOut ? 'timed-out' : 'failed', sha, seconds, tail: scrub(tail.join('\n')) };
+        build = { state: timedOut ? 'timed-out' : 'failed', sha, patch, seconds, tail: scrub(tail.join('\n')) };
       }
     });
   }
@@ -381,10 +394,37 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         return json(res, 200, health());
       case 'POST /build': {
         const sha = url.searchParams.get('sha') ?? '';
+        const patch = url.searchParams.get('patch');
         if (!/^[0-9a-f]{40}$/.test(sha)) return json(res, 400, { error: 'sha must be a full commit id' });
+        if (patch !== null && !PATCH_HASH.test(patch)) return json(res, 400, { error: 'patch must be the sha256 of the patch' });
         if (device === null) return json(res, 409, { error: 'this session has no device to build for' });
-        startBuild(sha);
+        if (patch !== null) {
+          const body = await readBody(req, Math.ceil(PATCH_LIMIT_BYTES / 3) * 4 + 64);
+          if (body === null) return json(res, 413, { error: `the patch is larger than ${PATCH_LIMIT_BYTES} bytes` });
+          let bytes: Buffer;
+          try {
+            bytes = Buffer.from(String((JSON.parse(body) as { readonly patch?: unknown }).patch), 'base64');
+          } catch {
+            return json(res, 400, { error: 'the body must be a JSON object with the patch in base64' });
+          }
+          if (sha256Hex(bytes) !== patch) return json(res, 400, { error: 'the patch that arrived does not have the sha256 it was sent with' });
+          writeFileSync(patchFile(patch), bytes);
+        }
+        startBuild(sha, patch);
         return json(res, 202, health());
+      }
+      case 'GET /build/log': {
+        const file = logFile('build');
+        const size = existsSync(file) ? statSync(file).size : 0;
+        const from = Number(url.searchParams.get('from') ?? 0);
+        const start = Number.isInteger(from) && from >= 0 && from <= size ? from : 0;
+        res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', [BUILD_LOG_START]: String(start) });
+        if (start === size) {
+          res.end();
+          return;
+        }
+        createReadStream(file, { start, end: size - 1 }).pipe(res);
+        return;
       }
       case 'POST /record/start': {
         if (device === null) return json(res, 409, { error: 'this session has no device to record' });
@@ -475,7 +515,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
 
   server.listen(port, '127.0.0.1', () => {
     console.log(`verify-remote session ${request.session} on :${port}, idle stop ${request.idleMinutes} min, cap ${request.capMinutes} min`);
-    if (request.sha !== null) startBuild(request.sha);
+    if (request.sha !== null) startBuild(request.sha, null);
   });
 }
 

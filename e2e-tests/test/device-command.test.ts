@@ -19,7 +19,7 @@ afterEach(() => void (globalThis.fetch = realFetch));
 function remoteLease(platform: 'ios' | 'android'): RemoteLease {
   const tokenFile = join(mkdtempSync(join(tmpdir(), 'verify-command-')), 'token');
   writeFileSync(tokenFile, 'd'.repeat(64));
-  return { backend: 'remote', provider: 'github-actions', platform, session: `${platform}abc123`, providerRef: '7', baseUrl: 'https://quick-fox.trycloudflare.com', tokenFile, deviceId: 'emulator-5554', deviceName: 'Pixel', runner: 'linux', expiresAt: new Date(Date.now() + 3_600_000).toISOString(), builtSha: null, acquiredAt: '', installedBuild: null };
+  return { backend: 'remote', provider: 'github-actions', platform, session: `${platform}abc123`, providerRef: '7', baseUrl: 'https://quick-fox.trycloudflare.com', tokenFile, deviceId: 'emulator-5554', deviceName: 'Pixel', runner: 'linux', expiresAt: new Date(Date.now() + 3_600_000).toISOString(), builtSha: null, builtPatch: null, acquiredAt: '', installedBuild: null };
 }
 
 function tunnel(reply: (path: string) => { status: number; body: unknown }): { readonly calls: { path: string; method: string; authorization: string | null; body: unknown }[] } {

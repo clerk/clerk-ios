@@ -258,10 +258,19 @@ export interface LocalBuild extends BuiltAppBase {
   readonly source: 'local';
   readonly path: ScratchPath;
 }
+export interface TreePatch {
+  readonly sha256: string;
+  readonly bytes: Buffer;
+}
+export interface SessionSource {
+  readonly sha: string;
+  readonly patch: TreePatch | null;
+}
 export interface SessionBuild extends BuiltAppBase {
   readonly source: 'github-actions';
   readonly path: null;
   readonly sourceSha: string;
+  readonly patch: TreePatch | null;
 }
 export type BuiltApp = LocalBuild | SessionBuild;
 export type BuildSource = BuiltApp['source'];
@@ -292,6 +301,7 @@ export interface RemoteLease extends LeaseBase {
   readonly runner: string;
   readonly expiresAt: string;
   readonly builtSha: string | null;
+  readonly builtPatch: string | null;
 }
 export type Lease = LocalLease | RemoteLease;
 
@@ -329,7 +339,7 @@ export interface EvidenceRecord {
   readonly dirty: boolean;
   readonly platform: Platform;
   readonly backend: BackendKind;
-  readonly remote: { readonly provider: RemoteProvider; readonly runner: string; readonly builtSha: string | null } | null;
+  readonly remote: { readonly provider: RemoteProvider; readonly runner: string; readonly builtSha: string | null; readonly builtPatch?: string | null } | null;
   readonly device: string;
   readonly build: BuildKey;
   readonly results: readonly SpecResult[];
@@ -411,7 +421,7 @@ export interface DeviceBackend<L extends Lease = Lease> {
   readonly kind: BackendKind;
   readonly platform: Platform;
   availability(): Availability;
-  sourceCommit?(input: { readonly worktree: string; readonly inputs: readonly string[] }): Promise<string>;
+  sourceCommit?(input: { readonly worktree: string; readonly inputs: readonly string[] }): Promise<SessionSource>;
   acquire(request: AcquireRequest): Promise<L>;
   check(lease: L): Promise<'held' | 'lost' | 'expiring'>;
   install(lease: L, app: BuiltApp, progress: (line: string) => void): Promise<L>;

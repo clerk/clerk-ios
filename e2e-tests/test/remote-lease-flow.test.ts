@@ -8,7 +8,7 @@ import { heldInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
 import { doctor, down, up, type Deps } from '../src/core/verbs.ts';
 import { openWorkspace } from '../src/core/workspace.ts';
-import { VerifyFailure, type BuiltApp, type DeviceBackend, type HostAdapter, type RemoteLease } from '../src/core/types.ts';
+import { VerifyFailure, type BuiltApp, type DeviceBackend, type HostAdapter, type RemoteLease, type SessionSource } from '../src/core/types.ts';
 
 const shaOf = (app: BuiltApp): string | null => (app.source === 'local' ? null : app.sourceSha);
 
@@ -23,7 +23,7 @@ function setup() {
   let health: 'held' | 'lost' = 'held';
   let pushed = true;
   let stuck = false;
-  const lease = (session: string): RemoteLease => ({ backend: 'remote', provider: 'github-actions', platform: 'ios', session, providerRef: '1', baseUrl: 'https://x.trycloudflare.com', tokenFile: join(dir, 'token'), deviceId: 'UDID', deviceName: 'iPhone Air', runner: 'mac-runner', expiresAt: '2026-10-05T01:00:00Z', builtSha: null, acquiredAt: '', installedBuild: null });
+  const lease = (session: string): RemoteLease => ({ backend: 'remote', provider: 'github-actions', platform: 'ios', session, providerRef: '1', baseUrl: 'https://x.trycloudflare.com', tokenFile: join(dir, 'token'), deviceId: 'UDID', deviceName: 'iPhone Air', runner: 'mac-runner', expiresAt: '2026-10-05T01:00:00Z', builtSha: null, builtPatch: null, acquiredAt: '', installedBuild: null });
   let sessions = 0;
   const inputsAskedFor: string[] = [];
   const remote = {
@@ -31,9 +31,9 @@ function setup() {
     platform: 'ios',
     requirement: 'a pushed branch',
     availability: () => ({ usable: true, why: 'a device on a runner' }),
-    async sourceCommit(): Promise<string> {
+    async sourceCommit(): Promise<SessionSource> {
       if (!pushed) throw new VerifyFailure('BUILD_FAILED', 'GitHub does not have HEAD', 'git push, then rerun');
-      return sha;
+      return { sha, patch: null };
     },
     reapable: async () => [],
     check: async () => health,

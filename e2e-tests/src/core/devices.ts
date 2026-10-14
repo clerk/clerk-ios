@@ -116,15 +116,16 @@ export function readBuiltApp(workspace: Workspace, key: BuildKey): LocalBuild | 
 async function ensureBuild(host: HostAdapter, platform: Platform, workspace: Workspace, backend: DeviceBackend, held: Lease | null, heldIsAlive: boolean, progress: (line: string) => void): Promise<{ app: BuiltApp; view: BuildView }> {
   const key = await computeBuildKey(host, platform, backend.kind, workspace.worktree);
   if (backend.sourceCommit !== undefined) {
-    const builtForThisApp = held !== null && held.backend === 'remote' && held.installedBuild === key ? held.builtSha : null;
+    const builtForThisApp = held !== null && held.backend === 'remote' && held.installedBuild === key && held.builtPatch === null ? held.builtSha : null;
     const onSession = heldIsAlive ? builtForThisApp : null;
-    const sourceSha =
-      onSession ??
-      (await backend.sourceCommit({ worktree: workspace.worktree, inputs: host.buildInputs(platform, backend.kind) }).catch((error: unknown) => {
-        if (builtForThisApp !== null && error instanceof VerifyFailure && error.code === 'BUILD_FAILED') return builtForThisApp;
-        throw error;
-      }));
-    const app: BuiltApp = { platform, key, appId: host.appId(platform), path: null, source: 'github-actions', sourceSha };
+    const source =
+      onSession === null
+        ? await backend.sourceCommit({ worktree: workspace.worktree, inputs: host.buildInputs(platform, backend.kind) }).catch((error: unknown) => {
+            if (builtForThisApp !== null && error instanceof VerifyFailure && error.code === 'BUILD_FAILED') return { sha: builtForThisApp, patch: null };
+            throw error;
+          })
+        : { sha: onSession, patch: null };
+    const app: BuiltApp = { platform, key, appId: host.appId(platform), path: null, source: 'github-actions', sourceSha: source.sha, patch: source.patch };
     return { app, view: { platform, key, source: app.source, reused: onSession !== null, seconds: 0 } };
   }
   const existing = readBuiltApp(workspace, key);
@@ -178,7 +179,7 @@ export async function ensureLease(
 
   const state = held === null ? 'held' : await backend.check(held);
   const { app, view: build } = await ensureBuild(host, platform, workspace, backend, held, state === 'held', options.progress);
-  const builtBy = app.source === 'local' ? (build.reused ? 'reused' : `built in ${build.seconds}s`) : `commit ${app.sourceSha.slice(0, 12)}  ${build.reused ? 'already on the session' : 'the session builds it'}`;
+  const builtBy = app.source === 'local' ? (build.reused ? 'reused' : `built in ${build.seconds}s`) : `commit ${app.sourceSha.slice(0, 12)}${app.patch === null ? '' : ` with uncommitted changes ${app.patch.sha256.slice(0, 12)}`}  ${build.reused ? 'already on the session' : 'the session builds it'}`;
   options.progress(`build   ${build.key}  ${build.source}  ${builtBy}`);
 
   let lease: Lease | null = held;
