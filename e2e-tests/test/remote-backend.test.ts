@@ -9,7 +9,7 @@ import { run } from '../src/core/exec.ts';
 import { remoteBackend, workingPatch } from '../src/core/remote/backend.ts';
 import type { GitHub } from '../src/core/remote/github.ts';
 import { driverId, newSessionRequest, type RemoteSettings } from '../src/core/remote/settings.ts';
-import { BUILD_LOG_START, BUILD_TIMEOUT_MINUTES, sha256Hex, type SessionHealth } from '../src/core/remote/protocol.ts';
+import { BUILD_LOG_START, BUILD_TIMEOUT_MINUTES, PATCH_LIMIT_BYTES, sha256Hex, type SessionHealth } from '../src/core/remote/protocol.ts';
 import { VerifyFailure, type BuildKey, type BuiltApp, type RemoteLease } from '../src/core/types.ts';
 
 function repo(): { dir: string; git: (...args: string[]) => string } {
@@ -66,6 +66,43 @@ describe('the remote backend owns the build', () => {
     writeFileSync(join(dir, 'README.md'), 'edited docs');
     const { hub } = github(() => ({ status: 200, json: {} }));
     assert.equal((await remoteBackend(settings(dir), { env: {}, runner: run, github: async () => hub }).sourceCommit!(input(dir))).patch, null);
+  });
+
+  it('refuses uncommitted changes larger than a session takes, however large, with the fix to commit them', async () => {
+    const { dir, git } = repo();
+    writeFileSync(join(dir, 'App.swift'), 'edited');
+    const bin = mkdtempSync(join(tmpdir(), 'verify-remote-bin-'));
+    const realGit = execFileSync('which', ['git'], { encoding: 'utf8' }).trim();
+    writeFileSync(join(bin, 'git'), `#!/bin/sh\nif [ "$1" = diff ]; then exec head -c "$PATCH_BYTES" /dev/zero; fi\nexec "${realGit}" "$@"\n`, { mode: 0o755 });
+    const { hub } = github(() => ({ status: 200, json: {} }));
+    const path = process.env.PATH;
+    process.env.PATH = `${bin}:${path}`;
+    try {
+      process.env.PATCH_BYTES = String(PATCH_LIMIT_BYTES);
+      const fits = await remoteBackend(settings(dir), { env: {}, runner: run, github: async () => hub }).sourceCommit!(input(dir));
+      assert.deepEqual([fits.sha, fits.patch?.bytes.length], [git('rev-parse', 'HEAD'), PATCH_LIMIT_BYTES]);
+      for (const bytes of [PATCH_LIMIT_BYTES + 1, 4 * PATCH_LIMIT_BYTES + 1]) {
+        process.env.PATCH_BYTES = String(bytes);
+        await assert.rejects(remoteBackend(settings(dir), { env: {}, runner: run, github: async () => hub }).sourceCommit!(input(dir)), {
+          code: 'BUILD_FAILED',
+          message: 'the uncommitted changes to the app make a patch larger than the 16 MiB a session takes',
+          fix: 'git commit the changes and git push, then rerun',
+        });
+      }
+    } finally {
+      process.env.PATH = path;
+      delete process.env.PATCH_BYTES;
+    }
+  });
+
+  it('refuses with the fix to commit the changes when git cannot read them', async () => {
+    const { dir } = repo();
+    const { hub } = github(() => ({ status: 200, json: {} }));
+    await assert.rejects(remoteBackend(settings(dir), { env: {}, runner: run, github: async () => hub }).sourceCommit!({ worktree: dir, inputs: ['Missing.swift'] }), {
+      code: 'BUILD_FAILED',
+      message: "git could not read the uncommitted changes to the app: fatal: pathspec 'Missing.swift' did not match any files",
+      fix: 'git commit the changes and git push, then rerun',
+    });
   });
 
   it('refuses a commit GitHub does not have', async () => {

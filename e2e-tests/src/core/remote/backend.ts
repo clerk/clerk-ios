@@ -33,11 +33,21 @@ async function pullRequestCommits(hub: GitHub, pr: number): Promise<readonly str
   return shas;
 }
 
+const COMMIT_THE_CHANGES = 'git commit the changes and git push, then rerun';
+
 export function workingPatch(worktree: string, inputs: readonly string[]): TreePatch | null {
   const scratch = mkdtempSync(join(tmpdir(), 'verify-patch-'));
   try {
     const index = join(scratch, 'index');
-    const git = (args: readonly string[]): Buffer => execFileSync('git', [...args], { cwd: worktree, env: { ...process.env, GIT_INDEX_FILE: index }, maxBuffer: 4 * PATCH_LIMIT_BYTES, stdio: ['ignore', 'pipe', 'pipe'] });
+    const git = (args: readonly string[]): Buffer => {
+      try {
+        return execFileSync('git', [...args], { cwd: worktree, env: { ...process.env, GIT_INDEX_FILE: index }, maxBuffer: PATCH_LIMIT_BYTES, stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (error) {
+        const failed = error as NodeJS.ErrnoException & { readonly stderr?: Buffer };
+        if (failed.code === 'ENOBUFS') throw new VerifyFailure('BUILD_FAILED', `the uncommitted changes to the app make a patch larger than the ${PATCH_LIMIT_BYTES / 1024 / 1024} MiB a session takes`, COMMIT_THE_CHANGES);
+        throw new VerifyFailure('BUILD_FAILED', `git could not read the uncommitted changes to the app: ${failed.stderr?.toString().trim() || failed.message}`, COMMIT_THE_CHANGES);
+      }
+    };
     const own = resolve(worktree, execFileSync('git', ['rev-parse', '--git-path', 'index'], { cwd: worktree, encoding: 'utf8' }).trim());
     if (existsSync(own)) copyFileSync(own, index);
     git(['add', '--all', '--', ...inputs]);
@@ -137,9 +147,6 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
     async sourceCommit(input) {
       const sha = (await deps.runner('git', ['rev-parse', 'HEAD'], { cwd: input.worktree })).stdout.trim();
       const patch = workingPatch(input.worktree, input.inputs);
-      if (patch !== null && patch.bytes.length > PATCH_LIMIT_BYTES) {
-        throw new VerifyFailure('BUILD_FAILED', `the uncommitted changes to the app are ${Math.ceil(patch.bytes.length / 1024 / 1024)} MiB as a patch, more than the ${PATCH_LIMIT_BYTES / 1024 / 1024} MiB a session takes`, 'git commit the changes and git push, then rerun');
-      }
       const found = await (await github()).api('GET', `/commits/${sha}`);
       if (found.status !== 200) {
         throw new VerifyFailure('BUILD_FAILED', `a remote session builds a pushed commit, and GitHub does not have ${sha.slice(0, 12)} (${found.status})`, 'git push, then rerun');
