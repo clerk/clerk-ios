@@ -15,6 +15,7 @@ import { sendEvidence } from '../src/core/remote/session.ts';
 import { plan } from '../src/core/remote/session-agent.ts';
 import { BUILD_LOG_START, sha256Hex, type SessionHealth, type SessionRequest } from '../src/core/remote/protocol.ts';
 import type { TreePatch } from '../src/core/types.ts';
+import { BUILD_INPUTS } from '../src/host-app.ts';
 
 const here = import.meta.dirname;
 const token = 'b'.repeat(64);
@@ -427,6 +428,28 @@ describe('session agent', () => {
       assert.equal(refused.state === 'failed' ? refused.tail.split('\n').at(-1) : '', `the uncommitted changes ${patch.sha256.slice(0, 12)} change ${path}, and a session builds changes only to app.txt, extra.txt, Sources. Commit and push that change, then run again.`);
       assert.deepEqual([repo.git('status', '--porcelain', '--ignored'), readFileSync(join(repo.dir, 'app.txt'), 'utf8'), readFileSync(join(agent.work, 'built'), 'utf8')], ['', 'two', 'two'], `nothing of the changes to ${path} was applied or built`);
     }
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('refuses changes to a path that only begins with the name of an app source, such as SourcesX beside Sources', async () => {
+    assert.ok(BUILD_INPUTS.includes('Sources'));
+    const repo = repoWithCommit();
+    writeFileSync(join(repo.dir, 'device.ts'), `export default () => ({ inputs: ${JSON.stringify(BUILD_INPUTS)}, build: (work) => [{ command: process.execPath, args: ['-e', "require('fs').writeFileSync(require('path').join(process.argv[1], 'built'), 'built')", work] }] });\n`);
+    const started = repo.commit('two');
+    const agent = await startAgent({ ...base, sha: started }, { cwd: repo.dir, deviceModule: 'device.ts', env: (await gitHubWith({ ...repo, sha: started })).env });
+    const settled = (patch: string | null) => until(async () => { const b = (await agent.health()).build; return b.state !== 'building' && b.state !== 'none' && b.patch === patch ? b : null; }, `the build with ${patch ?? 'no changes'}`);
+    assert.equal((await settled(null)).state, 'built');
+
+    const client = mkdtempSync(join(tmpdir(), 'verify-agent-client-'));
+    execFileSync('git', ['clone', '-q', repo.dir, client]);
+    mkdirSync(join(client, 'SourcesX'));
+    writeFileSync(join(client, 'SourcesX', 'Recipe.swift'), 'a new file beside the SDK sources');
+    const changes = workingPatch(client, ['.'])!;
+    assert.equal((await agent.call(`/__sim/build?sha=${started}&patch=${changes.sha256}`, { method: 'POST', body: JSON.stringify({ patch: changes.bytes.toString('base64') }) })).status, 202);
+    const refused = await settled(changes.sha256);
+    assert.equal(refused.state === 'failed' ? refused.tail.split('\n').at(-1) : refused.state, `the uncommitted changes ${changes.sha256.slice(0, 12)} change SourcesX/Recipe.swift, and a session builds changes only to ${BUILD_INPUTS.join(', ')}. Commit and push that change, then run again.`);
+    assert.equal(repo.git('status', '--porcelain'), '', 'nothing of the changes was applied');
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
   });
