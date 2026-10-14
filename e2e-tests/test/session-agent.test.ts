@@ -450,6 +450,19 @@ describe('session agent', () => {
     await agent.exited;
   });
 
+  it('keeps serving when the build log cannot be read', async () => {
+    const repo = repoWithCommit();
+    const github = await gitHubWith(repo);
+    const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: github.env });
+    await until(async () => ((await agent.health()).build.state === 'built' ? true : null), 'the build');
+    rmSync(join(agent.work, 'build.log'));
+    mkdirSync(join(agent.work, 'build.log'));
+    await agent.call('/__sim/build/log?from=0').then((answer) => answer.arrayBuffer()).catch(() => null);
+    assert.equal((await agent.call('/__sim/health')).status, 200, 'the agent still answers after a failed read of the log');
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
   it('builds only the commit it was started on and later commits of that branch, whoever asks with the session token', async () => {
     const repo = repoWithCommit();
     const earlier = repo.sha;
