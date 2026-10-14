@@ -1,7 +1,7 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -302,12 +302,23 @@ describe('the E2E runner tests', () => {
     assert.equal(after.length, 5);
   });
 
-  it('watch every workflow a test reads, the scripts, and the test package itself', () => {
-    const tests = join(import.meta.dirname);
-    const named = new Set(readdirSync(tests).flatMap((file) => [...readFileSync(join(tests, file), 'utf8').matchAll(/[\w-]+\.yml/g)].map((match) => match[0])));
-    const workflows = [...named].filter((name) => existsSync(join(WORKFLOWS, name))).map((name) => `.github/workflows/${name}`);
-    assert.deepEqual(workflows.filter((path) => !watched.includes(path)), []);
+  it('watch every workflow and repository file that a test of the job reads, the scripts, and the test package itself', () => {
+    const pkg = join(import.meta.dirname, '..');
+    const root = join(pkg, '..');
+    const commands = [JSON.parse(readFileSync(join(pkg, 'package.json'), 'utf8')).scripts.test as string, ...[...job.matchAll(/^ {8}run: (node --test .+)$/gm)].map((match) => match[1]!)];
+    const tests = commands.flatMap((command) => command.split(' ').slice(2)).flatMap((pattern) => globSync(pattern, { cwd: pkg }).map((file) => join(pkg, file)));
+    assert.ok(tests.some((file) => file.endsWith('.github/scripts/verify-attach.test.mjs')) && tests.some((file) => file.endsWith('shared-checks.test.ts')), tests.join(', '));
+    const onlyInThrowawayRepos = ['Clerk.xcworkspace/contents.xcworkspacedata', 'Examples/E2EHost/E2EHost/E2EHostApp.swift', 'Examples/Quickstart/Quickstart/ContentView.swift'];
+    const reads = new Set(
+      tests.flatMap((file) => {
+        const text = readFileSync(file, 'utf8');
+        const workflows = [...text.matchAll(/[\w-]+\.yml/g)].map((match) => `.github/workflows/${match[0]}`);
+        const paths = [...text.matchAll(/['"`]([\w.-]+(?:\/[\w.-]+)+)['"`]/g)].map((match) => match[1]!);
+        return [...workflows, ...paths].filter((path) => existsSync(join(root, path)) && !onlyInThrowawayRepos.includes(path));
+      }),
+    );
+    assert.deepEqual([...reads].filter((path) => !watched.some((entry) => path === entry || path.startsWith(`${entry}/`))), []);
     assert.deepEqual(['e2e-tests', '.github/scripts'].filter((path) => !watched.includes(path)), []);
-    assert.deepEqual(watched.filter((path) => !existsSync(join(WORKFLOWS, '..', '..', path))), []);
+    assert.deepEqual(watched.filter((path) => !existsSync(join(root, path))), []);
   });
 });

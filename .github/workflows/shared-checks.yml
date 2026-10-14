@@ -281,6 +281,7 @@ jobs:
         .github/workflows/run-pr-ci.yml
         .github/workflows/shared-checks.yml
         .github/workflows/verify-app-cache.yml
+        .github/workflows/verify-attach.yml
         .github/workflows/verify-e2e.yml
         .github/workflows/verify-remote.yml
         Examples/Quickstart/Quickstart.xcodeproj/project.pbxproj
