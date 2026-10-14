@@ -145,8 +145,14 @@ export function pinInputTimes(worktree: string, derived: string, tree: InputTree
   } catch {
     recorded = {};
   }
+  const changed = tree.changed.map((path) => path.replace(/\/+$/, ''));
+  const differs = (path: string): boolean => changed.some((other) => other === path || other.startsWith(`${path}/`));
   const pinned: Record<string, readonly [string, number]> = {};
   for (const { path, oid } of tree.entries) {
+    if (differs(path)) {
+      if (existsSync(join(worktree, path))) utimesSync(join(worktree, path), now, now);
+      continue;
+    }
     const was = recorded[path];
     const seconds = was !== undefined && was[0] === oid ? was[1] : now;
     utimesSync(join(worktree, path), seconds, seconds);
