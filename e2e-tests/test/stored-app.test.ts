@@ -363,6 +363,37 @@ describe('the workflows that store and restore', () => {
   });
 });
 
+describe('a session that built uncommitted changes', () => {
+  const session = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8');
+  const steps = session.split(/\n(?= {6}- )/);
+  const at = (needle: string) => steps.findIndex((step) => step.includes(needle));
+  const check = steps[at('id: patched')] ?? '';
+  const script = check.slice(check.indexOf('run: |') + 'run: |'.length).split('\n').map((line) => line.trim()).join('\n');
+
+  function checked(marked: boolean): string {
+    const work = scratch('verify-patched-');
+    if (marked) writeFileSync(join(work, 'patched'), `${'c'.repeat(64)}\n`);
+    writeFileSync(join(work, 'output'), '');
+    const ran = spawnSync('bash', ['-e', '-c', script], { env: { PATH: process.env.PATH, VERIFY_SESSION_WORK: work, GITHUB_OUTPUT: join(work, 'output') }, encoding: 'utf8', timeout: 20_000 });
+    assert.equal(ran.status, 0);
+    return readFileSync(join(work, 'output'), 'utf8');
+  }
+
+  it('is found from the mark the session agent leaves before it applies the changes', () => {
+    assert.deepEqual([checked(true), checked(false)], ['built=true\n', '']);
+  });
+
+  it('stores no app, XCTest runner or packages for later sessions, and checks for the mark after the build it waits for', () => {
+    const saves = steps.flatMap((step, index) => (step.includes('uses: actions/cache/save@') ? [index] : []));
+    assert.equal(saves.length, 3);
+    for (const index of saves) {
+      assert.match(steps[index]!, /^ {8}if: steps\.patched\.outputs\.built != 'true' && /m, steps[index]!.split('\n')[0]);
+      assert.ok(at('id: patched') < index, 'the check comes before the save');
+    }
+    assert.ok(at('- name: Report the app and the stage times') < at('id: patched'), 'the report waits for a running build, so a build that applied changes has left its mark');
+  });
+});
+
 describe('the workflow step that reports the app', () => {
   const session = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8');
   const step = session.slice(session.indexOf('- name: Report the app and the stage times'), session.indexOf('- name: Store the app for the next session'));

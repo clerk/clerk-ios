@@ -314,9 +314,11 @@ describe('session agent', () => {
     writeFileSync(join(client, 'app.txt'), 'edited');
     writeFileSync(join(client, 'extra.txt'), 'added');
     const first = workingPatch(client, ['.'])!;
+    assert.equal(existsSync(join(agent.work, 'patched')), false, 'a build of the commit leaves no mark');
     assert.equal((await send(first)).status, 202);
     assert.equal((await settled(first.sha256)).state, 'built');
     assert.deepEqual([readFileSync(join(agent.work, 'built'), 'utf8'), checkout('extra.txt')], ['edited', 'added']);
+    assert.equal(readFileSync(join(agent.work, 'patched'), 'utf8'), `${first.sha256}\n`, 'the mark that keeps the job from storing what it built');
 
     rmSync(join(client, 'extra.txt'));
     writeFileSync(join(client, 'app.txt'), 'edited again');
@@ -339,6 +341,7 @@ describe('session agent', () => {
     await send(null);
     assert.equal((await settled(null)).state, 'built');
     assert.equal(readFileSync(join(agent.work, 'built'), 'utf8'), 'one');
+    assert.ok(existsSync(join(agent.work, 'patched')), 'a later build of the commit does not take the mark away');
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
   });
@@ -395,7 +398,7 @@ describe('session agent', () => {
       const refused = await settled(patch.sha256);
       assert.equal(refused.state, 'failed', path);
       assert.equal(refused.state === 'failed' ? refused.tail.split('\n').at(-1) : '', `the uncommitted changes ${patch.sha256.slice(0, 12)} change ${path}, and a session builds changes only to app.txt, extra.txt, Sources. Commit and push that change, then run again.`);
-      assert.deepEqual([repo.git('status', '--porcelain', '--ignored'), readFileSync(join(repo.dir, 'app.txt'), 'utf8'), readFileSync(join(agent.work, 'built'), 'utf8')], ['', 'two', 'two'], `nothing of the changes to ${path} was applied or built`);
+      assert.deepEqual([repo.git('status', '--porcelain', '--ignored'), readFileSync(join(repo.dir, 'app.txt'), 'utf8'), readFileSync(join(agent.work, 'built'), 'utf8'), existsSync(join(agent.work, 'patched'))], ['', 'two', 'two', false], `nothing of the changes to ${path} was applied or built`);
     }
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;

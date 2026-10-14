@@ -263,22 +263,30 @@ jobs:
           node "$SESSION_BUILD" outcome "$VERIFY_SESSION_WORK"
           node "$SESSION_BUILD" stages "$VERIFY_SESSION_WORK"
 
+      - name: Check whether the session built uncommitted changes
+        id: patched
+        run: |
+          if [ -f "$VERIFY_SESSION_WORK/patched" ]; then
+            echo "::notice title=verify::this session built uncommitted changes, so it stores nothing for later sessions"
+            echo "built=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Store the app for the next session with the same sources, packages and Xcode
-        if: steps.report.outputs.store != '' && steps.report.outputs.store == steps.app.outputs.key
+        if: steps.patched.outputs.built != 'true' && steps.report.outputs.store != '' && steps.report.outputs.store == steps.app.outputs.key
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/apps/${{ steps.report.outputs.store }}
           key: verify-e2ehost-${{ steps.report.outputs.store }}
 
       - name: Store the XCTest runner
-        if: steps.prepare.outputs.how == 'built' && steps.runner.outputs.cache-hit != 'true'
+        if: steps.patched.outputs.built != 'true' && steps.prepare.outputs.how == 'built' && steps.runner.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.agent-device/apple-runner
           key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
 
       - name: Store the Swift packages
-        if: steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)
+        if: steps.patched.outputs.built != 'true' && steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/packages
