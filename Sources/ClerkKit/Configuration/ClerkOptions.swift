@@ -95,6 +95,9 @@ extension Clerk {
     /// Your Clerk app's proxy URL. Required for applications that run behind a reverse proxy. Must be a full URL (for example, https://proxy.example.com/__clerk).
     public let proxyUrl: URL?
 
+    /// The proxy URL exactly as the app passed it, so configuration can reject a value it can't use.
+    let proxyUrlInput: String?
+
     /// Configuration for OAuth redirect URLs and callback handling.
     public let redirectConfig: RedirectConfig
 
@@ -159,6 +162,7 @@ extension Clerk {
       self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
       self.keychainConfig = keychainConfig
+      proxyUrlInput = proxyUrl
       self.proxyUrl = proxyUrl.flatMap { URL(string: $0) }
       self.redirectConfig = redirectConfig
       self.watchConnectivityEnabled = watchConnectivityEnabled

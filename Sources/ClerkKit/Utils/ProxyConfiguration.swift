@@ -9,14 +9,21 @@ struct ProxyConfiguration {
   let baseURL: URL
   let pathSegments: [String]
 
+  /// Returns `nil` unless `url` is an http or https URL with a host.
   init?(url: URL?) {
-    guard let url else { return nil }
-    guard let scheme = url.scheme, let host = url.host else { return nil }
+    guard let url,
+          let scheme = url.scheme?.lowercased(),
+          scheme == "http" || scheme == "https",
+          url.host?.isEmpty == false,
+          var baseComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    else { return nil }
 
-    var baseComponents = URLComponents()
-    baseComponents.scheme = scheme
-    baseComponents.host = host
-    baseComponents.port = url.port
+    // Keep the host as parsed, including IPv6 brackets and percent-encoding, and drop everything after it.
+    baseComponents.user = nil
+    baseComponents.password = nil
+    baseComponents.path = ""
+    baseComponents.query = nil
+    baseComponents.fragment = nil
 
     guard let baseURL = baseComponents.url else { return nil }
 

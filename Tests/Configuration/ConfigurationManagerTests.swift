@@ -272,6 +272,57 @@ struct ConfigurationManagerTests {
     #expect(manager.proxyConfiguration?.pathSegments == ["__clerk"])
   }
 
+  @Test(arguments: [
+    "proxy.example.com/__clerk",
+    "/__clerk",
+    "not a url",
+    "ftp://proxy.example.com/__clerk",
+    "https://",
+  ])
+  func configureRejectsAProxyUrlThatCantRouteRequests(proxyUrl: String) {
+    let manager = ConfigurationManager()
+    let options = Clerk.Options(proxyUrl: proxyUrl)
+
+    do {
+      try manager.configure(publishableKey: createTestPublishableKey(for: "clerk.example.com"), options: options)
+      Issue.record("Expected invalidProxyUrl error")
+    } catch let error as ClerkInitializationError {
+      if case .invalidProxyUrl = error {
+      } else {
+        Issue.record("Wrong error type: \(error)")
+      }
+    } catch {
+      Issue.record("Wrong error type: \(error)")
+    }
+
+    #expect(manager.publishableKey.isEmpty)
+    #expect(manager.proxyConfiguration == nil)
+  }
+
+  @Test(arguments: [
+    "https://proxy.example.com/__clerk",
+    "http://localhost:3000/__clerk",
+    "HTTPS://proxy.example.com",
+    "https://[::1]/__clerk",
+  ])
+  func configureAcceptsAnHttpProxyUrl(proxyUrl: String) throws {
+    let manager = ConfigurationManager()
+
+    try manager.configure(publishableKey: createTestPublishableKey(for: "clerk.example.com"), options: .init(proxyUrl: proxyUrl))
+
+    #expect(manager.proxyConfiguration != nil)
+  }
+
+  @Test(arguments: [String?.none, "", "   "])
+  func configureTreatsABlankProxyUrlAsNoProxy(proxyUrl: String?) throws {
+    let manager = ConfigurationManager()
+
+    try manager.configure(publishableKey: createTestPublishableKey(for: "clerk.example.com"), options: .init(proxyUrl: proxyUrl))
+
+    #expect(!manager.publishableKey.isEmpty)
+    #expect(manager.proxyConfiguration == nil)
+  }
+
   @Test
   func configureNormalizesSurroundingPublishableKeyWhitespace() throws {
     let manager = ConfigurationManager()
