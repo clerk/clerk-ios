@@ -182,7 +182,7 @@ function readBody(req: IncomingMessage, limit: number): Promise<string | null> {
 }
 
 async function changesRefusal(ref: string, named: string, get: GitHubGet): Promise<string | null> {
-  if (ref === '') return 'this session does not know the branch it was started on, so it builds no uncommitted changes. Commit and push them to a branch, then run again.';
+  if (!ref.startsWith('refs/heads/')) return `this session ${ref === '' ? 'does not know the branch it was started on' : `was started on ${ref}, which is not a branch`}, so it builds no uncommitted changes. Commit and push them to a branch, then run again.`;
   const defaultBranch = named !== '' ? named : ((await get('')) as { readonly default_branch?: unknown } | null)?.default_branch;
   if (typeof defaultBranch !== 'string' || defaultBranch === '') return 'this session could not learn the default branch of the repository, so it builds no uncommitted changes. Commit and push them to a branch, then run again.';
   return ref === `refs/heads/${defaultBranch}` ? `this session runs on ${defaultBranch}, the default branch, so it builds no uncommitted changes. Work on a branch: commit to a new branch and push it, then run down and up from that branch.` : null;

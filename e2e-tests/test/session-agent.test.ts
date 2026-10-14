@@ -382,6 +382,7 @@ describe('session agent', () => {
       [{ GITHUB_REF: 'refs/heads/main', VERIFY_SESSION_DEFAULT_BRANCH: '' }, onMain],
       [{ VERIFY_SESSION_DEFAULT_BRANCH: '', GITHUB_REPOSITORY: 'clerk/unknown' }, 'this session could not learn the default branch of the repository, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
       [{ GITHUB_REF: '' }, 'this session does not know the branch it was started on, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
+      [{ GITHUB_REF: 'refs/tags/v1' }, 'this session was started on refs/tags/v1, which is not a branch, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
     ] as const;
     for (const [env, error] of refusals) {
       const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: { ...github.env, ...env } });
