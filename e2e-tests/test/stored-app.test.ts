@@ -77,7 +77,7 @@ function checkout(): Checkout {
   for (const [name, value] of Object.entries({ xcode: '27A266a', sdk: '25A300', pins: 'aaaa', 'also-reads': SOURCE, calls: '' })) writeFileSync(join(fake, name), value);
   const made: Checkout = { dir, fake, env: { PATH: `${join(fake, 'bin')}:${process.env.PATH}`, FAKE: fake, HOME: fake } };
   execFileSync('git', ['init', '-q'], { cwd: dir });
-  const files = { '.gitignore': 'Package.resolved\n', [SOURCE]: 'sdk one\n', [HOST_APP]: 'host one\n', [PROJECT]: 'project one\n', 'Package.swift': 'package one\n', 'Clerk.xcworkspace/contents.xcworkspacedata': 'workspace\n', 'README.md': 'readme\n', 'e2e-tests/specs/golden/a.e2e.ts': 'spec\n' };
+  const files = { '.gitignore': 'Package.resolved\n', [SOURCE]: 'sdk one\n', [HOST_APP]: 'host one\n', [PROJECT]: 'project one\n', 'Package.swift': 'package one\n', 'Clerk.xcworkspace/contents.xcworkspacedata': 'workspace\n', 'README.md': 'readme\n', 'e2e-tests/specs/features/a.e2e.ts': 'spec\n' };
   for (const [file, text] of Object.entries(files)) {
     mkdirSync(dirname(join(dir, file)), { recursive: true });
     writeFileSync(join(dir, file), text);
@@ -142,7 +142,7 @@ describe('the key of a stored E2EHost', () => {
   it('stays the same when only a spec, a doc or a workflow changes', () => {
     const repo = checkout();
     const first = named(repo).key;
-    commit(repo, 'e2e-tests/specs/golden/a.e2e.ts', 'spec two\n');
+    commit(repo, 'e2e-tests/specs/features/a.e2e.ts', 'spec two\n');
     commit(repo, 'README.md', 'readme two\n');
     commit(repo, 'docs/guide.md', 'guide\n');
     commit(repo, '.github/workflows/checks.yml', 'on: push\n');
@@ -176,7 +176,7 @@ describe('a session build', () => {
     const repo = checkout();
     const first = scratch('verify-stored-app-work-');
     sessionBuild(repo, ['build', first, 'UDID-1']);
-    commit(repo, 'e2e-tests/specs/golden/a.e2e.ts', 'spec two\n');
+    commit(repo, 'e2e-tests/specs/features/a.e2e.ts', 'spec two\n');
     rmSync(join(repo.fake, 'installed'));
     const next = carriedTo(first);
     assert.equal(sessionBuild(repo, ['build', next, 'UDID-1']).status, 0);
