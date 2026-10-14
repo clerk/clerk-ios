@@ -133,7 +133,7 @@ A failing spec prints `FAIL`, the first assertion message, and the path of its f
 
 With `--retries`, a test that fails and then passes prints `flaky` and the error of its failed attempt, and a `flaky` line under the results counts such tests. `run.json` records the test as `flaky` with its `attempts`, never as passed, and `run` exits 0. The failure page of the failed attempt and the files of every attempt stay in the run directory. A test that fails on every attempt prints `FAIL`, and `run` exits 1.
 
-Right after `up` the app has no launch arguments, so `screen` shows the host's error screen. To look at a real screen, first run a spec that launches the app and taps to it. When a node may be missing, assert `await expect(locator).toBeVisible()` before you tap it. That failure reads `observed: no node (match count 0)`, and a failed tap says only `LOCATOR_NOT_FOUND`.
+Right after `up` the app has no launch arguments, so `screen` shows the host's error screen. To look at a real screen, first run a spec that launches the app and taps to it. When a node may be missing, assert `await expect(locator).toBeVisible()` before you tap it. That failure reads `observed: no node (match count 0)`, while a failed tap stops with `LOCATOR_NOT_FOUND` and `locator matched no nodes within <locator>`.
 
 ### Agent steps
 
