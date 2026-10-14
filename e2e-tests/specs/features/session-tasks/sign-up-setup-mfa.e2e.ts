@@ -12,19 +12,7 @@ test('a sign-up on an MFA-required instance moves straight into the setup-MFA ta
   await expect(password).toBeVisible({ timeout: 20_000 });
   await host.fill(password, `Verify-${host.runId}-Pw1!`);
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
-  const task = screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp');
-  const savePassword = screen.getByText('Save Password?');
-  for (const until = Date.now() + 30_000; Date.now() < until && (await savePassword.count()) === 0 && (await task.count()) === 0; ) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  for (const until = Date.now() + 10_000; Date.now() < until && (await savePassword.count()) === 0; ) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
-  if ((await savePassword.count()) > 0) {
-    await host.tap(screen.getByRole('button', { name: 'Not Now' }));
-    await expect(savePassword).toHaveCount(0, { timeout: 10_000 });
-  }
-  await expect(task).toBeVisible({ timeout: 20_000 });
+  await host.expectVisible(screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp'), 60_000);
   await expect(screen.getByTestId('clerk.auth.sessionTask.setupMfa.smsCode')).toBeVisible();
   await host.screenshot('sign-up-session-task');
   await host.tap(screen.getByTestId('clerk.userButton.profile'));
