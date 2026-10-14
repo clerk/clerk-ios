@@ -128,6 +128,7 @@ jobs:
       - name: Build the XCTest runner on a new simulator
         id: prepare
         if: steps.runner.outputs.cache-hit != 'true'
+        continue-on-error: ${{ steps.stored.outputs.cache-hit == 'true' || steps.report.outputs.store != '' }}
         timeout-minutes: 45
         run: |
           set -uo pipefail
