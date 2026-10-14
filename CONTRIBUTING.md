@@ -250,7 +250,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 
 ### E2EHost Tests
 
-E2E tests are the golden specs in `e2e-tests/specs/golden/`. They drive `Examples/E2EHost`, a dedicated SwiftUI test host app, on an iOS Simulator. They are an ordinary e2e project, and `e2e-tests/README.md` has the commands to run one by hand. The host app exists only for E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. The CLI creates a Clerk development instance for the worktree, and `down` deletes it, so the tests need no entry in `.keys.json`.
+E2E tests are the specs in `e2e-tests/specs/features/`. They drive `Examples/E2EHost`, a dedicated SwiftUI test host app, on an iOS Simulator. They are an ordinary e2e project, and `e2e-tests/README.md` has the commands to run one by hand. The host app exists only for E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. The CLI creates a Clerk development instance for the worktree, and `down` deletes it, so the tests need no entry in `.keys.json`.
 
 **Running E2E tests (Clerk employees only):**
 ```bash

@@ -143,7 +143,7 @@ jobs:
           echo "the 1-minute load average is $load after $waited seconds, and the tests start below $limit"
           [ "$load" -lt "$limit" ] || echo "::warning::the first-boot work of the simulator had not ended after 12 minutes; the tests start anyway"
 
-      - name: Run the golden specs
+      - name: Run the end-to-end tests
         timeout-minutes: 45
         env:
           CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
@@ -222,7 +222,7 @@ jobs:
           case "$RESULT" in
             success)
               conclusion="success"
-              summary="The golden specs passed on the simulator."
+              summary="The end-to-end tests passed on the simulator."
               ;;
             cancelled)
               conclusion="cancelled"
@@ -230,7 +230,7 @@ jobs:
               ;;
             *)
               conclusion="failure"
-              summary="A golden spec failed on both of its attempts, or the end-to-end tests could not run. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
+              summary="A test failed on both of its attempts, or the end-to-end tests could not run. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
               ;;
           esac
 
