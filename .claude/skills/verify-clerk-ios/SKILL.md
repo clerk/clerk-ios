@@ -192,7 +192,9 @@ When this machine cannot attach and there is no session to hand the files to, or
 
 Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other golden specs too, cite that run's id in the PR.
 
-Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec on the build without your change when the change is to something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach`, then `down`. Open the pull request after the last run, so that it is not left open without its evidence. On a local simulator `attach` writes the description itself. On a remote session the evidence reaches the description about a minute after `down`. A remote session builds the commit it was started on and later commits of the branch, and never an earlier one, so there the before run comes before the push of the change. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
+Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach` with the before run as `--before <run-id>`, `down`. Open the pull request after the last run, so that it is not left open without its evidence. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
+
+On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
 
 ## Cleanup
 
