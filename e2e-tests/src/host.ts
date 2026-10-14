@@ -7,7 +7,7 @@ import { remoteBackend } from './core/remote/backend.ts';
 import { VerifyFailure, type HostAdapter, type ScratchPath } from './core/types.ts';
 import { localIosBackend } from './platform/ios/local.ts';
 import { APP_ID, app } from '../specs/app.ts';
-import { BUILD_HOST, builtHost } from './host-app.ts';
+import { BUILD_HOST, BUILD_INPUTS, builtHost } from './host-app.ts';
 
 const PACKAGE_DIR = fileURLToPath(new URL('../', import.meta.url));
 const WORKTREE = fileURLToPath(new URL('../../', import.meta.url));
@@ -19,7 +19,7 @@ export const host: HostAdapter = {
   platforms: ['ios'],
   githubRepo: GITHUB_REPO,
   appId: app.id,
-  buildInputs: () => ['Sources', 'Examples/E2EHost', 'Examples/Quickstart/Quickstart.xcodeproj', 'Package.swift', 'Clerk.xcworkspace'],
+  buildInputs: () => BUILD_INPUTS,
   async build(platform, key, into) {
     const derived = join(into, '..', 'derived');
     const result = await run('xcodebuild', [...BUILD_HOST, derived], { cwd: WORKTREE, env: withoutClerkKeys(process.env) });

@@ -91,12 +91,9 @@ describe('the clerk-ios host with a remote device', () => {
     assert.match(onLinux.why, /^local is out: the iOS simulator needs macOS and this machine runs linux; /);
   });
 
-  it('has a session build E2EHost, wait for the simulator to boot, then install the app it built', () => {
+  it('has a session run one build command for the device, in the checkout, that installs a stored app or builds one', () => {
     const steps = sessionDevice({ id: 'UDID-1', platform: 'ios' }).build('/work');
-    assert.deepEqual(steps.map((step) => step.command), ['xcodebuild', 'xcrun', 'xcrun']);
-    assert.deepEqual(steps[0]!.args.slice(-2), ['-derivedDataPath', '/work/derived']);
-    assert.deepEqual(steps[1]!.args, ['simctl', 'bootstatus', 'UDID-1', '-b']);
-    assert.deepEqual(steps[2]!.args, ['simctl', 'install', 'UDID-1', '/work/derived/Build/Products/Debug-iphonesimulator/E2EHost.app']);
+    assert.deepEqual(steps, [{ command: process.execPath, args: [join(PACKAGE_DIR, 'src', 'platform', 'ios', 'session-build.ts'), 'build', '/work', 'UDID-1'], cwd: `${WORKTREE}/` }]);
   });
 
   it('has the session workflow start on the three runner labels this repository uses, and fail for any other', () => {
