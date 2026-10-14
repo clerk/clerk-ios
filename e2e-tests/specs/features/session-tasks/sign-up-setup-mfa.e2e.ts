@@ -15,7 +15,7 @@ test('a sign-up on an MFA-required instance moves straight into the setup-MFA ta
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
   const authenticatorApp = screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp');
   await host.expectVisible(authenticatorApp, 'the authenticator app choice of the setup-MFA task', 60_000);
-  await expect(screen.getByTestId('clerk.auth.sessionTask.setupMfa.smsCode')).toBeVisible();
+  await host.expectVisible(screen.getByTestId('clerk.auth.sessionTask.setupMfa.smsCode'), 'the SMS code choice of the setup-MFA task');
   await host.screenshot('sign-up-session-task');
   await host.tap(authenticatorApp);
   const secret = screen.getByTestId('clerk.auth.sessionTask.totp.secret');
