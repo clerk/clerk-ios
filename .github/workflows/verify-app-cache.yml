@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - mike/verify-session-no-build
     paths:
       - Sources/**
       - Examples/E2EHost/**
@@ -15,7 +14,6 @@ on:
       - e2e-tests/src/host-app.ts
       - e2e-tests/src/platform/ios/**
       - .github/workflows/verify-app-cache.yml
-      - e2e-tests/measure
   workflow_dispatch:
 
 permissions:
