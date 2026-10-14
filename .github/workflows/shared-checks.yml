@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       run_integration_tests:
-        description: Run integration tests as part of shared checks
+        description: Run the integration tests and the macOS smoke build as part of shared checks
         required: false
         type: boolean
         default: false
@@ -172,9 +172,6 @@ jobs:
       - name: Run unit tests
         run: make test
 
-      - name: Run macOS smoke build
-        run: make smoke-macos
-
       - name: Setup integration test keys
         if: inputs.run_integration_tests
         env:
@@ -202,6 +199,10 @@ jobs:
         run: |
           rm -f .keys.json
           echo "✅ Cleaned up .keys.json"
+
+      - name: Run macOS smoke build
+        if: ${{ !cancelled() && inputs.run_integration_tests }}
+        run: make smoke-macos
 
   test-ui:
     name: Run ClerkKitUI tests on iOS

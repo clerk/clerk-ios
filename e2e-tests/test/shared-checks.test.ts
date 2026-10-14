@@ -10,16 +10,37 @@ const WORKFLOWS = join(import.meta.dirname, '..', '..', '.github', 'workflows');
 const read = (file: string): string => readFileSync(join(WORKFLOWS, file), 'utf8');
 const shared = read('shared-checks.yml');
 
-function passed(caller: string, input: string): string | undefined {
+function passed(caller: string, name: string): string | undefined {
   const job = read(caller).split(/\n(?= {2}[\w-]+:\n)/).find((block) => block.includes('uses: ./.github/workflows/shared-checks.yml'));
   assert.ok(job, `${caller} calls shared-checks.yml`);
-  return new RegExp(`^ {6}${input}: (.+)$`, 'm').exec(job)?.[1];
+  return new RegExp(`^ {6}${name}: (.+)$`, 'm').exec(job)?.[1];
 }
 
-function buildPlatforms(caller: string): string {
-  const platforms = passed(caller, 'build_platforms')?.replace(/^'(.*)'$/, '$1');
-  const inputs = shared.slice(shared.indexOf('      build_platforms:'), shared.indexOf('    secrets:'));
-  return platforms ?? /^ {8}default: '(.+)'$/m.exec(inputs)?.[1] ?? 'no build_platforms input';
+function input(caller: string, name: string): string {
+  const declared = shared.slice(shared.search(new RegExp(`^ {6}${name}:$`, 'm'))).split(/\n(?= {6}\w+:\n)/)[0]!;
+  return passed(caller, name) ?? /^ {8}default: (.+)$/m.exec(declared)?.[1] ?? `no ${name} input`;
+}
+
+const buildPlatforms = (caller: string): string => input(caller, 'build_platforms').replace(/^'(.*)'$/, '$1');
+
+function macOSTestTargets(caller: string, failing?: string): string[] {
+  const job = shared.slice(shared.indexOf('  test:\n'), shared.indexOf('  test-ui:\n'));
+  let failed = false;
+  return job
+    .split(/\n(?= {6}- name: )/)
+    .slice(1)
+    .flatMap((step) => {
+      const written = (/^ {8}if: (.+)$/m.exec(step)?.[1] ?? 'true').replace(/^\$\{\{ (.+) \}\}$/, '$1');
+      const condition = (/\b(?:always|success|cancelled)\(\)/.test(written) ? written : `success() && (${written})`)
+        .replaceAll('always()', 'true')
+        .replaceAll('cancelled()', 'false')
+        .replaceAll('success()', String(!failed))
+        .replace(/inputs\.(\w+)/g, (_, name: string) => input(caller, name));
+      if (!(new Function(`return ${condition};`)() as boolean)) return [];
+      const targets = [...step.matchAll(/\bmake ([\w-]+)/g)].map((match) => match[1]!);
+      failed ||= targets.includes(failing ?? '');
+      return targets;
+    });
 }
 
 function script(step: string, workflow = shared): string {
@@ -99,6 +120,22 @@ describe('the platforms the shared checks build', () => {
   it('come from the one input that the build matrix and both check run steps read', () => {
     assert.match(shared, /^ {8}platform: \$\{\{ fromJSON\(inputs\.build_platforms\) \}\}$/m);
     assert.equal(shared.match(/^ {10}BUILD_PLATFORMS: \$\{\{ inputs\.build_platforms \}\}$/gm)?.length, 2);
+  });
+});
+
+describe('the ClerkKit tests on macOS', () => {
+  it('run the unit tests alone for a pull request and a push to main, and add the integration tests and the macOS smoke build each night and for a release', () => {
+    assert.deepEqual(
+      ['run-pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => macOSTestTargets(caller)),
+      [['test'], ['test'], ['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
+    );
+  });
+
+  it('run both the integration tests and the macOS smoke build each night when one of them fails, so one failure does not hide the other', () => {
+    assert.deepEqual(
+      [macOSTestTargets('nightly-checks.yml', 'test-integration'), macOSTestTargets('nightly-checks.yml', 'smoke-macos')],
+      [['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
+    );
   });
 });
 
