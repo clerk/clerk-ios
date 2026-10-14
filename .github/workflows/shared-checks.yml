@@ -222,15 +222,46 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Cache Swift dependencies
-        uses: actions/cache@v4
+      - name: Name the Xcode build cache
+        id: build-cache
+        run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
+
+      # PR CI runs on comment and status events, which read and write main's cache scope. So only a push
+      # saves the build, and a push builds from scratch so that main never builds on what those runs saved.
+      - name: Restore the Xcode build of the last main push
+        if: github.event_name != 'push'
+        uses: actions/cache/restore@v4
         with:
-          path: .build
-          key: swiftpm-ios-${{ hashFiles('Package.resolved') }}
-          restore-keys: swiftpm-ios-
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
+          restore-keys: ${{ steps.build-cache.outputs.prefix }}
+
+      # A restored cache gives every file a new inode, which XCBuild otherwise treats as a change.
+      - name: Let Xcode ignore the inodes of a restored build
+        run: defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
+
+      # Xcode rebuilds a Swift file when its modification time differs from the one it recorded, and a
+      # checkout stamps every file with the current time. A time derived from the content keeps unchanged
+      # files up to date and still rebuilds changed ones.
+      - name: Give each file a modification time from its content
+        run: |
+          set -euo pipefail
+          git ls-files -s -z | perl -0ne '
+            my ($mode, $oid, $path) = /\A(\d+) ([0-9a-f]+) \d\t(.*)\0\z/s or die "unexpected ls-files entry: $_";
+            next if $mode eq "120000" || $mode eq "160000";
+            my $time = 946684800 + hex(substr($oid, 0, 7));
+            utime($time, $time, $path) or die "$path: $!";
+          '
 
       - name: Run ClerkKitUI tests
         run: make test-ui
+
+      - name: Save the Xcode build for later runs
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
 
   build:
     name: Build ${{ matrix.platform }}
