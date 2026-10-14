@@ -10,7 +10,6 @@ import ConcurrencyExtras
 import Foundation
 import Testing
 
-/// Tests for ClerkRateLimitRetryMiddleware retry logic and delay calculations.
 @MainActor
 @Suite(.serialized)
 struct ClerkRateLimitRetryMiddlewareTests {
@@ -50,7 +49,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForServerError500() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     let response = try HTTPURLResponse(
@@ -72,7 +71,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableCodes = [408, 425, 429, 500, 502, 503, 504]
@@ -98,7 +97,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryForNonRetryableStatusCodes() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableCodes = [400, 401, 403, 404, 422]
@@ -124,7 +123,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryOnSecondAttempt() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
     let response = try HTTPURLResponse(
       url: #require(request.url),
@@ -178,19 +177,19 @@ struct ClerkRateLimitRetryMiddlewareTests {
   @Test
   func retryDelayFromXRateLimitResetHeader() async throws {
     let sleepDelay = LockIsolated<UInt64?>(nil)
+    let now = Date(timeIntervalSince1970: 1_700_000_000)
 
-    let middleware = ClerkRateLimitRetryMiddleware { delay in
-      sleepDelay.setValue(delay)
-    }
+    let middleware = ClerkRateLimitRetryMiddleware(
+      sleep: { delay in sleepDelay.setValue(delay) },
+      currentDate: { now }
+    )
 
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
-    // Set reset time to 2 seconds in the future
-    let resetTime = Date().timeIntervalSince1970 + 2.0
     let response = try HTTPURLResponse(
       url: #require(request.url),
       statusCode: 429,
       httpVersion: nil,
-      headerFields: ["X-RateLimit-Reset": String(format: "%.0f", resetTime)]
+      headerFields: ["X-RateLimit-Reset": "1700000002"]
     )
 
     _ = try await middleware.shouldRetry(
@@ -200,15 +199,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
       attempts: 1
     )
 
-    // Should delay for approximately 2 seconds (some time may have passed)
-    #expect(sleepDelay.value != nil)
-    if let delay = sleepDelay.value {
-      // Allow tolerance for timing variance - delay should be approximately 2 seconds
-      // (accounting for time that may have passed between setting resetTime and calculation)
-      // The delay is clamped between 0.1s and 5s, so we check it's in a reasonable range
-      #expect(delay >= 1_500_000_000, "Delay should be approximately 2 seconds")
-      #expect(delay <= 2_500_000_000, "Delay should be approximately 2 seconds")
-    }
+    #expect(sleepDelay.value == 2_000_000_000)
   }
 
   @Test
@@ -243,7 +234,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldRetryForRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let retryableErrors: [URLError.Code] = [
@@ -270,7 +261,7 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
   @Test
   func shouldNotRetryForNonRetryableURLErrors() async throws {
-    let middleware = ClerkRateLimitRetryMiddleware { _ in /* no-op */ }
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
     let request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     let nonRetryableErrors: [URLError.Code] = [
@@ -291,5 +282,251 @@ struct ClerkRateLimitRetryMiddlewareTests {
 
       #expect(shouldRetry == false, "URLError \(errorCode.rawValue) should not trigger retry")
     }
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodDoesNotRetryServerErrors(method: String) async throws {
+    let sleepCalled = LockIsolated(false)
+    let middleware = ClerkRateLimitRetryMiddleware { _ in sleepCalled.setValue(true) }
+    let request = try makeRequest(method: method)
+
+    for statusCode in [500, 502, 503, 504] {
+      let response = try HTTPURLResponse(
+        url: #require(request.url),
+        statusCode: statusCode,
+        httpVersion: nil,
+        headerFields: nil
+      )
+
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: response,
+        error: NSError(domain: "test", code: 0),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == false, "\(method) with status \(statusCode) should not retry")
+    }
+
+    #expect(sleepCalled.value == false)
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodDoesNotRetryErrorsThatCanFollowServerProcessing(method: String) async throws {
+    let sleepCalled = LockIsolated(false)
+    let middleware = ClerkRateLimitRetryMiddleware { _ in sleepCalled.setValue(true) }
+    let request = try makeRequest(method: method)
+
+    for errorCode in [URLError.Code.timedOut, .networkConnectionLost] {
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: nil,
+        error: URLError(errorCode),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == false, "\(method) with URLError \(errorCode.rawValue) should not retry")
+    }
+
+    #expect(sleepCalled.value == false)
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodRetriesStatusCodesTheServerDidNotProcess(method: String) async throws {
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
+    let request = try makeRequest(method: method)
+
+    for statusCode in [408, 425, 429] {
+      let response = try HTTPURLResponse(
+        url: #require(request.url),
+        statusCode: statusCode,
+        httpVersion: nil,
+        headerFields: nil
+      )
+
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: response,
+        error: NSError(domain: "test", code: 0),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == true, "\(method) with status \(statusCode) should retry")
+    }
+  }
+
+  @Test(arguments: ["POST", "PATCH", "DELETE"])
+  func nonSafeMethodRetriesConnectPhaseErrors(method: String) async throws {
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
+    let request = try makeRequest(method: method)
+
+    let connectPhaseErrors: [URLError.Code] = [
+      .cannotFindHost,
+      .cannotConnectToHost,
+      .dnsLookupFailed,
+      .notConnectedToInternet,
+    ]
+
+    for errorCode in connectPhaseErrors {
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: nil,
+        error: URLError(errorCode),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == true, "\(method) with URLError \(errorCode.rawValue) should retry")
+    }
+  }
+
+  @Test
+  func headRetriesServerErrorAndTimeout() async throws {
+    let middleware = ClerkRateLimitRetryMiddleware { _ in }
+    let request = try makeRequest(method: "HEAD")
+    let response = try HTTPURLResponse(
+      url: #require(request.url),
+      statusCode: 500,
+      httpVersion: nil,
+      headerFields: nil
+    )
+
+    let retriesServerError = try await middleware.shouldRetry(
+      request: request,
+      response: response,
+      error: NSError(domain: "test", code: 0),
+      attempts: 1
+    )
+    let retriesTimeout = try await middleware.shouldRetry(
+      request: request,
+      response: nil,
+      error: URLError(.timedOut),
+      attempts: 1
+    )
+
+    #expect(retriesServerError == true)
+    #expect(retriesTimeout == true)
+  }
+
+  @Test(arguments: [
+    ["Retry-After": "25"],
+    ["Retry-After": "Tue, 14 Nov 2023 22:13:45 GMT"],
+    ["X-RateLimit-Reset": "1700000025"],
+  ])
+  func serverDelayLongerThanTheCapIsNotRetried(headers: [String: String]) async throws {
+    let sleepCalled = LockIsolated(false)
+    let middleware = ClerkRateLimitRetryMiddleware(
+      sleep: { _ in sleepCalled.setValue(true) },
+      currentDate: { Date(timeIntervalSince1970: 1_700_000_000) }
+    )
+
+    for method in ["GET", "POST"] {
+      let request = try makeRequest(method: method)
+      let shouldRetry = try await middleware.shouldRetry(
+        request: request,
+        response: response(statusCode: 429, for: request, headers: headers),
+        error: NSError(domain: "test", code: 0),
+        attempts: 1
+      )
+
+      #expect(shouldRetry == false, "\(method) with \(headers) should not retry")
+    }
+    #expect(sleepCalled.value == false)
+  }
+
+  @Test(arguments: [
+    ["Retry-After": "5"],
+    ["Retry-After": "Tue, 14 Nov 2023 22:13:25 GMT"],
+    ["X-RateLimit-Reset": "1700000005"],
+  ])
+  func serverDelayOfExactlyTheCapIsRetried(headers: [String: String]) async throws {
+    let sleepDelay = LockIsolated<UInt64?>(nil)
+    let middleware = ClerkRateLimitRetryMiddleware(
+      sleep: { sleepDelay.setValue($0) },
+      currentDate: { Date(timeIntervalSince1970: 1_700_000_000) }
+    )
+    let request = try makeRequest(method: "POST")
+
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: response(statusCode: 429, for: request, headers: headers),
+      error: NSError(domain: "test", code: 0),
+      attempts: 1
+    )
+
+    #expect(shouldRetry == true)
+    #expect(sleepDelay.value == 5_000_000_000)
+  }
+
+  @Test(arguments: [
+    ["Retry-After": "soon"],
+    ["Retry-After": "Tue, 14 Nov 2023 22:13:15 GMT"],
+    ["Retry-After": "nan"],
+    ["Retry-After": "-1"],
+  ])
+  func unusableRetryAfterFallsBackToTheDefaultDelay(headers: [String: String]) async throws {
+    let sleepDelay = LockIsolated<UInt64?>(nil)
+    let middleware = ClerkRateLimitRetryMiddleware(
+      sleep: { sleepDelay.setValue($0) },
+      currentDate: { Date(timeIntervalSince1970: 1_700_000_000) }
+    )
+    let request = try makeRequest(method: "GET")
+
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: response(statusCode: 429, for: request, headers: headers),
+      error: NSError(domain: "test", code: 0),
+      attempts: 1
+    )
+
+    #expect(shouldRetry == true)
+    #expect(sleepDelay.value == 500_000_000)
+  }
+
+  @Test(arguments: ["soon", "-1"])
+  func unusableRetryAfterFallsBackToTheRateLimitReset(retryAfter: String) async throws {
+    let sleepDelay = LockIsolated<UInt64?>(nil)
+    let middleware = ClerkRateLimitRetryMiddleware(
+      sleep: { sleepDelay.setValue($0) },
+      currentDate: { Date(timeIntervalSince1970: 1_700_000_000) }
+    )
+    let request = try makeRequest(method: "GET")
+
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: response(statusCode: 429, for: request, headers: ["Retry-After": retryAfter, "X-RateLimit-Reset": "1700000030"]),
+      error: NSError(domain: "test", code: 0),
+      attempts: 1
+    )
+
+    #expect(shouldRetry == false)
+    #expect(sleepDelay.value == nil)
+  }
+
+  @Test
+  func serverErrorAskingForALongWaitIsNotRetried() async throws {
+    let sleepCalled = LockIsolated(false)
+    let middleware = ClerkRateLimitRetryMiddleware { _ in sleepCalled.setValue(true) }
+    let request = try makeRequest(method: "GET")
+
+    let shouldRetry = try await middleware.shouldRetry(
+      request: request,
+      response: response(statusCode: 503, for: request, headers: ["Retry-After": "30"]),
+      error: NSError(domain: "test", code: 0),
+      attempts: 1
+    )
+
+    #expect(shouldRetry == false)
+    #expect(sleepCalled.value == false)
+  }
+
+  private func response(statusCode: Int, for request: URLRequest, headers: [String: String]) throws -> HTTPURLResponse {
+    let url = try #require(request.url)
+    return try #require(HTTPURLResponse(url: url, statusCode: statusCode, httpVersion: nil, headerFields: headers))
+  }
+
+  private func makeRequest(method: String) throws -> URLRequest {
+    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
+    request.httpMethod = method
+    return request
   }
 }

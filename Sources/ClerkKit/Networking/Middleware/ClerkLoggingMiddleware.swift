@@ -5,17 +5,14 @@
 
 import Foundation
 
-/// Logs outgoing requests based on log level configuration.
 struct ClerkRequestLoggingMiddleware: ClerkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
     let method = request.httpMethod ?? "GET"
-    let url = request.url?.absoluteString ?? "<unknown url>"
+    let url = ClerkLogRedaction.redactingSecrets(in: request.url?.absoluteString ?? "<unknown url>")
 
-    // Log basic request info (method and URL only) at info level
     let basicMessage = "➡️ Request: \(method) \(url)"
     ClerkLogger.info(basicMessage)
 
-    // Log headers and body at verbose level
     if let headers = request.allHTTPHeaderFields, !headers.isEmpty {
       let sanitized = headers
         .filter { key, _ in key.caseInsensitiveCompare("Authorization") != .orderedSame }
@@ -33,19 +30,17 @@ struct ClerkRequestLoggingMiddleware: ClerkRequestMiddleware {
        let bodyString = String(data: body, encoding: .utf8),
        !bodyString.isEmpty
     {
-      let bodyMessage = "➡️ Request Body: \(bodyString)"
+      let bodyMessage = "➡️ Request Body: \(ClerkLogRedaction.redactingSecrets(in: bodyString))"
       ClerkLogger.verbose(bodyMessage)
     }
   }
 }
 
-/// Logs incoming responses based on log level configuration.
 struct ClerkResponseLoggingMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
-    let url = response.url?.absoluteString ?? "<unknown url>"
+    let url = ClerkLogRedaction.redactingSecrets(in: response.url?.absoluteString ?? "<unknown url>")
     let status = response.statusCode
 
-    // Log basic response info at info level
     var basicMessage = "⬅️ Response: \(status) \(url)"
     if let method = request.httpMethod {
       basicMessage = "⬅️ Response: \(status) \(method) \(url)"
@@ -53,14 +48,79 @@ struct ClerkResponseLoggingMiddleware: ClerkResponseMiddleware {
 
     ClerkLogger.info(basicMessage)
 
-    // Log response body at verbose level
     if request.shouldLogClerkBodies,
        !data.isEmpty,
        let body = String(data: data, encoding: .utf8),
        !body.isEmpty
     {
-      let bodyMessage = "⬅️ Response Body: \(body)"
+      let bodyMessage = "⬅️ Response Body: \(ClerkLogRedaction.redactingSecrets(in: body))"
       ClerkLogger.verbose(bodyMessage)
+    }
+  }
+}
+
+enum ClerkLogRedaction {
+  static let placeholder = "██"
+
+  private static let sensitiveFormFields = [
+    "password",
+    "current_password",
+    "new_password",
+    "code",
+    "token",
+    "ticket",
+    "code_verifier",
+    "id_token",
+    "approval_token",
+    "rotating_token_nonce",
+    "signature",
+  ]
+
+  private static let sensitiveJSONKeys = [
+    "password",
+    "jwt",
+    "secret",
+    "token",
+    "ticket",
+    "code_verifier",
+    "id_token",
+    "approval_token",
+  ]
+
+  private static let rules: [(pattern: NSRegularExpression, template: String)] = [
+    (
+      regex("(^|[?&])(\(sensitiveFormFields.joined(separator: "|")))=[^&\\s]*"),
+      "$1$2=\(placeholder)"
+    ),
+    (
+      regex(#"("(?:\#(sensitiveJSONKeys.joined(separator: "|")))"\s*:\s*)"(?:[^"\\]|\\.)*""#),
+      "$1\"\(placeholder)\""
+    ),
+    (
+      regex(#"("(?:backup_codes|codes)"\s*:\s*)\[[^\]]*\]"#),
+      "$1[\"\(placeholder)\"]"
+    ),
+    (
+      regex(#"otpauth:[^"\s]*"#),
+      placeholder
+    ),
+  ]
+
+  static func redactingSecrets(in text: String) -> String {
+    rules.reduce(text) { text, rule in
+      rule.pattern.stringByReplacingMatches(
+        in: text,
+        range: NSRange(text.startIndex..., in: text),
+        withTemplate: rule.template
+      )
+    }
+  }
+
+  private static func regex(_ pattern: String) -> NSRegularExpression {
+    do {
+      return try NSRegularExpression(pattern: pattern)
+    } catch {
+      preconditionFailure("Invalid log redaction pattern \(pattern): \(error)")
     }
   }
 }

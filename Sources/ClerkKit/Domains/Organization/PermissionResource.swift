@@ -19,8 +19,8 @@ public struct PermissionResource: Codable, Identifiable, Sendable {
   /// The type of the permission.
   public var type: String
 
-  /// A description of the permission.
-  public var description: String
+  /// A description of the permission, or `nil` if the permission has none.
+  public var description: String?
 
   /// The date when the permission was created.
   public var createdAt: Date
@@ -33,7 +33,7 @@ public struct PermissionResource: Codable, Identifiable, Sendable {
     key: String,
     name: String,
     type: String,
-    description: String,
+    description: String? = nil,
     createdAt: Date,
     updatedAt: Date
   ) {

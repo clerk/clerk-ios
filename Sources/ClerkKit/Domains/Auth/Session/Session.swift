@@ -43,8 +43,8 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The last active organization identifier.
   public var lastActiveOrganizationId: String?
 
-  /// The JWT actor for the session.
-  public var actor: String?
+  /// The actor for an impersonation or agent session, such as `{"sub": "user_123"}`, or `nil` for a session the user started.
+  public var actor: JSON?
 
   /// The user associated with the session.
   public var user: User?
@@ -61,7 +61,10 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The pending tasks required to activate this session.
   public var tasks: [Task]?
 
-  /// The last active token for the session.
+  /// The last accepted token captured in this session value.
+  ///
+  /// Retained session values are snapshots and do not update when the SDK refreshes a token.
+  /// Use ``getToken(_:)`` to obtain a token for a request, including refreshing it when needed.
   public var lastActiveToken: TokenResource?
 
   /// Minutes since the last first- and second-factor verification: `[firstFactorAge, secondFactorAge]`.
@@ -77,7 +80,7 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
     lastActiveAt: Date,
     latestActivity: SessionActivity? = nil,
     lastActiveOrganizationId: String? = nil,
-    actor: String? = nil,
+    actor: JSON? = nil,
     user: User? = nil,
     publicUserData: PublicUserData? = nil,
     createdAt: Date,
@@ -251,7 +254,6 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
 
 /// A `SessionActivity` object will provide information about the user's location, device and browser.
 public struct SessionActivity: Codable, Equatable, Sendable {
-  /// A unique identifier for the session activity record.
   let id: String
 
   /// The name of the browser from which this session activity occurred.
@@ -316,15 +318,10 @@ extension Session {
 }
 
 extension Session {
-  @MainActor
-  private var sessionService: any SessionServiceProtocol {
-    Clerk.shared.dependencies.sessionService
-  }
-
   /// Marks this session as revoked. If this is the active session, the attempt to revoke it will fail. Users can revoke only their own sessions.
   @discardableResult @MainActor
   public func revoke() async throws -> Session {
-    try await sessionService.revoke(sessionId: id)
+    try await Clerk.currentDependencies.transport.send(SessionAPI.revoke(sessionId: id)).value.response
   }
 
   /**

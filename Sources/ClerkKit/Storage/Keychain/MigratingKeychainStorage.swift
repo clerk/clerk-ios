@@ -1,16 +1,8 @@
 import Foundation
 
 struct MigratingKeychainStorage: KeychainStorage {
-  private let primary: any KeychainStorage
-  private let fallback: any KeychainStorage
-
-  init(
-    primary: any KeychainStorage,
-    fallback: any KeychainStorage
-  ) {
-    self.primary = primary
-    self.fallback = fallback
-  }
+  let primary: any KeychainStorage
+  let fallback: any KeychainStorage
 
   func set(_ data: Data, forKey key: String) throws {
     try primary.set(data, forKey: key)

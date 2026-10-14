@@ -10,24 +10,30 @@ import SwiftUI
 struct SignInPasswordActionsView: View {
   @Environment(\.clerkTheme) private var theme
 
-  let onUseAnotherMethod: () -> Void
-  let onForgotPassword: () -> Void
+  let onUseAnotherMethod: (() -> Void)?
+  let onForgotPassword: (() -> Void)?
 
   var body: some View {
     ActionsLayout {
-      Button(action: onUseAnotherMethod) {
-        Text("Use another method", bundle: .module)
-          .frame(maxWidth: .infinity)
+      if let onUseAnotherMethod {
+        Button(action: onUseAnotherMethod) {
+          Text("Use another method", bundle: .module)
+            .frame(maxWidth: .infinity)
+        }
+        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignIn.useAnotherMethodButton)
       }
-      .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.SignIn.useAnotherMethodButton)
 
-      Rectangle()
-        .foregroundStyle(theme.colors.border)
-        .frame(width: 1, height: 16)
+      if onUseAnotherMethod != nil, onForgotPassword != nil {
+        Rectangle()
+          .foregroundStyle(theme.colors.border)
+          .frame(width: 1, height: 16)
+      }
 
-      Button(action: onForgotPassword) {
-        Text("Forgot password?", bundle: .module)
-          .frame(maxWidth: .infinity)
+      if let onForgotPassword {
+        Button(action: onForgotPassword) {
+          Text("Forgot password?", bundle: .module)
+            .frame(maxWidth: .infinity)
+        }
       }
     }
     .buttonStyle(.primary(config: .init(emphasis: .none, size: .small)))

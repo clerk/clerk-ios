@@ -191,7 +191,6 @@ struct DecodedJWT: JWT {
 /// A JWT claim.
 @_documentation(visibility: internal)
 public struct Claim {
-  /// Raw claim value.
   let value: Any?
 
   /// Original claim value.

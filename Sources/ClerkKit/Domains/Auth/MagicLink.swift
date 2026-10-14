@@ -138,9 +138,6 @@ final class MagicLinkStore {
   }
 
   /// Stores the verifier for the active native magic-link flow.
-  ///
-  /// Only one pending flow is persisted at a time. Saving a new verifier
-  /// replaces any previously stored pending flow.
   func save(
     kind: PendingMagicLinkFlow.Kind,
     flowId: String,

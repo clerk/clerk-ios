@@ -1,0 +1,234 @@
+---
+name: verify-clerk-ios
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
+---
+
+# verify-clerk-ios
+
+`e2e-tests/bin/control-clerk-ios` is a control CLI over [e2e](https://github.com/tester-army/e2e). It builds E2EHost, leases a simulator, creates one Clerk application for the worktree, seeds `+clerk_test` users, runs specs, and keeps the evidence. On a Mac the simulator is local. On any other machine the CLI leases one on a GitHub Actions runner, with the same verbs, specs, and evidence.
+
+The tests are an ordinary e2e project. `e2e.config.ts` and `specs/` run under `npx e2e run` when the environment names a device, a build of the test app, and a development instance's keys. The CLI sits on top: it makes those three for a run and keeps the evidence. [The package README](../../../e2e-tests/README.md) has the commands for a run by hand and what such a run leaves out.
+
+No change to clerk-ios UI or auth behavior is done until a simulator shows the changed behavior. A `run` in E2EHost is one way to show it. An app of your own that exercises the change is just as good.
+
+Run every command from the repo root. In the prose below, `doctor`, `up`, `run`, `screen`, `attach`, and `down` are verbs of that CLI. The tests and the CLI are the Node package `e2e-tests/`, and paths that begin `specs/`, `src/`, or `.verify/` are inside it. `features/` and `references/` are beside this file. Every error prints a `fix` line. Every verb takes `--json`, and [CLI output](references/output.md) has its shape and the exit codes.
+
+## Launch
+
+Set up each machine once.
+
+1. Install Node 24, at 24.8.0 or newer, and Xcode with an iOS simulator runtime.
+2. Create the template simulator, which the CLI clones to make each simulator it drives, with `xcrun simctl create "Clerk Verify Template iOS" "iPhone Air"`. That makes a new simulator that holds only the system's apps. Do not clone a simulator you already use: a clone holds every app of the original, and those apps show on the home screen at the start of a video. Boot the template once and shut it down: a clone of a template that never booted takes about twenty seconds longer to boot. `doctor` says when a system HTTPS proxy needs its CA trusted there.
+3. Give the machine the team's Clerk Platform API key. Set `CLERK_PLATFORM_API_KEY`, or set `CLERK_PLATFORM_API_KEY_FILE` to a file that only you can read (mode 0600). With neither set, the CLI reads the key from 1Password through the secret reference in `VERIFY_PLATFORM_KEY_REFERENCE`. A command that reads the key from 1Password waits up to 60 seconds for a person to approve the request in the 1Password app. Never put the key in a file inside a repository.
+
+Then, in each worktree:
+
+```console
+$ npm ci --prefix e2e-tests                 # once per worktree
+$ e2e-tests/bin/control-clerk-ios doctor
+$ e2e-tests/bin/control-clerk-ios up
+backend local  this Mac runs the simulator itself
+device  verify-ios-<n>  local  leased by this worktree  installed <build key>
+```
+
+`up` builds E2EHost for the current tree, creates this worktree's Clerk application, clones the template into a simulator named `verify-ios-<n>`, and installs the build. It prints a line for each step. The simulator is ready when `up` prints the `device` line above, which is its last line. `run` does the same steps itself and prints the same line, so `up` only starts the slow part early. Teardown is `down` (see [Cleanup](#cleanup)).
+
+`up` is idempotent. It keeps a lease this worktree already holds, and it reuses a build whose key matches the current tree. The key is a hash of the tracked and untracked files under `Sources`, `Examples/E2EHost`, `Package.swift`, and `Clerk.xcworkspace`, minus Markdown. A change to any of those files changes the key, so the next `up` or `run` builds that key, unless this worktree already built it, and reinstalls.
+
+The Clerk application is this worktree's own. `up` creates it through Clerk's Platform API, in the team's verification workspace, and puts its development instance on the standard settings in `src/core/instances/base.json`. It holds only the users that this worktree's runs create, and `down` deletes it. A spec file that needs other settings declares them (see [Drive](#drive)). [Test instances](references/instances.md) has the credential lookup, the application's lifetime, and its limits.
+
+The CLI drives only `verify-ios-<n>`, which it creates. A Mac has four of these simulators, shared by every worktree on it. When all four are taken, `up` and `run` fail with `POOL_FULL`, and `--wait <seconds>` on either verb waits for one.
+
+A machine that is not a Mac cannot run the simulator, so there the CLI leases one on a GitHub Actions runner and drives it through a tunnel. That machine needs Node 24, the Platform API key, and access to GitHub, and `doctor` checks each. The session builds a pushed commit, never your working tree, so commit and push app changes before `up` or `run`.
+
+```console
+$ git push
+$ e2e-tests/bin/control-clerk-ios up --backend remote
+backend remote  forced by --backend remote
+device  remote ios  starting session <session> on xcode-27 (idle stop 15 min, cap 60 min)
+build   <build key>  github-actions  <commit> built in 552s on xcode-27
+device  iPhone Air on xcode-27  remote  leased by this worktree  installed <build key>
+$ e2e-tests/bin/control-clerk-ios down  # ends the runner job
+```
+
+The `backend` line says which backend the CLI chose and why. On a machine that is not a Mac, `up` needs no flag, and the `backend` line says why the local backend is out. `--backend local` or `--backend remote` on `doctor`, `up`, or `run` forces a backend, and a worktree that holds a lease keeps its backend until `down`. `--runner <label>` on `up` or `run` names another runner label for a new session.
+
+A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and the golden set to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
+
+## Doctor
+
+```console
+$ e2e-tests/bin/control-clerk-ios doctor
+```
+
+Run it first, and again whenever anything looks off. Without `--live` it only reads. It creates no file, no simulator, and no Clerk application. Each line starts with `ok`, `warn`, `skip`, or `FAIL`, then has the id of the check and what the check found. `skip` marks a check that did not run, and its text starts with `not run:`. A failing check also prints a `fix:` line with the command to run, and `doctor` exits 3. A warning does not change the exit code.
+
+After the once-per-machine setup and before the first `up`, `build` is the one failing check, and its fix is `up`. A machine with no Platform API credential fails `instances`, and the fix line says how to supply one. `doctor --live` also proves that the credential can create, configure, and delete an application. It creates one application, configures it, compares it with the standard file, and deletes it, and reports that in a `live-instance` line.
+
+With the remote backend, plain `doctor` starts nothing, and `doctor --live` starts one short session to prove the path. There `build` fails until a session holds the current build, and `remote-commit` fails until HEAD is pushed.
+
+## Drive
+
+Input reaches the app only through specs. A spec is a TypeScript file that uses the `host` fixture from `specs/fixtures.ts` and e2e's `screen` locators.
+
+```console
+$ e2e-tests/bin/control-clerk-ios run auth-start                        # one feature: every spec in specs/golden/auth-start/
+$ e2e-tests/bin/control-clerk-ios run sign-up/complete                  # one golden spec
+$ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts      # a spec you wrote
+$ e2e-tests/bin/control-clerk-ios run auth-start sign-up organizations  # several targets in one run, with one video
+$ e2e-tests/bin/control-clerk-ios screen                                # the UI tree that is on screen now; --png adds a screenshot
+```
+
+`run --all` runs every golden spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free simulator and another `run` in this worktree that holds the device.
+
+### Sign in with the form or with a ticket
+
+A change that touches sign-in or sign-up gets a spec that drives the real form with a `+clerk_test` identity and the test code. Any other change reaches a signed-in state with a sign-in ticket, `host.launch({ signedInAs: user })`.
+
+Type only test identities: `+clerk_test` emails, phone numbers 555-0100 to 555-0199, and the code `424242`, which specs import as `CLERK_TEST_CODE`. Never type a real person's address, number, or password. [The feature map index](features/README.md) lists the test identities and the identifier for each step of the forms.
+
+### Write a spec
+
+```ts
+import { test, expect } from '../../fixtures.ts';
+
+test('the home UserButton opens the profile of the signed-in user', async ({ host, screen }) => {
+  const user = await host.seedUser();
+  await host.launch({ signedInAs: user });
+  await host.tap(screen.getByTestId('clerk.userButton.profile'));
+  await host.tap(screen.getByTestId('clerk.userProfile.row.manageAccount'));
+  await expect(screen.getByText(user.email)).toBeVisible({ timeout: 20_000 });
+  await host.screenshot('profile');
+});
+```
+
+- `host.seedUser({ phone?, password? })` creates a `+clerk_test` user in the worktree's application. With `password: true` the user also has a password that the run generated for that user, and `user.password` holds it. Pass it to `host.fill`, as `host.fill(field, user.password!)`, and to nothing else. It prints as `<secret:password>`, `run` redacts its value from the logs it writes, and `attach` refuses a run whose files hold it. For a sign-up through the form, `host.newEmail()` returns a new address of this run, and `host.newPhone()` returns a 555-01xx number that no user holds. `host.newEmail()` calls nothing and records nothing. After the tests, `run` finds the user by the run's prefix in the address.
+- `host.launch({ signedInAs?, authMode?, initialIdentifier?, debugLogs?, keepStorage?, landsOn? })` relaunches E2EHost and waits up to 60 seconds for its home. Every launch opens on the home, and a spec taps from there to the view it needs, as a user does. `authMode` is the mode of both AuthViews the home opens: `signIn`, `signUp`, or `signInOrUp`. `initialIdentifier` is the email, username, or phone number that the full-screen AuthView gets through `AuthView().initialIdentifier(_:)`. A launch starts with fresh storage unless `keepStorage` is true, so a launch with no `signedInAs` is signed out and lands on the home's `Sign in` button. A launch with `signedInAs` lands on the home, which must show that user's email and user ID. When the home should show anything else, pass its locator as `landsOn`. Two launches need it: one that signs in a user whose session stays pending on a task, where the home shows `Signed out`, and one that keeps storage and has no `signedInAs`. `host.launch` fails at once when the app shows its error screen, and the error has the message on that screen.
+- `host.expectSignedInAs(user, timeoutMs?)` waits for the home to show `Signed in as <email>`, the user's ID, and a session ID. Pass the email alone for a user that the sign-up form created. `host.expectSignedOut(timeoutMs?)` waits for the home to show `Signed out` with no user ID and no session ID. Use them for the outcome of a flow that returns to the home. When one of these waits or the wait of `host.launch` runs out, its message says what the home showed at the last reading, how many passes and screen reads the wait made, how long the slowest read took, and the error of a read that failed.
+- `host.app` has the locators of the home: `signIn`, `signInFullScreen`, `signedOut`, `signedIn`, `userId`, `sessionId`, `signOut`, and `error` for the error screen. `host.runId` is the id of the run, for a name or a password that must be new in each run.
+- `host.tap(locator)` is `locator.tap()` with the assertion timeout, and `host.fill(locator, text)` taps a field and types into it. When the first tap left no field focused, it taps the field once more before it types. Fill every SDK text field with `host.fill`. An SDK text field shows no text input until it has focus, so a plain `locator.fill()` on an email or name field fails with "no text input found at the provided coordinates to clear". After it types, `host.fill` reads the focused text input back. When the screen tree marks no text input as focused, as it does on iOS for a while after a slow snapshot, it reads the value that the node the locator names shows. It sends a long text sixteen characters to a command, because the iOS runner abandons a command after 30 seconds. If the input is still empty after two seconds and the screen shows no text that it did not show before the typing, `host.fill` taps it and types once more, and it fails with "the text never reached the field" if the input is empty again. A screen that shows new text has taken the typed text and moved on, as a code screen does when its code is complete, so `host.fill` types nothing more there. For this it compares the letters of the screen's text only, so the seconds that a code screen counts down beside `Resend` are not new text. If the input holds something other than the text, `host.fill` replaces the input's contents with the text once, and it fails with "the field does not hold the typed text" if the input is still wrong. It compares letters and digits only, so the formatting a field adds does not count. A secure field withholds its value, so a password is typed once and is not confirmed. When the iOS runner refuses a tap, a typing command, or a screenshot because it is still finishing an earlier command, `host.tap`, `host.fill`, and `host.screenshot` wait five seconds and try the step again, up to six times, and then fail with the refusal. After a refused typing command, `host.fill` replaces the input's contents with the text and does not type that command again, so characters that did land are not typed twice.
+- `host.screenshot(label)` writes `screenshots/<label>.png` in the run directory.
+
+Assert on what a user sees, and look in the SDK's own views first. The code screen names the address the code went to. A session task is on screen while the session is pending. The profile and the account sheet of a task view show the email of the signed-in user. The OrganizationSwitcher shows the active organization. Use E2EHost's home for a fact that no SDK view shows, and for the outcome of a flow that returns to the home.
+
+The home is E2EHost's own screen. With no active session it shows `Signed out` (`e2e.auth.signedOut`) and two buttons. `Sign in` (`e2e.auth.signIn`) opens AuthView in a sheet. `Sign in full screen` (`e2e.auth.signInFullScreen`) shows `AuthView(isDismissible: false)` as the root of the window, which is how an app shows AuthView until `clerk.isAuthFlowComplete`. With an active session it shows the UserButton, `Signed in as <email>` (`e2e.auth.signedIn`), the user ID (`e2e.auth.userId`), the session ID (`e2e.auth.sessionId`), the OrganizationSwitcher, and a `Sign out` button (`e2e.auth.signOut`). A pending session counts as signed out there, and either button opens AuthView on the task. E2EHost shows the home again when the full-screen AuthView completes its flow. It draws nothing on or around an SDK view. While Clerk loads or a ticket signs in, it shows a spinner. When a launch cannot start, it shows `Something went wrong` and the reason (`e2e.launch.error`).
+
+E2EHost has a small flow of its own only where the SDK has no view for one. `Sign out` calls `clerk.auth.signOut()`. When a change needs a fact or a flow that no SDK view covers, add it to the home the way a real app would show it, and assert on that.
+
+Locate nodes with `screen.getByTestId(...)`. The SDK's identifiers start with `clerk.`, and `Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift` lists them. E2EHost's own identifiers start with `e2e.`, and `Examples/E2EHost/E2EHost/E2EIdentifiers.swift` lists them. All of these identifiers are internal test hooks, not public API, and they can change. Every spec keeps at least one exact assertion on an identifier or on visible text. To assert on the text of a node, use `await expect(locator).toHaveText('...')`.
+
+A spec file that needs other settings than the standard ones declares them in a JSON file beside it, which has the name of the spec with `.settings.json` in place of `.e2e.ts`. `run` puts the application on those settings before the tests in that spec file start. [Test instances](references/instances.md) has the rules for a declaration.
+
+### Check your work
+
+Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
+
+1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
+2. Run it by path.
+3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique.
+4. Fix the locators from that output until the spec passes.
+5. When the change adds or changes what the SDK does, move the spec to `specs/golden/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a golden spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
+
+A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
+
+With `--retries`, a test that fails and then passes prints `flaky` and the error of its failed attempt, and a `flaky` line under the results counts such tests. `run.json` records the test as `flaky` with its `attempts`, never as passed, and `run` exits 0. The failure page of the failed attempt and the files of every attempt stay in the run directory. A test that fails on every attempt prints `FAIL`, and `run` exits 1.
+
+Right after `up` the app has no launch arguments, so `screen` shows the host's error screen. To look at a real screen, first run a spec that launches the app and taps to it. When a node may be missing, assert `await expect(locator).toBeVisible()` before you tap it. That failure reads `observed: no node (match count 0)`, and a failed tap says only `LOCATOR_NOT_FOUND`.
+
+### Agent steps
+
+e2e has a built-in agent, which a test drives with `agent.act(...)` and `agent.assert(...)`. The CLI configures it only when the machine has a Vercel AI Gateway key. The model is `anthropic/claude-haiku-5.5`, and `openai/gpt-6-luna-fast` is the gateway's backup. Supply the key in `AI_GATEWAY_API_KEY_FILE`, a file that only you can read, or in `AI_GATEWAY_API_KEY`. The `agent` line of `doctor` shows the model and where the key came from. Committed golden specs do not use agent steps.
+
+## Evidence
+
+Every `run` writes `.verify/runs/<run-id>/` and prints its path.
+
+| File | What it holds |
+| --- | --- |
+| `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build`, `device`, `identities`, `settings`, and `tainted` |
+| `video.mp4` | `simctl io recordVideo` of the run, from the first `host.launch` to the end. Just before that launch, `run` closes the app and starts the recorder, so the video opens on the simulator's home screen for a moment and then on the app being launched. A run in which no test calls `host.launch` has no video, and `run` prints a `video` line that says so |
+| `screenshots/<label>.png` | Every `host.screenshot(label)` |
+| `app.log` | The `com.clerk.verify` and `com.clerk.sdk` log lines of the run. E2EHost writes one `com.clerk.verify` line each time its screen, user, session, or launch error changes, with the `launchId` that a failed `host.launch` names. No spec reads these lines. They are for diagnosing a failure that the screen does not explain. The SDK logs errors only, unless the launch passes `debugLogs: true` |
+| `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |
+| `driver/` | `summary.txt`, which says what agent-device state the run found and what it copied, and the part of agent-device's `daemon.log` and of the XCTest runner's `runner.log` that the run added. The copies leave out typed text. They are for a failure that the driver caused, such as a daemon that did not start or a screen read that hung |
+| `specs/` | A copy of every spec the run used, and of its settings file |
+
+A proof drives the real user path. The video and the screenshots show the action and its result as a user sees them. It checks side effects where the app shows them, such as the user ID on the home or the organization name on the switcher, not only that the last screen appeared.
+
+After a run, the CLI searches the run directory for every secret the run used: the Platform API key, the instance's secret key, sign-in tickets, the passwords the tests typed, and a GitHub token in `GITHUB_TOKEN` or `GH_TOKEN`. It also searches for any token shaped like a JWT. A hit marks the file as tainted in `run.json`. The user ID and the session ID on the home are not secrets, because neither can sign anyone in.
+
+A remote run writes the same files. The runner records the video, and the CLI downloads it into the run directory. `run.json` also has `remote`, with `provider`, `runner`, and `builtSha`, the commit the session built.
+
+```console
+$ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot profile                    # a still change that is new
+$ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot profile --before <run-id>  # a still change to something that exists
+$ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --video                                 # a flow that is new
+$ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --video --before <run-id>               # a change to a flow that exists
+```
+
+`attach` posts what you choose, and with neither `--screenshot` nor `--video` it fails with a usage error. Make two choices.
+
+Choose screenshots or the video by what changed. A still change, such as wording, shows in screenshots, so pass `--screenshot <label>` once for each `host.screenshot(label)` to show. A change to behavior, to movement or animation, or to a flow shows in the video, so pass `--video`. One kind is usually enough. Use your judgment, and pass both flags when one kind alone does not show the change.
+
+Choose before and after, or after only, by whether the thing existed. A change to something that exists shows what it replaced, so add `--before <run-id>`. Something new has no before, so leave the flag out.
+
+To make the before run, `run` the spec of your change on the build without the change, before you make the change. That run can fail, and a failed run is a good before: a spec that expects the new wording fails on the old build. `attach` pairs each screenshot with the screenshot of the same label in the before run. When the before run failed before it took that screenshot, `attach` uses that run's failure screenshot. With `--video` it pairs the two videos. The before run must be in `.verify/runs/` of this checkout.
+
+`attach` puts the files in the description of the pull request with `gh pr edit --attach`. It writes one block between the comments `<!-- verify-evidence:ios -->` and `<!-- /verify-evidence:ios -->`. The block is a line and one or two tables. The line leads with the result and names the run, the device, the commit, and how many tests passed. With `--before` it also names the before run, its commit, and how many of its tests passed. With `--before`, a table has a `Before` and an `After` column and one row for each screenshot. Without it, the screenshots are two across, each under its label in code font. Each screenshot is 280 pixels wide. The video is in a table of its own under the screenshots.
+
+The first `attach` adds the block after the description. A later `attach` replaces the block, so the description holds the latest run and the media does not pile up. `attach` changes nothing outside the block. Keep both comments or remove both: `attach` refuses a description that has one without the other, or either one twice. A comment counts only when it is a whole line outside a code fence, so a description can quote one in a sentence or show a whole block as an example.
+
+`attach` writes the description twice. `gh` puts the address of an upload only where the description names the file as a markdown image, and a markdown image has no width. So the first write uploads the files as a list, and the second replaces the list with the tables. If the block changes between the two writes, the list stays and `attach` fails and says so. Run `attach` again.
+
+`attach` reads the description again just before each write, and builds on the newer text once if it changed. It cannot see an edit that someone saves while the files upload, and that edit is lost, so do not edit the description while `attach` runs.
+
+On a machine whose `gh` can attach, `attach` edits the description itself and prints `posted`. That needs gh 2.99.0 or newer, whose `gh pr edit` has `--attach`. It reads the description first. When the description already holds the block that this `attach` would write, it uploads nothing and prints `already posted`. When the block there is of another run or another choice of files, or there is none, it uploads the files and writes the block.
+
+`attach` always tries `gh pr edit --attach` itself first, on every kind of machine, and hands off only when that cannot work. On a machine whose `gh` cannot attach, such as a cloud sandbox, it hands the files of a remote run to the session's runner and prints `handed off`. With `--before`, the files of the before run go with them, from that run's directory in this checkout. Run it before `down`. The evidence reaches the description after `down` ends the session, when the `verify-attach` workflow publishes it, in the same tables. Its line says that the session reported the result, links the session's run, and names the account that started the session and the commit the run was made at. With `--before`, the line says that the session reports the before run, and it links that run's commit. That workflow publishes only to the open pull request of the session's branch, and only when the commit of the run is a commit of that pull request. The commit the session started on must be one too, or a commit that the base branch holds, such as the one the branch came from. The commit of the before run must be the commit of the run or a commit before it in its history. A later push does not lose the evidence: the line then says that the pull request has newer commits. To show the newer commit, `run` and `attach` again, which replaces the block. `attach` checks the pull request first, and fails with the reason when the workflow would refuse it.
+
+When this machine cannot attach and there is no session to hand the files to, or the hand-off fails, `attach` fails and says which. Then name the run id in the PR and say that the evidence was not attached. A run on a local simulator has no session, so its fix is a newer `gh`. [Remote devices](references/remote.md) has what the repository needs before a hand-off can be published, and its limits.
+
+`attach` writes only to an open pull request, and fails on one that is closed or merged. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create. A before run can have failing specs. `attach` refuses a before run that is tainted, that was never sealed, or whose `app.log` names a user that the run did not create.
+
+Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other golden specs too, cite that run's id in the PR.
+
+Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach` with the before run as `--before <run-id>`, `down`. Open the pull request after the last run, so that it is not left open without its evidence. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
+
+On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
+
+## Cleanup
+
+```console
+$ e2e-tests/bin/control-clerk-ios down --dry-run  # what it would release, delete, and stop
+$ e2e-tests/bin/control-clerk-ios down            # release the simulator, delete this worktree's application, stop its processes
+$ e2e-tests/bin/control-clerk-ios down --stale    # also release a simulator that a crashed run here, or a deleted worktree, left claimed
+```
+
+`down` removes only what this worktree created: its simulator, its Clerk application with every user and organization in it, the video recorder, and its agent-device daemon. It releases the simulator before it deletes the application. Deleting the application needs the same credential as `up`. If Clerk refuses the delete, `down` fails, and its fix is to run `down` again. Run `down` after a failed iteration too, so that no simulator or application stays behind. The XCTest runner that agent-device started, an `xcodebuild test-without-building` process, can outlive `down` for a minute or so. It exits by itself, so do not wait for it and do not stop it.
+
+`down` does not stop an agent-device daemon that a by-hand `npx e2e run` left running, because the CLI did not start it. `npx agent-device daemon stop --clean` stops it, as `e2e-tests/README.md` says.
+
+```console
+$ e2e-tests/bin/control-clerk-ios down
+released  verify-ios-1
+deleted   1 application (<application>, with every test user in it)
+stopped   agent-device <pid>
+kept      30 runs in .verify/runs/
+```
+
+The `deleted` line names the application. Its users and organizations go with it and get no lines of their own. `down --dry-run` changes nothing. It prints `would release`, `would delete`, and `would stop` lines, and under `would delete` one `application   <application>  (with every test user in it)` line for each application.
+
+`down` never deletes `.verify/runs/`, and it prints how many runs it kept. Evidence lives inside the worktree, so `git worktree remove` deletes it with the rest. Copy the runs you need out first.
+
+If a worktree is removed without `down`, the next `up` or `run` in any worktree on the same Mac finishes for it. That command deletes the removed worktree's simulator and application, stops its daemon, and prints a `reap` line for each.
+
+For a remote simulator, `down` ends the runner job, and `down --stale` also ends a session that a crashed run of this checkout left running. No other checkout cleans up a remote session. If its checkout is deleted, the session's own idle stop ends it.
+
+## For maintainers of the tests and the CLI
+
+- clerk-android and clerk/javascript have the same package, and `src/core/`, `specs/support/`, `specs/fixtures.ts`, and `e2e.config.ts` are copied to them. After a change to any of them, `node e2e-tests/src/core/manifest.ts --write` rewrites `src/core/MANIFEST`. Nothing under `specs/` or `e2e.config.ts` imports the CLI, and `test/seam.test.ts` fails when a file does.
+- `npm test --prefix e2e-tests` runs the CLI's unit tests, with no network, key, or simulator. `npm run typecheck --prefix e2e-tests` runs `tsc`. The `Run E2E runner tests` job in `.github/workflows/shared-checks.yml` runs both on Linux.
+- `.github/workflows/verify-e2e.yml` runs `up`, `run --all --retries 1 --github-report`, and `down` on a simulator on a CI runner. It needs the repository secret `MOBILE_VERIFICATION_PLATFORM_API_KEY`. It runs on the `xcode-27` label unless the repository variable `VERIFY_CI_RUNNER` names another. `gh workflow run verify-e2e.yml --ref <branch>` starts it by hand.
+- `.github/workflows/verify-remote.yml` is the workflow that a remote session runs in, and `src/core/remote/` is the code on both ends of it. A session keeps the `src/core/` of the commit it started on, so after a change to a file that `src/core/MANIFEST` lists, commit, push, `down`, then `up`.
+- `.github/workflows/verify-attach.yml` publishes the evidence that `attach` hands to a session's runner, with `.github/scripts/verify-attach.mjs`. It reads the manifest that `src/core/remote/handoff.ts` writes. It and `src/core/publish.ts` each replace the block the other wrote, each applies the same rules to the comments and to the start of the line, and each lays the files out in the same tables. The script is checked out alone, so it imports nothing from the package. So a change to the manifest, the comments, those rules, or the tables is a change in both places. `node --test .github/scripts/verify-attach.test.mjs` runs its tests.
+- `run --github-report` hands the results of a run to `@e2e-dev/github`, which writes them to the job summary and to one pull request comment.

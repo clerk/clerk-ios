@@ -5,14 +5,9 @@
 
 import Foundation
 
-/// Options used to configure the telemetry collector.
-///
-/// Use this to control sampling, buffering, and environment metadata for
-/// development-only telemetry in the Clerk iOS SDK.
 struct TelemetryCollectorOptions {
   /// Sampling rate in the range [0, 1].
   var samplingRate: Double
-  /// Maximum number of events to buffer before forcing a flush.
   var maxBufferSize: Int
   /// Time interval (in seconds) between periodic flushes.
   var flushInterval: TimeInterval
@@ -45,25 +40,17 @@ struct TelemetryCollectorOptions {
 ///
 /// iOS does not include `cv` (Clerk version) or `sk` (secret key).
 struct TelemetryEvent: Codable {
-  /// The event name (e.g. "method_invoked").
   let event: String
   /// The instance type string (e.g. "development", "production").
   let it: String // swiftlint:disable:this identifier_name
-  /// The SDK name (e.g. "clerk-ios").
   let sdk: String
-  /// The SDK version string.
   let sdkv: String
-  /// The publishable key, if available.
   let pk: String? // swiftlint:disable:this identifier_name
-  /// Arbitrary JSON payload for the event.
   let payload: [String: JSON]
 }
 
-/// Raw input describing a telemetry event to be recorded by the collector.
 package struct TelemetryEventRaw {
-  /// The event name.
   let event: String
-  /// Arbitrary JSON payload.
   let payload: [String: JSON]
   /// Optional per-event sampling rate in \[0, 1\]. If omitted, defaults to the collector `samplingRate`.
   let eventSamplingRate: Double?

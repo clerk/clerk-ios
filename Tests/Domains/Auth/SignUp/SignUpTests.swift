@@ -6,14 +6,17 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct SignUpTests {
+  private let transport = FakeTransport.mockDefaults()
+
   init() {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockSignUpService) {
+  private func useTransport(keychain: (any KeychainStorage)? = nil) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      signUpService: service
+      transport: transport,
+      keychain: keychain
     )
   }
 
@@ -22,51 +25,38 @@ struct SignUpTests {
   }
 
   @Test
-  func updateUsesSignUpServiceUpdate() async throws {
+  func updatePatchesSignUpFields() async throws {
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.UpdateParams)?>(nil)
-    let service = MockSignUpService(update: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    configureService(service)
+    useTransport()
 
     _ = try await signUp.update(firstName: "John", lastName: "Doe", legalAccepted: true)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.firstName == "John")
-    #expect(params.1.lastName == "Doe")
-    #expect(params.1.legalAccepted == true)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .patch)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)")
+    #expect(call.body?["first_name"]?.stringValue == "John")
+    #expect(call.body?["last_name"]?.stringValue == "Doe")
+    #expect(call.body?["legal_accepted"]?.boolValue == true)
   }
 
   @Test
-  func sendEmailLinkUsesSignUpServicePrepareVerification() async throws {
+  func sendEmailLinkPreparesEmailLinkVerification() async throws {
     let keychain = InMemoryKeychain()
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)
-    let service = MockSignUpService(prepareVerification: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      keychain: keychain,
-      signUpService: service
-    )
+    useTransport(keychain: keychain)
     let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
     _ = try await signUp.sendEmailLink()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.strategy == .emailLink)
-    #expect(params.1.emailAddressId == nil)
-    #expect(params.1.redirectUri == Clerk.shared.options.redirectConfig.redirectUrl)
-    #expect(params.1.codeChallengeMethod == PKCE.codeChallengeMethod)
-    #expect(params.1.codeChallenge?.isEmpty == false)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)/prepare_verification")
+    #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailLink)
+    #expect(call.body?["email_address_id"] == nil)
+    #expect(call.body?["redirect_uri"]?.stringValue == Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(call.body?["code_challenge_method"]?.stringValue == PKCE.codeChallengeMethod)
+    #expect(call.body?["code_challenge"]?.stringValue?.isEmpty == false)
 
     let pendingFlow = try #require(magicLinkStore.load())
     #expect(pendingFlow.kind == .signUp)
@@ -78,15 +68,11 @@ struct SignUpTests {
   func sendEmailLinkSavesPendingFlowBeforePrepare() async throws {
     let keychain = InMemoryKeychain()
     let signUp = SignUp.mock
-    let service = MockSignUpService(prepareVerification: { _, _ in
+    transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
       throw ClerkClientError(message: "Prepare failed.")
-    })
+    }
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      keychain: keychain,
-      signUpService: service
-    )
+    useTransport(keychain: keychain)
     let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
 
     await #expect(throws: ClerkClientError.self) {
@@ -100,97 +86,68 @@ struct SignUpTests {
 
   @Test
   func sendEmailLinkDoesNotPrepareWhenSavingPendingFlowFails() async throws {
-    let prepareWasCalled = LockIsolated(false)
     let signUp = SignUp.mock
-    let service = MockSignUpService(prepareVerification: { _, _ in
-      prepareWasCalled.setValue(true)
-      return .mock
-    })
 
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      keychain: SetFailingKeychain(),
-      signUpService: service
-    )
+    useTransport(keychain: SetFailingKeychain())
 
     await #expect(throws: SetFailingKeychain.Failure.self) {
       try await signUp.sendEmailLink()
     }
-    #expect(prepareWasCalled.value == false)
+    #expect(!transport.calls.contains { $0.path.hasSuffix("/prepare_verification") })
   }
 
   @Test
-  func sendEmailCodeUsesSignUpServicePrepareVerification() async throws {
+  func sendEmailCodePreparesEmailCodeVerification() async throws {
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)
-    let service = MockSignUpService(prepareVerification: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    configureService(service)
+    useTransport()
 
     _ = try await signUp.sendEmailCode()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.strategy == .emailCode)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)/prepare_verification")
+    #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailCode)
   }
 
   @Test
-  func sendPhoneCodeUsesSignUpServicePrepareVerification() async throws {
+  func sendPhoneCodePreparesPhoneCodeVerification() async throws {
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.PrepareVerificationParams)?>(nil)
-    let service = MockSignUpService(prepareVerification: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    configureService(service)
+    useTransport()
 
     _ = try await signUp.sendPhoneCode()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.strategy == .phoneCode)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)/prepare_verification")
+    #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .phoneCode)
   }
 
   @Test
-  func verifyEmailCodeUsesSignUpServiceAttemptVerification() async throws {
+  func verifyEmailCodeAttemptsEmailCodeVerification() async throws {
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.AttemptVerificationParams)?>(nil)
-    let service = MockSignUpService(attemptVerification: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    configureService(service)
+    useTransport()
 
     _ = try await signUp.verifyEmailCode("123456")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.strategy == .emailCode)
-    #expect(params.1.code == "123456")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)/attempt_verification")
+    #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .emailCode)
+    #expect(call.body?["code"]?.stringValue == "123456")
   }
 
   @Test
-  func verifyPhoneCodeUsesSignUpServiceAttemptVerification() async throws {
+  func verifyPhoneCodeAttemptsPhoneCodeVerification() async throws {
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.AttemptVerificationParams)?>(nil)
-    let service = MockSignUpService(attemptVerification: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    configureService(service)
+    useTransport()
 
     _ = try await signUp.verifyPhoneCode("654321")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.strategy == .phoneCode)
-    #expect(params.1.code == "654321")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)/attempt_verification")
+    #expect(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)) == .phoneCode)
+    #expect(call.body?["code"]?.stringValue == "654321")
   }
 
   @Test(
@@ -199,22 +156,18 @@ struct SignUpTests {
       ReloadScenario(rotatingTokenNonce: "test_nonce"),
     ]
   )
-  func reloadUsesSignUpServiceGet(
+  func reloadFetchesSignUpWithNonce(
     scenario: ReloadScenario
   ) async throws {
     let signUp = SignUp.mock
-    let captured = LockIsolated<(String, SignUp.GetParams)?>(nil)
-    let service = MockSignUpService(get: { id, params in
-      captured.setValue((id, params))
-      return .mock
-    })
 
-    configureService(service)
+    useTransport()
 
     _ = try await signUp.reload(rotatingTokenNonce: scenario.rotatingTokenNonce)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == signUp.id)
-    #expect(params.1.rotatingTokenNonce == scenario.rotatingTokenNonce)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .get)
+    #expect(call.path == "/v1/client/sign_ups/\(signUp.id)")
+    #expect(call.query.first { $0.name == "rotating_token_nonce" }?.value == scenario.rotatingTokenNonce)
   }
 }

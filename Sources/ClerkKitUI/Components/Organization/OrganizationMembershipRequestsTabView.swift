@@ -34,8 +34,8 @@ struct OrganizationMembershipRequestsTabView: View {
 
   var body: some View {
     OrganizationAccountPaginatedList(
-      pager: dataSource.membershipRequestsPager,
-      isLoading: dataSource.isLoadingMembershipRequests,
+      pager: dataSource.membershipRequests.pager,
+      isLoading: dataSource.membershipRequests.isLoading,
       emptyState: {
         ClerkEmptyStateView(
           icon: .asset("icon-users"),
@@ -69,14 +69,14 @@ struct OrganizationMembershipRequestsTabView: View {
 extension OrganizationMembershipRequestsTabView {
   @MainActor
   private func refresh() async {
-    guard canManageMembershipRequests, let organization else { return }
-    await dataSource.loadMembershipRequests(organization: organization)
+    guard canManageMembershipRequests else { return }
+    await dataSource.refreshMembershipRequests()
   }
 
   @MainActor
   private func loadMore() async {
-    guard canManageMembershipRequests, let organization else { return }
-    await dataSource.loadMoreMembershipRequests(organization: organization)
+    guard canManageMembershipRequests else { return }
+    dataSource.membershipRequests.loadMore()
   }
 
   @MainActor

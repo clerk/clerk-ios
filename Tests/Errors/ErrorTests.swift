@@ -143,7 +143,6 @@ struct ErrorTests {
     #expect(response.errors.count == 2)
     #expect(response.clerkTraceId == "trace123")
 
-    // Test Codable
     let encoder = JSONEncoder()
     let data = try encoder.encode(response)
 

@@ -6,27 +6,50 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct ExternalAccountTests {
+  private let transport = FakeTransport.mockDefaults()
+
   init() {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockExternalAccountService) {
+  private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      externalAccountService: service
+      transport: transport
     )
   }
 
   @Test
-  func destroyUsesExternalAccountServiceDestroy() async throws {
+  func prepareReauthorizationDefaultsRedirectUrlToConfiguredRedirect() async throws {
+    let externalAccount = ExternalAccount.mockVerified
+    let expectedRedirectUrl = Clerk.shared.options.redirectConfig.redirectUrl
+    let captured = LockIsolated<(String, JSON?)?>(nil)
+    transport.stub(ExternalAccountAPI.reauthorize(externalAccountId: FakeTransport.anyPathSegment, redirectUrl: "", additionalScopes: [], oidcPrompts: [])) { call in
+      captured.setValue((String(call.path.split(separator: "/")[3]), call.body))
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
+
+    configureTransport()
+
+    _ = try await externalAccount.prepareReauthorization(additionalScopes: ["write", "view"])
+
+    let params = try #require(captured.value)
+    #expect(params.0 == externalAccount.id)
+    #expect(params.1?["redirect_url"]?.stringValue == expectedRedirectUrl)
+    #expect(params.1?["additional_scope"] == .array([.string("write"), .string("view")]))
+    #expect(params.1?["oidc_prompt"] == nil)
+  }
+
+  @Test
+  func destroySendsExternalAccountId() async throws {
     let externalAccount = ExternalAccount.mockVerified
     let captured = LockIsolated<String?>(nil)
-    let service = MockExternalAccountService(destroy: { externalAccountId in
-      captured.setValue(externalAccountId)
-      return .mock
-    })
+    transport.stub(ExternalAccountAPI.destroy(externalAccountId: FakeTransport.anyPathSegment)) { call in
+      captured.setValue(String(call.path.split(separator: "/")[3]))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await externalAccount.destroy()
 

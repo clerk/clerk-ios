@@ -7,7 +7,6 @@ import CryptoKit
 import Foundation
 import Security
 
-/// Generates PKCE values using the `S256` code challenge method (RFC 7636).
 enum PKCE {
   static let codeChallengeMethod = "S256"
 

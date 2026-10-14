@@ -81,30 +81,48 @@ public struct SignIn: Codable, Sendable, Equatable {
 
 extension SignIn {
   @MainActor
-  private var signInService: any SignInServiceProtocol {
-    Clerk.shared.dependencies.signInService
+  private var magicLinkStore: MagicLinkStore {
+    get throws {
+      try Clerk.currentDependencies.magicLinkStore
+    }
   }
 
   @MainActor
-  private var magicLinkStore: MagicLinkStore {
-    Clerk.shared.dependencies.magicLinkStore
+  private func startNativeMagicLink(redirectUri: String?) throws -> (redirectUri: String, codeChallenge: String) {
+    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
+    guard !resolvedRedirectUri.isEmpty else {
+      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
+    }
+
+    let pkcePair = try PKCE.generatePair()
+    try magicLinkStore.save(
+      kind: .signIn,
+      flowId: id,
+      codeVerifier: pkcePair.verifier,
+      authFlowOwnerId: AuthFlowRequestScope.ownerId
+    )
+
+    return (resolvedRedirectUri, pkcePair.challenge)
   }
 
   // MARK: - First Factor Verification
 
   /// Sends a verification code to the specified email address.
   ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
+  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor, or the first email code factor when none matches the identifier (such as a username sign-in).
   /// - Returns: An updated `SignIn` object with the verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
+    let emailId =
+      emailAddressId
+        ?? identifyingFirstFactor(for: FactorStrategy.emailCode.rawValue)?.emailAddressId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .emailCode })?.emailAddressId
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    )).value.response
   }
 
   /// Sends a native magic link to the specified email address.
@@ -134,44 +152,36 @@ extension SignIn {
       throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
     }
 
-    let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
-    guard !resolvedRedirectUri.isEmpty else {
-      throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
-    }
+    let magicLink = try startNativeMagicLink(redirectUri: redirectUri)
 
-    let pkcePair = try PKCE.generatePair()
-    try magicLinkStore.save(
-      kind: .signIn,
-      flowId: id,
-      codeVerifier: pkcePair.verifier,
-      authFlowOwnerId: AuthFlowRequestScope.ownerId
-    )
-
-    return try await signInService.prepareFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .emailLink,
         emailAddressId: emailId,
-        redirectUri: resolvedRedirectUri,
-        codeChallenge: pkcePair.challenge,
+        redirectUri: magicLink.redirectUri,
+        codeChallenge: magicLink.codeChallenge,
         codeChallengeMethod: PKCE.codeChallengeMethod
       )
-    )
+    )).value.response
   }
 
   /// Sends a verification code to the specified phone number.
   ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
+  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor, or the first phone code factor when none matches the identifier (such as a username sign-in).
   /// - Returns: An updated `SignIn` object with the verification process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
+    let phoneId =
+      phoneNumberId
+        ?? identifyingFirstFactor(for: FactorStrategy.phoneCode.rawValue)?.phoneNumberId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .phoneCode })?.phoneNumberId
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    )).value.response
   }
 
   /// Verifies the code entered by the user.
@@ -192,10 +202,10 @@ extension SignIn {
       throw ClerkClientError(message: "Unable to verify code for strategy '\(resolvedStrategy.rawValue)'.", localizationBundle: .module)
     }
 
-    return try await signInService.attemptFirstFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: resolvedStrategy, code: code)
-    )
+    )).value.response
   }
 
   /// Authenticates with the user's password.
@@ -206,10 +216,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithPassword(_ password: String) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .password, password: password)
-    )
+    )).value.response
   }
 
   #if !os(tvOS) && !os(watchOS)
@@ -254,10 +264,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithIdToken(_ idToken: String, provider: IDTokenProvider) async throws -> SignIn {
-    try await signInService.attemptFirstFactor(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
       signInId: id,
       params: .init(strategy: .idToken(provider), token: idToken)
-    )
+    )).value.response
   }
 
   /// Authenticates with Apple using Sign in with Apple.
@@ -282,16 +292,35 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+    // Shares Auth.signInWithApple's scope handling, so instances without name fields aren't sent a name.
+    let credential = try await Auth.appleCredential(
+      requestedScopes,
+      environment: Clerk.shared.environment
+    )
+    return try await completeAppleAuthentication(
+      idToken: credential.tokenString,
+      firstName: credential.fullName?.givenName,
+      lastName: credential.fullName?.familyName,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    )
+  }
 
-    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
-      throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
-    }
-
+  /// Apple returns the user's name only on the first authorization, so a transfer to sign-up carries it.
+  @MainActor
+  func completeAppleAuthentication(
+    idToken: String,
+    firstName: String?,
+    lastName: String?,
+    transferable: Bool,
+    unsafeMetadata: JSON?
+  ) async throws -> TransferFlowResult {
     let signIn = try await authenticateWithIdToken(idToken, provider: .apple)
     let result = try await signIn.handleTransferFlow(
       transferable: transferable,
-      unsafeMetadata: unsafeMetadata
+      unsafeMetadata: unsafeMetadata,
+      firstName: firstName,
+      lastName: lastName
     )
     if case .signIn(let signIn) = result, let error = signIn.firstFactorVerification?.error {
       throw error
@@ -311,10 +340,10 @@ extension SignIn {
   @MainActor
   public func sendMfaPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
     let phoneId = phoneNumberId ?? identifyingSecondFactor(for: "phone_code")?.phoneNumberId
-    return try await signInService.prepareSecondFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
       signInId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: phoneId)
-    )
+    )).value.response
   }
 
   /// Sends an MFA code to the email address.
@@ -326,10 +355,51 @@ extension SignIn {
   @MainActor
   public func sendMfaEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
     let emailId = emailAddressId ?? identifyingSecondFactor(for: "email_code")?.emailAddressId
-    return try await signInService.prepareSecondFactor(
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
       signInId: id,
       params: .init(strategy: .emailCode, emailAddressId: emailId)
-    )
+    )).value.response
+  }
+
+  /// Sends a native magic link to the specified email address as the second factor.
+  ///
+  /// Use this when the sign-in needs client trust and `supportedSecondFactors` offers
+  /// `email_link`. This prepares the `email_link` second factor using PKCE and stores the
+  /// verifier locally so the callback can be completed inside the app. Only one pending native
+  /// magic-link flow is stored locally at a time; starting a new flow replaces
+  /// the previously stored verifier.
+  ///
+  /// - Parameters:
+  ///   - emailAddressId: Optional email address ID. If not provided, uses the email-link second factor.
+  ///   - redirectUri: Optional redirect URI override. Defaults to the Clerk redirect configuration.
+  /// - Returns: An updated `SignIn` object with the email-link verification started.
+  /// - Throws: An error if email-link verification is unavailable or preparation fails.
+  @discardableResult
+  @MainActor
+  public func sendMfaEmailLink(
+    emailAddressId: String? = nil,
+    redirectUri: String? = nil
+  ) async throws -> SignIn {
+    let emailId =
+      emailAddressId
+        ?? supportedSecondFactors?.first(where: { $0.strategy == .emailLink })?.emailAddressId
+
+    guard let emailId else {
+      throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
+    }
+
+    let magicLink = try startNativeMagicLink(redirectUri: redirectUri)
+
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
+      signInId: id,
+      params: .init(
+        strategy: .emailLink,
+        emailAddressId: emailId,
+        redirectUri: magicLink.redirectUri,
+        codeChallenge: magicLink.codeChallenge,
+        codeChallengeMethod: PKCE.codeChallengeMethod
+      )
+    )).value.response
   }
 
   /// Verifies the MFA code with the specified type.
@@ -342,42 +412,48 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func verifyMfaCode(_ code: String, type: MfaType) async throws -> SignIn {
-    try await signInService.attemptSecondFactor(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.attemptSecondFactor(
       signInId: id,
       params: .init(strategy: type.strategy, code: code)
-    )
+    )).value.response
   }
 
   // MARK: - Password Reset
 
   /// Sends a password reset code to the specified email address.
   ///
-  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor.
+  /// - Parameter emailAddressId: Optional email address ID. If not provided, uses the identifying first factor, or the first reset password email code factor when none matches the identifier.
   /// - Returns: An updated `SignIn` object with the password reset process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendResetPasswordEmailCode(emailAddressId: String? = nil) async throws -> SignIn {
-    let emailId = emailAddressId ?? identifyingFirstFactor(for: "reset_password_email_code")?.emailAddressId
-    return try await signInService.prepareFirstFactor(
+    let emailId =
+      emailAddressId
+        ?? identifyingFirstFactor(for: FactorStrategy.resetPasswordEmailCode.rawValue)?.emailAddressId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .resetPasswordEmailCode })?.emailAddressId
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .resetPasswordEmailCode, emailAddressId: emailId)
-    )
+    )).value.response
   }
 
   /// Sends a password reset code to the specified phone number.
   ///
-  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor.
+  /// - Parameter phoneNumberId: Optional phone number ID. If not provided, uses the identifying first factor, or the first reset password phone code factor when none matches the identifier.
   /// - Returns: An updated `SignIn` object with the password reset process started.
   /// - Throws: An error if sending the code fails.
   @discardableResult
   @MainActor
   public func sendResetPasswordPhoneCode(phoneNumberId: String? = nil) async throws -> SignIn {
-    let phoneId = phoneNumberId ?? identifyingFirstFactor(for: "reset_password_phone_code")?.phoneNumberId
-    return try await signInService.prepareFirstFactor(
+    let phoneId =
+      phoneNumberId
+        ?? identifyingFirstFactor(for: FactorStrategy.resetPasswordPhoneCode.rawValue)?.phoneNumberId
+        ?? supportedFirstFactors?.first(where: { $0.strategy == .resetPasswordPhoneCode })?.phoneNumberId
+    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneId)
-    )
+    )).value.response
   }
 
   /// Resets the user's password after verification.
@@ -390,10 +466,10 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func resetPassword(newPassword: String, signOutOfOtherSessions: Bool = false) async throws -> SignIn {
-    try await signInService.resetPassword(
+    try await Clerk.currentDependencies.transport.send(SignInAPI.resetPassword(
       signInId: id,
       params: .init(password: newPassword, signOutOfOtherSessions: signOutOfOtherSessions)
-    )
+    )).value.response
   }
 
   // MARK: - Enterprise SSO
@@ -406,6 +482,8 @@ extension SignIn {
   /// is handled automatically.
   ///
   /// - Parameters:
+  ///   - enterpriseConnectionId: The enterprise connection to use when more than one matches the email address.
+  ///     Pass the ``Factor/enterpriseConnectionId`` of one of the `enterpriseSSO` factors in ``supportedFirstFactors``.
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral web browser session (default is `false`).
   ///   - transferable: Indicates whether a user should be signed up if they attempt to sign in but do not already have an account.
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
@@ -415,17 +493,19 @@ extension SignIn {
   @discardableResult
   @MainActor
   public func authenticateWithEnterpriseSSO(
+    enterpriseConnectionId: String? = nil,
     prefersEphemeralWebBrowserSession: Bool = false,
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.prepareFirstFactor(
+    let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .enterpriseSSO,
+        enterpriseConnectionId: enterpriseConnectionId,
         redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
       )
-    )
+    )).value.response
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
@@ -467,13 +547,13 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
-    let signIn = try await signInService.prepareFirstFactor(
+    let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
         strategy: .oauth(provider),
         redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
       )
-    )
+    )).value.response
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
@@ -546,15 +626,15 @@ extension SignIn {
     let signIn: SignIn
     do {
       if usesSecondFactor {
-        signIn = try await signInService.prepareSecondFactor(
+        signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
           signInId: id,
           params: .init(strategy: .passkey)
-        )
+        )).value.response
       } else {
-        signIn = try await signInService.prepareFirstFactor(
+        signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
           signInId: id,
           params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
-        )
+        )).value.response
       }
     } catch {
       throw PasskeyAuthenticationFailure(
@@ -575,16 +655,16 @@ extension SignIn {
 
     do {
       if usesSecondFactor {
-        return try await signInService.attemptSecondFactor(
+        return try await Clerk.currentDependencies.transport.send(SignInAPI.attemptSecondFactor(
           signInId: signIn.id,
           params: .init(strategy: .passkey, publicKeyCredential: credential)
-        )
+        )).value.response
       }
 
-      return try await signInService.attemptFirstFactor(
+      return try await Clerk.currentDependencies.transport.send(SignInAPI.attemptFirstFactor(
         signInId: signIn.id,
         params: .init(strategy: .passkey, publicKeyCredential: credential)
-      )
+      )).value.response
     } catch {
       throw PasskeyAuthenticationFailure(
         stage: usesSecondFactor ? .attemptingSecondFactor : .attemptingFirstFactor,
@@ -598,25 +678,13 @@ extension SignIn {
 extension SignIn {
   // MARK: - Internal Helpers
 
-  /// Reloads the current sign-in state from the server.
-  ///
-  /// - Parameter rotatingTokenNonce: Optional rotating token nonce for reloading.
-  /// - Returns: An updated `SignIn` object with the latest state.
-  /// - Throws: An error if reloading fails.
   @discardableResult
   @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignIn {
-    try await signInService.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    try await Clerk.currentDependencies.transport.send(SignInAPI.get(signInId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))).value.response
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
-  /// Gets the credential for passkey authentication.
-  ///
-  /// - Parameters:
-  ///   - autofill: Whether to use autofill-assisted flow (default is `false`).
-  ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
-  /// - Returns: A JSON-encoded string containing the passkey credential.
-  /// - Throws: An error if getting the credential fails.
   @MainActor
   func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
     let verification =
@@ -691,7 +759,6 @@ extension SignIn {
   }
   #endif
 
-  /// Handles the callback url from external authentication. Determines whether to return a sign in or sign up.
   @discardableResult @MainActor
   func handleRedirectCallbackUrl(
     _ url: URL,
@@ -705,7 +772,6 @@ extension SignIn {
       }
       return .signIn(updatedSignIn)
     } else {
-      // transfer flow
       let signIn = try await reload()
       let result = try await signIn.handleTransferFlow(
         transferable: transferable,
@@ -727,25 +793,27 @@ extension SignIn {
     }
   }
 
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
   func handleTransferFlow(
     transferable: Bool = true,
-    unsafeMetadata: JSON? = nil
+    unsafeMetadata: JSON? = nil,
+    firstName: String? = nil,
+    lastName: String? = nil
   ) async throws -> TransferFlowResult {
     if needsTransferToSignUp == true, transferable {
-      let signUpService: any SignUpServiceProtocol = Clerk.shared.dependencies.signUpService
-      let signUp = try await signUpService.create(params: .init(
+      let transport = try Clerk.currentDependencies.transport
+      let signUp = try await transport.send(SignUpAPI.create(params: .init(
+        firstName: firstName,
+        lastName: lastName,
         unsafeMetadata: unsafeMetadata,
         transfer: true
-      ))
+      ))).value.response
       return .signUp(signUp)
     } else {
       return .signIn(self)
     }
   }
 
-  /// Helper to determine if the SignIn needs to be transferred to a SignUp
   var needsTransferToSignUp: Bool {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
   }
@@ -756,21 +824,18 @@ extension SignIn {
     return needsSecondFactor && supportsPasskey
   }
 
-  /// The first factor matching the specified strategy string.
   package func identifyingFirstFactor(for strategy: String) -> Factor? {
     supportedFirstFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }
 
-  /// The first factor matching the specified strategy string and identifier.
   package func identifyingFirstFactor(for strategy: String, matching identifier: String) -> Factor? {
     supportedFirstFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier
     })
   }
 
-  /// The second factor matching the specified strategy string.
   func identifyingSecondFactor(for strategy: String) -> Factor? {
     supportedSecondFactors?.first(where: { factor in
       factor.strategy.rawValue == strategy && factor.safeIdentifier == identifier

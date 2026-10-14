@@ -20,6 +20,7 @@ struct UserProfileAddMfaView: View {
   enum PresentedView: Identifiable, Hashable {
     case sms
     case authApp(TOTPResource)
+    case backupCodes([String])
 
     var id: Self {
       self
@@ -33,6 +34,10 @@ struct UserProfileAddMfaView: View {
         UserProfileMfaAddSmsView()
       case let .authApp(totp):
         UserProfileMfaAddTotpView(totp: totp)
+      case let .backupCodes(backupCodes):
+        NavigationStack {
+          BackupCodesView(backupCodes: backupCodes)
+        }
       }
     }
   }
@@ -43,6 +48,11 @@ struct UserProfileAddMfaView: View {
 
   private var user: User? {
     clerk.user
+  }
+
+  private var availableMethods: [Clerk.Environment.MfaMethod] {
+    guard let environment, let user else { return [] }
+    return environment.mfaMethodsAvailableToAdd(for: user)
   }
 
   var body: some View {
@@ -58,7 +68,7 @@ struct UserProfileAddMfaView: View {
 
           VStack(spacing: 0) {
             Group {
-              if environment?.mfaPhoneCodeIsEnabled == true {
+              if availableMethods.contains(.phoneCode) {
                 Button {
                   navigation.chooseMfaTypeIsPresented = false
                   navigation.presentedAddMfaType = .sms
@@ -68,7 +78,7 @@ struct UserProfileAddMfaView: View {
                 .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.smsCode)
               }
 
-              if environment?.mfaAuthenticatorAppIsEnabled == true, user?.totpEnabled != true {
+              if availableMethods.contains(.authenticatorApp) {
                 AsyncButton {
                   await createTotp()
                 } label: { isRunning in
@@ -76,6 +86,16 @@ struct UserProfileAddMfaView: View {
                     .overlayProgressView(isActive: isRunning)
                 }
                 .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.authenticatorApp)
+              }
+
+              if availableMethods.contains(.backupCodes) {
+                AsyncButton {
+                  await createBackupCodes()
+                } label: { isRunning in
+                  UserProfileRowView(icon: "icon-lock", text: "Backup codes")
+                    .overlayProgressView(isActive: isRunning)
+                }
+                .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.Mfa.backupCodes)
               }
             }
             .overlay(alignment: .bottom) {
@@ -134,6 +154,19 @@ extension UserProfileAddMfaView {
     } catch {
       self.error = error
       ClerkLogger.error("Failed to create TOTP", error: error)
+    }
+  }
+
+  private func createBackupCodes() async {
+    guard let user else { return }
+
+    do {
+      let backupCodes = try await user.createBackupCodes()
+      navigation.chooseMfaTypeIsPresented = false
+      navigation.presentedAddMfaType = .backupCodes(backupCodes.codes)
+    } catch {
+      self.error = error
+      ClerkLogger.error("Failed to create backup codes", error: error)
     }
   }
 }

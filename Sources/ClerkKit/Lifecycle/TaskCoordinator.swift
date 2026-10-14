@@ -8,35 +8,30 @@
 import Foundation
 
 /// Manages and coordinates tasks for cleanup and cancellation.
-///
-/// This class provides a centralized way to track and cancel tasks.
-/// Call `cancelAll()` before releasing the coordinator to ensure proper cleanup.
 @MainActor
 final class TaskCoordinator {
-  /// Storage for tracked tasks.
-  private var tasks: Set<Task<Void, Never>> = []
+  private struct TrackedTask {
+    let cancel: @Sendable () -> Void
+    let wait: @Sendable () async -> Void
+  }
 
-  /// Creates a new task coordinator.
+  private var tasks: [UUID: TrackedTask] = [:]
+
   init() {}
 
-  /// Adds a task to be tracked by this coordinator.
-  ///
-  /// - Parameter task: The task to track.
-  func track(_ task: Task<Void, Never>) {
-    tasks.insert(task)
+  func track(_ task: Task<some Sendable, some Error>) {
+    let id = UUID()
+    tasks[id] = TrackedTask(
+      cancel: { task.cancel() },
+      wait: { _ = await task.result }
+    )
 
-    // Remove task when it completes
-    Task {
-      await task.value
-      tasks.remove(task)
+    Task { [weak self] in
+      _ = await task.result
+      self?.tasks[id] = nil
     }
   }
 
-  /// Creates and tracks a new task.
-  ///
-  /// - Parameter priority: The priority of the task. Defaults to `.userInitiated`.
-  /// - Parameter operation: The async operation to perform.
-  /// - Returns: The created task.
   @discardableResult
   func task(
     priority: TaskPriority = .userInitiated,
@@ -49,26 +44,28 @@ final class TaskCoordinator {
     return task
   }
 
-  /// Cancels all tracked tasks.
-  ///
-  /// This is called by `Clerk.cleanupManagers()` during reconfiguration or test cleanup.
   func cancelAll() {
-    for task in tasks {
+    for task in tasks.values {
       task.cancel()
     }
     tasks.removeAll()
   }
 
-  /// Cancels all tracked tasks and waits for them to finish observing cancellation.
   func cancelAllAndWait() async {
-    let trackedTasks = tasks
+    let trackedTasks = Array(tasks.values)
     for task in trackedTasks {
       task.cancel()
     }
     tasks.removeAll()
 
     for task in trackedTasks {
-      await task.value
+      await task.wait()
+    }
+  }
+
+  deinit {
+    for task in tasks.values {
+      task.cancel()
     }
   }
 }

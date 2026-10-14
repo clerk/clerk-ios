@@ -10,7 +10,6 @@ import Foundation
 /// This enum provides type-safe representation of factor strategies with support for
 /// OAuth providers, ID token providers, and unknown values to maintain forward compatibility with new strategies.
 public enum FactorStrategy: Hashable, Codable, Sendable {
-  // Standard strategies
   case password
   case emailCode
   case emailLink
@@ -21,11 +20,9 @@ public enum FactorStrategy: Hashable, Codable, Sendable {
   case backupCode
   case ticket
 
-  // Reset password strategies
   case resetPasswordEmailCode
   case resetPasswordPhoneCode
 
-  // Enterprise strategies
   case saml
   case enterpriseSSO
 
@@ -144,7 +141,6 @@ extension FactorStrategy {
     }
   }
 
-  /// Strategies that use email as the identifier
   package static let emailStrategies: [FactorStrategy] = [
     .emailCode,
     .emailLink,
@@ -152,14 +148,12 @@ extension FactorStrategy {
     .resetPasswordEmailCode,
   ]
 
-  /// Strategies that use phone number as the identifier
   package static let phoneStrategies: [FactorStrategy] = [
     .phoneCode,
     .password,
     .resetPasswordPhoneCode,
   ]
 
-  /// Strategies that use username as the identifier
   package static let usernameStrategies: [FactorStrategy] = [
     .password,
   ]

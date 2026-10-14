@@ -1,16 +1,17 @@
 import Foundation
 
-/// Lightweight async API client that executes requests through the shared networking pipeline.
 actor APIClient {
   private struct ClerkRequestContext: Equatable {
     let checkpoint: ClerkRequestCheckpoint
     let authorization: String?
     let clientID: String?
+    let sessionID: String?
 
     init(request: URLRequest) {
       checkpoint = request.clerkRequestCheckpoint
       authorization = request.value(forHTTPHeaderField: "Authorization")
       clientID = request.value(forHTTPHeaderField: "x-clerk-client-id")
+      sessionID = request.url?.queryParam(named: "_clerk_session_id")
     }
 
     func apply(to request: inout URLRequest) {
@@ -204,7 +205,7 @@ actor APIClient {
   private func finishStartupClientRefreshTakeover(_ id: UUID?) async {
     guard let id else { return }
     guard let clerk = try? await runtimeScope.requireCurrentClerk() else { return }
-    await clerk.startupClientRefreshTakeover.finish(id: id)
+    await clerk.runtime.startupClientRefreshTakeover.finish(id: id)
   }
 }
 

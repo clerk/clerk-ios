@@ -79,7 +79,6 @@ After running `make setup`, you're ready to start developing!
 - `make check` - Run both format-check and lint (for CI)
 - `make test` - Run `ClerkKitTests` on macOS
 - `make test-ui` - Run `ClerkKitUITests` on iOS Simulator
-- `make test-e2e` - Run E2EHost tests on iOS Simulator
 - `make test-integration` - Run only integration tests (requires `.keys.json` file; Clerk employees only)
 - `make fetch-test-keys` - Fetch integration test keys from 1Password (optional, for Clerk employees only; auto-installs CLI if needed)
 
@@ -121,7 +120,64 @@ SwiftLint checks for:
 
 ## Testing
 
-This project uses **Swift Testing** for package unit and integration tests, and **Maestro** for app-level E2E UI automation. Tests are organized into three categories:
+### Pull request CI
+
+For non-draft PRs authored by Clerk organization members, CI starts once after
+CodeRabbit completes a review of the current commit and every review thread it
+opened is resolved. Both signals are structured GitHub data (CodeRabbit's commit
+status and review thread state), so CI doesn't depend on the wording of CodeRabbit's
+comments. CodeRabbit resolves its own threads once they're addressed; resolving a
+thread yourself also counts. Unresolved threads from people don't block the run.
+
+CodeRabbit's automatic approval/request-changes workflow is explicitly disabled in
+`.coderabbit.yaml`, with the organization's other settings inherited. CodeRabbit
+never approves PRs.
+
+After the first CI kickoff, new commits and retries require a Clerk member to comment
+`/run ci`, or a Clerk member with write access to check **Run CI** in the instructions
+comment. A manual kickoff before CodeRabbit finishes also counts as the first run.
+External contributions and draft PRs use these manual controls.
+
+Automatic and manual runs use the same checks, pinned to the requested commit. GitHub
+has no workflow event for resolving a thread, so CI re-checks after CodeRabbit's own
+review comment activity. If you resolve the last thread yourself after CodeRabbit
+finishes, or CodeRabbit skips a review or is unavailable, use the manual controls.
+The first kickoff is recorded in a separate bot comment so pushes, force-pushes, and
+reopening the PR do not reset it.
+
+The CI gate runs trusted scripts from the default branch, so workflow changes become
+active after they land there. Run its regression tests locally with Node.js 22 or later:
+
+```sh
+node --test .github/scripts/pr-ci.test.cjs
+```
+
+`.github/workflows/verify-attach.yml` runs a second trusted script from the default branch,
+`.github/scripts/verify-attach.mjs`. It puts the video and screenshots that a borrowed-device
+verify session handed off into the description of that session's pull request. GitHub starts it
+only when it and `.github/workflows/verify-remote.yml` are both on the default branch. It needs a
+bot token, and without one the workflow publishes nothing. To set it up:
+
+1. Create an environment named `verify-evidence` in the repository settings.
+2. Limit the environment's deployment branches to the default branch.
+3. Store the token in that environment as the secret `VERIFY_EVIDENCE_TOKEN`. It is a
+   fine-grained personal access token of a machine account with write access, limited to this
+   repository, with the permission "Pull requests: read and write".
+4. Do not create a repository secret named `VERIFY_EVIDENCE_TOKEN`.
+
+A repository secret can be read by a workflow that anyone with write access adds on any branch.
+A secret of an environment that allows only the default branch cannot.
+
+The `Run E2E runner tests` job of `shared-checks.yml` runs the script's tests. Run them locally
+with Node.js 24 or later:
+
+```sh
+node --test .github/scripts/verify-attach.test.mjs
+```
+
+### Test suites
+
+This project uses **Swift Testing** for package unit and integration tests, and the device tests in `e2e-tests/` for app-level E2E tests on an iOS Simulator. Tests are organized into three categories:
 
 ### Unit and UI Tests
 
@@ -166,7 +222,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 3. If `make fetch-test-keys` doesn't work, you can manually add the key to `.keys.json`:
    ```json
    {
-     "auth-email-code-password": {
+     "with-email-codes": {
        "pk": "pk_test_..."
      }
    }
@@ -178,7 +234,7 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 - The `.keys.json` file created by `make setup` will remain empty, which is expected
 
 **How it works:**
-- The `.keys.json` file is automatically created by `make setup` with blank baseline E2E key entries such as `auth-email-code-password.pk`, `auth-legal-consent.pk`, `auth-multi-methods.pk`, `auth-phone-code.pk`, `auth-username-password-user-model.pk`, `session-task-setup-mfa.pk`, and `with-email-codes.pk`
+- The `.keys.json` file is automatically created by `make setup` with a blank `with-email-codes.pk` entry
 - Clerk employees can run `make fetch-test-keys` to populate it from 1Password via `scripts/fetch-1password-secrets.sh`; fetched entries may include both `pk` and optional `sk` values, such as reset-password fixtures, so do not strip `sk` values from `.keys.json`
 - Each test method must call `configureClerkForIntegrationTesting(keyName:)` with the desired key name at the start
 - Tests read keys directly from `.keys.json` file
@@ -194,42 +250,30 @@ Each test method must call `configureClerkForIntegrationTesting(keyName:)` at th
 
 ### E2EHost Tests
 
-E2E tests live in `Examples/E2EHost/Maestro/` and run a dedicated SwiftUI test host app on an iOS Simulator. The host app exists only for release-gating E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. By default, `make test-e2e` runs the email-code sign-up flow with the `auth-email-code-password` mobile integration test instance.
+E2E tests are the golden specs in `e2e-tests/specs/golden/`. They drive `Examples/E2EHost`, a dedicated SwiftUI test host app, on an iOS Simulator. They are an ordinary e2e project, and `e2e-tests/README.md` has the commands to run one by hand. The host app exists only for E2E coverage, keeping product-facing examples such as Quickstart free of test-only controls and launch configuration. The CLI creates a Clerk development instance for the worktree, and `down` deletes it, so the tests need no entry in `.keys.json`.
 
 **Running E2E tests (Clerk employees only):**
 ```bash
-make fetch-test-keys
-make test-e2e
+npm ci --prefix e2e-tests
+e2e-tests/bin/control-clerk-ios doctor
+e2e-tests/bin/control-clerk-ios run --all
+e2e-tests/bin/control-clerk-ios down
 ```
 
-If CI is missing a named test key, add it to the 1Password item, then sync the GitHub Actions snapshot:
+To run one feature:
 ```bash
-make sync-test-keys-to-github
-```
-
-You can also provide a key directly:
-```bash
-CLERK_E2E_PUBLISHABLE_KEY=pk_test_... make test-e2e
-```
-
-To run a different flow:
-```bash
-E2E_MAESTRO_FLOW_NAME=session-task-setup-mfa make test-e2e
-```
-Available flow names are `auth-email`, `auth-phone`, `user-profile`, and `session-task-setup-mfa`. Each flow selects its required test instance automatically. `CLERK_E2E_KEY_NAME` can override that selection when necessary.
-
-To choose a specific simulator:
-```bash
-IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,name=iPhone 16' make test-e2e
+e2e-tests/bin/control-clerk-ios run sign-up
 ```
 
 **Requirements:**
 - Network access
-- `maestro-runner`
-- Valid publishable key in `.keys.json` for `CLERK_E2E_KEY_NAME` or `CLERK_E2E_PUBLISHABLE_KEY`
-- iOS Simulator available through `xcrun simctl`
+- Node.js 24, version 24.8 or later
+- Xcode with an iOS Simulator runtime
+- The team's Clerk Platform API key
 
-The test runner writes failure artifacts to `build/reports/maestro-<flow>`. CI uploads those reports when a flow fails. Generated tests must use the approved accessibility identifiers and be reviewed like production code.
+`doctor` checks each requirement and prints the fix for one that is missing. `.claude/skills/verify-clerk-ios/SKILL.md` has the one-time machine setup, how to write a spec, and where a run keeps its video, screenshots, and logs.
+
+The maintainer-only **Release SDK** workflow runs the same specs through `.github/workflows/verify-e2e.yml` and does not publish unless they pass.
 
 ## Releasing (Maintainers)
 

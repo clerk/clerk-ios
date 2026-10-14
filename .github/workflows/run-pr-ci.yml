@@ -1,0 +1,111 @@
+name: Run PR CI
+
+on:
+  workflow_call:
+    inputs:
+      pr_number:
+        description: Pull request whose CI request should be evaluated
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  resolve-pr-ci-request:
+    name: Resolve PR CI request
+    runs-on: ubuntu-latest
+    concurrency:
+      group: manual-ci-${{ github.repository }}-${{ inputs.pr_number }}
+      cancel-in-progress: false
+      queue: max
+    permissions:
+      contents: read
+      checks: write
+      issues: write
+      # PR issue comments return 403 with issues: write alone in this repository.
+      pull-requests: write
+      statuses: read
+    outputs:
+      manual_check_run_id: ${{ steps.resolve.outputs.manual_check_run_id }}
+      should_run: ${{ steps.resolve.outputs.should_run }}
+      head_repository: ${{ steps.resolve.outputs.head_repository }}
+      head_sha: ${{ steps.resolve.outputs.head_sha }}
+    steps:
+      - name: Checkout trusted CI scripts
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Resolve CI request
+        id: resolve
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
+        with:
+          script: |
+            const { resolveRequest } = require('./.github/scripts/pr-ci.cjs');
+            await resolveRequest({ github, context, core, prNumber: Number(process.env.PR_NUMBER) });
+
+  pr-checks:
+    name: Shared checks
+    needs: resolve-pr-ci-request
+    if: needs.resolve-pr-ci-request.outputs.should_run == 'true'
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+    uses: ./.github/workflows/shared-checks.yml
+    with:
+      checkout_repository: ${{ needs.resolve-pr-ci-request.outputs.head_repository }}
+      checkout_ref: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
+      report_check_runs: true
+      check_run_sha: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
+      check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      check_run_name_prefix: Manual CI
+
+  report-pr-ci-status:
+    name: Report PR CI status
+    needs:
+      - resolve-pr-ci-request
+      - pr-checks
+    if: always() && needs.resolve-pr-ci-request.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    steps:
+      - name: Report check run on PR head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MANUAL_CHECK_RUN_ID: ${{ needs.resolve-pr-ci-request.outputs.manual_check_run_id }}
+          REPO: ${{ github.repository }}
+          RESULT: ${{ needs.pr-checks.result }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+
+          case "$RESULT" in
+            success)
+              conclusion="success"
+              summary="Manual CI completed successfully."
+              ;;
+            cancelled)
+              conclusion="cancelled"
+              summary="Manual CI was cancelled."
+              ;;
+            *)
+              conclusion="failure"
+              summary="Manual CI failed."
+              ;;
+          esac
+
+          gh api --method PATCH "repos/$REPO/check-runs/$MANUAL_CHECK_RUN_ID" \
+            -f status=completed \
+            -f conclusion="$conclusion" \
+            -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -f details_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID" \
+            -f "output[title]=Manual CI" \
+            -f "output[summary]=$summary"

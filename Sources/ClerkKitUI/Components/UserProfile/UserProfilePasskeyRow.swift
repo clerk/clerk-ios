@@ -73,7 +73,7 @@ struct UserProfilePasskeyRow: View {
         .foregroundStyle(theme.colors.border)
     }
     .clerkErrorPresenting($error)
-    .sheet(isPresented: $renameIsPresented) {
+    .clerkSheet(isPresented: $renameIsPresented) {
       UserProfilePasskeyRenameView(passkey: passkey)
     }
     .confirmationDialog(

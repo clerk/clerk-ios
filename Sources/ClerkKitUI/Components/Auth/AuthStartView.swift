@@ -34,17 +34,17 @@ struct AuthStartView: View {
   // MARK: - Configuration
 
   var emailIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    clerk.environment?.firstFactorAttributes(for: authState.mode)
       .contains("email_address") ?? false
   }
 
   var usernameIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    clerk.environment?.firstFactorAttributes(for: authState.mode)
       .contains("username") ?? false
   }
 
   var phoneNumberIsEnabled: Bool {
-    clerk.environment?.enabledFirstFactorAttributes
+    clerk.environment?.firstFactorAttributes(for: authState.mode)
       .contains("phone_number") ?? false
   }
 
@@ -136,7 +136,7 @@ struct AuthStartView: View {
 
   func passkeyAutoFillFallbackIsEnabled(environment: Clerk.Environment?) -> Bool {
     #if os(iOS) && !targetEnvironment(macCatalyst)
-    let enabledAttributes = environment?.enabledFirstFactorAttributes ?? []
+    let enabledAttributes = environment?.firstFactorAttributes(for: authState.mode) ?? []
     return passkeySignInIsAvailable(environment: environment) &&
       !phoneNumberInputIsActive &&
       (enabledAttributes.contains("email_address") || enabledAttributes.contains("username"))

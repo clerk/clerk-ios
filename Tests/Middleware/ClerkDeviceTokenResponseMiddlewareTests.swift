@@ -1,4 +1,4 @@
-@testable import ClerkKit
+@_spi(FrameworkIntegration) @testable import ClerkKit
 import Foundation
 import Testing
 
@@ -29,20 +29,20 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
 
     try await middleware.validate(response, data: Data("{}".utf8), for: request)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "new-token")
+    #expect(clerk.deviceToken == "new-token")
   }
 
   @Test
   func lateResponseCannotRestoreTokenAfterNewerClear() async throws {
     configureClerkForTesting()
     let keychain = InMemoryKeychain()
-    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
+    try clerk.seedIdentity(deviceToken: "current-token")
     clerk.client = Client.mock
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let url = try #require(URL(string: "https://example.com/v1/client"))
@@ -75,7 +75,7 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     ))
     try await middleware.validate(olderResponse, data: responseData, for: olderRequest)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == nil)
+    #expect(clerk.deviceToken == nil)
     #expect(clerk.client == nil)
   }
 
@@ -83,13 +83,13 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
   func staleDeviceTokenGenerationCannotUpdateToken() async throws {
     configureClerkForTesting()
     let keychain = InMemoryKeychain()
-    try keychain.set("current-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: clerk.dependencies.apiClient,
       keychain: keychain,
       telemetryCollector: clerk.dependencies.telemetryCollector
     )
+    try clerk.seedIdentity(deviceToken: "current-token")
     let middleware = ClerkClientSyncResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
     let url = try #require(URL(string: "https://example.com/v1/client/sessions"))
     let response = try #require(HTTPURLResponse(
@@ -102,9 +102,9 @@ struct ClerkDeviceTokenResponseMiddlewareTests {
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
     request.setClerkRequestSequence(1)
 
-    clerk.identityController.clearCachedClientStateAfterDeviceTokenChange()
+    clerk.identityController.fenceClientResponses()
     try await middleware.validate(response, data: Data("{}".utf8), for: request)
 
-    #expect(try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == "current-token")
+    #expect(clerk.deviceToken == "current-token")
   }
 }

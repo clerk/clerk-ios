@@ -13,7 +13,6 @@ enum LocaleUtils {
       return first
     }
 
-    // Fallback: construct from current locale components
     let locale = Locale.current
     let languageCode = locale.language.languageCode ?? "en"
     if let region = locale.region?.identifier, !region.isEmpty {

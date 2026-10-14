@@ -14,9 +14,7 @@ import SwiftUI
 /// `design` tokens. Apply it with `.environment(\.clerkTheme, ...)` on your root
 /// view, or override individual properties such as
 /// `.environment(\.clerkTheme.colors.primary, ...)` for more targeted changes.
-@MainActor
-@Observable
-public class ClerkTheme {
+public struct ClerkTheme: Sendable {
   /// Color tokens used throughout ClerkKitUI components.
   public var colors: Colors
 

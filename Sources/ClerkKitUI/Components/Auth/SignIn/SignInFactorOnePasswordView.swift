@@ -83,8 +83,8 @@ struct SignInFactorOnePasswordView: View {
         .padding(.bottom, 16)
 
         SignInPasswordActionsView(
-          onUseAnotherMethod: showOtherMethods,
-          onForgotPassword: showPasswordReset
+          onUseAnotherMethod: useAnotherMethodAction,
+          onForgotPassword: forgotPasswordAction
         )
         .padding(.bottom, 32)
 
@@ -100,6 +100,24 @@ struct SignInFactorOnePasswordView: View {
 }
 
 extension SignInFactorOnePasswordView {
+  var showsOtherMethods: Bool {
+    SignInFactorMode.firstFactor.showsUseAnotherMethod(
+      signIn: signIn,
+      currentFactor: factor,
+      socialProviders: clerk.environment?.authenticatableSocialProviders ?? []
+    )
+  }
+
+  var useAnotherMethodAction: (() -> Void)? {
+    guard showsOtherMethods else { return nil }
+    return { showOtherMethods() }
+  }
+
+  var forgotPasswordAction: (() -> Void)? {
+    guard signIn?.resetPasswordFactor != nil || showsOtherMethods else { return nil }
+    return { showPasswordReset() }
+  }
+
   func showOtherMethods() {
     navigation.path.append(
       AuthView.Destination.signInFactorOneUseAnotherMethod(currentFactor: factor)

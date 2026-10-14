@@ -11,10 +11,10 @@ import Foundation
 /// organization-scoped operations.
 @MainActor
 public struct Organizations {
-  private let organizationService: OrganizationServiceProtocol
+  private let transport: any APITransport
 
-  init(organizationService: OrganizationServiceProtocol) {
-    self.organizationService = organizationService
+  init(transport: any APITransport) {
+    self.transport = transport
   }
 
   /// Creates an organization and makes the current user its administrator.
@@ -25,7 +25,7 @@ public struct Organizations {
   /// - Returns: The newly created ``Organization``.
   @discardableResult
   public func create(name: String, slug: String? = nil) async throws -> Organization {
-    try await organizationService.createOrganization(name: name, slug: slug)
+    try await transport.send(OrganizationAPI.create(name: name, slug: slug)).value.response
   }
 
   /// Retrieves an organization by its ID.
@@ -33,6 +33,6 @@ public struct Organizations {
   /// - Parameter id: The organization ID.
   /// - Returns: The requested ``Organization``.
   public func get(id: String) async throws -> Organization {
-    try await organizationService.getOrganization(organizationId: id)
+    try await transport.send(OrganizationAPI.get(organizationId: id)).value.response
   }
 }

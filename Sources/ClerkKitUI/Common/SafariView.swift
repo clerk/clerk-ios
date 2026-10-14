@@ -18,9 +18,7 @@ struct SafariView: UIViewControllerRepresentable {
     SFSafariViewController(url: url)
   }
 
-  func updateUIViewController(_: SFSafariViewController, context _: Context) {
-    // No updates needed as URL doesn't change after creation
-  }
+  func updateUIViewController(_: SFSafariViewController, context _: Context) {}
 }
 
 #elseif os(macOS)

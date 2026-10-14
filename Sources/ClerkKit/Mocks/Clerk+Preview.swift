@@ -41,7 +41,7 @@ public final class PreviewBuilder {
   /// ```
   public var client: Client?
 
-  package var services: MockServicesBuilder = .init()
+  package var transport = FakeTransport.mockDefaults()
 
   /// Creates a new preview builder.
   public init() {}
@@ -54,7 +54,7 @@ extension Clerk {
   /// It automatically configures all async operations to return mock values immediately,
   /// and allows you to configure whether the user is signed in.
   ///
-  /// Advanced service customization is available only within this package.
+  /// Stubbing individual endpoints is available only within this package.
   ///
   /// **Environment Loading:**
   /// This method automatically looks for a `ClerkEnvironment.json` file in the main bundle.
@@ -103,50 +103,36 @@ extension Clerk {
   public static func preview(
     preview: ((PreviewBuilder) -> Void)? = nil
   ) -> Clerk {
-    // Check if running in SwiftUI preview
     guard EnvironmentDetection.isRunningInPreviews else {
       return Clerk.shared
     }
 
-    // Configure Clerk.shared if not already configured
     let clerk = Clerk.configure(publishableKey: "pk_test_bW9jay5jbGVyay5hY2NvdW50cy5kZXYk")
 
-    // Create a minimal API client (won't be used if services are mocked)
+    // Requests go through the preview transport; this client only satisfies the container.
     let mockBaseURL = URL(string: "https://mock.clerk.accounts.dev")!
     let mockAPIClient = APIClient(baseURL: mockBaseURL, runtimeScope: clerk.runtimeScope)
 
-    // Create preview builder and apply closure
     let previewBuilder = PreviewBuilder()
     preview?(previewBuilder)
 
-    // Determine environment and client
     let loadedEnvironment = loadEnvironmentFromBundle()
     let mockEnvironment = previewBuilder.environment ?? loadedEnvironment ?? .mock
     let mockClient = previewBuilder.client ?? (previewBuilder.isSignedIn ? Client.mock : Client.mockSignedOut)
 
-    // Configure services to return builder values if no custom handler set
-    if previewBuilder.services.clientService.getHandler == nil {
-      previewBuilder.services.clientService.getHandler = { mockClient }
-    }
-    if previewBuilder.services.environmentService.getHandler == nil {
-      previewBuilder.services.environmentService.getHandler = { mockEnvironment }
-    }
+    previewBuilder.transport.fallback(ClientAPI.get(), returning: ClientResponse(response: mockClient, client: nil))
+    previewBuilder.transport.fallback(EnvironmentAPI.get(), returning: mockEnvironment)
 
-    // Create mock dependency container using services from builder
-    let container = createMockDependencyContainer(
+    clerk.dependencies = MockDependencyContainer(
       apiClient: mockAPIClient,
-      services: previewBuilder.services
+      transport: previewBuilder.transport
     )
-
-    // Replace dependencies with mock services
-    clerk.dependencies = container
     clerk.setClientFromIdentityController(mockClient)
     clerk.environment = mockEnvironment
 
     return clerk
   }
 
-  /// Loads the Clerk environment from ClerkEnvironment.json in the main bundle.
   @MainActor
   private static func loadEnvironmentFromBundle() -> Clerk.Environment? {
     guard let url = Bundle.main.url(forResource: "ClerkEnvironment", withExtension: "json"),
@@ -155,30 +141,5 @@ extension Clerk {
       return nil
     }
     return loadedEnvironment
-  }
-
-  /// Creates a mock dependency container with all mock services configured.
-  @MainActor
-  private static func createMockDependencyContainer(
-    apiClient: APIClient,
-    services: MockServicesBuilder
-  ) -> MockDependencyContainer {
-    // Use the services from the builder directly - this allows users to customize
-    // individual service behaviors (like adding delays for loading states).
-    MockDependencyContainer(
-      apiClient: apiClient,
-      clientService: services.clientService,
-      userService: services.userService,
-      signInService: services.signInService,
-      signUpService: services.signUpService,
-      sessionService: services.sessionService,
-      passkeyService: services.passkeyService,
-      organizationService: services.organizationService,
-      billingService: services.billingService,
-      environmentService: services.environmentService,
-      emailAddressService: services.emailAddressService,
-      phoneNumberService: services.phoneNumberService,
-      externalAccountService: services.externalAccountService
-    )
   }
 }

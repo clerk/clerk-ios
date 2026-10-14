@@ -65,7 +65,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       isSubmittingPhone = false
       isReservingForSecondFactor = false
     }
-    .sheet(isPresented: $addPhoneNumberIsPresented) {
+    .clerkSheet(isPresented: $addPhoneNumberIsPresented) {
       NavigationStack {
         ScrollView {
           SessionTaskAddPhoneForm(
@@ -84,7 +84,6 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       }
       .presentationBackground(theme.colors.background)
       .tint(theme.colors.primary)
-      .environment(clerk)
     }
   }
 

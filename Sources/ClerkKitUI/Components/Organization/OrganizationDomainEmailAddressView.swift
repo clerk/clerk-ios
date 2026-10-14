@@ -132,9 +132,11 @@ private struct OrganizationDomainEmailAddressField: View {
         .font(theme.fonts.caption)
         .foregroundStyle(theme.colors.mutedForeground)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityHidden(true)
 
       HStack(spacing: 0) {
         TextField("", text: $localPart)
+          .accessibilityLabel(Text(titleKey, bundle: .module))
           .textContentType(.emailAddress)
           #if os(iOS)
           .keyboardType(.emailAddress)

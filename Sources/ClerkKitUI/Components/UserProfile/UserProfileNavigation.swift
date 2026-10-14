@@ -8,23 +8,15 @@
 import Foundation
 import SwiftUI
 
-/// Manages presentation state for the user profile flow.
-///
-/// This class handles sheet presentation state for the user profile.
-/// It is injected into child views via the environment.
 @MainActor
 @Observable
 final class UserProfileSheetNavigation {
-  /// Whether the account switcher sheet is presented.
   var accountSwitcherIsPresented = false
 
-  /// Whether the auth view sheet is presented.
   var authViewIsPresented = false
 
-  /// Whether the MFA type chooser sheet is presented.
   var chooseMfaTypeIsPresented = false
 
-  /// The currently presented MFA add view type.
   var presentedAddMfaType: UserProfileAddMfaView.PresentedView?
 }
 
