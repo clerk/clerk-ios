@@ -55,11 +55,11 @@ describe('the clerk-ios host build', () => {
   });
 });
 
-describe('the clerk-ios golden specs', () => {
+describe('the clerk-ios committed specs', () => {
   const MFA: InstanceSettings = { config: { auth_multi_factor: { required_for_sign_up: true } }, environment: { 'user_settings.sign_up.mfa.required': true } };
   const FORCED_ORG: InstanceSettings = { config: { organization_settings: { force_organization_selection: true } }, environment: { 'organization_settings.force_organization_selection': true } };
-  const golden = resolveSpecs(PACKAGE_DIR, { all: true }).map((spec) => ({ spec, ...readSpecText(PACKAGE_DIR, spec.path) }));
-  const declarations = golden.map(({ spec, ...text }) => ({ path: spec.path, declared: declaredIn(text, spec.path) }));
+  const committed = resolveSpecs(PACKAGE_DIR, { all: true }).map((spec) => ({ spec, ...readSpecText(PACKAGE_DIR, spec.path) }));
+  const declarations = committed.map(({ spec, ...text }) => ({ path: spec.path, declared: declaredIn(text, spec.path) }));
   const declaredBy = (file: string) => declarations.find(({ path }) => path.endsWith(`/session-tasks/${file}`))?.declared;
 
   it('declare forced organization selection or required MFA at sign-up and nothing else', () => {
@@ -72,10 +72,10 @@ describe('the clerk-ios golden specs', () => {
   });
 
   it('plan from the standard settings into three groups, standard first, each asked for by its own first spec', () => {
-    const plan = planGroups(golden, STANDARD.key);
+    const plan = planGroups(committed, STANDARD.key);
     assert.equal(plan.length, 3);
     assert.equal(plan[0]!.settings, STANDARD);
-    assert.deepEqual(plan.flatMap((group) => group.specs.map((spec) => spec.path)).sort(), golden.map(({ spec }) => spec.path).sort(), 'every spec is in one group, once');
+    assert.deepEqual(plan.flatMap((group) => group.specs.map((spec) => spec.path)).sort(), committed.map(({ spec }) => spec.path).sort(), 'every spec is in one group, once');
     for (const group of plan.slice(1)) assert.equal(group.settings.askedBy, group.specs[0]!.path);
   });
 });

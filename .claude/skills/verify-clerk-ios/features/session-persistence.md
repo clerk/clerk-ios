@@ -18,7 +18,7 @@ Preconditions:
 - The spec seeds a `+clerk_test` user and signs in with a ticket on the home.
 
 - **Relaunch.** Run `e2e-tests/bin/control-clerk-ios run session-persistence`. The spec reads the session ID on the home (`e2e.auth.sessionId`), then launches again with `keepStorage: true` and no `signedInAs`. That launch kills the process and starts it with the same storage scope and no sign-in ticket. The spec waits for the home to show the same user, and expects the same session ID. Screenshot `relaunched`.
-- **Proof.** `specs/golden/session-persistence/relaunch.e2e.ts` passes. The video shows the home with the user, the app closing, and the home with the same user and session ID.
+- **Proof.** `specs/features/session-persistence/relaunch.e2e.ts` passes. The video shows the home with the user, the app closing, and the home with the same user and session ID.
 
 ## Gotchas
 

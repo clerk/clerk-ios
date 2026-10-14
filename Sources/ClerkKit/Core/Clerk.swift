@@ -259,7 +259,14 @@ public final class Clerk {
 extension Clerk {
   @MainActor
   func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
-    let runtime = try makeRuntime(publishableKey: publishableKey, options: options)
+    let runtime: ClerkRuntime
+    do {
+      runtime = try makeRuntime(publishableKey: publishableKey, options: options)
+    } catch {
+      // Release builds skip `configure`'s assertion, and no instance is installed to supply the app's logger yet.
+      ClerkLogger.logError(error, message: "Failed to configure Clerk", configuration: .init(options: options))
+      throw error
+    }
     self.runtime.stop()
     install(runtime)
   }

@@ -1,6 +1,6 @@
 ---
 name: verify-clerk-ios
-description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the golden regression specs.
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the e2e tests.
 ---
 
 # verify-clerk-ios
@@ -53,7 +53,7 @@ $ e2e-tests/bin/control-clerk-ios down  # ends the runner job
 
 The `backend` line says which backend the CLI chose and why. On a machine that is not a Mac, `up` needs no flag, and the `backend` line says why the local backend is out. `--backend local` or `--backend remote` on `doctor`, `up`, or `run` forces a backend, and a worktree that holds a lease keeps its backend until `down`. `--runner <label>` on `up` or `run` names another runner label for a new session.
 
-A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and the golden set to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
+A remote session runs on a free GitHub-hosted Mac, and that Mac is slow. Expect `up` to print the ready line 15 to 20 minutes after it starts, and `run --all` to take about five minutes. A session stops itself after 15 minutes without a call from the CLI and always after 60, and `down` stops it at once, so run `down` as soon as you are done. After an edit to the app, commit, push, and `run` again, and the same session builds the new commit. Specs run from your working tree, so an edit to a spec needs no commit. [Remote devices](references/remote.md) has what the machine needs, the runner labels, and the limits.
 
 ## Doctor
 
@@ -72,14 +72,14 @@ With the remote backend, plain `doctor` starts nothing, and `doctor --live` star
 Input reaches the app only through specs. A spec is a TypeScript file that uses the `host` fixture from `specs/fixtures.ts` and e2e's `screen` locators.
 
 ```console
-$ e2e-tests/bin/control-clerk-ios run auth-start                        # one feature: every spec in specs/golden/auth-start/
-$ e2e-tests/bin/control-clerk-ios run sign-up/complete                  # one golden spec
+$ e2e-tests/bin/control-clerk-ios run auth-start                        # one feature: every spec in specs/features/auth-start/
+$ e2e-tests/bin/control-clerk-ios run sign-up/complete                  # one spec
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts      # a spec you wrote
 $ e2e-tests/bin/control-clerk-ios run auth-start sign-up organizations  # several targets in one run, with one video
 $ e2e-tests/bin/control-clerk-ios screen                                # the UI tree that is on screen now; --png adds a screenshot
 ```
 
-`run --all` runs every golden spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free simulator and another `run` in this worktree that holds the device.
+`run --all` runs every committed spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a failed test again, up to `n` more times. The default is 0, so a run of your own change shows exactly what happened. The wait covers a free simulator and another `run` in this worktree that holds the device.
 
 ### Sign in with the form or with a ticket
 
@@ -121,13 +121,13 @@ A spec file that needs other settings than the standard ones declares them in a 
 
 ### Check your work
 
-Golden specs under `specs/golden/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the golden specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a golden spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
+The specs under `specs/features/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the committed specs to the release workflow (`.github/workflows/release-sdk.yml`), which runs every one of them before an SDK version is published. When your change is to behavior a committed spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing else runs them before the release. For new work:
 
 1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
 2. Run it by path.
 3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique.
 4. Fix the locators from that output until the spec passes.
-5. When the change adds or changes what the SDK does, move the spec to `specs/golden/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a golden spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
+5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a committed spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
 
 A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
 
@@ -137,7 +137,7 @@ Right after `up` the app has no launch arguments, so `screen` shows the host's e
 
 ### Agent steps
 
-e2e has a built-in agent, which a test drives with `agent.act(...)` and `agent.assert(...)`. The CLI configures it only when the machine has a Vercel AI Gateway key. The model is `anthropic/claude-haiku-5.5`, and `openai/gpt-6-luna-fast` is the gateway's backup. Supply the key in `AI_GATEWAY_API_KEY_FILE`, a file that only you can read, or in `AI_GATEWAY_API_KEY`. The `agent` line of `doctor` shows the model and where the key came from. Committed golden specs do not use agent steps.
+e2e has a built-in agent, which a test drives with `agent.act(...)` and `agent.assert(...)`. The CLI configures it only when the machine has a Vercel AI Gateway key. The model is `anthropic/claude-haiku-5.5`, and `openai/gpt-6-luna-fast` is the gateway's backup. Supply the key in `AI_GATEWAY_API_KEY_FILE`, a file that only you can read, or in `AI_GATEWAY_API_KEY`. The `agent` line of `doctor` shows the model and where the key came from. Committed specs do not use agent steps.
 
 ## Evidence
 
@@ -184,17 +184,17 @@ The first `attach` adds the block after the description. A later `attach` replac
 
 On a machine whose `gh` can attach, `attach` edits the description itself and prints `posted`. That needs gh 2.99.0 or newer, whose `gh pr edit` has `--attach`. It reads the description first. When the description already holds the block that this `attach` would write, it uploads nothing and prints `already posted`. When the block there is of another run or another choice of files, or there is none, it uploads the files and writes the block.
 
-`attach` always tries `gh pr edit --attach` itself first, on every kind of machine, and hands off only when that cannot work. On a machine whose `gh` cannot attach, such as a cloud sandbox, it hands the files of a remote run to the session's runner and prints `handed off`. With `--before`, the files of the before run go with them, from that run's directory in this checkout. Run it before `down`. The evidence reaches the description after `down` ends the session, when the `verify-attach` workflow publishes it, in the same tables. Its line says that the session reported the result, links the session's run, and names the account that started the session and the commit the run was made at. With `--before`, the line says that the session reports the before run, and it links that run's commit. That workflow publishes only to the open pull request of the session's branch, and only when the commit the session started on and the commit of the run are both commits of that pull request. The commit of the before run must be the commit of the run or a commit before it in its history, such as the one the branch started from. So open the pull request before `up`. A later push does not lose the evidence: the line then says that the pull request has newer commits. To show the newer commit, `run` and `attach` again, which replaces the block. `attach` checks the pull request first, and fails with the reason when the workflow would refuse it.
+`attach` always tries `gh pr edit --attach` itself first, on every kind of machine, and hands off only when that cannot work. On a machine whose `gh` cannot attach, such as a cloud sandbox, it hands the files of a remote run to the session's runner and prints `handed off`. With `--before`, the files of the before run go with them, from that run's directory in this checkout. Run it before `down`. The evidence reaches the description after `down` ends the session, when the `verify-attach` workflow publishes it, in the same tables. Its line says that the session reported the result, links the session's run, and names the account that started the session and the commit the run was made at. With `--before`, the line says that the session reports the before run, and it links that run's commit. That workflow publishes only to the open pull request of the session's branch, and only when the commit of the run is a commit of that pull request. The commit the session started on must be one too, or a commit that the base branch holds, such as the one the branch came from. The commit of the before run must be the commit of the run or a commit before it in its history. A later push does not lose the evidence: the line then says that the pull request has newer commits. To show the newer commit, `run` and `attach` again, which replaces the block. `attach` checks the pull request first, and fails with the reason when the workflow would refuse it.
 
 When this machine cannot attach and there is no session to hand the files to, or the hand-off fails, `attach` fails and says which. Then name the run id in the PR and say that the evidence was not attached. A run on a local simulator has no session, so its fix is a newer `gh`. [Remote devices](references/remote.md) has what the repository needs before a hand-off can be published, and its limits.
 
 `attach` writes only to an open pull request, and fails on one that is closed or merged. It refuses a run that is tainted, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create. A before run can have failing specs. `attach` refuses a before run that is tainted, that was never sealed, or whose `app.log` names a user that the run did not create.
 
-Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other golden specs too, cite that run's id in the PR.
+Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other committed specs too, cite that run's id in the PR.
 
-On a local simulator, work in this order: `run` the spec on the build without your change when the change is to something that exists, make the change, commit, `run` the spec, `git push`, open the pull request, `attach`, then `down`. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
+Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach` with the before run as `--before <run-id>`, `down`. Open the pull request after the last run, so that it is not left open without its evidence. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
 
-On a remote session, make the before run before you push the change. A session builds the commit it was started on and later commits of the branch, and never an earlier one. When the branch has a pushed commit that does not hold the change, such as the commit that adds the spec, one session does both runs: open the pull request, `up`, `run` the spec, push the change, `run` the spec again, `attach` with `--before`, then `down`. When the change is the only commit, it takes two sessions, because the workflow publishes only for a session that started on a commit of the pull request: push the branch, `up`, `run` the spec, `down`, push the change, open the pull request, `up`, `run` the spec again, `attach` with `--before`, then `down`.
+On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
 
 ## Cleanup
 
