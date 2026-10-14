@@ -138,9 +138,11 @@ describe('the nightly checks', () => {
   const job = (name: string): string => nightly.split(/\n(?= {2}[\w-]+:\n)/).find((text) => text.startsWith(`  ${name}:\n`)) ?? '';
 
   function runs(name: string, context: { event: string; repository?: string; checks?: string; stopped?: boolean }): boolean {
-    const condition = (/^ {4}if: >-\n((?: {6}.+\n)+)/m.exec(job(name))?.[1] ?? /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true').replace(/\s+/g, ' ').trim();
+    const written = (/^ {4}if: >-\n((?: {6}.+\n)+)/m.exec(job(name))?.[1] ?? /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true').replace(/\s+/g, ' ').trim();
+    const condition = /\b(?:always|success|failure|cancelled)\(\)/.test(written) ? written : `success() && (${written})`;
     const expression = condition
       .replaceAll('always()', 'true')
+      .replaceAll('success()', String((context.checks ?? 'success') === 'success' && !context.stopped))
       .replaceAll('cancelled()', String(context.stopped ?? false))
       .replace(/contains\(needs\.\*\.result, '(\w+)'\)/g, (_, result: string) => String(result === (context.checks ?? 'success')))
       .replaceAll('github.event_name', JSON.stringify(context.event))
