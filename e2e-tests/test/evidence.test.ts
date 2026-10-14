@@ -224,6 +224,13 @@ describe('the evidence block of a pull request description', () => {
     assert.deepEqual(withEvidenceBlock(notes, 'ios', block), { ok: false, why: `has text between \`${start}\` and \`${end}\` that is not an evidence block`, fix: 'leave one pair of those markers in the description, or none' });
   });
 
+  it('writes the block in place of an empty pair of markers, so a description may say where the block goes', () => {
+    const { start, end } = evidenceMarkers('ios');
+    assert.deepEqual(withEvidenceBlock(`## Verification\n\n${start}\n\n${end}\n\n## Notes\n`, 'ios', block), { ok: true, body: `## Verification\n\n${block}\n\n## Notes\n`, was: 'replaced' });
+    assert.deepEqual(withEvidenceBlock(`intro\r\n${start}\r\n \t\r\n${end}\r\noutro`, 'ios', block), { ok: true, body: `intro\r\n${block.replaceAll('\n', '\r\n')}\r\noutro`, was: 'replaced' });
+    assert.deepEqual(withEvidenceBlock(`${start}\n${end}`, 'ios', block), { ok: true, body: block, was: 'replaced' });
+  });
+
   it('takes no marker from inside a code fence, so a description may show a whole example block', () => {
     const example = evidenceBlock({ ...summary, run: 'r20261007-010101-aaaa' as RunId }, null, media);
     const later = evidenceBlock({ ...summary, run: 'r20261009-020202-bbbb' as RunId }, null, media);
