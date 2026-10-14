@@ -1,4 +1,5 @@
 import { test, expect } from '../../fixtures.ts';
+import { asShownByClerk } from '../../phone.ts';
 
 test('the home UserButton opens the profile of the signed-in user', async ({ host, screen }) => {
   const user = await host.seedUser();
@@ -10,6 +11,30 @@ test('the home UserButton opens the profile of the signed-in user', async ({ hos
   await host.tap(screen.getByTestId('clerk.userProfile.row.manageAccount'));
   await expect(screen.getByText(user.email)).toBeVisible({ timeout: 20_000 });
   await host.screenshot('profile');
+});
+
+test('Manage account and Security open from the profile, and back returns to it from each', async ({ host, screen, device }) => {
+  const user = await host.seedUser({ phone: true });
+  await host.launch({ signedInAs: user });
+  await host.tap(screen.getByTestId('clerk.userButton.profile'));
+  const profileRoot = screen.getByRole('button', { name: 'Edit profile' });
+  await expect(profileRoot).toBeVisible({ timeout: 20_000 });
+  await host.screenshot('profile-before-sections');
+  await host.tap(screen.getByTestId('clerk.userProfile.row.manageAccount'));
+  await expect(screen.getByText(user.email)).toBeVisible({ timeout: 20_000 });
+  await expect(screen.getByText('PHONE NUMBERS')).toBeVisible();
+  await expect(screen.getByText(asShownByClerk(user.phone!))).toBeVisible();
+  await expect(screen.getByText('CONNECTED ACCOUNTS')).toBeVisible();
+  await host.screenshot('manage-account-sections');
+  await device.back();
+  await expect(profileRoot).toBeVisible({ timeout: 20_000 });
+  await host.tap(screen.getByTestId('clerk.userProfile.row.security'));
+  const activeDevices = screen.getByText('ACTIVE DEVICES');
+  await expect(activeDevices).toBeVisible({ timeout: 20_000 });
+  await device.back();
+  await expect(profileRoot).toBeVisible({ timeout: 20_000 });
+  await expect(activeDevices).toHaveCount(0);
+  await host.screenshot('profile-after-back');
 });
 
 test('the Add account row opens sign-in for a second account', async ({ host, screen }) => {

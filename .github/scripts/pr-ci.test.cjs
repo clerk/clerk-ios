@@ -18,7 +18,7 @@ function harness() {
     pr: {
       number: 610, state: 'open', draft: false, user: MEMBER, author_association: 'MEMBER',
       head: { sha: SHA, repo: { full_name: 'clerk/clerk-ios' } },
-      base: { repo: { full_name: 'clerk/clerk-ios' } },
+      base: { ref: 'main', repo: { full_name: 'clerk/clerk-ios' } },
     },
     comments: [{ id: 1, user: ACTIONS, body: INSTRUCTIONS }],
     // Pages of review threads, as returned by GraphQL.
@@ -234,6 +234,13 @@ test('fork authored by a Clerk member uses the fork repository and exact reviewe
   assert.equal(result.head_repository, 'member/clerk-ios');
   assert.equal(result.head_sha, SHA);
   assert.equal(result.should_run, 'true');
+});
+
+test('a PR stacked on another branch gives that branch as the base to diff against', async () => {
+  const h = harness();
+  h.state.pr.base.ref = 'mike/parent';
+  const result = await h.evaluate();
+  assert.deepEqual([result.should_run, result.base_ref], ['true', 'mike/parent']);
 });
 
 test('marking a reviewed draft ready evaluates the existing clean review', async () => {

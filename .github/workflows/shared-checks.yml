@@ -38,6 +38,16 @@ on:
         required: false
         type: string
         default: Manual CI
+      build_platforms:
+        description: JSON array of the platforms to build ClerkKit for
+        required: false
+        type: string
+        default: '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]'
+      e2e_runner_tests_base:
+        description: Base branch of the PR; the E2E runner tests skip when no file they read changed since it
+        required: false
+        type: string
+        default: ""
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -62,6 +72,7 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
+          BUILD_PLATFORMS: ${{ inputs.build_platforms }}
         run: |
           set -euo pipefail
 
@@ -74,14 +85,11 @@ jobs:
             "$CHECK_RUN_NAME_PREFIX / Check formatting and linting"
             "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS"
             "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS"
-            "$CHECK_RUN_NAME_PREFIX / Build iOS"
-            "$CHECK_RUN_NAME_PREFIX / Build macOS"
-            "$CHECK_RUN_NAME_PREFIX / Build macCatalyst"
-            "$CHECK_RUN_NAME_PREFIX / Build watchOS"
-            "$CHECK_RUN_NAME_PREFIX / Build tvOS"
-            "$CHECK_RUN_NAME_PREFIX / Build visionOS"
             "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests"
           )
+          while IFS= read -r platform; do
+            check_run_names+=("$CHECK_RUN_NAME_PREFIX / Build $platform")
+          done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")
 
           check_runs_json="$(jq -cn '{}')"
           started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -230,7 +238,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]
+        platform: ${{ fromJSON(inputs.build_platforms) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -263,6 +271,20 @@ jobs:
     name: Run E2E runner tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      WATCHED: >-
+        e2e-tests
+        .github/scripts
+        .github/workflows/checks.yml
+        .github/workflows/nightly-checks.yml
+        .github/workflows/release-sdk.yml
+        .github/workflows/run-pr-ci.yml
+        .github/workflows/shared-checks.yml
+        .github/workflows/verify-app-cache.yml
+        .github/workflows/verify-attach.yml
+        .github/workflows/verify-e2e.yml
+        .github/workflows/verify-remote.yml
+        Examples/Quickstart/Quickstart.xcodeproj/project.pbxproj
     defaults:
       run:
         working-directory: e2e-tests
@@ -272,23 +294,49 @@ jobs:
         with:
           repository: ${{ inputs.checkout_repository || github.repository }}
           ref: ${{ inputs.checkout_ref || github.sha }}
+          fetch-depth: ${{ inputs.e2e_runner_tests_base == '' && 1 || 0 }}
           persist-credentials: false
 
+      - name: Check whether a file the tests read changed
+        id: changed
+        working-directory: .
+        env:
+          BASE: ${{ inputs.e2e_runner_tests_base }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$BASE" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch --no-tags --quiet "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "$BASE"
+          if git diff --quiet "$(git merge-base FETCH_HEAD HEAD)" HEAD -- $WATCHED; then
+            echo "::notice::No file the E2E runner tests read changed since $BASE, so they are skipped."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Node
+        if: steps.changed.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
       - name: Install dependencies
+        if: steps.changed.outputs.run == 'true'
         run: npm ci
 
       - name: Run unit tests
+        if: steps.changed.outputs.run == 'true'
         run: npm test
 
       - name: Typecheck
+        if: steps.changed.outputs.run == 'true'
         run: npm run typecheck
 
       - name: Run the tests of the scripts in .github/scripts
+        if: steps.changed.outputs.run == 'true'
         run: node --test ../.github/scripts/*.test.mjs
 
   report-manual-ci-check-runs:
@@ -312,6 +360,7 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUNS_JSON: ${{ needs.prepare-manual-ci-check-runs.outputs.check_runs_json }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
+          BUILD_PLATFORMS: ${{ inputs.build_platforms }}
         run: |
           set -euo pipefail
 
@@ -378,11 +427,8 @@ jobs:
           update_check_run "$CHECK_RUN_NAME_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
-
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build iOS" "$(job_result "Build iOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macOS" "$(job_result "Build macOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macCatalyst" "$(job_result "Build macCatalyst")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests" "$(job_result "Run E2E runner tests")"
+
+          while IFS= read -r platform; do
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Build $platform" "$(job_result "Build $platform")"
+          done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")
