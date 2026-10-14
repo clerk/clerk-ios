@@ -252,10 +252,13 @@ jobs:
         id: report
         if: steps.device.outputs.udid != ''
         run: |
-          for _ in $(seq 1 600); do
+          for _ in $(seq 1 1500); do
             pgrep -f 'session-build.ts build' > /dev/null || break
             sleep 1
           done
+          if pgrep -f 'session-build.ts build' > /dev/null; then
+            echo "::warning title=verify::a build was still running after 25 minutes, so nothing it builds is stored"
+          fi
           node "$SESSION_BUILD" outcome "$VERIFY_SESSION_WORK"
           node "$SESSION_BUILD" stages "$VERIFY_SESSION_WORK"
 
