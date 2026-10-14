@@ -44,7 +44,7 @@ on:
         type: string
         default: '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]'
       e2e_runner_tests_base:
-        description: Branch to diff against; the E2E runner tests skip when no file they read changed since it
+        description: Base branch of the PR; the E2E runner tests skip when no file they read changed since it
         required: false
         type: string
         default: ""

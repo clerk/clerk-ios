@@ -29,6 +29,7 @@ jobs:
     outputs:
       manual_check_run_id: ${{ steps.resolve.outputs.manual_check_run_id }}
       should_run: ${{ steps.resolve.outputs.should_run }}
+      base_ref: ${{ steps.resolve.outputs.base_ref }}
       head_repository: ${{ steps.resolve.outputs.head_repository }}
       head_sha: ${{ steps.resolve.outputs.head_sha }}
     steps:
@@ -66,7 +67,7 @@ jobs:
       check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       check_run_name_prefix: Manual CI
       build_platforms: '["iOS", "macOS"]'
-      e2e_runner_tests_base: ${{ github.event.repository.default_branch }}
+      e2e_runner_tests_base: ${{ needs.resolve-pr-ci-request.outputs.base_ref }}
 
   report-pr-ci-status:
     name: Report PR CI status

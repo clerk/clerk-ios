@@ -234,16 +234,21 @@ describe('the E2E runner tests', () => {
     git(cwd, 'commit', '-q', '-m', file);
   };
 
-  function ran(base: string, changed: string): string {
+  function ran(base: string, changed: string, stackedOn?: string): string {
     const server = mkdtempSync(join(tmpdir(), 'e2e-runner-tests-'));
     const upstream = join(server, 'clerk', 'clerk-ios.git');
     mkdirSync(upstream, { recursive: true });
     git(upstream, 'init', '-q');
     for (const file of ['Sources/ClerkKit/Clerk.swift', 'e2e-tests/src/cli.ts', '.github/workflows/verify-remote.yml']) change(upstream, file, 'one\n');
+    if (stackedOn) {
+      git(upstream, 'switch', '-q', '-c', stackedOn);
+      change(upstream, changed, 'changed by the parent pull request\n');
+      git(upstream, 'switch', '-q', 'main');
+    }
     const pr = join(server, 'pr');
     git(server, 'clone', '-q', upstream, pr);
-    git(pr, 'switch', '-q', '-c', 'pr');
-    change(pr, changed, 'two\n');
+    git(pr, 'switch', '-q', '-c', 'pr', stackedOn ? `origin/${stackedOn}` : 'HEAD');
+    change(pr, changed, stackedOn ? 'one\n' : 'two\n');
     change(upstream, 'e2e-tests/src/cli.ts', 'changed on main after the pull request branched\n');
     writeFileSync(join(server, 'output'), '');
     const checked = spawnSync('bash', ['-c', script('Check whether a file the tests read changed')], {
@@ -266,11 +271,15 @@ describe('the E2E runner tests', () => {
     assert.deepEqual([ran('main', 'e2e-tests/src/cli.ts'), ran('main', '.github/workflows/verify-remote.yml')], ['run=true\n', 'run=true\n']);
   });
 
+  it('run on a stacked pull request that undoes the change of its parent to a file they read, which a diff against main misses', () => {
+    assert.deepEqual([ran('mike/parent', 'e2e-tests/src/cli.ts', 'mike/parent'), ran('main', 'e2e-tests/src/cli.ts', 'mike/parent')], ['run=true\n', '']);
+  });
+
   it('run in full when no branch is given to diff against, and only PR CI gives one', () => {
     assert.equal(ran('', 'Sources/ClerkKit/Clerk.swift'), 'run=true\n');
     assert.deepEqual(
       ['run-pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'e2e_runner_tests_base')),
-      ['${{ github.event.repository.default_branch }}', undefined, undefined, undefined],
+      ['${{ needs.resolve-pr-ci-request.outputs.base_ref }}', undefined, undefined, undefined],
     );
   });
 
