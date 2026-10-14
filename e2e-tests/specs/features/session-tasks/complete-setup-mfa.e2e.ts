@@ -22,7 +22,7 @@ test('enrolls an authenticator app to finish the setup-MFA task', async ({ host,
   await host.tap(host.app.signInFullScreen);
   await expect(authenticatorApp).toBeVisible({ timeout: 20_000 });
   await expect(screen.getByTestId('clerk.auth.sessionTask.setupMfa.smsCode')).toBeVisible();
-  await host.screenshot('session-task');
+  await host.screenshot('session-task-before-totp');
   await host.tap(authenticatorApp);
   const secret = screen.getByTestId('clerk.auth.sessionTask.totp.secret');
   await expect(secret).toBeVisible({ timeout: 20_000 });
