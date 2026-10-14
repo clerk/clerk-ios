@@ -423,7 +423,7 @@ export interface DeviceBackend<L extends Lease = Lease> {
   availability(): Availability;
   sourceCommit?(input: { readonly worktree: string; readonly inputs: readonly string[] }): Promise<SessionSource>;
   acquire(request: AcquireRequest): Promise<L>;
-  check(lease: L): Promise<'held' | 'lost' | 'expiring'>;
+  check(lease: L): Promise<'held' | 'lost' | 'expiring' | 'other-app'>;
   install(lease: L, app: BuiltApp, progress: (line: string) => void): Promise<L>;
   release(lease: L): Promise<void>;
   reapable(owner?: string): Promise<readonly L[]>;

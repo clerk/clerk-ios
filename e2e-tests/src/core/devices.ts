@@ -184,7 +184,7 @@ export async function ensureLease(
 
   let lease: Lease | null = held;
   let renewed = false;
-  if (lease !== null && state !== 'held') {
+  if (lease !== null && (state === 'lost' || state === 'expiring')) {
     options.progress(`${(state === 'expiring' ? 'ending' : 'lost').padEnd(7)} ${backend.describe(lease)}  renewing`);
     await releaseLease(workspace, backend, lease);
     lease = null;
@@ -212,7 +212,7 @@ export async function ensureLease(
   }
 
   const sessionHasOtherSource = app.source === 'github-actions' && lease.backend === 'remote' && (lease.builtSha !== app.sourceSha || lease.builtPatch !== (app.patch?.sha256 ?? null));
-  if (lease.installedBuild !== app.key || sessionHasOtherSource) {
+  if (lease.installedBuild !== app.key || sessionHasOtherSource || state === 'other-app') {
     const target = lease;
     options.progress(`install ${app.key}  on ${backend.describe(target)}`);
     const wait = {

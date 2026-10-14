@@ -20,7 +20,7 @@ function setup() {
   const progress: string[] = [];
   const finished: string[] = [];
   let sha = 'a'.repeat(40);
-  let health: 'held' | 'lost' = 'held';
+  let health: 'held' | 'lost' | 'other-app' = 'held';
   let pushed = true;
   let stuck = false;
   let patch: string | null = null;
@@ -46,6 +46,7 @@ function setup() {
     async install(held: RemoteLease, app: BuiltApp): Promise<RemoteLease> {
       const sent = app.source === 'local' ? null : app.patch?.sha256 ?? null;
       events.push(`install ${held.session} sha=${shaOf(app)?.slice(0, 1)}${sent === null ? '' : ` patch=${sent}`}`);
+      if (health === 'other-app') health = 'held';
       return { ...held, builtSha: shaOf(app), builtPatch: sent };
     },
     async release(held: RemoteLease) {
@@ -81,7 +82,7 @@ function setup() {
     sha = newSha.repeat(40);
     patch = uncommitted;
   };
-  return { deps, events, progress, edit, commit: (newSha: string) => (sha = newSha.repeat(40)), lose: () => (health = 'lost'), unpush: () => (pushed = false), stick: () => (stuck = true), finished, inputsAskedFor };
+  return { deps, events, progress, edit, commit: (newSha: string) => (sha = newSha.repeat(40)), lose: () => (health = 'lost'), cutShort: () => (health = 'other-app'), unpush: () => (pushed = false), stick: () => (stuck = true), finished, inputsAskedFor };
 }
 
 describe('lease flow with a backend that builds the app', () => {
@@ -120,6 +121,18 @@ describe('lease flow with a backend that builds the app', () => {
     assert.deepEqual(events.slice(2), ['install s1 sha=a patch=p1', 'install s1 sha=b']);
     const held = deps.workspace.readLease('ios') as RemoteLease;
     assert.deepEqual([held.builtSha, held.builtPatch], ['b'.repeat(40), null]);
+  });
+
+  it('installs on the held session what the tree needs when the session holds a build the lease does not name, as after an install that was cut short', async () => {
+    const { deps, events, progress, cutShort } = setup();
+    await up(deps, { verb: 'up', waitSeconds: 0 });
+    cutShort();
+    const result = await up(deps, { verb: 'up', waitSeconds: 0 });
+    assert.deepEqual(events.slice(2), ['install s1 sha=a']);
+    assert.equal(result.leases[0]!.renewed, false);
+    assert.ok(progress.includes(`build   ${result.builds[0]!.key}  github-actions  commit ${'a'.repeat(12)}  the session builds it`), progress.join('\n'));
+    const held = deps.workspace.readLease('ios') as RemoteLease;
+    assert.deepEqual([held.session, held.builtSha, held.builtPatch], ['s1', 'a'.repeat(40), null]);
   });
 
   it('leases a new session when the held one has stopped itself', async () => {

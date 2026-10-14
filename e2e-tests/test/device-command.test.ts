@@ -100,6 +100,34 @@ describe('a session started from another core', () => {
   });
 });
 
+describe('a held session whose build is not the one the lease names', () => {
+  const sha = 'a'.repeat(40);
+  const patch = 'c'.repeat(64);
+  const backend = () =>
+    remoteBackend(
+      { platform: 'ios', repo: 'clerk/clerk-ios', workflow: 'verify-remote.yml', sessionsDir: mkdtempSync(join(tmpdir(), 'verify-check-')), runner: 'xcode-27', plumbingRunner: 'ubuntu-latest', device: 'iPhone Air', idleMinutes: 15, capMinutes: 60, requirement: '' },
+      { env: {}, runner: run, github: async () => assert.fail('a session that answers is not looked up at GitHub') },
+    );
+  const checked = (build: SessionHealth['build'], lease: Partial<RemoteLease>) => {
+    tunnel(() => ({ status: 200, body: { core: coreVersion(), device: { id: 'UDID', name: 'iPhone Air', ready: true }, daemon: true, build, capAt: '', ending: null } satisfies SessionHealth }));
+    return backend().check({ ...remoteLease('ios'), ...lease });
+  };
+
+  it('is held only while the session last built, and finished, the commit and the changes the lease names', async () => {
+    const onCommit = { builtSha: sha, builtPatch: null };
+    const answers: readonly (readonly [string, SessionHealth['build'], Partial<RemoteLease>, string])[] = [
+      ['the build the lease names', { state: 'built', sha, patch: null, seconds: 9, incremental: true }, onCommit, 'held'],
+      ['the changes of an install that was cut short, built', { state: 'built', sha, patch, seconds: 9, incremental: true }, onCommit, 'other-app'],
+      ['the changes of an install that was cut short, still building', { state: 'building', sha, patch, seconds: 9 }, onCommit, 'other-app'],
+      ['the commit the lease names, failed after the changes were built', { state: 'failed', sha, patch: null, seconds: 9, tail: 'error' }, onCommit, 'other-app'],
+      ['another commit', { state: 'built', sha: 'b'.repeat(40), patch: null, seconds: 9, incremental: true }, onCommit, 'other-app'],
+      ['the commit, when the lease names changes on it', { state: 'built', sha, patch: null, seconds: 9, incremental: true }, { builtSha: sha, builtPatch: patch }, 'other-app'],
+      ['anything, when the lease names no build yet', { state: 'built', sha, patch, seconds: 9, incremental: false }, {}, 'held'],
+    ];
+    for (const [what, build, lease, state] of answers) assert.equal(await checked(build, lease), state, what);
+  });
+});
+
 describe('acquiring a session whose agent has another core', () => {
   it('asks that session to stop through its tunnel and keeps no lease or token', async () => {
     const sessionsDir = mkdtempSync(join(tmpdir(), 'verify-acquire-'));

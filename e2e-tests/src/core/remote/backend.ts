@@ -203,7 +203,9 @@ export function remoteBackend(settings: RemoteSettings, deps: RemoteDeps = { env
       }
       if (health.ending !== null) return 'lost';
       assertSameCore(health);
-      return Date.parse(lease.expiresAt) - Date.now() < EXPIRING_MS ? 'expiring' : 'held';
+      if (Date.parse(lease.expiresAt) - Date.now() < EXPIRING_MS) return 'expiring';
+      const { build } = health;
+      return lease.builtSha === null || (build.state === 'built' && build.sha === lease.builtSha && build.patch === lease.builtPatch) ? 'held' : 'other-app';
     },
 
     async install(lease, app, progress) {
