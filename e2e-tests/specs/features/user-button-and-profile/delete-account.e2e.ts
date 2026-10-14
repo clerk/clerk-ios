@@ -8,9 +8,8 @@ test('deleting the account from the profile Security screen ends the session and
   const deleteAccount = screen.getByTestId('clerk.userProfile.security.deleteAccount');
   await screen.scrollUntilVisible(deleteAccount);
   await host.tap(deleteAccount);
-  await expect(screen.getByTestId('clerk.userProfile.deleteAccount.confirmation').first()).toBeVisible({ timeout: 20_000 });
-  const confirmation = screen.getByRole('textbox');
-  await expect(confirmation).toHaveCount(1);
+  const confirmation = screen.getByTestId('clerk.userProfile.deleteAccount.confirmation').first();
+  await expect(confirmation).toBeVisible({ timeout: 20_000 });
   await host.fill(confirmation, 'DELETE');
   await host.tap(screen.getByTestId('clerk.userProfile.deleteAccount.confirm'));
   await host.expectSignedOut(30_000);

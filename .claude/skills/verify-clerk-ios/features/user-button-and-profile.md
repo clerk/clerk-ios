@@ -32,7 +32,7 @@ Preconditions:
 ## Gotchas
 
 - A new application has reverification on, and the Platform API has no setting for it. Clerk accepts the deletion without another verification because the ticket sign-in happened seconds earlier. A spec that deletes the account long after its sign-in can be asked to verify again.
-- `clerk.userProfile.deleteAccount.confirmation` matches two nodes, because the field takes focus as the sheet opens: the floating label and the text box. Wait on `.first()`, then fill `screen.getByRole('textbox')`.
+- `clerk.userProfile.deleteAccount.confirmation` is the confirmation field, which takes focus as the sheet opens. Find it with `.first()`, wait for it to be visible, and fill that locator.
 - `Signed out` after a deletion looks the same as after a sign-out. The sign-in attempt with the deleted email is what shows that the account is gone. It needs `authMode: 'signIn'`, because the default mode would start a sign-up for an unknown email.
 - A seeded user has no name, so the profile header shows only the avatar and `Edit profile`. The email appears under `Manage account`.
 - The host shows a spinner while the ticket sign-in runs. `host.launch` returns once the home shows the user, and fails with the reason when the sign-in fails.
