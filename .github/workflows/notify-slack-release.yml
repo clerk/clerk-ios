@@ -13,7 +13,7 @@ on:
         type: string
         default: ""
       expo_bump_pr_url:
-        description: Optional @clerk/expo bump PR URL.
+        description: Optional @clerk/expo-native-components bump PR URL.
         required: false
         type: string
         default: ""
