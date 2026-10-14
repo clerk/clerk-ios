@@ -211,7 +211,8 @@ export async function ensureLease(
     lease = acquired;
   }
 
-  if (lease.installedBuild !== app.key) {
+  const sessionHasOtherSource = app.source === 'github-actions' && lease.backend === 'remote' && (lease.builtSha !== app.sourceSha || lease.builtPatch !== (app.patch?.sha256 ?? null));
+  if (lease.installedBuild !== app.key || sessionHasOtherSource) {
     const target = lease;
     options.progress(`install ${app.key}  on ${backend.describe(target)}`);
     const wait = {
