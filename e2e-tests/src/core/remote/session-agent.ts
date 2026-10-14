@@ -185,6 +185,13 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
   const request = parseRequest(env.VERIFY_SESSION_REQUEST ?? '');
   const dispatched = env.GITHUB_SHA ?? '';
   const dispatchedRef = env.GITHUB_REF ?? '';
+  const defaultBranch = env.VERIFY_SESSION_DEFAULT_BRANCH ?? '';
+  const refusesChanges =
+    defaultBranch === ''
+      ? 'this session was not told the default branch of the repository, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'
+      : dispatchedRef === `refs/heads/${defaultBranch}`
+        ? `this session runs on ${defaultBranch}, the default branch, so it builds no uncommitted changes. Work on a branch: commit to a new branch and push it, then run down and up from that branch.`
+        : null;
   const github = takeGitHub(env);
   const work = resolve(env.VERIFY_SESSION_WORK ?? 'verify-remote-work');
   const port = Number(env.VERIFY_SESSION_PORT ?? 3199);
@@ -424,6 +431,7 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         if (!/^[0-9a-f]{40}$/.test(sha)) return json(res, 400, { error: 'sha must be a full commit id' });
         if (patch !== null && !PATCH_HASH.test(patch)) return json(res, 400, { error: 'patch must be the sha256 of the patch' });
         if (device === null) return json(res, 409, { error: 'this session has no device to build for' });
+        if (patch !== null && refusesChanges !== null) return json(res, 409, { error: refusesChanges });
         if (patch !== null) {
           const body = await readBody(req, Math.ceil(PATCH_LIMIT_BYTES / 3) * 4 + 64);
           if (body === null) return json(res, 413, { error: `the patch is larger than ${PATCH_LIMIT_BYTES} bytes` });

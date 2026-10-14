@@ -105,7 +105,7 @@ async function gitHubWith(repo: { readonly sha: string; comesBefore(earlier: str
     authorizations,
     push: (sha: string) => (branchHead = sha),
     stop: () => new Promise((stopped) => server.close(stopped)),
-    env: { GITHUB_API_URL: `http://127.0.0.1:${port}`, GITHUB_REPOSITORY: 'clerk/sample', GITHUB_SHA: repo.sha, GITHUB_REF: 'refs/heads/feature/change', GITHUB_TOKEN },
+    env: { GITHUB_API_URL: `http://127.0.0.1:${port}`, GITHUB_REPOSITORY: 'clerk/sample', GITHUB_SHA: repo.sha, GITHUB_REF: 'refs/heads/feature/change', GITHUB_TOKEN, VERIFY_SESSION_DEFAULT_BRANCH: 'main' },
   };
 }
 
@@ -341,6 +341,30 @@ describe('session agent', () => {
     assert.equal(readFileSync(join(agent.work, 'built'), 'utf8'), 'one');
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
+  });
+
+  it('builds no uncommitted changes in a session on the default branch, or in one that does not know which branch that is', async () => {
+    const repo = repoWithCommit();
+    const github = await gitHubWith(repo);
+    const client = mkdtempSync(join(tmpdir(), 'verify-agent-client-'));
+    execFileSync('git', ['clone', '-q', repo.dir, client]);
+    writeFileSync(join(client, 'app.txt'), 'edited');
+    const changes = workingPatch(client, ['.'])!;
+    const refusals = [
+      [{ GITHUB_REF: 'refs/heads/main' }, 'this session runs on main, the default branch, so it builds no uncommitted changes. Work on a branch: commit to a new branch and push it, then run down and up from that branch.'],
+      [{ VERIFY_SESSION_DEFAULT_BRANCH: '' }, 'this session was not told the default branch of the repository, so it builds no uncommitted changes. Commit and push them to a branch, then run again.'],
+    ] as const;
+    for (const [env, error] of refusals) {
+      const agent = await startAgent({ ...base, sha: repo.sha }, { cwd: repo.dir, env: { ...github.env, ...env } });
+      await until(async () => ((await agent.health()).build.state === 'built' ? true : null), 'the build of the commit');
+      const sent = await agent.call(`/__sim/build?sha=${repo.sha}&patch=${changes.sha256}`, { method: 'POST', body: JSON.stringify({ patch: changes.bytes.toString('base64') }) });
+      assert.deepEqual([sent.status, await sent.json()], [409, { error }]);
+      const build = (await agent.health()).build;
+      assert.deepEqual([build.state, build.state === 'built' && build.patch, readdirSync(agent.work).filter((name) => name.startsWith('patch-'))], ['built', null, []], 'the changes were not kept or built');
+      assert.equal((await agent.call(`/__sim/build?sha=${repo.sha}`, { method: 'POST' })).status, 202, 'the commit itself still builds');
+      await agent.call('/__sim/stop', { method: 'POST' });
+      await agent.exited;
+    }
   });
 
   it('refuses changes to anything but the app sources, by what git would write, before it applies any of them', async () => {

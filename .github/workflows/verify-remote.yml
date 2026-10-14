@@ -175,6 +175,7 @@ jobs:
           VERIFY_SESSION_DEVICE_ID: ${{ steps.device.outputs.udid }}
           VERIFY_SESSION_DEVICE_NAME: ${{ needs.plan.outputs.device }}
           VERIFY_SESSION_DEVICE_MODULE: e2e-tests/src/platform/ios/session-device.ts
+          VERIFY_SESSION_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GITHUB_TOKEN: ${{ github.token }}
           CLOUDFLARED_VERSION: "2026.9.3"
         run: |
