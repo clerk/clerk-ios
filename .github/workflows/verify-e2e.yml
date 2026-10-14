@@ -120,7 +120,7 @@ jobs:
         run: |
           "$CLI" up --backend local
 
-      # agent-device compiles its XCTest runner on first use, which would otherwise happen inside the first spec's launch timeout.
+      # agent-device compiles its XCTest runner on first use. e2e would start that before the first test, inside the time limit of the step that runs the tests, so this step does it first with a limit of its own.
       - name: Prepare the XCTest runner
         timeout-minutes: 20
         run: |
@@ -230,7 +230,7 @@ jobs:
               ;;
             *)
               conclusion="failure"
-              summary="A test failed on both of its attempts, or the end-to-end tests could not run. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
+              summary="A test failed, or the end-to-end tests could not run. A failed assertion or a test that ran out of time had two attempts, and a failure of the device driver had one. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
               ;;
           esac
 
