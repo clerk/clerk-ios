@@ -206,7 +206,7 @@ jobs:
       - name: verify-remote tunnel ${{ steps.tunnel.outputs.host }}
         run: "true"
 
-      # The session's build boots the simulator once it has an app, because the first boot of a simulator slows a compile on this runner to a quarter of its speed. When no build is running, this step boots it.
+      # The session's build boots the simulator once it has an app, because a compile on this runner is three to four times slower during the first boot of a simulator. When no build is running, this step boots it.
       - name: Wait for the simulator
         if: steps.device.outputs.udid != ''
         timeout-minutes: 60
