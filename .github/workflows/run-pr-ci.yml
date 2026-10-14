@@ -65,6 +65,7 @@ jobs:
       check_run_sha: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
       check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       check_run_name_prefix: Manual CI
+      build_platforms: '["iOS", "macOS"]'
 
   report-pr-ci-status:
     name: Report PR CI status

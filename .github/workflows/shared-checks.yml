@@ -38,6 +38,11 @@ on:
         required: false
         type: string
         default: Manual CI
+      build_platforms:
+        description: JSON array of the platforms to build ClerkKit for
+        required: false
+        type: string
+        default: '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]'
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -62,6 +67,7 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
+          BUILD_PLATFORMS: ${{ inputs.build_platforms }}
         run: |
           set -euo pipefail
 
@@ -74,14 +80,11 @@ jobs:
             "$CHECK_RUN_NAME_PREFIX / Check formatting and linting"
             "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS"
             "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS"
-            "$CHECK_RUN_NAME_PREFIX / Build iOS"
-            "$CHECK_RUN_NAME_PREFIX / Build macOS"
-            "$CHECK_RUN_NAME_PREFIX / Build macCatalyst"
-            "$CHECK_RUN_NAME_PREFIX / Build watchOS"
-            "$CHECK_RUN_NAME_PREFIX / Build tvOS"
-            "$CHECK_RUN_NAME_PREFIX / Build visionOS"
             "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests"
           )
+          while IFS= read -r platform; do
+            check_run_names+=("$CHECK_RUN_NAME_PREFIX / Build $platform")
+          done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")
 
           check_runs_json="$(jq -cn '{}')"
           started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -230,7 +233,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       matrix:
-        platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]
+        platform: ${{ fromJSON(inputs.build_platforms) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -312,6 +315,7 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUNS_JSON: ${{ needs.prepare-manual-ci-check-runs.outputs.check_runs_json }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
+          BUILD_PLATFORMS: ${{ inputs.build_platforms }}
         run: |
           set -euo pipefail
 
@@ -378,11 +382,8 @@ jobs:
           update_check_run "$CHECK_RUN_NAME_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
-
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build iOS" "$(job_result "Build iOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macOS" "$(job_result "Build macOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macCatalyst" "$(job_result "Build macCatalyst")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests" "$(job_result "Run E2E runner tests")"
+
+          while IFS= read -r platform; do
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Build $platform" "$(job_result "Build $platform")"
+          done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")
