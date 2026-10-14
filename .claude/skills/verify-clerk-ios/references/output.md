@@ -38,7 +38,7 @@ Each check of `doctor --json` has `id`, `ok`, `detail`, and a `fix` when there i
 | `POOL_FULL` | All four `verify-ios-<n>` simulators on this Mac are in use |
 | `DEVICE_BUSY` | Another command in this worktree is driving the device |
 | `LEASE_LOST` | The leased device is gone |
-| `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that the app sources have uncommitted changes or that GitHub does not have HEAD |
+| `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that GitHub does not have HEAD, or that the uncommitted changes to the app sources do not apply to it or are larger than 16 MiB |
 | `KEYS_MISSING` | No Platform API credential works on this machine, or `AI_GATEWAY_API_KEY_FILE` names a file that is missing, empty, or readable by other users |
 | `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs |
 | `NOT_TEST_IDENTITY` | A spec used an email, phone number, or user that the run did not create |
