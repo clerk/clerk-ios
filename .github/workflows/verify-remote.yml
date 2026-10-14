@@ -280,13 +280,6 @@ jobs:
           path: ${{ runner.temp }}/verify-remote/packages
           key: verify-packages-${{ steps.app.outputs.pins }}
 
-      - name: Store the build state
-        if: steps.report.outputs.built != ''
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
-        with:
-          path: ${{ runner.temp }}/verify-remote/derived
-          key: verify-derived-${{ steps.app.outputs.toolchain }}-${{ steps.report.outputs.built }}
-
       - name: Hold the session
         env:
           UDID: ${{ steps.device.outputs.udid }}

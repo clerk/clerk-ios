@@ -306,14 +306,15 @@ describe('the workflows that store and restore', () => {
     return steps.map((step) => `${/^\s*path: (.+)$/m.exec(step)?.[1]} as ${/^\s*key: (.+)$/m.exec(step)?.[1]}`).sort();
   }
 
-  it('save each directory under the same path and key from a session and from main', () => {
-    assert.equal(caches(session, 'save').length, 4);
-    assert.deepEqual(caches(main, 'save'), caches(session, 'save'));
+  it('save from a session what main saves, except the build state, under the same path and key', () => {
+    const buildState = caches(main, 'save').filter((line) => line.includes(' as verify-derived-'));
+    assert.equal(buildState.length, 1);
+    assert.deepEqual(caches(session, 'save'), caches(main, 'save').filter((line) => !buildState.includes(line)));
   });
 
-  it('restore in a session each thing that is saved, from the path it was saved at', () => {
+  it('restore in a session each thing that main saves, from the path it was saved at', () => {
     const restoredFallback = (line: string): string => line.replace("${{ steps.app.outputs.key || github.run_id }}", '${{ steps.report.outputs.built }}').replace('verify-packages-unresolved', 'verify-packages-${{ steps.app.outputs.pins }}').replaceAll('steps.app.outputs.key', 'steps.report.outputs.store');
-    assert.deepEqual(caches(session, 'restore').map(restoredFallback).sort(), caches(session, 'save'));
+    assert.deepEqual(caches(session, 'restore').map(restoredFallback).sort(), caches(main, 'save'));
   });
 
   it('build the app on main when any build input changes', () => {
