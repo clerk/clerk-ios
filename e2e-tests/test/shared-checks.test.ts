@@ -137,10 +137,11 @@ describe('the nightly checks', () => {
   const nightly = read('nightly-checks.yml');
   const job = (name: string): string => nightly.split(/\n(?= {2}[\w-]+:\n)/).find((text) => text.startsWith(`  ${name}:\n`)) ?? '';
 
-  function runs(name: string, context: { event: string; repository?: string; failed?: boolean }): boolean {
-    const condition = /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true';
+  function runs(name: string, context: { event: string; repository?: string; checks?: string; stopped?: boolean }): boolean {
+    const condition = (/^ {4}if: >-\n((?: {6}.+\n)+)/m.exec(job(name))?.[1] ?? /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true').replace(/\s+/g, ' ').trim();
     const expression = condition
-      .replaceAll('failure()', String(context.failed ?? false))
+      .replaceAll('cancelled()', String(context.stopped ?? false))
+      .replace(/contains\(needs\.\*\.result, '(\w+)'\)/g, (_, result: string) => String(result === (context.checks ?? 'success')))
       .replaceAll('github.event_name', JSON.stringify(context.event))
       .replaceAll('github.repository', JSON.stringify(context.repository ?? 'clerk/clerk-ios'))
       .replaceAll(' != ', ' !== ')
@@ -165,8 +166,8 @@ describe('the nightly checks', () => {
     return { status: ran.status, stdout: ran.stdout, posted };
   }
 
-  it('run every night at 07:00 UTC', () => {
-    assert.match(nightly, /^on:\n {2}schedule:\n {4}- cron: "0 7 \* \* \*"$/m);
+  it('run every night at 07:17 UTC, off the top of the hour when GitHub may drop scheduled runs', () => {
+    assert.match(nightly, /^on:\n {2}schedule:\n {4}- cron: "17 7 \* \* \*"$/m);
   });
 
   it('run on the schedule only in clerk/clerk-ios, so that the nightly run of a fork does nothing', () => {
@@ -180,10 +181,17 @@ describe('the nightly checks', () => {
     );
   });
 
-  it('post to Slack only when a scheduled run fails', () => {
+  it('post to Slack when a scheduled run fails or times out, and not when it passes, a person stops it, or a person started it', () => {
     assert.deepEqual(
-      [runs('notify', { event: 'schedule', failed: true }), runs('notify', { event: 'schedule', failed: false }), runs('notify', { event: 'workflow_dispatch', failed: true })],
-      [true, false, false],
+      [
+        runs('notify', { event: 'schedule', checks: 'failure' }),
+        runs('notify', { event: 'schedule', checks: 'cancelled' }),
+        runs('notify', { event: 'schedule', checks: 'success' }),
+        runs('notify', { event: 'schedule', checks: 'skipped' }),
+        runs('notify', { event: 'schedule', checks: 'cancelled', stopped: true }),
+        runs('notify', { event: 'workflow_dispatch', checks: 'failure' }),
+      ],
+      [true, true, false, false, false, false],
     );
   });
 

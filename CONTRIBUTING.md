@@ -147,7 +147,7 @@ reopening the PR do not reset it.
 
 PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
 the iOS and macOS builds. On a PR, the E2E runner tests skip when no file they read
-changed. Every night at 07:00 UTC on `main`, and before each release, the checks also
+changed. Every night at 07:17 UTC on `main`, and before each release, the checks also
 run the integration tests and the macCatalyst, watchOS, tvOS, and visionOS builds. A
 failed nightly run posts to Slack.
 
