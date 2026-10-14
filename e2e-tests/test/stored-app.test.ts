@@ -363,6 +363,30 @@ describe('the workflows that store and restore', () => {
   });
 });
 
+describe('the build state in a session', () => {
+  const steps = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8').split(/\n(?= {6}- )/);
+  const at = (needle: string) => steps.findIndex((step) => step.includes(needle));
+  const restore = at('path: ${{ runner.temp }}/verify-remote/derived');
+
+  function restoredWith(outputs: Readonly<Record<string, string>>): boolean {
+    const condition = /^ {8}if: (.+)$/m.exec(steps[restore] ?? '')?.[1] ?? 'true';
+    const script = condition.replace(/steps\.([\w-]+)\.outputs\.([\w-]+)/g, (_, step: string, name: string) => JSON.stringify(outputs[`${step}.${name}`] ?? '')).replaceAll(' != ', ' !== ').replaceAll(' == ', ' === ');
+    return new Function(`return ${script};`)() as boolean;
+  }
+
+  it('is restored whether or not the app is stored, so that the first build of a change in the session is incremental', () => {
+    assert.ok(restore > 0, 'the session restores the build state');
+    assert.deepEqual(
+      [restoredWith({ 'device.udid': 'UDID-1', 'stored.cache-hit': 'true' }), restoredWith({ 'device.udid': 'UDID-1', 'stored.cache-hit': 'false' }), restoredWith({ 'device.udid': '', 'stored.cache-hit': '' })],
+      [true, true, false],
+    );
+  });
+
+  it('is restored before the session agent starts, because the agent can start a build at once', () => {
+    assert.ok(restore < at('- name: Start the session agent and tunnel'), 'the restore comes before the agent');
+  });
+});
+
 describe('a session that built uncommitted changes', () => {
   const session = readFileSync(join(WORKFLOWS, 'verify-remote.yml'), 'utf8');
   const steps = session.split(/\n(?= {6}- )/);
