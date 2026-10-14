@@ -103,5 +103,10 @@ Examples/**/LocalSecrets.plist
 
 # Agent skills
 .codex/skills/
-.claude/skills/
-.cursor/skills/
+.claude/skills/*
+!.claude/skills/verify-clerk-ios/
+e2e-tests/node_modules/
+e2e-tests/specs/explored/
+.verify/
+.cursor/skills/*
+!.cursor/skills/verify-clerk-ios

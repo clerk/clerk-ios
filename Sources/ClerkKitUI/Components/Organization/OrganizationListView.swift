@@ -62,7 +62,7 @@ public struct OrganizationListView: View {
   private let title: LocalizedStringKey
   private let subtitle: LocalizedStringKey?
 
-  @State private var accountList = OrganizationAccountListDataSource()
+  @State var accountList = OrganizationAccountListDataSource()
   @State private var internalPath = NavigationPath()
   @State private var isSelectingAccount = false
 
@@ -151,11 +151,14 @@ public struct OrganizationListView: View {
       .presentationBackground(theme.colors.background)
       .background(theme.colors.background)
       .clerkErrorPresenting($accountList.error, onDismiss: { _ in
-        guard !accountList.hasExistingResources, user != nil else { return }
+        guard !accountList.hasExistingResources || accountList.hasFailedLists, user != nil else { return }
         Task { await fetchOrganizationResources() }
       })
       .taskOnce {
         await fetchOrganizationResources()
+      }
+      .onChange(of: user?.id) {
+        Task { await fetchOrganizationResources() }
       }
       #if os(macOS)
       .frame(width: 560, height: 620, alignment: .topLeading)

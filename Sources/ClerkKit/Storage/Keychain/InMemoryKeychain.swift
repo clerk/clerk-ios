@@ -7,8 +7,6 @@
 
 import Foundation
 
-/// An in-memory keychain storage implementation for testing and previews.
-/// Data is stored in a dictionary and cleared when the container is deallocated.
 package final class InMemoryKeychain: @unchecked Sendable, KeychainStorage {
   private let lock = NSLock()
   private var items: [String: Data] = [:]

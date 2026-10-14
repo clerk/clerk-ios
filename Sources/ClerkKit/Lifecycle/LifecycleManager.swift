@@ -7,85 +7,69 @@
 
 import Foundation
 
-#if canImport(UIKit) && !os(watchOS)
+#if os(watchOS)
+import WatchKit
+#elseif canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
 import AppKit
 #endif
 
-/// Protocol defining callbacks for app lifecycle events.
-///
-/// Implementations of this protocol can respond to foreground and background transitions
-/// to perform necessary actions like refreshing data or cleaning up resources.
 protocol LifecycleEventHandling: Sendable {
-  /// Called when the app is about to enter the foreground.
-  ///
-  /// Use this to resume background tasks, refresh data, or restart polling.
   @MainActor func onWillEnterForeground() async
 
-  /// Called when the app has entered the background.
-  ///
-  /// Use this to pause background tasks, flush telemetry, or save state.
   @MainActor func onDidEnterBackground() async
 }
 
 /// Manages app lifecycle notifications and coordinates foreground/background transitions.
-///
-/// This class handles the registration and cleanup of notification observers for app lifecycle events.
-/// Call `stopObserving()` before releasing the manager to ensure proper cleanup.
 @MainActor
 final class LifecycleManager {
-  /// Task that observes foreground notifications.
-  private var willEnterForegroundTask: Task<Void, Error>?
+  private var willEnterForegroundTask: Task<Void, Never>?
 
-  /// Task that observes background notifications.
-  private var didEnterBackgroundTask: Task<Void, Error>?
+  private var didEnterBackgroundTask: Task<Void, Never>?
 
-  /// The handler that responds to lifecycle events.
   private let handler: any LifecycleEventHandling
 
-  /// Creates a new lifecycle manager with the provided event handler.
-  ///
-  /// - Parameter handler: The object that will handle lifecycle events.
-  init(handler: any LifecycleEventHandling) {
+  private let notificationCenter: NotificationCenter
+
+  private let tasks: TaskCoordinator
+
+  init(
+    handler: any LifecycleEventHandling,
+    notificationCenter: NotificationCenter = .default,
+    tasks: TaskCoordinator = TaskCoordinator()
+  ) {
     self.handler = handler
+    self.notificationCenter = notificationCenter
+    self.tasks = tasks
   }
 
-  /// Starts observing app lifecycle notifications.
-  ///
-  /// This method sets up notification observers for foreground and background transitions.
-  /// If observers are already active, existing tasks are cancelled before creating new ones.
   func startObserving() {
-    // Cancel existing tasks if they exist (switching instances)
     willEnterForegroundTask?.cancel()
     didEnterBackgroundTask?.cancel()
 
-    #if os(watchOS)
-    return
-    #else
+    let willEnterForeground = notificationCenter.notifications(named: Self.willEnterForegroundNotification)
+    let didEnterBackground = notificationCenter.notifications(named: Self.didEnterBackgroundNotification)
 
-    willEnterForegroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(
-        named: Self.willEnterForegroundNotification
-      ).map({ _ in () }) {
+    let foregroundTask = Task { [handler] in
+      for await _ in willEnterForeground.map({ _ in () }) {
+        guard !Task.isCancelled else { break }
         await handler.onWillEnterForeground()
       }
     }
+    willEnterForegroundTask = foregroundTask
+    tasks.track(foregroundTask)
 
-    didEnterBackgroundTask = Task {
-      for await _ in NotificationCenter.default.notifications(
-        named: Self.didEnterBackgroundNotification
-      ).map({ _ in () }) {
+    let backgroundTask = Task { [handler] in
+      for await _ in didEnterBackground.map({ _ in () }) {
+        guard !Task.isCancelled else { break }
         await handler.onDidEnterBackground()
       }
     }
-
-    #endif
+    didEnterBackgroundTask = backgroundTask
+    tasks.track(backgroundTask)
   }
 
-  /// Stops observing app lifecycle notifications and cancels all active tasks.
-  ///
-  /// This is called by `Clerk.cleanupManagers()` during reconfiguration or test cleanup.
   func stopObserving() {
     willEnterForegroundTask?.cancel()
     willEnterForegroundTask = nil
@@ -93,24 +77,31 @@ final class LifecycleManager {
     didEnterBackgroundTask?.cancel()
     didEnterBackgroundTask = nil
   }
+
+  deinit {
+    willEnterForegroundTask?.cancel()
+    didEnterBackgroundTask?.cancel()
+  }
 }
 
-#if !os(watchOS)
 extension LifecycleManager {
-  private static var willEnterForegroundNotification: Notification.Name {
+  static var willEnterForegroundNotification: Notification.Name {
     #if os(macOS)
     NSApplication.didBecomeActiveNotification
+    #elseif os(watchOS)
+    WKApplication.willEnterForegroundNotification
     #else
     UIApplication.willEnterForegroundNotification
     #endif
   }
 
-  private static var didEnterBackgroundNotification: Notification.Name {
+  static var didEnterBackgroundNotification: Notification.Name {
     #if os(macOS)
     NSApplication.didResignActiveNotification
+    #elseif os(watchOS)
+    WKApplication.didEnterBackgroundNotification
     #else
     UIApplication.didEnterBackgroundNotification
     #endif
   }
 }
-#endif

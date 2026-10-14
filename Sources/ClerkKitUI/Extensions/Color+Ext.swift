@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 
 extension Color {
-  /// Returns whether the color is considered "dark" based on relative luminance.
   var isDark: Bool {
     let rgb = rgbComponents
     let luminance = 0.2126 * rgb.red.luminanceComponent + 0.7152 * rgb.green.luminanceComponent + 0.0722 * rgb.blue.luminanceComponent
@@ -28,12 +27,10 @@ extension Color {
     return Color(red: Double(red), green: Double(green), blue: Double(blue))
   }
 
-  /// Lightens the color by mixing it with white.
   func lighten(by amount: CGFloat) -> Color {
     mix(with: .white, amount: amount)
   }
 
-  /// Darkens the color by mixing it with black.
   func darken(by amount: CGFloat) -> Color {
     mix(with: .black, amount: amount)
   }
@@ -59,7 +56,6 @@ extension Color {
 }
 
 extension CGFloat {
-  /// Converts an sRGB component to its linearized form for luminance calculation.
   fileprivate var luminanceComponent: CGFloat {
     self <= 0.03928 ? self / 12.92 : pow((self + 0.055) / 1.055, 2.4)
   }

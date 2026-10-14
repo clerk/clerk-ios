@@ -18,21 +18,20 @@ struct BillingTests {
     // Omitted write APIs from clerk-js BillingNamespace / BillingPayerMethods:
     // startCheckout, updateCheckout, initializePaymentMethod, addPaymentMethod,
     // cancel, remove, makeDefault
-    let service = MockBillingService()
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      billingService: service
+      transport: FakeTransport.mockDefaults()
     )
 
-    _ = try await Clerk.shared.billing.getPaymentAttempts(params: .init())
-    _ = try await Clerk.shared.billing.getPaymentAttempt(params: .init(id: "pay_1"))
+    _ = try await Clerk.shared.billing.getPaymentAttempts()
+    _ = try await Clerk.shared.billing.getPaymentAttempt(id: "pay_1")
     _ = try await Clerk.shared.billing.getPlans()
-    _ = try await Clerk.shared.billing.getPlan(params: .init(id: "plan_1"))
-    _ = try await Clerk.shared.billing.getSubscription(params: .init())
-    _ = try await Clerk.shared.billing.getStatements(params: .init())
-    _ = try await Clerk.shared.billing.getStatement(params: .init(id: "stmt_1"))
-    _ = try await Clerk.shared.billing.getCreditBalance(params: .init())
-    _ = try await Clerk.shared.billing.getCreditHistory(params: .init())
+    _ = try await Clerk.shared.billing.getPlan(id: "plan_1")
+    _ = try await Clerk.shared.billing.getSubscription()
+    _ = try await Clerk.shared.billing.getStatements()
+    _ = try await Clerk.shared.billing.getStatement(id: "stmt_1")
+    _ = try await Clerk.shared.billing.getCreditBalance()
+    _ = try await Clerk.shared.billing.getCreditHistory()
     _ = try await User.mock.getPaymentMethods()
     _ = try await Organization.mock.getPaymentMethods()
   }
@@ -63,13 +62,11 @@ struct BillingTests {
     mock.register()
 
     _ = try await Clerk.shared.billing.getPlans(
-      params: .init(
-        for: .organization,
-        orgId: "org_123",
-        minSeats: 5,
-        initialPage: 3,
-        pageSize: 10
-      )
+      for: .organization,
+      orgId: "org_123",
+      minSeats: 5,
+      page: 3,
+      pageSize: 10
     )
     #expect(requestHandled.value)
   }
@@ -91,7 +88,7 @@ struct BillingTests {
       #expect(request.url?.queryParam(named: "payer_type") == "user")
       #expect(request.url?.queryParam(named: "org_id") == nil)
       #expect(request.url?.queryParam(named: "min_seats") == nil)
-      #expect(request.url?.queryParam(named: "limit") == "10")
+      #expect(request.url?.queryParam(named: "limit") == "20")
       #expect(request.url?.queryParam(named: "offset") == "0")
       requestHandled.setValue(true)
     }
@@ -107,56 +104,56 @@ struct BillingTests {
       path: "/v1/me/billing/subscription",
       body: encodeClientResponse(BillingSubscription.mock)
     ) {
-      _ = try await Clerk.shared.billing.getSubscription(params: .init())
+      _ = try await Clerk.shared.billing.getSubscription()
     }
 
     try await assertGET(
       path: "/v1/organizations/org_123/billing/subscription",
       body: encodeClientResponse(BillingSubscription.mock)
     ) {
-      _ = try await Clerk.shared.billing.getSubscription(params: .init(orgId: "org_123"))
+      _ = try await Clerk.shared.billing.getSubscription(orgId: "org_123")
     }
 
     try await assertGET(
       path: "/v1/me/billing/statements",
       body: encodeClientResponse(ClerkPaginatedResponse(data: [BillingStatement.mock], totalCount: 1))
     ) {
-      _ = try await Clerk.shared.billing.getStatements(params: .init())
+      _ = try await Clerk.shared.billing.getStatements()
     }
 
     try await assertGET(
       path: "/v1/organizations/org_123/billing/statements",
       body: encodeClientResponse(ClerkPaginatedResponse(data: [BillingStatement.mock], totalCount: 1))
     ) {
-      _ = try await Clerk.shared.billing.getStatements(params: .init(orgId: "org_123"))
+      _ = try await Clerk.shared.billing.getStatements(orgId: "org_123")
     }
 
     try await assertGET(
       path: "/v1/me/billing/payment_attempts",
       body: JSONEncoder.clerkEncoder.encode(ClerkPaginatedResponse(data: [BillingPayment.mock], totalCount: 1))
     ) {
-      _ = try await Clerk.shared.billing.getPaymentAttempts(params: .init())
+      _ = try await Clerk.shared.billing.getPaymentAttempts()
     }
 
     try await assertGET(
       path: "/v1/organizations/org_123/billing/payment_attempts",
       body: JSONEncoder.clerkEncoder.encode(ClerkPaginatedResponse(data: [BillingPayment.mock], totalCount: 1))
     ) {
-      _ = try await Clerk.shared.billing.getPaymentAttempts(params: .init(orgId: "org_123"))
+      _ = try await Clerk.shared.billing.getPaymentAttempts(orgId: "org_123")
     }
 
     try await assertGET(
       path: "/v1/me/billing/credits",
       body: encodeClientResponse(BillingCreditBalance.mock)
     ) {
-      _ = try await Clerk.shared.billing.getCreditBalance(params: .init())
+      _ = try await Clerk.shared.billing.getCreditBalance()
     }
 
     try await assertGET(
       path: "/v1/organizations/org_123/billing/credits",
       body: encodeClientResponse(BillingCreditBalance.mock)
     ) {
-      _ = try await Clerk.shared.billing.getCreditBalance(params: .init(orgId: "org_123"))
+      _ = try await Clerk.shared.billing.getCreditBalance(orgId: "org_123")
     }
 
     try await assertGET(
@@ -175,7 +172,7 @@ struct BillingTests {
   }
 
   @Test
-  func getCreditHistoryOmitsPagination() async throws {
+  func getCreditHistorySendsPagination() async throws {
     let requestHandled = LockIsolated(false)
     var mock = try Mock(
       url: URL(string: mockBaseUrl.absoluteString + "/v1/me/billing/credits/history")!,
@@ -188,14 +185,14 @@ struct BillingTests {
     )
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.url?.queryParam(named: "limit") == nil)
-      #expect(request.url?.queryParam(named: "offset") == nil)
+      #expect(request.url?.queryParam(named: "limit") == "5")
+      #expect(request.url?.queryParam(named: "offset") == "10")
       #expect(request.url?.query?.contains("_clerk_session_id") == true)
       requestHandled.setValue(true)
     }
     mock.register()
 
-    _ = try await Clerk.shared.billing.getCreditHistory(params: .init())
+    _ = try await Clerk.shared.billing.getCreditHistory(page: 3, pageSize: 5)
     #expect(requestHandled.value)
   }
 
@@ -398,11 +395,37 @@ struct BillingTests {
 
   @Test
   func decodesBillingCreditLedger() throws {
-    let ledger = try decoder.decode(BillingCreditLedger.self, from: Data(creditLedgerJSON.utf8))
+    let ledger = try decoder.decode(BillingCreditLedger.self, from: Data(creditLedgerJSON().utf8))
     #expect(ledger.id == "led_1")
     #expect(ledger.sourceType == "payment")
     #expect(ledger.sourceId == "pay_1")
     #expect(ledger.amount.currencySymbol == "$")
+    #expect(ledger.createdAt == Date(timeIntervalSince1970: 1_782_223_512.5))
+  }
+
+  @Test(arguments: [
+    (#""2026-06-23T14:05:12Z""#, 1_782_223_512.0),
+    (#""2026-06-23T14:05:12.5Z""#, 1_782_223_512.5),
+    (#""2026-06-23T14:05:12.123456789Z""#, 1_782_223_512.123457),
+    (#""2026-06-23T10:05:12.5-04:00""#, 1_782_223_512.5),
+    ("1782223512500", 1_782_223_512.5),
+  ])
+  func decodesBillingCreditLedgerCreatedAt(rawCreatedAt: String, expectedSeconds: TimeInterval) throws {
+    let ledger = try decoder.decode(
+      BillingCreditLedger.self,
+      from: Data(creditLedgerJSON(createdAt: rawCreatedAt).utf8)
+    )
+    #expect(abs(ledger.createdAt.timeIntervalSince1970 - expectedSeconds) < 0.000_001)
+  }
+
+  @Test
+  func rejectsBillingCreditLedgerWithInvalidCreatedAt() {
+    #expect(throws: DecodingError.self) {
+      try decoder.decode(
+        BillingCreditLedger.self,
+        from: Data(creditLedgerJSON(createdAt: #""not a date""#).utf8)
+      )
+    }
   }
 
   @Test
@@ -420,7 +443,7 @@ struct BillingTests {
       path: "/v1/billing/plans/plan_1",
       body: JSONEncoder.clerkEncoder.encode(BillingPlan.mock)
     ) {
-      let plan = try await Clerk.shared.billing.getPlan(params: .init(id: "plan_1"))
+      let plan = try await Clerk.shared.billing.getPlan(id: "plan_1")
       #expect(plan.id == BillingPlan.mock.id)
     }
 
@@ -428,7 +451,7 @@ struct BillingTests {
       path: "/v1/me/billing/payment_attempts",
       body: JSONEncoder.clerkEncoder.encode(ClerkPaginatedResponse(data: [BillingPayment.mock], totalCount: 1))
     ) {
-      let payments = try await Clerk.shared.billing.getPaymentAttempts(params: .init())
+      let payments = try await Clerk.shared.billing.getPaymentAttempts()
       #expect(payments.data.first?.id == BillingPayment.mock.id)
     }
 
@@ -436,7 +459,7 @@ struct BillingTests {
       path: "/v1/me/billing/payment_attempts/pay_1",
       body: JSONEncoder.clerkEncoder.encode(BillingPayment.mock)
     ) {
-      let payment = try await Clerk.shared.billing.getPaymentAttempt(params: .init(id: "pay_1"))
+      let payment = try await Clerk.shared.billing.getPaymentAttempt(id: "pay_1")
       #expect(payment.id == "pay_1")
     }
   }
@@ -447,7 +470,7 @@ struct BillingTests {
       path: "/v1/me/billing/subscription",
       body: encodeClientResponse(BillingSubscription.mock)
     ) {
-      let subscription = try await Clerk.shared.billing.getSubscription(params: .init())
+      let subscription = try await Clerk.shared.billing.getSubscription()
       #expect(subscription.id == BillingSubscription.mock.id)
     }
 
@@ -455,7 +478,7 @@ struct BillingTests {
       path: "/v1/me/billing/statements",
       body: encodeClientResponse(ClerkPaginatedResponse(data: [BillingStatement.mock], totalCount: 1))
     ) {
-      let statements = try await Clerk.shared.billing.getStatements(params: .init())
+      let statements = try await Clerk.shared.billing.getStatements()
       #expect(statements.data.first?.totals.grandTotal.amount == 1000)
     }
 
@@ -463,7 +486,7 @@ struct BillingTests {
       path: "/v1/me/billing/statements/stmt_1",
       body: encodeClientResponse(BillingStatement.mock)
     ) {
-      let statement = try await Clerk.shared.billing.getStatement(params: .init(id: "stmt_1"))
+      let statement = try await Clerk.shared.billing.getStatement(id: "stmt_1")
       #expect(statement.id == "stmt_1")
     }
 
@@ -471,7 +494,7 @@ struct BillingTests {
       path: "/v1/me/billing/credits",
       body: encodeClientResponse(BillingCreditBalance.mock)
     ) {
-      let credits = try await Clerk.shared.billing.getCreditBalance(params: .init())
+      let credits = try await Clerk.shared.billing.getCreditBalance()
       #expect(credits.balance?.amount == 1000)
     }
 
@@ -479,7 +502,7 @@ struct BillingTests {
       path: "/v1/me/billing/credits/history",
       body: encodeClientResponse(ClerkPaginatedResponse(data: [BillingCreditLedger.mock], totalCount: 1))
     ) {
-      let history = try await Clerk.shared.billing.getCreditHistory(params: .init())
+      let history = try await Clerk.shared.billing.getCreditHistory()
       #expect(history.data.first?.id == "led_1")
     }
 
@@ -777,13 +800,16 @@ private let creditBalanceJSON = """
 }
 """
 
-private let creditLedgerJSON = """
-{
-  "object": "commerce_credit_ledger",
-  "id": "led_1",
-  "amount": \(moneyJSON),
-  "source_type": "payment",
-  "source_id": "pay_1",
-  "created_at": 1700000000000
+private func creditLedgerJSON(createdAt: String = #""2026-06-23T14:05:12.5Z""#) -> String {
+  """
+  {
+    "object": "commerce_credit_ledger",
+    "id": "led_1",
+    "payer_id": "payer_1",
+    "amount": \(moneyJSON),
+    "source_type": "payment",
+    "source_id": "pay_1",
+    "created_at": \(createdAt)
+  }
+  """
 }
-"""

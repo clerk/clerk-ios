@@ -8,13 +8,8 @@
 import Foundation
 import RegexBuilder
 
-/// Manages Clerk configuration including API client setup, keychain registration, and options management.
-///
-/// This class centralizes configuration logic to avoid cascading didSet observers and provides
-/// a single point for configuring the Clerk SDK.
 @MainActor
 final class ConfigurationManager {
-  /// Configuration state for the Clerk instance.
   struct ConfigurationState {
     var publishableKey: String = ""
     var frontendApiUrl: String = ""
@@ -36,63 +31,49 @@ final class ConfigurationManager {
   func configure(publishableKey: String, options: Clerk.Options) throws {
     let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
-    // Validate publishable key early for fail-fast behavior
     try validatePublishableKey(normalizedPublishableKey)
+    let proxyConfiguration = try makeProxyConfiguration(for: options)
 
     state.publishableKey = normalizedPublishableKey
     state.options = options
 
-    // Extract frontend API URL from publishable key
     state.frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
 
-    // Set proxy URL from options
     state.proxyUrl = options.proxyUrl
-    state.proxyConfiguration = ProxyConfiguration(url: state.proxyUrl)
+    state.proxyConfiguration = proxyConfiguration
 
     state.isConfigured = true
   }
 
-  /// Updates the proxy URL configuration.
-  ///
-  /// - Parameter proxyUrl: The new proxy URL, or nil to remove proxy configuration.
   func updateProxyUrl(_ proxyUrl: URL?) {
     state.proxyUrl = proxyUrl
     state.proxyConfiguration = ProxyConfiguration(url: proxyUrl)
   }
 
-  /// Updates the frontend API URL and reconfigures the API client.
-  ///
-  /// - Parameter frontendApiUrl: The new frontend API URL.
   func updateFrontendApiUrl(_ frontendApiUrl: String) {
     state.frontendApiUrl = frontendApiUrl
   }
 
-  /// Returns the current frontend API URL.
   var frontendApiUrl: String {
     state.frontendApiUrl
   }
 
-  /// Returns the current proxy configuration.
   var proxyConfiguration: ProxyConfiguration? {
     state.proxyConfiguration
   }
 
-  /// Returns the current proxy URL.
   var proxyUrl: URL? {
     state.proxyUrl
   }
 
-  /// Returns the current publishable key.
   var publishableKey: String {
     state.publishableKey
   }
 
-  /// Returns the current configuration options.
   var options: Clerk.Options {
     state.options
   }
 
-  /// Returns the instance environment type based on the publishable key.
   var instanceType: InstanceEnvironmentType {
     if state.publishableKey.starts(with: "pk_live_") {
       return .production
@@ -112,6 +93,23 @@ final class ConfigurationManager {
     guard key.starts(with: "pk_test_") || key.starts(with: "pk_live_") else {
       throw ClerkInitializationError.invalidPublishableKeyFormat(key: key)
     }
+  }
+
+  /// Builds the proxy configuration for the proxy URL the app passed.
+  ///
+  /// Requests would skip a proxy URL that `ProxyConfiguration` can't build from and go straight to the
+  /// Frontend API, so an explicit one fails configuration instead. An omitted or blank value means no proxy.
+  ///
+  /// - Throws: `ClerkInitializationError.invalidProxyUrl` if the proxy URL isn't an http or https URL with a host.
+  private func makeProxyConfiguration(for options: Clerk.Options) throws -> ProxyConfiguration? {
+    guard let input = options.proxyUrlInput,
+          !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    else { return nil }
+
+    guard let configuration = ProxyConfiguration(url: options.proxyUrl) else {
+      throw ClerkInitializationError.invalidProxyUrl
+    }
+    return configuration
   }
 
   /// Extracts the frontend API URL from a publishable key.

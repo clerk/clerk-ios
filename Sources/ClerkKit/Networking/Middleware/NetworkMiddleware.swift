@@ -16,7 +16,6 @@ public protocol ClerkResponseMiddleware: Sendable {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws
 }
 
-/// Allows middleware to influence retry decisions.
 protocol NetworkRetryMiddleware: Sendable {
   func shouldRetry(
     request: URLRequest,
@@ -26,7 +25,6 @@ protocol NetworkRetryMiddleware: Sendable {
   ) async throws -> Bool
 }
 
-/// Describes the order of execution for networking middleware.
 struct NetworkingPipeline {
   private let requestMiddleware: [any ClerkRequestMiddleware]
   private let customRequestMiddleware: [any ClerkRequestMiddleware]
@@ -126,7 +124,7 @@ extension NetworkingPipeline {
 }
 
 extension HTTPURLResponse {
-  private static let httpDateFormatter: DateFormatter = {
+  static let httpDateFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.timeZone = TimeZone(identifier: "GMT")
@@ -143,7 +141,6 @@ extension HTTPURLResponse {
 struct ClerkRequestCheckpoint: Equatable {
   let requestSequence: Int?
   let clientResponseGeneration: ClientResponseGeneration?
-  let sharedSessionBaseGeneration: UInt64?
   let isCanonicalClientRequest: Bool
   let requestDeviceToken: String?
   let authFlowRegistrationId: UUID?
@@ -151,14 +148,12 @@ struct ClerkRequestCheckpoint: Equatable {
   init(
     requestSequence: Int?,
     clientResponseGeneration: ClientResponseGeneration?,
-    sharedSessionBaseGeneration: UInt64?,
     isCanonicalClientRequest: Bool,
     requestDeviceToken: String?,
     authFlowRegistrationId: UUID? = nil
   ) {
     self.requestSequence = requestSequence
     self.clientResponseGeneration = clientResponseGeneration
-    self.sharedSessionBaseGeneration = sharedSessionBaseGeneration
     self.isCanonicalClientRequest = isCanonicalClientRequest
     self.requestDeviceToken = requestDeviceToken
     self.authFlowRegistrationId = authFlowRegistrationId
@@ -168,7 +163,6 @@ struct ClerkRequestCheckpoint: Equatable {
     self.init(
       requestSequence: request.clerkRequestSequence,
       clientResponseGeneration: request.clerkClientResponseGeneration,
-      sharedSessionBaseGeneration: request.clerkSharedSessionBaseGeneration,
       isCanonicalClientRequest: request.clerkIsCanonicalClientRequest,
       requestDeviceToken: request.clerkRequestDeviceToken,
       authFlowRegistrationId: request.clerkAuthFlowRegistrationId
@@ -184,12 +178,12 @@ extension URLRequest {
   private static let clerkRequestSequenceKey = "com.clerk.request-sequence"
   private static let clerkStartupClientRefreshTakeoverIDKey = "com.clerk.startup-client-refresh-takeover-id"
   private static let clerkClientResponseGenerationKey = "com.clerk.client-response-generation"
-  private static let clerkSharedSessionBaseGenerationKey = "com.clerk.shared-session-base-generation"
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
   private static let clerkAuthFlowRegistrationIdKey = "com.clerk.auth-flow-registration-id"
   private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
   private static let clerkBodyLoggingKey = "com.clerk.body-logging"
+  private static let clerkActiveSessionScopeKey = "com.clerk.active-session-scope"
 
   var clerkRequestCheckpoint: ClerkRequestCheckpoint {
     ClerkRequestCheckpoint(request: self)
@@ -213,13 +207,6 @@ extension URLRequest {
     ClientResponseGeneration(
       propertyListValue: URLProtocol.property(forKey: Self.clerkClientResponseGenerationKey, in: self)
     )
-  }
-
-  var clerkSharedSessionBaseGeneration: UInt64? {
-    (URLProtocol.property(
-      forKey: Self.clerkSharedSessionBaseGenerationKey,
-      in: self
-    ) as? NSNumber)?.uint64Value
   }
 
   var clerkIsCanonicalClientRequest: Bool {
@@ -249,6 +236,10 @@ extension URLRequest {
 
   var shouldLogClerkBodies: Bool {
     URLProtocol.property(forKey: Self.clerkBodyLoggingKey, in: self) as? Bool ?? true
+  }
+
+  var isScopedToClerkActiveSession: Bool {
+    URLProtocol.property(forKey: Self.clerkActiveSessionScopeKey, in: self) as? Bool ?? false
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {
@@ -282,13 +273,6 @@ extension URLRequest {
     )
   }
 
-  mutating func setClerkSharedSessionBaseGeneration(_ generation: UInt64) {
-    setClerkProperty(
-      NSNumber(value: generation),
-      key: Self.clerkSharedSessionBaseGenerationKey
-    )
-  }
-
   mutating func setClerkCanonicalClientRequest(_ isCanonical: Bool) {
     setClerkProperty(
       NSNumber(value: isCanonical),
@@ -310,10 +294,6 @@ extension URLRequest {
       (
         value: checkpoint.clientResponseGeneration?.propertyListValue,
         key: Self.clerkClientResponseGenerationKey
-      ),
-      (
-        value: checkpoint.sharedSessionBaseGeneration.map { NSNumber(value: $0) },
-        key: Self.clerkSharedSessionBaseGenerationKey
       ),
       (
         value: NSNumber(value: checkpoint.isCanonicalClientRequest),
@@ -352,5 +332,9 @@ extension URLRequest {
 
   mutating func disableClerkBodyLogging() {
     setClerkProperty(NSNumber(value: false), key: Self.clerkBodyLoggingKey)
+  }
+
+  mutating func scopeToClerkActiveSession() {
+    setClerkProperty(NSNumber(value: true), key: Self.clerkActiveSessionScopeKey)
   }
 }

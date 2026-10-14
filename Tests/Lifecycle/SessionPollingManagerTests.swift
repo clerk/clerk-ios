@@ -6,13 +6,14 @@
 import Foundation
 import Testing
 
-/// Mock session provider for testing polling behavior
 @MainActor
 final class MockSessionProvider: SessionProviding {
   var sessionToReturn: Session?
+  private(set) var sessionReadCount = 0
 
   var session: Session? {
-    sessionToReturn
+    sessionReadCount += 1
+    return sessionToReturn
   }
 
   init(session: Session? = nil) {
@@ -36,49 +37,65 @@ private func createSession(
   )
 }
 
-/// Tests for SessionPollingManager ensuring proper polling behavior and cleanup.
 @MainActor
 @Suite(.serialized)
 struct SessionPollingManagerTests {
   @Test
-  func stopPollingMultipleTimes() {
+  func stopPollingMultipleTimes() async throws {
     let provider = MockSessionProvider()
-    let manager = SessionPollingManager(
-      sessionProvider: provider,
-      pollInterval: 0.1,
-      pollTolerance: 0.01
-    )
+    let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
 
     manager.startPolling()
+    #expect(manager.isPollingActive)
+    try await waitUntil { provider.sessionReadCount == 1 }
 
-    // Stop polling should work without error
     manager.stopPolling()
+    #expect(!manager.isPollingActive)
 
-    // Calling stopPolling multiple times should be safe
     manager.stopPolling()
     manager.stopPolling()
+    #expect(!manager.isPollingActive)
 
-    // Verify manager is still in valid state (can start again)
     manager.startPolling()
+    #expect(manager.isPollingActive)
+    try await waitUntil { provider.sessionReadCount == 2 }
+
     manager.stopPolling()
   }
 
   @Test
-  func startPollingMultipleTimes() {
+  func releasedManagerStopsPolling() throws {
     let provider = MockSessionProvider()
-    let manager = SessionPollingManager(
-      sessionProvider: provider,
-      pollInterval: 0.1,
-      pollTolerance: 0.01
-    )
+    weak var released: SessionPollingManager?
+    let pollingTask: Task<Void, Error>
 
-    // Start polling multiple times - should not crash
+    do {
+      let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
+      released = manager
+      manager.startPolling()
+      pollingTask = try #require(manager.pollingTask)
+    }
+
+    #expect(released == nil)
+    #expect(pollingTask.isCancelled)
+  }
+
+  @Test
+  func startPollingMultipleTimes() throws {
+    let provider = MockSessionProvider()
+    let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
+
     manager.startPolling()
+    let firstTask = try #require(manager.pollingTask)
     manager.startPolling()
     manager.startPolling()
 
-    // Should be able to stop after multiple starts
+    #expect(manager.pollingTask == firstTask)
+    #expect(manager.isPollingActive)
+
     manager.stopPolling()
+    #expect(manager.pollingTask == nil)
+    #expect(firstTask.isCancelled)
   }
 
   @Test
@@ -251,6 +268,15 @@ struct SessionPollingManagerTests {
     await manager.refreshNowIfNeeded()
     #expect(manager.consecutiveFailures == 0)
   }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for session poll.")
+  }
 }
 
 // MARK: - Backoff Tests
@@ -286,13 +312,11 @@ struct SessionPollingManagerBackoffTests {
     let provider = MockSessionProvider()
     let manager = SessionPollingManager(sessionProvider: provider)
 
-    // Simulate multiple failures
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.consecutiveFailures == 3)
 
-    // Success should reset to zero
     manager.updateBackoffState(success: true)
     #expect(manager.consecutiveFailures == 0)
   }
@@ -343,12 +367,10 @@ struct SessionPollingManagerBackoffTests {
       maxPollInterval: 60.0
     )
 
-    // Simulate many failures to exceed the cap
     for _ in 0 ..< 10 {
       manager.updateBackoffState(success: false)
     }
 
-    // Should be capped at maxPollInterval
     #expect(manager.calculateBaseBackoffInterval() == 60.0)
   }
 
@@ -361,14 +383,12 @@ struct SessionPollingManagerBackoffTests {
       maxPollInterval: 60.0
     )
 
-    // Simulate 2 failures: base interval should be 20.0
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
 
     let baseInterval = manager.calculateBaseBackoffInterval()
     #expect(baseInterval == 20.0)
 
-    // Run multiple times to verify intervals stay within expected jitter range (±20%).
     let minExpected = baseInterval * 0.8
     let maxExpected = baseInterval * 1.2
     for _ in 0 ..< 100 {
@@ -387,13 +407,11 @@ struct SessionPollingManagerBackoffTests {
       maxPollInterval: 60.0
     )
 
-    // Simulate failures to build up backoff
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     manager.updateBackoffState(success: false)
     #expect(manager.calculateBaseBackoffInterval() == 40.0)
 
-    // Success resets the backoff
     manager.updateBackoffState(success: true)
     #expect(manager.calculateBaseBackoffInterval() == 5.0)
   }
@@ -409,15 +427,13 @@ struct SessionPollingManagerBackoffTests {
     let manager = SessionPollingManager(
       sessionProvider: provider,
       pollInterval: 5.0,
-      maxPollInterval: 30.0 // Custom max
+      maxPollInterval: 30.0
     )
 
-    // Simulate many failures
     for _ in 0 ..< 10 {
       manager.updateBackoffState(success: false)
     }
 
-    // Should be capped at custom maxPollInterval
     #expect(manager.calculateBaseBackoffInterval() == 30.0)
   }
 
@@ -430,13 +446,10 @@ struct SessionPollingManagerBackoffTests {
       maxPollInterval: 60.0
     )
 
-    // Expected progression: 5 -> 10 -> 20 -> 40 -> 60 (capped)
     let expectedIntervals: [TimeInterval] = [5.0, 10.0, 20.0, 40.0, 60.0, 60.0]
 
-    // No failures - base interval
     #expect(manager.calculateBaseBackoffInterval() == expectedIntervals[0])
 
-    // Each failure should progress through the sequence
     for i in 1 ..< expectedIntervals.count {
       manager.updateBackoffState(success: false)
       #expect(manager.calculateBaseBackoffInterval() == expectedIntervals[i],

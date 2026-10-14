@@ -5,47 +5,108 @@
 
 import Foundation
 
+/// Reads Clerk Billing data: Plans, Subscriptions, statements, payment attempts, and credits.
+///
+/// Methods that read a payer's data take an optional `orgId`: omit it for the signed-in user, or pass
+/// an Organization ID to read that Organization's data, which requires the `org:sys_billing:read`
+/// Permission.
 @MainActor
 public struct Billing {
-  private let billingService: BillingServiceProtocol
+  private let transport: any APITransport
 
-  init(billingService: BillingServiceProtocol) {
-    self.billingService = billingService
+  init(transport: any APITransport) {
+    self.transport = transport
   }
 
-  public func getPaymentAttempts(params: GetPaymentAttemptsParams) async throws -> ClerkPaginatedResponse<BillingPayment> {
-    try await billingService.getPaymentAttempts(params: params)
+  /// Lists your publicly visible Plans.
+  ///
+  /// - Parameters:
+  ///   - payerType: Whether to list user Plans or Organization Plans. Defaults to `.user`.
+  ///   - orgId: The Organization to fetch Plans for. Populates each Plan's available prices for
+  ///     that Organization.
+  ///   - minSeats: The minimum number of seats the returned Plans need to support.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of Plans to return per page. Defaults to `20`.
+  public func getPlans(
+    for payerType: ForPayerType = .user,
+    orgId: String? = nil,
+    minSeats: Int? = nil,
+    page: Int = 1,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<BillingPlan> {
+    try await transport.send(BillingAPI.getPlans(
+      params: GetPlansParams(for: payerType, orgId: orgId, minSeats: minSeats, page: page, pageSize: pageSize)
+    )).value
   }
 
-  public func getPaymentAttempt(params: GetPaymentAttemptParams) async throws -> BillingPayment {
-    try await billingService.getPaymentAttempt(params: params)
+  /// Gets a Plan by ID.
+  public func getPlan(id: String) async throws -> BillingPlan {
+    try await transport.send(BillingAPI.getPlan(params: GetPlanParams(id: id))).value
   }
 
-  public func getPlans(params: GetPlansParams? = nil) async throws -> ClerkPaginatedResponse<BillingPlan> {
-    try await billingService.getPlans(params: params)
+  /// Gets the Subscription of the signed-in user, or of the Organization with `orgId`.
+  public func getSubscription(orgId: String? = nil) async throws -> BillingSubscription {
+    try await transport.send(BillingAPI.getSubscription(params: GetSubscriptionParams(orgId: orgId))).value.response
   }
 
-  public func getPlan(params: GetPlanParams) async throws -> BillingPlan {
-    try await billingService.getPlan(params: params)
+  /// Lists the statements of the signed-in user, or of the Organization with `orgId`.
+  ///
+  /// - Parameters:
+  ///   - orgId: The Organization to read. Omit for the signed-in user.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of statements to return per page. Defaults to `20`.
+  public func getStatements(
+    orgId: String? = nil,
+    page: Int = 1,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<BillingStatement> {
+    try await transport.send(BillingAPI.getStatements(params: GetStatementsParams(orgId: orgId, page: page, pageSize: pageSize))).value.response
   }
 
-  public func getSubscription(params: GetSubscriptionParams) async throws -> BillingSubscription {
-    try await billingService.getSubscription(params: params)
+  /// Gets a statement by ID.
+  public func getStatement(id: String, orgId: String? = nil) async throws -> BillingStatement {
+    try await transport.send(BillingAPI.getStatement(params: GetStatementParams(id: id, orgId: orgId))).value.response
   }
 
-  public func getStatements(params: GetStatementsParams) async throws -> ClerkPaginatedResponse<BillingStatement> {
-    try await billingService.getStatements(params: params)
+  /// Lists the payment attempts of the signed-in user, or of the Organization with `orgId`.
+  ///
+  /// - Parameters:
+  ///   - orgId: The Organization to read. Omit for the signed-in user.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of payment attempts to return per page. Defaults to `20`.
+  public func getPaymentAttempts(
+    orgId: String? = nil,
+    page: Int = 1,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<BillingPayment> {
+    try await transport.send(BillingAPI.getPaymentAttempts(
+      params: GetPaymentAttemptsParams(orgId: orgId, page: page, pageSize: pageSize)
+    )).value
   }
 
-  public func getStatement(params: GetStatementParams) async throws -> BillingStatement {
-    try await billingService.getStatement(params: params)
+  /// Gets a payment attempt by ID.
+  public func getPaymentAttempt(id: String, orgId: String? = nil) async throws -> BillingPayment {
+    try await transport.send(BillingAPI.getPaymentAttempt(params: GetPaymentAttemptParams(id: id, orgId: orgId))).value
   }
 
-  public func getCreditBalance(params: GetCreditBalanceParams) async throws -> BillingCreditBalance {
-    try await billingService.getCreditBalance(params: params)
+  /// Gets the credit balance of the signed-in user, or of the Organization with `orgId`.
+  public func getCreditBalance(orgId: String? = nil) async throws -> BillingCreditBalance {
+    try await transport.send(BillingAPI.getCreditBalance(params: GetCreditBalanceParams(orgId: orgId))).value.response
   }
 
-  public func getCreditHistory(params: GetCreditHistoryParams) async throws -> ClerkPaginatedResponse<BillingCreditLedger> {
-    try await billingService.getCreditHistory(params: params)
+  /// Lists the credit ledger entries of the signed-in user, or of the Organization with `orgId`.
+  ///
+  /// - Parameters:
+  ///   - orgId: The Organization to read. Omit for the signed-in user.
+  ///   - page: The 1-based page number to fetch. Defaults to `1`.
+  ///   - pageSize: The maximum number of entries to return per page. Defaults to `20`.
+  public func getCreditHistory(
+    orgId: String? = nil,
+    page: Int = 1,
+    pageSize: Int = 20
+  ) async throws -> ClerkPaginatedResponse<BillingCreditLedger> {
+    try await transport.send(BillingAPI.getCreditHistory(
+      params: GetCreditHistoryParams(orgId: orgId, page: page, pageSize: pageSize)
+    )).value.response
   }
 }

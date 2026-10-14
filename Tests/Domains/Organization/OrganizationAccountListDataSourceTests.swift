@@ -15,34 +15,33 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     let defaultsCalled = LockIsolated(false)
     let defaults = organizationCreationDefaults()
 
-    let userService = MockUserService(
-      getOrganizationInvitations: { offset, pageSize, status in
-        invitationCalls.withValue { $0.append((offset, pageSize, status)) }
-        return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
-      },
-      getOrganizationMemberships: { offset, pageSize in
-        membershipCalls.withValue { $0.append((offset, pageSize)) }
-        return ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
-      },
-      getOrganizationSuggestions: { offset, pageSize, status in
-        suggestionCalls.withValue { $0.append((offset, pageSize, status)) }
-        return ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
-      },
-      getOrganizationCreationDefaults: {
-        defaultsCalled.setValue(true)
-        return defaults
-      }
-    )
-    setDependencies(userService: userService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { offset, pageSize, status in
+      invitationCalls.withValue { $0.append((offset, pageSize, status)) }
+      return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
+    }
+    transport.stubOrganizationMemberships { offset, pageSize in
+      membershipCalls.withValue { $0.append((offset, pageSize)) }
+      return ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    }
+    transport.stubOrganizationSuggestions { offset, pageSize, status in
+      suggestionCalls.withValue { $0.append((offset, pageSize, status)) }
+      return ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
+    }
+    transport.stub(UserAPI.getOrganizationCreationDefaults()) { _ in
+      defaultsCalled.setValue(true)
+      return ClientResponse(response: defaults, client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 3)
     await model.loadInitial(user: .mock, includeCreationDefaults: true)
 
     XCTAssertFalse(model.isLoading)
     XCTAssertNil(model.error)
-    XCTAssertEqual(model.membershipsPager.items.map(\.id), ["mem_1"])
-    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1"])
-    XCTAssertEqual(model.suggestionsPager.items.map(\.id), ["sug_1"])
+    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_1"])
+    XCTAssertEqual(model.invitations.pager.items.map(\.id), ["inv_1"])
+    XCTAssertEqual(model.suggestions.pager.items.map(\.id), ["sug_1"])
     XCTAssertEqual(model.creationDefaults, defaults)
     XCTAssertTrue(defaultsCalled.value)
 
@@ -65,18 +64,17 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   func testLoadInitialTracksEmptyState() async {
     configureClerkForTesting()
 
-    let userService = MockUserService(
-      getOrganizationInvitations: { _, _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      },
-      getOrganizationMemberships: { _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      },
-      getOrganizationSuggestions: { _, _, _ in
-        ClerkPaginatedResponse(data: [], totalCount: 0)
-      }
-    )
-    setDependencies(userService: userService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { _, _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    transport.stubOrganizationMemberships { _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    transport.stubOrganizationSuggestions { _, _, _ in
+      ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
@@ -91,12 +89,11 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
   func testLoadInitialClearsLoadingStateAfterFailure() async {
     configureClerkForTesting()
 
-    let userService = MockUserService(
-      getOrganizationMemberships: { _, _ in
-        throw ClerkClientError(message: "Failed to load memberships")
-      }
-    )
-    setDependencies(userService: userService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      throw ClerkClientError(message: "Failed to load memberships")
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     await model.loadInitial(user: .mock, includeCreationDefaults: false)
@@ -110,28 +107,29 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let captured = LockIsolated<(offset: Int, pageSize: Int)?>(nil)
-    let userService = MockUserService(getOrganizationMemberships: { offset, pageSize in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { offset, pageSize in
+      guard offset > 0 else {
+        return ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member_1")], totalCount: 2)
+      }
       captured.setValue((offset, pageSize))
       return ClerkPaginatedResponse(
         data: [membership(id: "mem_2", organizationId: "org_member_2")],
         totalCount: 2
       )
-    })
-    setDependencies(userService: userService)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 4)
-    model.membershipsPager.replace(with: ClerkPaginatedResponse(
-      data: [membership(id: "mem_1", organizationId: "org_member_1")],
-      totalCount: 2
-    ))
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
 
-    await model.loadMoreMemberships(user: .mock)
+    await model.memberships.loadMore()?.value
 
     let params = try XCTUnwrap(captured.value)
     XCTAssertEqual(params.offset, 1)
     XCTAssertEqual(params.pageSize, 4)
-    XCTAssertEqual(model.membershipsPager.items.map(\.id), ["mem_1", "mem_2"])
-    XCTAssertFalse(model.membershipsPager.hasNextPage)
+    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_1", "mem_2"])
+    XCTAssertFalse(model.memberships.pager.hasNextPage)
   }
 
   func testPagerLoadedPageOffsetsRepresentCurrentLoadedWindow() {
@@ -186,22 +184,24 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let capturedInvitationId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { call in
+      let invitationId = String(call.path.split(separator: "/")[3])
       capturedInvitationId.setValue(invitationId)
-      return invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
-    })
-    setDependencies(organizationService: organizationService)
+      return ClientResponse(response: invitation(id: invitationId, organizationId: "org_invite", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
-    model.invitationsPager.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1))
+    model.invitations.update { $0.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1)) }
 
     await model.acceptInvitation(pendingInvitation)
 
     XCTAssertEqual(capturedInvitationId.value, "inv_1")
-    XCTAssertEqual(model.invitationsPager.items.first?.status, "accepted")
-    XCTAssertEqual(model.invitationsPager.offset, 0)
-    XCTAssertEqual(model.invitationsPager.totalCount, 0)
+    XCTAssertEqual(model.invitations.pager.items.first?.status, "accepted")
+    XCTAssertEqual(model.invitations.pager.offset, 0)
+    XCTAssertEqual(model.invitations.pager.totalCount, 0)
   }
 
   @MainActor
@@ -209,24 +209,26 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let fetchedOrganizationId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(
-      getOrganization: { organizationId in
-        fetchedOrganizationId.setValue(organizationId)
-        throw ClerkClientError(message: "Accepted invitations should not fetch a full organization.")
-      },
-      acceptUserOrganizationInvitation: { invitationId in
-        invitation(id: invitationId, organizationId: "org_invite", status: "accepted")
-      }
-    )
-    setDependencies(organizationService: organizationService)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.get(organizationId: FakeTransport.anyPathSegment)) { call in
+      fetchedOrganizationId.setValue(String(call.path.split(separator: "/")[2]))
+      throw ClerkClientError(message: "Accepted invitations should not fetch a full organization.")
+    }
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { call in
+      ClientResponse(
+        response: invitation(id: String(call.path.split(separator: "/")[3]), organizationId: "org_invite", status: "accepted"),
+        client: nil
+      )
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
     let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
-    model.invitationsPager.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1))
+    model.invitations.update { $0.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1)) }
 
     await model.acceptInvitation(pendingInvitation)
 
-    let acceptedInvitation = try XCTUnwrap(model.invitationsPager.items.first)
+    let acceptedInvitation = try XCTUnwrap(model.invitations.pager.items.first)
     XCTAssertEqual(acceptedInvitation.status, "accepted")
     XCTAssertEqual(acceptedInvitation.publicOrganizationData.id, "org_invite")
     XCTAssertNil(fetchedOrganizationId.value)
@@ -237,45 +239,188 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let invitationCalls = LockIsolated<[(offset: Int, pageSize: Int, status: [String])]>([])
-    let userService = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { offset, pageSize, status in
+      guard offset > 0 else {
+        return ClerkPaginatedResponse(
+          data: [invitation(id: "inv_1", organizationId: "org_1"), invitation(id: "inv_2", organizationId: "org_2")],
+          totalCount: 3
+        )
+      }
       invitationCalls.withValue { $0.append((offset, pageSize, status)) }
       return ClerkPaginatedResponse(
         data: [invitation(id: "inv_3", organizationId: "org_3")],
         totalCount: 2
       )
-    })
-    let organizationService = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
-      invitation(id: invitationId, organizationId: "org_1", status: "accepted")
-    })
-    setDependencies(userService: userService, organizationService: organizationService)
+    }
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { call in
+      ClientResponse(response: invitation(id: String(call.path.split(separator: "/")[3]), organizationId: "org_1", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource(pageSize: 2)
-    let firstInvitation = invitation(id: "inv_1", organizationId: "org_1")
-    let secondInvitation = invitation(id: "inv_2", organizationId: "org_2")
-    model.invitationsPager.replace(with: ClerkPaginatedResponse(
-      data: [firstInvitation, secondInvitation],
-      totalCount: 3
-    ))
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let firstInvitation = try XCTUnwrap(model.invitations.pager.items.first)
 
     await model.acceptInvitation(firstInvitation)
 
-    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2"])
-    XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending"])
-    XCTAssertEqual(model.invitationsPager.offset, 1)
-    XCTAssertEqual(model.invitationsPager.totalCount, 2)
-    XCTAssertTrue(model.invitationsPager.hasNextPage)
+    XCTAssertEqual(model.invitations.pager.items.map(\.id), ["inv_1", "inv_2"])
+    XCTAssertEqual(model.invitations.pager.items.map(\.status), ["accepted", "pending"])
+    XCTAssertEqual(model.invitations.pager.offset, 1)
+    XCTAssertEqual(model.invitations.pager.totalCount, 2)
+    XCTAssertTrue(model.invitations.pager.hasNextPage)
 
-    await model.loadMoreInvitations(user: .mock)
+    await model.invitations.loadMore()?.value
 
     let invitationCall = try XCTUnwrap(invitationCalls.value.first)
     XCTAssertEqual(invitationCall.offset, 1)
     XCTAssertEqual(invitationCall.pageSize, 2)
     XCTAssertEqual(invitationCall.status, ["pending"])
-    XCTAssertEqual(model.invitationsPager.items.map(\.id), ["inv_1", "inv_2", "inv_3"])
-    XCTAssertEqual(model.invitationsPager.items.map(\.status), ["accepted", "pending", "pending"])
-    XCTAssertEqual(model.invitationsPager.offset, 2)
-    XCTAssertEqual(model.invitationsPager.totalCount, 2)
-    XCTAssertFalse(model.invitationsPager.hasNextPage)
+    XCTAssertEqual(model.invitations.pager.items.map(\.id), ["inv_1", "inv_2", "inv_3"])
+    XCTAssertEqual(model.invitations.pager.items.map(\.status), ["accepted", "pending", "pending"])
+    XCTAssertEqual(model.invitations.pager.offset, 2)
+    XCTAssertEqual(model.invitations.pager.totalCount, 2)
+    XCTAssertFalse(model.invitations.pager.hasNextPage)
+  }
+
+  @MainActor
+  func testPartiallyFailedLoadKeepsLoadedListsAndCanBeRetried() async {
+    configureClerkForTesting()
+
+    let invitationsFail = LockIsolated(true)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    }
+    transport.stubOrganizationInvitations { _, _, _ in
+      if invitationsFail.value {
+        throw ClerkClientError(message: "Failed to load invitations")
+      }
+      return ClerkPaginatedResponse(data: [invitation(id: "inv_1", organizationId: "org_invite")], totalCount: 1)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource()
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+
+    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_1"])
+    XCTAssertNotNil(model.error)
+    XCTAssertTrue(model.hasExistingResources)
+    XCTAssertTrue(model.hasFailedLists)
+
+    invitationsFail.setValue(false)
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+
+    XCTAssertEqual(model.invitations.pager.items.map(\.id), ["inv_1"])
+    XCTAssertFalse(model.hasFailedLists)
+  }
+
+  @MainActor
+  func testFailedListIsRetryableWhileAnotherListIsStillLoading() async {
+    configureClerkForTesting()
+
+    let gate = ResponseGate()
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      ClerkPaginatedResponse(data: [membership(id: "mem_1", organizationId: "org_member")], totalCount: 1)
+    }
+    transport.stubOrganizationInvitations { _, _, _ in
+      throw ClerkClientError(message: "Failed to load invitations")
+    }
+    transport.stubOrganizationSuggestions { _, _, _ in
+      await gate.wait("suggestions")
+      return ClerkPaginatedResponse(data: [], totalCount: 0)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource()
+    let load = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    for _ in 0 ..< 1000 where model.error == nil || model.memberships.isLoading {
+      await Task.yield()
+    }
+
+    XCTAssertNotNil(model.error)
+    XCTAssertTrue(model.suggestions.isLoading)
+    XCTAssertTrue(model.hasExistingResources)
+    XCTAssertTrue(model.hasFailedLists)
+
+    gate.open("suggestions")
+    await load.value
+    XCTAssertTrue(model.hasFailedLists)
+  }
+
+  @MainActor
+  func testLoadingAnotherUserClearsThePreviousUsersLists() async {
+    configureClerkForTesting()
+
+    let failsForSecondUser = LockIsolated(false)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationMemberships { _, _ in
+      if failsForSecondUser.value {
+        throw ClerkClientError(message: "Failed to load memberships")
+      }
+      return ClerkPaginatedResponse(data: [membership(id: "mem_a", organizationId: "org_a")], totalCount: 1)
+    }
+    transport.stub(UserAPI.getOrganizationCreationDefaults()) { _ in
+      ClientResponse(response: organizationCreationDefaults(), client: nil)
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource()
+    await model.loadInitial(user: .mock, includeCreationDefaults: true)
+    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_a"])
+    XCTAssertNotNil(model.creationDefaults)
+
+    var otherUser = User.mock
+    otherUser.id = "user_other"
+    failsForSecondUser.setValue(true)
+    await model.loadInitial(user: otherUser, includeCreationDefaults: false)
+
+    XCTAssertTrue(model.memberships.pager.items.isEmpty)
+    XCTAssertNil(model.creationDefaults)
+
+    await model.loadInitial(user: nil, includeCreationDefaults: false)
+
+    XCTAssertFalse(model.hasExistingResources)
+    XCTAssertNil(model.creationDefaults)
+    XCTAssertFalse(model.isLoading)
+    XCTAssertFalse(model.hasFailedLists)
+  }
+
+  @MainActor
+  func testReloadDropsALoadMoreInFlight() async {
+    configureClerkForTesting()
+
+    let gate = ResponseGate()
+    let isFirstLoad = LockIsolated(true)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { offset, _, _ in
+      if offset > 0 {
+        await gate.wait("oldLoadMore")
+        return ClerkPaginatedResponse(data: [invitation(id: "inv_3", organizationId: "org_3")], totalCount: 3)
+      }
+      guard isFirstLoad.value else {
+        return ClerkPaginatedResponse(data: [invitation(id: "new_1", organizationId: "org_new")], totalCount: 1)
+      }
+      isFirstLoad.setValue(false)
+      return ClerkPaginatedResponse(
+        data: [invitation(id: "inv_1", organizationId: "org_1"), invitation(id: "inv_2", organizationId: "org_2")],
+        totalCount: 3
+      )
+    }
+    setDependencies(transport: transport)
+
+    let model = OrganizationAccountListDataSource(pageSize: 2)
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let oldLoadMore = model.invitations.loadMore()
+
+    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    gate.open("oldLoadMore")
+    await oldLoadMore?.value
+
+    XCTAssertEqual(model.invitations.pager.items.map(\.id), ["new_1"])
+    XCTAssertFalse(model.isLoadingMore)
+    XCTAssertNil(model.error)
   }
 
   @MainActor
@@ -283,35 +428,70 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     configureClerkForTesting()
 
     let capturedSuggestionId = LockIsolated<String?>(nil)
-    let organizationService = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(OrganizationAPI.acceptSuggestion(suggestionId: FakeTransport.anyPathSegment)) { call in
+      let suggestionId = String(call.path.split(separator: "/")[3])
       capturedSuggestionId.setValue(suggestionId)
-      return suggestion(id: suggestionId, organizationId: "org_suggested", status: "accepted")
-    })
-    setDependencies(organizationService: organizationService)
+      return ClientResponse(response: suggestion(id: suggestionId, organizationId: "org_suggested", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
 
     let model = OrganizationAccountListDataSource()
-    model.suggestionsPager.replace(with: ClerkPaginatedResponse(
+    model.suggestions.update { $0.replace(with: ClerkPaginatedResponse(
       data: [suggestion(id: "sug_1", organizationId: "org_suggested")],
       totalCount: 1
-    ))
+    )) }
 
-    await model.acceptSuggestion(model.suggestionsPager.items[0])
+    await model.acceptSuggestion(model.suggestions.pager.items[0])
 
     XCTAssertEqual(capturedSuggestionId.value, "sug_1")
-    XCTAssertEqual(model.suggestionsPager.items.first?.status, "accepted")
+    XCTAssertEqual(model.suggestions.pager.items.first?.status, "accepted")
   }
 }
 
 @MainActor
-private func setDependencies(
-  userService: (any UserServiceProtocol)? = nil,
-  organizationService: (any OrganizationServiceProtocol)? = nil
-) {
+private func setDependencies(transport: FakeTransport) {
   Clerk.shared.dependencies = MockDependencyContainer(
     apiClient: createMockAPIClient(),
-    userService: userService,
-    organizationService: organizationService
+    transport: transport
   )
+}
+
+@MainActor
+extension FakeTransport {
+  fileprivate func stubOrganizationMemberships(
+    _ respond: @escaping @MainActor (_ offset: Int, _ pageSize: Int) async throws -> ClerkPaginatedResponse<OrganizationMembership>
+  ) {
+    stub(UserAPI.getOrganizationMemberships(offset: 0, pageSize: 0)) { call in
+      try await ClientResponse(response: respond(call.intQuery("offset"), call.intQuery("limit")), client: nil)
+    }
+  }
+
+  fileprivate func stubOrganizationInvitations(
+    _ respond: @escaping @MainActor (_ offset: Int, _ pageSize: Int, _ status: [String]) async throws -> ClerkPaginatedResponse<UserOrganizationInvitation>
+  ) {
+    stub(UserAPI.getOrganizationInvitations(offset: 0, pageSize: 0, status: [])) { call in
+      try await ClientResponse(response: respond(call.intQuery("offset"), call.intQuery("limit"), call.statusQuery), client: nil)
+    }
+  }
+
+  fileprivate func stubOrganizationSuggestions(
+    _ respond: @escaping @MainActor (_ offset: Int, _ pageSize: Int, _ status: [String]) async throws -> ClerkPaginatedResponse<OrganizationSuggestion>
+  ) {
+    stub(UserAPI.getOrganizationSuggestions(offset: 0, pageSize: 0, status: [])) { call in
+      try await ClientResponse(response: respond(call.intQuery("offset"), call.intQuery("limit"), call.statusQuery), client: nil)
+    }
+  }
+}
+
+extension FakeTransport.Call {
+  fileprivate func intQuery(_ name: String) -> Int {
+    query.first { $0.name == name }?.value.flatMap(Int.init) ?? -1
+  }
+
+  fileprivate var statusQuery: [String] {
+    query.filter { $0.name == "status" }.compactMap(\.value)
+  }
 }
 
 private func organization(id: String, name: String? = nil) -> Organization {

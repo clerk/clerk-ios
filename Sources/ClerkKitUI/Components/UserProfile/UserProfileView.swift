@@ -155,91 +155,94 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 
   public var body: some View {
-    if let user = clerk.user {
-      Group {
-        if navigationPath == nil {
-          NavigationStack(path: $internalPath) {
+    ZStack {
+      if let user = clerk.user {
+        Group {
+          if navigationPath == nil {
+            NavigationStack(path: $internalPath) {
+              profileContent(user: user)
+                .navigationDestination(for: Route.self) { route in
+                  view(for: route)
+                    .environment(sheetNavigation)
+                    .environment(codeLimiter)
+                    .environment(
+                      UserProfileNavigator(
+                        push: navigateToCustom,
+                        popToRoot: { dismissAction(.popToRoot) }
+                      )
+                    )
+                    .environment(
+                      UserProfileBuiltInRouter(
+                        push: navigateToBuiltIn,
+                        dismissAction: dismissAction
+                      )
+                    )
+                }
+            }
+            #if os(macOS)
+            .frame(
+              width: isDismissible ? 560 : nil,
+              height: isDismissible ? 620 : nil,
+              alignment: .topLeading
+            )
+            #endif
+          } else {
             profileContent(user: user)
-              .navigationDestination(for: Route.self) { route in
-                view(for: route)
-                  .environment(sheetNavigation)
-                  .environment(codeLimiter)
-                  .environment(
-                    UserProfileNavigator(
-                      push: navigateToCustom,
-                      popToRoot: { dismissAction(.popToRoot) }
-                    )
-                  )
-                  .environment(
-                    UserProfileBuiltInRouter(
-                      push: navigateToBuiltIn,
-                      dismissAction: dismissAction
-                    )
-                  )
-              }
           }
-          #if os(macOS)
-          .frame(
-            width: isDismissible ? 560 : nil,
-            height: isDismissible ? 620 : nil,
-            alignment: .topLeading
-          )
-          #endif
-        } else {
-          profileContent(user: user)
         }
-      }
-      .tint(theme.colors.primary)
-      .presentationBackground(theme.colors.background)
-      .background(theme.colors.background)
-      .onFirstAppear {
-        initialPathCount = navigationPath?.wrappedValue.count ?? 0
-      }
-      .clerkErrorPresenting($error)
-      .sheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
-        UserButtonAccountSwitcher()
-          .environment(clerk)
-          .environment(sheetNavigation)
-      }
-      .sheet(isPresented: $updateProfileIsPresented) {
-        UserProfileUpdateProfileView(user: user)
-          .environment(clerk)
-      }
-      .sheet(isPresented: $sheetNavigation.authViewIsPresented) {
-        // The add-account sheet is modal over the host, so it dismisses itself
-        // rather than showing the host's back button.
-        AuthView()
-          .environment(\.clerkHostBackAction, nil)
-          .environment(clerk)
-      }
-      .task(id: user) {
-        await getSessionsOnAllDevices()
-      }
-      .task {
-        _ = try? await clerk.refreshEnvironment()
-      }
-      .task {
-        _ = try? await clerk.refreshClient()
-      }
-      .taskOnce {
-        await clerk.telemetry.record(
-          TelemetryEvents.viewDidAppear(
-            "UserProfileView",
-            payload: [
-              "isDismissible": .bool(isDismissible),
-              "isEmbedded": .bool(navigationPath != nil),
-            ]
+        .tint(theme.colors.primary)
+        .presentationBackground(theme.colors.background)
+        .background(theme.colors.background)
+        .onFirstAppear {
+          initialPathCount = navigationPath?.wrappedValue.count ?? 0
+        }
+        .clerkErrorPresenting($error)
+        .clerkSheet(isPresented: $sheetNavigation.accountSwitcherIsPresented) {
+          UserButtonAccountSwitcher()
+        }
+        .clerkSheet(isPresented: $updateProfileIsPresented) {
+          UserProfileUpdateProfileView(user: user)
+        }
+        .clerkSheet(isPresented: $sheetNavigation.authViewIsPresented) {
+          // The add-account sheet is modal over the host, so it dismisses itself
+          // rather than showing the host's back button.
+          AuthView()
+            .environment(\.clerkHostBackAction, nil)
+        }
+        .task(id: user) {
+          await getSessionsOnAllDevices()
+        }
+        .task {
+          _ = try? await clerk.refreshEnvironment()
+        }
+        .task {
+          _ = try? await clerk.refreshClient()
+        }
+        .taskOnce {
+          await clerk.telemetry.record(
+            TelemetryEvents.viewDidAppear(
+              "UserProfileView",
+              payload: [
+                "isDismissible": .bool(isDismissible),
+                "isEmbedded": .bool(navigationPath != nil),
+              ]
+            )
+          )
+        }
+        .environment(sheetNavigation)
+        .environment(codeLimiter)
+        .environment(
+          UserProfileBuiltInRouter(
+            push: navigateToBuiltIn,
+            dismissAction: dismissAction
           )
         )
       }
-      .environment(sheetNavigation)
-      .environment(codeLimiter)
-      .environment(
-        UserProfileBuiltInRouter(
-          push: navigateToBuiltIn,
-          dismissAction: dismissAction
-        )
-      )
+    }
+    .onChange(of: clerk.user == nil) { _, userIsGone in
+      if userIsGone {
+        dismissAction(.exitUserProfile)
+      }
     }
   }
 
@@ -268,6 +271,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       navigationPath.wrappedValue.removeLast(entriesToRemove)
     } else {
       internalPath = NavigationPath()
+      if action == .exitUserProfile, isDismissible {
+        dismiss()
+      }
     }
   }
 
@@ -586,9 +592,6 @@ extension UserProfileView {
   fileprivate func signOut(sessionId: String) async {
     do {
       try await clerk.auth.signOut(sessionId: sessionId)
-      if clerk.session == nil {
-        dismiss()
-      }
     } catch {
       self.error = error
       ClerkLogger.error("Failed to sign out", error: error)
@@ -597,10 +600,11 @@ extension UserProfileView {
 
   fileprivate func getSessionsOnAllDevices() async {
     guard let user = clerk.user else { return }
+    let sessionId = clerk.session?.id
     do {
       try await user.getSessions()
     } catch {
-      guard !error.isCancellationError else { return }
+      guard !error.isCancellationError, clerk.session?.id == sessionId else { return }
 
       self.error = error
       ClerkLogger.error("Failed to get sessions on all devices", error: error)
@@ -633,17 +637,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   UserProfileView()
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -682,17 +686,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
     }
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -707,17 +711,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   UserProfileView(isDismissible: false)
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }
@@ -734,17 +738,17 @@ private enum UserProfileListRowID<Route: Hashable>: Hashable {
   UserProfileView(isDismissible: false, navigationPath: $navigationPath)
     .environment(
       Clerk.preview { builder in
-        builder.services.clientService.getHandler = {
+        builder.transport.stub(ClientAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
-          return Client.mock
+          return ClientResponse(response: Client.mock, client: nil)
         }
 
-        builder.services.environmentService.getHandler = {
+        builder.transport.stub(EnvironmentAPI.get()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return Clerk.Environment.mock
         }
 
-        builder.services.userService.getSessionsHandler = { _ in
+        builder.transport.stub(UserAPI.getSessions()) { _ in
           try? await Task.sleep(for: .seconds(1))
           return [Session.mock, Session.mock2]
         }

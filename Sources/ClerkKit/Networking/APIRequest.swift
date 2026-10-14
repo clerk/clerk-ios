@@ -1,7 +1,6 @@
 import Foundation
 
-/// Supported HTTP verbs for Clerk network requests.
-enum HTTPMethod: String {
+package enum HTTPMethod: String {
   case get = "GET"
   case post = "POST"
   case put = "PUT"
@@ -24,7 +23,6 @@ struct AnyEncodable: Encodable, @unchecked Sendable {
   }
 }
 
-/// Encodable dictionary wrapper that allows `[String: Any]` to be encoded.
 struct EncodableDictionary: Encodable, @unchecked Sendable {
   let dictionary: [String: Any]
 
@@ -33,15 +31,12 @@ struct EncodableDictionary: Encodable, @unchecked Sendable {
   }
 
   func encode(to encoder: Encoder) throws {
-    // Convert dictionary to JSON data using JSONSerialization
     let jsonData = try JSONSerialization.data(withJSONObject: dictionary, options: [])
-    // Decode it back as a generic JSON structure and encode it properly
     let json = try JSONDecoder().decode(JSON.self, from: jsonData)
     try json.encode(to: encoder)
   }
 }
 
-/// Represents a request body, either unused, raw data, or an encodable payload.
 enum RequestBody: @unchecked Sendable {
   case data(Data)
   case encodable(AnyEncodable)
@@ -56,16 +51,15 @@ enum RequestBody: @unchecked Sendable {
   }
 }
 
-/// Canonical empty payload used for requests where no response body is anticipated.
 struct EmptyResponse: Codable {}
 
-/// Describes a single API request with a strongly typed response.
-struct Request<Response: Decodable & Sendable> {
+package struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
   let headers: [String: String]
   let canEstablishClientWhenTokenless: Bool
 
+  private let scopedToActiveSession: Bool
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
   private let automaticallySyncClient: Bool
@@ -77,6 +71,7 @@ struct Request<Response: Decodable & Sendable> {
     method: HTTPMethod = .get,
     headers: [String: String] = [:],
     canEstablishClientWhenTokenless: Bool = false,
+    scopedToActiveSession: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
     automaticallySyncClient: Bool = true,
@@ -97,6 +92,7 @@ struct Request<Response: Decodable & Sendable> {
     self.method = method
     self.headers = headers
     self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
+    self.scopedToActiveSession = scopedToActiveSession
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
     self.automaticallySyncClient = automaticallySyncClient
@@ -152,14 +148,21 @@ struct Request<Response: Decodable & Sendable> {
       }
     }
 
+    applyPipelineFlags(to: &urlRequest)
+
+    return urlRequest
+  }
+
+  private func applyPipelineFlags(to urlRequest: inout URLRequest) {
+    if scopedToActiveSession {
+      urlRequest.scopeToClerkActiveSession()
+    }
     if !automaticallySyncClient {
       urlRequest.disableAutomaticClerkClientSync()
     }
     if !logBodies {
       urlRequest.disableClerkBodyLogging()
     }
-
-    return urlRequest
   }
 
   func decode(_ data: Data, using decoder: JSONDecoder) throws -> Response {
@@ -180,7 +183,6 @@ enum RequestError: Error {
   case invalidURL(path: String)
 }
 
-/// Wraps a decoded response value from the API client.
 struct APIResponse<Value: Sendable> {
   let value: Value
   let requestSequence: Int?

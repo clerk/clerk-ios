@@ -108,9 +108,8 @@ struct OrganizationVerifiedDomainsView: View {
       }
     }
     .clerkErrorPresenting($error)
-    .sheet(item: $presentedDomainFlow) { presentedDomainFlow in
+    .clerkSheet(item: $presentedDomainFlow) { presentedDomainFlow in
       view(for: presentedDomainFlow)
-        .environment(clerk)
     }
     .task(id: organization?.id) {
       await loadDomains(page: 1)
@@ -440,7 +439,7 @@ private enum PresentedDomainFlow: Hashable, Identifiable {
 
         preview.client = client
         preview.environment = environment
-        preview.services.organizationService.getOrganizationDomainsHandler = { _, _, _, _ in
+        preview.transport.stub(OrganizationAPI.getDomains(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0, enrollmentMode: nil)) { _ in
           var unverifiedDomain = OrganizationDomain.mock
           unverifiedDomain.id = "domain_1"
           unverifiedDomain.name = "clerk.com"
@@ -452,7 +451,7 @@ private enum PresentedDomainFlow: Hashable, Identifiable {
           manualDomain.enrollmentMode = OrganizationDomain.EnrollmentMode.manualInvitation.rawValue
           manualDomain.verification = .init(status: "verified", strategy: "strategy", attempts: 0)
 
-          return ClerkPaginatedResponse(data: [unverifiedDomain, manualDomain], totalCount: 2)
+          return ClientResponse(response: ClerkPaginatedResponse(data: [unverifiedDomain, manualDomain], totalCount: 2), client: nil)
         }
       })
   }

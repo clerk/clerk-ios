@@ -41,10 +41,10 @@ extension Session {
   /// - Returns: A ``SessionVerification`` reflecting the current state of the flow.
   @discardableResult @MainActor
   public func startVerification(level: SessionVerification.Level) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.startVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.startVerification(
       sessionId: id,
       params: .init(level: level)
-    )
+    )).value.response
   }
 
   /// Verifies the current session using a biometric credential enrolled on this app installation.
@@ -52,6 +52,10 @@ extension Session {
   /// Start the flow with ``startVerification(level:)`` and follow its returned status.
   /// A biometric credential submitted as the first factor can also satisfy an existing
   /// second-factor requirement. Use `.secondFactor` when the flow is waiting for that stage.
+  ///
+  /// Requires a credential enrolled with ``BiometricCredentialPolicy/biometryCurrentSet``.
+  /// Other policies throw ``BiometricCredentialError/policyIncompatible``; offer another
+  /// verification method. Existing credentials remain available for sign-in and are not replaced.
   ///
   /// Biometric reverification shares the instance's native biometric sign-in settings.
   /// Disabling biometric sign-in also disables biometric reverification, even for
@@ -273,19 +277,19 @@ extension Session {
 
     let localCredential = try biometricCredentials.localCredential(for: userID)
 
-    let service = Clerk.shared.dependencies.sessionService
+    let transport = try Clerk.currentDependencies.transport
     do {
       try _Concurrency.Task.checkCancellation()
       let prepared = if level == .secondFactor {
-        try await service.prepareSecondFactorVerification(
+        try await transport.send(SessionAPI.prepareSecondFactorVerification(
           sessionId: id,
           params: .init(strategy: .biometricCredential, biometricCredentialId: localCredential.id)
-        )
+        )).value.response
       } else {
-        try await service.prepareFirstFactorVerification(
+        try await transport.send(SessionAPI.prepareFirstFactorVerification(
           sessionId: id,
           params: .init(strategy: .biometricCredential, biometricCredentialId: localCredential.id)
-        )
+        )).value.response
       }
       let factor = level == .secondFactor ? prepared.secondFactorVerification : prepared.firstFactorVerification
       guard factor?.strategy == .biometricCredential,
@@ -294,14 +298,14 @@ extension Session {
         throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
       }
       try _Concurrency.Task.checkCancellation()
-      let signature = try biometricCredentials.sign(
+      let signature = try await biometricCredentials.sign(
         challenge: challenge,
         credential: localCredential,
         reason: reason ?? "Use biometrics to verify your identity."
       )
       try _Concurrency.Task.checkCancellation()
       let verified = if level == .secondFactor {
-        try await service.attemptSecondFactorVerification(
+        try await transport.send(SessionAPI.attemptSecondFactorVerification(
           sessionId: id,
           params: .init(
             strategy: .biometricCredential,
@@ -310,9 +314,9 @@ extension Session {
             signature: signature.signature,
             algorithm: signature.algorithm
           )
-        )
+        )).value.response
       } else {
-        try await service.attemptFirstFactorVerification(
+        try await transport.send(SessionAPI.attemptFirstFactorVerification(
           sessionId: id,
           params: .init(
             strategy: .biometricCredential,
@@ -321,10 +325,10 @@ extension Session {
             signature: signature.signature,
             algorithm: signature.algorithm
           )
-        )
+        )).value.response
       }
       if verified.status == .complete {
-        await SessionTokensCache.shared.removeTokens(sessionId: id)
+        Clerk.shared.identityController.invalidateSessionTokens(sessionId: id)
       }
       return verified
     } catch {
@@ -332,7 +336,6 @@ extension Session {
     }
   }
 
-  /// Prepares the first factor of an in-session reverification flow.
   @discardableResult @MainActor
   func prepareFirstFactorVerification(
     strategy: FactorStrategy,
@@ -341,7 +344,7 @@ extension Session {
     enterpriseConnectionId: String? = nil,
     redirectUrl: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareFirstFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.prepareFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -350,10 +353,9 @@ extension Session {
         enterpriseConnectionId: enterpriseConnectionId,
         redirectUrl: redirectUrl
       )
-    )
+    )).value.response
   }
 
-  /// Attempts the first factor of an in-session reverification flow.
   @discardableResult @MainActor
   func attemptFirstFactorVerification(
     strategy: FactorStrategy,
@@ -361,7 +363,7 @@ extension Session {
     password: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptFirstFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -369,35 +371,33 @@ extension Session {
         password: password,
         publicKeyCredential: publicKeyCredential
       )
-    )
+    )).value.response
   }
 
-  /// Prepares the second factor of an in-session reverification flow.
   @discardableResult @MainActor
   func prepareSecondFactorVerification(
     strategy: FactorStrategy,
     phoneNumberId: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.prepareSecondFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.prepareSecondFactorVerification(
       sessionId: id,
       params: .init(strategy: strategy, phoneNumberId: phoneNumberId)
-    )
+    )).value.response
   }
 
-  /// Attempts the second factor of an in-session reverification flow.
   @discardableResult @MainActor
   func attemptSecondFactorVerification(
     strategy: FactorStrategy,
     code: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.shared.dependencies.sessionService.attemptSecondFactorVerification(
+    try await Clerk.currentDependencies.transport.send(SessionAPI.attemptSecondFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
         code: code,
         publicKeyCredential: publicKeyCredential
       )
-    )
+    )).value.response
   }
 }

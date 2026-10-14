@@ -23,7 +23,6 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     )
     _ = try runtimeScope.requireCurrentClerk()
     request.setClerkClientResponseGeneration(identity.clientResponseGeneration)
-    request.setClerkSharedSessionBaseGeneration(identity.baseGeneration)
     let isCanonicalClientRequest = request.value(
       forHTTPHeaderField: Self.canonicalClientRequestHeader
     ) == "1"
@@ -34,7 +33,6 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     request.setClerkRequestCheckpoint(ClerkRequestCheckpoint(
       requestSequence: request.clerkRequestSequence,
       clientResponseGeneration: identity.clientResponseGeneration,
-      sharedSessionBaseGeneration: identity.baseGeneration,
       isCanonicalClientRequest: isCanonicalClientRequest,
       requestDeviceToken: identity.deviceToken,
       authFlowRegistrationId: identity.authFlowRegistrationId
@@ -42,6 +40,10 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
 
     if let deviceToken = identity.deviceToken {
       request.setValue(deviceToken, forHTTPHeaderField: "Authorization")
+    }
+
+    if request.isScopedToClerkActiveSession {
+      request.url?.append(queryItems: [URLQueryItem(name: "_clerk_session_id", value: identity.activeSessionID)])
     }
 
     if !skipClientId, let clientId = identity.clientID {

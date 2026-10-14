@@ -25,7 +25,6 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl == nil)
     #expect(options.keychainConfig.service == Bundle.main.bundleIdentifier ?? "")
     #expect(options.keychainConfig.accessGroup == nil)
-    #expect(options.sharedSessionSync == nil)
     #expect(options.redirectConfig.redirectUrl.contains("://callback"))
     #expect(options.redirectConfig.callbackUrlScheme == Bundle.main.bundleIdentifier ?? "")
     #expect(options.middleware.request.isEmpty == true)
@@ -42,8 +41,7 @@ struct ClerkOptionsTests {
       telemetryEnabled: false,
       keychainConfig: keychainConfig,
       proxyUrl: "https://proxy.example.com/__clerk",
-      redirectConfig: redirectConfig,
-      sharedSessionSync: .enabled
+      redirectConfig: redirectConfig
     )
 
     #expect(options.logLevel == .debug)
@@ -53,7 +51,6 @@ struct ClerkOptionsTests {
     #expect(options.proxyUrl?.absoluteString == "https://proxy.example.com/__clerk")
     #expect(options.redirectConfig.redirectUrl == "test://redirect")
     #expect(options.redirectConfig.callbackUrlScheme == "test")
-    #expect(options.sharedSessionSync == .enabled)
   }
 
   @Test
@@ -68,18 +65,9 @@ struct ClerkOptionsTests {
 
   @Test
   func proxyUrlConversionInvalidURL() {
-    // URL(string:) can be lenient, so use a string that definitely won't create a valid URL
-    // Using a string without a scheme should work
-    let options = Clerk.Options(proxyUrl: "://invalid")
+    let options = Clerk.Options(proxyUrl: "https://proxy example.com/__clerk")
 
-    // URL(string:) with "://invalid" may still create a URL with nil scheme
-    // So we check if it's actually a valid proxy URL by checking scheme
-    if let url = options.proxyUrl {
-      // If URL was created, it should have an invalid scheme
-      #expect(url.scheme == nil || url.scheme == "")
-    } else {
-      // nil is also acceptable
-    }
+    #expect(options.proxyUrl == nil)
   }
 
   @Test
@@ -107,32 +95,11 @@ struct ClerkOptionsTests {
 
   @Test
   func partialInitialization() {
-    // Test with only some parameters
     let options = Clerk.Options(logLevel: .debug)
 
     #expect(options.logLevel == .debug)
-    #expect(options.telemetryEnabled == true) // Default
-    #expect(options.proxyUrl == nil) // Default
-  }
-
-  @Test
-  func propertyAccess() {
-    let options = Clerk.Options(
-      logLevel: .debug,
-      telemetryEnabled: false,
-      proxyUrl: "https://proxy.example.com/__clerk"
-    )
-
-    // Verify all properties are accessible
-    _ = options.logLevel
-    _ = options.telemetryEnabled
-    _ = options.keychainConfig
-    _ = options.proxyUrl
-    _ = options.redirectConfig
-    _ = options.middleware
-
-    #expect(options.logLevel == .debug)
-    #expect(options.telemetryEnabled == false)
+    #expect(options.telemetryEnabled == true)
+    #expect(options.proxyUrl == nil)
   }
 
   @Test

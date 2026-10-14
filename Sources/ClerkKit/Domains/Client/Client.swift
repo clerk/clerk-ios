@@ -52,3 +52,17 @@ public struct Client: Codable, Sendable, Equatable {
     self.updatedAt = updatedAt
   }
 }
+
+extension Client {
+  static func differsIgnoringSessionTokens(_ previous: Client?, _ current: Client?) -> Bool {
+    previous?.withoutSessionTokens != current?.withoutSessionTokens
+  }
+
+  private var withoutSessionTokens: Client {
+    var client = self
+    for index in client.sessions.indices {
+      client.sessions[index].lastActiveToken = nil
+    }
+    return client
+  }
+}

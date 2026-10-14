@@ -8,7 +8,6 @@
 import Foundation
 
 extension Client {
-  /// Returns the current session for this client.
   var currentSession: Session? {
     guard let sessionId = lastActiveSessionId else {
       return nil

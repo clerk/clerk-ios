@@ -77,11 +77,11 @@ extension Auth {
     )
     let hostedAuth: HostedAuthResource
     do {
-      hostedAuth = try await hostedAuthService.create(params: createParams)
+      hostedAuth = try await transport.send(HostedAuthAPI.create(params: createParams)).value.response
     } catch let error as ClerkAPIError where error.code == "signed_out" {
       // Reconcile an abandoned handoff before retrying once with the same request inputs.
       try await clerk.refreshClient(skipClientId: true)
-      hostedAuth = try await hostedAuthService.create(params: createParams)
+      hostedAuth = try await transport.send(HostedAuthAPI.create(params: createParams)).value.response
     }
     let hostedAuthUrl = try hostedAuth.authenticationUrl()
 
@@ -103,27 +103,34 @@ extension Auth {
       throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }
 
-    let response = try await hostedAuthService.redeem(params: HostedAuthRedeemParams(
+    let response = try await transport.send(HostedAuthAPI.redeem(params: HostedAuthRedeemParams(
       rotatingTokenNonce: callback.rotatingTokenNonce,
       codeVerifier: pkce.verifier
-    ))
+    )))
+    let redeemedClient = response.value.response
+    guard let clientSyncContext = response.deferredClientSyncMetadata?.context(client: redeemedClient) else {
+      throw ClerkClientError(
+        message: "Hosted auth completion response was missing identity synchronization metadata.",
+        localizationBundle: .module
+      )
+    }
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
 
-    if response.clientSyncContext.update == .explicitClear {
-      try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
+    if clientSyncContext.update == .explicitClear {
+      try await clerk.identityController.applyNetworkResponse(clientSyncContext)
       throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }
 
     guard
-      let returnedClient = response.client,
+      let returnedClient = redeemedClient,
       returnedClient.sessions.contains(where: { $0.id == callback.createdSessionId })
     else {
       throw ClerkClientError(message: "Hosted auth completion did not include the created session.", localizationBundle: .module)
     }
 
     guard
-      response.clientSyncContext.clientResponseGeneration
+      clientSyncContext.clientResponseGeneration
         == browserStartClientResponseGeneration
     else {
       throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
@@ -141,7 +148,7 @@ extension Auth {
       }
     }
 
-    try await clerk.identityController.applyNetworkResponse(response.clientSyncContext)
+    try await clerk.identityController.applyNetworkResponse(clientSyncContext)
     guard clerk.client?.sessions.contains(where: { $0.id == callback.createdSessionId }) == true else {
       throw ClerkClientError(message: "Hosted auth completion could not update the current client.", localizationBundle: .module)
     }

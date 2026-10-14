@@ -6,14 +6,13 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct OrganizationTests {
+  private let transport = FakeTransport.mockDefaults()
+
   init() {
     configureClerkForTesting()
-  }
-
-  private func configureOrganizationService(_ service: MockOrganizationService) {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      organizationService: service
+      transport: transport
     )
   }
 
@@ -60,92 +59,64 @@ struct OrganizationTests {
   }
 
   @Test
-  func updateOrganizationUsesOrganizationServiceUpdateOrganization() async throws {
+  func updateSendsNameAndSlugForOrganization() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String, String?)?>(nil)
-    let service = MockOrganizationService(updateOrganization: { id, name, slug in
-      captured.setValue((id, name, slug))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.update(name: "New Name", slug: "new-slug")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "New Name")
-    #expect(params.2 == "new-slug")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .patch)
+    #expect(call.path == "/v1/organizations/\(organization.id)")
+    #expect(call.body?["name"]?.stringValue == "New Name")
+    #expect(call.body?["slug"]?.stringValue == "new-slug")
   }
 
   @Test
-  func destroyOrganizationUsesOrganizationServiceDestroyOrganization() async throws {
+  func destroyDeletesOrganization() async throws {
     let organization = Organization.mock
-    let capturedId = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(destroyOrganization: { organizationId in
-      capturedId.setValue(organizationId)
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.destroy()
 
-    #expect(capturedId.value == organization.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .delete)
+    #expect(call.path == "/v1/organizations/\(organization.id)")
   }
 
   @Test
-  func setOrganizationLogoUsesOrganizationServiceSetOrganizationLogo() async throws {
+  func setLogoUploadsImageDataForOrganization() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Data)?>(nil)
-    let service = MockOrganizationService(setOrganizationLogo: { organizationId, imageData in
-      captured.setValue((organizationId, imageData))
-      return .mock
-    })
-
-    configureOrganizationService(service)
-
     let imageData = Data("fake image data".utf8)
+
     _ = try await organization.setLogo(imageData: imageData)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == imageData)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .put)
+    #expect(call.path == "/v1/organizations/\(organization.id)/logo")
+    let uploadBody = try #require(call.uploadBody)
+    #expect(uploadBody.range(of: imageData) != nil)
   }
 
   @Test
-  func deleteOrganizationLogoUsesOrganizationServiceDeleteOrganizationLogo() async throws {
+  func deleteLogoDeletesOrganizationLogo() async throws {
     let organization = Organization.mock
-    let capturedId = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(deleteOrganizationLogo: { organizationId in
-      capturedId.setValue(organizationId)
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.deleteLogo()
 
-    #expect(capturedId.value == organization.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .delete)
+    #expect(call.path == "/v1/organizations/\(organization.id)/logo")
   }
 
   @Test
-  func getOrganizationRolesUsesOrganizationServiceGetOrganizationRoles() async throws {
+  func getRolesSendsPageOffset() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int)?>(nil)
-    let service = MockOrganizationService(getOrganizationRoles: { organizationId, initialPage, pageSize in
-      captured.setValue((organizationId, initialPage, pageSize))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getRoles(page: 2, pageSize: 10)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 10)
-    #expect(params.2 == 10)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/roles")
+    #expect(call.query.first { $0.name == "offset" }?.value == "10")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
   }
 
   @Test(
@@ -155,17 +126,10 @@ struct OrganizationTests {
       MembershipsScenario(query: nil, role: ["admin"]),
     ]
   )
-  func getOrganizationMembershipsUsesOrganizationServiceGetOrganizationMemberships(
+  func getMembershipsSendsPageOffsetQueryAndRoles(
     scenario: MembershipsScenario
   ) async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
-    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, initialPage, pageSize in
-      captured.setValue((organizationId, query, role, initialPage, pageSize))
-      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getMemberships(
       query: scenario.query,
@@ -174,24 +138,17 @@ struct OrganizationTests {
       pageSize: 10
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == scenario.query)
-    #expect(params.2 == scenario.role)
-    #expect(params.3 == 20)
-    #expect(params.4 == 10)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/memberships")
+    #expect(call.query.first { $0.name == "query" }?.value == scenario.query)
+    #expect(call.query.filter { $0.name == "role[]" }.compactMap(\.value) == (scenario.role ?? []))
+    #expect(call.query.first { $0.name == "offset" }?.value == "20")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
   }
 
   @Test
-  func getOrganizationMembershipsWithOffsetUsesOrganizationServiceGetOrganizationMemberships() async throws {
+  func getMembershipsWithOffsetSendsOffsetQueryAndRoles() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String?, [String]?, Int, Int)?>(nil)
-    let service = MockOrganizationService(getOrganizationMemberships: { organizationId, query, role, initialPage, pageSize in
-      captured.setValue((organizationId, query, role, initialPage, pageSize))
-      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getMemberships(
       query: "search",
@@ -200,105 +157,73 @@ struct OrganizationTests {
       pageSize: 10
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "search")
-    #expect(params.2 == ["admin"])
-    #expect(params.3 == 30)
-    #expect(params.4 == 10)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/memberships")
+    #expect(call.query.first { $0.name == "query" }?.value == "search")
+    #expect(call.query.filter { $0.name == "role[]" }.compactMap(\.value) == ["admin"])
+    #expect(call.query.first { $0.name == "offset" }?.value == "30")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
   }
 
   @Test
-  func addOrganizationMemberUsesOrganizationServiceAddOrganizationMember() async throws {
+  func addMemberSendsUserIdAndRole() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(addOrganizationMember: { organizationId, userId, role in
-      captured.setValue((organizationId, userId, role))
-      return .mockWithUserData
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.addMember(userId: "user123", role: "org:member")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "user123")
-    #expect(params.2 == "org:member")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(organization.id)/memberships")
+    #expect(call.body?["user_id"]?.stringValue == "user123")
+    #expect(call.body?["role"]?.stringValue == "org:member")
   }
 
   @Test
-  func updateOrganizationMemberUsesOrganizationServiceUpdateOrganizationMember() async throws {
+  func updateMemberSendsRoleForUser() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
-      captured.setValue((organizationId, userId, role))
-      return .mockWithUserData
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.updateMember(userId: "user123", role: "org:admin")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "user123")
-    #expect(params.2 == "org:admin")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .patch)
+    #expect(call.path == "/v1/organizations/\(organization.id)/memberships/user123")
+    #expect(call.body?["role"]?.stringValue == "org:admin")
   }
 
   @Test
-  func removeOrganizationMemberUsesOrganizationServiceRemoveOrganizationMember() async throws {
+  func removeMemberDeletesUserMembership() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(removeOrganizationMember: { organizationId, userId in
-      captured.setValue((organizationId, userId))
-      return .mockWithUserData
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.removeMember(userId: "user123")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "user123")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .delete)
+    #expect(call.path == "/v1/organizations/\(organization.id)/memberships/user123")
   }
 
   @Test
-  func updateOrganizationMembershipUsesOrganizationServiceUpdateOrganizationMember() async throws {
+  func membershipUpdateSendsRoleForMembershipUser() async throws {
     let membership = OrganizationMembership.mockWithUserData
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(updateOrganizationMember: { organizationId, userId, role in
-      captured.setValue((organizationId, userId, role))
-      return .mockWithUserData
-    })
-
-    configureOrganizationService(service)
+    let userId = try #require(membership.publicUserData?.userId)
 
     _ = try await membership.update(role: "org:admin")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == membership.organization.id)
-    #expect(params.1 == membership.publicUserData?.userId)
-    #expect(params.2 == "org:admin")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .patch)
+    #expect(call.path == "/v1/organizations/\(membership.organization.id)/memberships/\(userId)")
+    #expect(call.body?["role"]?.stringValue == "org:admin")
   }
 
   @Test
-  func destroyOrganizationMembershipUsesOrganizationServiceDestroyOrganizationMembership() async throws {
+  func membershipDestroyDeletesMembershipUser() async throws {
     let membership = OrganizationMembership.mockWithUserData
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(destroyOrganizationMembership: { organizationId, userId in
-      captured.setValue((organizationId, userId))
-      return .mockWithUserData
-    })
-
-    configureOrganizationService(service)
+    let userId = try #require(membership.publicUserData?.userId)
 
     _ = try await membership.destroy()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == membership.organization.id)
-    #expect(params.1 == membership.publicUserData?.userId)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .delete)
+    #expect(call.path == "/v1/organizations/\(membership.organization.id)/memberships/\(userId)")
   }
 
   @Test
@@ -337,17 +262,10 @@ struct OrganizationTests {
       InvitationsScenario(status: ["pending", "accepted"]),
     ]
   )
-  func getOrganizationInvitationsUsesOrganizationServiceGetOrganizationInvitations(
+  func getInvitationsSendsPageOffsetAndStatuses(
     scenario: InvitationsScenario
   ) async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, [String])?>(nil)
-    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
-      captured.setValue((organizationId, initialPage, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getInvitations(
       page: 2,
@@ -355,23 +273,16 @@ struct OrganizationTests {
       status: scenario.status
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 10)
-    #expect(params.2 == 10)
-    #expect(params.3 == scenario.status)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/invitations")
+    #expect(call.query.first { $0.name == "offset" }?.value == "10")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.filter { $0.name == "status" }.compactMap(\.value) == scenario.status)
   }
 
   @Test
-  func getOrganizationInvitationsWithOffsetUsesOrganizationServiceGetOrganizationInvitations() async throws {
+  func getInvitationsWithOffsetSendsOffsetAndStatuses() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, [String])?>(nil)
-    let service = MockOrganizationService(getOrganizationInvitations: { organizationId, initialPage, pageSize, status in
-      captured.setValue((organizationId, initialPage, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getInvitations(
       offset: 30,
@@ -379,70 +290,52 @@ struct OrganizationTests {
       status: ["pending"]
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 30)
-    #expect(params.2 == 10)
-    #expect(params.3 == ["pending"])
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/invitations")
+    #expect(call.query.first { $0.name == "offset" }?.value == "30")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.filter { $0.name == "status" }.compactMap(\.value) == ["pending"])
   }
 
   @Test
-  func inviteOrganizationMemberUsesOrganizationServiceInviteOrganizationMember() async throws {
+  func inviteMemberSendsEmailAddressAndRole() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(inviteOrganizationMember: { organizationId, emailAddress, role in
-      captured.setValue((organizationId, emailAddress, role))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.inviteMember(emailAddress: "user@example.com", role: "org:member")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "user@example.com")
-    #expect(params.2 == "org:member")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(organization.id)/invitations")
+    #expect(call.body?["email_address"]?.stringValue == "user@example.com")
+    #expect(call.body?["role"]?.stringValue == "org:member")
   }
 
   @Test
-  func inviteOrganizationMembersUsesOrganizationServiceInviteOrganizationMembers() async throws {
+  func inviteMembersSendsEmailAddressesAndRole() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, [String], String)?>(nil)
-    let service = MockOrganizationService(inviteOrganizationMembers: { organizationId, emailAddresses, role in
-      captured.setValue((organizationId, emailAddresses, role))
-      return [.mock]
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.inviteMembers(
       emailAddresses: ["one@example.com", "two@example.com"],
       role: "org:member"
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == ["one@example.com", "two@example.com"])
-    #expect(params.2 == "org:member")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(organization.id)/invitations/bulk")
+    #expect(call.body?["email_address"] == ["one@example.com", "two@example.com"])
+    #expect(call.body?["role"]?.stringValue == "org:member")
   }
 
   @Test
-  func createOrganizationDomainUsesOrganizationServiceCreateOrganizationDomain() async throws {
+  func createDomainSendsDomainName() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(createOrganizationDomain: { organizationId, domainName in
-      captured.setValue((organizationId, domainName))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.createDomain(domainName: "example.com")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "example.com")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(organization.id)/domains")
+    #expect(call.body?["name"]?.stringValue == "example.com")
   }
 
   @Test(
@@ -451,17 +344,10 @@ struct OrganizationTests {
       DomainsScenario(enrollmentMode: .unknown("future_mode")),
     ]
   )
-  func getOrganizationDomainsUsesOrganizationServiceGetOrganizationDomains(
+  func getDomainsSendsPageOffsetAndEnrollmentMode(
     scenario: DomainsScenario
   ) async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
-      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getDomains(
       page: 2,
@@ -469,23 +355,16 @@ struct OrganizationTests {
       enrollmentMode: scenario.enrollmentMode
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 10)
-    #expect(params.2 == 10)
-    #expect(params.3 == scenario.enrollmentMode?.rawValue)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/domains")
+    #expect(call.query.first { $0.name == "offset" }?.value == "10")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.first { $0.name == "enrollment_mode" }?.value == scenario.enrollmentMode?.rawValue)
   }
 
   @Test
-  func getOrganizationDomainsWithEnrollmentModeUsesRawEnrollmentMode() async throws {
+  func getDomainsWithEnrollmentModeUsesRawEnrollmentMode() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
-      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getDomains(
       page: 2,
@@ -493,23 +372,16 @@ struct OrganizationTests {
       enrollmentMode: .automaticInvitation
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 10)
-    #expect(params.2 == 10)
-    #expect(params.3 == OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/domains")
+    #expect(call.query.first { $0.name == "offset" }?.value == "10")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.first { $0.name == "enrollment_mode" }?.value == OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue)
   }
 
   @Test
-  func getOrganizationDomainsWithOffsetUsesOrganizationServiceGetOrganizationDomains() async throws {
+  func getDomainsWithOffsetSendsOffsetAndEnrollmentMode() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomains: { organizationId, initialPage, pageSize, enrollmentMode in
-      captured.setValue((organizationId, initialPage, pageSize, enrollmentMode))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getDomains(
       offset: 20,
@@ -517,29 +389,22 @@ struct OrganizationTests {
       enrollmentMode: OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 20)
-    #expect(params.2 == 10)
-    #expect(params.3 == OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/domains")
+    #expect(call.query.first { $0.name == "offset" }?.value == "20")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.first { $0.name == "enrollment_mode" }?.value == OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue)
   }
 
   @Test
-  func getOrganizationDomainUsesOrganizationServiceGetOrganizationDomain() async throws {
+  func getDomainRequestsDomainById() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(getOrganizationDomain: { organizationId, domainId in
-      captured.setValue((organizationId, domainId))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getDomain(domainId: "domain123")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == "domain123")
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .get)
+    #expect(call.path == "/v1/organizations/\(organization.id)/domains/domain123")
   }
 
   @Test(
@@ -548,17 +413,10 @@ struct OrganizationTests {
       MembershipRequestsScenario(status: "pending"),
     ]
   )
-  func getOrganizationMembershipRequestsUsesOrganizationServiceGetOrganizationMembershipRequests(
+  func getMembershipRequestsSendsPageOffsetAndStatus(
     scenario: MembershipRequestsScenario
   ) async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationMembershipRequests: { organizationId, initialPage, pageSize, status in
-      captured.setValue((organizationId, initialPage, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getMembershipRequests(
       page: 2,
@@ -566,23 +424,16 @@ struct OrganizationTests {
       status: scenario.status
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 10)
-    #expect(params.2 == 10)
-    #expect(params.3 == scenario.status)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/membership_requests")
+    #expect(call.query.first { $0.name == "offset" }?.value == "10")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.first { $0.name == "status" }?.value == scenario.status)
   }
 
   @Test
-  func getOrganizationMembershipRequestsWithOffsetUsesOrganizationServiceGetOrganizationMembershipRequests() async throws {
+  func getMembershipRequestsWithOffsetSendsOffsetAndStatus() async throws {
     let organization = Organization.mock
-    let captured = LockIsolated<(String, Int, Int, String?)?>(nil)
-    let service = MockOrganizationService(getOrganizationMembershipRequests: { organizationId, initialPage, pageSize, status in
-      captured.setValue((organizationId, initialPage, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
-
-    configureOrganizationService(service)
 
     _ = try await organization.getMembershipRequests(
       offset: 30,
@@ -590,105 +441,66 @@ struct OrganizationTests {
       status: "pending"
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == organization.id)
-    #expect(params.1 == 30)
-    #expect(params.2 == 10)
-    #expect(params.3 == "pending")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(organization.id)/membership_requests")
+    #expect(call.query.first { $0.name == "offset" }?.value == "30")
+    #expect(call.query.first { $0.name == "limit" }?.value == "10")
+    #expect(call.query.first { $0.name == "status" }?.value == "pending")
   }
 
   @Test
-  func deleteOrganizationDomainUsesOrganizationServiceDeleteOrganizationDomain() async throws {
+  func domainDeleteDeletesDomain() async throws {
     let domain = OrganizationDomain.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(deleteOrganizationDomain: { organizationId, domainId in
-      captured.setValue((organizationId, domainId))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await domain.delete()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == domain.organizationId)
-    #expect(params.1 == domain.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .delete)
+    #expect(call.path == "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)")
   }
 
   @Test
-  func prepareAffiliationVerificationUsesOrganizationServicePrepareOrganizationDomainAffiliationVerification() async throws {
+  func prepareAffiliationVerificationSendsAffiliationEmailAddress() async throws {
     let domain = OrganizationDomain.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(prepareOrganizationDomainAffiliationVerification: { organizationId, domainId, emailAddress in
-      captured.setValue((organizationId, domainId, emailAddress))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await domain.prepareAffiliationVerification(affiliationEmailAddress: "user@example.com")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == domain.organizationId)
-    #expect(params.1 == domain.id)
-    #expect(params.2 == "user@example.com")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/prepare_affiliation_verification")
+    #expect(call.body?["affiliation_email_address"]?.stringValue == "user@example.com")
   }
 
   @Test
-  func sendEmailCodeUsesOrganizationServicePrepareOrganizationDomainAffiliationVerification() async throws {
+  func sendEmailCodePreparesAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(prepareOrganizationDomainAffiliationVerification: { organizationId, domainId, emailAddress in
-      captured.setValue((organizationId, domainId, emailAddress))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await domain.sendEmailCode(affiliationEmailAddress: "user@example.com")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == domain.organizationId)
-    #expect(params.1 == domain.id)
-    #expect(params.2 == "user@example.com")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/prepare_affiliation_verification")
+    #expect(call.body?["affiliation_email_address"]?.stringValue == "user@example.com")
   }
 
   @Test
-  func attemptAffiliationVerificationUsesOrganizationServiceAttemptOrganizationDomainAffiliationVerification() async throws {
+  func attemptAffiliationVerificationSendsCode() async throws {
     let domain = OrganizationDomain.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(attemptOrganizationDomainAffiliationVerification: { organizationId, domainId, code in
-      captured.setValue((organizationId, domainId, code))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await domain.attemptAffiliationVerification(code: "123456")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == domain.organizationId)
-    #expect(params.1 == domain.id)
-    #expect(params.2 == "123456")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/attempt_affiliation_verification")
+    #expect(call.body?["code"]?.stringValue == "123456")
   }
 
   @Test
-  func verifyCodeUsesOrganizationServiceAttemptOrganizationDomainAffiliationVerification() async throws {
+  func verifyCodeAttemptsAffiliationVerification() async throws {
     let domain = OrganizationDomain.mock
-    let captured = LockIsolated<(String, String, String)?>(nil)
-    let service = MockOrganizationService(attemptOrganizationDomainAffiliationVerification: { organizationId, domainId, code in
-      captured.setValue((organizationId, domainId, code))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await domain.verifyCode("123456")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == domain.organizationId)
-    #expect(params.1 == domain.id)
-    #expect(params.2 == "123456")
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/attempt_affiliation_verification")
+    #expect(call.body?["code"]?.stringValue == "123456")
   }
 
   @Test
@@ -744,108 +556,69 @@ struct OrganizationTests {
   }
 
   @Test
-  func updateOrganizationDomainEnrollmentModeUsesOrganizationServiceUpdateOrganizationDomainEnrollmentMode() async throws {
+  func updateEnrollmentModeSendsModeAndDeletePending() async throws {
     let domain = OrganizationDomain.mock
-    let captured = LockIsolated<(String, String, String, Bool?)?>(nil)
-    let service = MockOrganizationService(updateOrganizationDomainEnrollmentMode: { organizationId, domainId, enrollmentMode, deletePending in
-      captured.setValue((organizationId, domainId, enrollmentMode, deletePending))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await domain.updateEnrollmentMode(.automaticSuggestion, deletePending: true)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == domain.organizationId)
-    #expect(params.1 == domain.id)
-    #expect(params.2 == OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue)
-    #expect(params.3 == true)
+    let call = try #require(transport.calls.last)
+    #expect(call.path == "/v1/organizations/\(domain.organizationId)/domains/\(domain.id)/update_enrollment_mode")
+    #expect(call.body?["enrollment_mode"]?.stringValue == OrganizationDomain.EnrollmentMode.automaticSuggestion.rawValue)
+    #expect(call.body?["delete_pending"]?.boolValue == true)
   }
 
   @Test
-  func revokeOrganizationInvitationUsesOrganizationServiceRevokeOrganizationInvitation() async throws {
+  func invitationRevokeRevokesInvitation() async throws {
     let invitation = OrganizationInvitation.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(revokeOrganizationInvitation: { organizationId, invitationId in
-      captured.setValue((organizationId, invitationId))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await invitation.revoke()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == invitation.organizationId)
-    #expect(params.1 == invitation.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(invitation.organizationId)/invitations/\(invitation.id)/revoke")
   }
 
   @Test
-  func acceptUserOrganizationInvitationUsesOrganizationServiceAcceptUserOrganizationInvitation() async throws {
+  func userInvitationAcceptAcceptsInvitation() async throws {
     let invitation = UserOrganizationInvitation.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(acceptUserOrganizationInvitation: { invitationId in
-      captured.setValue(invitationId)
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await invitation.accept()
 
-    #expect(captured.value == invitation.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/me/organization_invitations/\(invitation.id)/accept")
   }
 
   @Test
-  func acceptOrganizationSuggestionUsesOrganizationServiceAcceptOrganizationSuggestion() async throws {
+  func suggestionAcceptAcceptsSuggestion() async throws {
     let suggestion = OrganizationSuggestion.mock
-    let captured = LockIsolated<String?>(nil)
-    let service = MockOrganizationService(acceptOrganizationSuggestion: { suggestionId in
-      captured.setValue(suggestionId)
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await suggestion.accept()
 
-    #expect(captured.value == suggestion.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/me/organization_suggestions/\(suggestion.id)/accept")
   }
 
   @Test
-  func acceptOrganizationMembershipRequestUsesOrganizationServiceAcceptOrganizationMembershipRequest() async throws {
+  func membershipRequestAcceptAcceptsRequest() async throws {
     let request = OrganizationMembershipRequest.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(acceptOrganizationMembershipRequest: { organizationId, requestId in
-      captured.setValue((organizationId, requestId))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await request.accept()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == request.organizationId)
-    #expect(params.1 == request.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(request.organizationId)/membership_requests/\(request.id)/accept")
   }
 
   @Test
-  func rejectOrganizationMembershipRequestUsesOrganizationServiceRejectOrganizationMembershipRequest() async throws {
+  func membershipRequestRejectRejectsRequest() async throws {
     let request = OrganizationMembershipRequest.mock
-    let captured = LockIsolated<(String, String)?>(nil)
-    let service = MockOrganizationService(rejectOrganizationMembershipRequest: { organizationId, requestId in
-      captured.setValue((organizationId, requestId))
-      return .mock
-    })
-
-    configureOrganizationService(service)
 
     _ = try await request.reject()
 
-    let params = try #require(captured.value)
-    #expect(params.0 == request.organizationId)
-    #expect(params.1 == request.id)
+    let call = try #require(transport.calls.last)
+    #expect(call.method == .post)
+    #expect(call.path == "/v1/organizations/\(request.organizationId)/membership_requests/\(request.id)/reject")
   }
 }

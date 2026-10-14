@@ -218,6 +218,19 @@ jobs:
       run_integration_tests: true
     secrets: inherit
 
+  e2e-tests:
+    name: Verify end-to-end tests
+    needs: prepare-release
+    permissions:
+      checks: write
+      contents: read
+    uses: ./.github/workflows/verify-e2e.yml
+    with:
+      checkout_ref: ${{ needs.prepare-release.outputs.release_sha }}
+      check_run_sha: ${{ needs.prepare-release.outputs.version_already_set != 'true' && needs.prepare-release.outputs.release_sha || '' }}
+    secrets:
+      MOBILE_VERIFICATION_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
+
   report-manual-ci:
     name: Report Manual CI check
     needs:
@@ -273,8 +286,9 @@ jobs:
     needs:
       - prepare-release
       - checks
+      - e2e-tests
       - report-manual-ci
-    if: always() && needs.prepare-release.result == 'success' && needs.checks.result == 'success' && (needs.prepare-release.outputs.version_already_set == 'true' || needs.report-manual-ci.result == 'success')
+    if: always() && needs.prepare-release.result == 'success' && needs.checks.result == 'success' && needs.e2e-tests.result == 'success' && (needs.prepare-release.outputs.version_already_set == 'true' || needs.report-manual-ci.result == 'success')
     runs-on: macos-26
     env:
       RELEASE_VERSION: ${{ inputs.version }}

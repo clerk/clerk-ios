@@ -11,22 +11,54 @@ struct SessionTests {
   }
 
   @Test
-  func revokeUsesSessionServiceRevoke() async throws {
+  func revokeSendsSessionId() async throws {
     let session = Session.mock
     let captured = LockIsolated<String?>(nil)
-    let service = MockSessionService(revoke: { sessionId in
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.revoke(sessionId: FakeTransport.anyPathSegment)) { call in
+      let sessionId = String(call.path.split(separator: "/")[3])
       captured.setValue(sessionId)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     _ = try await session.revoke()
 
     #expect(captured.value == session.id)
+  }
+
+  @Test(arguments: [
+    ["sub": "user_123", "iss": "https://dashboard.clerk.com"],
+    ["sub": "agent_123", "type": "agent", "task_id": "task_123"],
+  ])
+  func clientDecodesSessionWithActor(actor: [String: String]) throws {
+    let client = try decodeClient(withFirstSessionActor: actor)
+
+    let decodedActor = try #require(client.sessions.first?.actor)
+    for (key, value) in actor {
+      #expect(decodedActor[key]?.stringValue == value)
+    }
+  }
+
+  @Test
+  func clientDecodesSessionWithoutActor() throws {
+    let client = try decodeClient(withFirstSessionActor: NSNull())
+
+    #expect(client.sessions.first?.actor == nil)
+  }
+
+  private func decodeClient(withFirstSessionActor actor: Any) throws -> Client {
+    var client = try #require(
+      JSONSerialization.jsonObject(with: JSONEncoder.clerkEncoder.encode(Client.mock)) as? [String: Any]
+    )
+    var sessions = try #require(client["sessions"] as? [[String: Any]])
+    sessions[0]["actor"] = actor
+    client["sessions"] = sessions
+    return try JSONDecoder.clerkDecoder.decode(Client.self, from: JSONSerialization.data(withJSONObject: client))
   }
 
   @Test
@@ -88,25 +120,27 @@ struct SessionTests {
   }
 
   @Test
-  func startVerificationForwardsLevelToService() async throws {
+  func startVerificationSendsLevel() async throws {
     let session = Session.mock
     let capturedSessionId = LockIsolated<String?>(nil)
-    let capturedLevel = LockIsolated<SessionVerification.Level?>(nil)
-    let service = MockSessionService(startVerification: { sessionId, params in
+    let capturedLevel = LockIsolated<String?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.startVerification(sessionId: FakeTransport.anyPathSegment, params: .init(level: .firstFactor))) { call in
+      let sessionId = String(call.path.split(separator: "/")[3])
       capturedSessionId.setValue(sessionId)
-      capturedLevel.setValue(params.level)
-      return .mockNeedsFirstFactor
-    })
+      capturedLevel.setValue(call.body?["level"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.startVerification(level: .firstFactor)
 
     #expect(capturedSessionId.value == session.id)
-    #expect(capturedLevel.value == .firstFactor)
+    #expect(capturedLevel.value == "first_factor")
     #expect(verification.status == .needsFirstFactor)
   }
 
@@ -115,15 +149,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedEmailAddressId = LockIsolated<String?>(nil)
-    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedEmailAddressId.setValue(params.emailAddressId)
-      return .mockNeedsFirstFactor
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedEmailAddressId.setValue(call.body?["email_address_id"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.sendEmailCode(emailAddressId: "idn_email")
@@ -138,15 +173,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedPhoneNumberId = LockIsolated<String?>(nil)
-    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedPhoneNumberId.setValue(params.phoneNumberId)
-      return .mockNeedsFirstFactor
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedPhoneNumberId.setValue(call.body?["phone_number_id"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.sendPhoneCode(phoneNumberId: "idn_phone")
@@ -161,15 +197,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedCode = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedCode.setValue(params.code)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.verifyWithEmailCode(code: "123456")
@@ -184,15 +221,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedCode = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedCode.setValue(params.code)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.verifyWithPhoneCode(code: "123456")
@@ -207,15 +245,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedPassword = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedPassword.setValue(params.password)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedPassword.setValue(call.body?["password"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.verifyWithPassword("hunter2")
@@ -232,17 +271,18 @@ struct SessionTests {
     let capturedEmailAddressId = LockIsolated<String?>(nil)
     let capturedEnterpriseConnectionId = LockIsolated<String?>(nil)
     let capturedRedirectUrl = LockIsolated<String?>(nil)
-    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedEmailAddressId.setValue(params.emailAddressId)
-      capturedEnterpriseConnectionId.setValue(params.enterpriseConnectionId)
-      capturedRedirectUrl.setValue(params.redirectUrl)
-      return .mockNeedsFirstFactor
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedEmailAddressId.setValue(call.body?["email_address_id"]?.stringValue)
+      capturedEnterpriseConnectionId.setValue(call.body?["enterprise_connection_id"]?.stringValue)
+      capturedRedirectUrl.setValue(call.body?["redirect_url"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.startEnterpriseSSO(
@@ -273,17 +313,18 @@ struct SessionTests {
     let capturedEmailAddressId = LockIsolated<String?>(nil)
     let capturedEnterpriseConnectionId = LockIsolated<String?>(nil)
     let capturedRedirectUrl = LockIsolated<String?>(nil)
-    let service = MockSessionService(prepareFirstFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedEmailAddressId.setValue(params.emailAddressId)
-      capturedEnterpriseConnectionId.setValue(params.enterpriseConnectionId)
-      capturedRedirectUrl.setValue(params.redirectUrl)
-      return .mockNeedsFirstFactor
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedEmailAddressId.setValue(call.body?["email_address_id"]?.stringValue)
+      capturedEnterpriseConnectionId.setValue(call.body?["enterprise_connection_id"]?.stringValue)
+      capturedRedirectUrl.setValue(call.body?["redirect_url"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
 
     let dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
     try dependencies.configurationManager.configure(
       publishableKey: testPublishableKey,
@@ -309,15 +350,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedPhoneNumberId = LockIsolated<String?>(nil)
-    let service = MockSessionService(prepareSecondFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedPhoneNumberId.setValue(params.phoneNumberId)
-      return .mockNeedsSecondFactor
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedPhoneNumberId.setValue(call.body?["phone_number_id"]?.stringValue)
+      return ClientResponse(response: .mockNeedsSecondFactor, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.sendMfaPhoneCode(phoneNumberId: "idn_phone")
@@ -332,15 +374,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedCode = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedCode.setValue(params.code)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.verifyWithMfaPhoneCode(code: "123456")
@@ -356,16 +399,17 @@ struct SessionTests {
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedCode = LockIsolated<String?>(nil)
     let capturedCredential = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedCode.setValue(params.code)
-      capturedCredential.setValue(params.publicKeyCredential)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      capturedCredential.setValue(call.body?["public_key_credential"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.attemptSecondFactorVerification(
@@ -384,15 +428,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedCode = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedCode.setValue(params.code)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.verifyWithTOTP(code: "123456")
@@ -407,15 +452,16 @@ struct SessionTests {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
     let capturedCode = LockIsolated<String?>(nil)
-    let service = MockSessionService(attemptSecondFactorVerification: { _, params in
-      capturedStrategy.setValue(params.strategy)
-      capturedCode.setValue(params.code)
-      return .mockComplete
-    })
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
 
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      sessionService: service
+      transport: transport
     )
 
     let verification = try await session.verifyWithBackupCode(code: "abcdef")

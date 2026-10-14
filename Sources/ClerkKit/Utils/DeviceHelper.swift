@@ -9,7 +9,6 @@ import Foundation
 import UIKit
 #endif
 
-/// Provides device-related information for the current device.
 enum DeviceHelper {
   /// The device's vendor identifier UUID string.
   ///
@@ -54,7 +53,6 @@ enum DeviceHelper {
     #endif
   }
 
-  /// The device's model name (e.g., "iPhone15,2").
   static var deviceModel: String {
     #if canImport(UIKit)
     var systemInfo = utsname()
@@ -69,7 +67,6 @@ enum DeviceHelper {
     #endif
   }
 
-  /// The operating system version (e.g., "17.0.0").
   static var osVersion: String {
     let systemVersion = ProcessInfo.processInfo.operatingSystemVersion
     return String(
@@ -78,12 +75,10 @@ enum DeviceHelper {
     )
   }
 
-  /// The app's version string from Info.plist.
   static var appVersion: String {
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
   }
 
-  /// The app's bundle identifier.
   static var bundleID: String {
     Bundle.main.bundleIdentifier ?? ""
   }

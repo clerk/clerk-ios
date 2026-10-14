@@ -53,7 +53,6 @@ struct InstanceEnvironmentTypeTests {
   func decodingInvalidValue() throws {
     let decoder = JSONDecoder()
 
-    // Invalid value should decode to unknown with the captured value
     let invalidData = "\"invalid\"".data(using: .utf8)!
     let result = try decoder.decode(InstanceEnvironmentType.self, from: invalidData)
     #expect(result == .unknown("invalid"))

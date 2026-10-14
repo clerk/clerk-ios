@@ -24,22 +24,13 @@ public final class Clerk {
     return instance
   }
 
-  /// Private shared instance that is set during configuration.
   private static var _shared: Clerk?
 
-  /// The installed logging configuration, when Clerk has completed configuration.
   static var installedLoggingConfiguration: ClerkLogger.Configuration? {
     _shared.map { ClerkLogger.Configuration(options: $0.options) }
   }
 
-  private static var isRuntimeReconfigurationInProgress = false
   private static var runtimeReconfigurationWaiters: [CheckedContinuation<Void, Never>] = []
-
-  private struct ReconfigurationRollbackState {
-    let configurationEpoch: ClerkConfigurationEpoch
-    let dependencies: any Dependencies
-    let identity: ClerkIdentityController.RollbackState
-  }
 
   /// A getter to see if the Clerk object is ready for use or not.
   /// Returns true when both environment and client are loaded.
@@ -61,17 +52,12 @@ public final class Clerk {
   /// The Client object for the current device.
   public internal(set) var client: Client? {
     didSet {
-      identityController.validateClientMutation()
-      // Emit session change event if the session changed
       if SessionUtils.sessionChanged(previousClient: oldValue, currentClient: client) {
         auth.send(.sessionChanged(oldValue: oldValue?.currentSession, newValue: client?.currentSession))
       }
 
       if let client {
-        cacheManager?.saveClient(client, serverFetchDate: lastClientServerFetchDate)
         dependencies.sessionStatusLogger.logPendingSessionStatusIfNeeded(previousClient: oldValue, currentClient: client)
-      } else {
-        cacheManager?.deleteClient(serverFetchDate: lastClientServerFetchDate)
       }
 
       emitInternalStateChange(.clientDidChange(previous: oldValue, current: client))
@@ -142,23 +128,6 @@ public final class Clerk {
     identityController.clientResponseGeneration
   }
 
-  /// Shared refresh task used to coalesce invalid-auth recovery refreshes.
-  private var invalidAuthRefreshTask: Task<Void, Never>?
-
-  /// Configure-time client refresh, canceled when tokenless client creation starts.
-  private var startupClientRefreshTask: Task<Void, Never>?
-  private var startupClientRefreshID: UUID?
-
-  @ObservationIgnored
-  lazy var startupClientRefreshTakeover = StartupClientRefreshTakeover(clerk: self)
-
-  /// Changes every time this instance is reconfigured.
-  /// SDK-owned requests capture this value so stale responses cannot mutate new state.
-  private(set) var configurationEpoch: ClerkConfigurationEpoch = .initial
-
-  /// Thread-safe runtime state used by SDK-owned dependencies to detect stale work.
-  let runtimeState = ClerkRuntimeState()
-
   /// The publishable key from your Clerk Dashboard, used to connect to Clerk.
   public var publishableKey: String {
     dependencies.configurationManager.publishableKey
@@ -167,8 +136,7 @@ public final class Clerk {
   /// The Clerk environment for the instance.
   public internal(set) var environment: Environment? {
     didSet {
-      if let environment {
-        cacheManager?.saveEnvironment(environment)
+      if environment != nil {
         emitInternalStateChange(.environmentDidChange)
       }
     }
@@ -179,8 +147,6 @@ public final class Clerk {
   }
 
   private var environmentRefreshRevision = 0
-  private var environmentRefreshTask: Task<Environment, Error>?
-  private var environmentRefreshTaskID: UUID?
 
   package var environmentRefreshCheckpoint: EnvironmentRefreshCheckpoint {
     .init(revision: environmentRefreshRevision)
@@ -191,56 +157,43 @@ public final class Clerk {
     dependencies.configurationManager.options
   }
 
-  /// Coordinates task lifecycle and cleanup.
-  private var taskCoordinator: TaskCoordinator? = TaskCoordinator()
-
-  /// Frontend API URL.
   var frontendApiUrl: String {
     dependencies.configurationManager.frontendApiUrl
   }
 
-  // MARK: - Lifecycle Managers
-
-  // These managers coordinate Clerk-specific lifecycle concerns and require Clerk as a dependency.
-
-  /// Manages caching of client and environment data.
-  var cacheManager: CacheManager?
-
-  /// Manages periodic polling of session tokens to keep them refreshed.
-  private var sessionPollingManager: SessionPollingManager?
-
-  /// Manages app lifecycle notifications and coordinates foreground/background transitions.
-  private var lifecycleManager: LifecycleManager?
-
-  /// Coordinates shared persisted auth state between sibling apps.
-  var sharedSessionSyncCoordinator: SharedSessionSyncCoordinator?
-
-  /// Owns complete authentication identity transitions and persistence routing.
   @ObservationIgnored
   lazy var identityController = ClerkIdentityController(clerk: self)
 
-  /// Coordinates authentication state exchanged with a paired Apple Watch.
-  private var watchConnectivityCoordinator: WatchConnectivityCoordinator?
+  @ObservationIgnored
+  private lazy var installedRuntime = Self.makeUnconfiguredRuntime(clerk: self)
 
-  /// Coalesces overlapping public Keychain clears so persistence remains frozen
-  /// until the single clear transaction has completed.
-  var keychainClearTask: Task<Void, Error>?
+  private(set) var runtime: ClerkRuntime {
+    get {
+      access(keyPath: \.runtime)
+      return installedRuntime
+    }
+    set {
+      withMutation(keyPath: \.runtime) {
+        installedRuntime = newValue
+      }
+    }
+  }
 
-  /// Dispatches Clerk state changes to optional internal observers.
-  var internalStateChanges = ClerkInternalStateChangeEmitter()
-
-  /// Dependency container holding all SDK dependencies.
-  var dependencies: any Dependencies
+  var dependencies: any Dependencies {
+    get { runtime.dependencies }
+    set {
+      withMutation(keyPath: \.runtime) {
+        installedRuntime.dependencies = newValue
+      }
+    }
+  }
 
   /// The event emitter for auth events.
   /// Owned by Clerk to ensure stable identity across accesses to `auth`.
   private let authEventEmitter = EventEmitter<AuthEvent>()
-  /// Coalesces duplicate URL handling tasks triggered by multiple UI surfaces.
   private let urlHandlingCoordinator = URLHandlingCoordinator()
-  /// Callback-scoped auth continuation used internally by `AuthView` to resume recovered flows.
   package private(set) var callbackContinuation: TransferFlowResult?
 
-  /// Coordinates the active authentication view's transient post-authentication work.
   var authFlowCoordinator = AuthFlowCoordinator()
 
   /// The main entry point for all authentication operations.
@@ -250,11 +203,7 @@ public final class Clerk {
   public var auth: Auth {
     Auth(
       magicLinkStore: dependencies.magicLinkStore,
-      magicLinkService: dependencies.magicLinkService,
-      hostedAuthService: dependencies.hostedAuthService,
-      signInService: dependencies.signInService,
-      signUpService: dependencies.signUpService,
-      sessionService: dependencies.sessionService,
+      transport: dependencies.transport,
       biometricCredentials: biometricCredentials,
       eventEmitter: authEventEmitter,
       urlHandlingCoordinator: urlHandlingCoordinator
@@ -269,270 +218,78 @@ public final class Clerk {
   ///
   /// Use this property to create organizations.
   public var organizations: Organizations {
-    Organizations(organizationService: dependencies.organizationService)
+    Organizations(transport: dependencies.transport)
   }
 
-  /// The main entry point for Billing GET APIs.
-  ///
-  /// Use this to read plans, subscriptions, statements, payments, and credits.
-  /// Payment methods live on ``User/getPaymentMethods(params:)`` and
-  /// ``Organization/getPaymentMethods(params:)``.
+  /// Reads Plans, Subscriptions, statements, payment attempts, and credits.
   public var billing: Billing {
-    Billing(billingService: dependencies.billingService)
+    Billing(transport: dependencies.transport)
   }
 
   /// The main entry point for biometric credential operations.
   public var biometricCredentials: BiometricCredentials {
     BiometricCredentials(
-      biometricCredentialService: dependencies.biometricCredentialService,
-      signInService: dependencies.signInService,
+      transport: dependencies.transport,
       keyManager: dependencies.biometricCredentialKeyManager,
       credentialStore: dependencies.biometricCredentialStore
     )
   }
 
-  /// Proxy configuration derived from `proxyUrl`, if present.
   var proxyConfiguration: ProxyConfiguration? {
     dependencies.configurationManager.proxyConfiguration
   }
 
-  package init() {
-    // Create temporary container - will be replaced during configure with proper values
+  package init() {}
+
+  private static func makeUnconfiguredRuntime(clerk: Clerk) -> ClerkRuntime {
+    let state = ClerkRuntimeState()
     do {
-      dependencies = try DependencyContainer(
+      let dependencies = try DependencyContainer(
         publishableKey: "",
         options: .init(),
-        runtimeScope: .init(epoch: .initial)
+        runtimeScope: ClerkRuntimeScope(state: state)
       )
+      return ClerkRuntime(clerk: clerk, state: state, dependencies: dependencies)
     } catch {
-      // This should never happen, but handle it just in case
-      assertionFailure("Failed to create temporary dependency container: \(error.localizedDescription)")
-      if let fallbackDependencies = try? DependencyContainer(
-        publishableKey: "",
-        options: .init(),
-        runtimeScope: .init(epoch: .initial)
-      ) {
-        dependencies = fallbackDependencies
-      } else {
-        fatalError("Failed to create temporary dependency container")
-      }
+      fatalError("Failed to create the unconfigured dependency container: \(error.localizedDescription)")
     }
   }
 }
 
 extension Clerk {
-  /// Internal helper method that performs the actual configuration work.
   @MainActor
   func performConfiguration(publishableKey: String, options: Clerk.Options) throws {
+    let runtime: ClerkRuntime
+    do {
+      runtime = try makeRuntime(publishableKey: publishableKey, options: options)
+    } catch {
+      // Release builds skip `configure`'s assertion, and no instance is installed to supply the app's logger yet.
+      ClerkLogger.logError(error, message: "Failed to configure Clerk", configuration: .init(options: options))
+      throw error
+    }
+    self.runtime.stop()
+    install(runtime)
+  }
+
+  @MainActor
+  func performConfiguration(dependencies: any Dependencies) {
+    runtime.stop()
+    install(ClerkRuntime(clerk: self, state: runtime.state, dependencies: dependencies))
+  }
+
+  private func makeRuntime(publishableKey: String, options: Clerk.Options) throws -> ClerkRuntime {
+    let state = ClerkRuntimeState()
     let dependencies = try DependencyContainer(
       publishableKey: publishableKey,
       options: options,
-      runtimeScope: runtimeScope
+      runtimeScope: ClerkRuntimeScope(state: state, clerkProvider: { self })
     )
-    try dependencies.discardPendingPublicationWhenSharedSyncDisabled()
-    installConfiguration(dependencies: dependencies)
+    return ClerkRuntime(clerk: self, state: state, dependencies: dependencies)
   }
 
-  /// Internal helper method that installs a prebuilt dependency container and starts managers.
-  @MainActor
-  func performConfiguration(dependencies: any Dependencies) throws {
-    try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
-      in: dependencies.sharedSessionOwnerSlotClearRecovery
-    )
-    installConfiguration(dependencies: dependencies)
-  }
-
-  /// Installs dependencies whose pending clear recovery has already been checked.
-  @MainActor
-  private func installConfiguration(dependencies: any Dependencies) {
-    cancelStartupClientRefresh()
-    identityController.prepareForConfiguration()
-    taskCoordinator?.cancelAll()
-    watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
-    watchConnectivityCoordinator = nil
-    internalStateChanges.removeAllObservers()
-    sharedSessionSyncCoordinator = nil
-
-    // Initialize task coordinator
-    taskCoordinator = TaskCoordinator()
-
-    self.dependencies = dependencies
-    reconcileBiometricCredentialsForCurrentInstallation()
-    let usesSharedSessionSync = options.sharedSessionSync != nil
-
-    // Set up session polling and lifecycle management
-    sessionPollingManager = SessionPollingManager(
-      sessionProvider: self,
-      authEventsProvider: { [weak self] in
-        self?.auth.events ?? AsyncStream { $0.finish() }
-      }
-    )
-    lifecycleManager = LifecycleManager(handler: self)
-    sessionPollingManager?.startPolling()
-    lifecycleManager?.startObserving()
-
-    // Set up cache manager and load cached data synchronously
-    let cacheManager = CacheManager(
-      coordinator: self,
-      identityKeychain: dependencies.identityKeychain,
-      environmentKeychain: dependencies.appLocalKeychain,
-      provisionalClientKeychains: [
-        dependencies.appLocalKeychain,
-        dependencies.legacyAppLocalKeychain,
-        dependencies.keychain,
-      ].compactMap { $0 },
-      atomicIdentityStore: dependencies.atomicIdentityStore
-    )
-    self.cacheManager = cacheManager
-    cacheManager.loadCachedData(hydrateIdentity: !usesSharedSessionSync)
-    if usesSharedSessionSync, dependencies.shouldHydrateProvisionalLegacyClient {
-      cacheManager.loadProvisionalLegacyClientForPresentation()
-    }
-
-    let initialSharedSessionReconciliation = startSharedSessionSyncIfNeeded(
-      dependencies: dependencies
-    )
-
-    // Set up watch connectivity coordinator only after cache hydration.
-    // Restored cached state should not be versioned as a new local auth change.
-    if options.watchConnectivityEnabled {
-      let coordinator = WatchConnectivityCoordinator()
-      watchConnectivityCoordinator = coordinator
-      internalStateChanges.addObserver(coordinator)
-    }
-
-    // Fire and forget: fetch fresh client and environment from API
-    let retryPolicy = Self.startupRefreshRetryPolicy
-    taskCoordinator?.task { @MainActor [weak self] in
-      do {
-        guard let self else { return }
-        _ = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "environment refresh"
-        ) {
-          try await self.refreshEnvironment()
-        }
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to load environment")
-      }
-    }
-
-    startStartupClientRefreshIfNeeded(after: initialSharedSessionReconciliation)
-  }
-
-  func startStartupClientRefreshIfNeeded(
-    after initialSharedSessionReconciliation: Task<Bool, Never>? = nil
-  ) {
-    guard startupClientRefreshTask == nil,
-          let taskCoordinator
-    else {
-      return
-    }
-
-    let retryPolicy = Self.startupRefreshRetryPolicy
-    let startupClientRefreshID = UUID()
-    self.startupClientRefreshID = startupClientRefreshID
-    startupClientRefreshTask = taskCoordinator.task { @MainActor [weak self] in
-      guard let self else { return }
-      defer {
-        if self.startupClientRefreshID == startupClientRefreshID {
-          self.startupClientRefreshTask = nil
-          self.startupClientRefreshID = nil
-        }
-      }
-      do {
-        _ = await initialSharedSessionReconciliation?.value
-        try Task.checkCancellation()
-        _ = try await retryingOperation(
-          policy: retryPolicy,
-          operationName: "client refresh"
-        ) {
-          try Task.checkCancellation()
-          try await self.refreshClient(skipClientId: false)
-        }
-      } catch is CancellationError {
-        return
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to load client")
-      }
-    }
-  }
-
-  @MainActor
-  private func startSharedSessionSyncIfNeeded(
-    dependencies: any Dependencies
-  ) -> Task<Bool, Never>? {
-    guard options.sharedSessionSync != nil else { return nil }
-    guard options.keychainConfig.normalizedAccessGroup != nil,
-          let ownerIdentifier = dependencies.sharedSessionOwnerIdentifier,
-          !ownerIdentifier.isEmpty,
-          let localIdentityStore = dependencies.atomicIdentityStore
-    else {
-      ClerkLogger.error(
-        "Shared session sync requires a Keychain access group, bundle identifier, and app-local identity store."
-      )
-      return nil
-    }
-
-    do {
-      let namespace = SharedSessionNamespace(
-        frontendApiUrl: frontendApiUrl,
-        publishableKey: publishableKey
-      )
-      let slotStore = try SharedSessionOwnerSlotStore(
-        keychainConfig: options.keychainConfig,
-        namespace: namespace,
-        ownerIdentifier: ownerIdentifier
-      )
-      let coordinator = SharedSessionSyncCoordinator(
-        ownerIdentifier: ownerIdentifier,
-        instanceFingerprint: namespace.fingerprint,
-        slotStore: slotStore,
-        localIdentityStore: localIdentityStore,
-        localIdentityIO: dependencies.atomicIdentityIO,
-        notifier: SharedSessionSyncDarwinNotifier(
-          keychainConfig: options.keychainConfig,
-          instanceFingerprint: namespace.fingerprint
-        ),
-        configurationEpoch: configurationEpoch,
-        clerk: self
-      )
-      return activateSharedSessionSync(coordinator)
-    } catch {
-      ClerkLogger.logError(error, message: "Failed to install shared session sync")
-      return nil
-    }
-  }
-
-  @MainActor
-  func activateSharedSessionSync(
-    _ coordinator: SharedSessionSyncCoordinator
-  ) -> Task<Bool, Never>? {
-    sharedSessionSyncCoordinator = coordinator
-    coordinator.hydrateInitialSharedState()
-    if let error = coordinator.initialHydrationError as? KeychainError,
-       error.isMissingEntitlement
-    {
-      coordinator.deactivate()
-      sharedSessionSyncCoordinator = nil
-      do {
-        try dependencies.atomicIdentityStore?.clearPendingPublication()
-      } catch {
-        ClerkLogger.logError(
-          error,
-          message: "Failed to discard an interrupted shared-session publication before using app-local authentication"
-        )
-      }
-      cacheManager?.loadCachedIdentity()
-      ClerkLogger.error(
-        "Shared session sync is unavailable because this app cannot access the configured Keychain group. Clerk will continue using app-local authentication. Correct the entitlement or disable shared session sync, then relaunch the app."
-      )
-      return nil
-    }
-    internalStateChanges.addObserver(coordinator)
-    return coordinator.start()
+  private func install(_ runtime: ClerkRuntime) {
+    self.runtime = runtime
+    runtime.start()
   }
 
   /// Configures the shared Clerk instance.
@@ -549,7 +306,6 @@ extension Clerk {
     publishableKey: String,
     options: Clerk.Options = .init()
   ) -> Clerk {
-    // Allow reconfiguration in test environments for test isolation
     if let existing = _shared {
       if EnvironmentDetection.isRunningInTests {
         // Clean up old managers before resetting to prevent background tasks from interfering
@@ -574,7 +330,6 @@ extension Clerk {
     return clerk
   }
 
-  /// Configures the shared instance with isolated persistence for SDK tests.
   @MainActor
   @discardableResult
   static func configureForTesting(
@@ -596,10 +351,10 @@ extension Clerk {
       publishableKey: publishableKey,
       options: options,
       runtimeScope: clerk.runtimeScope,
-      persistentAdoptionEnabledOverride: false,
+      probesAccessGroupOverride: false,
       keychainStorageOverride: keychainStorage
     )
-    try clerk.performConfiguration(dependencies: dependencies)
+    clerk.performConfiguration(dependencies: dependencies)
     _shared = clerk
     return clerk
   }
@@ -608,9 +363,9 @@ extension Clerk {
   ///
   /// This method validates the new configuration, clears local Clerk state, and then
   /// installs the new configuration on the existing shared instance. Any user currently
-  /// signed in should be expected to sign in again after reconfiguration. If shared-session
-  /// sync is enabled in the destination configuration, normal reconciliation may subsequently
-  /// hydrate an identity published by another participating app.
+  /// signed in should be expected to sign in again after reconfiguration. An identity stored
+  /// in a Keychain access group is left for the other apps in the group, and a destination
+  /// configuration that uses the group adopts the identity those apps already share.
   ///
   /// If Clerk has not been configured yet, this method creates and installs the shared
   /// instance without going through the fallback ``Clerk/shared`` getter.
@@ -638,89 +393,60 @@ extension Clerk {
     defer { endRuntimeReconfiguration() }
 
     if let existing = _shared {
-      // A public Keychain clear owns deletion of the current atomic identity.
-      // Let that transaction commit before reconfiguration invalidates the old
-      // runtime's identity queue or decides whether local state can be reused.
-      try await existing.keychainClearTask?.value
-      if existing.options.sharedSessionSync != nil {
-        // Fail before recovery or clearing can mutate identity if the current group is inaccessible.
-        _ = try existing.dependencies.keychain.hasItem(
-          forKey: ClerkKeychainKey.clerkDeviceToken.rawValue
-        )
-      }
-      try SharedSessionOwnerSlotClearRecovery.recoverIfNeeded(
-        in: existing.dependencies.sharedSessionOwnerSlotClearRecovery
-      )
+      _ = try existing.dependencies.keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
 
-      let nextEpoch = existing.nextConfigurationEpoch
-      let newDependencies = try DependencyContainer(
-        publishableKey: publishableKey,
-        options: options,
-        runtimeScope: .init(epoch: nextEpoch, runtimeState: existing.runtimeState),
-        deferSharedSessionAdoption: true
-      )
-      let reusesOwnerSlot = existing.hasSameSharedSessionOwnerSlot(
-        as: newDependencies
-      )
-      let rollbackState = existing.captureReconfigurationRollbackState()
-
-      existing.setConfigurationEpoch(to: nextEpoch)
-      await existing.cleanupManagersAndDrainCache(
-        deleteSharedSessionOwnerSlot: false
-      )
+      let next = try existing.makeRuntime(publishableKey: publishableKey, options: options)
+      let outgoing = existing.runtime
+      existing.urlHandlingCoordinator.cancelAll()
+      // Polling can await shared token requests, so cancel those before draining runtime tasks.
+      await SessionTokenFetcher.shared.reset()
+      await outgoing.shutdown()
 
       do {
-        try await clearLocalClerkStorageStrictly(
-          in: newDependencies,
-          deleteSharedSessionOwnerSlot: !reusesOwnerSlot
-        )
-        try await clearLocalClerkStorageStrictly(
-          in: rollbackState.dependencies,
-          deleteSharedSessionOwnerSlot: false
-        )
-        try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
-        try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
-        try await SharedSessionOwnerSlotCleanup.deleteIfConfigured(
-          in: rollbackState.dependencies
-        )
+        try clearLocalClerkStorageStrictly(in: outgoing.dependencies)
+        try clearLocalClerkStorageStrictly(in: next.dependencies)
       } catch {
-        existing.restoreAfterFailedReconfiguration(rollbackState)
+        // A partial clear can delete the stored device token, so sign out in memory to match it.
+        if existing.identityController.currentDeviceToken != nil,
+           case .success(nil) = Result(catching: { try outgoing.dependencies.identityStore.deviceToken() })
+        {
+          existing.identityController.invalidateAllSessionTokens()
+          existing.identityController.fenceClientResponses()
+          existing.identityController.resetRuntimeIdentity()
+          existing.sessionsByUserId = [:]
+        }
+        outgoing.start()
         throw error
       }
 
       await existing.resetRuntimeStateForReconfiguration()
-      existing.installConfiguration(dependencies: newDependencies)
+      existing.install(next)
       return existing
     }
 
     let clerk = Clerk()
-    let newDependencies = try DependencyContainer(
-      publishableKey: publishableKey,
-      options: options,
-      runtimeScope: clerk.runtimeScope,
-      deferSharedSessionAdoption: true
-    )
-
-    try await clearLocalClerkStorageStrictly(in: newDependencies)
-    try newDependencies.markSharedSessionAdoptedWithoutMigratingCredentialsIfNeeded()
-    try newDependencies.discardPendingPublicationWhenSharedSyncDisabled()
-    clerk.installConfiguration(dependencies: newDependencies)
+    let runtime = try clerk.makeRuntime(publishableKey: publishableKey, options: options)
+    try clearLocalClerkStorageStrictly(in: runtime.dependencies)
+    clerk.install(runtime)
     _shared = clerk
     return clerk
   }
 
   @MainActor
-  package static func resetSharedInstanceForTesting() async {
+  static func resetSharedInstanceForTesting() async {
     guard EnvironmentDetection.isRunningInTests else {
       return
     }
 
     guard let shared = _shared else { return }
 
-    await shared.cleanupManagersAndDrainCache()
+    shared.urlHandlingCoordinator.cancelAll()
+    shared.runtime.state.retire()
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    await shared.runtime.shutdown()
+    shared.identityController.invalidateAllSessionTokens()
     _shared = nil
+    resumeRuntimeReconfigurationWaiters()
   }
 
   /// Refreshes the current client from the API.
@@ -740,19 +466,16 @@ extension Clerk {
     try Task.checkCancellation()
     let runtime = runtimeScope
     let clientResponseGeneration = clientResponseGeneration
-    let response = try await dependencies.clientService.getResponse(skipClientId: skipClientId)
+    let response = try await dependencies.transport.send(ClientAPI.get(skipClientId: skipClientId))
     try Task.checkCancellation()
     try runtime.validateStableRuntime()
-    switch response.update {
-    case .client(let responseClient):
-      identityController.applyDecodedClientFallback(
+    if let responseClient = response.value.response {
+      identityController.applyResponseClient(
         responseClient,
         responseSequence: response.requestSequence,
         serverDate: response.serverDate,
         clientResponseGeneration: clientResponseGeneration
       )
-    case .preserve:
-      break
     }
     return client
   }
@@ -760,31 +483,12 @@ extension Clerk {
   /// Refreshes the current environment from the API.
   @discardableResult
   public func refreshEnvironment() async throws -> Environment {
-    if let environmentRefreshTask {
-      return try await environmentRefreshTask.value
-    }
+    try await runtime.refreshEnvironment()
+  }
 
-    let runtime = runtimeScope
-    let taskID = UUID()
-    let task = Task { @MainActor in
-      defer {
-        if self.environmentRefreshTaskID == taskID {
-          self.environmentRefreshTask = nil
-          self.environmentRefreshTaskID = nil
-        }
-      }
-
-      let environment = try await self.dependencies.environmentService.get()
-      try Task.checkCancellation()
-      try runtime.validateStableRuntime()
-      self.environment = environment
-      self.environmentRefreshRevision += 1
-      return environment
-    }
-
-    environmentRefreshTask = task
-    environmentRefreshTaskID = taskID
-    return try await task.value
+  func applyRefreshedEnvironment(_ environment: Environment) {
+    self.environment = environment
+    environmentRefreshRevision += 1
   }
 
   @discardableResult
@@ -795,12 +499,6 @@ extension Clerk {
 
     return try await refreshEnvironment()
   }
-
-  private static let startupRefreshRetryPolicy = RetryPolicy(
-    maxAttempts: 3,
-    initialDelay: .milliseconds(500),
-    maximumDelay: .seconds(5)
-  )
 
   /// Handles an incoming URL, routing it to the appropriate handler.
   ///
@@ -825,8 +523,9 @@ extension Clerk {
 
   @MainActor
   private func resetRuntimeStateForReconfiguration() async {
+    resetPerConfigurationState()
     await SessionTokenFetcher.shared.reset()
-    await SessionTokensCache.shared.clear()
+    identityController.invalidateAllSessionTokens()
 
     resetAuthFlowForReconfiguration()
     identityController.resetRuntimeIdentity()
@@ -841,22 +540,6 @@ extension Clerk {
 }
 
 extension Clerk: CacheCoordinator {
-  func hydrateIdentityIfNeeded(_ identity: ClerkIdentitySnapshot) {
-    identityController.hydrateAtomicIdentityIfNeeded(identity)
-  }
-
-  func setClientIfNeeded(_ client: Client?, serverFetchDate: Date?) {
-    identityController.hydrateLegacyClientIfNeeded(client, serverDate: serverFetchDate)
-  }
-
-  func setProvisionalClientIfNeeded(_ client: Client?) {
-    identityController.hydrateProvisionalLegacyClientIfNeeded(client)
-  }
-
-  func setServerFetchDateIfNeeded(_ date: Date) {
-    identityController.hydrateLegacyServerDateIfNeeded(date)
-  }
-
   func setEnvironmentIfNeeded(_ environment: Clerk.Environment) {
     // Only set if environment hasn't been loaded yet
     // This prevents cached data from overwriting fresh data loaded from the API
@@ -866,53 +549,6 @@ extension Clerk: CacheCoordinator {
 }
 
 extension Clerk: SessionProviding {}
-
-extension Clerk: LifecycleEventHandling {
-  /// Handles the app entering the foreground by resuming session polling and refreshing data.
-  func onWillEnterForeground() async {
-    sessionPollingManager?.startPolling()
-
-    emitInternalStateChange(.applicationDidEnterForeground)
-
-    #if os(macOS)
-    if WebAuthentication.consumePendingForegroundRefreshSuppression() {
-      return
-    }
-    #endif
-
-    // Refresh client and environment concurrently
-    taskCoordinator?.task { [weak self] in
-      guard let self else { return }
-      do {
-        try await refreshClient()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh client on foreground")
-      }
-
-      // Force an immediate token evaluation after foreground client refresh
-      // rather than waiting for the next polling interval.
-      await sessionPollingManager?.refreshNowIfNeeded()
-    }
-
-    taskCoordinator?.task { [weak self] in
-      guard let self else { return }
-      do {
-        _ = try await refreshEnvironment()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh environment on foreground")
-      }
-    }
-  }
-
-  /// Handles the app entering the background by stopping session polling and flushing telemetry.
-  func onDidEnterBackground() async {
-    sessionPollingManager?.stopPolling()
-
-    taskCoordinator?.task(priority: .utility) { [weak self] in
-      await self?.telemetry.flush()
-    }
-  }
-}
 
 extension Clerk {
   /// Applies a client value after the identity controller has established its mutation boundary.
@@ -930,231 +566,80 @@ extension Clerk {
 
   func emitInternalStateChange(_ change: ClerkInternalStateChange) {
     do {
-      try internalStateChanges.emit(change, from: self)
+      try runtime.internalStateChanges.emit(change, from: self)
     } catch {
       ClerkLogger.logError(error, message: "Failed to notify Clerk state observer")
     }
   }
 
-  @discardableResult
-  func scheduleManagedTask(
-    priority: TaskPriority = .userInitiated,
-    operation: @escaping @Sendable () async -> Void
-  ) -> Task<Void, Never>? {
-    taskCoordinator?.task(priority: priority, operation: operation)
-  }
-
-  @discardableResult
-  func cancelStartupClientRefreshTask() -> Bool {
-    guard let startupClientRefreshTask else { return false }
-    self.startupClientRefreshTask = nil
-    startupClientRefreshID = nil
-    startupClientRefreshTask.cancel()
-    return true
-  }
-
-  var isStartupClientRefreshInProgress: Bool {
-    startupClientRefreshTask != nil
-  }
-
-  @discardableResult
-  func cancelStartupClientRefresh() -> Bool {
-    startupClientRefreshTakeover.cancel()
-    return cancelStartupClientRefreshTask()
-  }
-
   @MainActor
   static func beginRuntimeReconfiguration() throws {
-    guard !isRuntimeReconfigurationInProgress else {
+    guard !runtimeReconfigurationIsInProgress else {
       throw ClerkClientError(message: "Clerk is already reconfiguring. Wait for the current reconfiguration to finish before starting another one.", localizationBundle: .module)
     }
-    isRuntimeReconfigurationInProgress = true
-    _shared?.runtimeState.beginReconfiguration()
+    _shared?.runtime.state.retire()
   }
 
   @MainActor
   static func endRuntimeReconfiguration() {
-    isRuntimeReconfigurationInProgress = false
-    _shared?.runtimeState.endReconfiguration()
-    let waiters = runtimeReconfigurationWaiters
-    runtimeReconfigurationWaiters.removeAll()
-    waiters.forEach { $0.resume() }
+    _shared?.runtime.state.reinstate()
+    resumeRuntimeReconfigurationWaiters()
   }
 
   @MainActor
   static var runtimeReconfigurationIsInProgress: Bool {
-    isRuntimeReconfigurationInProgress
+    _shared?.runtime.isCurrent == false
   }
 
   @MainActor
   static func waitForRuntimeReconfigurationIfNeeded() async {
-    guard isRuntimeReconfigurationInProgress else { return }
+    guard runtimeReconfigurationIsInProgress else { return }
     await withCheckedContinuation {
       runtimeReconfigurationWaiters.append($0)
     }
   }
 
   @MainActor
-  static func requireStableRuntime() throws -> ClerkRuntimeScope {
-    guard !isRuntimeReconfigurationInProgress else {
-      throw CancellationError()
-    }
+  private static func resumeRuntimeReconfigurationWaiters() {
+    let waiters = runtimeReconfigurationWaiters
+    runtimeReconfigurationWaiters.removeAll()
+    waiters.forEach { $0.resume() }
+  }
 
+  @MainActor
+  static func requireStableRuntime() throws -> ClerkRuntimeScope {
     guard let shared = _shared else {
       throw ClerkClientError(message: "Clerk must be configured before getting a session token.", localizationBundle: .module)
     }
 
-    return shared.runtimeScope
+    let scope = shared.runtimeScope
+    try scope.validateStableRuntime()
+    return scope
   }
 
   var runtimeScope: ClerkRuntimeScope {
     ClerkRuntimeScope.current(clerkProvider: { self })
   }
 
-  var nextConfigurationEpoch: ClerkConfigurationEpoch {
-    configurationEpoch.next()
-  }
-
-  func setConfigurationEpoch(to epoch: ClerkConfigurationEpoch) {
-    configurationEpoch = epoch
-    runtimeState.advance(to: epoch)
-  }
-
-  private func captureReconfigurationRollbackState() -> ReconfigurationRollbackState {
-    ReconfigurationRollbackState(
-      configurationEpoch: configurationEpoch,
-      dependencies: dependencies,
-      identity: identityController.captureRollbackState()
-    )
-  }
-
-  private func restoreAfterFailedReconfiguration(
-    _ state: ReconfigurationRollbackState
-  ) {
-    setConfigurationEpoch(to: state.configurationEpoch)
-    identityController.restoreRollbackState(state.identity)
-    installConfiguration(dependencies: state.dependencies)
-  }
-
-  func isCurrentConfigurationEpoch(_ epoch: ClerkConfigurationEpoch) -> Bool {
-    configurationEpoch == epoch
-  }
-
-  func refreshClientAfterInvalidAuth() async {
-    let task = startRefreshClientAfterInvalidAuth()
-    await task.value
-  }
-
-  func startRefreshClientAfterInvalidAuth() -> Task<Void, Never> {
-    if let invalidAuthRefreshTask {
-      return invalidAuthRefreshTask
+  @MainActor
+  static var currentDependencies: any Dependencies {
+    get throws {
+      try shared.runtimeScope.requireCurrentClerk().dependencies
     }
-
-    let task = Task { [self] in
-      defer { invalidAuthRefreshTask = nil }
-
-      do {
-        try await refreshClient()
-      } catch {
-        ClerkLogger.logError(error, message: "Failed to refresh client after invalid authentication response")
-      }
-    }
-
-    invalidAuthRefreshTask = task
-    return task
   }
 
   /// Cleans up managers that were started during configuration.
   /// Used during testing to ensure old managers are properly cleaned up before reconfiguration.
   package func cleanupManagers() {
-    watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
-    identityController.invalidateLocalOperations()
-    cancelStartupClientRefresh()
-    invalidAuthRefreshTask?.cancel()
-    invalidAuthRefreshTask = nil
     urlHandlingCoordinator.cancelAll()
-    cancelEnvironmentRefreshTask()
-    taskCoordinator?.cancelAll()
-    sharedSessionSyncCoordinator?.deactivate()
-    resetManagerStateForCleanup(finishAuthEventStreams: true)
-    cacheManager?.shutdown()
-    cacheManager = nil
-    teardownNonCacheManagers()
+    runtime.stop()
+    authEventEmitter.finish()
+    resetPerConfigurationState()
   }
 
-  private func cleanupManagersAndDrainCache(
-    deleteSharedSessionOwnerSlot: Bool = true
-  ) async {
-    let watchConnectivityCoordinator = watchConnectivityCoordinator
-    watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
-    await identityController.invalidateAndDrainLocalOperations(
-      through: dependencies.atomicIdentityIO
-    )
-    cancelStartupClientRefresh()
-    invalidAuthRefreshTask?.cancel()
-    await invalidAuthRefreshTask?.value
-    invalidAuthRefreshTask = nil
-    urlHandlingCoordinator.cancelAll()
-
-    cancelEnvironmentRefreshTask()
-    let sharedSessionSyncCoordinator = sharedSessionSyncCoordinator
-    await sharedSessionSyncCoordinator?.shutdown(
-      deleteOwnSlot: deleteSharedSessionOwnerSlot
-    )
-    // Stop SDK-owned tasks before draining the cache to prevent in-flight refreshes
-    // from enqueuing new writes during the drain.
-    await taskCoordinator?.cancelAllAndWait()
-    await watchConnectivityCoordinator?.waitForIdentityPublications()
-
-    resetManagerStateForCleanup(finishAuthEventStreams: false)
-    await cacheManager?.shutdownAndDrain()
-    cacheManager = nil
-    teardownNonCacheManagers()
-  }
-
-  private func hasSameSharedSessionOwnerSlot(
-    as newDependencies: any Dependencies
-  ) -> Bool {
-    guard let currentTopology = SharedSessionSlotTopology(
-      dependencies: dependencies
-    ),
-      let newTopology = SharedSessionSlotTopology(dependencies: newDependencies)
-    else {
-      return false
-    }
-
-    return currentTopology == newTopology
-  }
-
-  private func resetManagerStateForCleanup(finishAuthEventStreams: Bool) {
-    if finishAuthEventStreams {
-      authEventEmitter.finish()
-    }
-    resetEnvironmentRefreshState()
+  private func resetPerConfigurationState() {
+    environmentRefreshRevision = 0
     callbackContinuation = nil
     identityController.resetOrderingState()
-  }
-
-  private func cancelEnvironmentRefreshTask() {
-    environmentRefreshTask?.cancel()
-    environmentRefreshTask = nil
-    environmentRefreshTaskID = nil
-  }
-
-  private func resetEnvironmentRefreshState() {
-    cancelEnvironmentRefreshTask()
-    environmentRefreshRevision = 0
-  }
-
-  private func teardownNonCacheManagers() {
-    sessionPollingManager?.stopPolling()
-    sessionPollingManager = nil
-    lifecycleManager?.stopObserving()
-    lifecycleManager = nil
-    internalStateChanges.removeAllObservers()
-    sharedSessionSyncCoordinator = nil
-    watchConnectivityCoordinator = nil
-    taskCoordinator?.cancelAll()
-    taskCoordinator = nil
   }
 }

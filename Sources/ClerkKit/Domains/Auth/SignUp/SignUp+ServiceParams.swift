@@ -21,6 +21,7 @@ extension SignUp {
     let strategy: FactorStrategy?
     let token: String?
     let transfer: Bool?
+    let enterpriseConnectionId: String?
 
     init(
       emailAddress: String? = nil,
@@ -35,7 +36,8 @@ extension SignUp {
       strategy: FactorStrategy? = nil,
       token: String? = nil,
       redirectUrl: String? = nil,
-      transfer: Bool? = nil
+      transfer: Bool? = nil,
+      enterpriseConnectionId: String? = nil
     ) {
       locale = LocaleUtils.userLocale()
       self.emailAddress = emailAddress
@@ -51,6 +53,7 @@ extension SignUp {
       self.strategy = strategy
       self.token = token
       self.transfer = transfer
+      self.enterpriseConnectionId = enterpriseConnectionId
     }
   }
 

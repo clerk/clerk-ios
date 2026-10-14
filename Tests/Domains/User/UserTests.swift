@@ -6,14 +6,16 @@ import Testing
 @MainActor
 @Suite(.serialized)
 struct UserTests {
+  private let transport = FakeTransport.mockDefaults()
+
   init() {
     configureClerkForTesting()
   }
 
-  private func configureService(_ service: MockUserService) {
+  private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
-      userService: service
+      transport: transport
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -21,14 +23,14 @@ struct UserTests {
   }
 
   @Test
-  func reloadUsesUserServiceReload() async throws {
+  func reloadSendsReloadRequest() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(reload: {
+    transport.stub(UserAPI.reload()) { _ in
       called.setValue(true)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.reload()
 
@@ -36,35 +38,35 @@ struct UserTests {
   }
 
   @Test
-  func updateUsesUserServiceUpdate() async throws {
-    let captured = LockIsolated<User.UpdateParams?>(nil)
-    let service = MockUserService(update: { params in
-      captured.setValue(params)
-      return .mock
-    })
+  func updateSendsProfileFields() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.update(params: .init())) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.update(.init(firstName: "John", lastName: "Doe"))
 
-    let params = try #require(captured.value)
-    #expect(params.firstName == "John")
-    #expect(params.lastName == "Doe")
+    let body = try #require(captured.value)
+    #expect(body["first_name"]?.stringValue == "John")
+    #expect(body["last_name"]?.stringValue == "Doe")
   }
 
   @Test
-  func updateMetadataUsesUserServiceUpdateMetadata() async throws {
-    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
-    let service = MockUserService(updateMetadata: { params in
-      captured.setValue(params)
-      return .mock
-    })
+  func updateMetadataSendsUnsafeMetadata() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.updateMetadata(params: .init(unsafeMetadata: .object([:])))) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.updateMetadata(unsafeMetadata: ["token": "some-value"])
 
-    #expect(captured.value?.unsafeMetadata == ["token": "some-value"])
+    #expect(captured.value?["unsafe_metadata"] == ["token": "some-value"])
   }
 
   @Test
@@ -73,24 +75,22 @@ struct UserTests {
     let reloadCalls = LockIsolated(0)
     let updateCalls = LockIsolated(0)
     let metadataCalls = LockIsolated(0)
-    let service = MockUserService(
-      reload: {
-        reloadCalls.withValue { $0 += 1 }
-        var user = User.mock
-        user.unsafeMetadata = ["token": "some-value"]
-        return user
-      },
-      update: { _ in
-        updateCalls.withValue { $0 += 1 }
-        return .mock
-      },
-      updateMetadata: { _ in
-        metadataCalls.withValue { $0 += 1 }
-        return .mock
-      }
-    )
+    transport.stub(UserAPI.reload()) { _ in
+      reloadCalls.withValue { $0 += 1 }
+      var user = User.mock
+      user.unsafeMetadata = ["token": "some-value"]
+      return ClientResponse(response: user, client: nil)
+    }
+    transport.stub(UserAPI.update(params: .init())) { _ in
+      updateCalls.withValue { $0 += 1 }
+      return ClientResponse(response: .mock, client: nil)
+    }
+    transport.stub(UserAPI.updateMetadata(params: .init(unsafeMetadata: .object([:])))) { _ in
+      metadataCalls.withValue { $0 += 1 }
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     var user = User.mock
     user.unsafeMetadata = ["token": "some-value"]
@@ -107,32 +107,30 @@ struct UserTests {
   func metadataOnlyDeprecatedUpdateUsesReloadedUnsafeMetadataForReplacementPatch() async throws {
     let reloadCalls = LockIsolated(0)
     let updateCalls = LockIsolated(0)
-    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
-    let service = MockUserService(
-      reload: {
-        reloadCalls.withValue { $0 += 1 }
-        var user = User.mock
-        user.unsafeMetadata = [
-          "token": "old-value",
-          "serverOnly": true,
-          "nested": [
-            "keep": "same",
-            "remove": "old",
-          ],
-        ]
-        return user
-      },
-      update: { _ in
-        updateCalls.withValue { $0 += 1 }
-        return .mock
-      },
-      updateMetadata: { params in
-        captured.setValue(params)
-        return .mock
-      }
-    )
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.reload()) { _ in
+      reloadCalls.withValue { $0 += 1 }
+      var user = User.mock
+      user.unsafeMetadata = [
+        "token": "old-value",
+        "serverOnly": true,
+        "nested": [
+          "keep": "same",
+          "remove": "old",
+        ],
+      ]
+      return ClientResponse(response: user, client: nil)
+    }
+    transport.stub(UserAPI.update(params: .init())) { _ in
+      updateCalls.withValue { $0 += 1 }
+      return ClientResponse(response: .mock, client: nil)
+    }
+    transport.stub(UserAPI.updateMetadata(params: .init(unsafeMetadata: .object([:])))) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     var user = User.mock
     user.unsafeMetadata = ["token": "stale-local-value"]
@@ -147,7 +145,7 @@ struct UserTests {
 
     #expect(reloadCalls.value == 1)
     #expect(updateCalls.value == 0)
-    #expect(captured.value?.unsafeMetadata == [
+    #expect(captured.value?["unsafe_metadata"] == [
       "token": "new-value",
       "serverOnly": .null,
       "nested": [
@@ -160,27 +158,25 @@ struct UserTests {
   @Test
   @available(*, deprecated)
   func metadataOnlyDeprecatedUpdateTreatsReloadedNilUnsafeMetadataAsEmpty() async throws {
-    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
-    let service = MockUserService(
-      reload: {
-        var user = User.mock
-        user.unsafeMetadata = nil
-        return user
-      },
-      updateMetadata: { params in
-        captured.setValue(params)
-        return .mock
-      }
-    )
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.reload()) { _ in
+      var user = User.mock
+      user.unsafeMetadata = nil
+      return ClientResponse(response: user, client: nil)
+    }
+    transport.stub(UserAPI.updateMetadata(params: .init(unsafeMetadata: .object([:])))) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     var user = User.mock
     user.unsafeMetadata = ["staleLocal": true]
 
     _ = try await user.update(.init(unsafeMetadata: ["token": "some-value"]))
 
-    #expect(captured.value?.unsafeMetadata == ["token": "some-value"])
+    #expect(captured.value?["unsafe_metadata"] == ["token": "some-value"])
   }
 
   @Test
@@ -188,26 +184,24 @@ struct UserTests {
   func profileAndDeprecatedMetadataUpdateTreatsProfileResponseNilUnsafeMetadataAsEmpty() async throws {
     let reloadCalls = LockIsolated(0)
     let updateCalls = LockIsolated(0)
-    let captured = LockIsolated<User.UpdateMetadataParams?>(nil)
-    let service = MockUserService(
-      reload: {
-        reloadCalls.withValue { $0 += 1 }
-        return .mock
-      },
-      update: { params in
-        updateCalls.withValue { $0 += 1 }
-        #expect(params.firstName == "John")
-        var user = User.mock
-        user.unsafeMetadata = nil
-        return user
-      },
-      updateMetadata: { params in
-        captured.setValue(params)
-        return .mock
-      }
-    )
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.reload()) { _ in
+      reloadCalls.withValue { $0 += 1 }
+      return ClientResponse(response: .mock, client: nil)
+    }
+    transport.stub(UserAPI.update(params: .init())) { call in
+      updateCalls.withValue { $0 += 1 }
+      #expect(call.body?["first_name"]?.stringValue == "John")
+      var user = User.mock
+      user.unsafeMetadata = nil
+      return ClientResponse(response: user, client: nil)
+    }
+    transport.stub(UserAPI.updateMetadata(params: .init(unsafeMetadata: .object([:])))) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     var user = User.mock
     user.unsafeMetadata = ["staleLocal": true]
@@ -219,18 +213,18 @@ struct UserTests {
 
     #expect(reloadCalls.value == 0)
     #expect(updateCalls.value == 1)
-    #expect(captured.value?.unsafeMetadata == ["token": "some-value"])
+    #expect(captured.value?["unsafe_metadata"] == ["token": "some-value"])
   }
 
   @Test
-  func createBackupCodesUsesUserServiceCreateBackupCodes() async throws {
+  func createBackupCodesSendsBackupCodesRequest() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(createBackupCodes: {
+    transport.stub(UserAPI.createBackupCodes()) { _ in
       called.setValue(true)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.createBackupCodes()
 
@@ -238,33 +232,33 @@ struct UserTests {
   }
 
   @Test
-  func createEmailAddressUsesUserServiceCreateEmailAddress() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createEmailAddress: { email in
-      captured.setValue(email)
-      return .mock
-    })
+  func createEmailAddressSendsEmailAddress() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(EmailAddressAPI.create(email: "")) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.createEmailAddress("new@example.com")
 
-    #expect(captured.value == "new@example.com")
+    #expect(captured.value?["email_address"]?.stringValue == "new@example.com")
   }
 
   @Test
-  func createPhoneNumberUsesUserServiceCreatePhoneNumber() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(createPhoneNumber: { phoneNumber in
-      captured.setValue(phoneNumber)
-      return .mock
-    })
+  func createPhoneNumberSendsPhoneNumber() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(PhoneNumberAPI.create(phoneNumber: "")) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.createPhoneNumber("+1234567890")
 
-    #expect(captured.value == "+1234567890")
+    #expect(captured.value?["phone_number"]?.stringValue == "+1234567890")
   }
 
   struct ExternalAccountScenario: Equatable {
@@ -281,16 +275,16 @@ struct UserTests {
       ExternalAccountScenario(redirectUrl: nil, additionalScopes: [], oidcPrompts: [.consent]),
     ]
   )
-  func createExternalAccountUsesUserServiceCreateExternalAccount(
+  func createExternalAccountSendsProviderRedirectScopesAndPrompts(
     scenario: ExternalAccountScenario
   ) async throws {
-    let captured = LockIsolated<(OAuthProvider, String?, [String], [OIDCPrompt])?>(nil)
-    let service = MockUserService(createExternalAccount: { provider, redirectUrl, additionalScopes, oidcPrompts in
-      captured.setValue((provider, redirectUrl, additionalScopes, oidcPrompts))
-      return .mockVerified
-    })
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.createExternalAccount(provider: .google, redirectUrl: "", additionalScopes: [], oidcPrompts: [])) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.createExternalAccount(
       provider: .google,
@@ -299,39 +293,39 @@ struct UserTests {
       oidcPrompts: scenario.oidcPrompts
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == .google)
-    #expect(params.1 == scenario.redirectUrl)
-    #expect(params.2 == scenario.additionalScopes)
-    #expect(params.3 == scenario.oidcPrompts)
+    let body = try #require(captured.value)
+    #expect(body["strategy"]?.stringValue == OAuthProvider.google.strategy)
+    #expect(body["redirect_url"]?.stringValue == scenario.redirectUrl ?? Clerk.shared.options.redirectConfig.redirectUrl)
+    #expect(body["additional_scope"]?.arrayValue?.compactMap(\.stringValue) ?? [] == scenario.additionalScopes)
+    #expect(body["oidc_prompt"]?.stringValue == scenario.oidcPrompts.serializedPrompt)
   }
 
   @Test
-  func createExternalAccountTokenUsesUserServiceCreateExternalAccountToken() async throws {
-    let captured = LockIsolated<(IDTokenProvider, String)?>(nil)
-    let service = MockUserService(createExternalAccountToken: { provider, idToken in
-      captured.setValue((provider, idToken))
-      return .mockVerified
-    })
+  func createExternalAccountWithIdTokenSendsProviderAndToken() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "")) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.createExternalAccount(provider: .apple, idToken: "mock_id_token")
 
-    let params = try #require(captured.value)
-    #expect(params.0 == .apple)
-    #expect(params.1 == "mock_id_token")
+    let body = try #require(captured.value)
+    #expect(body["strategy"]?.stringValue == IDTokenProvider.apple.strategy)
+    #expect(body["token"]?.stringValue == "mock_id_token")
   }
 
   @Test
-  func createTotpUsesUserServiceCreateTotp() async throws {
+  func createTotpSendsCreateTotpRequest() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(createTotp: {
+    transport.stub(UserAPI.createTotp()) { _ in
       called.setValue(true)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.createTOTP()
 
@@ -339,29 +333,29 @@ struct UserTests {
   }
 
   @Test
-  func verifyTotpUsesUserServiceVerifyTotp() async throws {
-    let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(verifyTotp: { code in
-      captured.setValue(code)
-      return .mock
-    })
+  func verifyTotpSendsCode() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.verifyTotp(code: "")) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.verifyTOTP(code: "123456")
 
-    #expect(captured.value == "123456")
+    #expect(captured.value?["code"]?.stringValue == "123456")
   }
 
   @Test
-  func disableTotpUsesUserServiceDisableTotp() async throws {
+  func disableTotpSendsDisableTotpRequest() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(disableTotp: {
+    transport.stub(UserAPI.disableTotp()) { _ in
       called.setValue(true)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.disableTOTP()
 
@@ -369,49 +363,49 @@ struct UserTests {
   }
 
   @Test
-  func getOrganizationInvitationsUsesUserServiceGetOrganizationInvitations() async throws {
-    let captured = LockIsolated<(Int, Int, [String])?>(nil)
-    let service = MockUserService(getOrganizationInvitations: { offset, pageSize, status in
-      captured.setValue((offset, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
+  func getOrganizationInvitationsSendsPageOffsetAndStatuses() async throws {
+    let captured = LockIsolated<[URLQueryItem]?>(nil)
+    transport.stub(UserAPI.getOrganizationInvitations(offset: 0, pageSize: 0, status: [])) { call in
+      captured.setValue(call.query)
+      return ClientResponse(response: ClerkPaginatedResponse(data: [.mock], totalCount: 1), client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.getOrganizationInvitations(page: 2, pageSize: 10, status: ["pending", "accepted"])
 
-    let params = try #require(captured.value)
-    #expect(params.0 == 10)
-    #expect(params.1 == 10)
-    #expect(params.2 == ["pending", "accepted"])
+    let query = try #require(captured.value)
+    #expect(query.first { $0.name == "offset" }?.value == "10")
+    #expect(query.first { $0.name == "limit" }?.value == "10")
+    #expect(query.filter { $0.name == "status" }.compactMap(\.value) == ["pending", "accepted"])
   }
 
   @Test
-  func getOrganizationMembershipsUsesUserServiceGetOrganizationMemberships() async throws {
-    let captured = LockIsolated<(Int, Int)?>(nil)
-    let service = MockUserService(getOrganizationMemberships: { offset, pageSize in
-      captured.setValue((offset, pageSize))
-      return ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1)
-    })
+  func getOrganizationMembershipsSendsPageOffset() async throws {
+    let captured = LockIsolated<[URLQueryItem]?>(nil)
+    transport.stub(UserAPI.getOrganizationMemberships(offset: 0, pageSize: 0)) { call in
+      captured.setValue(call.query)
+      return ClientResponse(response: ClerkPaginatedResponse(data: [.mockWithUserData], totalCount: 1), client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.getOrganizationMemberships(page: 3, pageSize: 10)
 
-    let params = try #require(captured.value)
-    #expect(params.0 == 20)
-    #expect(params.1 == 10)
+    let query = try #require(captured.value)
+    #expect(query.first { $0.name == "offset" }?.value == "20")
+    #expect(query.first { $0.name == "limit" }?.value == "10")
   }
 
   @Test
-  func leaveOrganizationUsesUserServiceLeaveOrganization() async throws {
+  func leaveOrganizationSendsOrganizationId() async throws {
     let captured = LockIsolated<String?>(nil)
-    let service = MockUserService(leaveOrganization: { organizationId in
-      captured.setValue(organizationId)
-      return .mock
-    })
+    transport.stub(UserAPI.leaveOrganization(organizationId: FakeTransport.anyPathSegment)) { call in
+      captured.setValue(String(call.path.split(separator: "/")[3]))
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.leaveOrganization(organizationId: "org_123")
 
@@ -428,16 +422,16 @@ struct UserTests {
       OrganizationSuggestionsScenario(status: ["pending", "accepted"]),
     ]
   )
-  func getOrganizationSuggestionsUsesUserServiceGetOrganizationSuggestions(
+  func getOrganizationSuggestionsSendsPageOffsetAndStatuses(
     scenario: OrganizationSuggestionsScenario
   ) async throws {
-    let captured = LockIsolated<(Int, Int, [String])?>(nil)
-    let service = MockUserService(getOrganizationSuggestions: { offset, pageSize, status in
-      captured.setValue((offset, pageSize, status))
-      return ClerkPaginatedResponse(data: [.mock], totalCount: 1)
-    })
+    let captured = LockIsolated<[URLQueryItem]?>(nil)
+    transport.stub(UserAPI.getOrganizationSuggestions(offset: 0, pageSize: 0, status: [])) { call in
+      captured.setValue(call.query)
+      return ClientResponse(response: ClerkPaginatedResponse(data: [.mock], totalCount: 1), client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.getOrganizationSuggestions(
       page: 2,
@@ -445,37 +439,38 @@ struct UserTests {
       status: scenario.status
     )
 
-    let params = try #require(captured.value)
-    #expect(params.0 == 10)
-    #expect(params.1 == 10)
-    #expect(params.2 == scenario.status)
+    let query = try #require(captured.value)
+    #expect(query.first { $0.name == "offset" }?.value == "10")
+    #expect(query.first { $0.name == "limit" }?.value == "10")
+    #expect(query.filter { $0.name == "status" }.compactMap(\.value) == scenario.status)
   }
 
   @Test
-  func getSessionsUsesUserServiceGetSessions() async throws {
+  func getSessionsCachesSessionsForTheUser() async throws {
     let user = User.mock
-    let captured = LockIsolated<User?>(nil)
-    let service = MockUserService(getSessions: { user in
-      captured.setValue(user)
+    let called = LockIsolated(false)
+    transport.stub(UserAPI.getSessions()) { _ in
+      called.setValue(true)
       return [Session.mock]
-    })
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await user.getSessions()
 
-    #expect(captured.value?.id == user.id)
+    #expect(called.value == true)
+    #expect(Clerk.shared.sessionsByUserId[user.id]?.map(\.id) == [Session.mock.id])
   }
 
   @Test
-  func updatePasswordUsesUserServiceUpdatePassword() async throws {
-    let captured = LockIsolated<User.UpdatePasswordParams?>(nil)
-    let service = MockUserService(updatePassword: { params in
-      captured.setValue(params)
-      return .mock
-    })
+  func updatePasswordSendsPasswordParams() async throws {
+    let captured = LockIsolated<JSON?>(nil)
+    transport.stub(UserAPI.updatePassword(params: .init(newPassword: "", signOutOfOtherSessions: false))) { call in
+      captured.setValue(call.body)
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.updatePassword(
       .init(
@@ -485,37 +480,45 @@ struct UserTests {
       )
     )
 
-    let params = try #require(captured.value)
-    #expect(params.currentPassword == "currentPassword123")
-    #expect(params.newPassword == "newPassword123")
-    #expect(params.signOutOfOtherSessions == true)
+    let body = try #require(captured.value)
+    #expect(body["current_password"]?.stringValue == "currentPassword123")
+    #expect(body["new_password"]?.stringValue == "newPassword123")
+    #expect(body["sign_out_of_other_sessions"]?.boolValue == true)
   }
 
   @Test
-  func setProfileImageUsesUserServiceSetProfileImage() async throws {
+  func setProfileImageUploadsMultipartImageThroughTransport() async throws {
     let imageData = Data("fake image data".utf8)
-    let captured = LockIsolated<Data?>(nil)
-    let service = MockUserService(setProfileImage: { data in
-      captured.setValue(data)
-      return ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg")
-    })
+    let captured = LockIsolated<FakeTransport.Call?>(nil)
+    transport.stub(UserAPI.setProfileImage(boundary: "")) { call in
+      captured.setValue(call)
+      return ClientResponse(response: ImageResource(id: "1", name: "profile", publicUrl: "https://example.com/image.jpg"), client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.setProfileImage(imageData: imageData)
 
-    #expect(captured.value == imageData)
+    let call = try #require(captured.value)
+    let contentType = try #require(call.headers["Content-Type"])
+    #expect(contentType.hasPrefix("multipart/form-data; boundary="))
+    let boundary = String(contentType.dropFirst("multipart/form-data; boundary=".count))
+    let body = try #require(call.uploadBody)
+    #expect(body.range(of: imageData) != nil)
+    #expect(body.range(of: Data("--\(boundary)\r\n".utf8)) != nil)
+    #expect(body.range(of: Data("Content-Type: image/jpeg\r\n\r\n".utf8)) != nil)
+    #expect(body.suffix(boundary.utf8.count + 8) == Data("\r\n--\(boundary)--\r\n".utf8))
   }
 
   @Test
-  func deleteProfileImageUsesUserServiceDeleteProfileImage() async throws {
+  func deleteProfileImageSendsDeleteProfileImageRequest() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(deleteProfileImage: {
+    transport.stub(UserAPI.deleteProfileImage()) { _ in
       called.setValue(true)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.deleteProfileImage()
 
@@ -523,14 +526,14 @@ struct UserTests {
   }
 
   @Test
-  func deleteUsesUserServiceDelete() async throws {
+  func deleteSendsDeleteRequest() async throws {
     let called = LockIsolated(false)
-    let service = MockUserService(delete: {
+    transport.stub(UserAPI.delete()) { _ in
       called.setValue(true)
-      return .mock
-    })
+      return ClientResponse(response: .mock, client: nil)
+    }
 
-    configureService(service)
+    configureTransport()
 
     _ = try await User.mock.delete()
 

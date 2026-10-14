@@ -109,13 +109,10 @@ public struct SignUp: Codable, Sendable, Equatable {
 
 extension SignUp {
   @MainActor
-  private var signUpService: any SignUpServiceProtocol {
-    Clerk.shared.dependencies.signUpService
-  }
-
-  @MainActor
   private var magicLinkStore: MagicLinkStore {
-    Clerk.shared.dependencies.magicLinkStore
+    get throws {
+      try Clerk.currentDependencies.magicLinkStore
+    }
   }
 
   /// This method is used to update the current sign-up.
@@ -146,7 +143,7 @@ extension SignUp {
     unsafeMetadata: JSON? = nil,
     legalAccepted: Bool? = nil
   ) async throws -> SignUp {
-    try await signUpService.update(signUpId: id, params: .init(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.update(signUpId: id, params: .init(
       emailAddress: emailAddress,
       phoneNumber: phoneNumber,
       password: password,
@@ -155,7 +152,7 @@ extension SignUp {
       username: username,
       unsafeMetadata: unsafeMetadata,
       legalAccepted: legalAccepted
-    ))
+    ))).value.response
   }
 
   /// Sends a native magic link to the email address for verification.
@@ -181,7 +178,7 @@ extension SignUp {
       authFlowOwnerId: AuthFlowRequestScope.ownerId
     )
 
-    return try await signUpService.prepareVerification(
+    return try await Clerk.currentDependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: id,
       params: .init(
         strategy: .emailLink,
@@ -190,7 +187,7 @@ extension SignUp {
         codeChallenge: pkcePair.challenge,
         codeChallengeMethod: PKCE.codeChallengeMethod
       )
-    )
+    )).value.response
   }
 
   /// Sends a verification code to the email address.
@@ -199,10 +196,10 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendEmailCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, emailAddressId: nil)
-    )
+    )).value.response
   }
 
   /// Sends a verification code to the phone number.
@@ -211,10 +208,10 @@ extension SignUp {
   /// - Throws: An error if sending the code fails.
   @discardableResult @MainActor
   public func sendPhoneCode() async throws -> SignUp {
-    try await signUpService.prepareVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.prepareVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, phoneNumberId: nil)
-    )
+    )).value.response
   }
 
   /// Verifies the email code entered by the user.
@@ -224,10 +221,10 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyEmailCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.attemptVerification(
       signUpId: id,
       params: .init(strategy: .emailCode, code: code)
-    )
+    )).value.response
   }
 
   /// Verifies the phone code entered by the user.
@@ -237,10 +234,10 @@ extension SignUp {
   /// - Throws: An error if verification fails.
   @discardableResult @MainActor
   public func verifyPhoneCode(_ code: String) async throws -> SignUp {
-    try await signUpService.attemptVerification(
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.attemptVerification(
       signUpId: id,
       params: .init(strategy: .phoneCode, code: code)
-    )
+    )).value.response
   }
 }
 
@@ -251,12 +248,11 @@ extension SignUp {
     verifications.contains(where: { $0.key == "external_account" && $0.value?.status == .transferable })
   }
 
-  /// Determines whether or not to return a sign in or sign up object as part of the transfer flow.
   @MainActor
   func handleTransferFlow() async throws -> TransferFlowResult {
     if needsTransferToSignIn == true {
-      let signInService: any SignInServiceProtocol = Clerk.shared.dependencies.signInService
-      let signIn = try await signInService.create(params: .init(transfer: true))
+      let transport = try Clerk.currentDependencies.transport
+      let signIn = try await transport.send(SignInAPI.create(params: .init(transfer: true))).value.response
       return .signIn(signIn)
     } else {
       return .signUp(self)
@@ -274,7 +270,6 @@ extension SignUp {
       }
       return .signUp(updatedSignUp)
     } else {
-      // transfer flow
       let signUp = try await reload()
       let result = try await signUp.handleTransferFlow()
       switch result {
@@ -293,9 +288,8 @@ extension SignUp {
     }
   }
 
-  /// Returns the current sign up.
   @discardableResult @MainActor
   func reload(rotatingTokenNonce: String? = nil) async throws -> SignUp {
-    try await signUpService.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))
+    try await Clerk.currentDependencies.transport.send(SignUpAPI.get(signUpId: id, params: .init(rotatingTokenNonce: rotatingTokenNonce))).value.response
   }
 }

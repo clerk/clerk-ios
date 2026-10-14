@@ -40,6 +40,26 @@ struct ProxyConfigurationTests {
     #expect(config == nil)
   }
 
+  @Test(arguments: [
+    ("https://[::1]/__clerk", "https://[::1]"),
+    ("http://[::1]:8080/__clerk", "http://[::1]:8080"),
+    ("https://user:secret@proxy.example.com/__clerk?token=abc#section", "https://proxy.example.com"),
+    ("https://bücher.example/__clerk", "https://xn--bcher-kva.example"),
+    ("https://proxy%20example.com/__clerk", "https://proxy%20example.com"),
+  ])
+  func baseURLKeepsTheProxyUrlsSchemeHostAndPort(proxyUrl: String, baseURL: String) throws {
+    let config = try #require(ProxyConfiguration(url: URL(string: proxyUrl)))
+
+    #expect(config.baseURL.absoluteString == baseURL)
+    #expect(config.pathSegments == ["__clerk"])
+  }
+
+  @Test
+  func initWithANonHttpScheme() throws {
+    let url = try #require(URL(string: "ftp://proxy.example.com/__clerk"))
+    #expect(ProxyConfiguration(url: url) == nil)
+  }
+
   @Test
   func initWithURLWithPort() throws {
     let url = try #require(URL(string: "https://proxy.example.com:8080/__clerk"))
@@ -108,7 +128,6 @@ struct ProxyConfigurationTests {
     let url = try #require(URL(string: "https://proxy.example.com/__clerk"))
     let config = try #require(ProxyConfiguration(url: url))
 
-    // Path already starts with proxy segments
     let result = config.prefixedPath(for: "/__clerk/v1/client")
     #expect(result == "/__clerk/v1/client")
   }
@@ -154,7 +173,6 @@ struct ProxyConfigurationTests {
     let url = try #require(URL(string: "https://proxy.example.com/__clerk/v1"))
     let config = try #require(ProxyConfiguration(url: url))
 
-    // Path doesn't start with all proxy segments
     let result = config.prefixedPath(for: "/v1/client")
     #expect(result == "/__clerk/v1/v1/client")
   }

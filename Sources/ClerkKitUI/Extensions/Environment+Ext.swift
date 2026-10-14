@@ -27,18 +27,27 @@ extension Clerk.Environment {
     }.sorted()
   }
 
-  var enabledFirstFactorAttributes: [String] {
+  /// The attributes the start screen offers for the given auth mode.
+  ///
+  /// `enabled` means an attribute can be used to sign up. Sign-in accepts any attribute used as a
+  /// first factor, including one that is turned off for sign-up.
+  func firstFactorAttributes(for mode: AuthView.Mode) -> [String] {
     userSettings.attributes
       .filter { _, value in
-        value.enabled && value.usedForFirstFactor
+        switch mode {
+        case .signIn, .signInOrUp:
+          value.usedForFirstFactor
+        case .signUp:
+          value.enabled && value.usedForFirstFactor
+        }
       }
       .map(\.key)
   }
 
-  /// Total count of enabled authentication methods.
+  /// Total count of authentication methods available for signing in.
   ///
   /// This counts:
-  /// - First factor identifiers (email, phone, username) that are enabled
+  /// - First factor identifiers (email, phone, username) used for sign-in
   /// - Authenticatable OAuth providers
   ///
   /// Used to determine whether to show authentication badges (only shown when > 1 method is available).
@@ -47,9 +56,7 @@ extension Clerk.Environment {
 
     let firstFactorCount = userSettings.attributes
       .filter { key, value in
-        identifierKeys.contains(key) &&
-          value.enabled &&
-          value.usedForFirstFactor
+        identifierKeys.contains(key) && value.usedForFirstFactor
       }
       .count
 
@@ -87,48 +94,96 @@ extension Clerk.Environment {
 
   var mfaIsEnabled: Bool {
     userSettings.attributes.contains { _, value in
-      value.enabled && value.usedForSecondFactor
+      value.usedForSecondFactor
     }
   }
 
   var mfaAuthenticatorAppIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "authenticator_app" && value.enabled && value.usedForSecondFactor
-    }
+    userSettings.attributes["authenticator_app"]?.usedForSecondFactor == true
   }
 
   var mfaPhoneCodeIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled && value.usedForSecondFactor
-    }
+    userSettings.attributes["phone_number"]?.usedForSecondFactor == true
   }
 
   var mfaBackupCodeIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "backup_code" && value.enabled && value.usedForSecondFactor
+    userSettings.attributes["backup_code"]?.usedForSecondFactor == true
+  }
+
+  var mfaIsRequired: Bool {
+    userSettings.signUp.mfa?.required == true
+  }
+
+  /// Whether removing the authenticator app leaves the user another two-step method.
+  /// When MFA is required, the server rejects removing the last TOTP or SMS factor;
+  /// backup codes don't count.
+  func allowsRemovingAuthenticatorApp(for user: User) -> Bool {
+    guard mfaIsRequired, mfaAuthenticatorAppIsEnabled else { return true }
+
+    return mfaPhoneCodeIsEnabled && !user.phoneNumbersReservedForMfa.isEmpty
+  }
+
+  /// Whether removing `phoneNumber` from two-step verification leaves the user another method.
+  func allowsRemovingMfaPhoneNumber(_ phoneNumber: PhoneNumber, for user: User) -> Bool {
+    guard mfaIsRequired, mfaPhoneCodeIsEnabled else { return true }
+
+    return (mfaAuthenticatorAppIsEnabled && user.totpEnabled)
+      || user.phoneNumbersReservedForMfa.contains { $0.id != phoneNumber.id }
+  }
+
+  func allowsAddingIdentifications(for user: User) -> Bool {
+    enterpriseAccountsDisallowingIdentifications(for: user).isEmpty
+  }
+
+  /// The backend exempts EASIE connections from this restriction for email addresses and phone numbers.
+  func allowsAddingEmailAddressesAndPhoneNumbers(for user: User) -> Bool {
+    enterpriseAccountsDisallowingIdentifications(for: user).allSatisfy { account in
+      ["oauth_google", "oauth_microsoft", "oauth_mock"].contains(account.provider)
     }
   }
 
-  var deleteSelfIsEnabled: Bool {
-    userSettings.actions.deleteSelf
-  }
-
-  var emailIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "email_address" && value.enabled
+  private func enterpriseAccountsDisallowingIdentifications(for user: User) -> [EnterpriseAccount] {
+    guard userSettings.enterpriseSSO?.enabled == true else { return [] }
+    return (user.enterpriseAccounts ?? []).filter { account in
+      account.active && account.enterpriseConnection.disableAdditionalIdentifications
     }
   }
 
-  var phoneNumberIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "phone_number" && value.enabled
-    }
+  enum MfaMethod {
+    case phoneCode
+    case authenticatorApp
+    case backupCodes
   }
 
-  var usernameIsEnabled: Bool {
-    userSettings.attributes.contains { key, value in
-      key == "username" && value.enabled
+  func mfaMethodsAvailableToAdd(for user: User) -> [MfaMethod] {
+    var methods: [MfaMethod] = []
+    if mfaPhoneCodeIsEnabled {
+      methods.append(.phoneCode)
     }
+    if mfaAuthenticatorAppIsEnabled, !user.totpEnabled {
+      methods.append(.authenticatorApp)
+    }
+    if mfaBackupCodeIsEnabled, user.twoFactorEnabled, !user.backupCodeEnabled {
+      methods.append(.backupCodes)
+    }
+    return methods
+  }
+
+  var emailIsAvailable: Bool {
+    attributeIsAvailable("email_address")
+  }
+
+  var phoneNumberIsAvailable: Bool {
+    attributeIsAvailable("phone_number")
+  }
+
+  var usernameIsAvailable: Bool {
+    attributeIsAvailable("username")
+  }
+
+  private func attributeIsAvailable(_ key: String) -> Bool {
+    guard let attribute = userSettings.attributes[key] else { return false }
+    return attribute.enabled || attribute.usedForFirstFactor || attribute.usedForSecondFactor
   }
 
   var firstNameIsEnabled: Bool {

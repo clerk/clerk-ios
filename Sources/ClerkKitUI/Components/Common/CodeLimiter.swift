@@ -7,114 +7,84 @@
 
 import Foundation
 
-/// Tracks when verification codes were last sent to prevent excessive requests.
-///
-/// This class is used by both auth and user profile flows to manage code rate limiting.
-/// It is injected into child views via the environment and drives countdown UI via observation.
 @MainActor
 @Observable
 final class CodeLimiter {
-  /// The default cooldown period between code requests (in seconds).
   static let defaultCooldown: TimeInterval = 30
 
-  /// Tracks when the last code was sent for each identifier.
-  private(set) var lastCodeSentAt: [String: Date] = [:]
+  private var cooldownEndsAt: [String: Date] = [:]
+  private(set) var lastCodeSentIdentifier: String?
+  private var now: Date
+  private var stopTicking: (() -> Void)?
+  private let currentDate: () -> Date
+  private let startTicking: (_ tick: @escaping @MainActor () -> Bool) -> () -> Void
 
-  /// A tick counter that increments every second while any cooldown is active.
-  /// Views that access `remainingCooldown(for:)` will re-render when this changes.
-  private(set) var tick: UInt = 0
-
-  /// The timer that drives the tick updates.
-  private var timer: Timer?
-
-  /// Creates a new CodeLimiter instance.
-  init() {}
-
-  /// Checks if this is the first code request for the given identifier.
-  ///
-  /// - Parameter identifier: The identifier to check.
-  /// - Returns: `true` if no code has been sent yet for this identifier.
-  func isFirstRequest(for identifier: String) -> Bool {
-    lastCodeSentAt[identifier] == nil
+  /// - Parameters:
+  ///   - currentDate: The clock used to measure cooldowns.
+  ///   - startTicking: Calls `tick` every second until it returns `false`, and returns a closure that stops the ticks.
+  init(
+    currentDate: @escaping () -> Date = { .now },
+    startTicking: @escaping (_ tick: @escaping @MainActor () -> Bool) -> () -> Void = CodeLimiter.startTimer
+  ) {
+    self.currentDate = currentDate
+    self.startTicking = startTicking
+    now = currentDate()
   }
 
-  /// Records that a code was sent for the given identifier and starts the countdown timer.
-  ///
-  /// - Parameter identifier: The identifier that received the code.
-  func recordCodeSent(for identifier: String) {
-    lastCodeSentAt[identifier] = .now
+  func isFirstRequest(for identifier: String) -> Bool {
+    cooldownEndsAt[identifier] == nil
+  }
+
+  func recordCodeSent(for identifier: String, cooldown: TimeInterval = defaultCooldown) {
+    now = currentDate()
+    cooldownEndsAt[identifier] = now.addingTimeInterval(cooldown)
+    lastCodeSentIdentifier = identifier
     startTimerIfNeeded()
   }
 
-  /// Starts the countdown timer if not already running.
   private func startTimerIfNeeded() {
-    guard timer == nil else { return }
-    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] timer in
-      guard let self else {
-        timer.invalidate()
-        return
-      }
-      Task { @MainActor in
-        self.onTick()
-      }
+    guard stopTicking == nil else { return }
+    stopTicking = startTicking { [weak self] in
+      guard let self else { return false }
+      onTick()
+      return true
     }
-    RunLoop.current.add(timer!, forMode: .common)
   }
 
-  /// Called every second by the timer.
   private func onTick() {
-    tick &+= 1
-
-    // Stop the timer if all cooldowns have expired
-    let hasActiveCooldown = lastCodeSentAt.values.contains { date in
-      Date.now.timeIntervalSince(date) < Self.defaultCooldown
-    }
-    if !hasActiveCooldown {
+    now = currentDate()
+    if !cooldownEndsAt.values.contains(where: { $0 > now }) {
       stopTimer()
     }
   }
 
-  /// Stops the countdown timer.
   private func stopTimer() {
-    timer?.invalidate()
-    timer = nil
+    stopTicking?()
+    stopTicking = nil
   }
 
-  /// Clears the code sent record for the given identifier.
-  ///
-  /// Call this when verification succeeds to reset the state.
-  ///
-  /// - Parameter identifier: The identifier to clear.
+  private nonisolated static func startTimer(_ tick: @escaping @MainActor () -> Bool) -> () -> Void {
+    let timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+      // Scheduled from the main actor on its run loop, so the timer fires on the main thread.
+      if !MainActor.assumeIsolated(tick) {
+        timer.invalidate()
+      }
+    }
+    RunLoop.current.add(timer, forMode: .common)
+    return { timer.invalidate() }
+  }
+
   func clearRecord(for identifier: String) {
-    lastCodeSentAt[identifier] = nil
+    cooldownEndsAt[identifier] = nil
   }
 
-  /// Returns the remaining cooldown time for the given identifier.
-  ///
-  /// This method accesses the `tick` property to ensure views re-render every second
-  /// while the cooldown is active.
-  ///
-  /// - Parameters:
-  ///   - identifier: The identifier to check.
-  ///   - cooldown: The cooldown period in seconds. Defaults to 30 seconds.
-  /// - Returns: The remaining seconds until a new code can be sent, or 0 if ready.
-  func remainingCooldown(for identifier: String, cooldown: TimeInterval = defaultCooldown) -> Int {
-    // Access tick to establish observation dependency for SwiftUI updates
-    _ = tick
-    guard let lastSent = lastCodeSentAt[identifier] else { return 0 }
-    let elapsed = Date.now.timeIntervalSince(lastSent)
-    let remaining = cooldown - elapsed
-    return max(0, Int(ceil(remaining)))
+  func remainingCooldown(for identifier: String) -> Int {
+    guard let endsAt = cooldownEndsAt[identifier] else { return 0 }
+    return max(0, Int(ceil(endsAt.timeIntervalSince(now))))
   }
 
-  /// Checks if a new code can be sent for the given identifier.
-  ///
-  /// - Parameters:
-  ///   - identifier: The identifier to check.
-  ///   - cooldown: The cooldown period in seconds. Defaults to 30 seconds.
-  /// - Returns: `true` if enough time has passed since the last code was sent.
-  func canSendCode(for identifier: String, cooldown: TimeInterval = defaultCooldown) -> Bool {
-    remainingCooldown(for: identifier, cooldown: cooldown) == 0
+  func canSendCode(for identifier: String) -> Bool {
+    remainingCooldown(for: identifier) == 0
   }
 }
 

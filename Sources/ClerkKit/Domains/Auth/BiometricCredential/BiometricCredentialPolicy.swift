@@ -13,10 +13,12 @@ public enum BiometricCredentialPolicy: String, Codable, Equatable, Sendable {
   case biometryCurrentSet = "biometry_current_set"
 
   /// Require biometric authentication, but allow biometric enrollment changes.
+  /// Supported for sign-in; reverification requires ``biometryCurrentSet``.
   case biometryAny = "biometry_any"
 
   /// Require biometric availability at enrollment, then allow biometric or device passcode authentication.
   ///
   /// This permits the device passcode to unlock the biometric credential during sign-in.
+  /// Reverification requires ``biometryCurrentSet``.
   case biometryOrDevicePasscode = "biometry_or_device_passcode"
 }
