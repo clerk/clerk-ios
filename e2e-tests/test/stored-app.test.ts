@@ -361,6 +361,15 @@ describe('the workflows that store and restore', () => {
     const paths = main.slice(main.indexOf('paths:'), main.indexOf('workflow_dispatch:')).split('\n').map((line) => line.trim().replace(/^- /, ''));
     for (const input of BUILD_INPUTS) assert.ok(paths.includes(input) || paths.includes(`${input}/**`), `${input} is not a path that starts verify-app-cache.yml`);
   });
+
+  it('build the app on main once a week, so that a new Xcode on the runner image is stored before sessions need it, and build nothing when it is stored already', () => {
+    assert.match(main, /^ {2}schedule:\n {4}- cron: "\d+ \d+ \* \* [0-6]"$/m);
+    const steps = main.split(/\n(?= {6}- )/);
+    assert.match(steps.find((step) => step.includes('id: stored')) ?? '', /^ {10}lookup-only: true$/m);
+    assert.match(steps.find((step) => step.includes('- name: Build E2EHost from nothing')) ?? '', /^ {8}if: .*steps\.stored\.outputs\.cache-hit != 'true'$/m);
+    assert.match(steps.find((step) => step.includes('id: runner')) ?? '', /^ {10}lookup-only: true$/m);
+    assert.match(steps.find((step) => step.includes('id: prepare')) ?? '', /^ {8}if: steps\.runner\.outputs\.cache-hit != 'true'$/m);
+  });
 });
 
 describe('the build state in a session', () => {
