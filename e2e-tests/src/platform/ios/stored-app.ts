@@ -53,13 +53,14 @@ function output(command: string, args: readonly string[], cwd: string): string {
 }
 
 export function inputTree(worktree: string): InputTree {
-  const listed = output('git', ['ls-tree', '-r', '-t', '-z', 'HEAD', '--', ...BUILD_INPUTS], worktree);
-  const entries = listed.split('\0').filter((line) => line !== '').map((line) => {
+  const listed = output('git', ['ls-tree', '-r', '-t', '-z', 'HEAD', '--', ...BUILD_INPUTS], worktree).split('\0').filter((line) => line !== '');
+  const entries = listed.map((line) => {
     const [meta = '', path = ''] = line.split('\t');
     return { path, oid: meta.split(' ')[2] ?? '' };
   });
+  const files = listed.filter((line) => line.split(' ')[1] !== 'tree');
   const changed = output('git', ['status', '--porcelain', '-z', '--', ...BUILD_INPUTS], worktree).split('\0').filter((line) => line !== '').map((line) => line.slice(3));
-  return { head: output('git', ['rev-parse', 'HEAD'], worktree).trim(), hash: sha256(listed), entries, changed };
+  return { head: output('git', ['rev-parse', 'HEAD'], worktree).trim(), hash: sha256(files.join('\0')), entries, changed };
 }
 
 export function toolchain(cwd: string): Toolchain {

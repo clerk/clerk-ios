@@ -115,7 +115,7 @@ describe('the key of a stored E2EHost', () => {
     for (const field of Object.keys(identity) as (keyof typeof identity)[]) assert.notEqual(appKey({ ...identity, [field]: 'other' }), appKey(identity), field);
   });
 
-  it('changes with a Swift source, the host app, the project, Package.swift, a package version, Xcode and the SDK', () => {
+  it('changes with a Swift source, the host app, the project, Package.swift, the workspace, a package version, Xcode and the SDK', () => {
     const repo = checkout();
     const first = named(repo).key!;
     assert.match(first, /^[0-9a-f]{32}$/);
@@ -125,6 +125,7 @@ describe('the key of a stored E2EHost', () => {
       'the host app': () => commit(repo, HOST_APP, 'host two\n'),
       'the Xcode project': () => commit(repo, PROJECT, 'project two\n'),
       'Package.swift': () => commit(repo, 'Package.swift', 'package two\n'),
+      'the workspace': () => commit(repo, 'Clerk.xcworkspace/contents.xcworkspacedata', 'workspace two\n'),
       'the revision a package resolves to': () => writeFileSync(join(repo.fake, 'pins'), 'bbbb'),
       'the Xcode build': () => writeFileSync(join(repo.fake, 'xcode'), '27B100'),
       'the simulator SDK': () => writeFileSync(join(repo.fake, 'sdk'), '25B200'),
@@ -139,9 +140,11 @@ describe('the key of a stored E2EHost', () => {
     }
   });
 
-  it('stays the same when only a spec, a doc or a workflow changes', () => {
+  it('stays the same when only a spec, a doc, a workflow or another example app changes', () => {
     const repo = checkout();
     const first = named(repo).key;
+    commit(repo, 'Examples/AirbnbClone/AirbnbClone/App.swift', 'other app\n');
+    commit(repo, 'Examples/Quickstart/Quickstart/ContentView.swift', 'quickstart app\n');
     commit(repo, 'e2e-tests/specs/features/a.e2e.ts', 'spec two\n');
     commit(repo, 'README.md', 'readme two\n');
     commit(repo, 'docs/guide.md', 'guide\n');
