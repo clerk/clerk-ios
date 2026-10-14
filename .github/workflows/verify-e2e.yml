@@ -19,7 +19,7 @@ on:
         required: false
   workflow_dispatch:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "17 7 * * *"
 
 permissions:
   contents: read
@@ -120,6 +120,7 @@ jobs:
           xcrun simctl create "Clerk Verify Template iOS" "iPhone Air" "com.apple.CoreSimulator.SimRuntime.$IOS_RUNTIME"
 
       - name: Build E2EHost and boot a simulator
+        timeout-minutes: 25
         env:
           CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
         run: |
@@ -252,7 +253,7 @@ jobs:
     needs:
       - plan
       - e2e-tests
-    if: failure() && github.event_name == 'schedule'
+    if: always() && github.event_name == 'schedule' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

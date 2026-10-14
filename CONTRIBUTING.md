@@ -273,7 +273,7 @@ e2e-tests/bin/control-clerk-ios run sign-up
 
 `doctor` checks each requirement and prints the fix for one that is missing. `.claude/skills/verify-clerk-ios/SKILL.md` has the one-time machine setup, how to write a spec, and where a run keeps its video, screenshots, and logs.
 
-`.github/workflows/verify-e2e.yml` runs the same specs on `main` every night at 07:00 UTC. The maintainer-only **Release SDK** workflow runs them through the same workflow and does not publish unless they pass.
+`.github/workflows/verify-e2e.yml` runs the same specs on `main` every night at 07:17 UTC. The maintainer-only **Release SDK** workflow runs them through the same workflow and does not publish unless they pass.
 
 ## Releasing (Maintainers)
 

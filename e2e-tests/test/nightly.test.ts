@@ -11,15 +11,28 @@ const triggers = workflow.slice(workflow.indexOf('\non:\n'), workflow.indexOf('\
 const jobs = workflow.split(/\n(?= {2}[\w-]+:\n)/);
 const job = (name: string): string => jobs.find((text) => text.startsWith(`  ${name}:\n`)) ?? '';
 
-function runs(name: string, context: { event: string; repository?: string; failed?: boolean }): boolean {
-  const condition = /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true';
-  const script = condition
-    .replaceAll('failure()', String(context.failed ?? false))
+type Result = 'success' | 'failure' | 'cancelled' | 'skipped';
+
+function runs(name: string, context: { event: string; repository?: string; results?: Record<string, Result>; runCancelled?: boolean }): boolean {
+  const text = job(name);
+  const condition = (/^ {4}if: (.+)$/m.exec(text)?.[1] ?? 'true').replace(/^\$\{\{ (.+) \}\}$/, '$1');
+  const block = /^ {4}needs:(?: ([\w-]+)$|\n((?: {6}- [\w-]+\n)+))/m.exec(text);
+  const needs = block?.[1] !== undefined ? [block[1]] : (block?.[2] ?? '').trim().split('\n').filter(Boolean).map((line) => line.replace(/^\s*- /, ''));
+  const results = needs.map((need) => context.results?.[need] ?? 'success');
+  const runCancelled = context.runCancelled ?? false;
+  const script = (/\b(always|cancelled|failure|success)\(\)/.test(condition) ? condition : `success() && (${condition})`)
+    .replaceAll('needs.*.result', JSON.stringify(results))
     .replaceAll('github.event_name', JSON.stringify(context.event))
     .replaceAll('github.repository', JSON.stringify(context.repository ?? 'clerk/clerk-ios'))
     .replaceAll(' != ', ' !== ')
     .replaceAll(' == ', ' === ');
-  return new Function(`return ${script};`)() as boolean;
+  return new Function('always', 'cancelled', 'failure', 'success', 'contains', `return ${script};`)(
+    () => true,
+    () => runCancelled,
+    () => results.includes('failure'),
+    () => !runCancelled && results.every((result) => result === 'success'),
+    (list: string[], item: string) => list.includes(item),
+  ) as boolean;
 }
 
 function notified(webhook: string): { status: number | null; stdout: string; posted: unknown } {
@@ -42,8 +55,8 @@ function notified(webhook: string): { status: number | null; stdout: string; pos
 }
 
 describe('when the end-to-end tests run', () => {
-  it('run every night at 07:00 UTC, before each release, and when a person starts them', () => {
-    assert.match(triggers, /^ {2}schedule:\n {4}- cron: "0 7 \* \* \*"$/m);
+  it('run every night at 07:17 UTC, before each release, and when a person starts them', () => {
+    assert.match(triggers, /^ {2}schedule:\n {4}- cron: "17 7 \* \* \*"$/m);
     assert.match(triggers, /^ {2}workflow_call:$/m);
     assert.match(triggers, /^ {2}workflow_dispatch:$/m);
   });
@@ -62,16 +75,44 @@ describe('when the end-to-end tests run', () => {
   });
 });
 
+describe('a step that hangs', () => {
+  it('ends at the time limit of its own step, well before the time limit of the job', () => {
+    const e2e = job('e2e-tests');
+    const steps = e2e.split(/\n(?= {6}- name: )/).filter((step) => /"\$CLI" (up|run) /.test(step));
+    assert.deepEqual(
+      {
+        job: Number(/^ {4}timeout-minutes: (\d+)$/m.exec(e2e)?.[1]),
+        steps: steps.map((step) => [/- name: (.+)/.exec(step)?.[1], Number(/^ {8}timeout-minutes: (\d+)$/m.exec(step)?.[1])]),
+      },
+      { job: 90, steps: [['Build E2EHost and boot a simulator', 25], ['Run the end-to-end tests', 45]] },
+    );
+  });
+});
+
 describe('the Slack message about a failed nightly run', () => {
-  it('is sent only when a scheduled run fails, and not for a release, a run a person started, or a run that passed', () => {
+  it('is sent when a scheduled run fails, runs out of time, or is cancelled, and not for a release, a run a person started, a run that passed, or a fork', () => {
     assert.ok(job('notify').length > 0, 'the workflow has a notify job');
     assert.deepEqual(
-      [
-        runs('notify', { event: 'schedule', failed: true }),
-        runs('notify', { event: 'schedule', failed: false }),
-        runs('notify', { event: 'workflow_dispatch', failed: true }),
-      ],
-      [true, false, false],
+      {
+        'a scheduled run whose tests failed': runs('notify', { event: 'schedule', results: { 'e2e-tests': 'failure' } }),
+        'a scheduled run that could not start': runs('notify', { event: 'schedule', results: { plan: 'failure', 'e2e-tests': 'skipped' } }),
+        'a scheduled run that ran out of time': runs('notify', { event: 'schedule', results: { 'e2e-tests': 'cancelled' } }),
+        'a scheduled run that was cancelled': runs('notify', { event: 'schedule', results: { 'e2e-tests': 'cancelled' }, runCancelled: true }),
+        'a scheduled run that passed': runs('notify', { event: 'schedule' }),
+        'a scheduled run in a fork': runs('notify', { event: 'schedule', results: { plan: 'skipped', 'e2e-tests': 'skipped' } }),
+        'a release, or a run a person started, that failed': runs('notify', { event: 'workflow_dispatch', results: { 'e2e-tests': 'failure' } }),
+        'a run a person started that was cancelled': runs('notify', { event: 'workflow_dispatch', results: { 'e2e-tests': 'cancelled' }, runCancelled: true }),
+      },
+      {
+        'a scheduled run whose tests failed': true,
+        'a scheduled run that could not start': true,
+        'a scheduled run that ran out of time': true,
+        'a scheduled run that was cancelled': true,
+        'a scheduled run that passed': false,
+        'a scheduled run in a fork': false,
+        'a release, or a run a person started, that failed': false,
+        'a run a person started that was cancelled': false,
+      },
     );
   });
 
