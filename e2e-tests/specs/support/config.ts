@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { E2EConfig } from 'e2e';
@@ -25,7 +26,7 @@ export function engineDevice(device: Device): readonly string[] | DeviceProvider
       deviceId: device.id,
       device: device.id,
       daemon: token.use('e2e-provider-lease', (authToken) => ({ baseUrl: device.daemonUrl, authToken })),
-      ...(env.AGENT_DEVICE_STATE_DIR === undefined ? {} : { client: { cwd: env.AGENT_DEVICE_STATE_DIR } }),
+      client: { cwd: env.AGENT_DEVICE_STATE_DIR ?? join(env.HOME ?? homedir(), '.agent-device') },
     }),
     release: async () => {},
   };

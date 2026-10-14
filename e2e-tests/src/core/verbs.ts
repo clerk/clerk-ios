@@ -197,7 +197,8 @@ const CLOSE_BEFORE_RECORDING_MS = 30_000;
 function agentDeviceFor(deps: Deps, lease: Lease, platform: Platform) {
   const target = agentDeviceOn(deviceOf(lease), platform);
   const env = { ...withoutClerkKeys(deps.env), AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env };
-  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, ...limit }) };
+  mkdirSync(deps.workspace.agentDeviceDir, { recursive: true });
+  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, cwd: deps.workspace.agentDeviceDir, ...limit }) };
 }
 
 const targetOf = (deps: Deps, outcome: RuntimeOutcome): Target => ({

@@ -5,7 +5,7 @@ import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, type TestContext } from 'node:test';
 import type { DeviceProvider, DeviceRequest } from '@e2e-dev/mobile';
 import { createAgentDeviceClient } from 'agent-device';
 import { engineDevice } from '../specs/support/config.ts';
@@ -32,12 +32,10 @@ async function daemonWithAFallbackScreenshot(): Promise<{ readonly url: string; 
 }
 
 describe('a borrowed device', () => {
-  it('puts a fallback screenshot of a remote snapshot in the agent-device state directory, not in the checkout', async (t) => {
+  async function snapshotFrom(t: TestContext, env: Readonly<Record<string, string>>, dir: string) {
     const daemon = await daemonWithAFallbackScreenshot();
     t.after(daemon.close);
-    const dir = mkdtempSync(join(tmpdir(), 'verify-borrowed-'));
     const checkout = mkdtempSync(join(dir, 'checkout-'));
-    const stateDir = join(dir, 'state');
     const tokenFile = join(dir, 'token');
     writeFileSync(tokenFile, 'b'.repeat(64));
     const before = process.cwd();
@@ -45,12 +43,27 @@ describe('a borrowed device', () => {
     t.after(() => process.chdir(before));
 
     const provider = engineDevice({ kind: 'borrowed', id: UDID, daemonUrl: daemon.url, tokenFile }) as DeviceProvider;
-    const lease = await provider.acquire({ env: { AGENT_DEVICE_STATE_DIR: stateDir } } as unknown as DeviceRequest);
+    const lease = await provider.acquire({ env } as unknown as DeviceRequest);
     const client = createAgentDeviceClient({ ...lease.client, session: 'verify-ios-test', daemonBaseUrl: lease.daemon!.baseUrl, daemonAuthToken: lease.daemon!.authToken });
-    const snapshot = await client.capture.snapshot();
+    return { snapshot: await client.capture.snapshot(), checkout };
+  }
+
+  it('puts a fallback screenshot of a remote snapshot in the agent-device state directory, not in the checkout', async (t) => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-borrowed-'));
+    const stateDir = join(dir, 'state');
+    const { snapshot, checkout } = await snapshotFrom(t, { AGENT_DEVICE_STATE_DIR: stateDir }, dir);
 
     assert.equal(snapshot.fallbackScreenshotPath, join(stateDir, 'snapshot-fallback.png'));
     assert.deepEqual(readdirSync(stateDir), ['snapshot-fallback.png']);
+    assert.deepEqual(readdirSync(checkout), []);
+  });
+
+  it('puts it in agent-device\'s default state directory when a person runs e2e without one', async (t) => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-borrowed-'));
+    const home = join(dir, 'home');
+    const { snapshot, checkout } = await snapshotFrom(t, { HOME: home }, dir);
+
+    assert.equal(snapshot.fallbackScreenshotPath, join(home, '.agent-device', 'snapshot-fallback.png'));
     assert.deepEqual(readdirSync(checkout), []);
   });
 });
