@@ -218,6 +218,36 @@ struct ClerkReconfigureTests {
   }
 
   @Test
+  func invalidProxyUrlReconfigureLeavesCurrentInstanceUntouched() async throws {
+    let original = Clerk.shared
+    let originalDependencies = Clerk.shared.dependencies
+    let originalClient = Client.mock
+    try Clerk.shared.seedIdentity(deviceToken: "old-device-token", client: originalClient)
+
+    do {
+      _ = try await Clerk.reconfigure(
+        publishableKey: testPublishableKey,
+        options: .init(proxyUrl: "proxy.example.com/__clerk")
+      )
+      Issue.record("Expected reconfigure to throw for an invalid proxy URL")
+    } catch let error as ClerkInitializationError {
+      if case .invalidProxyUrl = error {
+      } else {
+        Issue.record("Expected invalidProxyUrl, got \(error)")
+      }
+    } catch {
+      Issue.record("Expected ClerkInitializationError, got \(error)")
+    }
+
+    let dependenciesUnchanged = Clerk.shared.dependencies === originalDependencies
+    #expect(Clerk.shared === original)
+    #expect(dependenciesUnchanged)
+    #expect(Clerk.shared.identityController.currentDeviceToken == "old-device-token")
+    #expect(Clerk.shared.client?.id == originalClient.id)
+    #expect(Clerk.shared.session?.id == originalClient.currentSession?.id)
+  }
+
+  @Test
   func reconfigureClearsLocalStateAndStorage() async throws {
     let oldKeychain = InMemoryKeychain()
     Clerk.shared.dependencies = MockDependencyContainer(
