@@ -8,6 +8,7 @@ A signed-out user opens AuthView and sees the start screen, where they enter an 
 - `auth-start-full-screen` opens AuthView as the root of the window from the home's full-screen sign-in button.
 - `auth-start-dismiss` closes the sheet with its close button, shows the home again, and opens the sheet again.
 - `auth-start-initial-identifier` opens AuthView on the phone field, holding the number the app passed to `initialIdentifier(_:)`.
+- `auth-start-switch-clears` clears the email or username field when the user switches to the phone field, and the phone field when the user switches back.
 
 ## How to get to it (user POV)
 
@@ -15,6 +16,7 @@ A signed-out user opens AuthView and sees the start screen, where they enter an 
 - Tap the `Sign in full screen` button on the home screen, which shows AuthView the way an app shows it as its root.
 - Tap the close button of the sheet to go back to the home screen.
 - Open the sign-in screen from an app that already knows the phone number. The screen opens with that number in it.
+- Type an email address, tap the button under Continue to switch to the phone field, and tap it again to switch back. The email field is empty. The same holds for a phone number typed before switching to the email field and back.
 
 ## Driving it with verify
 
@@ -27,7 +29,8 @@ Preconditions:
 - **Full screen.** Run `e2e-tests/bin/control-clerk-ios run auth-start`. The first test taps `e2e.auth.signInFullScreen` and expects `clerk.auth.start.identifier` and no `clerk.dismissButton`, because E2EHost shows that AuthView with `isDismissible: false`. Screenshot `auth-full-screen`.
 - **Home button and dismiss.** The second test launches the app, expects `Signed out` on the home, taps `e2e.auth.signIn`, and expects `clerk.auth.start.identifier` and `clerk.auth.start.continue`. Screenshot `auth-start`. It then taps `clerk.dismissButton`, waits for the home to show `Signed out`, and expects no `clerk.auth.start.identifier`. Screenshot `auth-dismissed`. It then taps `e2e.auth.signIn` again and expects the identifier field.
 - **Initial identifier.** The third test launches in `signIn` mode with the user's phone as `initialIdentifier` and taps `e2e.auth.signInFullScreen`, and E2EHost shows `AuthView().initialIdentifier(<that phone>)`. AuthView then opens on the phone field and shows no `clerk.auth.start.identifier`. The text field is the one node that carries `clerk.auth.start.phoneNumber`, and its name is `Enter your phone number`. The country control is named `United States, +1`, and its role differs by iOS version (`button` on some, `pop-up-button` on others), so the test does not locate it. The test expects the text field to hold the national part of the number as `(201) 555-01xx`, and `clerk.auth.start.identifier` to be absent. It then taps `clerk.auth.start.continue` and expects `clerk.auth.signIn.password`. Screenshots `auth-initial-identifier` and `auth-initial-identifier-accepted`.
-- **Proof.** `specs/features/auth-start/auth-start.e2e.ts` passes. The run directory holds `video.mp4` and the five screenshots.
+- **Switching clears the field left.** `specs/features/auth-start/switch-clears-field.e2e.ts` opens AuthView in the sheet, fills `clerk.auth.start.identifier` with `host.newEmail()`, taps `clerk.auth.start.identifierSwitcher` twice, and expects the identifier field to have the value `""`. It then switches to the phone field, fills `clerk.auth.start.phoneNumber` with the ten digits of `host.newPhone()`, switches away and back, and expects the phone field to have the value `""`. Screenshots `email-typed`, `email-cleared`, `phone-typed`, and `phone-cleared`.
+- **Proof.** `specs/features/auth-start/auth-start.e2e.ts` and `specs/features/auth-start/switch-clears-field.e2e.ts` pass. The run directory holds `video.mp4` and the nine screenshots.
 
 ## Gotchas
 

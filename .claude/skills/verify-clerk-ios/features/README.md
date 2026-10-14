@@ -60,7 +60,7 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 
 ## Features
 
-- [Auth start](./auth-start.md) covers opening AuthView from the home in a sheet and full screen, dismissing it, and opening it with an initial identifier.
+- [Auth start](./auth-start.md) covers opening AuthView from the home in a sheet and full screen, dismissing it, opening it with an initial identifier, and clearing the field the user leaves when switching between email and phone.
 - [Sign in with an email code](./sign-in-email-code.md) covers requesting and entering the email code.
 - [Sign up](./sign-up.md) covers requesting the sign-up code, completing sign-up with a password, and signing up with a phone number.
 - [Session persistence](./session-persistence.md) covers a session that survives a restart of the app.
