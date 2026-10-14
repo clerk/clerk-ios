@@ -161,6 +161,14 @@ jobs:
           "$PACKAGE/node_modules/.bin/agent-device" --version
           echo "tools-installed $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
 
+      # agent-device takes minutes to start its daemon while a simulator does its first-boot work, or fails to. Its proxy, which the session agent starts, reuses a daemon that is already running.
+      - name: Start the agent-device daemon before the simulator boots
+        if: steps.device.outputs.udid != ''
+        timeout-minutes: 5
+        run: |
+          "$PACKAGE/node_modules/.bin/agent-device" devices --platform ios > /dev/null || echo "::warning::agent-device did not start its daemon; the first command that needs it starts it"
+          echo "daemon-started $(date +%s)000" >> "$VERIFY_SESSION_WORK/marks"
+
       - name: Restore the XCTest runner
         id: runner
         if: steps.device.outputs.udid != ''
