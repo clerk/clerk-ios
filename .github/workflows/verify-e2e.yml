@@ -256,10 +256,24 @@ jobs:
     if: always() && github.event_name == 'schedule' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
     steps:
+      - name: Check out the script that lists the merged pull requests
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts/nightly-failure-message.mjs
+          sparse-checkout-cone-mode: false
+
+      # The message goes out without the list when the checkout or the script fails.
       - name: Notify Slack
+        if: always()
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -269,31 +283,14 @@ jobs:
           fi
 
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          message=":red_circle: $GITHUB_REPOSITORY nightly end-to-end tests failed · <$run_url|View the run>"
+          if since="$(timeout 120 node .github/scripts/nightly-failure-message.mjs verify-e2e.yml release-sdk.yml)"; then
+            message="$message"$'\n'"$since"
+          else
+            echo "::warning::Could not list the pull requests merged since the last passing run; the message has only its first line"
+          fi
 
-          PAYLOAD=$(jq -n \
-            --arg repo "$GITHUB_REPOSITORY" \
-            --arg run_url "$run_url" \
-            '{
-              text: "The nightly end-to-end tests failed in \($repo)",
-              blocks: [
-                {
-                  type: "section",
-                  text: {
-                    type: "mrkdwn",
-                    text: "*The nightly end-to-end tests failed in \($repo)*"
-                  }
-                },
-                {
-                  type: "context",
-                  elements: [
-                    {
-                      type: "mrkdwn",
-                      text: "<\($run_url)|View the run>"
-                    }
-                  ]
-                }
-              ]
-            }')
+          PAYLOAD=$(jq -n --arg text "$message" '{text: $text, unfurl_links: false, unfurl_media: false}')
 
           curl --fail-with-body \
             --connect-timeout 10 \

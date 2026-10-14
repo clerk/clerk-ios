@@ -35,13 +35,17 @@ function runs(name: string, context: { event: string; repository?: string; resul
   ) as boolean;
 }
 
-function notified(webhook: string): { status: number | null; stdout: string; posted: unknown } {
+const SINCE = 'Merged since the <https://github.com/clerk/clerk-ios/actions/runs/41|last passing run> (2026-10-13 07:17 UTC):\n• <https://github.com/clerk/clerk-ios/pull/705|#705 Add passkeys> · mikepitre';
+
+function notified(webhook: string, script: 'lists' | 'fails' = 'lists'): { status: number | null; stdout: string; node: string; posted: unknown } {
   const text = job('notify');
-  const script = text.slice(text.indexOf('run: |') + 'run: |'.length).split('\n').map((line) => line.trim()).join('\n');
+  const step = text.slice(text.indexOf('run: |') + 'run: |'.length).split('\n').map((line) => line.trim()).join('\n');
   const work = mkdtempSync(join(tmpdir(), 'verify-nightly-notify-'));
   mkdirSync(join(work, 'bin'));
   writeFileSync(join(work, 'bin', 'curl'), `#!/bin/sh\nwhile [ "$#" -gt 1 ]; do [ "$1" = --data ] && printf '%s' "$2" > "${work}/posted"; shift; done\necho "$1" > "${work}/url"\n`, { mode: 0o755 });
-  const ran = spawnSync('bash', ['-c', script], {
+  const node = script === 'lists' ? `printf '%s\\n' '${SINCE}'` : `echo 'GET /actions/workflows/verify-e2e.yml/runs answered 403' >&2; exit 1`;
+  writeFileSync(join(work, 'bin', 'node'), `#!/bin/sh\necho "$@" > "${work}/node"\n${node}\n`, { mode: 0o755 });
+  const ran = spawnSync('bash', ['-c', step], {
     env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
     encoding: 'utf8',
     timeout: 20_000,
@@ -50,9 +54,15 @@ function notified(webhook: string): { status: number | null; stdout: string; pos
   try {
     posted = { url: readFileSync(join(work, 'url'), 'utf8').trim(), payload: JSON.parse(readFileSync(join(work, 'posted'), 'utf8')) };
   } catch {}
+  let args = '';
+  try {
+    args = readFileSync(join(work, 'node'), 'utf8').trim();
+  } catch {}
   rmSync(work, { recursive: true, force: true });
-  return { status: ran.status, stdout: ran.stdout, posted };
+  return { status: ran.status, stdout: ran.stdout, node: args, posted };
 }
+
+const permissions = (text: string): string[] => [...text.matchAll(/^ {4}permissions:\n((?: {6}[\w-]+: \w+\n)+)/gm)].flatMap((block) => block[1]!.trim().split('\n').map((line) => line.trim()));
 
 describe('when the end-to-end tests run', () => {
   it('run every night at 07:17 UTC, before each release, and when a person starts them', () => {
@@ -116,24 +126,45 @@ describe('the Slack message about a failed nightly run', () => {
     );
   });
 
-  it('names the repository and links the run', () => {
+  it('names the repository, links the run, and lists the pull requests merged since the last passing run', () => {
+    const headline = ':red_circle: clerk/clerk-ios nightly end-to-end tests failed · <https://github.com/clerk/clerk-ios/actions/runs/123|View the run>';
     assert.deepEqual(notified('https://hooks.slack.test/T/B/x'), {
       status: 0,
       stdout: '',
+      node: '.github/scripts/nightly-failure-message.mjs verify-e2e.yml release-sdk.yml',
+      posted: { url: 'https://hooks.slack.test/T/B/x', payload: { text: `${headline}\n${SINCE}`, unfurl_links: false, unfurl_media: false } },
+    });
+  });
+
+  it('still names the repository and links the run when the list of pull requests cannot be made', () => {
+    assert.deepEqual(notified('https://hooks.slack.test/T/B/x', 'fails'), {
+      status: 0,
+      stdout: '::warning::Could not list the pull requests merged since the last passing run; the message has only its first line\n',
+      node: '.github/scripts/nightly-failure-message.mjs verify-e2e.yml release-sdk.yml',
       posted: {
         url: 'https://hooks.slack.test/T/B/x',
-        payload: {
-          text: 'The nightly end-to-end tests failed in clerk/clerk-ios',
-          blocks: [
-            { type: 'section', text: { type: 'mrkdwn', text: '*The nightly end-to-end tests failed in clerk/clerk-ios*' } },
-            { type: 'context', elements: [{ type: 'mrkdwn', text: '<https://github.com/clerk/clerk-ios/actions/runs/123|View the run>' }] },
-          ],
-        },
+        payload: { text: ':red_circle: clerk/clerk-ios nightly end-to-end tests failed · <https://github.com/clerk/clerk-ios/actions/runs/123|View the run>', unfurl_links: false, unfurl_media: false },
       },
     });
   });
 
+  it('posts even when the checkout of the script fails, and reads the runs and pull requests with only read access', () => {
+    const notify = job('notify');
+    const post = notify.split(/\n(?= {6}- name: )/).find((step) => step.includes('- name: Notify Slack')) ?? '';
+    assert.deepEqual(
+      { post: /^ {8}if: (.+)$/m.exec(post)?.[1], token: /^ {10}GITHUB_TOKEN: (.+)$/m.exec(post)?.[1], permissions: permissions(notify) },
+      { post: 'always()', token: '${{ github.token }}', permissions: ['actions: read', 'contents: read', 'pull-requests: read'] },
+    );
+  });
+
+  it('asks for no permission that the release workflow does not grant when it calls this workflow, so the release can start', () => {
+    const release = readFileSync(join(import.meta.dirname, '..', '..', '.github', 'workflows', 'release-sdk.yml'), 'utf8');
+    const caller = release.split(/\n(?= {2}[\w-]+:\n)/).find((text) => /^ {4}uses: \.\/\.github\/workflows\/verify-e2e\.yml$/m.test(text)) ?? '';
+    const granted = permissions(caller);
+    assert.deepEqual([...new Set(permissions(workflow))].filter((permission) => !granted.includes(permission)), []);
+  });
+
   it('is skipped with a warning when the repository has no Slack webhook', () => {
-    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', posted: null });
+    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', node: '', posted: null });
   });
 });
