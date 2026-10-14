@@ -35,16 +35,18 @@ function runs(name: string, context: { event: string; repository?: string; resul
   ) as boolean;
 }
 
+const RELEASE_JOB = 'Verify end-to-end tests / Run verify end-to-end tests on iOS';
+const NODE_ARGS = ['.github/scripts/nightly-failure-message.mjs', 'verify-e2e.yml', `release-sdk.yml=${RELEASE_JOB}`];
 const SINCE = 'Merged since the <https://github.com/clerk/clerk-ios/actions/runs/41|last passing run> (2026-10-13 07:17 UTC):\n• <https://github.com/clerk/clerk-ios/pull/705|#705 Add passkeys> · mikepitre';
 
-function notified(webhook: string, script: 'lists' | 'fails' = 'lists'): { status: number | null; stdout: string; node: string; posted: unknown } {
+function notified(webhook: string, script: 'lists' | 'fails' = 'lists'): { status: number | null; stdout: string; node: string[]; posted: unknown } {
   const text = job('notify');
   const step = text.slice(text.indexOf('run: |') + 'run: |'.length).split('\n').map((line) => line.trim()).join('\n');
   const work = mkdtempSync(join(tmpdir(), 'verify-nightly-notify-'));
   mkdirSync(join(work, 'bin'));
   writeFileSync(join(work, 'bin', 'curl'), `#!/bin/sh\nwhile [ "$#" -gt 1 ]; do [ "$1" = --data ] && printf '%s' "$2" > "${work}/posted"; shift; done\necho "$1" > "${work}/url"\n`, { mode: 0o755 });
   const node = script === 'lists' ? `printf '%s\\n' '${SINCE}'` : `echo 'GET /actions/workflows/verify-e2e.yml/runs answered 403' >&2; exit 1`;
-  writeFileSync(join(work, 'bin', 'node'), `#!/bin/sh\necho "$@" > "${work}/node"\n${node}\n`, { mode: 0o755 });
+  writeFileSync(join(work, 'bin', 'node'), `#!/bin/sh\nprintf '%s\\n' "$@" > "${work}/node"\n${node}\n`, { mode: 0o755 });
   const ran = spawnSync('bash', ['-c', step], {
     env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, SLACK_WEBHOOK_URL: webhook, GITHUB_SERVER_URL: 'https://github.com', GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_RUN_ID: '123' },
     encoding: 'utf8',
@@ -54,9 +56,9 @@ function notified(webhook: string, script: 'lists' | 'fails' = 'lists'): { statu
   try {
     posted = { url: readFileSync(join(work, 'url'), 'utf8').trim(), payload: JSON.parse(readFileSync(join(work, 'posted'), 'utf8')) };
   } catch {}
-  let args = '';
+  let args: string[] = [];
   try {
-    args = readFileSync(join(work, 'node'), 'utf8').trim();
+    args = readFileSync(join(work, 'node'), 'utf8').split('\n').slice(0, -1);
   } catch {}
   rmSync(work, { recursive: true, force: true });
   return { status: ran.status, stdout: ran.stdout, node: args, posted };
@@ -131,7 +133,7 @@ describe('the Slack message about a failed nightly run', () => {
     assert.deepEqual(notified('https://hooks.slack.test/T/B/x'), {
       status: 0,
       stdout: '',
-      node: '.github/scripts/nightly-failure-message.mjs verify-e2e.yml release-sdk.yml',
+      node: NODE_ARGS,
       posted: { url: 'https://hooks.slack.test/T/B/x', payload: { text: `${headline}\n${SINCE}`, unfurl_links: false, unfurl_media: false } },
     });
   });
@@ -140,7 +142,7 @@ describe('the Slack message about a failed nightly run', () => {
     assert.deepEqual(notified('https://hooks.slack.test/T/B/x', 'fails'), {
       status: 0,
       stdout: '::warning::Could not list the pull requests merged since the last passing run; the message has only its first line\n',
-      node: '.github/scripts/nightly-failure-message.mjs verify-e2e.yml release-sdk.yml',
+      node: NODE_ARGS,
       posted: {
         url: 'https://hooks.slack.test/T/B/x',
         payload: { text: ':red_circle: clerk/clerk-ios nightly end-to-end tests failed · <https://github.com/clerk/clerk-ios/actions/runs/123|View the run>', unfurl_links: false, unfurl_media: false },
@@ -164,7 +166,14 @@ describe('the Slack message about a failed nightly run', () => {
     assert.deepEqual([...new Set(permissions(workflow))].filter((permission) => !granted.includes(permission)), []);
   });
 
+  it('counts a release as the last passing run only by the name its end-to-end test job has in the release', () => {
+    const release = readFileSync(join(import.meta.dirname, '..', '..', '.github', 'workflows', 'release-sdk.yml'), 'utf8');
+    const caller = release.split(/\n(?= {2}[\w-]+:\n)/).find((text) => /^ {4}uses: \.\/\.github\/workflows\/verify-e2e\.yml$/m.test(text)) ?? '';
+    const name = (text: string): string | undefined => /^ {4}name: (.+)$/m.exec(text)?.[1];
+    assert.equal(RELEASE_JOB, `${name(caller)} / ${name(job('e2e-tests'))}`);
+  });
+
   it('is skipped with a warning when the repository has no Slack webhook', () => {
-    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', node: '', posted: null });
+    assert.deepEqual(notified(''), { status: 0, stdout: '::warning::SLACK_WEBHOOK_URL is not configured; skipping Slack notification\n', node: [], posted: null });
   });
 });

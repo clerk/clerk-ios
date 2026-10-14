@@ -284,7 +284,7 @@ jobs:
 
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           message=":red_circle: $GITHUB_REPOSITORY nightly end-to-end tests failed · <$run_url|View the run>"
-          if since="$(timeout 120 node .github/scripts/nightly-failure-message.mjs verify-e2e.yml release-sdk.yml)"; then
+          if since="$(timeout 120 node .github/scripts/nightly-failure-message.mjs verify-e2e.yml 'release-sdk.yml=Verify end-to-end tests / Run verify end-to-end tests on iOS')"; then
             message="$message"$'\n'"$since"
           else
             echo "::warning::Could not list the pull requests merged since the last passing run; the message has only its first line"

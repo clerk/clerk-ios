@@ -6,8 +6,10 @@ import { main } from './nightly-failure-message.mjs';
 const REPO = 'clerk/clerk-ios';
 const API = 'https://api.github.test';
 const sha = name => Buffer.from(name).toString('hex').padEnd(40, 'f');
+const RELEASE_JOB = 'Verify end-to-end tests / Run verify end-to-end tests on iOS';
 
-function fakeGitHub({ parents, runs = {}, pulls = {} }) {
+function fakeGitHub({ parents, runs = {}, jobs = {}, pulls = {} }) {
+  const known = new Set([...Object.keys(parents), ...Object.values(parents)]);
   const ancestors = head => {
     const line = [];
     for (let at = head; at !== undefined; at = parents[at]) {
@@ -22,14 +24,22 @@ function fakeGitHub({ parents, runs = {}, pulls = {} }) {
     const path = pathname.replace(`/repos/${REPO}`, '');
     requests.push(path);
     const reply = body => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
+    const notFound = { ok: false, status: 404, json: async () => ({}), text: async () => 'Not Found' };
     let match = /^\/actions\/workflows\/([\w.-]+)\/runs$/.exec(path);
     if (match) {
       assert.equal(searchParams.get('status'), 'success');
       return reply({ workflow_runs: runs[match[1]] ?? [] });
     }
+    match = /^\/actions\/runs\/(\d+)\/jobs$/.exec(path);
+    if (match) {
+      return reply({ jobs: jobs[match[1]] ?? [] });
+    }
     match = /^\/compare\/(\w+)\.\.\.(\w+)$/.exec(path);
     if (match) {
       const [, base, head] = match;
+      if (!known.has(base) || !known.has(head)) {
+        return notFound;
+      }
       const headLine = ancestors(head);
       if (!headLine.includes(base)) {
         return reply({ status: ancestors(base).includes(head) ? 'behind' : 'diverged', total_commits: 0, commits: [] });
@@ -47,7 +57,7 @@ function fakeGitHub({ parents, runs = {}, pulls = {} }) {
     if (match) {
       return reply(pulls[match[1]] ?? []);
     }
-    return { ok: false, status: 404, json: async () => ({}), text: async () => 'Not Found' };
+    return notFound;
   };
   return { fetch, requests };
 }
@@ -74,7 +84,7 @@ const pull = (number, commit, title, login) => ({
 
 async function message(github, failing) {
   let written = '';
-  await main(['verify-e2e.yml', 'release-sdk.yml'], { GITHUB_API_URL: API, GITHUB_REPOSITORY: REPO, GITHUB_SHA: sha(failing), GITHUB_RUN_ID: '999', GITHUB_TOKEN: 'test-token' }, {
+  await main(['verify-e2e.yml', `release-sdk.yml=${RELEASE_JOB}`], { GITHUB_API_URL: API, GITHUB_REPOSITORY: REPO, GITHUB_SHA: sha(failing), GITHUB_RUN_ID: '999', GITHUB_TOKEN: 'test-token' }, {
     fetch: github.fetch,
     out: { write: text => (written += text) },
   });
@@ -106,11 +116,56 @@ describe('the list of pull requests in the message about a failed nightly run', 
   it('lists the newest 20 and counts the rest when more were merged', async () => {
     const names = Array.from({ length: 151 }, (_, at) => `c${at}`);
     const pulls = Object.fromEntries(names.slice(1).map((name, at) => [sha(name), [pull(1000 + at, name, `Change ${at}`, 'mikepitre')]]));
-    const github = fakeGitHub({ parents: history(...names), runs: { 'release-sdk.yml': [run(7, 'c0', '2026-10-01T09:00:00Z')] }, pulls });
+    const github = fakeGitHub({ parents: history(...names), runs: { 'verify-e2e.yml': [run(7, 'c0', '2026-10-01T07:17:00Z')] }, pulls });
     const lines = (await message(github, 'c150')).trimEnd().split('\n');
     assert.deepEqual(
       [lines.length, lines[1], lines[20], lines[21]],
       [22, `• <https://github.com/${REPO}/pull/1149|#1149 Change 149> · mikepitre`, `• <https://github.com/${REPO}/pull/1130|#1130 Change 130> · mikepitre`, 'and 130 more'],
+    );
+  });
+
+  it('lists all 20 and counts nothing more when exactly 20 were merged', async () => {
+    const names = Array.from({ length: 21 }, (_, at) => `c${at}`);
+    const pulls = Object.fromEntries(names.slice(1).map((name, at) => [sha(name), [pull(1000 + at, name, `Change ${at}`, 'mikepitre')]]));
+    const github = fakeGitHub({ parents: history(...names), runs: { 'verify-e2e.yml': [run(7, 'c0', '2026-10-01T07:17:00Z')] }, pulls });
+    const lines = (await message(github, 'c20')).trimEnd().split('\n');
+    assert.deepEqual([lines.length, lines[20]], [21, `• <https://github.com/${REPO}/pull/1000|#1000 Change 0> · mikepitre`]);
+  });
+
+  it('lists a pull request once when more than one of its commits was merged', async () => {
+    const twoCommits = pull(702, 'a3', 'Two commits, merged by a rebase', 'mikepitre');
+    const github = fakeGitHub({
+      parents: history('a1', 'a2', 'a3'),
+      runs: { 'verify-e2e.yml': [run(41, 'a1', '2026-10-13T07:17:00Z')] },
+      pulls: { [sha('a2')]: [twoCommits], [sha('a3')]: [twoCommits] },
+    });
+    assert.equal(
+      await message(github, 'a3'),
+      [`Merged since the <https://github.com/${REPO}/actions/runs/41|last passing run> (2026-10-13 07:17 UTC):`, `• <https://github.com/${REPO}/pull/702|#702 Two commits, merged by a rebase> · mikepitre`, ''].join('\n'),
+    );
+  });
+
+  it('names the pull request that merged a commit to main, not an earlier merged one that also held it', async () => {
+    const github = fakeGitHub({
+      parents: history('a1', 'a2'),
+      runs: { 'verify-e2e.yml': [run(41, 'a1', '2026-10-13T07:17:00Z')] },
+      pulls: { [sha('a2')]: [pull(650, 'zz', 'A pull request into another branch that held this commit', 'someone'), pull(702, 'a2', 'Two', 'mikepitre')] },
+    });
+    assert.equal(
+      await message(github, 'a2'),
+      [`Merged since the <https://github.com/${REPO}/actions/runs/41|last passing run> (2026-10-13 07:17 UTC):`, `• <https://github.com/${REPO}/pull/702|#702 Two> · mikepitre`, ''].join('\n'),
+    );
+  });
+
+  it('skips a passing run on a commit that GitHub no longer has', async () => {
+    const github = fakeGitHub({
+      parents: history('a1', 'a2'),
+      runs: { 'verify-e2e.yml': [run(42, 'gone', '2026-10-13T20:00:00Z', 'workflow_dispatch'), run(41, 'a1', '2026-10-13T07:17:00Z')] },
+      pulls: { [sha('a2')]: [pull(702, 'a2', 'Two', 'mikepitre')] },
+    });
+    assert.equal(
+      await message(github, 'a2'),
+      [`Merged since the <https://github.com/${REPO}/actions/runs/41|last passing run> (2026-10-13 07:17 UTC):`, `• <https://github.com/${REPO}/pull/702|#702 Two> · mikepitre`, ''].join('\n'),
     );
   });
 
@@ -140,12 +195,27 @@ describe('the list of pull requests in the message about a failed nightly run', 
     const github = fakeGitHub({
       parents: history('a1', 'a2', 'a3'),
       runs: { 'verify-e2e.yml': [run(61, 'a1', '2026-10-12T07:17:00Z')], 'release-sdk.yml': [run(62, 'a2', '2026-10-12T15:40:00Z', 'release', 'v1.4.0')] },
+      jobs: { 62: [{ name: 'Prepare release commit', conclusion: 'success' }, { name: RELEASE_JOB, conclusion: 'success' }] },
       pulls: { [sha('a2')]: [pull(702, 'a2', 'Two', 'mikepitre')], [sha('a3')]: [pull(703, 'a3', 'Three', 'swolfand')] },
     });
     assert.equal(
       await message(github, 'a3'),
       [`Merged since the <https://github.com/${REPO}/actions/runs/62|last passing run> (2026-10-12 15:40 UTC):`, `• <https://github.com/${REPO}/pull/703|#703 Three> · swolfand`, ''].join('\n'),
     );
+  });
+
+  it('does not count a run of the release workflow that skipped the checks, or that ran before the release ran them', async () => {
+    const github = fakeGitHub({
+      parents: history('a1', 'a2', 'a3'),
+      runs: {
+        'verify-e2e.yml': [run(61, 'a1', '2026-10-12T07:17:00Z')],
+        'release-sdk.yml': [run(63, 'a2', '2026-10-12T18:00:00Z', 'release', 'v1.4.1'), run(62, 'a2', '2026-10-12T15:40:00Z', 'workflow_dispatch')],
+      },
+      jobs: { 63: [{ name: RELEASE_JOB, conclusion: 'skipped' }], 62: [{ name: 'Push, tag, and publish release', conclusion: 'success' }] },
+      pulls: { [sha('a2')]: [pull(702, 'a2', 'Two', 'mikepitre')], [sha('a3')]: [pull(703, 'a3', 'Three', 'swolfand')] },
+    });
+    const lines = (await message(github, 'a3')).split('\n');
+    assert.deepEqual([lines[0], lines.length], [`Merged since the <https://github.com/${REPO}/actions/runs/61|last passing run> (2026-10-12 07:17 UTC):`, 4]);
   });
 
   it('ignores a pull request run and a run a person started on another branch, which did not test main', async () => {

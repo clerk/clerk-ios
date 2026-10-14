@@ -25,21 +25,35 @@ const startedAt = run => run.run_started_at ?? run.created_at;
 
 const ranFullSuiteOnMain = run => run.event === 'schedule' || run.event === 'release' || (run.event === 'workflow_dispatch' && run.head_branch === 'main');
 
-async function lastPassingRun(get, { sha, runId, workflows }) {
+// A release run passes whether or not it ran these checks, so a `file=job` source counts a run only when that job passed.
+function source(arg) {
+  const at = arg.indexOf('=');
+  return at === -1 ? { file: arg, job: null } : { file: arg.slice(0, at), job: arg.slice(at + 1) };
+}
+
+async function passedJob(get, run, name) {
+  const { jobs } = await get(`/actions/runs/${run.id}/jobs?per_page=100`);
+  return jobs.some(job => job.name === name && job.conclusion === 'success');
+}
+
+async function lastPassingRun(get, { sha, runId, sources }) {
   const listed = await Promise.all(
-    workflows.map(file => get(`/actions/workflows/${encodeURIComponent(file)}/runs?status=success&exclude_pull_requests=true&per_page=${RUNS_PER_WORKFLOW}`)),
+    sources.map(async ({ file, job }) => {
+      const page = await get(`/actions/workflows/${encodeURIComponent(file)}/runs?status=success&exclude_pull_requests=true&per_page=${RUNS_PER_WORKFLOW}`);
+      return page.workflow_runs.map(run => ({ run, job }));
+    }),
   );
   const runs = listed
-    .flatMap(page => page.workflow_runs)
-    .filter(run => ranFullSuiteOnMain(run) && String(run.id) !== String(runId))
-    .sort((a, b) => startedAt(b).localeCompare(startedAt(a)));
+    .flat()
+    .filter(({ run }) => ranFullSuiteOnMain(run) && String(run.id) !== String(runId))
+    .sort((a, b) => startedAt(b.run).localeCompare(startedAt(a.run)));
   const ancestor = new Map();
-  for (const run of runs) {
+  for (const { run, job } of runs) {
     if (!ancestor.has(run.head_sha)) {
       const compared = await get(`/compare/${run.head_sha}...${sha}?per_page=1`, { missing: { status: 'unrelated' } });
       ancestor.set(run.head_sha, compared.status === 'ahead' || compared.status === 'identical');
     }
-    if (ancestor.get(run.head_sha)) {
+    if (ancestor.get(run.head_sha) && (job === null || (await passedJob(get, run, job)))) {
       return run;
     }
   }
@@ -93,9 +107,9 @@ function sinceLastPass(passing, pulls) {
   return [`Merged since ${since}:`, ...lines].join('\n');
 }
 
-async function nightlyFailureMessage({ fetch, api, token, repo, sha, runId, workflows }) {
+async function nightlyFailureMessage({ fetch, api, token, repo, sha, runId, sources }) {
   const get = client({ fetch, api, token, repo });
-  const passing = await lastPassingRun(get, { sha, runId, workflows });
+  const passing = await lastPassingRun(get, { sha, runId, sources });
   if (passing === null) {
     return sinceLastPass(null, []);
   }
@@ -103,10 +117,10 @@ async function nightlyFailureMessage({ fetch, api, token, repo, sha, runId, work
   return sinceLastPass(passing, await mergedPullRequests(get, shas));
 }
 
-async function main(workflows, env, { fetch = globalThis.fetch, out = process.stdout } = {}) {
+async function main(args, env, { fetch = globalThis.fetch, out = process.stdout } = {}) {
   const missing = ['GITHUB_REPOSITORY', 'GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_TOKEN'].filter(name => !env[name]);
-  if (workflows.length === 0 || missing.length > 0) {
-    throw new Error(`usage: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_RUN_ID and GITHUB_TOKEN set (missing: ${missing.join(', ') || 'none'}); nightly-failure-message.mjs <workflow file>...`);
+  if (args.length === 0 || missing.length > 0) {
+    throw new Error(`usage: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_RUN_ID and GITHUB_TOKEN set (missing: ${missing.join(', ') || 'none'}); nightly-failure-message.mjs <workflow file>[=<job that runs the checks>]...`);
   }
   const message = await nightlyFailureMessage({
     fetch,
@@ -115,7 +129,7 @@ async function main(workflows, env, { fetch = globalThis.fetch, out = process.st
     repo: env.GITHUB_REPOSITORY,
     sha: env.GITHUB_SHA,
     runId: env.GITHUB_RUN_ID,
-    workflows,
+    sources: args.map(source),
   });
   out.write(`${message}\n`);
 }
