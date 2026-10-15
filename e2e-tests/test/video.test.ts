@@ -264,4 +264,26 @@ describe('cutVideo', () => {
     assert.equal(await differs(1.6, 24, 60), false, 'nothing drawn away from the tap');
     assert.equal(await differs(2.2, 24, 300), false, 'the pulse is gone half a second later');
   });
+
+  it('times a video by when each frame shows, so the pulse still comes 0.2 s before the change it marks when the decode times lag far behind', { skip: FFMPEG.code === 0 ? false : 'ffmpeg is not installed on this machine' }, async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'verify-lagging-dts-'));
+    const made = join(dir, 'made.mp4');
+    const video = join(dir, 'video.mp4') as EvidencePath;
+    assert.equal((await run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:size=300x600:rate=30:duration=4', '-vf', "drawbox=x=120:y=280:w=60:h=40:color=white:t=fill:enable='gte(t,2.5)'", '-c:v', 'libx264', '-bf', '2', '-pix_fmt', 'yuv420p', made])).code, 0);
+    const lagging = await run('ffmpeg', ['-v', 'error', '-i', made, '-c', 'copy', '-bsf:v', 'setts=pts=floor(PTS/1536)*1536:dts=DTS-15360', video]);
+    assert.equal(lagging.code, 0, lagging.stderr);
+    const taps = await evidenceTapsOf(video, [{ sent: 2.4, returned: 2.6, x: 50, y: 100 }], { width: 100, height: 200 }, run);
+    assert.deepEqual(taps, [{ at: 2.3, x: 50, y: 100 }]);
+    const cut = await cutVideo(video, null, run, { viewport: { width: 100, height: 200 }, taps });
+    assert.ok(cut.kind === 'cut', JSON.stringify(cut));
+    assert.deepEqual(cut.pieces, [{ from: 0, to: 1 }, { from: 2.3, to: 3.93 }], 'the still before the box is cut where the pulse starts');
+    const firstBrightFrame = async (x: number, y: number): Promise<number> => {
+      const read = await run('ffmpeg', ['-v', 'error', '-i', cut.path, '-vf', `format=gray,crop=2:2:${x}:${y},signalstats,metadata=mode=print:key=lavfi.signalstats.YAVG:file=-`, '-f', 'null', '-']);
+      return [...read.stdout.matchAll(/YAVG=([\d.]+)/g)].findIndex((match) => Number(match[1]) > 60);
+    };
+    const pulse = await firstBrightFrame(150, 300);
+    const change = await firstBrightFrame(124, 284);
+    assert.ok(pulse > 0, `the pulse starts at frame ${pulse}`);
+    assert.equal(change - pulse, 6, `the pulse starts at frame ${pulse} and the box shows at frame ${change}`);
+  });
 });
