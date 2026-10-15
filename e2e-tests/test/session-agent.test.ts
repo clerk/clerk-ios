@@ -585,6 +585,17 @@ describe('session agent', () => {
     await agent.exited;
   });
 
+  it('answers the start of a recording whose recorder never says it records with how long the recorder has run, so the CLI can time the video from its start', async () => {
+    const agent = await startAgent(base, { minuteMs: 600, env: { FAKE_DEVICE_RECORDER: 'mute' } });
+    const started = await agent.call('/__sim/record/start', { method: 'POST' });
+    const answer = (await started.json()) as { ok: boolean; recordingForMs?: number };
+    assert.equal(started.status, 200);
+    assert.ok(answer.ok && answer.recordingForMs !== undefined && answer.recordingForMs >= 100 && answer.recordingForMs < 1_000, JSON.stringify(answer));
+    await agent.call('/__sim/record/stop', { method: 'POST' });
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
   it('refuses the start of a recording when the recorder exits before it records, with what it printed', async () => {
     const agent = await startAgent(base, { env: { FAKE_DEVICE_RECORDER: 'dies' } });
     const started = await agent.call('/__sim/record/start', { method: 'POST' });
