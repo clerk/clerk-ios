@@ -201,6 +201,11 @@ describe('the start of the pulse of a tap', () => {
     assert.equal(reactionAt([...moving, { at: 4.5, share: 0.5 }], tap), null);
   });
 
+  it('is looked for until 2.5 s after the tap returns, as late as a CI runner shows it, and never after the next tap was sent', () => {
+    const [first, second] = tapWindows([{ sentAt: 10_000, tappedAt: 11_500, x: 1, y: 2 }, { sentAt: 13_000, tappedAt: 14_000, x: 3, y: 4 }], 0);
+    assert.deepEqual([reactionAt([{ at: 12.9, share: 0.5 }], first!), reactionAt([{ at: 13.1, share: 0.5 }], first!), reactionAt([{ at: 16.4, share: 0.5 }], second!)], [12.9, null, 16.4]);
+  });
+
   it('is when the tap was sent when the control does not change near it', () => {
     assert.equal(reactionAt([{ at: 4.8, share: 0.5 }], tap), null);
     assert.equal(pulseAt(tap, null), 4.019);
