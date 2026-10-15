@@ -73,7 +73,7 @@ jobs:
   e2e-tests:
     name: Run verify end-to-end tests on iOS
     needs: plan
-    runs-on: ${{ vars.VERIFY_CI_RUNNER || 'blacksmith-6vcpu-macos-27' }}
+    runs-on: ${{ vars.VERIFY_CI_RUNNER || 'xcode-27' }}
     timeout-minutes: 90
     permissions:
       contents: read

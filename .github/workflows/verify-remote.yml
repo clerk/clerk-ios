@@ -52,9 +52,9 @@ jobs:
           RUNNER_LABEL: ${{ steps.plan.outputs.runner }}
         run: |
           case "$RUNNER_LABEL" in
-            xcode-27 | ubuntu-latest | blacksmith-6vcpu-macos-27) ;;
+            xcode-27 | ubuntu-latest) ;;
             *)
-              echo "::error title=verify-remote::no session started: the runner label $RUNNER_LABEL is not xcode-27, ubuntu-latest, or blacksmith-6vcpu-macos-27"
+              echo "::error title=verify-remote::no session started: the runner label $RUNNER_LABEL is not xcode-27 or ubuntu-latest"
               exit 1
               ;;
           esac

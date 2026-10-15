@@ -91,9 +91,9 @@ describe('the clerk-ios host with a remote device', () => {
     assert.match(onLinux.why, /^local is out: the iOS simulator needs macOS and this machine runs linux; /);
   });
 
-  it('starts a session on the Blacksmith runner whose image verify-app-cache.yml stores the app for, unless --runner names another', () => {
+  it('starts a session on the free GitHub runner whose image verify-app-cache.yml stores the app for, unless --runner names another', () => {
     const remote = host.backends.find((b) => b.kind === 'remote')!;
-    assert.deepEqual(remote.availability(), { usable: true, why: 'the device runs on a CI runner (blacksmith-6vcpu-macos-27 unless --runner names another), started through verify-remote.yml on clerk/clerk-ios' });
+    assert.deepEqual(remote.availability(), { usable: true, why: 'the device runs on a CI runner (xcode-27 unless --runner names another), started through verify-remote.yml on clerk/clerk-ios' });
   });
 
   it('has a session run one build command for the device, in the checkout, that installs a stored app or builds one', () => {
@@ -101,7 +101,7 @@ describe('the clerk-ios host with a remote device', () => {
     assert.deepEqual(steps, [{ command: process.execPath, args: [join(PACKAGE_DIR, 'src', 'platform', 'ios', 'session-build.ts'), 'build', '/work', 'UDID-1'], cwd: `${WORKTREE}/` }]);
   });
 
-  it('has the session workflow start on the three runner labels this repository uses, and fail for any other', () => {
+  it('has the session workflow start on the two runner labels this repository uses, and fail for any other', () => {
     const lines = readFileSync(join(WORKTREE, '.github', 'workflows', 'verify-remote.yml'), 'utf8').split('\n').map((line) => line.trim());
     const first = lines.indexOf('case "$RUNNER_LABEL" in');
     const check = lines.slice(first, lines.indexOf('esac', first) + 1).join('\n');
@@ -110,7 +110,7 @@ describe('the clerk-ios host with a remote device', () => {
       return { status: ran.status, stdout: ran.stdout };
     };
     assert.ok(first > 0, 'the label check is in the workflow');
-    for (const label of ['xcode-27', 'ubuntu-latest', 'blacksmith-6vcpu-macos-27']) assert.deepEqual(checked(label), { status: 0, stdout: '' }, label);
-    assert.deepEqual(checked('macos-15-xlarge'), { status: 1, stdout: '::error title=verify-remote::no session started: the runner label macos-15-xlarge is not xcode-27, ubuntu-latest, or blacksmith-6vcpu-macos-27\n' });
+    for (const label of ['xcode-27', 'ubuntu-latest']) assert.deepEqual(checked(label), { status: 0, stdout: '' }, label);
+    assert.deepEqual(checked('blacksmith-6vcpu-macos-27'), { status: 1, stdout: '::error title=verify-remote::no session started: the runner label blacksmith-6vcpu-macos-27 is not xcode-27 or ubuntu-latest\n' });
   });
 });
