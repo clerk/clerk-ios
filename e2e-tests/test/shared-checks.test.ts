@@ -107,6 +107,32 @@ esac
   return Object.fromEntries(created.map((name, at) => [name, conclusions.get(String(101 + at)) ?? 'in_progress']));
 }
 
+describe('the jobs of the shared checks', () => {
+  const waitsFor = Object.fromEntries(
+    shared
+      .slice(shared.indexOf('\njobs:\n'))
+      .split(/\n(?= {2}[\w-]+:\n)/)
+      .slice(1)
+      .map((job) => {
+        const block = /^ {4}needs:(?: (.+)$|\n((?: {6}- [\w-]+\n?)+))/m.exec(job);
+        const needs = block?.[1] !== undefined ? block[1].replace(/^\[(.*)\]$/, '$1').split(',') : (block?.[2] ?? '').split('\n');
+        return [/^ {2}([\w-]+):/.exec(job)![1]!, needs.map((need) => need.replace(/^\s*- /, '').trim()).filter(Boolean)];
+      }),
+  );
+
+  it('all start when the run starts, so the builds and tests wait neither for linting nor for each other', () => {
+    assert.deepEqual(waitsFor, {
+      'prepare-manual-ci-check-runs': [],
+      'format-and-lint': [],
+      test: [],
+      'test-ui': [],
+      build: [],
+      'e2e-runner-tests': [],
+      'report-manual-ci-check-runs': ['prepare-manual-ci-check-runs', 'format-and-lint', 'test', 'test-ui', 'build', 'e2e-runner-tests'],
+    });
+  });
+});
+
 describe('the platforms the shared checks build', () => {
   it('are iOS and macOS for a pull request and for a push to main', () => {
     assert.deepEqual([buildPlatforms('run-pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
