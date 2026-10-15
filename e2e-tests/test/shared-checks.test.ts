@@ -16,9 +16,13 @@ function passed(caller: string, name: string): string | undefined {
   return new RegExp(`^ {6}${name}: (.+)$`, 'm').exec(job)?.[1];
 }
 
-function input(caller: string, name: string): string {
+function declaredDefault(name: string): string | undefined {
   const declared = shared.slice(shared.search(new RegExp(`^ {6}${name}:$`, 'm'))).split(/\n(?= {6}\w+:\n)/)[0]!;
-  return passed(caller, name) ?? /^ {8}default: (.+)$/m.exec(declared)?.[1] ?? `no ${name} input`;
+  return /^ {8}default: (.+)$/m.exec(declared)?.[1];
+}
+
+function input(caller: string, name: string): string {
+  return passed(caller, name) ?? declaredDefault(name) ?? `no ${name} input`;
 }
 
 const buildPlatforms = (caller: string): string => input(caller, 'build_platforms').replace(/^'(.*)'$/, '$1');
@@ -132,6 +136,43 @@ describe('the jobs of the shared checks', () => {
       build: [],
       'e2e-runner-tests': [],
       'report-manual-ci-check-runs': ['prepare-manual-ci-check-runs', 'format-and-lint', 'test', 'test-ui', 'build', 'e2e-runner-tests'],
+    });
+  });
+});
+
+describe('the runners of the macOS jobs', () => {
+  it('are Blacksmith macOS runners in every workflow but the remote session, which runs on the label its request names', () => {
+    const runners = globSync('*.yml', { cwd: WORKFLOWS })
+      .sort()
+      .flatMap((file) => {
+        const workflow = read(file);
+        return workflow
+          .slice(workflow.indexOf('\njobs:\n'))
+          .split(/\n(?= {2}[\w-]+:\n)/)
+          .slice(1)
+          .flatMap((job): [string, string][] => {
+            const id = `${file} ${/^ {2}([\w-]+):/.exec(job)![1]}`;
+            if (/^ {4}uses: \.\/\.github\/workflows\/shared-checks\.yml$/m.test(job)) return [[id, input(file, 'macos_runner')]];
+            const runsOn = /^ {4}runs-on: (.+)$/m.exec(job)?.[1];
+            if (runsOn === undefined || runsOn === '${{ needs.plan.outputs.runner }}') return [];
+            const label = (runsOn === '${{ inputs.macos_runner }}' ? declaredDefault('macos_runner') : /^\$\{\{ vars\.VERIFY_CI_RUNNER \|\| '([\w-]+)' \}\}$/.exec(runsOn)?.[1]) ?? runsOn;
+            return label.includes('ubuntu') ? [] : [[id, label]];
+          });
+      });
+
+    assert.deepEqual(Object.fromEntries(runners), {
+      'checks.yml checks': 'blacksmith-6vcpu-macos-26',
+      'docs.yml deploy': 'blacksmith-6vcpu-macos-26',
+      'nightly-checks.yml checks': 'blacksmith-6vcpu-macos-26',
+      'release-sdk.yml checks': 'blacksmith-6vcpu-macos-26',
+      'release-sdk.yml publish': 'blacksmith-6vcpu-macos-26',
+      'run-pr-ci.yml pr-checks': 'blacksmith-6vcpu-macos-26',
+      'shared-checks.yml format-and-lint': 'blacksmith-6vcpu-macos-26',
+      'shared-checks.yml test': 'blacksmith-6vcpu-macos-26',
+      'shared-checks.yml test-ui': 'blacksmith-6vcpu-macos-26',
+      'shared-checks.yml build': 'blacksmith-6vcpu-macos-26',
+      'verify-app-cache.yml store': 'blacksmith-6vcpu-macos-27',
+      'verify-e2e.yml e2e-tests': 'blacksmith-6vcpu-macos-27',
     });
   });
 });

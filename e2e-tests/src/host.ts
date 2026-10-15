@@ -39,7 +39,7 @@ export const host: HostAdapter = {
       repo: GITHUB_REPO,
       workflow: 'verify-remote.yml',
       sessionsDir: join(PACKAGE_DIR, '.verify', 'remote'),
-      runner: 'xcode-27',
+      runner: 'blacksmith-6vcpu-macos-27',
       plumbingRunner: 'ubuntu-latest',
       device: 'iPhone Air',
       idleMinutes: 15,

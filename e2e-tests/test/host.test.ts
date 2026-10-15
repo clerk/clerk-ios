@@ -91,6 +91,11 @@ describe('the clerk-ios host with a remote device', () => {
     assert.match(onLinux.why, /^local is out: the iOS simulator needs macOS and this machine runs linux; /);
   });
 
+  it('starts a session on the Blacksmith runner whose image verify-app-cache.yml stores the app for, unless --runner names another', () => {
+    const remote = host.backends.find((b) => b.kind === 'remote')!;
+    assert.deepEqual(remote.availability(), { usable: true, why: 'the device runs on a CI runner (blacksmith-6vcpu-macos-27 unless --runner names another), started through verify-remote.yml on clerk/clerk-ios' });
+  });
+
   it('has a session run one build command for the device, in the checkout, that installs a stored app or builds one', () => {
     const steps = sessionDevice({ id: 'UDID-1', platform: 'ios' }).build('/work');
     assert.deepEqual(steps, [{ command: process.execPath, args: [join(PACKAGE_DIR, 'src', 'platform', 'ios', 'session-build.ts'), 'build', '/work', 'UDID-1'], cwd: `${WORKTREE}/` }]);
