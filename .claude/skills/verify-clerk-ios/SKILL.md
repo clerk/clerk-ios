@@ -20,6 +20,7 @@ Set up each machine once.
 1. Install Node 24, at 24.8.0 or newer, and Xcode with an iOS simulator runtime.
 2. Create the template simulator, which the CLI clones to make each simulator it drives, with `xcrun simctl create "Clerk Verify Template iOS" "iPhone Air"`. That makes a new simulator that holds only the system's apps. Do not clone a simulator you already use: a clone holds every app of the original, and those apps show on the home screen at the start of a video. Boot the template once and shut it down: a clone of a template that never booted takes about twenty seconds longer to boot. `doctor` says when a system HTTPS proxy needs its CA trusted there.
 3. Give the machine the team's Clerk Platform API key. Set `CLERK_PLATFORM_API_KEY`, or set `CLERK_PLATFORM_API_KEY_FILE` to a file that only you can read (mode 0600). With neither set, the CLI reads the key from 1Password through the secret reference in `VERIFY_PLATFORM_KEY_REFERENCE`. A command that reads the key from 1Password waits up to 60 seconds for a person to approve the request in the 1Password app. Never put the key in a file inside a repository.
+4. Install ffmpeg (`brew install ffmpeg`), which `attach --video` uses to cut the video to the part that `host.evidence` marks. Without it, `attach` posts the whole video and says that ffmpeg is not installed.
 
 Then, in each worktree:
 
@@ -147,6 +148,8 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path.
 | --- | --- |
 | `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build`, `device`, `identities`, `settings`, and `tainted` |
 | `video.mp4` | `simctl io recordVideo` of the run, from the first `host.launch` to the end. Just before that launch, `run` closes the app and starts the recorder, so the video opens on the simulator's home screen for a moment and then on the app being launched. A run in which no test calls `host.launch` has no video, and `run` prints a `video` line that says so |
+| `evidence-marks.jsonl` | When each `host.evidence` block started and ended, in a run that records evidence. `run.json` keeps them as `evidenceSpans`, in seconds of the video |
+| `video-cut.mp4` | What `attach --video` last posted for this run: the marked part of `video.mp4`. `video.mp4` stays as recorded |
 | `screenshots/<label>.png` | Every `host.screenshot(label)` |
 | `app.log` | The `com.clerk.verify` and `com.clerk.sdk` log lines of the run. E2EHost writes one `com.clerk.verify` line each time its screen, user, session, or launch error changes, with the `launchId` that a failed `host.launch` names. No spec reads these lines. They are for diagnosing a failure that the screen does not explain. The SDK logs errors only, unless the launch passes `debugLogs: true` |
 | `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |
@@ -168,13 +171,28 @@ $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --video --before <run
 
 `attach` posts what you choose, and with neither `--screenshot` nor `--video` it fails with a usage error. Make two choices.
 
-Choose screenshots or the video by what changed. A still change, such as wording, shows in screenshots, so pass `--screenshot <label>` once for each `host.screenshot(label)` to show. A change to behavior, to movement or animation, or to a flow shows in the video, so pass `--video`. One kind is usually enough. Use your judgment, and pass both flags when one kind alone does not show the change.
+Choose screenshots or the video by what changed, and post one kind. A change to behavior, to movement or animation, or to a flow shows in a video, so pass `--video`: one before and after video for each change, and no screenshots beside it. A still change, such as wording or a layout, shows in screenshots, so pass `--screenshot <label>` once for each screen the change touches, each with its before. `attach` refuses both flags together unless you add `--both`, which is for the rare change a reviewer cannot see in one kind alone.
+
+A video shows only the part of the run that you mark. Wrap the steps that show the change in `host.evidence`, and leave sign-in, seeding and navigation outside it:
+
+```ts
+await host.launch({ signedInAs: user });
+await host.evidence('create an organization from the switcher', async () => {
+  await host.tap(screen.getByText('Personal account'));
+  // ...the steps a reviewer should watch, ending on the result
+  await expect(screen.getByText(name)).toBeVisible({ timeout: 20_000 });
+});
+```
+
+`attach --video` posts each marked block with a second before it and half a second after it, and shortens every stretch of more than a second where the screen does not change to one second, keeping two seconds of the result at the end of a block. It refuses a run with no marked block. A before run that failed before its block posts its whole video with the same shortening. `attach` prints how long the video was and how long the posted part is. The cut needs ffmpeg on `PATH`: without it `attach` posts the whole video and says so, and `doctor` has a `video-cut` line.
+
+A run that names its specs and records a video is paced for a reviewer. Before each `host.tap` and `host.fill` it waits for the target to show and then 0.6 seconds more, and at the end of each `host.evidence` block it holds the result for two seconds. Nothing else is slowed. A tap made any other way, such as the locator's own `tap`, gets no pause, so the screen it closes may show for only a moment; inside a `host.evidence` block, tap with `host.tap`. `run --all`, which the nightly and release workflows use, and `run --no-video` keep full speed, so pass `--no-video` while you iterate on a spec. The video does not show where a tap lands, because `simctl io recordVideo` records only the simulator's screen.
 
 Choose before and after, or after only, by whether the thing existed. A change to something that exists shows what it replaced, so add `--before <run-id>`. Something new has no before, so leave the flag out.
 
 To make the before run, `run` the spec of your change on the build without the change, before you make the change. That run can fail, and a failed run is a good before: a spec that expects the new wording fails on the old build. `attach` pairs each screenshot with the screenshot of the same label in the before run. When the test that takes a screenshot failed in the before run before it took it, `attach` uses the failure screenshot of that test. When the before run has neither, `attach` fails and says so. With `--video` it pairs the two videos. The before run must be in `.verify/runs/` of this checkout.
 
-Show each screen the change touches, and each state of a screen that it touches, in a before and after of its own. That includes a state the change should leave as it was, because its pair shows that it did. Write one spec file with one test per state, each ending in its own `host.screenshot(label)`. Run it once without the change and once with it, and pass every label to one `attach`, one `--screenshot <label>` each. The table then has a row for each state.
+For screenshots, show each screen the change touches, and each state of a screen that it touches, in a before and after of its own. That includes a state the change should leave as it was, because its pair shows that it did. Write one spec file with one test per state, each ending in its own `host.screenshot(label)`. Run it once without the change and once with it, and pass every label to one `attach`, one `--screenshot <label>` each. The table then has a row for each state.
 
 Some states are out of reach for a test user on the standard settings with the default roles. Try a settings file for the spec, or test data that the spec seeds, first. When neither reaches it, force the state with a small local patch to the build. Never commit or push the patch. Put the same patch on the before build and the after build, and run both on a local simulator, because `attach` refuses a run on a session build with uncommitted changes. In the pull request, say exactly what the patch changed and why no test user could reach the state without it.
 
@@ -194,7 +212,7 @@ When this machine cannot attach and there is no session to hand the files to, or
 
 `attach` writes only to an open pull request, and fails on one that is closed or merged. It refuses a run that is tainted, that ran on a session build with uncommitted changes, that has a failing spec or no passing one, or whose `app.log` names a user that the run did not create. A before run can have failing specs. `attach` refuses a before run that is tainted, that ran on a session build with uncommitted changes, that was never sealed, or whose `app.log` names a user that the run did not create.
 
-Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. If you ran other committed specs too, cite that run's id in the PR.
+Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. A run of `--all` marks nothing, so `attach --video` refuses it. If you ran other committed specs too, cite that run's id in the PR.
 
 Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach` with the before run as `--before <run-id>`, `down`. Open the pull request after the last run, so that it is not left open without its evidence. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
 
