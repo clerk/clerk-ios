@@ -123,6 +123,29 @@ function bearer(req: IncomingMessage): string | null {
 
 const isAgentRoute = (pathname: string): boolean => AGENT_ROUTES.some((route) => pathname === route || pathname.startsWith(`${route}/`));
 
+const RECORDER_START_MS = 10_000;
+
+// The CLI times the video from this answer, and a recorder can take a second or more to start on a runner.
+export function printed(child: ChildProcess, words: string, limitMs: number): Promise<{ readonly exited: boolean; readonly output: string }> {
+  return new Promise((done) => {
+    let seen = '';
+    const settle = (exited: boolean) => {
+      clearTimeout(timer);
+      child.stdout?.off('data', read);
+      child.stderr?.off('data', read);
+      done({ exited, output: seen });
+    };
+    const timer = setTimeout(() => settle(false), limitMs);
+    const read = (chunk: Buffer) => {
+      seen += chunk.toString();
+      if (seen.toLowerCase().includes(words)) settle(false);
+    };
+    child.stdout?.on('data', read);
+    child.stderr?.on('data', read);
+    child.on('close', () => settle(true));
+  });
+}
+
 function exitOf(child: ChildProcess): Promise<number> {
   return new Promise((done) => {
     child.on('error', () => done(127));
@@ -473,9 +496,14 @@ async function serve(env: NodeJS.ProcessEnv): Promise<void> {
         await stopRecording();
         const file = join(work, 'recording.mp4');
         rmSync(file, { force: true });
-        const { start, stop, collect } = await recipe(device, { op: 'record', file });
-        const child = spawn(start.command, [...start.args], { cwd: start.cwd, stdio: 'ignore' });
+        const { start, startedWhen, stop, collect } = await recipe(device, { op: 'record', file });
+        const child = spawn(start.command, [...start.args], { cwd: start.cwd, stdio: startedWhen === null ? 'ignore' : ['ignore', 'pipe', 'pipe'] });
         recorder = { child, exited: exitOf(child), file, stop, collect };
+        const started = startedWhen === null ? null : await printed(child, startedWhen, RECORDER_START_MS);
+        if (started?.exited === true) {
+          recorder = null;
+          return json(res, 500, { error: `the recorder exited before it recorded: ${started.output.trim() || 'no output'}` });
+        }
         return json(res, 200, { ok: true });
       }
       case 'POST /record/stop':

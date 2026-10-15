@@ -12,7 +12,7 @@ import { coreVersion } from '../src/core/manifest.ts';
 import { HANDOFF_LIMITS, parseHandoffManifest, type HandoffManifest } from '../src/core/remote/handoff.ts';
 import { workingPatch } from '../src/core/remote/backend.ts';
 import { sendEvidence } from '../src/core/remote/session.ts';
-import { plan } from '../src/core/remote/session-agent.ts';
+import { plan, printed } from '../src/core/remote/session-agent.ts';
 import { BUILD_LOG_START, sha256Hex, type SessionHealth, type SessionRequest } from '../src/core/remote/protocol.ts';
 import type { TreePatch } from '../src/core/types.ts';
 import { BUILD_INPUTS } from '../src/host-app.ts';
@@ -573,6 +573,33 @@ describe('session agent', () => {
     assert.equal(await (await agent.call('/__sim/record/file')).text(), 'pulled from android UDID-1');
     await agent.call('/__sim/stop', { method: 'POST' });
     await agent.exited;
+  });
+
+  it('answers the start of a recording once the recorder says it is recording, because the CLI times the video from that answer', async () => {
+    const agent = await startAgent(base, { env: { FAKE_DEVICE_RECORDER: 'slow-start' } });
+    const asked = Date.now();
+    assert.equal((await agent.call('/__sim/record/start', { method: 'POST' })).status, 200);
+    assert.ok(Date.now() - asked >= 700, `answered after ${Date.now() - asked} ms`);
+    await agent.call('/__sim/record/stop', { method: 'POST' });
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('refuses the start of a recording when the recorder exits before it records, with what it printed', async () => {
+    const agent = await startAgent(base, { env: { FAKE_DEVICE_RECORDER: 'dies' } });
+    const started = await agent.call('/__sim/record/start', { method: 'POST' });
+    assert.deepEqual([started.status, await started.json()], [500, { error: 'the recorder exited before it recorded: Recording failed: the simulator is not booted' }]);
+    assert.equal((await agent.call('/__sim/record/stop', { method: 'POST' })).status, 409);
+    await agent.call('/__sim/stop', { method: 'POST' });
+    await agent.exited;
+  });
+
+  it('stops reading the recorder once it says it is recording, so a long recording does not pile its output up in the agent', async () => {
+    const recorder = spawn(process.execPath, ['-e', "console.log('Recording started'); setTimeout(() => console.error('x'.repeat(100_000)), 100)"], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const closed = new Promise<number | null>((done) => recorder.on('close', done));
+    assert.deepEqual(await printed(recorder, 'recording started', 5_000), { exited: false, output: 'Recording started\n' });
+    assert.equal(await closed, 0);
+    assert.deepEqual([recorder.stdout?.listenerCount('data'), recorder.stderr?.listenerCount('data')], [0, 0]);
   });
 
   it('records, serves the file, and reads device logs', async () => {
