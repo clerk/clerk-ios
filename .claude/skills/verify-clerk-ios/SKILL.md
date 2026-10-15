@@ -200,7 +200,7 @@ Work in this order, with one `up` for both runs: make the branch and `git push` 
 
 On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
 
-When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it to `specs/explored/` first and change its import to `'../fixtures.ts'`.
+When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it, and its settings file if it has one, to `specs/explored/` first and change its import to `'../fixtures.ts'`.
 
 ```console
 $ git switch -c <branch>-before "$(git merge-base origin/main HEAD)"
@@ -208,7 +208,21 @@ $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
 $ git switch <branch> && git branch -D <branch>-before
 ```
 
-This does not work on a remote session. The session builds only the commit it was started on and later commits of that branch, and `attach` refuses a run on a session build with uncommitted changes. When the change is already pushed and the device is remote, attach without `--before` and say in the pull request why there is no before.
+On a remote device, the before run needs a session of its own, started on the base commit. A session starts only on a branch that GitHub has, so push the before branch first. Run the spec there and `down`. Then switch back, start a session on the branch of the change, run the spec again, and pass the first run as `--before`. Delete the before branch after `attach`.
+
+```console
+$ git switch -c <branch>-before "$(git merge-base origin/main HEAD)"
+$ git push origin <branch>-before
+$ e2e-tests/bin/control-clerk-ios up
+$ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
+$ e2e-tests/bin/control-clerk-ios down
+$ git switch <branch>
+$ e2e-tests/bin/control-clerk-ios up
+$ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
+$ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
+$ e2e-tests/bin/control-clerk-ios down
+$ git push origin --delete <branch>-before && git branch -D <branch>-before
+```
 
 ## Cleanup
 
