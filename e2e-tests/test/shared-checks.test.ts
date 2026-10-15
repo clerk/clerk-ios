@@ -381,11 +381,11 @@ describe('the alert about a blocked release', () => {
     });
   });
 
-  it('still name the repository and the version and link the run when the script cannot name the gates', () => {
+  it('still name the repository and link the run when the script cannot name the release or the gates', () => {
     assert.deepEqual(notified('https://hooks.slack.test/T/B/x', { 'start-manual-ci': 'success', checks: 'failure', 'e2e-tests': 'success' }, false), {
       status: 0,
-      stdout: '::warning::Could not name the gates that failed; the message names none\n',
-      posted: { url: 'https://hooks.slack.test/T/B/x', text: `:red_circle: clerk/clerk-ios 1.2.3 release blocked · ${RUN}` },
+      stdout: '::warning::Could not name the release or the gates that stopped it; the message names neither\n',
+      posted: { url: 'https://hooks.slack.test/T/B/x', text: `:red_circle: clerk/clerk-ios release blocked · ${RUN}` },
     });
   });
 

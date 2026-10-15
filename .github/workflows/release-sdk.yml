@@ -406,13 +406,11 @@ jobs:
           fi
 
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          blocked=":red_circle: $GITHUB_REPOSITORY $RELEASE_VERSION release blocked"
-          if failed="$(node .github/scripts/nightly-failure-message.mjs --release 'checks=shared checks' 'e2e-tests=end-to-end tests' 'start-manual-ci=starting the Manual CI check')"; then
-            blocked="$blocked: $failed"
-          else
-            echo "::warning::Could not name the gates that failed; the message names none"
+          if ! blocked="$(RELEASE="$RELEASE_VERSION" node .github/scripts/nightly-failure-message.mjs --release 'checks=shared checks' 'e2e-tests=end-to-end tests' 'start-manual-ci=starting the Manual CI check')"; then
+            echo "::warning::Could not name the release or the gates that stopped it; the message names neither"
+            blocked="release blocked"
           fi
-          message="$blocked · <$run_url|View the run>"
+          message=":red_circle: $GITHUB_REPOSITORY $blocked · <$run_url|View the run>"
 
           PAYLOAD=$(jq -n --arg text "$message" '{text: $text, unfurl_links: false, unfurl_media: false}')
 
