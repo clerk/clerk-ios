@@ -161,15 +161,37 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Cache Swift dependencies
-        uses: actions/cache@v4
+      - name: Name the SwiftPM build cache
+        id: build-cache
+        run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the SwiftPM build of the last main push
+        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        uses: actions/cache/restore@v4
         with:
           path: .build
-          key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
-          restore-keys: swiftpm-macOS-
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
+          restore-keys: ${{ steps.build-cache.outputs.prefix }}
+
+      - name: Give each file a modification time from its content
+        run: |
+          set -euo pipefail
+          git ls-files -s -z | perl -0ne '
+            my ($mode, $oid, $path) = /\A(\d+) ([0-9a-f]+) \d\t(.*)\0\z/s or die "unexpected ls-files entry: $_";
+            next if $mode eq "120000" || $mode eq "160000";
+            my $time = 946684800 + hex(substr($oid, 0, 7));
+            utime($time, $time, $path) or die "$path: $!";
+          '
 
       - name: Run unit tests
         run: make test
+
+      - name: Save the SwiftPM build for later runs
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
 
       - name: Setup integration test keys
         if: inputs.run_integration_tests

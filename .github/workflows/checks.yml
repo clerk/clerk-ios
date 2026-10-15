@@ -20,7 +20,7 @@ jobs:
       build_platforms: '["iOS", "macOS"]'
 
   delete-replaced-builds:
-    name: Delete the ClerkKitUI builds this push replaced
+    name: Delete the builds this push replaced
     needs: checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -32,11 +32,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          keys="$(gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key clerkkitui-derived-data- --limit 100 --json key --jq '.[].key')"
-          if ! grep -q -- "-$GITHUB_SHA\$" <<< "$keys"; then
-            echo "::notice::No ClerkKitUI build was saved for $GITHUB_SHA, so none is deleted."
-            exit 0
-          fi
-          while IFS= read -r key; do
-            [ -z "$key" ] || [[ "$key" == *"-$GITHUB_SHA" ]] || gh cache delete "$key" --repo "$GITHUB_REPOSITORY"
-          done <<< "$keys"
+          for prefix in clerkkitui-derived-data- clerkkit-swiftpm-build-; do
+            keys="$(gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$prefix" --limit 100 --sort created_at --order desc --json key --jq '.[].key')"
+            if ! grep -q -- "-$GITHUB_SHA\$" <<< "$keys"; then
+              echo "::notice::No $prefix build was saved for $GITHUB_SHA, so none is deleted."
+              continue
+            fi
+            # Keep the newest build rather than this push's own: an earlier push's cleanup can run after a later push saved.
+            while IFS= read -r key; do
+              [ -z "$key" ] || gh cache delete "$key" --repo "$GITHUB_REPOSITORY" || echo "::notice::$key was already deleted."
+            done < <(tail -n +2 <<< "$keys")
+          done
