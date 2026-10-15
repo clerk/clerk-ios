@@ -31,7 +31,6 @@ export function tapMarkedOnceUncovered(control: Control, markTap: MarkTap, settl
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 
-// A user goes back with the navigation back button on iOS and with the top bar's back arrow on Android, so a back in a video shows a pulse on that control.
 export function backControl<Found>(screen: { getByTestId(id: string): Found; getByLabel(label: string): Found }, platform: Platform): Found {
   return platform === 'ios' ? screen.getByTestId('BackButton') : screen.getByLabel('Back');
 }
