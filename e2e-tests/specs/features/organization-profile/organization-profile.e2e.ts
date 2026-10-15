@@ -35,7 +35,7 @@ async function openNewOrganizationProfile(host: HostFixture, screen: Screen, use
   await expect(screen.getByRole('button', { name: 'Update profile' })).toBeVisible({ timeout: 20_000 });
 }
 
-test('the organization creator opens every row of the organization profile and deletes the organization', async ({ host, screen, device }) => {
+test('the organization creator opens every row of the organization profile and deletes the organization', async ({ host, screen }) => {
   const user = await host.seedUser();
   const name = `Profile ${host.runId} ${randomBytes(3).toString('hex')}`;
   await openNewOrganizationProfile(host, screen, user, name);
@@ -62,13 +62,13 @@ test('the organization creator opens every row of the organization profile and d
   await expect(screen.getByText('No members found')).toBeVisible({ timeout: 20_000 });
   await host.screenshot('org-members-no-match');
 
-  await device.back();
+  await host.back();
   await host.tap(screen.getByRole('button', { name: 'Verified domains' }));
   await expect(screen.getByText('Add domain')).toBeVisible({ timeout: 20_000 });
   await expect(screen.getByText('No verified domains')).toHaveCount(0);
   await host.screenshot('org-domains');
 
-  await device.back();
+  await host.back();
   await host.tap(screen.getByRole('button', { name: 'Update profile' }));
   await expect(screen.getByTestId('clerk.organization.profileForm.name')).toBeVisible({ timeout: 20_000 });
   await host.screenshot('org-update-profile');
