@@ -117,10 +117,26 @@ async function nightlyFailureMessage({ fetch, api, token, repo, sha, runId, sour
   return sinceLastPass(passing, await mergedPullRequests(get, shas));
 }
 
+// A person who cancels a release run also cancels the gates still running, so the gates that failed are named when any did.
+function blockedRelease(gates, needs) {
+  const ended = result => gates.filter(({ job }) => needs[job]?.result === result).map(({ label }) => label);
+  const blocking = ended('failure').length > 0 ? ended('failure') : ended('cancelled');
+  if (blocking.length === 0) {
+    throw new Error(`no gate failed or was cancelled: ${JSON.stringify(needs)}`);
+  }
+  const named = blocking.length < 3 ? blocking.join(' and ') : `${blocking.slice(0, -1).join(', ')}, and ${blocking.at(-1)}`;
+  return `${named} failed`;
+}
+
 async function main(args, env, { fetch = globalThis.fetch, out = process.stdout } = {}) {
+  if (args[0] === '--release') {
+    const gates = args.slice(1).map(arg => ({ job: arg.slice(0, arg.indexOf('=')), label: arg.slice(arg.indexOf('=') + 1) }));
+    out.write(`${blockedRelease(gates, JSON.parse(env.NEEDS ?? '{}'))}\n`);
+    return;
+  }
   const missing = ['GITHUB_REPOSITORY', 'GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_TOKEN'].filter(name => !env[name]);
   if (args.length === 0 || missing.length > 0) {
-    throw new Error(`usage: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_RUN_ID and GITHUB_TOKEN set (missing: ${missing.join(', ') || 'none'}); nightly-failure-message.mjs <workflow file>[=<job that runs the checks>]...`);
+    throw new Error(`usage: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_RUN_ID and GITHUB_TOKEN set (missing: ${missing.join(', ') || 'none'}); nightly-failure-message.mjs <workflow file>[=<job that runs the checks>]..., or NEEDS set and nightly-failure-message.mjs --release <gate job>=<its name in the message>...`);
   }
   const message = await nightlyFailureMessage({
     fetch,

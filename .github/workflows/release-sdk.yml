@@ -369,3 +369,61 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ steps.prerelease.outputs.value }}
           token: ${{ secrets.IOS_RELEASE_PUSH_TOKEN }}
+
+  notify-blocked-release:
+    name: Notify Slack of a blocked release
+    needs:
+      - start-manual-ci
+      - checks
+      - e2e-tests
+    if: >-
+      always() &&
+      (contains(needs.*.result, 'failure') || (contains(needs.*.result, 'cancelled') && !cancelled()))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the script that names the gates
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts/nightly-failure-message.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification"
+            exit 0
+          fi
+
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          blocked=":red_circle: $GITHUB_REPOSITORY $RELEASE_VERSION release blocked"
+          if failed="$(node .github/scripts/nightly-failure-message.mjs --release 'checks=shared checks' 'e2e-tests=end-to-end tests' 'start-manual-ci=starting the Manual CI check')"; then
+            blocked="$blocked: $failed"
+          else
+            echo "::warning::Could not name the gates that failed; the message names none"
+          fi
+          message="$blocked · <$run_url|View the run>"
+
+          PAYLOAD=$(jq -n --arg text "$message" '{text: $text, unfurl_links: false, unfurl_media: false}')
+
+          curl --fail-with-body \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-max-time 60 \
+            --retry-all-errors \
+            --request POST \
+            --header "Content-type: application/json" \
+            --data "$PAYLOAD" \
+            "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL"
