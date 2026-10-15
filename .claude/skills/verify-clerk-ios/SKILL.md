@@ -1,6 +1,6 @@
 ---
 name: verify-clerk-ios
-description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the e2e tests.
+description: Drive the clerk-ios SDK UI (AuthView, UserButton, UserProfileView, OrganizationSwitcher, OrganizationProfileView, session tasks) in the E2EHost app on an iOS simulator against a real Clerk development instance that the session creates and deletes, and capture video, screenshots, and the app log as evidence. The simulator runs on this Mac, or on a CI runner when the machine is not a Mac. Use it to prove any change to ClerkKit, ClerkKitUI, or E2EHost works before calling it done, to reproduce a UI bug, or to run the e2e tests.
 ---
 
 # verify-clerk-ios
@@ -125,7 +125,7 @@ The specs under `specs/features/<feature>/` are committed and cover the feature 
 
 1. Write a spec under `specs/explored/`, which is gitignored. It imports the fixture as `'../fixtures.ts'`.
 2. Run it by path.
-3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique.
+3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique. The role there is agent-device's type for the node, which can differ from the role that `getByRole` matches: `screen` prints a segment of a segmented control as `button`, and `getByRole('tab')` matches it. The tree on a failure page shows the roles that locators match.
 4. Fix the locators from that output until the spec passes.
 5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a committed spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
 

@@ -56,7 +56,7 @@ On the standard settings an email sign-in for a user with no password goes strai
 
 ## Feature entry contract
 
-Each feature file starts with an H1 title and one paragraph describing the user-visible behavior, then exactly four H2 sections in this order: `Sub-features`, `How to get to it (user POV)`, `Driving it with verify`, and `Gotchas`. `Driving it with verify` starts with `Preconditions:` and names the specs that prove each sub-feature.
+Each feature file starts with an H1 title and one paragraph describing the user-visible behavior, then four H2 sections in this order: `Sub-features`, `How to get to it (user POV)`, `Driving it with verify`, and `Gotchas`. `Driving it with verify` starts with `Preconditions:` and names the specs that prove each sub-feature. A feature with states that no spec can reach has a `States a spec cannot reach` section before `Gotchas`, which names each state, where the app decides it, and what it takes.
 
 ## Features
 
@@ -69,5 +69,6 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, its Manage account and Security screens, sign-out, and deleting the account.
 - [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in, the setup-MFA task after sign-up, and finishing the setup-MFA task with an authenticator code.
 - [Organizations](./organizations.md) covers creating an organization from OrganizationSwitcher.
+- [Organization profile](./organization-profile.md) covers the profile that `Manage` opens from OrganizationSwitcher: its rows, the Members tabs and search, sending an invitation, verified domains, renaming, and leaving or deleting the organization. It lists the states that need a second member or a role other than admin, which the harness cannot seed.
 
-Not mapped yet: password sign-in, social providers (no real OAuth on simulators), passkeys and biometrics (no associated domains or Secure Enclave on the simulator).
+Not mapped yet: password sign-in, the email link (off on the standard settings), the profile's own flows past its first screens (editing the profile, adding an email address or a phone number, changing the password, adding a second factor, and switching between signed-in accounts), completing the setup-MFA task with an SMS code, the reset-password session task, the choose-organization task's list of memberships, invitations, and suggestions, organization invitations and suggestions in the switcher (the harness cannot seed them), social providers (no real OAuth on simulators), and passkeys and biometrics (no associated domains or Secure Enclave on the simulator).

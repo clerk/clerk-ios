@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { test, expect } from '../../fixtures.ts';
 
 test('creating an organization from OrganizationSwitcher makes it active', async ({ host, screen }) => {
@@ -5,7 +6,7 @@ test('creating an organization from OrganizationSwitcher makes it active', async
   await host.launch({ signedInAs: user });
   await host.tap(screen.getByText('Personal account'));
   await host.tap(screen.getByTestId('clerk.organization.accountList.createOrganization'));
-  const name = `Verify ${host.runId}`;
+  const name = `Verify ${host.runId} ${randomBytes(3).toString('hex')}`;
   await host.fill(screen.getByTestId('clerk.organization.profileForm.name'), name);
   await host.tap(screen.getByTestId('clerk.organization.profileForm.submit'));
   const skip = screen.getByRole('button', { name: 'Skip' });
