@@ -21,7 +21,7 @@ import { isRunning, type Runner } from './exec.ts';
 import { ledgerAgentDeviceDaemon, processesIn, readDaemonInfo, stopProcesses, type ProcessEntry } from './ledgers.ts';
 import { SHARED_ROOTS, manifestDrift } from './manifest.ts';
 import { CannotPostHere, chooseEvidence, missingAttach, postToPullRequest } from './publish.ts';
-import { cutVideo, readMarks, readTaps, spansOfMarks, tapsOfMarks, type VideoCut } from './video.ts';
+import { cutVideo, evidenceTapsOf, readMarks, readTaps, spansOfMarks, tapWindows, type VideoCut } from './video.ts';
 import { redact } from '../../specs/support/secret.ts';
 import { count } from './state.ts';
 import { newEntryId, parseRunId, type Workspace } from './workspace.ts';
@@ -522,9 +522,10 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       const hasVideo = existsSync(join(dir, 'video.mp4'));
       const evidenceSpans = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : spansOfMarks(readMarks(evidenceMarks), videoStartedAt);
       if (evidenceMarks !== null && hasVideo && evidenceSpans.length === 0) deps.progress("video   no test marked the part that shows the change with host.evidence('<label>', async () => { ... }), so attach --video refuses this run");
-      const taps = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : tapsOfMarks(readTaps(evidenceMarks), videoStartedAt, platform);
-      const viewport = taps.length === 0 ? null : await viewportOf(deps, lease, platform);
-      if (taps.length > 0 && viewport === null) deps.progress('video   the size of the screen could not be read, so attach --video draws no taps for this run');
+      const windows = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : tapWindows(readTaps(evidenceMarks), videoStartedAt);
+      const viewport = windows.length === 0 ? null : await viewportOf(deps, lease, platform);
+      const taps = viewport === null ? [] : await evidenceTapsOf(join(dir, 'video.mp4') as EvidencePath, windows, viewport, deps.runner);
+      if (windows.length > 0 && viewport === null) deps.progress('video   the size of the screen could not be read, so attach --video draws no taps for this run');
 
       driver.collect();
       const appLog = join(dir, 'app.log') as EvidencePath;
