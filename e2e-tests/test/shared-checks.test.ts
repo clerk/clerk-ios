@@ -30,6 +30,8 @@ function macOSTestTargets(caller: string, failing?: string): string[] {
     .split(/\n(?= {6}- name: )/)
     .slice(1)
     .flatMap((step) => {
+      const targets = [...step.matchAll(/\bmake ([\w-]+)/g)].map((match) => match[1]!);
+      if (targets.length === 0) return [];
       const written = (/^ {8}if: (.+)$/m.exec(step)?.[1] ?? 'true').replace(/^\$\{\{ (.+) \}\}$/, '$1');
       const condition = (/\b(?:always|success|cancelled)\(\)/.test(written) ? written : `success() && (${written})`)
         .replaceAll('always()', 'true')
@@ -37,7 +39,6 @@ function macOSTestTargets(caller: string, failing?: string): string[] {
         .replaceAll('success()', String(!failed))
         .replace(/inputs\.(\w+)/g, (_, name: string) => input(caller, name));
       if (!(new Function(`return ${condition};`)() as boolean)) return [];
-      const targets = [...step.matchAll(/\bmake ([\w-]+)/g)].map((match) => match[1]!);
       failed ||= targets.includes(failing ?? '');
       return targets;
     });
@@ -46,6 +47,7 @@ function macOSTestTargets(caller: string, failing?: string): string[] {
 function script(step: string, workflow = shared): string {
   const lines = workflow.split('\n');
   const named = lines.findIndex((line) => line.trim() === `- name: ${step}`);
+  assert.notEqual(named, -1, `no step ${step}`);
   const run = lines.findIndex((line, at) => at > named && line.trim() === 'run: |');
   const indent = lines[run]!.indexOf('run:');
   const body: string[] = [];
@@ -426,28 +428,39 @@ describe('the alert about a blocked release', () => {
   });
 });
 
-describe('the ClerkKitUI job', () => {
-  const job = shared.slice(shared.indexOf('  test-ui:\n'), shared.indexOf('  build:\n'));
+describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tests', () => {
+  const jobBlock = (id: string): string => {
+    const start = shared.indexOf(`\n  ${id}:\n`) + 1;
+    return shared.slice(start, start + 1 + shared.slice(start + 1).search(/^ {2}\S/m));
+  };
+  const caches = {
+    test: { restore: 'Restore the SwiftPM build of the last main push', save: 'Save the SwiftPM build for later runs' },
+    'test-ui': { restore: 'Restore the Xcode build of the last main push', save: 'Save the Xcode build for later runs' },
+  };
 
-  it('give each tracked file a modification time from its content, so a restored build sees only changed files as changed', () => {
-    const repo = mkdtempSync(join(tmpdir(), 'clerkkitui-times-'));
-    const git = (...args: string[]): void => {
-      const ran = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], { cwd: repo, encoding: 'utf8' });
+  it('give each tracked file a modification time from its content in both jobs, so a restored build sees only changed files as changed', () => {
+    const stamped = (job: string): number[] => {
+      const repo = mkdtempSync(join(tmpdir(), 'build-cache-times-'));
+      const git = (...args: string[]): void => {
+        const ran = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], { cwd: repo, encoding: 'utf8' });
+        assert.equal(ran.status, 0, ran.stderr);
+      };
+      git('init', '-q');
+      mkdirSync(join(repo, 'Sources'));
+      writeFileSync(join(repo, 'Sources', 'Same.swift'), 'hello\n');
+      writeFileSync(join(repo, 'Sources', 'Changed.swift'), 'world\n');
+      symlinkSync('Same.swift', join(repo, 'Sources', 'ZLink.swift'));
+      git('add', '-A');
+      git('commit', '-q', '-m', 'sources');
+
+      const ran = spawnSync('bash', ['-c', script('Give each file a modification time from its content', jobBlock(job))], { cwd: repo, encoding: 'utf8', timeout: 20_000 });
       assert.equal(ran.status, 0, ran.stderr);
+      const seconds = ['Same.swift', 'Changed.swift', 'ZLink.swift'].map((file) => statSync(join(repo, 'Sources', file)).mtimeMs / 1000);
+      rmSync(repo, { recursive: true, force: true });
+      return seconds;
     };
-    git('init', '-q');
-    mkdirSync(join(repo, 'Sources'));
-    writeFileSync(join(repo, 'Sources', 'Same.swift'), 'hello\n');
-    writeFileSync(join(repo, 'Sources', 'Changed.swift'), 'world\n');
-    symlinkSync('Same.swift', join(repo, 'Sources', 'ZLink.swift'));
-    git('add', '-A');
-    git('commit', '-q', '-m', 'sources');
 
-    const stamped = spawnSync('bash', ['-c', script('Give each file a modification time from its content')], { cwd: repo, encoding: 'utf8', timeout: 20_000 });
-    assert.equal(stamped.status, 0, stamped.stderr);
-    const seconds = (file: string): number => statSync(join(repo, 'Sources', file)).mtimeMs / 1000;
-    assert.deepEqual([seconds('Same.swift'), seconds('Changed.swift'), seconds('ZLink.swift')], [1162696418, 1160997964, 1162696418]);
-    rmSync(repo, { recursive: true, force: true });
+    assert.deepEqual({ test: stamped('test'), 'test-ui': stamped('test-ui') }, { test: [1162696418, 1160997964, 1162696418], 'test-ui': [1162696418, 1160997964, 1162696418] });
   });
 
   it('restore a build only in PR CI and save one only from a push to main, so main, the nightly and the release always build from scratch', () => {
@@ -459,39 +472,46 @@ describe('the ClerkKitUI job', () => {
         .filter((caller) => read(caller).includes(`uses: ./.github/workflows/${file}`))
         .flatMap(entryPoints);
     };
-    const steps = job.split(/\n(?= {6}- name: )/);
-    const step = (name: string): string => steps.find((candidate) => candidate.includes(`- name: ${name}\n`)) ?? assert.fail(`no step ${name}`);
-    const runsOn = (name: string, event: string): boolean => new Function('github', `return ${/^ {8}if: (.+)$/m.exec(step(name))?.[1] ?? 'true'};`)({ event_name: event }) as boolean;
-    const callers = Object.fromEntries(
-      entryPoints('shared-checks.yml').map(([caller, events]) => [
-        caller,
-        {
-          restores: events.filter((event) => runsOn('Restore the Xcode build of the last main push', event)),
-          saves: events.filter((event) => runsOn('Save the Xcode build for later runs', event)),
-        },
-      ]),
-    );
-
-    assert.deepEqual(callers, {
+    const events = (job: keyof typeof caches) => {
+      const steps = jobBlock(job).split(/\n(?= {6}- name: )/);
+      const step = (name: string): string => steps.find((candidate) => candidate.includes(`- name: ${name}\n`)) ?? assert.fail(`no step ${name} in ${job}`);
+      const runsOn = (name: string, event: string): boolean => new Function('github', `return ${/^ {8}if: (.+)$/m.exec(step(name))?.[1] ?? 'true'};`)({ event_name: event }) as boolean;
+      const restoreKeys = /^ {10}restore-keys: (.+)$/m.exec(step(caches[job].restore))?.[1];
+      assert.equal(/^ {10}key: (.+)$/m.exec(step(caches[job].save))?.[1], `${restoreKeys}\${{ github.sha }}`);
+      return Object.fromEntries(
+        entryPoints('shared-checks.yml').map(([caller, callerEvents]) => [
+          caller,
+          { restores: callerEvents.filter((event) => runsOn(caches[job].restore, event)), saves: callerEvents.filter((event) => runsOn(caches[job].save, event)) },
+        ]),
+      );
+    };
+    const prCiRestoresMainSaves = {
       'checks.yml': { restores: [], saves: ['push'] },
       'manual-pr-ci.yml': { restores: ['issue_comment', 'status', 'pull_request_target', 'workflow_run'], saves: [] },
       'nightly-checks.yml': { restores: [], saves: [] },
       'release-sdk.yml': { restores: [], saves: [] },
-    });
-    const restoreKeys = /^ {10}restore-keys: (.+)$/m.exec(step('Restore the Xcode build of the last main push'))?.[1];
-    assert.equal(/^ {10}key: (.+)$/m.exec(step('Save the Xcode build for later runs'))?.[1], `${restoreKeys}\${{ github.sha }}`);
+    };
+
+    assert.deepEqual({ test: events('test'), 'test-ui': events('test-ui') }, { test: prCiRestoresMainSaves, 'test-ui': prCiRestoresMainSaves });
   });
 
-  it('delete the older builds on main once a push saved its own, and delete none when the push saved nothing', () => {
+  it('delete the older builds of each job on main once a push saved its own, and delete none of a job whose push saved nothing', () => {
     const sha = 'c'.repeat(40);
-    const prefix = 'clerkkitui-derived-data-ARM64-Xcode-26.6-Build-version-17F113-';
+    const ui = 'clerkkitui-derived-data-ARM64-Xcode-26.6-Build-version-17F113-';
+    const macOS = 'clerkkit-swiftpm-build-ARM64-Xcode-26.6-Build-version-17F113-';
     const deleted = (saved: string[]): string[] => {
-      const work = mkdtempSync(join(tmpdir(), 'clerkkitui-cleanup-'));
+      const work = mkdtempSync(join(tmpdir(), 'build-cache-cleanup-'));
       mkdirSync(join(work, 'bin'));
       writeFileSync(join(work, 'deleted'), '');
       writeFileSync(
         join(work, 'bin', 'gh'),
-        `#!/bin/bash\ncase "$1 $2" in\n  'cache list') printf '%s\\n' ${saved.map((key) => `'${key}'`).join(' ')} ;;\n  'cache delete') echo "$3" >> '${work}/deleted' ;;\n  *) exit 1 ;;\nesac\n`,
+        `#!/bin/bash
+case "$1 $2" in
+  'cache list') while [ $# -gt 0 ]; do [ "$1" = --key ] && prefix=$2; shift; done; printf '%s\\n' ${saved.map((key) => `'${key}'`).join(' ')} | grep -- "^$prefix" || true ;;
+  'cache delete') echo "$3" >> '${work}/deleted' ;;
+  *) exit 1 ;;
+esac
+`,
         { mode: 0o755 },
       );
       const ran = spawnSync('bash', ['-c', script('Delete the older saved builds', read('checks.yml'))], {
@@ -504,13 +524,17 @@ describe('the ClerkKitUI job', () => {
       rmSync(work, { recursive: true, force: true });
       return keys;
     };
+    const olderXcode = (prefix: string): string => `${prefix.replace('26.6-Build-version-17F113', '26.0-Build-version-17A324')}${'b'.repeat(40)}`;
 
-    assert.deepEqual(deleted([`${prefix}${'a'.repeat(40)}`, `${prefix}${sha}`, `clerkkitui-derived-data-ARM64-Xcode-26.0-Build-version-17A324-${'b'.repeat(40)}`]), [
-      `${prefix}${'a'.repeat(40)}`,
-      `clerkkitui-derived-data-ARM64-Xcode-26.0-Build-version-17A324-${'b'.repeat(40)}`,
+    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${ui}${sha}`, olderXcode(ui), `${macOS}${'a'.repeat(40)}`, `${macOS}${sha}`, olderXcode(macOS)]), [
+      `${ui}${'a'.repeat(40)}`,
+      olderXcode(ui),
+      `${macOS}${'a'.repeat(40)}`,
+      olderXcode(macOS),
     ]);
-    assert.deepEqual(deleted([`${prefix}${sha}`]), []);
-    assert.deepEqual(deleted([`${prefix}${'a'.repeat(40)}`]), []);
+    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${ui}${sha}`, `${macOS}${'a'.repeat(40)}`]), [`${ui}${'a'.repeat(40)}`]);
+    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${macOS}${'a'.repeat(40)}`, `${macOS}${sha}`]), [`${macOS}${'a'.repeat(40)}`]);
+    assert.deepEqual(deleted([`${ui}${sha}`, `${macOS}${sha}`]), []);
   });
 });
 
