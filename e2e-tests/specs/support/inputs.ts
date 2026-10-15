@@ -135,12 +135,17 @@ export function runIdParts(run: string): { readonly time: string; readonly tag: 
   return { time: parts.time!, tag: parts.tag! };
 }
 
-export function newRunId(): RunId {
+export function newRunId(takenTags: readonly string[] = []): RunId {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  return `r${date}-${time}-${randomBytes(2).toString('hex')}` as RunId;
+  const taken = new Set(takenTags);
+  if (taken.size === 0x10000) throw new Error('every run tag is taken; run down to delete the application');
+  let tag: string;
+  do tag = randomBytes(2).toString('hex');
+  while (taken.has(tag));
+  return `r${date}-${time}-${tag}` as RunId;
 }
 
 export function readRun(env: Env): RunId {

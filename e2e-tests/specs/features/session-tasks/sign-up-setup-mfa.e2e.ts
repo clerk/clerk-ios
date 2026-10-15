@@ -1,5 +1,6 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 import { totp } from '../../totp.ts';
+import { runPassword } from '../../support/clerk.ts';
 
 test('a sign-up on an MFA-required instance moves straight into the setup-MFA task, and an authenticator code finishes it', async ({ host, screen }) => {
   const email = await host.newEmail();
@@ -11,7 +12,7 @@ test('a sign-up on an MFA-required instance moves straight into the setup-MFA ta
   await host.fill(screen.getByTestId('clerk.auth.signUp.code'), CLERK_TEST_CODE);
   const password = screen.getByTestId('clerk.auth.signUp.password').first();
   await expect(password).toBeVisible({ timeout: 20_000 });
-  await host.fill(password, `Verify-${host.runId}-Pw1!`);
+  await host.fill(password, runPassword(host.runId));
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
   const authenticatorApp = screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp');
   await host.expectVisible(authenticatorApp, 'the authenticator app choice of the setup-MFA task', 60_000);

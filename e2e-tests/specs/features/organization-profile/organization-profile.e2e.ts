@@ -1,7 +1,7 @@
-import { randomBytes } from 'node:crypto';
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 import type { Locator, Screen } from 'e2e';
 import type { HostFixture, SeededUser } from '../../support/types.ts';
+import { runPassword } from '../../support/clerk.ts';
 
 function atCenter(target: Locator): Locator {
   const tap = async (): Promise<void> => {
@@ -37,7 +37,7 @@ async function openNewOrganizationProfile(host: HostFixture, screen: Screen, use
 
 test('the organization creator opens every row of the organization profile and deletes the organization', async ({ host, screen }) => {
   const user = await host.seedUser();
-  const name = `Profile ${host.runId} ${randomBytes(3).toString('hex')}`;
+  const name = host.newOrganizationName();
   await openNewOrganizationProfile(host, screen, user, name);
   await expect(screen.getByRole('button', { name: 'Members' })).toBeVisible();
   await expect(screen.getByRole('button', { name: 'Verified domains' })).toBeVisible();
@@ -92,7 +92,7 @@ test('the organization creator opens every row of the organization profile and d
 test('Invite on the Members screen sends an invitation that the Invitations tab lists', async ({ host, screen }) => {
   const user = await host.seedUser();
   const invitee = await host.newEmail();
-  await openNewOrganizationProfile(host, screen, user, `Invite ${host.runId} ${randomBytes(3).toString('hex')}`);
+  await openNewOrganizationProfile(host, screen, user, host.newOrganizationName());
   await host.tap(screen.getByRole('button', { name: 'Members' }));
   await host.tap(atCenter(screen.getByRole('button', { name: 'Invite' })));
   await host.fill(screen.getByRole('textbox', { name: 'Enter email addresses' }), invitee);
@@ -104,8 +104,8 @@ test('Invite on the Members screen sends an invitation that the Invitations tab 
 
 test('Update profile renames the organization', async ({ host, screen }) => {
   const user = await host.seedUser();
-  const renamed = `Renamed ${host.runId}`;
-  await openNewOrganizationProfile(host, screen, user, `Rename ${host.runId.replaceAll('-', '')}${randomBytes(3).toString('hex')}`);
+  const renamed = host.newOrganizationName();
+  await openNewOrganizationProfile(host, screen, user, host.newOrganizationName());
   await host.tap(screen.getByRole('button', { name: 'Update profile' }));
   const nameField = screen.getByTestId('clerk.organization.profileForm.name');
   await host.tap(nameField);
@@ -144,7 +144,7 @@ test('a user who signs up at a verified domain of the organization asks to join,
   await host.fill(screen.getByTestId('clerk.auth.start.identifier'), requester);
   await host.tap(screen.getByTestId('clerk.auth.start.continue'));
   await host.fill(screen.getByTestId('clerk.auth.signUp.code'), CLERK_TEST_CODE);
-  await host.fill(screen.getByTestId('clerk.auth.signUp.password').first(), `Verify-${host.runId}-Pw1!`);
+  await host.fill(screen.getByTestId('clerk.auth.signUp.password').first(), runPassword(host.runId));
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
   await host.expectSignedInAs(requester, 30_000);
   await host.tap(screen.getByText('Personal account'));

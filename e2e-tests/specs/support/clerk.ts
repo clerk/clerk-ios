@@ -1,7 +1,8 @@
-import { randomBytes, randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
 import { runIdParts, type ClerkAccess, type ClerkInstance } from './inputs.ts';
+import { PASSWORD_WORDS, runNames, type RunNames } from './names.ts';
 import { SHORTEST_SECRET, Secret, protect } from './secret.ts';
 import { commandsFor } from './typing.ts';
 import type { EmailOptions, OrganizationSeed, RunId, SecretLike, SeedOptions, SeededOrganization, SeededUser, TestEmail, TestPhone } from './types.ts';
@@ -50,22 +51,19 @@ net.setDefaultAutoSelectFamilyAttemptTimeout(CONNECT_ATTEMPT_MS);
 
 const notTestIdentity = (value: string, kind: string): Error => new Error(`${value} is not a ${kind}; use an address with +clerk_test or a 555-0100..0199 phone that this run created`);
 
-export function runEmailPrefix(run: RunId): string {
-  const { time, tag } = runIdParts(run);
-  return `${time}${tag}`;
-}
+const tagOf = (run: RunId): string => runIdParts(run).tag;
 
-const fourCharacters = (): string => randomInt(36 ** 4).toString(36).padStart(4, '0');
+export const testEmail = (run: RunId, person: string, domain = 'example.com'): TestEmail => parseTestEmail(`${person}.${tagOf(run)}+clerk_test@${domain}`);
 
-export function newTestEmail(run: RunId, domain = 'example.com'): TestEmail {
-  return parseTestEmail(`${runEmailPrefix(run)}${fourCharacters()}+clerk_test@${domain}`);
-}
+export const isTestEmailOf = (run: RunId, email: string): boolean => new RegExp(`^[a-z]+[0-9]*\\.${tagOf(run)}\\+clerk_test@[a-z0-9.-]+\\.[a-z]+$`).test(email);
 
-export const newTestDomain = (run: RunId): string => `${runEmailPrefix(run)}${fourCharacters()}.clerk.test`;
+export const organizationName = (run: RunId, word: string): string => `${word} ${tagOf(run)}`;
 
-export const isTestDomainOf = (run: RunId, domain: string): boolean => new RegExp(`^${runEmailPrefix(run)}[0-9a-z]{4}\\.clerk\\.test$`).test(domain);
+export const isOrganizationNameOf = (run: RunId, name: string): boolean => new RegExp(`^[A-Z][a-z]+[0-9]* ${tagOf(run)}$`).test(name);
 
-export const organizationNamePrefix = (run: RunId): string => `${runEmailPrefix(run)} `;
+export const testDomain = (run: RunId, word: string): string => `${word.toLowerCase()}-${tagOf(run)}.clerk.test`;
+
+export const isTestDomainOf = (run: RunId, domain: string): boolean => new RegExp(`^[a-z]+[0-9]*-${tagOf(run)}\\.clerk\\.test$`).test(domain);
 
 const TEST_EMAIL = /^[a-z0-9._-]+\+clerk_test@[a-z0-9.-]+\.[a-z]+$/;
 export function parseTestEmail(value: string): TestEmail {
@@ -88,14 +86,26 @@ export function typedPassword(value: string): Secret<'password'> {
   return password;
 }
 
-export function newTestPassword(): Secret<'password'> {
-  return typedPassword(`${randomBytes(12).toString('hex')}Aa1!`);
+type Pick = (count: number) => number;
+
+function passwordFrom(pick: Pick): string {
+  const first = PASSWORD_WORDS[pick(PASSWORD_WORDS.length)]!;
+  const others = PASSWORD_WORDS.filter((word) => word !== first);
+  return `${first}-${others[pick(others.length)]}-${String(pick(10_000)).padStart(4, '0')}`;
 }
 
-export const runPassword = (run: RunId): Secret<'password'> => typedPassword(`Verify-${run}-Pw1!`);
+export const newTestPassword = (): Secret<'password'> => typedPassword(passwordFrom(randomInt));
+
+export function runPassword(run: RunId): Secret<'password'> {
+  const digest = createHash('sha256').update(run).digest();
+  let read = 0;
+  const pick: Pick = (count) => digest.readUInt32BE(4 * read++) % count;
+  return typedPassword(passwordFrom(pick));
+}
 
 export interface TestUsers {
   newEmail(options?: EmailOptions): TestEmail;
+  newOrganizationName(): string;
   newPhone(): Promise<TestPhone>;
   seed(options?: SeedOptions): Promise<SeededUser>;
   seedOrganization<Seed extends OrganizationSeed>(seed: Seed): Promise<SeededOrganization<Seed>>;
@@ -143,7 +153,7 @@ export async function aboutToLaunch(access: ClerkAccess, fetchImpl: typeof fetch
   throw new Error(`the verify CLI was not ready for the app to launch: ${said.join('; ') || `it answered ${response.status}`}`);
 }
 
-export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fetch = fetch): TestUsers {
+export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fetch = fetch, names: RunNames = runNames(run)): TestUsers {
   runPassword(run);
   const handedOut = new Set<TestPhone>();
 
@@ -208,7 +218,8 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
   const everyPhoneTaken = (otherwise: string): Error => new Error(`every 555-0100..0199 test phone is taken on this instance; delete its test users${otherwise}`);
 
   return {
-    newEmail: (options = {}) => newTestEmail(run, options.domain),
+    newEmail: (options = {}) => testEmail(run, names.claim('person'), options.domain),
+    newOrganizationName: () => organizationName(run, names.claim('organization')),
     async newPhone() {
       for (const phone of phonesNotHandedOut()) {
         const holders = await ask('usersByPhone', { query: `phone_number=${encodeURIComponent(phone)}` });
@@ -220,7 +231,7 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
       throw everyPhoneTaken('');
     },
     async seed(options = {}) {
-      const email = newTestEmail(run);
+      const email = testEmail(run, names.claim('person'));
       const password = options.password === true ? newTestPassword() : null;
       for (const phone of options.phone === true ? phonesNotHandedOut() : [null]) {
         const created = await ask('createUser', {
@@ -242,13 +253,14 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
     async seedOrganization<Seed extends OrganizationSeed>(seed: Seed): Promise<SeededOrganization<Seed>> {
       const members = seed.members ?? [];
       for (const role of new Set(members.map((member) => member.role))) await roleReady(role);
-      const name = `${organizationNamePrefix(run)}${randomBytes(3).toString('hex')}`;
+      const word = names.claim('organization');
+      const name = organizationName(run, word);
       const made = await answered('createOrganization', { body: { name, created_by: seed.creator.id } });
       const id = (made.json as { id?: unknown } | null)?.id;
       if (typeof id !== 'string') throw new Error('Clerk created an organization without an id');
       const params = { organization_id: id };
       for (const { user, role } of members) await answered('createMembership', { params, body: { user_id: user.id, role } });
-      const domain = seed.suggestDomain === true ? newTestDomain(run) : null;
+      const domain = seed.suggestDomain === true ? testDomain(run, word) : null;
       if (domain !== null) await answered('createDomain', { params, body: { name: domain, enrollment_mode: 'automatic_suggestion', verified: true } });
       return { id, name, domain } as SeededOrganization<Seed>;
     },

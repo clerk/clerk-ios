@@ -1,12 +1,18 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { keptTags, openWorkspace } from '../src/core/workspace.ts';
 import { PACKAGE_DIR } from '../specs/support/config.ts';
 import { agentDevice } from '../specs/support/device.ts';
-import { INPUT_VARIABLES, inputsEnv, readClerk, readEvidenceMarks, readRun, readTarget, type Inputs } from '../specs/support/inputs.ts';
+import { INPUT_VARIABLES, inputsEnv, newRunId, readClerk, readEvidenceMarks, readRun, readTarget, type Inputs } from '../specs/support/inputs.ts';
 import { Secret } from '../specs/support/secret.ts';
+import type { RunId } from '../specs/support/types.ts';
 import { BOTH_PLATFORMS_APP, IOS_APP, SAMPLE_INPUTS, SAMPLE_PUBLISHABLE_KEY, SAMPLE_RUN } from '../testing/sample-inputs.ts';
 
 const UDID = 'FDF0CD9E-CF9E-42B6-AE3A-116A665F7EF3';
@@ -107,6 +113,70 @@ describe('the id of a run', () => {
     assert.equal(readRun({ CLERK_E2E_RUN_ID: SAMPLE_RUN }), SAMPLE_RUN);
     assert.match(readRun({}), /^r\d{8}-\d{6}-[0-9a-f]{4}$/);
     assert.throws(() => readRun({ CLERK_E2E_RUN_ID: '../../etc' }), /is not a run id/);
+  });
+
+  it('never takes the tag of a run this worktree kept, since its users carry only the tag', () => {
+    const kept = Array.from({ length: 0x10000 }, (_, n) => n.toString(16).padStart(4, '0')).filter((tag) => tag !== 'beef');
+    assert.match(newRunId(kept), /^r\d{8}-\d{6}-beef$/);
+  });
+
+  it('says so when the worktree kept every tag, rather than looking for one forever', () => {
+    const kept = Array.from({ length: 0x10000 }, (_, n) => n.toString(16).padStart(4, '0'));
+    assert.throws(() => newRunId(kept), /every run tag is taken; run down to delete the application/);
+  });
+
+  describe('made by the workspace', () => {
+    const drawing = (tags: readonly string[], body: (workspace: ReturnType<typeof openWorkspace>, runs: string) => void, beforeDraw: (runs: string, tag: string) => void = () => {}) => {
+      const dir = mkdtempSync(join(tmpdir(), 'verify-run-tags-'));
+      const queue = [...tags];
+      const draw = mock.method(crypto, 'randomBytes', () => {
+        const tag = queue.shift()!;
+        beforeDraw(join(dir, '.verify', 'runs'), tag);
+        return Buffer.from(tag, 'hex');
+      });
+      syncBuiltinESMExports();
+      try {
+        body(openWorkspace({ packageDir: dir, worktree: dir, home: join(dir, 'home') }), join(dir, '.verify', 'runs'));
+        assert.deepEqual(queue, []);
+      } finally {
+        draw.mock.restore();
+        syncBuiltinESMExports();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    };
+
+    it('skips the tag of a run the worktree kept', () => {
+      drawing(['beef', '1234'], (workspace, runs) => {
+        mkdirSync(join(runs, 'r20261015-120000-beef'), { recursive: true });
+        assert.match(workspace.newRun().run, /^r\d{8}-\d{6}-1234$/);
+      });
+    });
+
+    it('gives one tag to one run when two ask before either has made its directory', () => {
+      const otherRunClaims = (runs: string, tag: string) => {
+        if (tag === 'beef') writeFileSync(join(runs, `.tag-${tag}`), '');
+      };
+      drawing(['beef', '1234'], (workspace) => assert.match(workspace.newRun().run, /^r\d{8}-\d{6}-1234$/), otherRunClaims);
+    });
+
+    it('counts the tag of a claim whose run directory is gone as kept', () => {
+      drawing([], (_workspace, runs) => {
+        mkdirSync(join(runs, 'r20261015-120000-beef'), { recursive: true });
+        writeFileSync(join(runs, '.tag-1234'), '');
+        for (const stray of ['notes.txt', '.tag-notes', '.tag-123', '.tag-12345', '.tag-BEEF']) writeFileSync(join(runs, stray), '');
+        assert.deepEqual(keptTags(runs).sort(), ['1234', 'beef']);
+      });
+    });
+
+    it('claims the tag it hands out', () => {
+      drawing(['beef', 'beef', '1234'], (workspace, runs) => {
+        const first = workspace.newRun();
+        assert.match(first.run, /^r\d{8}-\d{6}-beef$/);
+        assert.ok(existsSync(join(runs, '.tag-beef')));
+        rmSync(first.dir, { recursive: true });
+        assert.match(workspace.newRun().run, /^r\d{8}-\d{6}-1234$/);
+      });
+    });
   });
 });
 
