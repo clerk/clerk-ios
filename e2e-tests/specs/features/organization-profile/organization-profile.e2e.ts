@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { test, expect } from '../../fixtures.ts';
+import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 import type { Locator, Screen } from 'e2e';
 import type { HostFixture, SeededUser } from '../../support/types.ts';
 
@@ -119,4 +119,44 @@ test('Update profile renames the organization', async ({ host, screen }) => {
   await expect(screen.getByText(renamed)).toHaveCount(1, { timeout: 20_000 });
   await expect(screen.getByText(renamed)).toBeVisible();
   await host.screenshot('org-renamed');
+});
+
+test('a member whose role reads domains and cannot manage them sees No verified domains and no Add domain', async ({ host, screen }) => {
+  const admin = await host.seedUser();
+  const reader = await host.seedUser();
+  const org = await host.seedOrganization({ creator: admin, members: [{ user: reader, role: 'org:e2e_domains_reader' }] });
+  await host.launch({ signedInAs: reader });
+  await host.tap(screen.getByText(org.name));
+  await expect(screen.getByText('Domains reader')).toBeVisible({ timeout: 20_000 });
+  await host.tap(screen.getByRole('button', { name: 'Manage' }));
+  await host.tap(screen.getByRole('button', { name: 'Verified domains' }));
+  await expect(screen.getByText('No verified domains')).toBeVisible({ timeout: 20_000 });
+  await expect(screen.getByText('Add domain')).toHaveCount(0);
+  await host.screenshot('org-domains-empty');
+});
+
+test('a user who signs up at a verified domain of the organization asks to join, and an admin sees the request on the Requests tab', async ({ host, screen }) => {
+  const admin = await host.seedUser();
+  const org = await host.seedOrganization({ creator: admin, suggestDomain: true });
+  const requester = await host.newEmail({ domain: org.domain });
+  await host.launch({ authMode: 'signUp' });
+  await host.tap(host.app.signInFullScreen);
+  await host.fill(screen.getByTestId('clerk.auth.start.identifier'), requester);
+  await host.tap(screen.getByTestId('clerk.auth.start.continue'));
+  await host.fill(screen.getByTestId('clerk.auth.signUp.code'), CLERK_TEST_CODE);
+  await host.fill(screen.getByTestId('clerk.auth.signUp.password').first(), `Verify-${host.runId}-Pw1!`);
+  await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
+  await host.expectSignedInAs(requester, 30_000);
+  await host.tap(screen.getByText('Personal account'));
+  await host.tap(screen.getByRole('button', { name: 'Request to join' }));
+  await expect(screen.getByText('Pending approval')).toBeVisible({ timeout: 20_000 });
+
+  await host.launch({ signedInAs: admin });
+  await host.tap(screen.getByText(org.name));
+  await host.tap(screen.getByRole('button', { name: 'Manage' }));
+  await host.tap(screen.getByRole('button', { name: 'Members' }));
+  await selectTab(host, screen, 'Requests');
+  await expect(screen.getByText(requester)).toBeVisible({ timeout: 20_000 });
+  await expect(screen.getByText('No membership requests')).toHaveCount(0);
+  await host.screenshot('org-requests');
 });
