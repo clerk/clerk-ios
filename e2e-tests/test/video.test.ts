@@ -67,14 +67,14 @@ describe('the ffmpeg filter that keeps the pieces', () => {
 });
 
 describe('marks of host.evidence', () => {
-  it('become spans in seconds of the video, and a mark outside the video is dropped', () => {
+  it('become spans in seconds of the video, and a mark that ended before the video started is dropped', () => {
     const started = Date.parse('2026-10-14T23:00:00.000Z');
     const marks = [
       { label: 'before the video', startedAt: started - 5_000, endedAt: started - 1_000, passed: true },
       { label: 'the list after create', startedAt: started + 5_100, endedAt: started + 19_150, passed: true },
       { label: 'fails on the old build', startedAt: started + 20_000, endedAt: started + 41_000, passed: false },
     ];
-    assert.deepEqual(spansOfMarks(marks, started, 30), [
+    assert.deepEqual(spansOfMarks(marks, started), [
       { label: 'the list after create', from: 5.1, to: 19.15, passed: true },
       { label: 'fails on the old build', from: 20, to: 41, passed: false },
     ]);

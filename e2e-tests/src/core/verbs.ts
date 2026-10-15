@@ -518,7 +518,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
       }
       if (command.video && recorder === null) deps.progress('video   no test launched the app, so this run has no video');
       const hasVideo = existsSync(join(dir, 'video.mp4'));
-      const evidenceSpans = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : spansOfMarks(readMarks(evidenceMarks), videoStartedAt, null);
+      const evidenceSpans = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : spansOfMarks(readMarks(evidenceMarks), videoStartedAt);
       if (evidenceMarks !== null && hasVideo && evidenceSpans.length === 0) deps.progress("video   no test marked the part that shows the change with host.evidence('<label>', async () => { ... }), so attach --video refuses this run");
 
       driver.collect();

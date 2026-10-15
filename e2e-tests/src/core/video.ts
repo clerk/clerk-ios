@@ -19,10 +19,10 @@ export const CUT = {
   fps: 30,
 } as const;
 
-export function spansOfMarks(marks: readonly EvidenceMark[], videoStartedAt: number, duration: number | null): readonly EvidenceSpan[] {
+export function spansOfMarks(marks: readonly EvidenceMark[], videoStartedAt: number): readonly EvidenceSpan[] {
   return marks
     .map((mark) => ({ label: mark.label, from: (mark.startedAt - videoStartedAt) / 1000, to: (mark.endedAt - videoStartedAt) / 1000, passed: mark.passed }))
-    .filter((span) => span.to > 0 && (duration === null || span.from < duration))
+    .filter((span) => span.to > 0)
     .map((span) => ({ ...span, from: Math.max(0, round(span.from)), to: round(span.to) }));
 }
 
