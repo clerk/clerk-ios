@@ -146,10 +146,10 @@ describe('marks of host.evidence', () => {
     assert.deepEqual(readMarks(file), [{ label: 'the list', startedAt: 1_000, endedAt: 4_000, passed: true }]);
   });
 
-  it('of a tap become the window from sending it to 2.5 s after its return in seconds of the video, and a tap that returned before the video is dropped', () => {
+  it('of a tap become the window from sending it to 5 s after its return in seconds of the video, and a tap that returned before the video is dropped', () => {
     const started = Date.parse('2026-10-14T23:00:00.000Z');
     const taps = [{ sentAt: started - 100, tappedAt: started - 10, x: 1, y: 2 }, { sentAt: started + 5_120, tappedAt: started + 5_300, x: 210, y: 450.5 }];
-    assert.deepEqual(tapWindows(taps, started), [{ sent: 5.12, until: 7.8, x: 210, y: 450.5 }]);
+    assert.deepEqual(tapWindows(taps, started), [{ sent: 5.12, until: 10.3, x: 210, y: 450.5 }]);
   });
 
   it('of a tap are written after the tap returns, with when it was sent, at the middle of the box the target had before it, beside the marks of the blocks', async () => {
@@ -184,7 +184,7 @@ describe('marks of host.evidence', () => {
 });
 
 describe('the start of the pulse of a tap', () => {
-  const tap = { sent: 4.019, until: 6.702, x: 640, y: 1386 };
+  const tap = { sent: 4.019, until: 9.202, x: 640, y: 1386 };
 
   it('is 0.2 s before the first change at the tapped control after the tap was sent, so the pulse shows on the control before it changes', () => {
     const changes = [{ at: 3.1, share: 0.4 }, { at: 4.098, share: 0 }, { at: 4.112, share: 0.42 }, { at: 4.321, share: 0.4 }];
@@ -201,13 +201,13 @@ describe('the start of the pulse of a tap', () => {
     assert.equal(reactionAt([...moving, { at: 4.5, share: 0.5 }], tap), null);
   });
 
-  it('is looked for until 2.5 s after the tap returns, as late as a CI runner shows it, and never after the next tap was sent', () => {
+  it('is looked for until 5 s after the tap returns, as late as a CI runner shows it, and never after the next tap was sent', () => {
     const [first, second] = tapWindows([{ sentAt: 10_000, tappedAt: 11_500, x: 1, y: 2 }, { sentAt: 13_000, tappedAt: 14_000, x: 3, y: 4 }], 0);
-    assert.deepEqual([reactionAt([{ at: 12.9, share: 0.5 }], first!), reactionAt([{ at: 13.1, share: 0.5 }], first!), reactionAt([{ at: 16.4, share: 0.5 }], second!)], [12.9, null, 16.4]);
+    assert.deepEqual([reactionAt([{ at: 12.9, share: 0.5 }], first!), reactionAt([{ at: 13.1, share: 0.5 }], first!), reactionAt([{ at: 18.9, share: 0.5 }], second!)], [12.9, null, 18.9]);
   });
 
   it('is when the tap was sent when the control does not change near it', () => {
-    assert.equal(reactionAt([{ at: 6.8, share: 0.5 }], tap), null);
+    assert.equal(reactionAt([{ at: 9.3, share: 0.5 }], tap), null);
     assert.equal(pulseAt(tap, null), 4.019);
   });
 
@@ -221,7 +221,7 @@ describe('the start of the pulse of a tap', () => {
     const video = join(dir, 'video.mp4') as EvidencePath;
     const made = await run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=gray:size=300x600:rate=30:duration=3', '-vf', "drawbox=x=120:y=280:w=60:h=40:color=white:t=fill:enable='gte(t,1.5)'", '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video]);
     assert.equal(made.code, 0, made.stderr);
-    const taps = await evidenceTapsOf(video, [{ sent: 1.4, until: 2.2, x: 50, y: 100 }, { sent: 2.2, until: 4.9, x: 50, y: 100 }], { width: 100, height: 200 }, run);
+    const taps = await evidenceTapsOf(video, [{ sent: 1.4, until: 2.2, x: 50, y: 100 }, { sent: 2.2, until: 7.4, x: 50, y: 100 }], { width: 100, height: 200 }, run);
     assert.deepEqual(taps, [{ at: 1.3, x: 50, y: 100 }, { at: 2.2, x: 50, y: 100 }]);
   });
 });
@@ -281,7 +281,7 @@ describe('cutVideo', () => {
     assert.equal((await run('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:size=300x600:rate=30:duration=4', '-vf', "drawbox=x=120:y=280:w=60:h=40:color=white:t=fill:enable='gte(t,2.5)'", '-c:v', 'libx264', '-bf', '2', '-pix_fmt', 'yuv420p', made])).code, 0);
     const lagging = await run('ffmpeg', ['-v', 'error', '-i', made, '-c', 'copy', '-bsf:v', 'setts=pts=floor(PTS/1536)*1536:dts=DTS-15360', video]);
     assert.equal(lagging.code, 0, lagging.stderr);
-    const taps = await evidenceTapsOf(video, [{ sent: 2.4, until: 5.1, x: 50, y: 100 }], { width: 100, height: 200 }, run);
+    const taps = await evidenceTapsOf(video, [{ sent: 2.4, until: 7.6, x: 50, y: 100 }], { width: 100, height: 200 }, run);
     assert.deepEqual(taps, [{ at: 2.3, x: 50, y: 100 }]);
     const cut = await cutVideo(video, null, run, { viewport: { width: 100, height: 200 }, taps });
     assert.ok(cut.kind === 'cut', JSON.stringify(cut));

@@ -25,8 +25,8 @@ export const PULSE = { seconds: 0.5, widthShare: 0.1, leadSeconds: 0.2 } as cons
 // simctl on a CI runner writes decode times seconds behind the presentation times, and ffmpeg then stamps frames by decode time. Every read times frames by when they show.
 const input = (video: EvidencePath): readonly string[] => ['-fflags', '+igndts', '-i', video];
 
-// On a CI runner the iOS simulator can show a tap's effect more than 2 s after the runner returns, so the scan looks until 2.5 s after the return, and never past the sending of the next tap.
-export const REACTION = { before: 0.1, after: 2.5, stillFor: 0.1, level: 8, share: 0.02, width: 0.4, height: 0.06 } as const;
+// On a CI runner the iOS simulator has shown a tap's effect up to 2.9 s after the runner returned, so the scan looks until 5 s after the return, and never past the sending of the next tap.
+export const REACTION = { before: 0.1, after: 5, stillFor: 0.1, level: 8, share: 0.02, width: 0.4, height: 0.06 } as const;
 
 export function spansOfMarks(marks: readonly EvidenceMark[], videoStartedAt: number): readonly EvidenceSpan[] {
   return marks
