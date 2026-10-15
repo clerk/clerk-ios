@@ -1,4 +1,5 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
+import { runPassword } from '../../support/clerk.ts';
 
 test('completes sign-up with the test code and a run password', async ({ host, screen }) => {
   const email = await host.newEmail();
@@ -11,7 +12,7 @@ test('completes sign-up with the test code and a run password', async ({ host, s
   await host.fill(screen.getByTestId('clerk.auth.signUp.code'), CLERK_TEST_CODE);
   const password = screen.getByTestId('clerk.auth.signUp.password').first();
   await expect(password).toBeVisible({ timeout: 20_000 });
-  await host.fill(password, `Verify-${host.runId}-Pw1!`);
+  await host.fill(password, runPassword(host.runId));
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
   await host.expectSignedInAs(email, 30_000);
   await host.screenshot('signed-up');
@@ -27,7 +28,7 @@ test('a sign-up in the sheet from the home closes the sheet and shows the new us
   await host.fill(screen.getByTestId('clerk.auth.signUp.code'), CLERK_TEST_CODE);
   const password = screen.getByTestId('clerk.auth.signUp.password').first();
   await expect(password).toBeVisible({ timeout: 20_000 });
-  await host.fill(password, `Verify-${host.runId}-Pw1!`);
+  await host.fill(password, runPassword(host.runId));
   await host.tap(screen.getByTestId('clerk.auth.signUp.continue'));
   await host.expectSignedInAs(email, 30_000);
   await host.screenshot('signed-up-from-sheet');
