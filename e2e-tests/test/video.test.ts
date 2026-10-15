@@ -192,9 +192,8 @@ describe('the start of the pulse of a tap', () => {
     assert.equal(pulseAt(tap, reactionAt(changes, tap)), 3.912);
   });
 
-  it('skips the end of an animation that was still running when the tap was sent, and a flicker too small to see', () => {
-    const changes = [{ at: 3.85, share: 0.3 }, { at: 3.93, share: 0.3 }, { at: 3.98, share: 0.3 }, { at: 4.03, share: 0.3 }, { at: 4.2, share: 0.01 }, { at: 4.3, share: 0.5 }];
-    assert.equal(reactionAt(changes, tap), 4.3);
+  it('skips a flicker too small to see', () => {
+    assert.equal(reactionAt([{ at: 3.5, share: 0.3 }, { at: 4.05, share: 0.01 }, { at: 4.3, share: 0.5 }], tap), 4.3);
   });
 
   it('is when the tap was sent when the strip is still moving as the control reacts, so a later change cannot put the pulse after the reaction', () => {

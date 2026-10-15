@@ -94,7 +94,9 @@ export function parseChanges(metadata: string): readonly Change[] {
 
 export function reactionAt(changes: readonly Change[], tap: TapWindow): number | null {
   const moved = changes.filter((change) => change.share >= REACTION.share).map((change) => change.at);
-  return moved.find((at, i) => at >= tap.sent - REACTION.before && at <= tap.returned + REACTION.after && (i === 0 || at - moved[i - 1]! >= REACTION.stillFor)) ?? null;
+  const first = moved.findIndex((at) => at >= tap.sent - REACTION.before);
+  const at = moved[first];
+  return at !== undefined && at <= tap.returned + REACTION.after && (first === 0 || at - moved[first - 1]! >= REACTION.stillFor) ? at : null;
 }
 
 export const pulseAt = (tap: TapWindow, reaction: number | null): number => round(Math.max(0, reaction === null ? tap.sent : reaction - PULSE.leadSeconds));
