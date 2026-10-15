@@ -37,6 +37,7 @@ function partialRecord(dir: EvidencePath, run: RunId): Omit<EvidenceRecord, 'sea
       { spec: { kind: 'explored', path: 'specs/explored/a.e2e.ts', feature: null }, title: 'a', platform: 'ios', status: 'passed', seconds: 1, attempts: 1, error: null, skipReason: null, skippedBy: null, tags: [], failurePage: null, failureScreen: null, failureScreenshot: null },
     ],
     videos: [join(dir, 'video.mp4') as EvidencePath],
+    evidenceSpans: [{ label: 'the change', from: 1, to: 3, passed: true }],
     screenshots: [{ label: 'profile', path: join(dir, 'screenshots', 'profile.png') as EvidencePath }],
     appLog: join(dir, 'app.log') as EvidencePath,
     e2eReport: join(dir, 'e2e', 'report.json') as EvidencePath,
@@ -315,6 +316,7 @@ describe('attach', () => {
     let views = 0;
     let uploads = 0;
     const runner: Runner = async (command, args, runOptions) => {
+      if (command === 'ffmpeg') return { code: 127, stdout: '', stderr: 'spawn ffmpeg ENOENT' };
       assert.equal(command, 'gh');
       if (args.includes('--help')) return { code: 0, stdout: options.attachFlag === false ? '  -b, --body text   Set the new body.\n' : '      --attach file   Attach a file\n', stderr: '' };
       if (args[1] === 'view') {
