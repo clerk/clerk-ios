@@ -25,7 +25,8 @@ export const PULSE = { seconds: 0.5, widthShare: 0.1, leadSeconds: 0.2 } as cons
 // simctl on a CI runner writes decode times seconds behind the presentation times, and ffmpeg then stamps frames by decode time. Every read times frames by when they show.
 const input = (video: EvidencePath): readonly string[] => ['-fflags', '+igndts', '-i', video];
 
-export const REACTION = { before: 0.1, after: 0.5, stillFor: 0.1, level: 8, share: 0.02, width: 0.4, height: 0.06 } as const;
+// On a CI runner the iOS simulator can show a tap's effect more than 2 s after the runner returns, so the scan looks until 2.5 s after the return, and never past the sending of the next tap.
+export const REACTION = { before: 0.1, after: 2.5, stillFor: 0.1, level: 8, share: 0.02, width: 0.4, height: 0.06 } as const;
 
 export function spansOfMarks(marks: readonly EvidenceMark[], videoStartedAt: number): readonly EvidenceSpan[] {
   return marks
@@ -64,15 +65,16 @@ export const readTaps = (file: string): readonly TapMark[] => linesOf(file).flat
 
 export interface TapWindow {
   readonly sent: number;
-  readonly returned: number;
+  readonly until: number;
   readonly x: number;
   readonly y: number;
 }
 
 export function tapWindows(taps: readonly TapMark[], videoStartedAt: number): readonly TapWindow[] {
+  const seconds = (at: number): number => (at - videoStartedAt) / 1000;
   return taps
-    .map((tap) => ({ sent: round((tap.sentAt - videoStartedAt) / 1000), returned: round((tap.tappedAt - videoStartedAt) / 1000), x: tap.x, y: tap.y }))
-    .filter((tap) => tap.returned > 0);
+    .filter((tap) => tap.tappedAt > videoStartedAt)
+    .map((tap, i, kept) => ({ sent: round(seconds(tap.sentAt)), until: round(Math.min(seconds(tap.tappedAt) + REACTION.after, kept[i + 1] === undefined ? Infinity : seconds(kept[i + 1]!.sentAt))), x: tap.x, y: tap.y }));
 }
 
 export interface Change {
@@ -96,7 +98,7 @@ export function reactionAt(changes: readonly Change[], tap: TapWindow): number |
   const moved = changes.filter((change) => change.share >= REACTION.share).map((change) => change.at);
   const first = moved.findIndex((at) => at >= tap.sent - REACTION.before);
   const at = moved[first];
-  return at !== undefined && at <= tap.returned + REACTION.after && (first === 0 || at - moved[first - 1]! >= REACTION.stillFor) ? at : null;
+  return at !== undefined && at <= tap.until && (first === 0 || at - moved[first - 1]! >= REACTION.stillFor) ? at : null;
 }
 
 export const pulseAt = (tap: TapWindow, reaction: number | null): number => round(Math.max(0, reaction === null ? tap.sent : reaction - PULSE.leadSeconds));
@@ -105,7 +107,7 @@ function reactionFilter(tap: TapWindow, viewport: Viewport): string {
   const fx = tap.x / viewport.width;
   const fy = tap.y / viewport.height;
   return [
-    `trim=end=${tap.returned + REACTION.after}`,
+    `trim=end=${tap.until}`,
     `crop=w=iw*${REACTION.width}:h=ih*${REACTION.height}:x=max(0\\,min(iw-ow\\,iw*${fx}-ow/2)):y=max(0\\,min(ih-oh\\,ih*${fy}-oh/2))`,
     'scale=96:32,format=gray,tblend=all_mode=difference',
     `lut=c0='if(gt(val\\,${REACTION.level})\\,255\\,0)'`,
