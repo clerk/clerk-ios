@@ -8,12 +8,12 @@ import { busyWaits, onceTheRunnerIsFree, type BusyWait } from './support/busy-ru
 import { aboutToLaunch, testUsers } from './support/clerk.ts';
 import { ASSERTION_TIMEOUT_MS, PACKAGE_DIR } from './support/config.ts';
 import { agentDevice, deviceCommand } from './support/device.ts';
-import { EVIDENCE_PACE, evidenceBlock } from './support/evidence.ts';
+import { EVIDENCE_PACE, evidenceBlock, tapMarker } from './support/evidence.ts';
 import { fillField } from './support/fill.ts';
 import { readClerk, readEvidenceMarks, readRun, readTarget, type Target } from './support/inputs.ts';
 import { appLauncher } from './support/launch.ts';
 import { redact } from './support/secret.ts';
-import { tapOnceUncovered } from './support/tapping.ts';
+import { tapMarkedOnceUncovered } from './support/tapping.ts';
 import {
   APP_ELEMENT_IDS,
   CLERK_TEST_CODE,
@@ -112,8 +112,11 @@ export const test = base.extend<{ host: HostFixture }>({
       await sleep(EVIDENCE_PACE.beatMs);
     };
 
+    const marker = { marksFile: EVIDENCE_MARKS, now: Date.now, hold: sleep };
+    const markTap = tapMarker(marker);
+
     const tap = (control: Locator, busy: BusyWait): Promise<void> =>
-      tapOnceUncovered(() => control.tap({ timeout: ASSERTION_TIMEOUT_MS }), { timeoutMs: ASSERTION_TIMEOUT_MS, now: Date.now, wait: () => sleep(POLL_MS) }, busy);
+      tapMarkedOnceUncovered(control, markTap, { timeoutMs: ASSERTION_TIMEOUT_MS, now: Date.now, wait: () => sleep(POLL_MS) }, busy);
 
     const host: HostFixture = {
       runId: RUN,
@@ -140,14 +143,14 @@ export const test = base.extend<{ host: HostFixture }>({
       async fill(field, text) {
         await beat(field);
         await fillField(
-          field,
+          { tap: (options) => markTap(field, () => field.tap(options)), all: () => field.all() },
           typeof text === 'string' ? text : text.use('device-input', (value) => value),
           { platform, focused: device.locator('role=textbox focused'), texts: device.locator('role=text'), type: (command) => typeOnDevice(target, command) },
           { tapTimeoutMs: ASSERTION_TIMEOUT_MS, reads: CONFIRM_READS, now: Date.now, wait: () => sleep(POLL_MS) },
           runnerBusy(),
         );
       },
-      evidence: evidenceBlock({ marksFile: EVIDENCE_MARKS, now: Date.now, hold: sleep }),
+      evidence: evidenceBlock(marker),
     };
     await use(host);
   },
