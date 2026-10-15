@@ -19,11 +19,11 @@ A new user types a new email address or phone number into AuthView in sign-up mo
 Preconditions:
 
 - The standard settings allow sign-up with an email code and require a password.
-- The spec gets a fresh email from `host.newEmail()`. The address starts with the run's prefix, and that is how the run finds the user the form creates.
+- The spec gets a fresh email from `host.newEmail()`. The address is a first name and the run tag, as `maya.7c1e+clerk_test@example.com`, and the run tag is how the run finds the user the form creates.
 - The standard settings take a phone number at sign-up and verify it by SMS code, but they still require an email and a password. `phone.e2e.ts` reserves a number with `host.newPhone()` and gets an email from `host.newEmail()`.
 
 - **Request the code.** Run `e2e-tests/bin/control-clerk-ios run sign-up/complete`. The spec launches with `authMode: 'signUp'`, taps `e2e.auth.signInFullScreen` on the home, fills `clerk.auth.start.identifier`, taps `clerk.auth.start.continue`, and expects `clerk.auth.signUp.code`. Screenshot `signup-code`.
-- **Complete sign-up.** The spec then fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, waits for the first `clerk.auth.signUp.password` node, fills it with `Verify-<runId>-Pw1!`, taps `clerk.auth.signUp.continue`, and waits for the home to show `Signed in as` the new email with a user ID. Screenshot `signed-up`.
+- **Complete sign-up.** The spec then fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, waits for the first `clerk.auth.signUp.password` node, fills it with `runPassword(host.runId)`, taps `clerk.auth.signUp.continue`, and waits for the home to show `Signed in as` the new email with a user ID. Screenshot `signed-up`.
 - **Complete sign-up in the sheet.** The second test of `complete.e2e.ts` launches with `authMode: 'signUp'`, taps `e2e.auth.signIn`, and does the same steps in the sheet. The home is readable only after the sheet has closed, so `Signed in as` the new email is also the proof that the sheet closed itself. Screenshot `signed-up-from-sheet`.
 - **Sign up with a phone number.** Run `e2e-tests/bin/control-clerk-ios run sign-up/phone`. The spec taps `clerk.auth.start.identifierSwitcher`, fills `clerk.auth.start.phoneNumber` with the ten digits of the reserved number, taps `clerk.auth.start.continue`, and expects `Check your phone`. Screenshot `signup-phone-code`. It fills `clerk.auth.signUp.code` with `CLERK_TEST_CODE`, fills the email on the `clerk.auth.signUp.emailAddress` screen, taps `clerk.auth.signUp.continue`, expects `Check your email`, fills the code again, sets the password, and waits for the home to show `Signed in as` the email. Screenshot `signed-up-with-phone`.
 - **Proof.** Both specs pass. `run.json` lists the email under `identities` with the id of the user the form created.
@@ -31,7 +31,7 @@ Preconditions:
 ## Gotchas
 
 - Sign-up mode still uses the start screen's `clerk.auth.start.identifier` field for the email.
-- Always take the email from `host.newEmail`. The run finds the user that the form created by the run's prefix in that email, and `attach` refuses a run that shows a user it cannot account for.
+- Always take the email from `host.newEmail`. The run finds the user that the form created by the run tag in that email, and `attach` refuses a run that shows a user it cannot account for.
 - `clerk.auth.signUp.password` matches more than one node, because the SDK sets the identifier on the row that holds the secure field and the reveal button. The field comes first. Find it with `.first()`, wait for it to be visible, and fill that locator.
 - The password field is a secure field, and the screen withholds its value. `host.fill` types the password once and cannot confirm that it landed, so assert on what the form does next.
 - After a password is submitted, iOS may cover the app with its own "Save Password?" sheet. `host.expectSignedInAs`, `host.expectSignedOut`, and `host.expectVisible` tap "Not Now" when that sheet is up, and a plain `expect` does not.

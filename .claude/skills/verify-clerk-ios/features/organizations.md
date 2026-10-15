@@ -19,7 +19,7 @@ Preconditions:
 - The standard settings have organizations on and let users create organizations.
 - The spec seeds a user and signs in with a ticket and lands on the home, where the OrganizationSwitcher is.
 
-- **Create.** Run `e2e-tests/bin/control-clerk-ios run organizations`. The launch lands on the home with the user's email and user ID. The spec taps the switcher, which reads `Personal account` while no organization is active, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `Verify <runId> <suffix>`, and taps `clerk.organization.profileForm.submit`.
+- **Create.** Run `e2e-tests/bin/control-clerk-ios run organizations`. The launch lands on the home with the user's email and user ID. The spec taps the switcher, which reads `Personal account` while no organization is active, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `host.newOrganizationName()`, such as `Harbor 7c1e`, and taps `clerk.organization.profileForm.submit`.
 - **Skip invites.** The spec taps `Skip` on the invite step, waits for the home to show the same user again, and expects the organization name on the switcher and no `Personal account`. Screenshot `org-created`.
 - **Proof.** `specs/features/organizations/create-from-switcher.e2e.ts` passes, and the screenshot shows the switcher with the new organization's name under the user's email.
 
@@ -28,5 +28,5 @@ Preconditions:
 - The switcher label has no SDK identifier. The spec taps its visible text, `Personal account`.
 - `host.expectSignedInAs` waits for the switcher's sheet to close.
 - The invite step appears only when the organization allows more than one member. The standard settings allow three.
-- The slug of an organization comes from its name, and Clerk refuses a second organization with the same slug in the instance with "That slug is taken. Please try another." Every test in a run shares the run id, and so does every attempt of a test that `--retries` runs again. So each spec that creates an organization names it with its own prefix, the run id, and a random suffix, as `Verify <runId> <suffix>` here and `Profile <runId> <suffix>` in `organization-profile`, and a retry does not create the slug its first attempt took.
+- The slug of an organization comes from its name, and Clerk refuses a second organization with the same slug in the instance with "That slug is taken. Please try another." Every test in a run shares the run id, and so does every attempt of a test that `--retries` runs again. So each spec that creates an organization names it with `host.newOrganizationName()`, which claims a word for the run on this machine and adds the run tag, as `Harbor 7c1e`. No other test of the run and no retry gets that word, so a retry does not create the slug its first attempt took.
 - With an organization active, a tap on the switcher opens a sheet with `Manage` and `Switch account` instead of the account list. [Organization profile](./organization-profile.md) covers that sheet and the profile behind `Manage`.
