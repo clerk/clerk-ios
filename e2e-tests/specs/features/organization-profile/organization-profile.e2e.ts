@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { test, expect } from '../../fixtures.ts';
 import type { Screen } from 'e2e';
 import type { HostFixture, SeededUser } from '../../support/types.ts';
@@ -31,7 +32,7 @@ async function openNewOrganizationProfile(host: HostFixture, screen: Screen, use
 
 test('the organization creator opens every row of the organization profile and deletes the organization', async ({ host, screen, device }) => {
   const user = await host.seedUser();
-  const name = `Profile ${host.runId}`;
+  const name = `Profile ${host.runId} ${randomBytes(3).toString('hex')}`;
   await openNewOrganizationProfile(host, screen, user, name);
   await expect(screen.getByRole('button', { name: 'Members' })).toBeVisible();
   await expect(screen.getByRole('button', { name: 'Verified domains' })).toBeVisible();
@@ -86,7 +87,7 @@ test('the organization creator opens every row of the organization profile and d
 test('Invite on the Members screen sends an invitation that the Invitations tab lists', async ({ host, screen }) => {
   const user = await host.seedUser();
   const invitee = await host.newEmail();
-  await openNewOrganizationProfile(host, screen, user, `Invite ${host.runId}`);
+  await openNewOrganizationProfile(host, screen, user, `Invite ${host.runId} ${randomBytes(3).toString('hex')}`);
   await host.tap(screen.getByRole('button', { name: 'Members' }));
   await host.tap(screen.getByRole('button', { name: 'Invite' }));
   await host.fill(screen.getByRole('textbox', { name: 'Enter email addresses' }), invitee);
@@ -100,7 +101,7 @@ test('Update profile renames the organization', async ({ host, screen }) => {
   const user = await host.seedUser();
   const renamed = `Renamed ${host.runId}`;
   // agent-device's clear leaves the text after the last hyphen in this field, so the old name has no hyphen.
-  await openNewOrganizationProfile(host, screen, user, `Rename ${host.runId.replaceAll('-', '')}`);
+  await openNewOrganizationProfile(host, screen, user, `Rename ${host.runId.replaceAll('-', '')}${randomBytes(3).toString('hex')}`);
   await host.tap(screen.getByRole('button', { name: 'Update profile' }));
   const nameField = screen.getByTestId('clerk.organization.profileForm.name');
   await host.tap(nameField);
