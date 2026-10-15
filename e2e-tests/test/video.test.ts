@@ -197,6 +197,11 @@ describe('the start of the pulse of a tap', () => {
     assert.equal(reactionAt(changes, tap), 4.3);
   });
 
+  it('is when the tap was sent when the strip is still moving as the control reacts, so a later change cannot put the pulse after the reaction', () => {
+    const moving = Array.from({ length: 14 }, (_, i) => ({ at: Math.round((3.85 + i / 30) * 1000) / 1000, share: 0.3 }));
+    assert.equal(reactionAt([...moving, { at: 4.5, share: 0.5 }], tap), null);
+  });
+
   it('is when the tap was sent when the control does not change near it', () => {
     assert.equal(reactionAt([{ at: 4.8, share: 0.5 }], tap), null);
     assert.equal(pulseAt(tap, null), 4.019);
