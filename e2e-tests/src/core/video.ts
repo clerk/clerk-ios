@@ -22,6 +22,9 @@ export const CUT = {
 // An Android screen can change within a frame of the touch, so a pulse drawn at the touch shows on the next screen. Each pulse starts leadSeconds before the tapped control first changes in the video.
 export const PULSE = { seconds: 0.5, widthShare: 0.1, leadSeconds: 0.2 } as const;
 
+// simctl on a CI runner writes decode times seconds behind the presentation times, and ffmpeg then stamps frames by decode time. Every read times frames by when they show.
+const input = (video: EvidencePath): readonly string[] => ['-fflags', '+igndts', '-i', video];
+
 export const REACTION = { before: 0.1, after: 0.5, stillFor: 0.1, level: 8, share: 0.02, width: 0.4, height: 0.06 } as const;
 
 export function spansOfMarks(marks: readonly EvidenceMark[], videoStartedAt: number): readonly EvidenceSpan[] {
@@ -112,7 +115,7 @@ export async function evidenceTapsOf(video: EvidencePath, taps: readonly TapWind
   const drawn: EvidenceTap[] = [];
   for (const tap of taps) {
     const from = Math.max(0, tap.sent - REACTION.before - 1);
-    const scan = await runner('ffmpeg', ['-hide_banner', '-nostats', '-v', 'error', '-noaccurate_seek', '-ss', String(from), '-copyts', '-i', video, '-an', '-vf', reactionFilter(tap, viewport), '-f', 'null', '-']);
+    const scan = await runner('ffmpeg', ['-hide_banner', '-nostats', '-v', 'error', '-noaccurate_seek', '-ss', String(from), '-copyts', ...input(video), '-an', '-vf', reactionFilter(tap, viewport), '-f', 'null', '-']);
     drawn.push({ at: pulseAt(tap, scan.code === 0 ? reactionAt(parseChanges(scan.stdout), tap) : null), x: tap.x, y: tap.y });
   }
   return drawn;
@@ -229,7 +232,7 @@ export type VideoCut =
 
 export async function cutVideo(video: EvidencePath, spans: readonly EvidenceSpan[] | null, runner: Runner, taps: EvidenceRecord['evidenceTaps'] = null): Promise<VideoCut> {
   const uncut = (why: string): VideoCut => ({ kind: 'uncut', path: video, why });
-  const scan = await runner('ffmpeg', ['-hide_banner', '-nostats', '-i', video, '-an', '-vf', STILL_FILTER, '-f', 'null', '-']);
+  const scan = await runner('ffmpeg', ['-hide_banner', '-nostats', ...input(video), '-an', '-vf', STILL_FILTER, '-f', 'null', '-']);
   if (scan.code === 127) return uncut('ffmpeg is not installed');
   if (scan.code !== 0) return uncut(`ffmpeg could not read the video: ${lastLine(scan.stderr)}`);
   const { duration, stills } = parseStills(scan.stderr);
@@ -241,7 +244,7 @@ export async function cutVideo(video: EvidencePath, spans: readonly EvidenceSpan
   const width = parseWidth(scan.stderr);
   const pulses = taps === null || width === null ? [] : pulsesIn(pieces, taps, width);
   const filter = pulses.length === 0 ? ['-vf', selectFilter(pieces)] : ['-filter_complex', drawnFilter(pieces, pulses, pulseSize(width!)), '-map', '[out]'];
-  const encode = await runner('ffmpeg', ['-hide_banner', '-v', 'error', '-y', '-i', video, '-an', ...filter, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '26', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
+  const encode = await runner('ffmpeg', ['-hide_banner', '-v', 'error', '-y', ...input(video), '-an', ...filter, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '26', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out]);
   if (encode.code !== 0 || !existsSync(out)) return uncut(`ffmpeg could not write the cut: ${lastLine(encode.stderr) || `exit ${encode.code}`}`);
   return { kind: 'cut', path: out, from: duration, to: lengthOf(pieces), pieces, taps: pulses.length };
 }
