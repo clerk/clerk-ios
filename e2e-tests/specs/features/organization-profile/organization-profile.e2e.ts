@@ -1,15 +1,20 @@
 import { randomBytes } from 'node:crypto';
 import { test, expect } from '../../fixtures.ts';
-import type { Screen } from 'e2e';
+import type { Locator, Screen } from 'e2e';
 import type { HostFixture, SeededUser } from '../../support/types.ts';
 
-async function selectTab(screen: Screen, name: string): Promise<void> {
-  const tab = screen.getByRole('tab', { name });
-  await expect(tab).toBeVisible({ timeout: 20_000 });
-  const box = await tab.boundingBox();
-  if (!box) throw new Error(`the ${name} tab has no box`);
-  // agent-device can refuse a tab of this segmented control as covered by another element while it is on screen. A tap at a position skips that check.
-  await tab.tap({ position: { x: box.width / 2, y: box.height / 2 } });
+function atCenter(target: Locator): Locator {
+  const tap = async (): Promise<void> => {
+    await expect(target).toBeVisible({ timeout: 20_000 });
+    const box = await target.boundingBox();
+    if (!box) throw new Error('the target has no box');
+    await target.tap({ position: { x: box.width / 2, y: box.height / 2 } });
+  };
+  return Object.assign(Object.create(target) as Locator, { tap });
+}
+
+async function selectTab(host: HostFixture, screen: Screen, name: string): Promise<void> {
+  await host.tap(atCenter(screen.getByRole('tab', { name })));
   await expect(screen.getByRole('tab', { name, selected: true })).toBeVisible({ timeout: 20_000 });
 }
 
@@ -46,14 +51,14 @@ test('the organization creator opens every row of the organization profile and d
   await expect(screen.getByRole('button', { name: 'Invite' })).toBeVisible();
   await host.screenshot('org-members');
 
-  await selectTab(screen, 'Invitations');
+  await selectTab(host, screen, 'Invitations');
   await expect(screen.getByText('No invitations sent')).toBeVisible({ timeout: 20_000 });
   await host.screenshot('org-invitations-empty');
-  await selectTab(screen, 'Requests');
+  await selectTab(host, screen, 'Requests');
   await expect(screen.getByText('No membership requests')).toBeVisible({ timeout: 20_000 });
   await host.screenshot('org-requests-empty');
-  await selectTab(screen, 'Members');
-  await host.fill(screen.getByRole('textbox'), 'zz-no-such-member');
+  await selectTab(host, screen, 'Members');
+  await host.fill(atCenter(screen.getByRole('textbox')), 'zz-no-such-member');
   await expect(screen.getByText('No members found')).toBeVisible({ timeout: 20_000 });
   await host.screenshot('org-members-no-match');
 
@@ -89,10 +94,10 @@ test('Invite on the Members screen sends an invitation that the Invitations tab 
   const invitee = await host.newEmail();
   await openNewOrganizationProfile(host, screen, user, `Invite ${host.runId} ${randomBytes(3).toString('hex')}`);
   await host.tap(screen.getByRole('button', { name: 'Members' }));
-  await host.tap(screen.getByRole('button', { name: 'Invite' }));
+  await host.tap(atCenter(screen.getByRole('button', { name: 'Invite' })));
   await host.fill(screen.getByRole('textbox', { name: 'Enter email addresses' }), invitee);
   await host.tap(screen.getByRole('button', { name: 'Send invitations' }));
-  await selectTab(screen, 'Invitations');
+  await selectTab(host, screen, 'Invitations');
   await expect(screen.getByText(invitee)).toBeVisible({ timeout: 20_000 });
   await host.screenshot('invitation-sent');
 });
@@ -100,7 +105,6 @@ test('Invite on the Members screen sends an invitation that the Invitations tab 
 test('Update profile renames the organization', async ({ host, screen }) => {
   const user = await host.seedUser();
   const renamed = `Renamed ${host.runId}`;
-  // agent-device's clear leaves the text after the last hyphen in this field, so the old name has no hyphen.
   await openNewOrganizationProfile(host, screen, user, `Rename ${host.runId.replaceAll('-', '')}${randomBytes(3).toString('hex')}`);
   await host.tap(screen.getByRole('button', { name: 'Update profile' }));
   const nameField = screen.getByTestId('clerk.organization.profileForm.name');
@@ -111,6 +115,8 @@ test('Update profile renames the organization', async ({ host, screen }) => {
   await expect(nameField).toHaveValue(renamed);
   await host.tap(screen.getByTestId('clerk.organization.profileForm.submit'));
   await expect(screen.getByTestId('clerk.organization.profileForm.name')).toHaveCount(0, { timeout: 20_000 });
-  await expect(screen.getByText(renamed)).toBeVisible({ timeout: 20_000 });
+  await expect(screen.getByRole('button', { name: 'Update profile' })).toBeVisible();
+  await expect(screen.getByText(renamed)).toHaveCount(1, { timeout: 20_000 });
+  await expect(screen.getByText(renamed)).toBeVisible();
   await host.screenshot('org-renamed');
 });
