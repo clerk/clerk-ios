@@ -486,7 +486,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)], { timeoutMs: CLOSE_BEFORE_RECORDING_MS });
         if (closed.code !== 0) deps.progress(`video   the app could not be closed before the recording, so the video may open on the screen it was showing: ${redact(closed.stderr.trim() || closed.stdout.trim())}`);
         const recording = await backend.startRecording(lease, dir);
-        const startedAt = Date.now();
+        const startedAt = recording.videoStartsAt ?? Date.now();
         if (recording.process === null) return { recording, recorderEntry: null, startedAt };
         const recorderEntry = newEntryId();
         workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString(), platform });

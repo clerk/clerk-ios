@@ -336,6 +336,14 @@ describe('a run whose spec files declare different settings', () => {
       assert.equal(next, `{cli} attach ${record.run} --pr <n> --video, and add --before <run-id> when the change is to something that exists`);
     });
 
+    it('times the marks from the first frame when the recorder reports it, as the Android recorder does', async () => {
+      const r = recorded({ launches: true });
+      r.backend.startRecording = async (_lease, into) => ({ process: null, videoStartsAt: Date.now() - 2_000, stop: async () => (writeFileSync(join(into, 'video.mp4'), 'frames'), join(into, 'video.mp4') as EvidencePath) });
+      const { record } = await runVerb(r.deps, { ...RUN_ALL, selection: { selectors: ['auth-start'] }, video: true });
+      const [span] = record.evidenceSpans ?? [];
+      assert.ok(span !== undefined && span.from >= 2 && span.from < 2.5, JSON.stringify(span));
+    });
+
     it('keeps each host.tap in seconds of the video, from when it was sent when the video shows no change at the control, with the size of the screen the points are in', async () => {
       const r = recorded({ launches: true, taps: true });
       const snapshot = JSON.stringify({ success: true, data: { viewport: { width: 420, height: 912 }, nodes: [] } });
