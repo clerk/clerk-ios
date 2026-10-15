@@ -21,7 +21,7 @@ Preconditions:
 
 - **Create.** Run `e2e-tests/bin/control-clerk-ios run organizations`. The launch lands on the home with the user's email and user ID. The spec taps the switcher, which reads `Personal account` while no organization is active, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `Verify <runId> <suffix>`, and taps `clerk.organization.profileForm.submit`.
 - **Skip invites.** The spec taps `Skip` on the invite step, waits for the home to show the same user again, and expects the organization name on the switcher and no `Personal account`. Screenshot `org-created`.
-- **Proof.** The screenshot shows the switcher with the new organization's name under the user's email.
+- **Proof.** `specs/features/organizations/create-from-switcher.e2e.ts` passes, and the screenshot shows the switcher with the new organization's name under the user's email.
 
 ## Gotchas
 
