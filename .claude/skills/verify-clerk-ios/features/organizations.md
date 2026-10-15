@@ -28,3 +28,5 @@ Preconditions:
 - The switcher label has no SDK identifier. The spec taps its visible text, `Personal account`.
 - `host.expectSignedInAs` waits for the switcher's sheet to close.
 - The invite step appears only when the organization allows more than one member. The standard settings allow three.
+- The slug of an organization comes from its name, and Clerk refuses a second organization with the same slug in the instance with "That slug is taken. Please try another." Every test in a run shares the run id, so another spec that creates an organization in the same run names it differently, as `organization-profile` does.
+- With an organization active, a tap on the switcher opens a sheet with `Manage` and `Switch account` instead of the account list. [Organization profile](./organization-profile.md) covers that sheet and the profile behind `Manage`.
