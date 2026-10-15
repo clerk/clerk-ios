@@ -141,7 +141,7 @@ describe('the jobs of the shared checks', () => {
 });
 
 describe('the runners of the macOS jobs', () => {
-  it('are Blacksmith macOS runners in every workflow but the remote session, which runs on the label its request names', () => {
+  it('are Blacksmith macOS runners in every workflow but the release publish and the docs deploy, which hold push and Pages tokens and stay on GitHub, and the remote session, which runs on the label its request names', () => {
     const runners = globSync('*.yml', { cwd: WORKFLOWS })
       .sort()
       .flatMap((file) => {
@@ -162,10 +162,10 @@ describe('the runners of the macOS jobs', () => {
 
     assert.deepEqual(Object.fromEntries(runners), {
       'checks.yml checks': 'blacksmith-6vcpu-macos-26',
-      'docs.yml deploy': 'blacksmith-6vcpu-macos-26',
+      'docs.yml deploy': 'macos-26',
       'nightly-checks.yml checks': 'blacksmith-6vcpu-macos-26',
       'release-sdk.yml checks': 'blacksmith-6vcpu-macos-26',
-      'release-sdk.yml publish': 'blacksmith-6vcpu-macos-26',
+      'release-sdk.yml publish': 'macos-26',
       'run-pr-ci.yml pr-checks': 'blacksmith-6vcpu-macos-26',
       'shared-checks.yml format-and-lint': 'blacksmith-6vcpu-macos-26',
       'shared-checks.yml test': 'blacksmith-6vcpu-macos-26',
@@ -475,9 +475,53 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     return shared.slice(start, start + 1 + shared.slice(start + 1).search(/^ {2}\S/m));
   };
   const caches = {
-    test: { restore: 'Restore the SwiftPM build of the last main push', save: 'Save the SwiftPM build for later runs' },
-    'test-ui': { restore: 'Restore the Xcode build of the last main push', save: 'Save the Xcode build for later runs' },
+    test: { name: 'Name the SwiftPM build cache', restore: 'Restore the SwiftPM build of the last main push', save: 'Save the SwiftPM build for later runs' },
+    'test-ui': { name: 'Name the Xcode build cache', restore: 'Restore the Xcode build of the last main push', save: 'Save the Xcode build for later runs' },
   };
+  const runsWhen = (step: string, event: string, savedToday: string): boolean =>
+    new Function('github', 'steps', `return ${(/^ {8}if: (.+)$/m.exec(step)?.[1] ?? 'true').replace(/steps\.([\w-]+)\.outputs\.([\w-]+)/g, "steps['$1'].outputs['$2']")};`)({ event_name: event }, { 'saved-today': { outputs: { 'cache-matched-key': savedToday } } }) as boolean;
+
+  it('save at most one build of each job a day, under a key that the PR CI restore finds by its prefix', () => {
+    const daily = (job: keyof typeof caches) => {
+      const steps = jobBlock(job).split(/\n(?= {6}- name: )/);
+      const step = (name: string): string => steps.find((candidate) => candidate.includes(`- name: ${name}\n`)) ?? assert.fail(`no step ${name} in ${job}`);
+      const work = mkdtempSync(join(tmpdir(), 'build-cache-name-'));
+      mkdirSync(join(work, 'bin'));
+      writeFileSync(join(work, 'bin', 'xcodebuild'), '#!/bin/bash\nprintf "Xcode 26.6\\nBuild version 17F113\\n"\n', { mode: 0o755 });
+      writeFileSync(join(work, 'bin', 'date'), '#!/bin/bash\n[ "$*" = "-u +%F" ] && echo 2026-10-15\n', { mode: 0o755 });
+      writeFileSync(join(work, 'output'), '');
+      const ran = spawnSync('bash', ['-ec', script(caches[job].name, jobBlock(job)).replaceAll('${{ runner.arch }}', 'ARM64')], {
+        env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, GITHUB_OUTPUT: join(work, 'output') },
+        encoding: 'utf8',
+        timeout: 20_000,
+      });
+      assert.equal(ran.status, 0, ran.stderr);
+      const outputs = Object.fromEntries(readFileSync(join(work, 'output'), 'utf8').trim().split('\n').map((line) => line.split('=') as [string, string]));
+      rmSync(work, { recursive: true, force: true });
+      const resolve = (text: string | undefined): string | undefined => text?.replace(/\$\{\{ steps\.build-cache\.outputs\.(\w+) \}\}/g, (_, name: string) => outputs[name]!).replaceAll('${{ github.sha }}', 'SHA');
+      const lookup = step('Look for a build that main saved today');
+      const savedKey = resolve(/^ {10}key: (.+)$/m.exec(step(caches[job].save))?.[1])!;
+      return {
+        saved: savedKey,
+        foundByPrCi: savedKey.startsWith(resolve(/^ {10}restore-keys: (.+)$/m.exec(step(caches[job].restore))?.[1])!),
+        lookup: { key: resolve(/^ {10}key: (.+)$/m.exec(lookup)?.[1]), prefix: resolve(/^ {10}restore-keys: (.+)$/m.exec(lookup)?.[1]), downloads: !/^ {10}lookup-only: true$/m.test(lookup) },
+        lookupRunsOn: ['push', 'issue_comment', 'schedule', 'workflow_dispatch'].filter((event) => runsWhen(lookup, event, '')),
+        savesWhenTodayHas: { nothing: runsWhen(step(caches[job].save), 'push', ''), aBuild: runsWhen(step(caches[job].save), 'push', `${outputs.today}OLDER`) },
+      };
+    };
+    const expected = (prefix: string) => ({
+      saved: `${prefix}2026-10-15-SHA`,
+      foundByPrCi: true,
+      lookup: { key: `${prefix}2026-10-15-SHA`, prefix: `${prefix}2026-10-15-`, downloads: false },
+      lookupRunsOn: ['push'],
+      savesWhenTodayHas: { nothing: true, aBuild: false },
+    });
+
+    assert.deepEqual(
+      { test: daily('test'), 'test-ui': daily('test-ui') },
+      { test: expected('clerkkit-swiftpm-build-ARM64-Xcode-26.6-Build-version-17F113-'), 'test-ui': expected('clerkkitui-derived-data-ARM64-Xcode-26.6-Build-version-17F113-') },
+    );
+  });
 
   it('give each tracked file a modification time from its content in both jobs, so a restored build sees only changed files as changed', () => {
     const stamped = (job: string): number[] => {
@@ -516,9 +560,7 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     const events = (job: keyof typeof caches) => {
       const steps = jobBlock(job).split(/\n(?= {6}- name: )/);
       const step = (name: string): string => steps.find((candidate) => candidate.includes(`- name: ${name}\n`)) ?? assert.fail(`no step ${name} in ${job}`);
-      const runsOn = (name: string, event: string): boolean => new Function('github', `return ${/^ {8}if: (.+)$/m.exec(step(name))?.[1] ?? 'true'};`)({ event_name: event }) as boolean;
-      const restoreKeys = /^ {10}restore-keys: (.+)$/m.exec(step(caches[job].restore))?.[1];
-      assert.equal(/^ {10}key: (.+)$/m.exec(step(caches[job].save))?.[1], `${restoreKeys}\${{ github.sha }}`);
+      const runsOn = (name: string, event: string): boolean => runsWhen(step(name), event, '');
       return Object.fromEntries(
         entryPoints('shared-checks.yml').map(([caller, callerEvents]) => [
           caller,

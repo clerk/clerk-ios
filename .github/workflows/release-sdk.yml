@@ -291,7 +291,7 @@ jobs:
       - e2e-tests
       - report-manual-ci
     if: always() && needs.prepare-release.result == 'success' && needs.checks.result == 'success' && needs.e2e-tests.result == 'success' && (needs.prepare-release.outputs.version_already_set == 'true' || needs.report-manual-ci.result == 'success')
-    runs-on: blacksmith-6vcpu-macos-26
+    runs-on: macos-26
     env:
       RELEASE_VERSION: ${{ inputs.version }}
 
