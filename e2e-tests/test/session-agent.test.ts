@@ -608,7 +608,7 @@ describe('session agent', () => {
   it('stops reading the recorder once it says it is recording, so a long recording does not pile its output up in the agent', async () => {
     const recorder = spawn(process.execPath, ['-e', "console.log('Recording started'); setTimeout(() => console.error('x'.repeat(100_000)), 100)"], { stdio: ['ignore', 'pipe', 'pipe'] });
     const closed = new Promise<number | null>((done) => recorder.on('close', done));
-    assert.deepEqual(await printed(recorder, 'recording started', 5_000), { exited: false, output: 'Recording started\n' });
+    assert.deepEqual(await printed(recorder, 'recording started', 5_000), { outcome: 'printed', output: 'Recording started\n' });
     assert.equal(await closed, 0);
     assert.deepEqual([recorder.stdout?.listenerCount('data'), recorder.stderr?.listenerCount('data')], [0, 0]);
   });
