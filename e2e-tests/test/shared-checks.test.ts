@@ -114,7 +114,8 @@ describe('the jobs of the shared checks', () => {
       .split(/\n(?= {2}[\w-]+:\n)/)
       .slice(1)
       .map((job) => {
-        const block = /^ {4}needs:(?: (.+)$|\n((?: {6}- [\w-]+\n?)+))/m.exec(job);
+        const block = /^ {4}needs:(?: (.+)$|\n((?: +- [\w-]+\n?)+))/m.exec(job);
+        assert.equal(block === null, !/^ {4}needs:/m.test(job), `the needs of this job are a scalar or a list of job names:\n${job}`);
         const needs = block?.[1] !== undefined ? block[1].replace(/^\[(.*)\]$/, '$1').split(',') : (block?.[2] ?? '').split('\n');
         return [/^ {2}([\w-]+):/.exec(job)![1]!, needs.map((need) => need.replace(/^\s*- /, '').trim()).filter(Boolean)];
       }),
