@@ -1,7 +1,7 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, globSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -292,6 +292,94 @@ describe('the nightly checks and the release', () => {
       ['true', 'true'],
     );
     assert.match(read('nightly-checks.yml'), /^ {6}CLERK_TEST_KEYS_JSON: \$\{\{ secrets\.CLERK_TEST_KEYS_JSON \}\}$/m);
+  });
+});
+
+describe('the ClerkKitUI job', () => {
+  const job = shared.slice(shared.indexOf('  test-ui:\n'), shared.indexOf('  build:\n'));
+
+  it('give each tracked file a modification time from its content, so a restored build sees only changed files as changed', () => {
+    const repo = mkdtempSync(join(tmpdir(), 'clerkkitui-times-'));
+    const git = (...args: string[]): void => {
+      const ran = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', ...args], { cwd: repo, encoding: 'utf8' });
+      assert.equal(ran.status, 0, ran.stderr);
+    };
+    git('init', '-q');
+    mkdirSync(join(repo, 'Sources'));
+    writeFileSync(join(repo, 'Sources', 'Same.swift'), 'hello\n');
+    writeFileSync(join(repo, 'Sources', 'Changed.swift'), 'world\n');
+    symlinkSync('Same.swift', join(repo, 'Sources', 'ZLink.swift'));
+    git('add', '-A');
+    git('commit', '-q', '-m', 'sources');
+
+    const stamped = spawnSync('bash', ['-c', script('Give each file a modification time from its content')], { cwd: repo, encoding: 'utf8', timeout: 20_000 });
+    assert.equal(stamped.status, 0, stamped.stderr);
+    const seconds = (file: string): number => statSync(join(repo, 'Sources', file)).mtimeMs / 1000;
+    assert.deepEqual([seconds('Same.swift'), seconds('Changed.swift'), seconds('ZLink.swift')], [1162696418, 1160997964, 1162696418]);
+    rmSync(repo, { recursive: true, force: true });
+  });
+
+  it('restore a build only in PR CI and save one only from a push to main, so main, the nightly and the release always build from scratch', () => {
+    const entryPoints = (file: string): [string, string[]][] => {
+      const on = /^on:\n((?: {2}.*\n|\n)*)/m.exec(read(file))?.[1] ?? '';
+      const events = [...on.matchAll(/^ {2}([\w-]+):/gm)].map((match) => match[1]!);
+      if (!events.includes('workflow_call')) return [[file, events]];
+      return globSync('*.yml', { cwd: WORKFLOWS })
+        .filter((caller) => read(caller).includes(`uses: ./.github/workflows/${file}`))
+        .flatMap(entryPoints);
+    };
+    const steps = job.split(/\n(?= {6}- name: )/);
+    const step = (name: string): string => steps.find((candidate) => candidate.includes(`- name: ${name}\n`)) ?? assert.fail(`no step ${name}`);
+    const runsOn = (name: string, event: string): boolean => new Function('github', `return ${/^ {8}if: (.+)$/m.exec(step(name))?.[1] ?? 'true'};`)({ event_name: event }) as boolean;
+    const callers = Object.fromEntries(
+      entryPoints('shared-checks.yml').map(([caller, events]) => [
+        caller,
+        {
+          restores: events.filter((event) => runsOn('Restore the Xcode build of the last main push', event)),
+          saves: events.filter((event) => runsOn('Save the Xcode build for later runs', event)),
+        },
+      ]),
+    );
+
+    assert.deepEqual(callers, {
+      'checks.yml': { restores: [], saves: ['push'] },
+      'manual-pr-ci.yml': { restores: ['issue_comment', 'status', 'pull_request_target', 'workflow_run'], saves: [] },
+      'nightly-checks.yml': { restores: [], saves: [] },
+      'release-sdk.yml': { restores: [], saves: [] },
+    });
+    const restoreKeys = /^ {10}restore-keys: (.+)$/m.exec(step('Restore the Xcode build of the last main push'))?.[1];
+    assert.equal(/^ {10}key: (.+)$/m.exec(step('Save the Xcode build for later runs'))?.[1], `${restoreKeys}\${{ github.sha }}`);
+  });
+
+  it('delete the older builds on main once a push saved its own, and delete none when the push saved nothing', () => {
+    const sha = 'c'.repeat(40);
+    const prefix = 'clerkkitui-derived-data-ARM64-Xcode-26.6-Build-version-17F113-';
+    const deleted = (saved: string[]): string[] => {
+      const work = mkdtempSync(join(tmpdir(), 'clerkkitui-cleanup-'));
+      mkdirSync(join(work, 'bin'));
+      writeFileSync(join(work, 'deleted'), '');
+      writeFileSync(
+        join(work, 'bin', 'gh'),
+        `#!/bin/bash\ncase "$1 $2" in\n  'cache list') printf '%s\\n' ${saved.map((key) => `'${key}'`).join(' ')} ;;\n  'cache delete') echo "$3" >> '${work}/deleted' ;;\n  *) exit 1 ;;\nesac\n`,
+        { mode: 0o755 },
+      );
+      const ran = spawnSync('bash', ['-c', script('Delete the older saved builds', read('checks.yml'))], {
+        env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, GITHUB_REPOSITORY: 'clerk/clerk-ios', GITHUB_REF: 'refs/heads/main', GITHUB_SHA: sha },
+        encoding: 'utf8',
+        timeout: 20_000,
+      });
+      assert.equal(ran.status, 0, ran.stderr);
+      const keys = readFileSync(join(work, 'deleted'), 'utf8').split('\n').filter(Boolean);
+      rmSync(work, { recursive: true, force: true });
+      return keys;
+    };
+
+    assert.deepEqual(deleted([`${prefix}${'a'.repeat(40)}`, `${prefix}${sha}`, `clerkkitui-derived-data-ARM64-Xcode-26.0-Build-version-17A324-${'b'.repeat(40)}`]), [
+      `${prefix}${'a'.repeat(40)}`,
+      `clerkkitui-derived-data-ARM64-Xcode-26.0-Build-version-17A324-${'b'.repeat(40)}`,
+    ]);
+    assert.deepEqual(deleted([`${prefix}${sha}`]), []);
+    assert.deepEqual(deleted([`${prefix}${'a'.repeat(40)}`]), []);
   });
 });
 

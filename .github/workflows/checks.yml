@@ -18,3 +18,25 @@ jobs:
     uses: ./.github/workflows/shared-checks.yml
     with:
       build_platforms: '["iOS", "macOS"]'
+
+  delete-replaced-builds:
+    name: Delete the ClerkKitUI builds this push replaced
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete the older saved builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          keys="$(gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key clerkkitui-derived-data- --limit 100 --json key --jq '.[].key')"
+          if ! grep -q -- "-$GITHUB_SHA\$" <<< "$keys"; then
+            echo "::notice::No ClerkKitUI build was saved for $GITHUB_SHA, so none is deleted."
+            exit 0
+          fi
+          while IFS= read -r key; do
+            [ -z "$key" ] || [[ "$key" == *"-$GITHUB_SHA" ]] || gh cache delete "$key" --repo "$GITHUB_REPOSITORY"
+          done <<< "$keys"
