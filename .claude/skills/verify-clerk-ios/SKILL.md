@@ -213,11 +213,11 @@ On a remote device, the before run needs a session of its own, started on the ba
 ```console
 $ git switch -c <branch>-before "$(git merge-base origin/main HEAD)"
 $ git push origin <branch>-before
-$ e2e-tests/bin/control-clerk-ios up
+$ e2e-tests/bin/control-clerk-ios up --backend remote
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
 $ e2e-tests/bin/control-clerk-ios down
 $ git switch <branch>
-$ e2e-tests/bin/control-clerk-ios up
+$ e2e-tests/bin/control-clerk-ios up --backend remote
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
 $ e2e-tests/bin/control-clerk-ios down
