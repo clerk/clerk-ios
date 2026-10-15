@@ -245,3 +245,48 @@ describe('the list of pull requests in the message about a failed nightly run', 
     await assert.rejects(message({ fetch: refusing }, 'a2'), /\/commits\/6132f{36}\/pulls answered 403: Resource not accessible by integration/);
   });
 });
+
+describe('the gates named in the message about a blocked release', () => {
+  const GATES = ['verify=unit tests and lint', 'integration-test=integration tests', 'paparazzi-verify=Paparazzi screenshot tests'];
+
+  async function blocked(results, release = 'v1.2.3') {
+    let written = '';
+    const needs = Object.fromEntries(Object.entries(results).map(([job, result]) => [job, { result, outputs: {} }]));
+    await main(['--release', ...GATES], { NEEDS: JSON.stringify(needs), RELEASE: release }, { out: { write: text => (written += text) } });
+    return written;
+  }
+
+  it('names the release and the gate that failed', async () => {
+    assert.equal(await blocked({ verify: 'success', 'integration-test': 'success', 'paparazzi-verify': 'failure' }), 'v1.2.3 release blocked: Paparazzi screenshot tests failed\n');
+  });
+
+  it('names every gate that failed, in the order the workflow gives them', async () => {
+    assert.equal(
+      await blocked({ verify: 'failure', 'integration-test': 'failure', 'paparazzi-verify': 'failure' }),
+      'v1.2.3 release blocked: unit tests and lint, integration tests, and Paparazzi screenshot tests failed\n',
+    );
+  });
+
+  it('says a gate that ran out of time or was cancelled got cancelled or timed out, not that it failed', async () => {
+    assert.equal(await blocked({ verify: 'success', 'integration-test': 'cancelled', 'paparazzi-verify': 'success' }), 'v1.2.3 release blocked: integration tests got cancelled or timed out\n');
+  });
+
+  it('names the gates that failed and then the gates that got cancelled or timed out', async () => {
+    assert.equal(
+      await blocked({ verify: 'cancelled', 'integration-test': 'failure', 'paparazzi-verify': 'cancelled' }),
+      'v1.2.3 release blocked: integration tests failed; unit tests and lint and Paparazzi screenshot tests got cancelled or timed out\n',
+    );
+  });
+
+  it('escapes the release for Slack, and leaves it out when there is none', async () => {
+    const failed = { verify: 'failure', 'integration-test': 'success', 'paparazzi-verify': 'success' };
+    assert.deepEqual(
+      [await blocked(failed, 'v1.2.3-<b>&<a>'), await blocked(failed, '')],
+      ['v1.2.3-&lt;b&gt;&amp;&lt;a&gt; release blocked: unit tests and lint failed\n', 'release blocked: unit tests and lint failed\n'],
+    );
+  });
+
+  it('fails when every gate passed or was skipped, so the alert does not name a gate that did not stop the release', async () => {
+    await assert.rejects(blocked({ verify: 'success', 'integration-test': 'skipped', 'paparazzi-verify': 'success' }), /no gate failed or was cancelled/);
+  });
+});

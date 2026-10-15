@@ -117,10 +117,31 @@ async function nightlyFailureMessage({ fetch, api, token, repo, sha, runId, sour
   return sinceLastPass(passing, await mergedPullRequests(get, shas));
 }
 
+const listed = labels => (labels.length < 3 ? labels.join(' and ') : `${labels.slice(0, -1).join(', ')}, and ${labels.at(-1)}`);
+
+function blockedRelease(gates, needs, release) {
+  const ended = result => gates.filter(({ job }) => needs[job]?.result === result).map(({ label }) => label);
+  const reasons = [
+    [ended('failure'), 'failed'],
+    [ended('cancelled'), 'got cancelled or timed out'],
+  ]
+    .filter(([labels]) => labels.length > 0)
+    .map(([labels, verb]) => `${listed(labels)} ${verb}`);
+  if (reasons.length === 0) {
+    throw new Error(`no gate failed or was cancelled: ${JSON.stringify(needs)}`);
+  }
+  return `${release ? `${mrkdwn(release)} ` : ''}release blocked: ${reasons.join('; ')}`;
+}
+
 async function main(args, env, { fetch = globalThis.fetch, out = process.stdout } = {}) {
+  if (args[0] === '--release') {
+    const gates = args.slice(1).map(arg => ({ job: arg.slice(0, arg.indexOf('=')), label: arg.slice(arg.indexOf('=') + 1) }));
+    out.write(`${blockedRelease(gates, JSON.parse(env.NEEDS ?? '{}'), env.RELEASE ?? '')}\n`);
+    return;
+  }
   const missing = ['GITHUB_REPOSITORY', 'GITHUB_SHA', 'GITHUB_RUN_ID', 'GITHUB_TOKEN'].filter(name => !env[name]);
   if (args.length === 0 || missing.length > 0) {
-    throw new Error(`usage: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_RUN_ID and GITHUB_TOKEN set (missing: ${missing.join(', ') || 'none'}); nightly-failure-message.mjs <workflow file>[=<job that runs the checks>]...`);
+    throw new Error(`usage: GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_RUN_ID and GITHUB_TOKEN set (missing: ${missing.join(', ') || 'none'}); nightly-failure-message.mjs <workflow file>[=<job that runs the checks>]..., or NEEDS and RELEASE set and nightly-failure-message.mjs --release <gate job>=<its name in the message>...`);
   }
   const message = await nightlyFailureMessage({
     fetch,

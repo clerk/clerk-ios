@@ -295,6 +295,110 @@ describe('the nightly checks and the release', () => {
   });
 });
 
+describe('the alert about a blocked release', () => {
+  const release = read('release-sdk.yml');
+  const jobs = release.slice(release.indexOf('\njobs:\n')).split(/\n(?= {2}[\w-]+:\n)/).slice(1);
+  const alert = jobs.find((text) => text.startsWith('  notify-blocked-release:\n')) ?? '';
+  const RUN = '<https://github.com/clerk/clerk-ios/actions/runs/123|View the run>';
+
+  function posts(needs: Readonly<Record<string, string>>, stopped = false): boolean {
+    const written = (/^ {4}if: >-\n((?: {6}.+\n)+)/m.exec(alert)?.[1] ?? /^ {4}if: (.+)$/m.exec(alert)?.[1] ?? 'true').replace(/\s+/g, ' ').trim();
+    const results = Object.values(needs);
+    const expression = (/\b(?:always|success|failure|cancelled)\(\)/.test(written) ? written : `success() && (${written})`)
+      .replaceAll('always()', 'true')
+      .replaceAll('success()', String(!stopped && results.every((result) => result === 'success')))
+      .replaceAll('failure()', String(results.includes('failure')))
+      .replaceAll('cancelled()', String(stopped))
+      .replace(/contains\(needs\.\*\.result, '(\w+)'\)/g, (_, result: string) => String(results.includes(result)))
+      .replace(/needs\.([\w-]+)\.result/g, (_, job: string) => JSON.stringify(needs[job] ?? ''))
+      .replaceAll("'", '"')
+      .replaceAll(' != ', ' !== ')
+      .replaceAll(' == ', ' === ');
+    return new Function(`return ${expression};`)() as boolean;
+  }
+
+  function notified(webhook: string, needs: Readonly<Record<string, string>>, withScript = true): { status: number | null; stdout: string; posted: unknown } {
+    const work = mkdtempSync(join(tmpdir(), 'release-blocked-'));
+    mkdirSync(join(work, 'bin'));
+    mkdirSync(join(work, '.github', 'scripts'), { recursive: true });
+    if (withScript) writeFileSync(join(work, '.github', 'scripts', 'nightly-failure-message.mjs'), readFileSync(join(WORKFLOWS, '..', 'scripts', 'nightly-failure-message.mjs')));
+    writeFileSync(join(work, 'bin', 'curl'), `#!/bin/sh\nwhile [ "$#" -gt 1 ]; do [ "$1" = --data ] && printf '%s' "$2" > "${work}/posted"; shift; done\necho "$1" > "${work}/url"\n`, { mode: 0o755 });
+    const ran = spawnSync('bash', ['-c', script('Notify Slack', release)], {
+      cwd: work,
+      env: {
+        PATH: `${join(work, 'bin')}:${process.env.PATH}`,
+        SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: webhook,
+        RELEASE_VERSION: '1.2.3',
+        NEEDS: JSON.stringify(Object.fromEntries(Object.entries(needs).map(([job, result]) => [job, { result, outputs: {} }])), null, 2),
+        GITHUB_SERVER_URL: 'https://github.com',
+        GITHUB_REPOSITORY: 'clerk/clerk-ios',
+        GITHUB_RUN_ID: '123',
+      },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+    let posted: unknown = null;
+    try {
+      posted = { url: readFileSync(join(work, 'url'), 'utf8').trim(), text: JSON.parse(readFileSync(join(work, 'posted'), 'utf8')).text };
+    } catch {}
+    rmSync(work, { recursive: true, force: true });
+    return { status: ran.status, stdout: ran.stdout, posted };
+  }
+
+  it('post to Slack when a gate fails or is cancelled, and not when the gates pass, when no gate ran, or when a person cancels the run before a gate fails', () => {
+    assert.deepEqual(
+      [
+        posts({ 'start-manual-ci': 'success', checks: 'failure', 'e2e-tests': 'success' }),
+        posts({ 'start-manual-ci': 'skipped', checks: 'success', 'e2e-tests': 'failure' }),
+        posts({ 'start-manual-ci': 'failure', checks: 'skipped', 'e2e-tests': 'success' }),
+        posts({ 'start-manual-ci': 'success', checks: 'cancelled', 'e2e-tests': 'success' }),
+        posts({ 'start-manual-ci': 'success', checks: 'failure', 'e2e-tests': 'cancelled' }, true),
+        posts({ 'start-manual-ci': 'success', checks: 'success', 'e2e-tests': 'success' }),
+        posts({ 'start-manual-ci': 'skipped', checks: 'success', 'e2e-tests': 'success' }),
+        posts({ 'start-manual-ci': 'skipped', checks: 'skipped', 'e2e-tests': 'skipped' }),
+        posts({ 'start-manual-ci': 'success', checks: 'cancelled', 'e2e-tests': 'cancelled' }, true),
+      ],
+      [true, true, true, true, true, false, false, false, false],
+    );
+  });
+
+  it('wait for the gates alone, read only the repository contents, and hold up no job of the release', () => {
+    assert.deepEqual(
+      {
+        needs: (/^ {4}needs:\n((?: {6}- .+\n)+)/m.exec(alert)?.[1] ?? '').trim().split('\n').map((line) => line.trim()),
+        permissions: (/^ {4}permissions:\n((?: {6}[\w-]+: \w+\n)+)/m.exec(alert)?.[1] ?? '').trim().split('\n').map((line) => line.trim()),
+        waiting: jobs.filter((text) => /^ {4}needs:(?:.|\n {6}- )*\bnotify-blocked-release\b/m.test(text)).length,
+      },
+      { needs: ['- start-manual-ci', '- checks', '- e2e-tests'], permissions: ['contents: read'], waiting: 0 },
+    );
+  });
+
+  it('post a message that names the repository, the version and the gates that failed, and links the run', () => {
+    assert.deepEqual(notified('https://hooks.slack.test/T/B/x', { 'start-manual-ci': 'success', checks: 'failure', 'e2e-tests': 'failure' }), {
+      status: 0,
+      stdout: '',
+      posted: { url: 'https://hooks.slack.test/T/B/x', text: `:red_circle: clerk/clerk-ios 1.2.3 release blocked: shared checks and end-to-end tests failed · ${RUN}` },
+    });
+  });
+
+  it('still name the repository and link the run when the script cannot name the release or the gates', () => {
+    assert.deepEqual(notified('https://hooks.slack.test/T/B/x', { 'start-manual-ci': 'success', checks: 'failure', 'e2e-tests': 'success' }, false), {
+      status: 0,
+      stdout: '::warning::Could not name the release or the gates that stopped it; the message names neither\n',
+      posted: { url: 'https://hooks.slack.test/T/B/x', text: `:red_circle: clerk/clerk-ios release blocked · ${RUN}` },
+    });
+  });
+
+  it('skip the Slack message with a warning when the repository has no webhook', () => {
+    assert.deepEqual(notified('', { checks: 'failure' }), { status: 0, stdout: '::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification\n', posted: null });
+  });
+
+  it('retry the post as the nightly alert does, since a second message costs less than a lost one', () => {
+    const post = (text: string): string => text.slice(text.indexOf('curl '));
+    assert.equal(post(script('Notify Slack', release)), post(script('Notify Slack', read('nightly-checks.yml'))));
+  });
+});
+
 describe('the ClerkKitUI job', () => {
   const job = shared.slice(shared.indexOf('  test-ui:\n'), shared.indexOf('  build:\n'));
 
