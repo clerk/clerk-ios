@@ -33,7 +33,7 @@ env:
 jobs:
   store:
     name: Store E2EHost and the XCTest runner for verify-remote sessions
-    runs-on: ${{ vars.VERIFY_CI_RUNNER || 'xcode-27' }}
+    runs-on: ${{ vars.VERIFY_CI_RUNNER || 'blacksmith-6vcpu-macos-27' }}
     timeout-minutes: 60
     steps:
       - name: Checkout repository
