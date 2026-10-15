@@ -495,8 +495,10 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     assert.deepEqual({ test: events('test'), 'test-ui': events('test-ui') }, { test: prCiRestoresMainSaves, 'test-ui': prCiRestoresMainSaves });
   });
 
-  it('delete the older builds of each job on main once a push saved its own, and delete none of a job whose push saved nothing', () => {
+  it('keep only the newest build of each job on main once a push saved its own, and delete none of a job whose push saved nothing', () => {
     const sha = 'c'.repeat(40);
+    const newer = 'd'.repeat(40);
+    const gone = 'e'.repeat(40);
     const ui = 'clerkkitui-derived-data-ARM64-Xcode-26.6-Build-version-17F113-';
     const macOS = 'clerkkit-swiftpm-build-ARM64-Xcode-26.6-Build-version-17F113-';
     const deleted = (saved: string[]): string[] => {
@@ -507,8 +509,8 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
         join(work, 'bin', 'gh'),
         `#!/bin/bash
 case "$1 $2" in
-  'cache list') while [ $# -gt 0 ]; do [ "$1" = --key ] && prefix=$2; shift; done; printf '%s\\n' ${saved.map((key) => `'${key}'`).join(' ')} | grep -- "^$prefix" || true ;;
-  'cache delete') echo "$3" >> '${work}/deleted' ;;
+  'cache list') order=tac; while [ $# -gt 0 ]; do [ "$1" = --key ] && prefix=$2; [ "$1 $2 $3 $4" = '--sort created_at --order desc' ] && order=cat; shift; done; printf '%s\\n' ${saved.map((key) => `'${key}'`).join(' ')} | grep -- "^$prefix" | $order || true ;;
+  'cache delete') [[ "$3" == *${gone} ]] && exit 1; echo "$3" >> '${work}/deleted' ;;
   *) exit 1 ;;
 esac
 `,
@@ -522,18 +524,20 @@ esac
       assert.equal(ran.status, 0, ran.stderr);
       const keys = readFileSync(join(work, 'deleted'), 'utf8').split('\n').filter(Boolean);
       rmSync(work, { recursive: true, force: true });
-      return keys;
+      return keys.sort();
     };
     const olderXcode = (prefix: string): string => `${prefix.replace('26.6-Build-version-17F113', '26.0-Build-version-17A324')}${'b'.repeat(40)}`;
 
-    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${ui}${sha}`, olderXcode(ui), `${macOS}${'a'.repeat(40)}`, `${macOS}${sha}`, olderXcode(macOS)]), [
+    assert.deepEqual(deleted([`${ui}${sha}`, `${ui}${'a'.repeat(40)}`, olderXcode(ui), `${macOS}${sha}`, `${macOS}${'a'.repeat(40)}`, olderXcode(macOS)]), [
       `${ui}${'a'.repeat(40)}`,
       olderXcode(ui),
       `${macOS}${'a'.repeat(40)}`,
       olderXcode(macOS),
-    ]);
-    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${ui}${sha}`, `${macOS}${'a'.repeat(40)}`]), [`${ui}${'a'.repeat(40)}`]);
-    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${macOS}${'a'.repeat(40)}`, `${macOS}${sha}`]), [`${macOS}${'a'.repeat(40)}`]);
+    ].sort());
+    assert.deepEqual(deleted([`${ui}${sha}`, `${ui}${'a'.repeat(40)}`, `${macOS}${'a'.repeat(40)}`]), [`${ui}${'a'.repeat(40)}`]);
+    assert.deepEqual(deleted([`${ui}${'a'.repeat(40)}`, `${macOS}${sha}`, `${macOS}${'a'.repeat(40)}`]), [`${macOS}${'a'.repeat(40)}`]);
+    assert.deepEqual(deleted([`${ui}${newer}`, `${ui}${sha}`, `${macOS}${newer}`, `${macOS}${sha}`]), [`${ui}${sha}`, `${macOS}${sha}`].sort());
+    assert.deepEqual(deleted([`${ui}${sha}`, `${ui}${gone}`, `${macOS}${sha}`, `${macOS}${'a'.repeat(40)}`]), [`${macOS}${'a'.repeat(40)}`]);
     assert.deepEqual(deleted([`${ui}${sha}`, `${macOS}${sha}`]), []);
   });
 });
