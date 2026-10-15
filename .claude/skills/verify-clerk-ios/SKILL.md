@@ -172,7 +172,7 @@ Choose screenshots or the video by what changed. A still change, such as wording
 
 Choose before and after, or after only, by whether the thing existed. A change to something that exists shows what it replaced, so add `--before <run-id>`. Something new has no before, so leave the flag out.
 
-To make the before run, `run` the spec of your change on the build without the change, before you make the change. That run can fail, and a failed run is a good before: a spec that expects the new wording fails on the old build. `attach` pairs each screenshot with the screenshot of the same label in the before run. When the before run failed before it took that screenshot, `attach` uses that run's failure screenshot. With `--video` it pairs the two videos. The before run must be in `.verify/runs/` of this checkout.
+To make the before run, `run` the spec of your change on the build without the change, before you make the change. That run can fail, and a failed run is a good before: a spec that expects the new wording fails on the old build. `attach` pairs each screenshot with the screenshot of the same label in the before run. When the test that takes a screenshot failed in the before run before it took it, `attach` uses the failure screenshot of that test. When the before run has neither, `attach` fails and says so. With `--video` it pairs the two videos. The before run must be in `.verify/runs/` of this checkout.
 
 Show each screen the change touches, and each state of a screen that it touches, in a before and after of its own. That includes a state the change should leave as it was, because its pair shows that it did. Write one spec file with one test per state, each ending in its own `host.screenshot(label)`. Run it once without the change and once with it, and pass every label to one `attach`, one `--screenshot <label>` each. The table then has a row for each state.
 
@@ -200,7 +200,7 @@ Work in this order, with one `up` for both runs: make the branch and `git push` 
 
 On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
 
-When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it to `specs/explored/` first and change its import to `'../fixtures.ts'`.
+When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it, and its settings file if it has one, to `specs/explored/` first and change its import to `'../fixtures.ts'`.
 
 ```console
 $ git switch -c <branch>-before "$(git merge-base origin/main HEAD)"
@@ -208,7 +208,21 @@ $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
 $ git switch <branch> && git branch -D <branch>-before
 ```
 
-This does not work on a remote session. The session builds only the commit it was started on and later commits of that branch, and `attach` refuses a run on a session build with uncommitted changes. When the change is already pushed and the device is remote, attach without `--before` and say in the pull request why there is no before.
+On a remote device, the before run needs a session of its own, started on the base commit. A session starts only on a branch that GitHub has, so push the before branch first. Run the spec there and `down`. Then switch back, start a session on the branch of the change, run the spec again, and pass the first run as `--before`. Delete the before branch after `attach`.
+
+```console
+$ git switch -c <branch>-before "$(git merge-base origin/main HEAD)"
+$ git push origin <branch>-before
+$ e2e-tests/bin/control-clerk-ios up --backend remote
+$ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
+$ e2e-tests/bin/control-clerk-ios down
+$ git switch <branch>
+$ e2e-tests/bin/control-clerk-ios up --backend remote
+$ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
+$ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
+$ e2e-tests/bin/control-clerk-ios down
+$ git push origin --delete <branch>-before && git branch -D <branch>-before
+```
 
 ## Cleanup
 
