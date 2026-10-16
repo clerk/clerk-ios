@@ -1,0 +1,36 @@
+name: Merge queue CI
+
+on:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Shared checks
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+    uses: ./.github/workflows/shared-checks.yml
+    with:
+      build_platforms: '["iOS", "macOS"]'
+      e2e_runner_tests_base: ${{ github.event.merge_group.base_ref }}
+
+  # Branch protection requires a check named Manual CI. PR CI reports it on the PR head; this reports it on the queue's merge commit.
+  manual-ci:
+    name: Manual CI
+    needs: checks
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require the shared checks to pass
+        env:
+          RESULT: ${{ needs.checks.result }}
+        run: |
+          if [ "$RESULT" != success ]; then
+            echo "::error::The shared checks ended with $RESULT."
+            exit 1
+          fi
