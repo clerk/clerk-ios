@@ -28,15 +28,16 @@ def line_of(text, offset):
     return text.count("\n", 0, offset) + 1
 
 
+loaded = {module: (open(path).read(), json.load(open(path))) for module, path in catalogs.items()}
+locales = set()
+for _, catalog in loaded.values():
+    for entry in catalog["strings"].values():
+        locales |= set(entry.get("localizations", {})) - {catalog["sourceLanguage"]}
+
 keys = {}
 for module, path in catalogs.items():
-    raw = open(path).read()
-    catalog = json.load(open(path))
-    source_language = catalog["sourceLanguage"]
+    raw, catalog = loaded[module]
     entries = catalog["strings"]
-    locales = set()
-    for entry in entries.values():
-        locales |= set(entry.get("localizations", {})) - {source_language}
     for key, entry in entries.items():
         if entry.get("shouldTranslate") is False or entry.get("extractionState") == "stale":
             continue
@@ -54,15 +55,25 @@ for module, path in catalogs.items():
 format_specifier = r"%(?:\d+\$)?(?:@|l{0,2}[dui]|f|\.\d+f)"
 
 
+swift_escapes = {"0": "\0", "\\": "\\", "t": "\t", "n": "\n", "r": "\r", '"': '"', "'": "'"}
+
+
+def unescape(literal):
+    return re.sub(
+        r"\\(u\{([0-9a-fA-F]{1,8})\}|.)",
+        lambda m: chr(int(m.group(2), 16)) if m.group(2) else swift_escapes.get(m.group(1), m.group(0)),
+        literal,
+    )
+
+
 def literal_pattern(literal):
     parts = re.split(r"\\\((?:[^()]|\([^()]*\))*\)", literal)
-    unescaped = [bytes(part, "utf-8").decode("unicode_escape").encode("latin-1").decode("utf-8") for part in parts]
-    return re.compile(format_specifier.join(re.escape(part) for part in unescaped))
+    return re.compile(format_specifier.join(re.escape(unescape(part)) for part in parts))
 
 
 def has_key(module, literal):
     if "\\(" not in literal:
-        return bytes(literal, "utf-8").decode("unicode_escape").encode("latin-1").decode("utf-8") in keys[module]
+        return unescape(literal) in keys[module]
     pattern = literal_pattern(literal)
     return any(pattern.fullmatch(key) for key in keys[module])
 
@@ -116,7 +127,10 @@ for module in catalogs:
                 if any(start <= match.start() < end for start, end in previews):
                     continue
                 lookup, ui_title, literal = match.groups()
-                lookup = lookup and lookup.split("(")[0]
+                if lookup and lookup.startswith("String("):
+                    lookup = "String" if re.match(r"String\(\s*localized:", lookup) else "StringInClerkUI"
+                else:
+                    lookup = lookup and lookup.split("(")[0]
                 line_start = text.rfind("\n", 0, match.start()) + 1
                 if text[line_start : match.start()].lstrip().startswith("//") or not literal.strip():
                     continue
@@ -125,8 +139,11 @@ for module in catalogs:
                 if ui_title:
                     report(path, line, f'{ui_title}("{literal}") looks its title up in the app\'s bundle, so it shows in English. Build the title from Text("{literal}", bundle: .module).')
                     continue
-                if lookup in ("Text", "WarningText") and "bundle:" not in arguments:
-                    report(path, line, f'{lookup}("{literal}") looks its text up in the app\'s bundle, so it shows in English. Pass bundle: .module.')
+                if lookup in ("Text", "WarningText", "String") and (
+                    "bundle:" not in arguments or re.search(r"\bbundle:\s*(?:Bundle)?\.main\b", arguments)
+                ):
+                    written = "String(localized: " if lookup == "String" else f"{lookup}("
+                    report(path, line, f'{written}"{literal}") looks its text up in the app\'s bundle, so it shows in English. Pass bundle: .module.')
                     continue
                 if lookup == "ClerkClientError" and "localizationBundle:" not in arguments:
                     report(path, line, f'ClerkClientError(message: "{literal}") is never translated. Pass localizationBundle: .module.')
