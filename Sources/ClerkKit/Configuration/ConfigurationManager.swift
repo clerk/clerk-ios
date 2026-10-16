@@ -142,7 +142,7 @@ final class ConfigurationManager {
 
     let frontendApiUrl = "https://\(apiUrl.dropLast())"
     guard URL(string: frontendApiUrl)?.host?.isEmpty == false else {
-      throw ClerkInitializationError.invalidPublishableKeyFormat(key: publishableKey)
+      throw ClerkInitializationError.invalidPublishableKeyFormat
     }
     return frontendApiUrl
   }
