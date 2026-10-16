@@ -201,11 +201,18 @@ describe('the runners of the macOS jobs', () => {
 });
 
 describe('the platforms the shared checks build', () => {
-  it('are iOS and macOS for a pull request, in the merge queue, and for a push to main', () => {
-    assert.deepEqual(
-      [buildPlatforms('run-pr-ci.yml'), buildPlatforms('merge-queue-ci.yml'), buildPlatforms('checks.yml')],
-      ['["iOS", "macOS"]', '["iOS", "macOS"]', '["iOS", "macOS"]'],
-    );
+  it('are iOS and macOS for a pull request and in the merge queue', () => {
+    assert.deepEqual([buildPlatforms('run-pr-ci.yml'), buildPlatforms('merge-queue-ci.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
+  });
+
+  it('are skipped for a push to main, which the merge queue already built, so that push runs only the jobs that save a build', () => {
+    assert.equal(input('checks.yml', 'cache_builds_only'), 'true');
+    for (const job of ['format-and-lint', 'build', 'e2e-runner-tests']) {
+      assert.match(shared, new RegExp(`^  ${job}:\\n    name: .+\\n    if: \\$\\{\\{ !inputs\\.cache_builds_only \\}\\}$`, 'm'), job);
+    }
+    for (const job of ['test', 'test-ui']) {
+      assert.doesNotMatch(shared, new RegExp(`^  ${job}:\\n    name: .+\\n    if: `, 'm'), job);
+    }
   });
 
   it('are all six each night and for a release, so a break on macCatalyst, watchOS, tvOS or visionOS shows up by the next morning and stops the release', () => {

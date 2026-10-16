@@ -48,6 +48,11 @@ on:
         required: false
         type: string
         default: ""
+      cache_builds_only:
+        description: Run only the jobs that save a build for later runs, for a push the merge queue already checked
+        required: false
+        type: boolean
+        default: false
       macos_runner:
         description: Runner label of the macOS jobs
         required: false
@@ -116,6 +121,7 @@ jobs:
 
   format-and-lint:
     name: Check formatting and linting
+    if: ${{ !inputs.cache_builds_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 20
     steps:
@@ -291,6 +297,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.platform }}
+    if: ${{ !inputs.cache_builds_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     strategy:
@@ -326,6 +333,7 @@ jobs:
 
   e2e-runner-tests:
     name: Run E2E runner tests
+    if: ${{ !inputs.cache_builds_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

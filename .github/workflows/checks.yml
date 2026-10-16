@@ -17,7 +17,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/shared-checks.yml
     with:
-      build_platforms: '["iOS", "macOS"]'
+      cache_builds_only: true
 
   notify:
     name: Notify Slack of failed main checks
