@@ -91,7 +91,7 @@ final class ConfigurationManager {
     }
 
     guard key.starts(with: "pk_test_") || key.starts(with: "pk_live_") else {
-      throw ClerkInitializationError.invalidPublishableKeyFormat(key: key)
+      throw ClerkInitializationError.invalidPublishableKeyFormat
     }
   }
 
@@ -138,7 +138,7 @@ final class ConfigurationManager {
     guard let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
           let apiUrl = String(match).base64String()
     else {
-      throw ClerkInitializationError.invalidPublishableKeyFormat(key: publishableKey)
+      throw ClerkInitializationError.invalidPublishableKeyFormat
     }
 
     return "https://\(apiUrl.dropLast())"

@@ -213,7 +213,7 @@ struct ErrorTests {
   func clerkInitializationErrorMissingPublishableKey() {
     let error = ClerkInitializationError.missingPublishableKey
 
-    #expect(error.message != nil)
+    #expect(error.message == "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` from your Xcode project directory for guided Clerk setup.")
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
     #expect(error.context == nil)
@@ -221,14 +221,49 @@ struct ErrorTests {
   }
 
   @Test
+  @MainActor
   func clerkInitializationErrorInvalidPublishableKeyFormat() {
-    let error = ClerkInitializationError.invalidPublishableKeyFormat(key: "invalid_key")
+    let suppliedKey = "invalid_key_that_must_not_be_logged"
+    let manager = ConfigurationManager()
+    let error: ClerkInitializationError
 
-    #expect(error.message != nil)
+    do {
+      try manager.configure(publishableKey: suppliedKey, options: .init())
+      Issue.record("Expected invalidPublishableKeyFormat error")
+      return
+    } catch let configurationError as ClerkInitializationError {
+      error = configurationError
+    } catch {
+      Issue.record("Expected ClerkInitializationError, got \(error)")
+      return
+    }
+
+    guard case .invalidPublishableKeyFormat = error else {
+      Issue.record("Expected invalidPublishableKeyFormat, got \(error)")
+      return
+    }
+
+    var dumpedError = ""
+    dump(error, to: &dumpedError)
+
+    #expect(error.message == "Clerk publishable key is invalid. Pass the `pk_test_...` or `pk_live_...` publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`.")
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
-    #expect(error.context != nil)
-    #expect(error.context?["key"] == "invalid_key")
+    #expect(error.context == nil)
+
+    let externallyVisibleRepresentations = [
+      error.message ?? "",
+      error.errorDescription ?? "",
+      error.failureReason ?? "",
+      error.localizedDescription,
+      String(describing: error),
+      String(reflecting: error),
+      dumpedError,
+    ]
+
+    for representation in externallyVisibleRepresentations {
+      #expect(!representation.contains(suppliedKey))
+    }
   }
 
   @Test
