@@ -161,6 +161,20 @@ struct ConfigurationManagerTests {
     }
   }
 
+  @Test(arguments: ["pk_test_WyQ=", "pk_live_WyQ=", "pk_test_JA=="])
+  func configureRejectsAKeyThatDoesNotDecodeToAHost(_ publishableKey: String) {
+    let manager = ConfigurationManager()
+
+    #expect {
+      try manager.configure(publishableKey: publishableKey, options: .init())
+    } throws: { error in
+      guard case .invalidPublishableKeyFormat = error as? ClerkInitializationError else { return false }
+      return true
+    }
+    #expect(manager.publishableKey.isEmpty)
+    #expect(manager.frontendApiUrl.isEmpty)
+  }
+
   @Test
   func instanceTypeDevelopment() throws {
     let manager = ConfigurationManager()

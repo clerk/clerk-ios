@@ -25,6 +25,21 @@ struct DependencyContainerTests {
   }
 
   @Test
+  func publishableKeyThatDoesNotDecodeToAURLIsInvalid() {
+    #expect {
+      try DependencyContainer(
+        publishableKey: "pk_test_WyQ=",
+        options: .init(),
+        runtimeScope: ClerkRuntimeScope(),
+        keychainStorageOverride: InMemoryKeychain()
+      )
+    } throws: { error in
+      guard case .invalidPublishableKeyFormat = error as? ClerkInitializationError else { return false }
+      return true
+    }
+  }
+
+  @Test
   func unconfiguredContainerHasNoPublishableKey() {
     let container = DependencyContainer.unconfigured(runtimeScope: ClerkRuntimeScope())
 
