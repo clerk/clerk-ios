@@ -213,7 +213,7 @@ struct ErrorTests {
   func clerkInitializationErrorMissingPublishableKey() {
     let error = ClerkInitializationError.missingPublishableKey
 
-    #expect(error.message == "Clerk publishable key is missing. Run `npx clerk@latest init` from your Xcode project directory to configure Clerk, or pass a valid publishable key to `Clerk.configure(publishableKey:options:)`.")
+    #expect(error.message == "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` (requires Node.js 20 or later) from your Xcode project directory for guided Clerk setup.")
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
     #expect(error.context == nil)
@@ -246,7 +246,7 @@ struct ErrorTests {
     var dumpedError = ""
     dump(error, to: &dumpedError)
 
-    #expect(error.message == "Clerk publishable key is invalid. Verify that the value passed to `Clerk.configure(publishableKey:options:)` is a valid `pk_test_...` or `pk_live_...` key, or run `npx clerk@latest init` from your Xcode project directory to configure Clerk again.")
+    #expect(error.message == "Clerk publishable key is invalid. Pass the `pk_test_...` or `pk_live_...` publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`.")
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
     #expect(error.context == nil)

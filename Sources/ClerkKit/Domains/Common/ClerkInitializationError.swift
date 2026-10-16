@@ -49,10 +49,10 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
   var errorDescription: String? {
     switch self {
     case .missingPublishableKey:
-      "Clerk publishable key is missing. Run `npx clerk@latest init` from your Xcode project directory to configure Clerk, or pass a valid publishable key to `Clerk.configure(publishableKey:options:)`."
+      "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` (requires Node.js 20 or later) from your Xcode project directory for guided Clerk setup."
 
     case .invalidPublishableKeyFormat:
-      "Clerk publishable key is invalid. Verify that the value passed to `Clerk.configure(publishableKey:options:)` is a valid `pk_test_...` or `pk_live_...` key, or run `npx clerk@latest init` from your Xcode project directory to configure Clerk again."
+      "Clerk publishable key is invalid. Pass the `pk_test_...` or `pk_live_...` publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`."
 
     case .invalidProxyUrl:
       "Invalid proxy URL. The proxy URL must be a full http or https URL, such as https://proxy.example.com/__clerk."
