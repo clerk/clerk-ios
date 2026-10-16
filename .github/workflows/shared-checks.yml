@@ -52,7 +52,7 @@ on:
         description: Runner label of the macOS jobs
         required: false
         type: string
-        default: blacksmith-6vcpu-macos-26
+        default: macos-26
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -168,10 +168,7 @@ jobs:
 
       - name: Name the SwiftPM build cache
         id: build-cache
-        run: |
-          prefix="clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')"
-          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
-          echo "today=$prefix$(date -u +%F)-" >> "$GITHUB_OUTPUT"
+        run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Restore the SwiftPM build of the last main push
         if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
@@ -194,23 +191,12 @@ jobs:
       - name: Run unit tests
         run: make test
 
-      # Blacksmith's free cache store takes 25 GB a week, so main saves at most one build a day.
-      - name: Look for a build that main saved today
-        id: saved-today
-        if: github.event_name == 'push'
-        uses: actions/cache/restore@v4
-        with:
-          path: .build
-          key: ${{ steps.build-cache.outputs.today }}${{ github.sha }}
-          restore-keys: ${{ steps.build-cache.outputs.today }}
-          lookup-only: true
-
       - name: Save the SwiftPM build for later runs
-        if: github.event_name == 'push' && steps.saved-today.outputs.cache-matched-key == ''
+        if: github.event_name == 'push'
         uses: actions/cache/save@v4
         with:
           path: .build
-          key: ${{ steps.build-cache.outputs.today }}${{ github.sha }}
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
 
       - name: Setup integration test keys
         if: inputs.run_integration_tests
@@ -263,10 +249,7 @@ jobs:
 
       - name: Name the Xcode build cache
         id: build-cache
-        run: |
-          prefix="clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')"
-          echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
-          echo "today=$prefix$(date -u +%F)-" >> "$GITHUB_OUTPUT"
+        run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       # PR CI runs on comment and status events, which read and write main's cache scope. So only a push
       # saves the build, and only PR CI restores one. A push, the nightly and the release build from scratch,
@@ -299,23 +282,12 @@ jobs:
       - name: Run ClerkKitUI tests
         run: make test-ui
 
-      # Blacksmith's free cache store takes 25 GB a week, so main saves at most one build a day.
-      - name: Look for a build that main saved today
-        id: saved-today
-        if: github.event_name == 'push'
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ steps.build-cache.outputs.today }}${{ github.sha }}
-          restore-keys: ${{ steps.build-cache.outputs.today }}
-          lookup-only: true
-
       - name: Save the Xcode build for later runs
-        if: github.event_name == 'push' && steps.saved-today.outputs.cache-matched-key == ''
+        if: github.event_name == 'push'
         uses: actions/cache/save@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ steps.build-cache.outputs.today }}${{ github.sha }}
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
 
   build:
     name: Build ${{ matrix.platform }}

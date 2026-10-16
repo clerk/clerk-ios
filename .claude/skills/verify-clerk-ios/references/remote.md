@@ -48,15 +48,15 @@ A session builds nothing when CI already built the app. It names the app by a ke
 
 ## Runners and cost
 
-The default runner label is `blacksmith-6vcpu-macos-27`, a Blacksmith Mac that is ready in about three minutes and is billed by the minute. It has Xcode 27 and an `iPhone Air` simulator on iOS 27.0, and it is the runner that `verify-app-cache.yml` stores the app for. The session's 60 minutes start when the runner starts. The workflow names the iOS runtime it uses, `IOS_RUNTIME` in `verify-remote.yml`. On a runner without that runtime, the session fails at `Pick the simulator`, and the step lists the iOS runtimes the runner has.
+The default runner label is `xcode-27`, a GitHub-hosted Mac that costs nothing for a public repository. It has Xcode 27 and an `iPhone Air` simulator on iOS 27.0, and it is slow. Plan for 7 to 10 minutes before the first spec runs. The session's 60 minutes start when the runner starts. The workflow names the iOS runtime it uses, `IOS_RUNTIME` in `verify-remote.yml`. On a runner without that runtime, the session fails at `Pick the simulator`, and the step lists the iOS runtimes the runner has.
 
-`--runner xcode-27` uses a GitHub-hosted Mac instead, which costs nothing for a public repository and is slow. Plan for 7 to 10 minutes before the first spec runs. It finds no stored app, because Blacksmith runners and GitHub-hosted runners keep separate caches, so its session builds the app from scratch. `verify-remote.yml` starts a session only on `xcode-27`, `ubuntu-latest` (where the session of `doctor --live` runs), or `blacksmith-6vcpu-macos-27`, and fails its first job for any other label. To add a label, add it to the `Check the runner label` step there; it needs a Mac with Xcode and the iOS runtime that `IOS_RUNTIME` names. A held session keeps its label, and `--runner` with another label fails until `down`. The CLI ends a session that is not ready 40 minutes after it asked for the build, and `up` then fails with `NOT_READY`.
+`verify-remote.yml` starts a session only on `xcode-27` or `ubuntu-latest` (where the session of `doctor --live` runs), and fails its first job for any other label. To add a label, add it to the `Check the runner label` step there; it needs a Mac with Xcode and the iOS runtime that `IOS_RUNTIME` names. A held session keeps its label, and `--runner` with another label fails until `down`. The CLI ends a session that is not ready 40 minutes after it asked for the build, and `up` then fails with `NOT_READY`.
 
 If a run publishes no tunnel within 20 minutes, `up` fails with `NOT_READY`, says whether the run is still queued, and gives its URL. While a run has not published its tunnel, the CLI prints a `wait` line that names the label it is waiting for and for how long:
 
 ```console
-wait    run <run> has waited 15s, now for a blacksmith-6vcpu-macos-27 runner
-wait    run <run> has waited 85s, now for the tunnel on blacksmith-6vcpu-macos-27
+wait    run <run> has waited 15s, now for a xcode-27 runner
+wait    run <run> has waited 85s, now for the tunnel on xcode-27
 ```
 
 ## Session lifetime
