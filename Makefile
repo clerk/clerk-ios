@@ -1,4 +1,4 @@
-.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-clerk-presentations install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
+.PHONY: all clean setup format format-check lint lint-fix check check-e2e-hooks check-clerk-presentations check-localization install-tools install-hooks install-xcode-template-macros create-example-local-secrets-plists set-example-pk test test-ui test-integration smoke-macos help create-env install-1password-cli fetch-test-keys sync-test-keys-to-github update-swiftformat update-swiftlint
 
 SWIFTFORMAT := $(CURDIR)/.tools/bin/swiftformat
 SWIFTLINT := $(CURDIR)/.tools/bin/swiftlint
@@ -154,8 +154,12 @@ check-e2e-hooks:
 check-clerk-presentations:
 	@./scripts/check-clerk-presentations.sh
 
+# Verify every UI string is looked up in its module's catalog and translated into every shipped language
+check-localization:
+	@./scripts/check-localization.sh
+
 # Run format-check, lint, and lightweight repo checks
-check: format-check lint check-e2e-hooks check-clerk-presentations
+check: format-check lint check-e2e-hooks check-clerk-presentations check-localization
 	@echo "✅ All checks passed!"
 
 clean:
