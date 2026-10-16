@@ -213,7 +213,7 @@ struct ErrorTests {
   func clerkInitializationErrorMissingPublishableKey() {
     let error = ClerkInitializationError.missingPublishableKey
 
-    #expect(error.message == "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` (requires Node.js 20 or later) from your Xcode project directory for guided Clerk setup.")
+    #expect(error.message == "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` from your Xcode project directory for guided Clerk setup.")
     #expect(error.message == error.errorDescription)
     #expect(error.underlyingError == nil)
     #expect(error.context == nil)

@@ -49,7 +49,7 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
   var errorDescription: String? {
     switch self {
     case .missingPublishableKey:
-      "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` (requires Node.js 20 or later) from your Xcode project directory for guided Clerk setup."
+      "Clerk publishable key is missing. Pass your publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`, or run `npx clerk@latest init` from your Xcode project directory for guided Clerk setup."
 
     case .invalidPublishableKeyFormat:
       "Clerk publishable key is invalid. Pass the `pk_test_...` or `pk_live_...` publishable key from the API keys page in the Clerk Dashboard (https://dashboard.clerk.com/~/api-keys) to `Clerk.configure(publishableKey:options:)`."
