@@ -140,24 +140,6 @@ describe('the jobs of the shared checks', () => {
   });
 });
 
-describe('the merge queue', () => {
-  const queue = read('merge-queue-ci.yml');
-
-  it('runs on the merge commit the queue builds', () => {
-    assert.match(queue, /^on:\n {2}merge_group:\n/m);
-  });
-
-  it('reports the check that branch protection requires, failing unless every shared check passed', () => {
-    const job = queue.slice(queue.indexOf('\n  manual-ci:\n'));
-    assert.match(job, /^ {4}name: Manual CI$/m);
-    assert.match(job, /^ {4}needs: checks$/m);
-    assert.match(job, /^ {4}if: always\(\)$/m);
-    const run = /^ {8}run: \|\n((?: {10}.*\n?)+)/m.exec(job)?.[1]?.replace(/^ {10}/gm, '') ?? assert.fail('no run step');
-    const exits = (result: string) => spawnSync('bash', ['-c', run], { env: { ...process.env, RESULT: result } }).status;
-    assert.deepEqual(['success', 'failure', 'cancelled', 'skipped'].map(exits), [0, 1, 1, 1]);
-  });
-});
-
 describe('the runners of the macOS jobs', () => {
   it("are GitHub's free macOS runners in every workflow, but the remote session, which runs on the label its request names", () => {
     const runners = globSync('*.yml', { cwd: WORKFLOWS })
@@ -181,7 +163,6 @@ describe('the runners of the macOS jobs', () => {
     assert.deepEqual(Object.fromEntries(runners), {
       'checks.yml checks': 'macos-26',
       'docs.yml deploy': 'macos-26',
-      'merge-queue-ci.yml checks': 'macos-26',
       'nightly-checks.yml checks': 'macos-26',
       'release-sdk.yml checks': 'macos-26',
       'release-sdk.yml publish': 'macos-26',
@@ -201,11 +182,8 @@ describe('the runners of the macOS jobs', () => {
 });
 
 describe('the platforms the shared checks build', () => {
-  it('are iOS and macOS for a pull request, in the merge queue, and for a push to main', () => {
-    assert.deepEqual(
-      [buildPlatforms('run-pr-ci.yml'), buildPlatforms('merge-queue-ci.yml'), buildPlatforms('checks.yml')],
-      ['["iOS", "macOS"]', '["iOS", "macOS"]', '["iOS", "macOS"]'],
-    );
+  it('are iOS and macOS for a pull request and for a push to main', () => {
+    assert.deepEqual([buildPlatforms('run-pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
   });
 
   it('are all six each night and for a release, so a break on macCatalyst, watchOS, tvOS or visionOS shows up by the next morning and stops the release', () => {
@@ -530,7 +508,7 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     assert.deepEqual({ test: stamped('test'), 'test-ui': stamped('test-ui') }, { test: [1162696418, 1160997964, 1162696418], 'test-ui': [1162696418, 1160997964, 1162696418] });
   });
 
-  it('restore a build only in PR and merge queue CI and save one only from a push to main, so main, the nightly and the release always build from scratch', () => {
+  it('restore a build only in PR CI and save one only from a push to main, so main, the nightly and the release always build from scratch', () => {
     const entryPoints = (file: string): [string, string[]][] => {
       const on = /^on:\n((?: {2}.*\n|\n)*)/m.exec(read(file))?.[1] ?? '';
       const events = [...on.matchAll(/^ {2}([\w-]+):/gm)].map((match) => match[1]!);
@@ -555,7 +533,6 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     const prCiRestoresMainSaves = {
       'checks.yml': { restores: [], saves: ['push'] },
       'manual-pr-ci.yml': { restores: ['issue_comment', 'status', 'pull_request_target', 'workflow_run'], saves: [] },
-      'merge-queue-ci.yml': { restores: ['merge_group'], saves: [] },
       'nightly-checks.yml': { restores: [], saves: [] },
       'release-sdk.yml': { restores: [], saves: [] },
     };

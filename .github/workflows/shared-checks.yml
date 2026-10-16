@@ -171,7 +171,7 @@ jobs:
         run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Restore the SwiftPM build of the last main push
-        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run' || github.event_name == 'merge_group'
+        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
         uses: actions/cache/restore@v4
         with:
           path: .build
@@ -252,10 +252,10 @@ jobs:
         run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       # PR CI runs on comment and status events, which read and write main's cache scope. So only a push
-      # saves the build, and only PR and merge queue CI restore one. A push, the nightly and the release build
-      # from scratch, so they never build on what PR CI saved, and they resolve the newest dependency releases.
+      # saves the build, and only PR CI restores one. A push, the nightly and the release build from scratch,
+      # so they never build on what PR CI saved, and they resolve the newest dependency releases.
       - name: Restore the Xcode build of the last main push
-        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run' || github.event_name == 'merge_group'
+        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
