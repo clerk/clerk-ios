@@ -44,9 +44,9 @@ final class DependencyContainer: Dependencies {
   ///   - publishableKey: The publishable key from Clerk Dashboard.
   ///   - options: Configuration options for the Clerk instance.
   ///
-  /// - Throws: `ClerkInitializationError` if the publishable key is invalid or configuration fails.
+  /// - Throws: `ClerkInitializationError` if the publishable key is missing or invalid, or configuration fails.
   @MainActor
-  init(
+  convenience init(
     publishableKey: String,
     options: Clerk.Options,
     runtimeScope: ClerkRuntimeScope,
@@ -54,24 +54,52 @@ final class DependencyContainer: Dependencies {
     keychainStorageOverride: (any KeychainStorage)? = nil,
     ownerIdentifierProvider: () -> String? = { Bundle.main.bundleIdentifier }
   ) throws {
-    configurationManager = ConfigurationManager()
-
-    // Only configure if publishableKey is not empty (temporary containers use empty key)
-    // For temporary containers, ConfigurationManager will remain in its default unconfigured state
-    if !publishableKey.isEmpty {
-      try configurationManager.configure(publishableKey: publishableKey, options: options)
-    }
-
-    sessionStatusLogger = SessionStatusLogger()
+    let configurationManager = ConfigurationManager()
+    try configurationManager.configure(publishableKey: publishableKey, options: options)
 
     // Note: frontendApiUrl is always extracted from the publishable key, even when using a proxy,
     // because it's needed for passkey authentication which requires the original Clerk domain
     // (not the proxy domain) as the relying party identifier.
-    let baseURL: URL = if !publishableKey.isEmpty, !configurationManager.frontendApiUrl.isEmpty {
-      configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
-    } else {
-      URL(string: "https://clerk.clerk.dev")!
-    }
+    let baseURL = configurationManager.proxyConfiguration?.baseURL ?? URL(string: configurationManager.frontendApiUrl)!
+
+    self.init(
+      configurationManager: configurationManager,
+      baseURL: baseURL,
+      options: options,
+      runtimeScope: runtimeScope,
+      probesAccessGroup: probesAccessGroupOverride ?? !EnvironmentDetection.isRunningInTests,
+      keychainStorageOverride: keychainStorageOverride,
+      ownerIdentifierProvider: ownerIdentifierProvider
+    )
+  }
+
+  /// Creates the container of a `Clerk` instance that `configure` has not set up, such as the
+  /// unconfigured fallback `Clerk.shared` returns. It has no publishable key and never starts.
+  @MainActor
+  static func unconfigured(runtimeScope: ClerkRuntimeScope) -> DependencyContainer {
+    DependencyContainer(
+      configurationManager: ConfigurationManager(),
+      baseURL: URL(string: "https://clerk.clerk.dev")!,
+      options: .init(),
+      runtimeScope: runtimeScope,
+      probesAccessGroup: false,
+      keychainStorageOverride: nil,
+      ownerIdentifierProvider: { Bundle.main.bundleIdentifier }
+    )
+  }
+
+  @MainActor
+  private init(
+    configurationManager: ConfigurationManager,
+    baseURL: URL,
+    options: Clerk.Options,
+    runtimeScope: ClerkRuntimeScope,
+    probesAccessGroup: Bool,
+    keychainStorageOverride: (any KeychainStorage)?,
+    ownerIdentifierProvider: () -> String?
+  ) {
+    self.configurationManager = configurationManager
+    sessionStatusLogger = SessionStatusLogger()
 
     networkingPipeline = .clerkDefault(runtimeScope: runtimeScope)
       .appendingRequestMiddleware(options.middleware.request)
@@ -82,8 +110,7 @@ final class DependencyContainer: Dependencies {
       options: options,
       cacheWrites: cacheWrites,
       ownerIdentifier: ownerIdentifierProvider()?.trimmingCharacters(in: .whitespacesAndNewlines),
-      probesAccessGroup: probesAccessGroupOverride
-        ?? (!publishableKey.isEmpty && !EnvironmentDetection.isRunningInTests),
+      probesAccessGroup: probesAccessGroup,
       keychainStorageOverride: keychainStorageOverride
     )
     keychain = keychainStorages.shared

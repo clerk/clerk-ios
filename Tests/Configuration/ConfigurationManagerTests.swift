@@ -95,6 +95,19 @@ struct ConfigurationManagerTests {
   }
 
   @Test
+  func configureWithNewlineAndTabOnlyKey() {
+    let manager = ConfigurationManager()
+
+    #expect {
+      try manager.configure(publishableKey: "\n\t ", options: .init())
+    } throws: { error in
+      guard case .missingPublishableKey = error as? ClerkInitializationError else { return false }
+      return true
+    }
+    #expect(manager.publishableKey.isEmpty)
+  }
+
+  @Test
   func configureWithInvalidFormatKey() {
     let manager = ConfigurationManager()
     let options = Clerk.Options()
