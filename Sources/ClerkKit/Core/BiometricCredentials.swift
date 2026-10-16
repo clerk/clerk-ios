@@ -107,15 +107,15 @@ public struct BiometricCredentials {
     guard let session = Clerk.shared.session,
           session.status.allowsBiometricCredentialEnrollment
     else {
-      throw ClerkClientError(message: "Unable to enroll a biometric credential without an active or pending Clerk session.")
+      throw ClerkClientError(message: "Unable to enroll a biometric credential without an active or pending Clerk session.", localizationBundle: .module)
     }
     try ensureBiometricCredentialFeatureEnabled()
 
     guard let appIdentifier = appIdentifierProvider() else {
-      throw ClerkClientError(message: "Unable to enroll a biometric credential without a bundle identifier.")
+      throw ClerkClientError(message: "Unable to enroll a biometric credential without a bundle identifier.", localizationBundle: .module)
     }
     guard let userID = session.user?.id else {
-      throw ClerkClientError(message: "Unable to enroll a biometric credential without a user for the current session.")
+      throw ClerkClientError(message: "Unable to enroll a biometric credential without a user for the current session.", localizationBundle: .module)
     }
 
     let localKey = try keyManager.createKey(policy: policy)
@@ -193,7 +193,7 @@ public struct BiometricCredentials {
   @discardableResult
   public func revokeCurrentDeviceCredential() async throws -> BiometricCredential? {
     guard Clerk.shared.session?.status.allowsBiometricCredentialEnrollment == true else {
-      throw ClerkClientError(message: "Unable to revoke a biometric credential without an active or pending Clerk session.")
+      throw ClerkClientError(message: "Unable to revoke a biometric credential without an active or pending Clerk session.", localizationBundle: .module)
     }
     guard let userID = Clerk.shared.user?.id,
           let localCredential = try candidateLocalCredentials(id: nil, identifierHint: nil, userID: userID).first
@@ -234,7 +234,7 @@ public struct BiometricCredentials {
       }
       return credential
     case .unavailable:
-      throw ClerkClientError(message: "Biometric reverification is unavailable for this session.")
+      throw ClerkClientError(message: "Biometric reverification is unavailable for this session.", localizationBundle: .module)
     }
   }
 
@@ -244,10 +244,10 @@ public struct BiometricCredentials {
     reason: String?
   ) async throws -> BiometricCredentialKeySignature {
     guard challenge.biometricCredentialId == credential.id else {
-      throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
+      throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.", localizationBundle: .module)
     }
     guard challenge.expiresAt > Date() else {
-      throw ClerkClientError(message: "Biometric reverification challenge has expired.")
+      throw ClerkClientError(message: "Biometric reverification challenge has expired.", localizationBundle: .module)
     }
     return try await keyManager.sign(
       clientData: challenge.clientData,
@@ -276,7 +276,8 @@ public struct BiometricCredentials {
       localCredential = credential
     case .unavailable:
       throw ClerkClientError(
-        message: "Biometric sign-in is unavailable."
+        message: "Biometric sign-in is unavailable.",
+        localizationBundle: .module
       )
     }
     let biometricCredentialId = localCredential.id
@@ -387,13 +388,13 @@ extension BiometricCredentials {
 
     switch reason {
     case .environmentUnavailable:
-      throw ClerkClientError(message: "Unable to use biometric sign-in before the Clerk environment is loaded.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in before the Clerk environment is loaded.", localizationBundle: .module)
     case .nativeAPIDisabled:
-      throw ClerkClientError(message: "Unable to use biometric sign-in because Native API is disabled.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in because Native API is disabled.", localizationBundle: .module)
     case .featureDisabled:
-      throw ClerkClientError(message: "Unable to use biometric sign-in because it is disabled.")
+      throw ClerkClientError(message: "Unable to use biometric sign-in because it is disabled.", localizationBundle: .module)
     default:
-      throw ClerkClientError(message: "Biometric sign-in is unavailable.")
+      throw ClerkClientError(message: "Biometric sign-in is unavailable.", localizationBundle: .module)
     }
   }
 
@@ -597,7 +598,7 @@ extension BiometricCredentials {
 
   private func biometricCredentialChallenge(from signIn: SignIn) throws -> BiometricCredentialChallenge {
     guard let biometricCredentialChallenge = signIn.firstFactorVerification?.biometricCredentialChallenge else {
-      throw ClerkClientError(message: "Biometric sign-in did not return a challenge.")
+      throw ClerkClientError(message: "Biometric sign-in did not return a challenge.", localizationBundle: .module)
     }
     return biometricCredentialChallenge
   }
@@ -611,7 +612,7 @@ extension BiometricCredentials {
     }
 
     try? deleteLocalCredential(localCredential)
-    return ClerkClientError(message: "This device is no longer trusted. Sign in another way to enroll it again.")
+    return ClerkClientError(message: "This device is no longer trusted. Sign in another way to enroll it again.", localizationBundle: .module)
   }
 }
 

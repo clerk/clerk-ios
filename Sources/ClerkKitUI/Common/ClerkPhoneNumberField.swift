@@ -144,7 +144,7 @@ struct ClerkPhoneNumberField: View {
 
   var countrySelector: some View {
     Menu {
-      Section("Default") {
+      Section {
         Button {
           phoneNumberModel.currentCountry = phoneNumberModel.defaultCountry
           textDidUpdate(text: displayText)
@@ -152,9 +152,11 @@ struct ClerkPhoneNumberField: View {
           Text(phoneNumberModel.stringForCountry(phoneNumberModel.defaultCountry))
             .lineLimit(1)
         }
+      } header: {
+        Text("Default", bundle: .module)
       }
 
-      Section("International") {
+      Section {
         ForEach(phoneNumberModel.allCountriesExceptDefault, id: \.code) { country in
           Button {
             phoneNumberModel.currentCountry = country
@@ -164,6 +166,8 @@ struct ClerkPhoneNumberField: View {
               .lineLimit(1)
           }
         }
+      } header: {
+        Text("International", bundle: .module)
       }
     } label: {
       HStack(spacing: 4) {
