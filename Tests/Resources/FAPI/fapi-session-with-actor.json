@@ -1,0 +1,34 @@
+{
+  "object": "session",
+  "id": "sess_2wNkH7i9J1k3L5m7N9o1P3q5R7",
+  "status": "active",
+  "expire_at": 1760371200000,
+  "abandon_at": 1762358400000,
+  "last_active_at": 1759766400000,
+  "latest_activity": {
+    "object": "session_activity",
+    "id": "sess_activity_2wNkI8j0K2l4M6n8O0p2Q4r6S8",
+    "is_mobile": true,
+    "device_type": "iPhone",
+    "browser_name": "Mobile Safari"
+  },
+  "last_active_organization_id": null,
+  "actor": {
+    "sub": "agent_2wNkJ9k1L3m5N7o9P1q3R5s7T9",
+    "type": "agent",
+    "task_id": "task_2wNkK0l2M4n6O8p0Q2r4S6t8U0"
+  },
+  "user": null,
+  "public_user_data": {
+    "first_name": "Jane",
+    "last_name": "Doe",
+    "image_url": "https://img.clerk.com/eyJ0eXBlIjoiZGVmYXVsdCJ9",
+    "has_image": false,
+    "identifier": "jane+clerk_test@acme.example",
+    "user_id": "user_2wNkL1m3N5o7P9q1R3s5T7u9V1"
+  },
+  "factor_verification_age": [0, -1],
+  "created_at": 1759766400000,
+  "updated_at": 1759766400000,
+  "last_active_token": null
+}

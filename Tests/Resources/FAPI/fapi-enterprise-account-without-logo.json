@@ -1,0 +1,38 @@
+{
+  "id": "eac_2wNkE4f6G8h0I2j4K6l8M0n2O4",
+  "object": "enterprise_account",
+  "protocol": "oauth",
+  "provider": "oauth_custom_acme",
+  "active": true,
+  "email_address": "jane+clerk_test@acme.example",
+  "first_name": "Jane",
+  "last_name": "Doe",
+  "provider_user_id": "00u1abcd2EFGH3ijk4l5",
+  "last_authenticated_at": 1759766400000,
+  "public_metadata": {},
+  "verification": {
+    "object": "verification_oauth",
+    "status": "verified",
+    "strategy": "oauth_custom_acme",
+    "attempts": null,
+    "expire_at": 1759767000000
+  },
+  "enterprise_connection": {
+    "id": "oauthc_2wNkF5g7H9i1J3k5L7m9N1o3P5",
+    "enterprise_connection_id": "entc_2wNkG6h8I0j2K4l6M8n0O2p4Q6",
+    "protocol": "oauth",
+    "provider": "oauth_custom_acme",
+    "name": "Acme SSO",
+    "logo_public_url": null,
+    "domain": "acme.example",
+    "domains": ["acme.example"],
+    "active": true,
+    "sync_user_attributes": true,
+    "disable_additional_identifications": false,
+    "created_at": 1759766400000,
+    "updated_at": 1759766400000,
+    "allow_subdomains": false,
+    "allow_idp_initiated": false
+  },
+  "enterprise_connection_id": "entc_2wNkG6h8I0j2K4l6M8n0O2p4Q6"
+}

@@ -1,0 +1,20 @@
+{
+  "object": "commerce_credit_list",
+  "data": [
+    {
+      "object": "commerce_credit_ledger",
+      "id": "ccl_2wNkB1c3D5e7F9g1H3i5J7k9L1",
+      "payer_id": "cpayer_2wNkC2d4E6f8G0h2I4j6K8l0M2",
+      "amount": {
+        "amount": 2500,
+        "amount_formatted": "25.00",
+        "currency": "USD",
+        "currency_symbol": "$"
+      },
+      "source_type": "commerce_subscription_item",
+      "source_id": "csubi_2wNkD3e5F7g9H1i3J5k7L9m1N3",
+      "created_at": "2026-10-06T14:03:27.412839Z"
+    }
+  ],
+  "total_count": 1
+}

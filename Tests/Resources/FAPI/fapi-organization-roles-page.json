@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "object": "role",
+      "id": "role_2wNk8dQ3m5Rr7Xv1Jc4LhT9pZs",
+      "name": "Billing reviewer",
+      "key": "org:billing_reviewer",
+      "description": null,
+      "permissions": [
+        {
+          "object": "permission",
+          "id": "perm_2wNk9aB6c8Dd1Ee3Ff5Gg7Hh9I",
+          "name": "Read billing",
+          "key": "org:sys_billing:read",
+          "description": null,
+          "type": "system",
+          "created_at": 1759766400000,
+          "updated_at": 1759766400000
+        }
+      ],
+      "is_creator_eligible": false,
+      "created_at": 1759766400000,
+      "updated_at": 1759766400000
+    }
+  ],
+  "total_count": 1
+}
