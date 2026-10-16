@@ -70,6 +70,33 @@ struct ClerkTests {
     #expect(entry.error is ClerkInitializationError)
   }
 
+  @Test(arguments: ["", "   ", "\n\t "])
+  func blankPublishableKeyFailsConfigurationAndReportsItToTheAppsLogger(_ publishableKey: String) async throws {
+    let entries = LockIsolated<[LogEntry]>([])
+    let options = Clerk.Options(loggerHandler: { entry in entries.withValue { $0.append(entry) } })
+    let clerk = Clerk()
+
+    // `Clerk.configure` calls this and, in release builds, returns an unconfigured instance after it throws.
+    #expect {
+      try clerk.performConfiguration(publishableKey: publishableKey, options: options)
+    } throws: { error in
+      guard case .missingPublishableKey = error as? ClerkInitializationError else { return false }
+      return true
+    }
+
+    #expect(clerk.publishableKey.isEmpty)
+    #expect(clerk.frontendApiUrl.isEmpty)
+    for _ in 0 ..< 200 where entries.value.isEmpty {
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    let entry = try #require(entries.value.first)
+    #expect(entry.level == .error)
+    guard case .missingPublishableKey = entry.error as? ClerkInitializationError else {
+      Issue.record("Expected missingPublishableKey, got \(String(describing: entry.error))")
+      return
+    }
+  }
+
   @Test
   func callbackContinuationReturnsPendingAuthResult() {
     let signIn = SignIn(
