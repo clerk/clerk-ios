@@ -28,10 +28,18 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The current state of the session.
   public var status: SessionStatus
 
-  /// The time the session expires and will cease to be active.
+  /// The expiration deadline. Unix epoch zero means there is no maximum lifetime.
   public var expireAt: Date
 
-  /// The time when the session was abandoned by the user.
+  /// Whether the session has a configured expiration deadline.
+  ///
+  /// This describes the lifetime policy only. A session without a maximum lifetime can still be revoked or ended,
+  /// so check ``status`` to determine whether it is active.
+  public var hasMaximumLifetime: Bool {
+    expireAt.timeIntervalSince1970 > 0
+  }
+
+  /// The abandonment deadline. Unix epoch zero means there is no abandonment deadline.
   public var abandonAt: Date
 
   /// The time the session was last active on the client.
