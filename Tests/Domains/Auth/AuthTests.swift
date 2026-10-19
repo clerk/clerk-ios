@@ -616,6 +616,16 @@ struct AuthTests {
   }
 
   @Test
+  func completeMagicLinkThrowsKeychainReadError() async throws {
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-keychain.clerk.accounts.dev"))
+    let clerk = makeIsolatedClerk(keychain: MissingEntitlementKeychain(), baseURL: testBaseUrl)
+
+    await #expect(throws: KeychainError.self) {
+      try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
+    }
+  }
+
+  @Test
   func completeMagicLinkWithCallbackURLRejectsMissingCallbackParams() async throws {
     let transport = FakeTransport.mockDefaults()
 
