@@ -7,10 +7,11 @@ Clerk is the official authentication SDK for Apple platforms (iOS, iPadOS, macOS
 - `Sources/ClerkKit` is the core SDK: networking, session and token handling, Keychain storage, and the sign-in and sign-up flows (password, codes, magic links, OAuth and SSO, passkeys, Sign in with Apple, biometrics).
 - `Sources/ClerkKitUI` holds the prebuilt SwiftUI views built on ClerkKit.
 
-We trust the integrating app and its developer. The publishable key, `proxyUrl`, redirect configuration, Keychain access group, custom middleware and any text the app passes in are developer-controlled, not attacker input. We trust Clerk's Frontend API over TLS.
+We trust the integrating app's configuration: the publishable key, `proxyUrl`, redirect configuration, Keychain access group and custom middleware. We also trust text the developer writes, such as custom row titles. Values the app collects from its users and passes to the SDK are not trusted. We trust Clerk's Frontend API over TLS.
 
 Untrusted input enters at:
 
+- **Values end users type.** Identifiers, passwords, codes and profile fields the app passes to the authentication and user APIs (for example `Auth.signIn(_:)`), or that users enter in ClerkKitUI's forms.
 - **Inbound URLs.** `Clerk.handle(_:)` routes deep links and universal links (`Core/ClerkURLRoute.swift`, `Domains/Auth/MagicLink.swift`). Any app or web page can open a URL with the app's scheme.
 - **OAuth, SSO and hosted-auth callbacks.** `ASWebAuthenticationSession` returns them (`Utils/WebAuthentication.swift`, `Utils/ExternalAuthUtils.swift`, `Core/Auth+HostedAuth.swift`, `Domains/Auth/HostedAuth.swift`, the `handleRedirectCallbackUrl` paths in `SignIn.swift` and `SignUp.swift`).
 - **Content from other end users.** Names, organization names, emails, avatar and logo URLs, and custom fields come back from the API and are rendered in ClerkKitUI (Nuke `LazyImage`, `SafariView`, markdown in `LocalizedStringKey`).
