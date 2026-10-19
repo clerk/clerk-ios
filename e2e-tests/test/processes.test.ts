@@ -5,7 +5,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { isAlive } from '../src/core/exec.ts';
+import { currentProcess, isAlive, isRunning, run } from '../src/core/exec.ts';
 import { openProcesses, stopProcesses } from '../src/core/ledgers.ts';
 import { newEntryId, openWorkspace } from '../src/core/workspace.ts';
 
@@ -41,5 +41,34 @@ describe('stopProcesses', () => {
     assert.equal(isAlive(reused.pid!), true, 'a pid whose start time does not match is left alone');
     assert.deepEqual(workspace.unclosedEntries(), []);
     reused.kill();
+  });
+});
+
+describe('run', () => {
+  it('ends a command that ignores SIGTERM once its time is up, so a timeout always returns', async () => {
+    const began = Date.now();
+    const result = await run(process.execPath, ['-e', "process.on('SIGTERM', () => {}); console.log('waiting'); setInterval(() => {}, 1000)"], { timeoutMs: 300 });
+    assert.equal(result.code, 124);
+    assert.ok(Date.now() - began < 10_000, `returned after ${Date.now() - began}ms`);
+  });
+
+  it('returns on timeout even when a background child of the command keeps its output open', async () => {
+    const began = Date.now();
+    const result = await run('sh', ['-c', 'sleep 30 & echo $!; wait'], { timeoutMs: 300 });
+    assert.equal(result.code, 124);
+    assert.ok(Date.now() - began < 10_000, `returned after ${Date.now() - began}ms`);
+    process.kill(Number(result.stdout.trim()));
+  });
+});
+
+describe('isRunning', () => {
+  it('counts a live process as running when ps cannot be run, rather than as exited', () => {
+    const path = process.env.PATH;
+    process.env.PATH = mkdtempSync(join(tmpdir(), 'verify-no-ps-'));
+    try {
+      assert.equal(isRunning(currentProcess()), true);
+    } finally {
+      process.env.PATH = path;
+    }
   });
 });
