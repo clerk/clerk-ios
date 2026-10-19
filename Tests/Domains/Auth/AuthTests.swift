@@ -507,7 +507,7 @@ struct AuthTests {
     #expect(capturedPrepareParams["code_challenge"]?.stringValue?.isEmpty == false)
 
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue))
-    #expect(Clerk.shared.dependencies.magicLinkStore.load()?.flowId == signIn.id)
+    #expect(try Clerk.shared.dependencies.magicLinkStore.load()?.flowId == signIn.id)
   }
 
   @Test
@@ -552,7 +552,7 @@ struct AuthTests {
       codeVerifier: "verifier_123",
       authFlowOwnerId: expectedAuthFlowOwnerId
     )
-    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    let pendingFlow = try #require(try clerk.dependencies.magicLinkStore.load())
     #expect(
       clerk.dependencies.magicLinkStore.authFlowOwnerId(for: pendingFlow)
         == expectedAuthFlowOwnerId
@@ -590,7 +590,7 @@ struct AuthTests {
       authFlowOwnerId: ownerId
     )
 
-    let pendingFlow = try #require(store.load())
+    let pendingFlow = try #require(try store.load())
     #expect(store.authFlowOwnerId(for: pendingFlow) == ownerId)
     let sameFlowWithDifferentDates = PendingMagicLinkFlow(
       kind: pendingFlow.kind,
@@ -602,8 +602,27 @@ struct AuthTests {
     #expect(store.authFlowOwnerId(for: sameFlowWithDifferentDates) == ownerId)
 
     let relaunchedStore = MagicLinkStore(keychain: keychain)
-    let reloadedFlow = try #require(relaunchedStore.load())
+    let reloadedFlow = try #require(try relaunchedStore.load())
     #expect(relaunchedStore.authFlowOwnerId(for: reloadedFlow) == nil)
+  }
+
+  @Test
+  func magicLinkStoreLoadThrowsKeychainReadError() {
+    let store = MagicLinkStore(keychain: MissingEntitlementKeychain())
+
+    #expect(throws: KeychainError.self) {
+      try store.load()
+    }
+  }
+
+  @Test
+  func completeMagicLinkThrowsKeychainReadError() async throws {
+    let testBaseUrl = try #require(URL(string: "https://mock-authtests-keychain.clerk.accounts.dev"))
+    let clerk = makeIsolatedClerk(keychain: MissingEntitlementKeychain(), baseURL: testBaseUrl)
+
+    await #expect(throws: KeychainError.self) {
+      try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
+    }
   }
 
   @Test
@@ -973,8 +992,8 @@ struct AuthTests {
     #expect(signInParams.value == nil)
     #expect(activatedSessionId.value == nil)
     #expect(try keychain.hasItem(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) == true)
-    #expect(clerk.dependencies.magicLinkStore.load()?.flowId == "flow_new")
-    #expect(clerk.dependencies.magicLinkStore.load()?.codeVerifier == "verifier_new")
+    #expect(try clerk.dependencies.magicLinkStore.load()?.flowId == "flow_new")
+    #expect(try clerk.dependencies.magicLinkStore.load()?.codeVerifier == "verifier_new")
   }
 
   @Test
@@ -1122,7 +1141,7 @@ struct AuthTests {
       try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
     }
 
-    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    let pendingFlow = try #require(try clerk.dependencies.magicLinkStore.load())
     #expect(signInParams.value == nil)
     #expect(pendingFlow.flowId == "flow_123")
     #expect(pendingFlow.codeVerifier == "verifier_123")
@@ -1163,7 +1182,7 @@ struct AuthTests {
 
     _ = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
 
-    let pendingFlow = try #require(clerk.dependencies.magicLinkStore.load())
+    let pendingFlow = try #require(try clerk.dependencies.magicLinkStore.load())
     #expect(pendingFlow.flowId == "flow_new")
     #expect(pendingFlow.codeVerifier == "verifier_new")
     #expect(activatedSessionId.value == "sess_123")

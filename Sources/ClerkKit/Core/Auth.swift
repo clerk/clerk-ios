@@ -763,7 +763,7 @@ extension Auth {
       throw ClerkClientError(message: "Magic link callback is missing approval_token.", localizationBundle: .module)
     }
 
-    guard let pendingFlow = magicLinkStore.load() else {
+    guard let pendingFlow = try magicLinkStore.load() else {
       throw ClerkClientError(message: "No pending magic link flow was found.", localizationBundle: .module)
     }
 

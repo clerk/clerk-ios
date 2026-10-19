@@ -44,3 +44,9 @@ custom_rules:
       - identifier
     message: "Present with clerkSheet instead so the presented content keeps the Clerk UI context on Designed for iPad and Mac Catalyst."
     severity: error
+  keychain_read_try_optional:
+    name: "Keychain read error is not absence"
+    included: "Sources/.*\\.swift"
+    regex: "try\\?\\s*\\(?\\s*[\\w.]*\\.(data|string|hasItem)\\(forKey:"
+    message: "try? turns a Keychain read error into nil, the same value as a missing item. Use try and let the error propagate, or catch it and fail closed; nil from data(forKey:) or string(forKey:) means missing."
+    severity: error
