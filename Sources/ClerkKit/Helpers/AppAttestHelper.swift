@@ -91,7 +91,7 @@ enum AppAttestHelper {
 
   @MainActor
   private static func createAssertion(payload: Data) async throws -> String {
-    let keyId: String = if let existingKeyId = Self.keyId {
+    let keyId: String = if let existingKeyId = try Self.keyId {
       existingKeyId
     } else {
       try await performDeviceAttestation()
@@ -143,7 +143,9 @@ enum AppAttestHelper {
 
   @MainActor
   private static var keyId: String? {
-    try? keychain.string(forKey: keychainKey)
+    get throws {
+      try keychain.string(forKey: keychainKey)
+    }
   }
 
   @MainActor
