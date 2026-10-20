@@ -124,6 +124,11 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
   }
 
   public var body: some View {
+    bodyContent
+      .recordsThemeForUpdateRequiredView()
+  }
+
+  private var bodyContent: some View {
     ZStack {
       if let user = clerk.user {
         Button {

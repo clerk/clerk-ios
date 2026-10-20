@@ -163,6 +163,11 @@ public struct OrganizationProfileView<Route: Hashable, Destination: View>: View 
   }
 
   public var body: some View {
+    bodyContent
+      .recordsThemeForUpdateRequiredView()
+  }
+
+  private var bodyContent: some View {
     Group {
       if let organization {
         Group {

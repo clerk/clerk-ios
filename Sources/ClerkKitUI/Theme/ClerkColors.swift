@@ -13,7 +13,7 @@ extension ClerkTheme {
   /// Many additional tokens (such as borders and state variants) are derived
   /// from the base colors you provide here. A derived token follows its base
   /// color until you set it explicitly.
-  public struct Colors: Sendable, Equatable {
+  public struct Colors: Sendable {
     /// The primary color used throughout the views.
     public var primary: Color
 

@@ -9,7 +9,7 @@ import Foundation
 
 extension ClerkTheme {
   /// Design tokens that control layout and shape across ClerkKitUI views.
-  public struct Design: Sendable, Equatable {
+  public struct Design: Sendable {
     /// The default corner radius applied to ClerkKitUI surfaces.
     public var borderRadius: CGFloat
 

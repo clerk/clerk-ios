@@ -121,15 +121,12 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
 }
 
 private struct PresentedUpdateRequiredView: View {
-  @Environment(\.colorScheme) private var colorScheme
-  private let appearance = UpdateRequiredAppearance.shared
+  @Environment(Clerk.self) private var clerk
+  private let store = UpdateRequiredAppearanceStore.shared
 
   var body: some View {
     UpdateRequiredView()
-      .environment(\.clerkTheme, appearance.theme)
-      .environment(\.clerkAppIcon, appearance.appIcon)
-      .environment(\.clerkAppIconMaxHeight, appearance.appIconMaxHeight)
-      .environment(\.clerkAppIconView, appearance.appIconView(colorScheme: colorScheme))
+      .updateRequiredAppearance(store.presentedAppearance(dashboardLogoURL: clerk.environment?.displayConfig.logoImageUrl))
   }
 }
 

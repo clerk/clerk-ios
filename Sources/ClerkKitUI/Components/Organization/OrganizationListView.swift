@@ -137,6 +137,12 @@ public struct OrganizationListView: View {
   }
 
   public var body: some View {
+    bodyContent
+      .recordsThemeForUpdateRequiredView()
+  }
+
+  @ViewBuilder
+  private var bodyContent: some View {
     if organizationsEnabled, user != nil {
       Group {
         if navigationPath == nil {

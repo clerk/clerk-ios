@@ -25,9 +25,6 @@ extension View {
   /// - Returns: A view with a custom Clerk app icon configuration.
   public func clerkAppIcon(_ image: Image?) -> some View {
     environment(\.clerkAppIcon, image)
-      .recordUpdateRequiredAppearance(.appIcon, value: image) {
-        UpdateRequiredAppearance.shared.appIcon = $0
-      }
   }
 
   /// Overrides the maximum height of the app logo shown by ClerkKitUI authentication screens.
@@ -41,9 +38,6 @@ extension View {
   /// - Returns: A view with a custom Clerk app icon maximum height.
   public func clerkAppIcon(maxHeight: CGFloat) -> some View {
     environment(\.clerkAppIconMaxHeight, maxHeight)
-      .recordUpdateRequiredAppearance(.appIconMaxHeight, value: maxHeight) {
-        UpdateRequiredAppearance.shared.appIconMaxHeight = $0
-      }
   }
 
   /// Replaces the entire app logo slot shown by ClerkKitUI authentication screens.
@@ -53,22 +47,12 @@ extension View {
   /// the dashboard-configured logo and other app icon modifiers. You are responsible
   /// for its layout and accessibility.
   ///
-  /// The update-required screen that ClerkKitUI presents automatically captures
-  /// this content, and the environment it's declared in, when the modified view appears.
-  /// Environment objects the content reads stay available there and the color scheme
-  /// follows the system; values passed in when building it don't update.
-  ///
   /// - Parameter content: A view builder that creates the custom app logo content.
   /// - Returns: A view with fully custom Clerk app icon content.
   public func clerkAppIconView(
     @ViewBuilder content: () -> some View
   ) -> some View {
-    let appIconView = AnyView(content())
-    return environment(\.clerkAppIconView, appIconView)
-      .recordUpdateRequiredAppearanceOnAppear(.appIconView) { environment in
-        UpdateRequiredAppearance.shared.appIconView = appIconView
-        UpdateRequiredAppearance.shared.appIconEnvironment = environment
-      }
+    environment(\.clerkAppIconView, AnyView(content()))
   }
 }
 
