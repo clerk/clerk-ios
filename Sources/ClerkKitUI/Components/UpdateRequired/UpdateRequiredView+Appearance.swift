@@ -13,11 +13,14 @@ extension UpdateRequiredView {
   /// Clerk presents that view in its own window, outside your view hierarchy. By default it uses the
   /// theme of the ClerkKitUI views your app has shown, such as ``AuthView`` or ``UserButton``, and
   /// the logo set in the Clerk Dashboard, or your app's icon when there's none. To choose them
-  /// yourself, set them here, typically where you configure Clerk:
+  /// yourself, set them here, typically where you configure Clerk. Set only what you want to change:
   ///
   /// ```swift
-  /// UpdateRequiredView.appearance = .init(theme: myTheme, appIcon: Image("Logo"))
+  /// UpdateRequiredView.appearance.appIcon = Image("Logo")
   /// ```
+  ///
+  /// Assigning a new ``Appearance`` replaces every setting, so anything you leave out goes back to
+  /// its default.
   ///
   /// When you place ``UpdateRequiredView`` yourself, it uses your view hierarchy's theme and app
   /// icon like any other ClerkKitUI view, and this setting doesn't apply.
