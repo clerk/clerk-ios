@@ -8,17 +8,16 @@ import Observation
 
 @MainActor
 @Observable
-final class OrganizationAccountListDataSource {
-  let pageSize: Int
-
-  let memberships = UnscopedOrganizationPagedList<OrganizationMembership>(name: "memberships")
-  let invitations = UnscopedOrganizationPagedList<UserOrganizationInvitation>(name: "invitations")
-  let suggestions = UnscopedOrganizationPagedList<OrganizationSuggestion>(name: "suggestions")
-  var creationDefaults: OrganizationCreationDefaults?
+final class OrganizationAccountListDataSource: OrganizationScopedContent {
+  let scope: OrganizationUserScope
+  let memberships: OrganizationPagedList<OrganizationMembership, Void>
+  let invitations: OrganizationPagedList<UserOrganizationInvitation, Void>
+  let suggestions: OrganizationPagedList<OrganizationSuggestion, Void>
+  private(set) var creationDefaults: OrganizationCreationDefaults?
   var error: Error?
-  private var isLoadingCreationDefaults = false
-  @ObservationIgnored private var loadID = 0
-  @ObservationIgnored private(set) var loadedUserID: String?
+  private var isLoadingCreationDefaults: Bool
+  @ObservationIgnored private var creationDefaultsTask: Task<Void, Never>?
+  @ObservationIgnored private var isRetired = false
 
   var isLoading: Bool {
     memberships.isLoading || invitations.isLoading || suggestions.isLoading || isLoadingCreationDefaults
@@ -28,11 +27,8 @@ final class OrganizationAccountListDataSource {
     !memberships.pager.items.isEmpty || !invitations.pager.items.isEmpty || !suggestions.pager.items.isEmpty
   }
 
-  /// Whether a list's latest load failed, leaving it missing while the others show.
   var hasFailedLists: Bool {
-    guard loadedUserID != nil else { return false }
-
-    return (!memberships.isLoading && !memberships.hasLoaded)
+    (!memberships.isLoading && !memberships.hasLoaded)
       || (!invitations.isLoading && !invitations.hasLoaded)
       || (!suggestions.isLoading && !suggestions.hasLoaded)
   }
@@ -45,8 +41,20 @@ final class OrganizationAccountListDataSource {
     memberships.pager.hasNextPage || invitations.pager.hasNextPage || suggestions.pager.hasNextPage
   }
 
-  init(pageSize: Int = 10) {
-    self.pageSize = pageSize
+  init(scope: OrganizationUserScope, pageSize: Int = 10) {
+    let user = scope.user
+    self.scope = scope
+    memberships = OrganizationPagedList(name: "memberships", isLoading: true) { _, offset in
+      try await user.getOrganizationMemberships(offset: offset, pageSize: pageSize)
+    }
+    invitations = OrganizationPagedList(name: "invitations", isLoading: true) { _, offset in
+      try await user.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
+    }
+    suggestions = OrganizationPagedList(name: "suggestions", isLoading: true) { _, offset in
+      try await user.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: ["pending", "accepted"])
+    }
+    isLoadingCreationDefaults = scope.includesCreationDefaults
+
     let reportError: @MainActor (Error) -> Void = { [weak self] error in
       self?.error = error
     }
@@ -55,49 +63,33 @@ final class OrganizationAccountListDataSource {
     suggestions.onError = reportError
   }
 
-  func loadInitial(user: User?, includeCreationDefaults: Bool) async {
-    loadID += 1
-    let loadID = loadID
-    guard let user else {
-      loadedUserID = nil
-      resetLists(isLoading: false)
-      return
-    }
-    if user.id != loadedUserID {
-      loadedUserID = user.id
-      resetLists(isLoading: true)
-    }
+  func start() {
+    reload()
+  }
+
+  func retire() {
+    isRetired = true
+    memberships.retire()
+    invitations.retire()
+    suggestions.retire()
+    creationDefaultsTask?.cancel()
+    creationDefaultsTask = nil
+  }
+
+  func reload() {
+    guard !isRetired else { return }
 
     error = nil
-    isLoadingCreationDefaults = true
-    async let fetchedDefaults = fetchCreationDefaults(user: user, isEnabled: includeCreationDefaults)
-    let loads = [
-      memberships.reload { [pageSize] offset in
-        try await user.getOrganizationMemberships(offset: offset, pageSize: pageSize)
-      },
-      invitations.reload { [pageSize] offset in
-        try await user.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
-      },
-      suggestions.reload { [pageSize] offset in
-        try await user.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: ["pending", "accepted"])
-      },
-    ]
-    for load in loads {
-      await load.value
-    }
-    let defaults = await fetchedDefaults
-    guard loadID == self.loadID else { return }
-
-    creationDefaults = defaults
-    isLoadingCreationDefaults = false
+    memberships.reload()
+    invitations.reload()
+    suggestions.reload()
+    loadCreationDefaultsIfNeeded()
   }
 
   func acceptInvitation(_ invitation: UserOrganizationInvitation) async {
     do {
-      let accepted = try await invitation.accept()
-      invitations.update {
-        $0.replace(accepted)
-        $0.removeOneFromPagination()
+      try await invitations.mutate(invitation, as: .accepting) {
+        try await .resolve(invitation.accept())
       }
     } catch {
       self.error = error
@@ -106,29 +98,34 @@ final class OrganizationAccountListDataSource {
 
   func acceptSuggestion(_ suggestion: OrganizationSuggestion) async {
     do {
-      let accepted = try await suggestion.accept()
-      suggestions.update { $0.replace(accepted) }
+      try await suggestions.mutate(suggestion, as: .accepting) {
+        try await .replace(suggestion.accept())
+      }
     } catch {
       self.error = error
     }
   }
 
-  private func resetLists(isLoading: Bool) {
-    memberships.reset(isLoading: isLoading)
-    invitations.reset(isLoading: isLoading)
-    suggestions.reset(isLoading: isLoading)
-    creationDefaults = nil
-    isLoadingCreationDefaults = false
-  }
+  private func loadCreationDefaultsIfNeeded() {
+    guard scope.includesCreationDefaults, creationDefaults == nil, creationDefaultsTask == nil else { return }
 
-  private func fetchCreationDefaults(user: User, isEnabled: Bool) async -> OrganizationCreationDefaults? {
-    guard isEnabled else { return nil }
+    isLoadingCreationDefaults = true
+    let user = scope.user
+    creationDefaultsTask = Task { [weak self] in
+      let defaults: OrganizationCreationDefaults?
+      do {
+        defaults = try await user.getOrganizationCreationDefaults()
+      } catch {
+        if !error.isCancellationError {
+          ClerkLogger.error("Failed to fetch organization creation defaults", error: error)
+        }
+        defaults = nil
+      }
+      guard let self, !isRetired else { return }
 
-    do {
-      return try await user.getOrganizationCreationDefaults()
-    } catch {
-      ClerkLogger.error("Failed to fetch organization creation defaults", error: error)
-      return nil
+      creationDefaults = defaults
+      isLoadingCreationDefaults = false
+      creationDefaultsTask = nil
     }
   }
 }
