@@ -9,6 +9,7 @@ A member of the active organization opens its profile from OrganizationSwitcher,
 - `rename` changes the organization's name on `Update profile`, and the profile shows the new name.
 - `org-domains-empty` shows `No verified domains` and no `Add domain` to a member whose role can read domains but not manage them.
 - `org-requests` shows a request to join on the `Requests` tab, from a user who signed up with an address at the organization's verified domain.
+- `embedded-profile` keeps OrganizationProfileView mounted in a tab, with Members and then Verified domains open, while the user makes another organization active from the `Accounts` tab. Each screen then shows only the new active organization's rows.
 
 ## How to get to it (user POV)
 
@@ -26,6 +27,7 @@ Preconditions:
 - **Rename.** The third test taps `Update profile`, clears `clerk.organization.profileForm.name`, fills it with another `host.newOrganizationName()`, and taps `clerk.organization.profileForm.submit`. It expects the form gone and the new name on the profile. Screenshot `org-renamed`.
 - **Domains reader.** The fourth test seeds an admin and a reader, and an organization with the reader as `org:e2e_domains_reader`. It signs the reader in, taps the organization's name, expects the role `Domains reader`, taps `Manage`, then `Verified domains`, and expects `No verified domains` and no `Add domain`. Screenshot `org-domains-empty`.
 - **Request to join.** The fifth test seeds an admin and an organization with `suggestDomain: true`. It signs up a new user through the full-screen AuthView with `host.newEmail({ domain: org.domain })`, the test code, and the run password. That user taps `Personal account`, taps `Request to join` on the suggestion, and expects `Pending approval`. Then it signs the admin in, opens `Manage`, `Members`, and the `Requests` tab, and expects the requester's email and no `No membership requests`. Screenshot `org-requests`.
+- **Embedded profile.** Run `e2e-tests/bin/control-clerk-ios run organization-profile/embedded-profile`. The spec seeds an admin with two organizations, one of them with a second member and a verified domain. It opens `Organization tabs`, makes the first organization active from `Accounts`, opens `Members` on the `Organization` tab, and expects the admin and not the member (`members-first-org`). It makes the second organization active and expects the member on the same Members screen (`members-after-switch`). It goes back, opens `Verified domains`, and expects the domain (`domains-team-org`). It makes the first organization active again and expects `Add domain` and not the domain (`domains-after-switch`). [Organizations](./organizations.md) describes the tabs.
 - **Proof.** `specs/features/organization-profile/organization-profile.e2e.ts` passes, and the screenshots show each screen with the organization's name or the creator's email. `down` deletes the application, and every organization and invitation goes with it.
 
 ## States a spec cannot reach
