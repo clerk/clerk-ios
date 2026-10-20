@@ -45,6 +45,18 @@ struct AppVersionSupportDecodingTests {
   }
 
   @Test
+  func malformedNativeAppSettingsFallBackToTheDefault() throws {
+    let environment = try decodeEnvironment(nativeAppSettings: [
+      "minimum_supported_version": [
+        "ios": ["bundle_id": "com.example.app", "minimum_version": "2.0.0"],
+        "android": [],
+      ],
+    ])
+
+    #expect(environment.nativeAppSettings == .default)
+  }
+
+  @Test
   func missingIOSPoliciesDefaultToEmpty() throws {
     let environment = try decodeEnvironment(nativeAppSettings: [
       "minimum_supported_version": ["android": []],

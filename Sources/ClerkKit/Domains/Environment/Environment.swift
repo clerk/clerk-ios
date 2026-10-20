@@ -36,7 +36,7 @@ extension Clerk {
       displayConfig = try container.decode(DisplayConfig.self, forKey: .displayConfig)
       organizationSettings = try container.decodeIfPresent(OrganizationSettings.self, forKey: .organizationSettings) ?? .default
       commerceSettings = try container.decodeIfPresent(CommerceSettings.self, forKey: .commerceSettings) ?? .default
-      nativeAppSettings = try container.decodeIfPresent(NativeAppSettings.self, forKey: .nativeAppSettings) ?? .default
+      nativeAppSettings = (try? container.decodeIfPresent(NativeAppSettings.self, forKey: .nativeAppSettings)) ?? .default
     }
   }
 }
