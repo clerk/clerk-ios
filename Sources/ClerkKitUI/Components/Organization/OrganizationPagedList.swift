@@ -35,6 +35,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
   @ObservationIgnored private let name: String
   @ObservationIgnored private let fetch: Fetch
   @ObservationIgnored private var generation = 0
+  @ObservationIgnored private var pageLoads = 0
   @ObservationIgnored private var isRetired = false
   @ObservationIgnored private var reloadTask: Task<Void, Never>?
   @ObservationIgnored private var loadMoreTask: Task<Void, Never>?
@@ -76,6 +77,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     let generation = generation
     let offset = pager.offset
     pager.isLoadingMore = true
+    pageLoads += 1
     let task = Task { [weak self, fetch] in
       do {
         let page = try await fetch(query, offset)
@@ -95,19 +97,16 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
   ) async throws {
     guard !isRetired, mutations[item.id] == nil else { return }
 
-    let generation = generation
-    let startedDuringAReload = reloadTask != nil
+    let pageLoads = pageLoads
+    let startedDuringAPageLoad = reloadTask != nil || loadMoreTask != nil
     mutations[item.id] = mutation
     defer { mutations[item.id] = nil }
 
     let patch = try await operation()
-    guard !isRetired, let query else { return }
-    guard generation == self.generation, !startedDuringAReload else {
-      await load(query: query, throughOffset: pager.offset).value
-      return
-    }
+    guard !isRetired else { return }
 
-    switch patch {
+    let pagesHeldStill = !startedDuringAPageLoad && pageLoads == self.pageLoads
+    switch pagesHeldStill ? patch : .reload {
     case .replace(let item):
       pager.replace(item)
     case .remove(let item):
@@ -115,7 +114,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     case .resolve(let item):
       pager.resolve(item)
     case .reload:
-      await reload(query: query).value
+      await revalidate()
     }
   }
 
@@ -130,6 +129,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
 
     loadMoreAfterReload = loadMoreAfterReload || loadMoreTask != nil
     startGeneration()
+    pageLoads += 1
     self.query = query
     isLoading = true
     hasLoaded = false

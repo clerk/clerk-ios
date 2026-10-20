@@ -14,6 +14,7 @@ A member of the active organization opens its profile from OrganizationSwitcher,
 ## How to get to it (user POV)
 
 - With an organization active, the OrganizationSwitcher on the home shows the organization's name. Tap it. A sheet titled `Organization` shows the name, the user's role, `Manage`, and `Switch account`. Tap `Manage`. The profile opens in a sheet titled `Organization`.
+- Or tap `Organization tabs` on the home, then the `Organization` tab. The profile shows in the tab, and no sheet opens. Only `embedded-profile` goes this way.
 - From the profile, tap `Update profile`, `Members`, `Verified domains`, `Leave organization`, or `Delete organization`. On the Members screen, the three tabs are at the top and `Invite` is at the top right.
 
 ## Driving it with verify
@@ -50,7 +51,7 @@ A change to the role-set warning is shown on a build with a local change that is
 - No row, tab, or button of the profile has an identifier except the name, slug, and submit of `Update profile`, which share the `clerk.organization.profileForm.*` identifiers with the create form. The spec finds rows and buttons with `getByRole('button', { name })` and tabs with `getByRole('tab', { name })`. `Members` is a row, a tab, and the title of the Members screen.
 - `screen` prints each tab of the Members screen as a `button`, but a locator matches it only as a `tab`. The tree on a failure page shows the role that a locator matches.
 - agent-device refuses a tap on the Members screen with "covered by another visible element" while nothing covers the control. The screen tree of that sheet ends with a node of type `Toolbar` whose frame is the whole sheet, and agent-device takes a toolbar for an overlay unless a sibling has the same frame. On the profile and on Invite new members a scroll view has that frame, so their controls are not refused. On the Members screen the navigation bar, the tabs, the search field, and the list are separate nodes, so agent-device marks every control under the toolbar's frame as covered: the tabs, the search field, and `Invite`. A tap at a point of the control reaches it, because the toolbar takes no touches. So the spec taps these three through `atCenter`, which taps the middle of the control's box and skips agent-device's check. Each such tap is followed by an assertion on what the tap opens or selects, so a control that is really covered still fails the test.
-- `Manage` on the overview sheet is the only way into the profile from E2EHost. E2EHost shows no `OrganizationProfileView` of its own, so the profile always opens as the switcher's sheet.
+- E2EHost opens the profile in two places. `Manage` on the overview sheet opens it as the switcher's sheet. The `Organization` tab of `Organization tabs` (`e2e.home.organizationTabs`) embeds `OrganizationProfileView(isDismissible: false)`.
 - `No members found` is the empty state of a search, not of the list. The creator is always on the list.
 - `Verified domains` shows only when the instance has domains on and the member can read or manage them. On the standard settings the creator always sees it.
 - Back from Members and from Verified domains returns to the profile. The spec taps the navigation bar's `Back` button with `host.back()`.

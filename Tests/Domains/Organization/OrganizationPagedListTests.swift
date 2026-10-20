@@ -458,6 +458,63 @@ struct OrganizationPagedListTests {
     #expect(list.pager.items.map(\.id) == ["a", "b", "d"])
   }
 
+  @Test(arguments: [false, true])
+  func patchOverlappingALoadMoreReloadsInsteadOfPatching(pageLandsFirst: Bool) async throws {
+    let list = source.list()
+    let serverRows = RowsOnServer(["a", "b", "c", "d"])
+    source.pages["q"] = { [gate, serverRows] offset in
+      if offset > 0, !pageLandsFirst, serverRows.reloads == 0 {
+        serverRows.reloads += 1
+        await gate.wait("loadMore")
+      }
+      let rows = Array(serverRows.ids.dropFirst(offset).prefix(2))
+      return page(rows, totalCount: serverRows.ids.count)
+    }
+    await list.reload(query: "q").value
+
+    let mutation = Task {
+      try await list.mutate(Row(id: "a"), as: .removing) { [gate, serverRows] in
+        serverRows.ids = ["b", "c", "d"]
+        await gate.wait("removal")
+        return .remove(Row(id: "a"))
+      }
+    }
+    try await waitUntil { list.mutations["a"] == .removing }
+    let loadMore = list.loadMore()
+    if pageLandsFirst {
+      await loadMore?.value
+    }
+    gate.open("removal")
+    try await mutation.value
+    gate.open("loadMore")
+    await loadMore?.value
+    for _ in 0 ..< 3 {
+      await list.loadMore()?.value
+    }
+
+    #expect(list.pager.items.map(\.id) == ["b", "c", "d"])
+    #expect(list.pager.totalCount == 3)
+  }
+
+  @Test
+  func reloadPatchKeepsEveryLoadedPage() async throws {
+    let list = source.list()
+    let serverRows = RowsOnServer(["a", "b", "c", "d"])
+    source.pages["q"] = { [serverRows] offset in
+      let rows = Array(serverRows.ids.dropFirst(offset).prefix(2))
+      return page(rows, totalCount: serverRows.ids.count)
+    }
+    await list.reload(query: "q").value
+    await list.loadMore()?.value
+
+    try await list.mutate(Row(id: "c"), as: .rejecting) { [serverRows] in
+      serverRows.ids = ["a", "b", "d"]
+      return .reload
+    }
+
+    #expect(list.pager.items.map(\.id) == ["a", "b", "d"])
+  }
+
   @Test
   func resolvingAMissingItemKeepsPagination() async throws {
     let list = source.list()
