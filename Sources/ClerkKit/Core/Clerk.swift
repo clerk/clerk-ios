@@ -142,6 +142,24 @@ public final class Clerk {
     }
   }
 
+  /// Whether this build of your app meets the minimum version set for it in the Clerk Dashboard.
+  ///
+  /// Read this to show your own update screen when you set
+  /// ``Clerk/Options/updateRequiredViewEnabled`` to `false`.
+  public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supported(currentVersion: AppBuild.current.version)
+
+  @ObservationIgnored
+  var environmentVersionStatus: AppVersionSupportStatus?
+
+  @ObservationIgnored
+  var serverVersionStatus: AppVersionSupportStatus?
+
+  @ObservationIgnored
+  var appBuild = AppBuild.current
+
+  @ObservationIgnored
+  var automaticPresenter: (any ClerkAutomaticPresenter)?
+
   package struct EnvironmentRefreshCheckpoint: Equatable {
     fileprivate let revision: Int
   }
@@ -481,6 +499,7 @@ extension Clerk {
   func applyRefreshedEnvironment(_ environment: Environment) {
     self.environment = environment
     environmentRefreshRevision += 1
+    applyFetchedEnvironmentAppVersionSupport(environment)
   }
 
   @discardableResult
@@ -537,6 +556,7 @@ extension Clerk: CacheCoordinator {
     // This prevents cached data from overwriting fresh data loaded from the API
     guard self.environment == nil else { return }
     self.environment = environment
+    applySavedEnvironmentAppVersionSupport(environment)
   }
 }
 
@@ -631,6 +651,7 @@ extension Clerk {
 
   private func resetPerConfigurationState() {
     environmentRefreshRevision = 0
+    resetAppVersionSupport()
     callbackContinuation = nil
     identityController.resetOrderingState()
   }

@@ -11,10 +11,14 @@ import SwiftUI
 /// A top-level theme container that customizes the appearance of ClerkKitUI views.
 ///
 /// `ClerkTheme` groups semantic `colors`, Dynamic Type-aligned `fonts`, and shared
-/// `design` tokens. Apply it with `.environment(\.clerkTheme, ...)` on your root
-/// view, or override individual properties such as
-/// `.environment(\.clerkTheme.colors.primary, ...)` for more targeted changes.
-public struct ClerkTheme: Sendable {
+/// `design` tokens. Apply it with ``SwiftUICore/View/clerkTheme(_:)`` on your root
+/// view. To change a few tokens, set them on a `ClerkTheme()` and pass it to
+/// `clerkTheme(_:)`.
+///
+/// The update-required screen that ClerkKitUI presents automatically uses only the
+/// theme set with `clerkTheme(_:)`. A theme set with `.environment(\.clerkTheme, ...)`
+/// still styles views inside your hierarchy, but not that screen.
+public struct ClerkTheme: Sendable, Equatable {
   /// Color tokens used throughout ClerkKitUI components.
   public var colors: Colors
 

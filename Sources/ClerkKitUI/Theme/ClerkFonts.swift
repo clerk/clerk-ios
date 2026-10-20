@@ -9,7 +9,7 @@ import SwiftUI
 
 extension ClerkTheme {
   /// A typography scale aligned with system text styles.
-  public struct Fonts: Sendable {
+  public struct Fonts: Sendable, Equatable {
     /// The large title text style.
     public var largeTitle: Font
 

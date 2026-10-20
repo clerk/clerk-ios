@@ -1,0 +1,28 @@
+//
+//  ClerkAppVersionSupportResponseMiddleware.swift
+//  Clerk
+//
+
+import Foundation
+
+struct ClerkAppVersionSupportResponseMiddleware: ClerkResponseMiddleware {
+  static let statusHeader = "X-Clerk-App-Version-Status"
+  static let supportedStatus = "supported"
+
+  private let runtimeScope: ClerkRuntimeScope
+
+  init(runtimeScope: ClerkRuntimeScope) {
+    self.runtimeScope = runtimeScope
+  }
+
+  func validate(_ response: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
+    if response.statusCode == 403,
+       let error = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data).errors.first,
+       error.isUnsupportedAppVersion
+    {
+      try? await runtimeScope.withCurrentClerk { $0.applyUnsupportedAppVersion(meta: error.meta) }
+    } else if response.value(forHTTPHeaderField: Self.statusHeader)?.lowercased() == Self.supportedStatus {
+      try? await runtimeScope.withCurrentClerk { $0.applySupportedAppVersion() }
+    }
+  }
+}

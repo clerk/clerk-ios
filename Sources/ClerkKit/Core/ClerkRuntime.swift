@@ -83,6 +83,8 @@ final class ClerkRuntime {
     }
     installSharedIdentityNotifier(clerk: clerk)
 
+    clerk.startAutomaticPresenter()
+
     scheduleStartupEnvironmentRefresh()
     startStartupClientRefreshIfNeeded()
   }
@@ -132,6 +134,7 @@ final class ClerkRuntime {
   }
 
   private func stopManagers() {
+    clerk?.stopAutomaticPresenter()
     watchConnectivityCoordinator?.stopAcceptingIdentityUpdates()
     watchConnectivityCoordinator = nil
     sharedIdentityNotifier?.stop()

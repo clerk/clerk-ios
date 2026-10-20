@@ -139,6 +139,13 @@ extension Clerk {
     /// ```
     public let middleware: MiddlewareConfig
 
+    /// Presents ClerkKitUI's `UpdateRequiredView` over your iOS app automatically when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
+    ///
+    /// The view covers every window and can't be dismissed until the user updates. It only appears when your app links ClerkKitUI.
+    /// Set this to false to show your own UI from ``Clerk/appVersionSupportStatus`` instead, or to place `UpdateRequiredView` yourself.
+    /// It has no effect on macOS, where apps place `UpdateRequiredView` themselves.
+    public let updateRequiredViewEnabled: Bool
+
     /// Initializes a ``Options`` instance.
     /// - Parameters:
     ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.
@@ -149,6 +156,7 @@ extension Clerk {
     ///   - watchConnectivityEnabled: Keeps the iOS app and its watchOS companion signed in as the same user. Defaults to false.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     ///   - middleware: Middleware configuration for requests and responses. Defaults to an empty configuration.
+    ///   - updateRequiredViewEnabled: Presents ClerkKitUI's `UpdateRequiredView` over your app automatically when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
     public init(
       logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
@@ -157,7 +165,8 @@ extension Clerk {
       redirectConfig: RedirectConfig = .init(),
       watchConnectivityEnabled: Bool = false,
       loggerHandler: (@Sendable (LogEntry) -> Void)? = nil,
-      middleware: MiddlewareConfig = .init()
+      middleware: MiddlewareConfig = .init(),
+      updateRequiredViewEnabled: Bool = true
     ) {
       self.logLevel = logLevel
       self.telemetryEnabled = telemetryEnabled
@@ -168,6 +177,7 @@ extension Clerk {
       self.watchConnectivityEnabled = watchConnectivityEnabled
       self.loggerHandler = loggerHandler
       self.middleware = middleware
+      self.updateRequiredViewEnabled = updateRequiredViewEnabled
     }
   }
 }
