@@ -16,6 +16,7 @@ enum E2EIdentifiers {
 
   enum Home {
     static let customSignIn = "e2e.home.customSignIn"
+    static let organizationTabs = "e2e.home.organizationTabs"
   }
 
   enum CustomSignIn {
