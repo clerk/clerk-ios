@@ -61,7 +61,7 @@ struct OrganizationMembersView: View {
 
       if let dataSource = store.content(for: scope) {
         content(dataSource)
-      } else {
+      } else if scope != nil {
         SpinnerView()
           .frame(width: 24, height: 24)
       }

@@ -404,6 +404,35 @@ struct OrganizationPagedListTests {
   }
 
   @Test
+  func patchLandingWhileAnOlderReloadRunsReloadsInsteadOfPatching() async throws {
+    let list = source.list()
+    let serverRows = RowsOnServer(["a", "b"])
+    source.pages["q"] = { [gate, serverRows] _ in
+      let rows = serverRows.ids
+      if serverRows.reloads == 1 {
+        serverRows.reloads += 1
+        await gate.wait("staleReload")
+      } else {
+        serverRows.reloads += 1
+      }
+      return page(rows, totalCount: rows.count)
+    }
+    await list.reload(query: "q").value
+    let staleReload = list.reload(query: "q")
+    try await waitUntil { serverRows.reloads == 2 }
+
+    try await list.mutate(Row(id: "a"), as: .removing) { [serverRows] in
+      serverRows.ids = ["b"]
+      return .remove(Row(id: "a"))
+    }
+    gate.open("staleReload")
+    await staleReload.value
+
+    #expect(list.pager.items.map(\.id) == ["b"])
+    #expect(list.pager.totalCount == 1)
+  }
+
+  @Test
   func resolvingAMissingItemKeepsPagination() async throws {
     let list = source.list()
     source.pages["q"] = { _ in page(["a", "b"], totalCount: 4) }

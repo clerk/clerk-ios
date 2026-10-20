@@ -96,12 +96,13 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     guard !isRetired, mutations[item.id] == nil else { return }
 
     let generation = generation
+    let startedDuringAReload = reloadTask != nil
     mutations[item.id] = mutation
     defer { mutations[item.id] = nil }
 
     let patch = try await operation()
     guard !isRetired, let query else { return }
-    guard generation == self.generation else {
+    guard generation == self.generation, !startedDuringAReload else {
       await reload(query: query).value
       return
     }

@@ -100,10 +100,10 @@ struct OrganizationInviteMembersView: View {
       }
     }
     .onChange(of: emailAddresses) { _, _ in
-      error = nil
+      clearErrors()
     }
     .onChange(of: selectedRoleKey) { _, _ in
-      error = nil
+      clearErrors()
     }
     .onChange(of: roleOptions.map(\.key), initial: true) { _, keys in
       if !keys.contains(selectedRoleKey) {
@@ -248,6 +248,11 @@ struct OrganizationInviteMembersView: View {
     } else {
       dismiss()
     }
+  }
+
+  private func clearErrors() {
+    error = nil
+    roles?.error = nil
   }
 
   private func selectDefaultRoleIfNeeded() {
