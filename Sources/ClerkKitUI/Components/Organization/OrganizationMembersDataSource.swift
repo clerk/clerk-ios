@@ -13,9 +13,9 @@ import Observation
 final class OrganizationMembersDataSource {
   let pageSize: Int
 
-  let members = OrganizationPagedList<OrganizationMembership>(name: "members")
-  let invitations = OrganizationPagedList<OrganizationInvitation>(name: "invitations")
-  let membershipRequests = OrganizationPagedList<OrganizationMembershipRequest>(name: "membership requests")
+  let members = UnscopedOrganizationPagedList<OrganizationMembership>(name: "members")
+  let invitations = UnscopedOrganizationPagedList<OrganizationInvitation>(name: "invitations")
+  let membershipRequests = UnscopedOrganizationPagedList<OrganizationMembershipRequest>(name: "membership requests")
   var roles: [RoleResource] = []
   var hasRoleSetMigration = false
   var mutatingMembershipIds: Set<String> = []
@@ -228,13 +228,13 @@ extension OrganizationMembersDataSource {
     }
   }
 
-  fileprivate func invitationsFetch(organization: Organization) -> OrganizationPagedList<OrganizationInvitation>.Fetch {
+  fileprivate func invitationsFetch(organization: Organization) -> UnscopedOrganizationPagedList<OrganizationInvitation>.Fetch {
     { [pageSize] offset in
       try await organization.getInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
     }
   }
 
-  fileprivate func membershipRequestsFetch(organization: Organization) -> OrganizationPagedList<OrganizationMembershipRequest>.Fetch {
+  fileprivate func membershipRequestsFetch(organization: Organization) -> UnscopedOrganizationPagedList<OrganizationMembershipRequest>.Fetch {
     { [pageSize] offset in
       try await organization.getMembershipRequests(offset: offset, pageSize: pageSize, status: "pending")
     }

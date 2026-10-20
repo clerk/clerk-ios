@@ -11,9 +11,9 @@ import Observation
 final class OrganizationAccountListDataSource {
   let pageSize: Int
 
-  let memberships = OrganizationPagedList<OrganizationMembership>(name: "memberships")
-  let invitations = OrganizationPagedList<UserOrganizationInvitation>(name: "invitations")
-  let suggestions = OrganizationPagedList<OrganizationSuggestion>(name: "suggestions")
+  let memberships = UnscopedOrganizationPagedList<OrganizationMembership>(name: "memberships")
+  let invitations = UnscopedOrganizationPagedList<UserOrganizationInvitation>(name: "invitations")
+  let suggestions = UnscopedOrganizationPagedList<OrganizationSuggestion>(name: "suggestions")
   var creationDefaults: OrganizationCreationDefaults?
   var error: Error?
   private var isLoadingCreationDefaults = false
