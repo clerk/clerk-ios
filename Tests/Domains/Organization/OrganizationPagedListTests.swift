@@ -433,6 +433,32 @@ struct OrganizationPagedListTests {
   }
 
   @Test
+  func patchLandingAfterARevalidateKeepsEveryLoadedPage() async throws {
+    let list = source.list()
+    let serverRows = RowsOnServer(["a", "b", "c", "d"])
+    source.pages["q"] = { [serverRows] offset in
+      let rows = Array(serverRows.ids.dropFirst(offset).prefix(2))
+      return page(rows, totalCount: serverRows.ids.count)
+    }
+    await list.reload(query: "q").value
+    await list.loadMore()?.value
+
+    let mutation = Task {
+      try await list.mutate(Row(id: "c"), as: .removing) { [gate, serverRows] in
+        await gate.wait("removal")
+        serverRows.ids = ["a", "b", "d"]
+        return .remove(Row(id: "c"))
+      }
+    }
+    try await waitUntil { list.mutations["c"] == .removing }
+    await list.revalidate()
+    gate.open("removal")
+    try await mutation.value
+
+    #expect(list.pager.items.map(\.id) == ["a", "b", "d"])
+  }
+
+  @Test
   func resolvingAMissingItemKeepsPagination() async throws {
     let list = source.list()
     source.pages["q"] = { _ in page(["a", "b"], totalCount: 4) }

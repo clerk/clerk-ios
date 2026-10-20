@@ -103,7 +103,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     let patch = try await operation()
     guard !isRetired, let query else { return }
     guard generation == self.generation, !startedDuringAReload else {
-      await reload(query: query).value
+      await load(query: query, throughOffset: pager.offset).value
       return
     }
 
