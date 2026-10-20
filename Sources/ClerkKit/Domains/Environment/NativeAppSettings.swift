@@ -46,7 +46,7 @@ extension Clerk.Environment {
 
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      ios = try container.decodeIfPresent([IOSPolicy].self, forKey: .ios) ?? []
+      ios = try (container.decodeIfPresent([DecodedIfValid<IOSPolicy>].self, forKey: .ios) ?? []).compactMap(\.value)
     }
 
     /// The minimum version of one iOS app.
@@ -70,5 +70,13 @@ extension Clerk.Environment {
         self.updateUrl = updateUrl
       }
     }
+  }
+}
+
+private struct DecodedIfValid<Value: Decodable>: Decodable {
+  let value: Value?
+
+  init(from decoder: Decoder) throws {
+    value = try? Value(from: decoder)
   }
 }

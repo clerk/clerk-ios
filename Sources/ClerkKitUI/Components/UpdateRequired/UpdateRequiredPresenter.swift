@@ -92,7 +92,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     window.alpha = 0
     // Close the keyboard first, or it stays above this window and typing goes to
     // the hidden field.
-    _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    dismissKeyboard()
     window.makeKeyAndVisible()
     UIView.animate(withDuration: 0.2) {
       window.alpha = 1

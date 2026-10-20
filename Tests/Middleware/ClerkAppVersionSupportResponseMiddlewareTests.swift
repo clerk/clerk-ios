@@ -52,6 +52,28 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     #expect(!clerk.appVersionSupportStatus.isSupported)
   }
 
+  @Test
+  func responsesFromAReplacedRuntimeAreIgnored() async throws {
+    let clerk = Clerk()
+    let replacedRuntime = ClerkRuntimeScope(state: ClerkRuntimeState(), clerkProvider: { clerk })
+    let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: replacedRuntime)
+
+    try await middleware.validate(
+      response(statusCode: 403),
+      data: Data(#"{"errors":[{"code":"unsupported_app_version","message":"Unsupported app version","meta":{"minimum_version":"2.0"}}]}"#.utf8),
+      for: request()
+    )
+    #expect(clerk.appVersionSupportStatus.isSupported)
+
+    clerk.applyUnsupportedAppVersion(meta: nil)
+    try await middleware.validate(
+      response(statusCode: 200, headers: ["X-Clerk-App-Version-Status": "supported"]),
+      data: Data(),
+      for: request()
+    )
+    #expect(!clerk.appVersionSupportStatus.isSupported)
+  }
+
   private func request() throws -> URLRequest {
     try URLRequest(url: #require(URL(string: "https://example.com/v1/client")))
   }

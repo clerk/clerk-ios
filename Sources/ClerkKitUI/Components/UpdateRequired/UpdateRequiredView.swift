@@ -11,15 +11,17 @@ import SwiftUI
 /// A full-screen view telling the user to update the app because its version is older than the
 /// minimum set in the Clerk Dashboard.
 ///
-/// Clerk presents this view over your app automatically, matching the theme of the ClerkKitUI
-/// views your app shows unless you set one in ``UpdateRequiredView/appearance``. Place it yourself
-/// only after setting
-/// ``Clerk/Options/updateRequiredViewEnabled`` to `false`, for example:
+/// On iOS, Clerk presents this view over your app automatically. It matches the theme of the
+/// ClerkKitUI views your app shows unless you set one in `UpdateRequiredView.appearance`. Place it
+/// yourself on macOS, or on iOS after setting ``Clerk/Options/updateRequiredViewEnabled`` to
+/// `false`, for example:
 ///
 /// ```swift
 /// ContentView()
-///   .fullScreenCover(isPresented: .constant(!clerk.appVersionSupportStatus.isSupported)) {
-///     UpdateRequiredView()
+///   .overlay {
+///     if !clerk.appVersionSupportStatus.isSupported {
+///       UpdateRequiredView()
+///     }
 ///   }
 /// ```
 public struct UpdateRequiredView: View {

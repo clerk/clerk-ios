@@ -29,6 +29,22 @@ struct AppVersionSupportDecodingTests {
   }
 
   @Test
+  func aMalformedPolicyIsDroppedWithoutFailingTheEnvironment() throws {
+    let environment = try decodeEnvironment(nativeAppSettings: [
+      "minimum_supported_version": [
+        "ios": [
+          ["bundle_id": NSNull(), "minimum_version": "1.0"],
+          ["minimum_version": "1.0"],
+          ["bundle_id": "com.example.app", "minimum_version": "2.0.0"],
+        ],
+        "android": [],
+      ],
+    ])
+
+    #expect(environment.nativeAppSettings.minimumSupportedVersion.ios.map(\.bundleId) == ["com.example.app"])
+  }
+
+  @Test
   func missingIOSPoliciesDefaultToEmpty() throws {
     let environment = try decodeEnvironment(nativeAppSettings: [
       "minimum_supported_version": ["android": []],

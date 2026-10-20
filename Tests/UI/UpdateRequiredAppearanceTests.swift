@@ -25,8 +25,6 @@ struct UpdateRequiredAppearanceTests {
     #expect(appearance.appIconMaxHeight == 44)
   }
 
-  /// These use their own store: other suites show ClerkKitUI views, which record their theme in
-  /// the shared one at the same time.
   @Test
   func usesTheThemeOfAShownClerkViewWhenNoneIsSet() async throws {
     let store = UpdateRequiredAppearanceStore()
@@ -118,7 +116,6 @@ struct UpdateRequiredAppearanceTests {
     return window
   }
 
-  /// Lays the window out until `condition` holds, or for one second when it never does.
   private func layout(_ window: UIWindow, until condition: () -> Bool) async throws {
     window.isHidden = false
     for _ in 0 ..< 100 where !condition() {

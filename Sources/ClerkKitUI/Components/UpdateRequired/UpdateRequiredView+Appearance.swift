@@ -82,9 +82,7 @@ final class UpdateRequiredAppearanceStore {
   var appearance = UpdateRequiredView.Appearance()
   var shownTheme: ClerkTheme?
 
-  /// The appearance to present: the one set in ``UpdateRequiredView/appearance``, with the theme of
-  /// the last ClerkKitUI view shown and the app's icon filling in what it leaves out.
-  func presentedAppearance(dashboardLogoURL: String?, bundleIcon: () -> Image? = Image.appIcon) -> UpdateRequiredView.Appearance {
+  func presentedAppearance(dashboardLogoURL: String?, bundleIcon: () -> Image? = { Image.appIcon }) -> UpdateRequiredView.Appearance {
     var presented = appearance
     presented.theme = appearance.theme ?? shownTheme ?? .default
     if presented.appIcon == nil, presented.appIconView == nil, dashboardLogoURL?.isEmpty ?? true {
@@ -116,8 +114,9 @@ struct RecordThemeForUpdateRequiredViewModifier: ViewModifier {
 }
 
 extension Image {
-  /// The app's icon from its bundle, with the rounded corners iOS shows it with.
-  static func appIcon() -> Image? {
+  @MainActor static let appIcon: Image? = makeAppIcon()
+
+  private static func makeAppIcon() -> Image? {
     guard let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],
           let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
           let name = (primaryIcon["CFBundleIconFiles"] as? [String])?.last,
@@ -140,8 +139,6 @@ extension Image {
 import SwiftUI
 
 extension View {
-  /// Lets the ``UpdateRequiredView`` that Clerk presents on its own match the theme of the
-  /// ClerkKitUI views the app shows.
   func recordsThemeForUpdateRequiredView() -> some View {
     #if os(iOS)
     modifier(RecordThemeForUpdateRequiredViewModifier())
