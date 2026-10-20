@@ -12,45 +12,31 @@ struct OrganizationMembersView: View {
   @Environment(\.clerkTheme) private var theme
 
   @State private var selectedTab: OrganizationMembersTab = .members
-  @State private var dataSource = OrganizationMembersDataSource()
+  @State private var store = OrganizationScopedStore { OrganizationMembersDataSource(scope: $0) }
   @State private var inviteMembersIsPresented = false
 
-  private var organization: Organization? {
-    clerk.organization
-  }
-
-  private var organizationMembership: OrganizationMembership? {
-    clerk.organizationMembership
-  }
-
-  private var canReadMemberships: Bool {
-    organizationMembership?.canReadMemberships == true
-  }
-
-  private var canManageMemberships: Bool {
-    organizationMembership?.canManageMemberships == true
-  }
-
-  private var canManageMembershipRequests: Bool {
-    canManageMemberships && clerk.environment?.organizationSettings.domains.enabled == true
+  private var scope: OrganizationScope? {
+    OrganizationScope(clerk: clerk)
   }
 
   private var availableTabs: [OrganizationMembersTab] {
+    guard let access = scope?.access else { return [] }
+
     var tabs: [OrganizationMembersTab] = []
-    if canReadMemberships {
+    if access.contains(.readMemberships) {
       tabs.append(.members)
     }
-    if canManageMemberships {
+    if access.contains(.manageMemberships) {
       tabs.append(.invitations)
     }
-    if canManageMembershipRequests {
+    if access.contains(.manageMembershipRequests) {
       tabs.append(.requests)
     }
     return tabs
   }
 
   private var canInviteMembers: Bool {
-    guard let organization else { return false }
+    guard let organization = clerk.organization else { return false }
     if organization.maxAllowedMemberships == 0 {
       return true
     }
@@ -69,14 +55,34 @@ struct OrganizationMembersView: View {
   }
 
   var body: some View {
+    ZStack {
+      Color.clear
+        .frame(width: 0, height: 0)
+
+      if let dataSource = store.content(for: scope) {
+        content(dataSource)
+      } else {
+        SpinnerView()
+          .frame(width: 24, height: 24)
+      }
+    }
+    .onChange(of: scope, initial: true) {
+      store.bind(scope)
+    }
+    .onChange(of: availableTabs, initial: true) {
+      normalizeSelectedTab()
+    }
+  }
+
+  private func content(_ dataSource: OrganizationMembersDataSource) -> some View {
     @Bindable var dataSource = dataSource
 
-    VStack(spacing: 0) {
+    return VStack(spacing: 0) {
       if availableTabs.count > 1 {
         tabsPicker
       }
 
-      membersContent
+      membersContent(dataSource)
     }
     .background(theme.colors.muted)
     .securedByClerkFooter()
@@ -92,7 +98,7 @@ struct OrganizationMembersView: View {
           .foregroundStyle(theme.colors.foreground)
       }
 
-      if canManageMemberships {
+      if dataSource.scope.access.contains(.manageMemberships) {
         ToolbarItem(placement: inviteToolbarPlacement) {
           Button {
             inviteMembersIsPresented = true
@@ -106,20 +112,14 @@ struct OrganizationMembersView: View {
     .clerkSheet(isPresented: $inviteMembersIsPresented) {
       NavigationStack {
         OrganizationInviteMembersView { completion in
-          if completion == .sentInvitations, let organization {
-            await dataSource.loadInvitations(organization: organization)
+          if completion == .sentInvitations {
+            await dataSource.invitationsSent()
           }
           inviteMembersIsPresented = false
         }
       }
     }
     .clerkErrorPresenting($dataSource.error)
-    .task(id: organization?.id) {
-      await loadInitialData()
-    }
-    .onChange(of: availableTabs) {
-      normalizeSelectedTab()
-    }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
     #endif
@@ -143,7 +143,7 @@ extension OrganizationMembersView {
   }
 
   @ViewBuilder
-  private var membersContent: some View {
+  private func membersContent(_ dataSource: OrganizationMembersDataSource) -> some View {
     if availableTabs.contains(selectedTab) {
       switch selectedTab {
       case .members:
@@ -160,18 +160,6 @@ extension OrganizationMembersView {
 // MARK: - Actions
 
 extension OrganizationMembersView {
-  @MainActor
-  private func loadInitialData() async {
-    normalizeSelectedTab()
-
-    await dataSource.loadInitial(
-      organization: organization,
-      includeMembers: canReadMemberships,
-      includeInvitations: canManageMemberships,
-      includeMembershipRequests: canManageMembershipRequests
-    )
-  }
-
   private func normalizeSelectedTab() {
     if let firstAvailableTab = availableTabs.first, !availableTabs.contains(selectedTab) {
       selectedTab = firstAvailableTab
