@@ -132,33 +132,6 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertFalse(model.memberships.pager.hasNextPage)
   }
 
-  func testPagerLoadedPageOffsetsRepresentCurrentLoadedWindow() {
-    var pager = OrganizationAccountListPager<PagerItem>()
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0])
-
-    pager.replace(with: ClerkPaginatedResponse(
-      data: (1 ... 10).map { PagerItem(id: "item_\($0)") },
-      totalCount: 21
-    ))
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0])
-
-    pager.append(ClerkPaginatedResponse(
-      data: (11 ... 20).map { PagerItem(id: "item_\($0)") },
-      totalCount: 21
-    ))
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0, 10])
-
-    pager.append(ClerkPaginatedResponse(
-      data: [PagerItem(id: "item_21")],
-      totalCount: 21
-    ))
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0, 10, 20])
-  }
-
   func testPagerReplaceWithPagesPreservesLoadedWindowAndPagination() {
     var pager = OrganizationAccountListPager<PagerItem>()
 

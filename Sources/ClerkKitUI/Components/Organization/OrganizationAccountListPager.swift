@@ -15,19 +15,6 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
     offset < totalCount
   }
 
-  func loadedPageOffsets(pageSize: Int) -> [Int] {
-    let pageSize = max(pageSize, 1)
-    let loadedItemCount = max(offset, 1)
-    let loadedPageCount = max(1, (loadedItemCount + pageSize - 1) / pageSize)
-    return (0 ..< loadedPageCount).map { $0 * pageSize }
-  }
-
-  mutating func replace(with page: ClerkPaginatedResponse<Item>) {
-    items = page.data
-    totalCount = page.totalCount
-    offset = page.data.count
-  }
-
   mutating func replace(with pages: [ClerkPaginatedResponse<Item>]) {
     guard let lastPage = pages.last else {
       self = Self()
@@ -46,7 +33,7 @@ struct OrganizationAccountListPager<Item: Codable & Sendable> {
     offset += page.data.count
   }
 
-  mutating func removeOneFromPagination() {
+  private mutating func removeOneFromPagination() {
     offset = max(0, offset - 1)
     totalCount = max(0, totalCount - 1)
   }
