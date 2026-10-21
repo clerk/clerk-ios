@@ -34,8 +34,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource(pageSize: 3)
-    await model.loadInitial(user: .mock, includeCreationDefaults: true)
+    let model = OrganizationAccountListDataSource(scope: userScope(includesCreationDefaults: true), pageSize: 3)
+    await loadLists(model)
 
     XCTAssertFalse(model.isLoading)
     XCTAssertNil(model.error)
@@ -76,8 +76,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    await loadLists(model)
 
     XCTAssertFalse(model.isLoading)
     XCTAssertFalse(model.hasExistingResources)
@@ -95,8 +95,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    await loadLists(model)
 
     XCTAssertFalse(model.isLoading)
     XCTAssertNotNil(model.error)
@@ -120,8 +120,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource(pageSize: 4)
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let model = OrganizationAccountListDataSource(scope: userScope(), pageSize: 4)
+    await loadLists(model)
 
     await model.memberships.loadMore()?.value
 
@@ -130,33 +130,6 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertEqual(params.pageSize, 4)
     XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_1", "mem_2"])
     XCTAssertFalse(model.memberships.pager.hasNextPage)
-  }
-
-  func testPagerLoadedPageOffsetsRepresentCurrentLoadedWindow() {
-    var pager = OrganizationAccountListPager<PagerItem>()
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0])
-
-    pager.replace(with: ClerkPaginatedResponse(
-      data: (1 ... 10).map { PagerItem(id: "item_\($0)") },
-      totalCount: 21
-    ))
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0])
-
-    pager.append(ClerkPaginatedResponse(
-      data: (11 ... 20).map { PagerItem(id: "item_\($0)") },
-      totalCount: 21
-    ))
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0, 10])
-
-    pager.append(ClerkPaginatedResponse(
-      data: [PagerItem(id: "item_21")],
-      totalCount: 21
-    ))
-
-    XCTAssertEqual(pager.loadedPageOffsets(pageSize: 10), [0, 10, 20])
   }
 
   func testPagerReplaceWithPagesPreservesLoadedWindowAndPagination() {
@@ -190,11 +163,14 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
       capturedInvitationId.setValue(invitationId)
       return ClientResponse(response: invitation(id: invitationId, organizationId: "org_invite", status: "accepted"), client: nil)
     }
+    let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
+    transport.stubOrganizationInvitations { _, _, _ in
+      ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1)
+    }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
-    model.invitations.update { $0.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1)) }
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    await loadLists(model)
 
     await model.acceptInvitation(pendingInvitation)
 
@@ -220,11 +196,14 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
         client: nil
       )
     }
+    let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
+    transport.stubOrganizationInvitations { _, _, _ in
+      ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1)
+    }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    let pendingInvitation = invitation(id: "inv_1", organizationId: "org_invite")
-    model.invitations.update { $0.replace(with: ClerkPaginatedResponse(data: [pendingInvitation], totalCount: 1)) }
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    await loadLists(model)
 
     await model.acceptInvitation(pendingInvitation)
 
@@ -258,8 +237,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource(pageSize: 2)
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let model = OrganizationAccountListDataSource(scope: userScope(), pageSize: 2)
+    await loadLists(model)
     let firstInvitation = try XCTUnwrap(model.invitations.pager.items.first)
 
     await model.acceptInvitation(firstInvitation)
@@ -300,8 +279,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    await loadLists(model)
 
     XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_1"])
     XCTAssertNotNil(model.error)
@@ -309,7 +288,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertTrue(model.hasFailedLists)
 
     invitationsFail.setValue(false)
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    model.reload()
+    await model.invitations.refresh()
 
     XCTAssertEqual(model.invitations.pager.items.map(\.id), ["inv_1"])
     XCTAssertFalse(model.hasFailedLists)
@@ -333,8 +313,8 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    let load = Task { await model.loadInitial(user: .mock, includeCreationDefaults: false) }
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    model.start()
     for _ in 0 ..< 1000 where model.error == nil || model.memberships.isLoading {
       await Task.yield()
     }
@@ -345,12 +325,12 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     XCTAssertTrue(model.hasFailedLists)
 
     gate.open("suggestions")
-    await load.value
+    await loadLists(model)
     XCTAssertTrue(model.hasFailedLists)
   }
 
   @MainActor
-  func testLoadingAnotherUserClearsThePreviousUsersLists() async {
+  func testBindingAnotherUserShowsOnlyThatUsersLists() async throws {
     configureClerkForTesting()
 
     let failsForSecondUser = LockIsolated(false)
@@ -366,25 +346,69 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    await model.loadInitial(user: .mock, includeCreationDefaults: true)
-    XCTAssertEqual(model.memberships.pager.items.map(\.id), ["mem_a"])
-    XCTAssertNotNil(model.creationDefaults)
+    let store = OrganizationScopedStore { OrganizationAccountListDataSource(scope: $0) }
+    store.bind(userScope(includesCreationDefaults: true))
+    let first = try XCTUnwrap(store.content(for: userScope(includesCreationDefaults: true)))
+    await loadLists(first)
+    XCTAssertEqual(first.memberships.pager.items.map(\.id), ["mem_a"])
+    XCTAssertNotNil(first.creationDefaults)
 
     var otherUser = User.mock
     otherUser.id = "user_other"
     failsForSecondUser.setValue(true)
-    await model.loadInitial(user: otherUser, includeCreationDefaults: false)
+    let otherScope = OrganizationUserScope(user: otherUser, includesCreationDefaults: false)
+    store.bind(otherScope)
+    let second = try XCTUnwrap(store.content(for: otherScope))
+    await loadLists(second)
 
-    XCTAssertTrue(model.memberships.pager.items.isEmpty)
-    XCTAssertNil(model.creationDefaults)
+    XCTAssertTrue(second.memberships.pager.items.isEmpty)
+    XCTAssertNil(second.creationDefaults)
 
-    await model.loadInitial(user: nil, includeCreationDefaults: false)
+    store.bind(nil)
 
-    XCTAssertFalse(model.hasExistingResources)
-    XCTAssertNil(model.creationDefaults)
-    XCTAssertFalse(model.isLoading)
-    XCTAssertFalse(model.hasFailedLists)
+    XCTAssertNil(store.content(for: otherScope))
+    XCTAssertNil(store.boundScope)
+  }
+
+  @MainActor
+  func testAcceptInvitationFinishingAfterAnAccountSwitchLeavesTheNewUsersList() async throws {
+    configureClerkForTesting()
+
+    let gate = ResponseGate()
+    let transport = FakeTransport.mockDefaults()
+    transport.stubOrganizationInvitations { _, _, _ in
+      ClerkPaginatedResponse(
+        data: [invitation(id: "inv_1", organizationId: "org_1"), invitation(id: "inv_2", organizationId: "org_2")],
+        totalCount: 3
+      )
+    }
+    transport.stub(OrganizationAPI.acceptUserInvitation(invitationId: FakeTransport.anyPathSegment)) { _ in
+      await gate.wait("accept")
+      return ClientResponse(response: invitation(id: "inv_1", organizationId: "org_1", status: "accepted"), client: nil)
+    }
+    setDependencies(transport: transport)
+
+    let store = OrganizationScopedStore { OrganizationAccountListDataSource(scope: $0, pageSize: 2) }
+    store.bind(userScope())
+    let first = try XCTUnwrap(store.content(for: userScope()))
+    await loadLists(first)
+    let accept = Task { await first.acceptInvitation(first.invitations.pager.items[0]) }
+    for _ in 0 ..< 1000 where first.invitations.mutations.isEmpty {
+      await Task.yield()
+    }
+
+    var otherUser = User.mock
+    otherUser.id = "user_other"
+    let otherScope = OrganizationUserScope(user: otherUser, includesCreationDefaults: false)
+    store.bind(otherScope)
+    let second = try XCTUnwrap(store.content(for: otherScope))
+    await loadLists(second)
+    gate.open("accept")
+    await accept.value
+
+    XCTAssertEqual(second.invitations.pager.items.map(\.status), ["pending", "pending"])
+    XCTAssertEqual(second.invitations.pager.offset, 2)
+    XCTAssertEqual(second.invitations.pager.totalCount, 3)
   }
 
   @MainActor
@@ -410,11 +434,12 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
     }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource(pageSize: 2)
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    let model = OrganizationAccountListDataSource(scope: userScope(), pageSize: 2)
+    await loadLists(model)
     let oldLoadMore = model.invitations.loadMore()
 
-    await model.loadInitial(user: .mock, includeCreationDefaults: false)
+    model.reload()
+    await model.invitations.refresh()
     gate.open("oldLoadMore")
     await oldLoadMore?.value
 
@@ -434,18 +459,35 @@ final class OrganizationAccountListDataSourceTests: XCTestCase {
       capturedSuggestionId.setValue(suggestionId)
       return ClientResponse(response: suggestion(id: suggestionId, organizationId: "org_suggested", status: "accepted"), client: nil)
     }
+    transport.stubOrganizationSuggestions { _, _, _ in
+      ClerkPaginatedResponse(data: [suggestion(id: "sug_1", organizationId: "org_suggested")], totalCount: 1)
+    }
     setDependencies(transport: transport)
 
-    let model = OrganizationAccountListDataSource()
-    model.suggestions.update { $0.replace(with: ClerkPaginatedResponse(
-      data: [suggestion(id: "sug_1", organizationId: "org_suggested")],
-      totalCount: 1
-    )) }
+    let model = OrganizationAccountListDataSource(scope: userScope())
+    await loadLists(model)
 
     await model.acceptSuggestion(model.suggestions.pager.items[0])
 
     XCTAssertEqual(capturedSuggestionId.value, "sug_1")
     XCTAssertEqual(model.suggestions.pager.items.first?.status, "accepted")
+  }
+}
+
+private func userScope(includesCreationDefaults: Bool = false) -> OrganizationUserScope {
+  OrganizationUserScope(user: .mock, includesCreationDefaults: includesCreationDefaults)
+}
+
+@MainActor
+private func loadLists(_ model: OrganizationAccountListDataSource) async {
+  if model.memberships.query == nil {
+    model.start()
+  }
+  await model.memberships.refresh()
+  await model.invitations.refresh()
+  await model.suggestions.refresh()
+  for _ in 0 ..< 1000 where model.isLoading {
+    await Task.yield()
   }
 }
 

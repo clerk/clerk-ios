@@ -11,86 +11,39 @@ struct OrganizationVerifiedDomainsView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
-  @State private var domainsPager = OrganizationAccountListPager<OrganizationDomain>()
-  @State private var isLoadingDomains = true
+  @State private var store = OrganizationScopedStore { OrganizationDomainsDataSource(scope: $0) }
   @State private var presentedDomainFlow: PresentedDomainFlow?
-  @State private var error: Error?
 
-  private let pageSize = 10
-
-  private var organization: Organization? {
-    clerk.organization
-  }
-
-  private var organizationMembership: OrganizationMembership? {
-    clerk.organizationMembership
-  }
-
-  private var canReadDomains: Bool {
-    organizationMembership?.canReadDomains == true
-  }
-
-  private var canManageDomains: Bool {
-    organizationMembership?.canManageDomains == true
+  private var scope: OrganizationScope? {
+    OrganizationScope(clerk: clerk)
   }
 
   var body: some View {
-    ScrollView {
+    ZStack {
+      Color.clear
+        .frame(width: 0, height: 0)
+
+      if let domains = store.content(for: scope) {
+        content(domains)
+      }
+    }
+    .onChange(of: scope, initial: true) {
+      store.bind(scope)
+    }
+  }
+
+  private func content(_ domains: OrganizationDomainsDataSource) -> some View {
+    @Bindable var domains = domains
+
+    return ScrollView {
       LazyVStack(spacing: 0) {
         Divider()
 
-        if isLoadingDomains, domainsPager.items.isEmpty {
-          SpinnerView()
-            .frame(width: 24, height: 24)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 32)
-        } else {
-          if domainsPager.items.isEmpty, !canManageDomains {
-            Text("No verified domains", bundle: .module)
-              .font(theme.fonts.body)
-              .foregroundStyle(theme.colors.mutedForeground)
-              .frame(maxWidth: .infinity)
-              .padding(.vertical, 32)
-          } else {
-            OrganizationPaginatedListSection(
-              items: domainsPager.items,
-              hasNextPage: domainsPager.hasNextPage,
-              onLoadMore: loadMoreDomains
-            ) { domain in
-              OrganizationVerifiedDomainRow(
-                domain: domain,
-                canManageDomains: canManageDomains,
-                onVerify: {
-                  presentedDomainFlow = .verify(domain)
-                },
-                onManage: {
-                  presentedDomainFlow = .enrollmentMode(domain)
-                },
-                onDelete: {
-                  presentedDomainFlow = .delete(domain)
-                }
-              )
-            }
-
-            if domainsPager.isLoadingMore {
-              SpinnerView()
-                .frame(width: 24, height: 24)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-            }
-          }
-
-          if canManageDomains {
-            OrganizationAddDomainRow {
-              presentedDomainFlow = .add
-            }
-            Divider()
-          }
-        }
+        rows(domains)
       }
     }
     .refreshable {
-      await loadDomains(page: 1)
+      await domains.list.refresh()
     }
     .tint(theme.colors.primary)
     .background(theme.colors.muted)
@@ -107,12 +60,9 @@ struct OrganizationVerifiedDomainsView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
-    .clerkErrorPresenting($error)
+    .clerkErrorPresenting($domains.error)
     .clerkSheet(item: $presentedDomainFlow) { presentedDomainFlow in
-      view(for: presentedDomainFlow)
-    }
-    .task(id: organization?.id) {
-      await loadDomains(page: 1)
+      view(for: presentedDomainFlow, domains: domains)
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
@@ -120,24 +70,73 @@ struct OrganizationVerifiedDomainsView: View {
   }
 
   @ViewBuilder
-  private func view(for presentedDomainFlow: PresentedDomainFlow) -> some View {
-    switch presentedDomainFlow {
-    case .add:
-      OrganizationAddDomainView(onDomainChanged: revalidateDomains)
-    case let .verify(domain):
-      OrganizationDomainVerificationFlowSheet(domain: domain, onDomainChanged: revalidateDomains)
-    case let .enrollmentMode(domain):
-      OrganizationDomainEnrollmentModeView(domain: domain, onDomainChanged: revalidateDomains)
-    case let .delete(domain):
-      OrganizationDomainDeleteConfirmationView(domain: domain) { deletedDomain in
-        domainsPager.remove(deletedDomain)
+  private func rows(_ domains: OrganizationDomainsDataSource) -> some View {
+    let domainsPager = domains.list.pager
+    let canManageDomains = domains.scope.access.contains(.manageDomains)
+
+    if domains.list.isLoading, domainsPager.items.isEmpty {
+      SpinnerView()
+        .frame(width: 24, height: 24)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    } else {
+      if domainsPager.items.isEmpty, !canManageDomains {
+        Text("No verified domains", bundle: .module)
+          .font(theme.fonts.body)
+          .foregroundStyle(theme.colors.mutedForeground)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 32)
+      } else {
+        OrganizationPaginatedListSection(
+          items: domainsPager.items,
+          hasNextPage: domainsPager.hasNextPage,
+          onLoadMore: { domains.list.loadMore() }
+        ) { domain in
+          OrganizationVerifiedDomainRow(
+            domain: domain,
+            canManageDomains: canManageDomains,
+            onVerify: {
+              presentedDomainFlow = .verify(domain)
+            },
+            onManage: {
+              presentedDomainFlow = .enrollmentMode(domain)
+            },
+            onDelete: {
+              presentedDomainFlow = .delete(domain, from: domains)
+            }
+          )
+        }
+
+        if domainsPager.isLoadingMore {
+          SpinnerView()
+            .frame(width: 24, height: 24)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+        }
+      }
+
+      if canManageDomains {
+        OrganizationAddDomainRow {
+          presentedDomainFlow = .add
+        }
+        Divider()
       }
     }
   }
 
-  private func revalidateDomains() {
-    Task {
-      await revalidateLoadedDomains()
+  @ViewBuilder
+  private func view(for presentedDomainFlow: PresentedDomainFlow, domains: OrganizationDomainsDataSource) -> some View {
+    switch presentedDomainFlow {
+    case .add:
+      OrganizationAddDomainView(onDomainChanged: domains.domainChanged)
+    case let .verify(domain):
+      OrganizationDomainVerificationFlowSheet(domain: domain, onDomainChanged: domains.domainChanged)
+    case let .enrollmentMode(domain):
+      OrganizationDomainEnrollmentModeView(domain: domain, onDomainChanged: domains.domainChanged)
+    case let .delete(domain, openedFrom):
+      OrganizationDomainDeleteConfirmationView(domain: domain) { deletedDomain in
+        Task { await openedFrom.domainDeleted(deletedDomain) }
+      }
     }
   }
 }
@@ -257,92 +256,6 @@ private struct OrganizationAddDomainRow: View {
   }
 }
 
-// MARK: - Actions
-
-extension OrganizationVerifiedDomainsView {
-  @MainActor
-  private func loadDomains(page: Int) async {
-    guard let organization, canReadDomains || canManageDomains else {
-      isLoadingDomains = false
-      domainsPager = OrganizationAccountListPager()
-      return
-    }
-
-    isLoadingDomains = true
-    defer { isLoadingDomains = false }
-
-    do {
-      let page = try await organization.getDomains(page: page, pageSize: pageSize)
-      domainsPager.replace(with: page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load organization domains", error: error)
-    }
-  }
-
-  @MainActor
-  private func revalidateLoadedDomains() async {
-    guard let organization, canReadDomains || canManageDomains else {
-      isLoadingDomains = false
-      domainsPager = OrganizationAccountListPager()
-      return
-    }
-
-    let offsets = domainsPager.loadedPageOffsets(pageSize: pageSize)
-
-    isLoadingDomains = true
-    defer { isLoadingDomains = false }
-
-    do {
-      let pages = try await withThrowingTaskGroup(
-        of: (index: Int, page: ClerkPaginatedResponse<OrganizationDomain>).self
-      ) { group in
-        for (index, offset) in offsets.enumerated() {
-          group.addTask {
-            let page = try await organization.getDomains(offset: offset, pageSize: pageSize)
-            return (index, page)
-          }
-        }
-
-        var indexedPages: [(index: Int, page: ClerkPaginatedResponse<OrganizationDomain>)] = []
-        for try await indexedPage in group {
-          indexedPages.append(indexedPage)
-        }
-
-        return indexedPages
-          .sorted { $0.index < $1.index }
-          .map { $0.page }
-      }
-      domainsPager.replace(with: pages)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to revalidate organization domains", error: error)
-    }
-  }
-
-  @MainActor
-  private func loadMoreDomains() async {
-    guard let organization, !domainsPager.isLoadingMore, domainsPager.hasNextPage else { return }
-
-    domainsPager.isLoadingMore = true
-    defer { domainsPager.isLoadingMore = false }
-
-    do {
-      let page = try await organization.getDomains(offset: domainsPager.offset, pageSize: pageSize)
-      domainsPager.append(page)
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      ClerkLogger.error("Failed to load more organization domains", error: error)
-    }
-  }
-}
-
 private struct OrganizationDomainVerificationFlowSheet: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
@@ -387,14 +300,19 @@ private struct OrganizationDomainVerificationFlowSheet: View {
   }
 }
 
-private enum PresentedDomainFlow: Hashable, Identifiable {
+private enum PresentedDomainFlow: Identifiable {
   case add
   case verify(OrganizationDomain)
   case enrollmentMode(OrganizationDomain)
-  case delete(OrganizationDomain)
+  case delete(OrganizationDomain, from: OrganizationDomainsDataSource)
 
-  var id: Self {
-    self
+  var id: String {
+    switch self {
+    case .add: "add"
+    case let .verify(domain): "verify-\(domain.id)"
+    case let .enrollmentMode(domain): "enrollmentMode-\(domain.id)"
+    case let .delete(domain, _): "delete-\(domain.id)"
+    }
   }
 }
 

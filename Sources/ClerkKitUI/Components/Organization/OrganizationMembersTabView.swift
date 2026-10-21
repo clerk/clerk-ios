@@ -8,27 +8,14 @@ import ClerkKit
 import SwiftUI
 
 struct OrganizationMembersTabView: View {
-  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
 
   let dataSource: OrganizationMembersDataSource
 
   @State private var searchDebounceTask: Task<Void, Never>?
 
-  private var organization: Organization? {
-    clerk.organization
-  }
-
-  private var organizationMembership: OrganizationMembership? {
-    clerk.organizationMembership
-  }
-
-  private var canReadMemberships: Bool {
-    organizationMembership?.canReadMemberships == true
-  }
-
   private var canManageMemberships: Bool {
-    organizationMembership?.canManageMemberships == true
+    dataSource.scope.access.contains(.manageMemberships)
   }
 
   var body: some View {
@@ -51,11 +38,11 @@ struct OrganizationMembersTabView: View {
         OrganizationMemberRow(
           membership: membership,
           roleName: dataSource.roleName(for: membership),
-          roles: dataSource.roles,
-          isCurrentUser: membership.publicUserData?.userId == clerk.user?.id,
+          roles: dataSource.roles.roles,
+          isCurrentUser: membership.publicUserData?.userId == dataSource.scope.userID,
           canManageMemberships: canManageMemberships,
-          hasRoleSetMigration: dataSource.hasRoleSetMigration,
-          isMutating: dataSource.mutatingMembershipIds.contains(membership.id),
+          hasRoleSetMigration: dataSource.roles.hasRoleSetMigration,
+          isMutating: dataSource.members.mutations[membership.id] != nil,
           onUpdateRole: { role in
             await dataSource.updateMemberRole(membership, role: role)
           },
@@ -80,7 +67,7 @@ struct OrganizationMembersTabView: View {
     VStack(spacing: 12) {
       searchField
 
-      if dataSource.hasRoleSetMigration {
+      if dataSource.roles.hasRoleSetMigration {
         WarningText("We are updating the available roles. Once that's done, you'll be able to update roles again.", bundle: .module)
       }
     }
@@ -128,19 +115,17 @@ struct OrganizationMembersTabView: View {
 extension OrganizationMembersTabView {
   @MainActor
   private func refresh() async {
-    guard canReadMemberships, let organization else { return }
-    await dataSource.refreshMembers(organization: organization)
+    await dataSource.refreshMembers()
   }
 
   @MainActor
   private func loadMore() async {
-    guard canReadMemberships else { return }
     dataSource.members.loadMore()
   }
 
   @MainActor
   private func removeMember(_ membership: OrganizationMembership) async {
-    guard membership.publicUserData?.userId != clerk.user?.id else { return }
+    guard membership.publicUserData?.userId != dataSource.scope.userID else { return }
     await dataSource.removeMember(membership)
   }
 
@@ -172,10 +157,8 @@ extension OrganizationMembersTabView {
 
   @MainActor
   private func search(query: String? = nil) {
-    guard canReadMemberships, let organization else { return }
-
     let query = query ?? dataSource.membershipSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
-    dataSource.searchMembers(organization: organization, query: query)
+    dataSource.searchMembers(query: query)
   }
 }
 
