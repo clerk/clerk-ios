@@ -155,6 +155,9 @@ public final class Clerk {
   var serverVersionStatus: AppVersionSupportStatus?
 
   @ObservationIgnored
+  var serverVersionAnswerCount = 0
+
+  @ObservationIgnored
   var appBuild = AppBuild.current
 
   @ObservationIgnored
@@ -496,10 +499,10 @@ extension Clerk {
     try await runtime.refreshEnvironment()
   }
 
-  func applyRefreshedEnvironment(_ environment: Environment) {
+  func applyRefreshedEnvironment(_ environment: Environment, serverVersionAnswersAtRequest: Int? = nil) {
     self.environment = environment
     environmentRefreshRevision += 1
-    applyFetchedEnvironmentAppVersionSupport(environment)
+    applyFetchedEnvironmentAppVersionSupport(environment, serverVersionAnswersAtRequest: serverVersionAnswersAtRequest)
   }
 
   @discardableResult

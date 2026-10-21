@@ -26,13 +26,14 @@ enum AppVersionSupportStatusResolver {
 
   static func resolve(
     unsupportedAppVersionMeta meta: JSON?,
-    currentVersion: String
+    currentVersion: String,
+    environmentStatus: Clerk.AppVersionSupportStatus? = nil
   ) -> Clerk.AppVersionSupportStatus {
     .init(
       isSupported: false,
       currentVersion: meta?["current_version"]?.stringValue ?? currentVersion,
-      minimumVersion: meta?["minimum_version"]?.stringValue,
-      updateURL: meta?["update_url"]?.stringValue.flatMap(storeURL)
+      minimumVersion: meta?["minimum_version"]?.stringValue.flatMap { $0.isEmpty ? nil : $0 } ?? environmentStatus?.minimumVersion,
+      updateURL: meta?["update_url"]?.stringValue.flatMap(storeURL) ?? environmentStatus?.updateURL
     )
   }
 

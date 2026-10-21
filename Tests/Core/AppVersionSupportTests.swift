@@ -94,6 +94,43 @@ struct AppVersionSupportTests {
   }
 
   @Test
+  func environmentInFlightDuringARejectionKeepsTheBlock() {
+    let clerk = makeClerk()
+    let answersAtRequest = clerk.serverVersionAnswerCount
+
+    clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
+    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: answersAtRequest)
+
+    #expect(!clerk.appVersionSupportStatus.isSupported)
+    #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0")
+  }
+
+  @Test
+  func environmentRequestedAfterARejectionLiftsIt() {
+    let clerk = makeClerk()
+    clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
+
+    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+
+    #expect(clerk.appVersionSupportStatus.isSupported)
+  }
+
+  @Test
+  func rejectionFallsBackToTheEnvironmentForWhatItsMetaLeavesOut() {
+    let clerk = makeClerk()
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
+
+    clerk.applyUnsupportedAppVersion(meta: ["update_url": ""])
+
+    #expect(clerk.appVersionSupportStatus == .init(
+      isSupported: false,
+      currentVersion: "1.0",
+      minimumVersion: "2.0",
+      updateURL: URL(string: "https://apps.apple.com/app/id123")
+    ))
+  }
+
+  @Test
   func fetchedEnvironmentBlocksAfterAnEarlierSupportedResponse() {
     let clerk = makeClerk()
     clerk.applySupportedAppVersion()
