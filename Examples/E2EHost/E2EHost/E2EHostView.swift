@@ -17,6 +17,7 @@ struct E2EHostView: View {
   private enum Destination {
     case authView
     case customSignIn
+    case organizationTabs
   }
 
   private enum Screen {
@@ -25,6 +26,7 @@ struct E2EHostView: View {
     case home
     case auth
     case customSignIn
+    case organizationTabs
 
     var name: String {
       switch self {
@@ -33,6 +35,7 @@ struct E2EHostView: View {
       case .home: "home"
       case .auth: "auth"
       case .customSignIn: "customSignIn"
+      case .organizationTabs: "organizationTabs"
       }
     }
   }
@@ -74,6 +77,7 @@ struct E2EHostView: View {
       switch destination {
       case .authView? where !clerk.isAuthFlowComplete: .auth
       case .customSignIn?: .customSignIn
+      case .organizationTabs?: .organizationTabs
       default: .home
       }
     }
@@ -93,6 +97,24 @@ struct E2EHostView: View {
     case .customSignIn:
       CustomSignInView {
         destination = nil
+      }
+    case .organizationTabs:
+      organizationTabs
+    }
+  }
+
+  private var organizationTabs: some View {
+    TabView {
+      Tab("Home", systemImage: "house") {
+        home
+      }
+
+      Tab("Accounts", systemImage: "person.2") {
+        OrganizationListView(isDismissible: false)
+      }
+
+      Tab("Organization", systemImage: "building.2") {
+        OrganizationProfileView(isDismissible: false)
       }
     }
   }
@@ -134,6 +156,13 @@ struct E2EHostView: View {
         }
 
         OrganizationSwitcher()
+
+        if destination != .organizationTabs {
+          Button("Organization tabs") {
+            destination = .organizationTabs
+          }
+          .accessibilityIdentifier(E2EIdentifiers.Home.organizationTabs)
+        }
 
         Button("Sign out") {
           Task {
