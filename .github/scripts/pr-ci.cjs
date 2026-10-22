@@ -61,7 +61,10 @@ async function resolveRequest({ github, context, core, prNumber }) {
     // would mark that commit's Manual CI as cancelled.
     if (context.payload.pull_request.head.sha !== headSha) return skip('a newer commit was pushed.');
   } else if (!MEMBER_ASSOCIATIONS.has(context.payload.comment.author_association)) {
-    return skip('the command author is not a Clerk organization member.');
+    const { user } = context.payload.comment;
+    if (user.type !== 'User') return skip('the command author is not a GitHub user.');
+    const issue = await internalWriterIssue(github, repo, user.login);
+    if (issue) return skip(`the command author ${issue}.`);
   }
 
   const checks = (await github.paginate(github.rest.checks.listForRef, {

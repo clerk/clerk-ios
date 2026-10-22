@@ -187,12 +187,33 @@ test('failed or cancelled CI can be retried manually on the same commit', async 
   }
 });
 
-test('manual command retains MEMBER/OWNER authorization and works for an external PR', async () => {
-  for (const association of ['MEMBER', 'OWNER', 'COLLABORATOR', 'CONTRIBUTOR', 'NONE']) {
+test('manual command from a Clerk member works for an external PR', async () => {
+  for (const association of ['MEMBER', 'OWNER']) {
     const h = harness();
     h.state.pr.author_association = 'CONTRIBUTOR';
     h.command(association);
-    assert.equal((await h.evaluate()).should_run, ['MEMBER', 'OWNER'].includes(association) ? 'true' : 'false');
+    assert.equal((await h.evaluate()).should_run, 'true');
+  }
+});
+
+test('a private Clerk member, seen as COLLABORATOR by the workflow token, can run CI by command', async () => {
+  const h = harness();
+  h.state.pr.draft = true;
+  h.command('COLLABORATOR');
+  assert.equal((await h.evaluate()).should_run, 'true');
+});
+
+test('a command from someone without write access or from an outside collaborator never runs CI', async () => {
+  for (const [association, setup] of [
+    ['CONTRIBUTOR', h => { h.state.permission = { permission: 'read', role_name: 'read' }; }],
+    ['NONE', h => { h.state.permission = { permission: 'none', role_name: 'none' }; }],
+    ['COLLABORATOR', h => { h.state.outsiders = [MEMBER]; }],
+  ]) {
+    const h = harness();
+    setup(h);
+    h.command(association);
+    assert.equal((await h.evaluate()).should_run, 'false', association);
+    assert.equal(checkWrites(h).length, 0);
   }
 });
 
