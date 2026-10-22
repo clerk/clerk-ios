@@ -13,40 +13,29 @@ import UIKit
 @MainActor
 final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
   private weak var clerk: Clerk?
-  private var isStarted = false
-  private var observationGeneration = 0
+  private lazy var loop = UpdateRequiredPresentationLoop { [weak self] in
+    self?.update()
+  }
+
   private var windows: [ObjectIdentifier: UIWindow] = [:]
   private var sceneObservers: [NSObjectProtocol] = []
 
   func start(clerk: Clerk) {
     self.clerk = clerk
-    guard !isStarted else {
+    guard !loop.isStarted else {
       update()
       return
     }
 
-    isStarted = true
-    observationGeneration += 1
     observeScenes()
-    observeStatus(generation: observationGeneration)
+    loop.start()
   }
 
   func stop() {
-    isStarted = false
+    loop.stop()
     sceneObservers.forEach(NotificationCenter.default.removeObserver)
     sceneObservers = []
     hideAll()
-  }
-
-  private func observeStatus(generation: Int) {
-    guard isStarted, generation == observationGeneration else { return }
-    withObservationTracking {
-      update()
-    } onChange: { [weak self] in
-      Task { @MainActor in
-        self?.observeStatus(generation: generation)
-      }
-    }
   }
 
   private func observeScenes() {
@@ -54,10 +43,20 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     sceneObservers = [UIScene.didActivateNotification, UIScene.willEnterForegroundNotification].map { name in
       center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.update()
+          self?.loop.scheduleUpdate()
         }
       }
     }
+    // A field the app focuses after the update screen appears, such as after showing
+    // the rejected request's error, brings the keyboard back over this window and
+    // sends typing to the hidden field.
+    sceneObservers.append(
+      center.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { [weak self] _ in
+        MainActor.assumeIsolated {
+          self?.endEditingInAppWindows()
+        }
+      }
+    )
     sceneObservers.append(
       center.addObserver(forName: UIScene.didDisconnectNotification, object: nil, queue: .main) { [weak self] notification in
         guard let scene = notification.object as? UIScene else { return }
@@ -71,7 +70,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
   }
 
   private func update() {
-    guard isStarted, let clerk, !clerk.appVersionSupportStatus.isSupported else {
+    guard loop.isStarted, let clerk, !clerk.appVersionSupportStatus.isSupported else {
       hideAll()
       return
     }
@@ -98,6 +97,15 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
       window.alpha = 1
     }
     return window
+  }
+
+  private func endEditingInAppWindows() {
+    guard !windows.isEmpty else { return }
+    let presented = Set(windows.values.map(ObjectIdentifier.init))
+    let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+    for window in scenes.flatMap(\.windows) where !presented.contains(ObjectIdentifier(window)) {
+      window.endEditing(true)
+    }
   }
 
   private func hideAll() {

@@ -15,41 +15,29 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
   private static let sheetSize = NSSize(width: 440, height: 600)
 
   private weak var clerk: Clerk?
-  private var isStarted = false
-  private var observationGeneration = 0
+  private lazy var loop = UpdateRequiredPresentationLoop { [weak self] in
+    self?.update()
+  }
+
   private var sheets: [ObjectIdentifier: NSWindow] = [:]
   private var windowObservers: [NSObjectProtocol] = []
-  private var updateIsScheduled = false
 
   func start(clerk: Clerk) {
     self.clerk = clerk
-    guard !isStarted else {
+    guard !loop.isStarted else {
       update()
       return
     }
 
-    isStarted = true
-    observationGeneration += 1
     observeWindows()
-    observeStatus(generation: observationGeneration)
+    loop.start()
   }
 
   func stop() {
-    isStarted = false
+    loop.stop()
     windowObservers.forEach(NotificationCenter.default.removeObserver)
     windowObservers = []
     hideAll()
-  }
-
-  private func observeStatus(generation: Int) {
-    guard isStarted, generation == observationGeneration else { return }
-    withObservationTracking {
-      update()
-    } onChange: { [weak self] in
-      Task { @MainActor in
-        self?.observeStatus(generation: generation)
-      }
-    }
   }
 
   /// AppKit has no notification for a new window, so the presenter checks again
@@ -63,7 +51,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     ].map { name in
       center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.scheduleUpdate()
+          self?.loop.scheduleUpdate()
         }
       }
     }
@@ -72,30 +60,22 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
         guard let window = notification.object as? NSWindow else { return }
         let windowID = ObjectIdentifier(window)
         MainActor.assumeIsolated {
-          self?.sheets[windowID] = nil
+          guard let self else { return }
+          self.sheets[windowID] = nil
+          self.sheets = self.sheets.filter { ObjectIdentifier($0.value) != windowID }
+          self.loop.scheduleUpdate()
         }
       }
     )
   }
 
-  /// AppKit posts these notifications in the middle of its own window changes, such as
-  /// beginSheet making the new sheet key, so the presenter updates once on the next
-  /// main-queue turn instead of re-entering while a change is still in progress.
-  private func scheduleUpdate() {
-    guard !updateIsScheduled else { return }
-    updateIsScheduled = true
-    DispatchQueue.main.async { [weak self] in
-      guard let self else { return }
-      updateIsScheduled = false
-      update()
-    }
-  }
-
   private func update() {
-    guard isStarted, let clerk, !clerk.appVersionSupportStatus.isSupported else {
+    guard loop.isStarted, let clerk, !clerk.appVersionSupportStatus.isSupported else {
       hideAll()
       return
     }
+
+    sheets = sheets.filter { $0.value.sheetParent != nil || $0.value.isVisible }
 
     for window in NSApplication.shared.windows where needsSheet(window) {
       show(on: window, clerk: clerk)
@@ -115,6 +95,8 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
   private func show(on window: NSWindow, clerk: Clerk) {
     let hostingController = NSHostingController(rootView: PresentedUpdateRequiredView().environment(clerk))
     let sheet = NSWindow(contentViewController: hostingController)
+    // Not closable, so File > Close can't end the sheet while the window stays open.
+    sheet.styleMask = [.titled]
     sheet.setContentSize(Self.sheetSize)
 
     // A window shows one sheet at a time, and a new one waits for the current one
