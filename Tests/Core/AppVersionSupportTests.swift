@@ -63,6 +63,32 @@ struct AppVersionSupportTests {
   }
 
   @Test
+  func supportedResponseKeepsTheMinimumTheEnvironmentSet() {
+    let clerk = makeClerk()
+    clerk.appBuild = .init(bundleID: "com.example.app", version: "2.1")
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+
+    clerk.applySupportedAppVersion()
+
+    #expect(clerk.appVersionSupportStatus == .init(
+      isSupported: true,
+      currentVersion: "2.1",
+      minimumVersion: "2.0",
+      updateURL: URL(string: "https://apps.apple.com/app/id123")
+    ))
+  }
+
+  @Test
+  func supportedResponseDropsAMinimumTheServerNoLongerEnforces() {
+    let clerk = makeClerk()
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+
+    clerk.applySupportedAppVersion()
+
+    #expect(clerk.appVersionSupportStatus == .supported(currentVersion: "1.0"))
+  }
+
+  @Test
   func laterSupportedResponseLiftsAnEnvironmentBlock() {
     let clerk = makeClerk()
     clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)

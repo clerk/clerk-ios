@@ -41,7 +41,11 @@ extension Clerk {
 
   func applySupportedAppVersion() {
     serverVersionAnswerCount += 1
-    serverVersionStatus = .supported(currentVersion: appBuild.version)
+    if let environmentVersionStatus, environmentVersionStatus.isSupported {
+      serverVersionStatus = environmentVersionStatus
+    } else {
+      serverVersionStatus = .supported(currentVersion: appBuild.version)
+    }
     updateAppVersionSupportStatus()
   }
 
