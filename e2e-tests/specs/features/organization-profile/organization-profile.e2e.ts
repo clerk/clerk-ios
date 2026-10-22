@@ -1,7 +1,7 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 import type { Locator, Screen } from 'e2e';
-import type { HostFixture, SeededUser } from '../../support/types.ts';
-import { runPassword } from '../../support/clerk.ts';
+import type { HostFixture, SeededUser } from '@clerk/internal-mobile-e2e/specs/support/types';
+import { runPassword } from '@clerk/internal-mobile-e2e/specs/support/clerk';
 
 function atCenter(target: Locator): Locator {
   const tap = async (): Promise<void> => {
