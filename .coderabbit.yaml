@@ -15,10 +15,7 @@ reviews:
         # A FAIL blocks CodeRabbit approval, so a human reviews.
         mode: error
         instructions: |
-          Decide whether a human should review this PR before it merges.
-          Use your own judgment. Always require a human if it touches auth/session/token
-          handling, keychain/keystore, public API, build/release config, `.coderabbit.yaml`,
-          or anything under `.github/`.
+          Decide whether a human should review this PR, and if so, say why.
+          Always require one for auth/session/token handling, keychain/keystore,
+          public API, build/release config, `.coderabbit.yaml`, or `.github/`.
           PASS if no human review is needed. FAIL if one is.
-          When you FAIL, start the explanation with the reason: name the files that need
-          a human and the rule above or the concern that applies to each.
