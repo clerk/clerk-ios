@@ -97,7 +97,6 @@ esac
     GITHUB_SERVER_URL: 'https://github.com',
     GITHUB_REPOSITORY: 'clerk/clerk-ios',
     GITHUB_RUN_ID: '42',
-    CHECK_RUN_NAME_PREFIX: 'Manual CI',
     CHECK_RUN_SHA: 'a'.repeat(40),
     CHECK_RUN_TARGET_URL: '',
     BUILD_PLATFORMS: platforms,
@@ -214,32 +213,32 @@ describe('the ClerkKit tests on macOS', () => {
 });
 
 describe('the Manual CI check runs of the shared checks', () => {
-  const tests = { 'Check formatting and linting': 'success', 'Run ClerkKit tests on macOS': 'success', 'Run ClerkKitUI tests on iOS': 'success', 'Run E2E runner tests': 'success' };
+  const tests = { 'Lint': 'success', 'ClerkKit tests (macOS)': 'success', 'ClerkKitUI tests (iOS)': 'success', 'E2E runner tests': 'success' };
 
   it('are made for each job that a pull request runs, and each one completes with the result of its job', () => {
     assert.deepEqual(checkRuns(buildPlatforms('run-pr-ci.yml'), { ...tests, 'Build iOS': 'success', 'Build macOS': 'failure' }), {
-      'Manual CI / Check formatting and linting': 'success',
-      'Manual CI / Run ClerkKit tests on macOS': 'success',
-      'Manual CI / Run ClerkKitUI tests on iOS': 'success',
-      'Manual CI / Run E2E runner tests': 'success',
-      'Manual CI / Build iOS': 'success',
-      'Manual CI / Build macOS': 'failure',
+      'Lint': 'success',
+      'ClerkKit tests (macOS)': 'success',
+      'ClerkKitUI tests (iOS)': 'success',
+      'E2E runner tests': 'success',
+      'Build iOS': 'success',
+      'Build macOS': 'failure',
     });
   });
 
   it('are made for each build of a release, and each one completes with the result of its job', () => {
     const builds = { 'Build iOS': 'success', 'Build macOS': 'success', 'Build macCatalyst': 'success', 'Build watchOS': 'failure', 'Build tvOS': 'success', 'Build visionOS': 'cancelled' };
     assert.deepEqual(checkRuns(buildPlatforms('release-sdk.yml'), { ...tests, ...builds }), {
-      'Manual CI / Check formatting and linting': 'success',
-      'Manual CI / Run ClerkKit tests on macOS': 'success',
-      'Manual CI / Run ClerkKitUI tests on iOS': 'success',
-      'Manual CI / Run E2E runner tests': 'success',
-      'Manual CI / Build iOS': 'success',
-      'Manual CI / Build macOS': 'success',
-      'Manual CI / Build macCatalyst': 'success',
-      'Manual CI / Build watchOS': 'failure',
-      'Manual CI / Build tvOS': 'success',
-      'Manual CI / Build visionOS': 'cancelled',
+      'Lint': 'success',
+      'ClerkKit tests (macOS)': 'success',
+      'ClerkKitUI tests (iOS)': 'success',
+      'E2E runner tests': 'success',
+      'Build iOS': 'success',
+      'Build macOS': 'success',
+      'Build macCatalyst': 'success',
+      'Build watchOS': 'failure',
+      'Build tvOS': 'success',
+      'Build visionOS': 'cancelled',
     });
   });
 });

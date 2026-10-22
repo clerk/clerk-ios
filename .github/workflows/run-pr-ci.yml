@@ -65,7 +65,6 @@ jobs:
       report_check_runs: true
       check_run_sha: ${{ needs.resolve-pr-ci-request.outputs.head_sha }}
       check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      check_run_name_prefix: Manual CI
       build_platforms: '["iOS", "macOS"]'
       e2e_runner_tests_base: ${{ needs.resolve-pr-ci-request.outputs.base_ref }}
 

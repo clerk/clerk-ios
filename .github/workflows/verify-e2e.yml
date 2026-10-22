@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 env:
-  CHECK_RUN_NAME: Manual CI / Run verify end-to-end tests on iOS
+  CHECK_RUN_NAME: Verify end-to-end tests (iOS)
 
 jobs:
   plan:
