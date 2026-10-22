@@ -11,8 +11,8 @@ reviews:
     override_requested_reviewers_only: true
     custom_checks:
       - name: "Needs human review"
-        # Switch to error once the calls look right. In error mode a FAIL blocks approval.
-        mode: warning
+        # A FAIL blocks CodeRabbit approval, so a human reviews.
+        mode: error
         instructions: |
           Decide whether a human should review this PR before it merges, and explain why.
           Use your own judgment. Always require a human if it touches auth/session/token
