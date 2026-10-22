@@ -6,7 +6,8 @@ reviews:
   # Approve once the latest commit is reviewed, threads are resolved and no checks fail.
   request_changes_workflow: true
   allow_author_approval: false
-  # Only requested reviewers can override a failing check, not the author.
+  # Authors cannot override a failing check. Requested reviewers and org
+  # members or collaborators who submit a review can.
   pre_merge_checks:
     override_requested_reviewers_only: true
     custom_checks:
