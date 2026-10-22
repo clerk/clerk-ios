@@ -12,12 +12,6 @@ struct UpdateRequiredAppearanceTests {
 
   init() {
     AppearanceProbe.reset()
-    UpdateRequiredAppearanceRecorder.reset()
-    let store = UpdateRequiredAppearanceStore.shared
-    store.shownTheme = nil
-    store.appliedTheme = nil
-    store.appliedAppIcon = nil
-    store.appliedAppIconMaxHeight = nil
   }
 
   @Test
@@ -35,33 +29,6 @@ struct UpdateRequiredAppearanceTests {
   }
 
   @Test
-  func usesTheThemeTheAppSetsBeforeAnyClerkViewIsShown() async throws {
-    var theme = ClerkTheme()
-    theme.colors.primary = .mint
-    let app = Color.clear.environment(\.clerkTheme, theme)
-
-    try await render(app) { UpdateRequiredAppearanceStore.shared.appliedTheme != nil }
-
-    #expect(UpdateRequiredAppearanceStore.shared.presentedAppearance(dashboardLogoURL: logoURL).theme.colors.primary == .mint)
-  }
-
-  @Test
-  func keepsTheRootThemeWhenAPartOfTheAppOverridesIt() async throws {
-    var root = ClerkTheme()
-    root.colors.primary = .mint
-    let app = VStack {
-      Color.clear
-      Color.clear.environment(\.clerkTheme.colors.primary, .green)
-    }
-    .environment(\.clerkTheme, root)
-
-    try await render(app) { UpdateRequiredAppearanceStore.shared.appliedTheme != nil }
-    try await Task.sleep(for: .milliseconds(50))
-
-    #expect(UpdateRequiredAppearanceStore.shared.appliedTheme?.colors.primary == .mint)
-  }
-
-  @Test
   func aShownClerkViewsThemeWinsOverTheAppsRootTheme() {
     let store = UpdateRequiredAppearanceStore()
     var shown = ClerkTheme()
@@ -75,6 +42,16 @@ struct UpdateRequiredAppearanceTests {
   }
 
   @Test
+  func usesTheAppsRootThemeBeforeAnyClerkViewIsShown() {
+    let store = UpdateRequiredAppearanceStore()
+    var applied = ClerkTheme()
+    applied.colors.primary = .mint
+    store.appliedTheme = applied
+
+    #expect(store.presentedAppearance(dashboardLogoURL: logoURL).theme.colors.primary == .mint)
+  }
+
+  @Test
   func usesTheDefaultThemeBeforeAnyThemeIsSet() {
     let store = UpdateRequiredAppearanceStore()
 
@@ -82,38 +59,14 @@ struct UpdateRequiredAppearanceTests {
   }
 
   @Test
-  func usesTheAppIconTheAppSetsOverTheDashboardLogo() async throws {
-    let app = Color.clear
-      .clerkAppIcon(Image(systemName: "star"))
-      .clerkAppIcon(maxHeight: 72)
+  func usesTheAppsIconOverTheDashboardLogo() {
+    let store = UpdateRequiredAppearanceStore()
+    store.appliedAppIcon = Image(systemName: "star")
+    store.appliedAppIconMaxHeight = 72
 
-    try await render(app) {
-      UpdateRequiredAppearanceStore.shared.appliedAppIcon != nil && UpdateRequiredAppearanceStore.shared.appliedAppIconMaxHeight != nil
-    }
-
-    let presented = UpdateRequiredAppearanceStore.shared.presentedAppearance(dashboardLogoURL: logoURL)
+    let presented = store.presentedAppearance(dashboardLogoURL: logoURL)
     #expect(presented.appIcon == Image(systemName: "star"))
     #expect(presented.appIconMaxHeight == 72)
-  }
-
-  @Test
-  func theUpdateWindowsOwnValuesAreNotRecorded() async throws {
-    var theme = ClerkTheme()
-    theme.colors.primary = .mint
-    let app = Color.clear
-      .environment(\.clerkTheme, theme)
-      .clerkAppIcon(Image(systemName: "star"))
-    try await render(app) {
-      UpdateRequiredAppearanceStore.shared.appliedTheme != nil && UpdateRequiredAppearanceStore.shared.appliedAppIcon != nil
-    }
-
-    let window = AppearanceProbeView()
-      .updateRequiredAppearance(.init(theme: .default, appIcon: Image(systemName: "app"), appIconMaxHeight: 44))
-    try await render(window) { AppearanceProbe.primaryColor != nil }
-    try await Task.sleep(for: .milliseconds(50))
-
-    #expect(UpdateRequiredAppearanceStore.shared.appliedTheme?.colors.primary == .mint)
-    #expect(UpdateRequiredAppearanceStore.shared.appliedAppIcon == Image(systemName: "star"))
   }
 
   @Test
@@ -127,6 +80,89 @@ struct UpdateRequiredAppearanceTests {
 
     store.appliedAppIcon = Image(systemName: "star")
     #expect(store.presentedAppearance(dashboardLogoURL: "", bundleIcon: bundleIcon).appIcon == Image(systemName: "star"))
+  }
+
+  @Test
+  func theRecorderKeepsTheFirstValuesAndPublishesThem() async throws {
+    let store = UpdateRequiredAppearanceStore()
+    let recorder = UpdateRequiredAppearanceRecorder { store }
+    var first = ClerkTheme()
+    first.colors.primary = .mint
+    var second = ClerkTheme()
+    second.colors.primary = .green
+
+    recorder.record(.theme(first))
+    recorder.record(.theme(second))
+    recorder.record(.appIcon(Image(systemName: "star")))
+    recorder.record(.appIcon(Image(systemName: "moon")))
+    recorder.record(.appIconMaxHeight(72))
+    recorder.record(.appIconMaxHeight(96))
+    try await waitUntil { store.appliedTheme != nil }
+
+    #expect(store.appliedTheme?.colors.primary == .mint)
+    #expect(store.appliedAppIcon == Image(systemName: "star"))
+    #expect(store.appliedAppIconMaxHeight == 72)
+  }
+
+  @Test
+  func theThemeSetterRecordsTheAppsTheme() async throws {
+    let store = UpdateRequiredAppearanceStore()
+    var theme = ClerkTheme()
+    theme.colors.primary = .mint
+    let app = Color.clear
+      .environment(\.clerkTheme, theme)
+      .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+
+    try await render(app) { store.appliedTheme != nil }
+
+    #expect(store.appliedTheme?.colors.primary == .mint)
+  }
+
+  @Test
+  func keepsTheRootThemeWhenAPartOfTheAppOverridesIt() async throws {
+    let store = UpdateRequiredAppearanceStore()
+    var root = ClerkTheme()
+    root.colors.primary = .mint
+    let app = VStack {
+      Color.clear
+      Color.clear.environment(\.clerkTheme.colors.primary, .green)
+    }
+    .environment(\.clerkTheme, root)
+    .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+
+    try await render(app) { store.appliedTheme != nil }
+    try await Task.sleep(for: .milliseconds(50))
+
+    #expect(store.appliedTheme?.colors.primary == .mint)
+  }
+
+  @Test
+  func theAppIconModifiersRecordTheAppsIcon() async throws {
+    let store = UpdateRequiredAppearanceStore()
+    let app = Color.clear
+      .clerkAppIcon(Image(systemName: "star"))
+      .clerkAppIcon(maxHeight: 72)
+      .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+
+    try await render(app) { store.appliedAppIcon != nil && store.appliedAppIconMaxHeight != nil }
+
+    #expect(store.appliedAppIcon == Image(systemName: "star"))
+    #expect(store.appliedAppIconMaxHeight == 72)
+  }
+
+  @Test
+  func theUpdateWindowsOwnValuesAreNotRecorded() async throws {
+    let store = UpdateRequiredAppearanceStore()
+    let window = AppearanceProbeView()
+      .updateRequiredAppearance(.init(theme: .default, appIcon: Image(systemName: "star"), appIconMaxHeight: 72))
+      .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+
+    try await render(window) { AppearanceProbe.primaryColor != nil }
+    try await Task.sleep(for: .milliseconds(50))
+
+    #expect(store.appliedTheme == nil)
+    #expect(store.appliedAppIcon == nil)
+    #expect(store.appliedAppIconMaxHeight == nil)
   }
 
   @Test
@@ -144,9 +180,10 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func aLaterRecordedValueUpdatesThePresentedView() async throws {
-    let window = try await render(StoreBackedProbeView()) { AppearanceProbe.appIconMaxHeight == 44 }
+    let store = UpdateRequiredAppearanceStore()
+    let window = try await render(StoreBackedProbeView(store: store)) { AppearanceProbe.appIconMaxHeight == 44 }
 
-    UpdateRequiredAppearanceStore.shared.appliedAppIconMaxHeight = 96
+    store.appliedAppIconMaxHeight = 96
     try await layout(window) { AppearanceProbe.appIconMaxHeight == 96 }
 
     #expect(AppearanceProbe.appIconMaxHeight == 96)
@@ -165,6 +202,12 @@ struct UpdateRequiredAppearanceTests {
     window.isHidden = false
     for _ in 0 ..< 100 where !condition() {
       window.layoutIfNeeded()
+      try await Task.sleep(for: .milliseconds(10))
+    }
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    for _ in 0 ..< 100 where !condition() {
       try await Task.sleep(for: .milliseconds(10))
     }
   }
@@ -201,10 +244,10 @@ private struct AppearanceProbeView: View {
 }
 
 private struct StoreBackedProbeView: View {
-  private let store = UpdateRequiredAppearanceStore.shared
+  let store: UpdateRequiredAppearanceStore
 
   var body: some View {
-    AppearanceProbeView().updateRequiredAppearance(store.presentedAppearance(dashboardLogoURL: nil, bundleIcon: { nil }))
+    AppearanceProbeView().updateRequiredAppearance(store.presentedAppearance(dashboardLogoURL: nil))
   }
 }
 

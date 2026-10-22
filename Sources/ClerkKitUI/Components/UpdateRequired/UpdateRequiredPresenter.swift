@@ -126,7 +126,9 @@ private struct PresentedUpdateRequiredView: View {
 
   var body: some View {
     UpdateRequiredView()
-      .updateRequiredAppearance(store.presentedAppearance(dashboardLogoURL: clerk.environment?.displayConfig.logoImageUrl))
+      .updateRequiredAppearance(
+        store.presentedAppearance(dashboardLogoURL: clerk.environment?.displayConfig.logoImageUrl, bundleIcon: { Image.appIcon })
+      )
   }
 }
 

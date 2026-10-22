@@ -34,9 +34,7 @@ extension EnvironmentValues {
     get { self[ClerkThemeEnvironmentKey.self] }
     set {
       self[ClerkThemeEnvironmentKey.self] = newValue
-      #if os(iOS)
-      UpdateRequiredAppearanceRecorder.recordTheme(newValue)
-      #endif
+      updateRequiredAppearanceRecorder.record(.theme(newValue))
     }
   }
 
