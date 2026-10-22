@@ -531,7 +531,7 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     };
     const prCiRestoresMainSaves = {
       'checks.yml': { restores: [], saves: ['push'] },
-      'manual-pr-ci.yml': { restores: ['issue_comment', 'status', 'pull_request_target', 'workflow_run'], saves: [] },
+      'manual-pr-ci.yml': { restores: ['issue_comment', 'pull_request_target'], saves: [] },
       'nightly-checks.yml': { restores: [], saves: [] },
       'release-sdk.yml': { restores: [], saves: [] },
     };

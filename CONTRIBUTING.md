@@ -122,30 +122,18 @@ SwiftLint checks for:
 
 ### Pull request CI
 
-For non-draft PRs authored by Clerk organization members, CI starts once after
-CodeRabbit completes a review of the current commit and every review thread it
-opened is resolved. Both signals are structured GitHub data (CodeRabbit's commit
-status and review thread state), so CI doesn't depend on the wording of CodeRabbit's
-comments. CodeRabbit resolves its own threads once they're addressed; resolving a
-thread yourself also counts. Unresolved threads from people don't block the run.
+CI starts automatically on every push to a ready PR authored by a Clerk organization
+member, and a new push cancels the run for the previous one. Draft PRs and external
+contributions need a Clerk member to comment `/run ci`, or a Clerk member with write
+access to check **Run CI** in the instructions comment. Use the same controls to retry
+a run. Automatic and manual runs use the same checks, pinned to the requested commit.
+CI must pass on the latest commit before merging.
 
 CodeRabbit requests changes when it leaves comments and approves once they're
 resolved. Its approval counts toward the one approval `main` requires. Authors can't
 use `@coderabbitai approve` on their own PRs. Admins can merge their own work after
 dismissing a CodeRabbit "changes requested" review. The approval workflow doesn't
 change when CI starts.
-
-After the first CI kickoff, new commits and retries require a Clerk member to comment
-`/run ci`, or a Clerk member with write access to check **Run CI** in the instructions
-comment. A manual kickoff before CodeRabbit finishes also counts as the first run.
-External contributions and draft PRs use these manual controls.
-
-Automatic and manual runs use the same checks, pinned to the requested commit. GitHub
-has no workflow event for resolving a thread, so CI re-checks after CodeRabbit's own
-review comment activity. If you resolve the last thread yourself after CodeRabbit
-finishes, or CodeRabbit skips a review or is unavailable, use the manual controls.
-The first kickoff is recorded in a separate bot comment so pushes, force-pushes, and
-reopening the PR do not reset it.
 
 PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
 the iOS and macOS builds. On a PR, the E2E runner tests skip when no file they read
