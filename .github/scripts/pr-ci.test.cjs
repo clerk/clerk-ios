@@ -7,6 +7,7 @@ const OLD_SHA = 'a546d827532ed391fc2dbdf4a9649a11f2719cf6';
 const NEXT_SHA = 'b'.repeat(40);
 const BOT = { id: 136622811, login: 'coderabbitai[bot]', type: 'Bot' };
 const MEMBER = { id: 123, login: 'member', type: 'User' };
+const COMMENTER = { id: 456, login: 'commenter', type: 'User' };
 
 function harness() {
   const state = {
@@ -32,7 +33,7 @@ function harness() {
         },
       },
       repos: {
-        getCollaboratorPermissionLevel: async () => ({ data: state.permission }),
+        getCollaboratorPermissionLevel: async ({ username }) => ({ data: state.permissions?.[username] ?? state.permission }),
         listCollaborators: async () => ({ data: state.outsiders }),
       },
       checks: {
@@ -71,8 +72,8 @@ function harness() {
   const command = association => {
     context.eventName = 'issue_comment';
     context.payload = {
-      action: 'created', issue: { number: 610, pull_request: {} }, sender: MEMBER,
-      comment: { user: MEMBER, body: '/run ci', author_association: association },
+      action: 'created', issue: { number: 610, pull_request: {} }, sender: COMMENTER,
+      comment: { user: COMMENTER, body: '/run ci', author_association: association },
     };
   };
   const h = { state, context, github, evaluate, push, command };
@@ -199,15 +200,17 @@ test('manual command from a Clerk member works for an external PR', async () => 
 test('a private Clerk member, seen as COLLABORATOR by the workflow token, can run CI by command', async () => {
   const h = harness();
   h.state.pr.draft = true;
+  h.state.permission = { permission: 'read', role_name: 'read' };
+  h.state.permissions = { commenter: { permission: 'write', role_name: 'write' } };
   h.command('COLLABORATOR');
   assert.equal((await h.evaluate()).should_run, 'true');
 });
 
 test('a command from someone without write access or from an outside collaborator never runs CI', async () => {
   for (const [association, setup] of [
-    ['CONTRIBUTOR', h => { h.state.permission = { permission: 'read', role_name: 'read' }; }],
-    ['NONE', h => { h.state.permission = { permission: 'none', role_name: 'none' }; }],
-    ['COLLABORATOR', h => { h.state.outsiders = [MEMBER]; }],
+    ['CONTRIBUTOR', h => { h.state.permissions = { commenter: { permission: 'read', role_name: 'read' } }; }],
+    ['NONE', h => { h.state.permissions = { commenter: { permission: 'none', role_name: 'none' } }; }],
+    ['COLLABORATOR', h => { h.state.outsiders = [COMMENTER]; }],
   ]) {
     const h = harness();
     setup(h);
