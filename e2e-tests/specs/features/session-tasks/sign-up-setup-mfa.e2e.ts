@@ -1,6 +1,6 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
 import { totp } from '../../totp.ts';
-import { runPassword } from '../../support/clerk.ts';
+import { runPassword } from '@clerk/internal-mobile-e2e/specs/support/clerk';
 
 test('a sign-up on an MFA-required instance moves straight into the setup-MFA task, and an authenticator code finishes it', async ({ host, screen }) => {
   const email = await host.newEmail();

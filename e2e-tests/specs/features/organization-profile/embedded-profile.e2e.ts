@@ -1,6 +1,6 @@
 import { test, expect } from '../../fixtures.ts';
 import type { Screen } from 'e2e';
-import type { HostFixture } from '../../support/types.ts';
+import type { HostFixture } from '@clerk/internal-mobile-e2e/specs/support/types';
 
 const TAB_SYMBOLS: Record<string, string> = { Home: 'house', Accounts: 'person.2', Organization: 'building.2' };
 

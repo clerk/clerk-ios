@@ -1,4 +1,4 @@
-import type { TestApp } from './support/inputs.ts';
+import type { TestApp } from '@clerk/internal-mobile-e2e/specs/support/inputs';
 
 export const APP_ID = 'com.clerk.E2EHost';
 

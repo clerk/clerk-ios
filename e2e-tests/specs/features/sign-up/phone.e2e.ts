@@ -1,5 +1,5 @@
 import { test, expect, CLERK_TEST_CODE } from '../../fixtures.ts';
-import { runPassword } from '../../support/clerk.ts';
+import { runPassword } from '@clerk/internal-mobile-e2e/specs/support/clerk';
 
 test('signs up with a phone number, then gives the email and password the instance requires', async ({ host, screen }) => {
   const phone = await host.newPhone();

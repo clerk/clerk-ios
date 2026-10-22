@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import type { SessionDeviceFactory } from '../../core/remote/protocol.ts';
+import type { SessionDeviceFactory } from '@clerk/internal-mobile-e2e/core/remote/protocol';
 import { BUILD_INPUTS } from '../../host-app.ts';
 import { recordVideo, showLogs } from './simulator.ts';
 

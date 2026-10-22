@@ -20,7 +20,7 @@ Clerk's test mode makes these identities safe to type into the real app.
 | Email | Any address that contains `+clerk_test@`. Clerk sends no mail to it and accepts the code below. `host.seedUser()` and `host.newEmail()` mint an address such as `maya.7c1e+clerk_test@example.com`, a first name and the run tag, new for each test of the run |
 | Phone | A US number from 555-0100 to 555-0199, typed as ten digits such as `2015550142`. Get one from `host.seedUser({ phone: true })`, or from `host.newPhone()` for a sign-up, instead of picking one by hand. Both give `+1` and the ten digits |
 | One-time code | `424242` verifies every email code and SMS code for a test address or number. Specs use the constant `CLERK_TEST_CODE` |
-| Password | The standard settings require a password at sign-up. Fill it with `runPassword(host.runId)` from `specs/support/clerk.ts`, such as `Otter-Lamp-3917`. For a password sign-in, seed the user with `host.seedUser({ password: true })` and fill the field with `host.fill(field, user.password!)` |
+| Password | The standard settings require a password at sign-up. Fill it with `runPassword(host.runId)` from `@clerk/internal-mobile-e2e/specs/support/clerk`, such as `Otter-Lamp-3917`. For a password sign-in, seed the user with `host.seedUser({ password: true })` and fill the field with `host.fill(field, user.password!)` |
 | Authenticator code | Read the setup key from `clerk.auth.sessionTask.totp.secret` and compute the 6-digit RFC 6238 code (SHA-1, 30-second step). `totp` in `specs/totp.ts` computes it |
 
 | Step | SDK identifier |
