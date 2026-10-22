@@ -6,9 +6,8 @@ const SHA = 'a67281b99b151e4aadf15fd568242624e42ee9da';
 const OLD_SHA = 'a546d827532ed391fc2dbdf4a9649a11f2719cf6';
 const NEXT_SHA = 'b'.repeat(40);
 const BOT = { id: 136622811, login: 'coderabbitai[bot]', type: 'Bot' };
-const ACTIONS = { id: 41898282, login: 'github-actions[bot]', type: 'Bot' };
 const MEMBER = { id: 123, login: 'member', type: 'User' };
-const INSTRUCTIONS = '<!-- clerk-ios-manual-ci -->\n- [ ] Run CI';
+const COMMENTER = { id: 456, login: 'commenter', type: 'User' };
 
 function harness() {
   const state = {
@@ -17,7 +16,6 @@ function harness() {
       head: { sha: SHA, repo: { full_name: 'clerk/clerk-ios' } },
       base: { ref: 'main', repo: { full_name: 'clerk/clerk-ios' } },
     },
-    comments: [{ id: 1, user: ACTIONS, body: INSTRUCTIONS }],
     checks: new Map([[SHA, [{ id: 20, head_sha: SHA, app: { slug: 'github-actions' }, status: 'queued' }]]]),
     permission: { permission: 'write', role_name: 'write' },
     outsiders: [],
@@ -35,16 +33,8 @@ function harness() {
         },
       },
       repos: {
-        getCollaboratorPermissionLevel: async () => ({ data: state.permission }),
+        getCollaboratorPermissionLevel: async ({ username }) => ({ data: state.permissions?.[username] ?? state.permission }),
         listCollaborators: async () => ({ data: state.outsiders }),
-      },
-      issues: {
-        updateComment: async params => {
-          state.writes.push({ kind: 'edit', ...params });
-          const comment = state.comments.find(comment => comment.id === params.comment_id);
-          comment.body = params.body;
-          return { data: comment };
-        },
       },
       checks: {
         listForRef: async params => ({ data: { check_runs: state.checks.get(params.ref) || [] } }),
@@ -82,18 +72,11 @@ function harness() {
   const command = association => {
     context.eventName = 'issue_comment';
     context.payload = {
-      action: 'created', issue: { number: 610, pull_request: {} }, sender: MEMBER,
-      comment: { user: MEMBER, body: '/run ci', author_association: association },
+      action: 'created', issue: { number: 610, pull_request: {} }, sender: COMMENTER,
+      comment: { user: COMMENTER, body: '/run ci', author_association: association },
     };
   };
-  const checkbox = () => {
-    context.eventName = 'issue_comment';
-    context.payload = {
-      action: 'edited', issue: { number: 610, pull_request: {} }, sender: MEMBER,
-      comment: { ...state.comments[0], body: INSTRUCTIONS.replace('[ ]', '[x]') },
-    };
-  };
-  const h = { state, context, github, evaluate, push, command, checkbox };
+  const h = { state, context, github, evaluate, push, command };
   push();
   return h;
 }
@@ -205,36 +188,57 @@ test('failed or cancelled CI can be retried manually on the same commit', async 
   }
 });
 
-test('manual command retains MEMBER/OWNER authorization and works for an external PR', async () => {
-  for (const association of ['MEMBER', 'OWNER', 'COLLABORATOR', 'CONTRIBUTOR', 'NONE']) {
+test('manual command from a Clerk member works for an external PR', async () => {
+  for (const association of ['MEMBER', 'OWNER']) {
     const h = harness();
     h.state.pr.author_association = 'CONTRIBUTOR';
     h.command(association);
-    assert.equal((await h.evaluate()).should_run, ['MEMBER', 'OWNER'].includes(association) ? 'true' : 'false');
+    assert.equal((await h.evaluate()).should_run, 'true');
   }
 });
 
-test('checkbox requires an internal writer and resets after use', async () => {
+test('a private Clerk member, seen as COLLABORATOR by the workflow token, can run CI by command', async () => {
   const h = harness();
-  h.checkbox();
+  h.state.pr.draft = true;
+  h.state.permission = { permission: 'read', role_name: 'read' };
+  h.state.permissions = { commenter: { permission: 'write', role_name: 'write' } };
+  h.command('COLLABORATOR');
   assert.equal((await h.evaluate()).should_run, 'true');
-  assert.equal(h.state.comments[0].body, INSTRUCTIONS);
-  for (const kind of ['outside', 'reader']) {
-    const denied = harness();
-    denied.checkbox();
-    if (kind === 'outside') denied.state.outsiders = [MEMBER];
-    else denied.state.permission = { permission: 'read', role_name: 'read' };
-    assert.equal((await denied.evaluate()).should_run, 'false');
-    assert.equal(checkWrites(denied).length, 0);
+});
+
+test('a command from someone without write access or from an outside collaborator never runs CI', async () => {
+  for (const [association, setup] of [
+    ['CONTRIBUTOR', h => { h.state.permissions = { commenter: { permission: 'read', role_name: 'read' } }; }],
+    ['NONE', h => { h.state.permissions = { commenter: { permission: 'none', role_name: 'none' } }; }],
+    ['COLLABORATOR', h => { h.state.outsiders = [COMMENTER]; }],
+  ]) {
+    const h = harness();
+    setup(h);
+    h.command(association);
+    assert.equal((await h.evaluate()).should_run, 'false', association);
+    assert.equal(checkWrites(h).length, 0);
   }
 });
 
 test('permission lookup failures never launch CI', async () => {
   const h = harness();
-  h.checkbox();
+  h.state.pr.author_association = 'COLLABORATOR';
   h.github.rest.repos.getCollaboratorPermissionLevel = async () => { throw new Error('403'); };
   await assert.rejects(h.evaluate(), /403/);
   assert.equal(checkWrites(h).length, 0);
+});
+
+test('an edited comment never starts CI, even one that checks a Run CI box', async () => {
+  const h = harness();
+  h.context.eventName = 'issue_comment';
+  h.context.payload = {
+    action: 'edited', issue: { number: 610, pull_request: {} }, sender: MEMBER,
+    comment: { user: MEMBER, author_association: 'MEMBER', body: '- [x] Run CI\n/run ci' },
+  };
+  assert.equal(requestKind(h.context), null);
+  assert.deepEqual(await findPullRequests(h), []);
+  assert.equal((await h.evaluate()).should_run, 'false');
+  assert.equal(h.state.writes.length, 0);
 });
 
 test('non-PR comments and arbitrary events are ignored', () => {

@@ -22,9 +22,7 @@ jobs:
     permissions:
       contents: read
       checks: write
-      issues: write
-      # PR issue comments return 403 with issues: write alone in this repository.
-      pull-requests: write
+      pull-requests: read
     outputs:
       manual_check_run_id: ${{ steps.resolve.outputs.manual_check_run_id }}
       should_run: ${{ steps.resolve.outputs.should_run }}
