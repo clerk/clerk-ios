@@ -16,7 +16,7 @@ on:
         description: Runner label of the end-to-end tests job
         required: false
         type: string
-        default: xcode-27
+        default: ""
     secrets:
       MOBILE_VERIFICATION_PLATFORM_API_KEY:
         required: false
