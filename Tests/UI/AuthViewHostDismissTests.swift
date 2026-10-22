@@ -74,7 +74,7 @@ struct AuthViewHostDismissTests {
       }
     }
     let ownerId = try #require(clerk.authFlowRegistrationId)
-    clerk.applyRefreshedEnvironment(.mock)
+    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
 
     var signIn = SignIn.mock
     signIn.status = .complete

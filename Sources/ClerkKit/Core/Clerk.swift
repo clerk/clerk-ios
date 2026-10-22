@@ -144,6 +144,10 @@ public final class Clerk {
 
   /// Whether this build of your app meets the minimum version set for it in the Clerk Dashboard.
   ///
+  /// Minimums are set per bundle ID under iOS applications, so on macOS your app is checked
+  /// against the minimum for its bundle ID too. A minimum applies to every Apple build of your app
+  /// that shares that bundle ID.
+  ///
   /// Read this to show your own update screen when you set
   /// ``Clerk/Options/updateRequiredViewEnabled`` to `false`.
   public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supported(currentVersion: AppBuild.current.version)
@@ -499,7 +503,7 @@ extension Clerk {
     try await runtime.refreshEnvironment()
   }
 
-  func applyRefreshedEnvironment(_ environment: Environment, serverVersionAnswersAtRequest: Int? = nil) {
+  func applyRefreshedEnvironment(_ environment: Environment, serverVersionAnswersAtRequest: Int) {
     self.environment = environment
     environmentRefreshRevision += 1
     applyFetchedEnvironmentAppVersionSupport(environment, serverVersionAnswersAtRequest: serverVersionAnswersAtRequest)

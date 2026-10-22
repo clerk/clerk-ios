@@ -20,8 +20,9 @@ extension Clerk {
     updateAppVersionSupportStatus()
   }
 
-  func applyFetchedEnvironmentAppVersionSupport(_ environment: Environment, serverVersionAnswersAtRequest: Int? = nil) {
-    if serverVersionAnswersAtRequest.map({ $0 == serverVersionAnswerCount }) ?? true {
+  func applyFetchedEnvironmentAppVersionSupport(_ environment: Environment, serverVersionAnswersAtRequest: Int) {
+    let answeredDuringFetch = serverVersionAnswersAtRequest != serverVersionAnswerCount
+    if !answeredDuringFetch || serverVersionStatus?.isSupported != false {
       serverVersionStatus = nil
     }
     environmentVersionStatus = versionStatus(in: environment)
