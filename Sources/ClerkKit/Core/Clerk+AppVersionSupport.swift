@@ -14,44 +14,34 @@ struct AppBuild {
   }
 }
 
-extension Clerk {
-  func applySavedEnvironmentAppVersionSupport(_ environment: Environment) {
-    environmentVersionStatus = versionStatus(in: environment)
-    updateAppVersionSupportStatus()
-  }
+enum AppVersionServerAnswer: Equatable {
+  case supported
+  case unsupported(Clerk.AppVersionSupportStatus)
+}
 
-  func applyFetchedEnvironmentAppVersionSupport(_ environment: Environment, serverVersionAnswersAtRequest: Int) {
-    let answeredDuringFetch = serverVersionAnswersAtRequest != serverVersionAnswerCount
-    if !answeredDuringFetch || serverVersionStatus?.isSupported != false {
-      serverVersionStatus = nil
-    }
+extension Clerk {
+  func applyEnvironmentAppVersionSupport(_ environment: Environment) {
     environmentVersionStatus = versionStatus(in: environment)
     updateAppVersionSupportStatus()
   }
 
   func applyUnsupportedAppVersion(meta: JSON?) {
-    serverVersionAnswerCount += 1
-    serverVersionStatus = AppVersionSupportStatusResolver.resolve(
+    serverVersionAnswer = .unsupported(AppVersionSupportStatusResolver.resolve(
       unsupportedAppVersionMeta: meta,
       currentVersion: appBuild.version,
       environmentStatus: environmentVersionStatus
-    )
+    ))
     updateAppVersionSupportStatus()
   }
 
   func applySupportedAppVersion() {
-    serverVersionAnswerCount += 1
-    if let environmentVersionStatus, environmentVersionStatus.isSupported {
-      serverVersionStatus = environmentVersionStatus
-    } else {
-      serverVersionStatus = .supported(currentVersion: appBuild.version)
-    }
+    serverVersionAnswer = .supported
     updateAppVersionSupportStatus()
   }
 
   func resetAppVersionSupport() {
     environmentVersionStatus = nil
-    serverVersionStatus = nil
+    serverVersionAnswer = nil
     updateAppVersionSupportStatus()
   }
 
@@ -64,7 +54,14 @@ extension Clerk {
   }
 
   private func updateAppVersionSupportStatus() {
-    let status = serverVersionStatus ?? environmentVersionStatus ?? .supported(currentVersion: appBuild.version)
+    let status: AppVersionSupportStatus = switch serverVersionAnswer {
+    case let .unsupported(rejection):
+      rejection
+    case .supported:
+      environmentVersionStatus.flatMap { $0.isSupported ? $0 : nil } ?? .supported(currentVersion: appBuild.version)
+    case nil:
+      environmentVersionStatus ?? .supported(currentVersion: appBuild.version)
+    }
     if appVersionSupportStatus != status {
       appVersionSupportStatus = status
     }

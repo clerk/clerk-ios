@@ -26,7 +26,7 @@ struct AppVersionSupportTests {
   func freshlyFetchedEnvironmentBlocksAnOutdatedApp() {
     let clerk = makeClerk()
 
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     #expect(!clerk.appVersionSupportStatus.isSupported)
     #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0")
@@ -57,7 +57,7 @@ struct AppVersionSupportTests {
     let clerk = makeClerk()
     clerk.setEnvironmentIfNeeded(Self.blockingEnvironment)
 
-    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(.mock)
 
     #expect(clerk.appVersionSupportStatus.isSupported)
   }
@@ -66,7 +66,7 @@ struct AppVersionSupportTests {
   func supportedResponseKeepsTheMinimumTheEnvironmentSet() {
     let clerk = makeClerk()
     clerk.appBuild = .init(bundleID: "com.example.app", version: "2.1")
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     clerk.applySupportedAppVersion()
 
@@ -81,7 +81,7 @@ struct AppVersionSupportTests {
   @Test
   func supportedResponseDropsAMinimumTheServerNoLongerEnforces() {
     let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     clerk.applySupportedAppVersion()
 
@@ -91,7 +91,7 @@ struct AppVersionSupportTests {
   @Test
   func laterSupportedResponseLiftsAnEnvironmentBlock() {
     let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     clerk.applySupportedAppVersion()
 
@@ -101,7 +101,7 @@ struct AppVersionSupportTests {
   @Test
   func laterServerRejectionBlocksDespiteTheEnvironment() {
     let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(.mock)
 
     clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
 
@@ -110,53 +110,52 @@ struct AppVersionSupportTests {
   }
 
   @Test
-  func fetchedEnvironmentLiftsAnEarlierServerRejection() {
+  func fetchedEnvironmentDoesNotLiftAServerRejection() {
     let clerk = makeClerk()
     clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
 
-    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
-
-    #expect(clerk.appVersionSupportStatus.isSupported)
-  }
-
-  @Test
-  func environmentInFlightDuringARejectionKeepsTheBlock() {
-    let clerk = makeClerk()
-    let answersAtRequest = clerk.serverVersionAnswerCount
-
-    clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
-    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: answersAtRequest)
+    clerk.applyRefreshedEnvironment(.mock)
 
     #expect(!clerk.appVersionSupportStatus.isSupported)
     #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0")
   }
 
   @Test
-  func supportedAnswerDuringTheFetchDoesNotHideTheEnvironmentsBlock() {
+  func supportedResponseLiftsAServerRejection() {
     let clerk = makeClerk()
-    let answersAtRequest = clerk.serverVersionAnswerCount
+    clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
 
     clerk.applySupportedAppVersion()
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: answersAtRequest)
 
-    #expect(!clerk.appVersionSupportStatus.isSupported)
-    #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0")
+    #expect(clerk.appVersionSupportStatus.isSupported)
   }
 
   @Test
-  func environmentRequestedAfterARejectionLiftsIt() {
+  func fetchedEnvironmentDoesNotOverrideASupportedResponse() {
     let clerk = makeClerk()
-    clerk.applyUnsupportedAppVersion(meta: ["minimum_version": "2.0"])
+    clerk.applySupportedAppVersion()
 
-    clerk.applyRefreshedEnvironment(.mock, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
+
+    #expect(clerk.appVersionSupportStatus == .supported(currentVersion: "1.0"))
+  }
+
+  @Test
+  func supportedResponseShowsTheMinimumALaterEnvironmentSets() {
+    let clerk = makeClerk()
+    clerk.appBuild = .init(bundleID: "com.example.app", version: "2.1")
+    clerk.applySupportedAppVersion()
+
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     #expect(clerk.appVersionSupportStatus.isSupported)
+    #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0")
   }
 
   @Test
   func rejectionFallsBackToTheEnvironmentForWhatItsMetaLeavesOut() {
     let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     clerk.applyUnsupportedAppVersion(meta: ["update_url": ""])
 
@@ -169,11 +168,12 @@ struct AppVersionSupportTests {
   }
 
   @Test
-  func fetchedEnvironmentBlocksAfterAnEarlierSupportedResponse() {
+  func rejectionAfterASupportedResponseBlocks() {
     let clerk = makeClerk()
     clerk.applySupportedAppVersion()
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment, serverVersionAnswersAtRequest: clerk.serverVersionAnswerCount)
+    clerk.applyUnsupportedAppVersion(meta: nil)
 
     #expect(!clerk.appVersionSupportStatus.isSupported)
     #expect(clerk.appVersionSupportStatus.minimumVersion == "2.0")

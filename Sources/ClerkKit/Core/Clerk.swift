@@ -157,10 +157,7 @@ public final class Clerk {
   var environmentVersionStatus: AppVersionSupportStatus?
 
   @ObservationIgnored
-  var serverVersionStatus: AppVersionSupportStatus?
-
-  @ObservationIgnored
-  var serverVersionAnswerCount = 0
+  var serverVersionAnswer: AppVersionServerAnswer?
 
   @ObservationIgnored
   var appBuild = AppBuild.current
@@ -504,10 +501,10 @@ extension Clerk {
     try await runtime.refreshEnvironment()
   }
 
-  func applyRefreshedEnvironment(_ environment: Environment, serverVersionAnswersAtRequest: Int) {
+  func applyRefreshedEnvironment(_ environment: Environment) {
     self.environment = environment
     environmentRefreshRevision += 1
-    applyFetchedEnvironmentAppVersionSupport(environment, serverVersionAnswersAtRequest: serverVersionAnswersAtRequest)
+    applyEnvironmentAppVersionSupport(environment)
   }
 
   @discardableResult
@@ -564,7 +561,7 @@ extension Clerk: CacheCoordinator {
     // This prevents cached data from overwriting fresh data loaded from the API
     guard self.environment == nil else { return }
     self.environment = environment
-    applySavedEnvironmentAppVersionSupport(environment)
+    applyEnvironmentAppVersionSupport(environment)
   }
 }
 
