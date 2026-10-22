@@ -1,0 +1,35 @@
+name: Dismiss CodeRabbit on approval
+
+# One reviewer's approval doesn't clear another reviewer's "changes requested",
+# so a Clerk member's approval dismisses CodeRabbit's.
+on:
+  pull_request_review:
+    types:
+      - submitted
+
+permissions: {}
+
+jobs:
+  dismiss:
+    name: Dismiss CodeRabbit's changes requests
+    if: >-
+      github.event.review.state == 'approved' &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.review.author_association) &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Dismiss CodeRabbit's changes requests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          APPROVER: ${{ github.event.review.user.login }}
+        run: |
+          ids=$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/reviews" \
+            --jq '.[] | select(.user.id == 136622811 and .state == "CHANGES_REQUESTED") | .id')
+          for id in $ids; do
+            gh api -X PUT "repos/${REPO}/pulls/${PR_NUMBER}/reviews/${id}/dismissals" \
+              -f message="Approved by @${APPROVER}." -f event=DISMISS --jq '.state'
+          done
