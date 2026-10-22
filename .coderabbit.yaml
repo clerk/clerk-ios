@@ -3,7 +3,9 @@
 inheritance: true
 reviews:
   request_changes_workflow: true
+  allow_author_approval: false
   pre_merge_checks:
+    override_requested_reviewers_only: true
     custom_checks:
       - name: "Needs human review"
         mode: error
