@@ -5,73 +5,13 @@
 
 #if os(iOS)
 
+import os
 import SwiftUI
 
-extension UpdateRequiredView {
-  /// The theme and app icon of the ``UpdateRequiredView`` that Clerk presents over your app on its own.
-  ///
-  /// Clerk presents that view in its own window, outside your view hierarchy. By default it uses the
-  /// theme of the ClerkKitUI views your app has shown, such as ``AuthView`` or ``UserButton``, and
-  /// the logo set in the Clerk Dashboard, or your app's icon when there's none. To choose them
-  /// yourself, set them here, typically where you configure Clerk. Set only what you want to change:
-  ///
-  /// ```swift
-  /// UpdateRequiredView.appearance.appIcon = Image("Logo")
-  /// ```
-  ///
-  /// Assigning a new ``Appearance`` replaces every setting, so anything you leave out goes back to
-  /// its default.
-  ///
-  /// When you place ``UpdateRequiredView`` yourself, it uses your view hierarchy's theme and app
-  /// icon like any other ClerkKitUI view, and this setting doesn't apply.
-  @MainActor
-  public static var appearance: Appearance {
-    get { UpdateRequiredAppearanceStore.shared.appearance }
-    set { UpdateRequiredAppearanceStore.shared.appearance = newValue }
-  }
-
-  /// The theme and app icon of the ``UpdateRequiredView`` that Clerk presents automatically.
-  public struct Appearance {
-    /// The theme of the view. When `nil`, the view uses the theme of the ClerkKitUI views your app
-    /// has shown, or the default theme before any has appeared.
-    public var theme: ClerkTheme?
-
-    /// An image to show instead of the logo set in the Clerk Dashboard, or your app's icon when
-    /// there's none. ClerkKitUI sizes it to fit ``appIconMaxHeight``.
-    public var appIcon: Image?
-
-    /// The maximum height of the app logo, in points.
-    public var appIconMaxHeight: CGFloat
-
-    /// A view to show in place of the app logo, laid out as is. It takes precedence over
-    /// ``appIcon``. It's drawn in Clerk's window, so give it any environment objects it reads.
-    public var appIconView: AnyView?
-
-    /// Creates an appearance.
-    ///
-    /// - Parameters:
-    ///   - theme: The theme of the view, or `nil` to use the theme of the ClerkKitUI views your app
-    ///     has shown.
-    ///   - appIcon: An image to show instead of the logo set in the Clerk Dashboard.
-    ///   - appIconMaxHeight: The maximum height of the app logo, in points.
-    public init(theme: ClerkTheme? = nil, appIcon: Image? = nil, appIconMaxHeight: CGFloat = 44) {
-      self.theme = theme
-      self.appIcon = appIcon
-      self.appIconMaxHeight = appIconMaxHeight
-      appIconView = nil
-    }
-
-    /// Creates an appearance with a custom view in place of the app logo.
-    ///
-    /// - Parameters:
-    ///   - theme: The theme of the view, or `nil` to use the theme of the ClerkKitUI views your app
-    ///     has shown.
-    ///   - appIconView: A view to show in place of the app logo, laid out as is.
-    public init(theme: ClerkTheme? = nil, @ViewBuilder appIconView: () -> some View) {
-      self.init(theme: theme)
-      self.appIconView = AnyView(appIconView())
-    }
-  }
+struct UpdateRequiredAppearance {
+  var theme: ClerkTheme
+  var appIcon: Image?
+  var appIconMaxHeight: CGFloat
 }
 
 @MainActor
@@ -79,25 +19,26 @@ extension UpdateRequiredView {
 final class UpdateRequiredAppearanceStore {
   static let shared = UpdateRequiredAppearanceStore()
 
-  var appearance = UpdateRequiredView.Appearance()
   var shownTheme: ClerkTheme?
+  var appliedTheme: ClerkTheme?
+  var appliedAppIcon: Image?
+  var appliedAppIconMaxHeight: CGFloat?
 
-  func presentedAppearance(dashboardLogoURL: String?, bundleIcon: () -> Image? = { Image.appIcon }) -> UpdateRequiredView.Appearance {
-    var presented = appearance
-    presented.theme = appearance.theme ?? shownTheme ?? .default
-    if presented.appIcon == nil, presented.appIconView == nil, dashboardLogoURL?.isEmpty ?? true {
-      presented.appIcon = bundleIcon()
-    }
-    return presented
+  func presentedAppearance(dashboardLogoURL: String?, bundleIcon: () -> Image? = { Image.appIcon }) -> UpdateRequiredAppearance {
+    let hasDashboardLogo = !(dashboardLogoURL?.isEmpty ?? true)
+    return UpdateRequiredAppearance(
+      theme: shownTheme ?? appliedTheme ?? .default,
+      appIcon: appliedAppIcon ?? (hasDashboardLogo ? nil : bundleIcon()),
+      appIconMaxHeight: appliedAppIconMaxHeight ?? 44
+    )
   }
 }
 
 extension View {
-  func updateRequiredAppearance(_ appearance: UpdateRequiredView.Appearance) -> some View {
-    environment(\.clerkTheme, appearance.theme ?? .default)
+  func updateRequiredAppearance(_ appearance: UpdateRequiredAppearance) -> some View {
+    environment(\.clerkThemeWithoutRecording, appearance.theme)
       .environment(\.clerkAppIcon, appearance.appIcon)
       .environment(\.clerkAppIconMaxHeight, appearance.appIconMaxHeight)
-      .environment(\.clerkAppIconView, appearance.appIconView)
   }
 }
 
@@ -109,6 +50,71 @@ struct RecordThemeForUpdateRequiredViewModifier: ViewModifier {
   func body(content: Content) -> some View {
     content.onAppear {
       store.shownTheme = theme
+    }
+  }
+}
+
+/// Clerk presents UpdateRequiredView in its own window, outside the app's view hierarchy, so it
+/// keeps the first theme and app icon the app sets. SwiftUI builds the environment from the root
+/// down, so the first value is the app's root one. SwiftUI sets environment values while it builds
+/// views, so values are recorded into a lock and published to the store afterward.
+enum UpdateRequiredAppearanceRecorder {
+  private struct State: @unchecked Sendable {
+    var theme: ClerkTheme?
+    var appIcon: Image?
+    var appIconMaxHeight: CGFloat?
+    var publishIsScheduled = false
+  }
+
+  private static let state = OSAllocatedUnfairLock(uncheckedState: State())
+
+  static func recordTheme(_ theme: ClerkTheme) {
+    record { state in
+      guard state.theme == nil else { return false }
+      state.theme = theme
+      return true
+    }
+  }
+
+  static func recordAppIcon(_ appIcon: Image?) {
+    guard let appIcon else { return }
+    record { state in
+      guard state.appIcon == nil else { return false }
+      state.appIcon = appIcon
+      return true
+    }
+  }
+
+  static func recordAppIconMaxHeight(_ maxHeight: CGFloat) {
+    record { state in
+      guard state.appIconMaxHeight == nil else { return false }
+      state.appIconMaxHeight = maxHeight
+      return true
+    }
+  }
+
+  static func reset() {
+    state.withLockUnchecked { $0 = State() }
+  }
+
+  private static func record(_ update: (inout State) -> Bool) {
+    let shouldSchedule = state.withLockUnchecked { state in
+      guard update(&state), !state.publishIsScheduled else { return false }
+      state.publishIsScheduled = true
+      return true
+    }
+    guard shouldSchedule else { return }
+    DispatchQueue.main.async {
+      let recorded = state.withLockUnchecked { state in
+        state.publishIsScheduled = false
+        return state
+      }
+      MainActor.assumeIsolated {
+        let store = UpdateRequiredAppearanceStore.shared
+        store.appliedTheme = recorded.theme
+        store.appliedAppIcon = recorded.appIcon
+        store.appliedAppIconMaxHeight = recorded.appIconMaxHeight
+      }
     }
   }
 }
