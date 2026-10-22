@@ -1,4 +1,20 @@
-# Preserve organization settings while keeping CI separate from approving reviews.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+# Preserve organization settings.
 inheritance: true
 reviews:
-  request_changes_workflow: false
+  # Approve once the latest commit is reviewed, threads are resolved and no checks fail.
+  request_changes_workflow: true
+  allow_author_approval: false
+  # Only requested reviewers can override a failing check, not the author.
+  pre_merge_checks:
+    override_requested_reviewers_only: true
+    custom_checks:
+      - name: "Needs human review"
+        # Switch to error once the calls look right. In error mode a FAIL blocks approval.
+        mode: warning
+        instructions: |
+          Decide whether a human should review this PR before it merges, and explain why.
+          Use your own judgment. Always require a human if it touches auth/session/token
+          handling, keychain/keystore, public API, or build/release config.
+          PASS if no human review is needed. FAIL if one is.
