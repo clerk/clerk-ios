@@ -5,6 +5,7 @@
 
 #if os(iOS) || os(macOS)
 
+import ClerkKit
 import os
 import SwiftUI
 
@@ -148,9 +149,30 @@ extension View {
   }
 }
 
+struct PresentedUpdateRequiredView: View {
+  @Environment(Clerk.self) private var clerk
+  private let store = UpdateRequiredAppearanceStore.shared
+
+  var body: some View {
+    UpdateRequiredView()
+      .updateRequiredAppearance(
+        store.presentedAppearance(dashboardLogoURL: clerk.environment?.displayConfig.logoImageUrl, bundleIcon: { Image.appIcon })
+      )
+  }
+}
+
 #endif
 
-#if os(iOS)
+#if os(macOS)
+
+import AppKit
+import SwiftUI
+
+extension Image {
+  @MainActor static let appIcon: Image? = Image(nsImage: NSApplication.shared.applicationIconImage)
+}
+
+#elseif os(iOS)
 
 import SwiftUI
 import UIKit

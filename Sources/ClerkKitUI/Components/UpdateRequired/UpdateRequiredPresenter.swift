@@ -120,16 +120,4 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
   }
 }
 
-private struct PresentedUpdateRequiredView: View {
-  @Environment(Clerk.self) private var clerk
-  private let store = UpdateRequiredAppearanceStore.shared
-
-  var body: some View {
-    UpdateRequiredView()
-      .updateRequiredAppearance(
-        store.presentedAppearance(dashboardLogoURL: clerk.environment?.displayConfig.logoImageUrl, bundleIcon: { Image.appIcon })
-      )
-  }
-}
-
 #endif

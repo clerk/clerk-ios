@@ -139,11 +139,11 @@ extension Clerk {
     /// ```
     public let middleware: MiddlewareConfig
 
-    /// Presents ClerkKitUI's `UpdateRequiredView` over your iOS app automatically when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
+    /// Presents ClerkKitUI's `UpdateRequiredView` over your app automatically when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
     ///
-    /// The view covers every window and can't be dismissed until the user updates. It only appears when your app links ClerkKitUI.
-    /// Set this to false to show your own UI from ``Clerk/appVersionSupportStatus`` instead, or to place `UpdateRequiredView` yourself.
-    /// It has no effect on macOS, where apps place `UpdateRequiredView` themselves.
+    /// The view covers every window, in its own window on iOS and as a sheet on each window on macOS, and can't be dismissed until the user updates.
+    /// It only appears when your app links ClerkKitUI. Set this to false to show your own UI from ``Clerk/appVersionSupportStatus`` instead,
+    /// or to place `UpdateRequiredView` yourself.
     public let updateRequiredViewEnabled: Bool
 
     /// Initializes a ``Options`` instance.
