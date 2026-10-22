@@ -19,6 +19,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
   private var observationGeneration = 0
   private var sheets: [ObjectIdentifier: NSWindow] = [:]
   private var windowObservers: [NSObjectProtocol] = []
+  private var updateIsScheduled = false
 
   func start(clerk: Clerk) {
     self.clerk = clerk
@@ -62,7 +63,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     ].map { name in
       center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
         MainActor.assumeIsolated {
-          self?.update()
+          self?.scheduleUpdate()
         }
       }
     }
@@ -75,6 +76,19 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
         }
       }
     )
+  }
+
+  /// AppKit posts these notifications in the middle of its own window changes, such as
+  /// beginSheet making the new sheet key, so the presenter updates once on the next
+  /// main-queue turn instead of re-entering while a change is still in progress.
+  private func scheduleUpdate() {
+    guard !updateIsScheduled else { return }
+    updateIsScheduled = true
+    DispatchQueue.main.async { [weak self] in
+      guard let self else { return }
+      updateIsScheduled = false
+      update()
+    }
   }
 
   private func update() {
@@ -109,8 +123,8 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     while let attachedSheet = parent.attachedSheet {
       parent = attachedSheet
     }
-    // beginSheet makes the sheet key at once, which posts didBecomeKey and runs
-    // update() again, so the sheet is recorded before it begins.
+    // Recorded before beginSheet, which makes the sheet key at once, so no update
+    // that runs before it returns can treat this window as uncovered.
     sheets[ObjectIdentifier(window)] = sheet
     parent.beginSheet(sheet)
   }
