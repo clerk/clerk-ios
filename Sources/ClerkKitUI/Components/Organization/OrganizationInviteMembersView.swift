@@ -16,12 +16,34 @@ struct OrganizationInviteMembersView: View {
   private let cancellationPlacement: ToolbarItemPlacement
   private let onComplete: ((OrganizationInviteMembersCompletion) async -> Void)?
 
-  @State private var roleOptions: [RoleResource] = []
+  @State private var rolesStore = OrganizationScopedStore { OrganizationRolesDataSource(scope: $0) }
   @State private var emailAddresses: [String] = []
   @State private var selectedRoleKey = ""
-  @State private var isLoadingRoles = true
-  @State private var hasRoleSetMigration = false
   @State private var error: Error?
+
+  private var scope: OrganizationScope? {
+    OrganizationScope(clerk: clerk)
+  }
+
+  private var roles: OrganizationRolesDataSource? {
+    rolesStore.content(for: scope)
+  }
+
+  private var roleOptions: [RoleResource] {
+    roles?.roles ?? []
+  }
+
+  private var isLoadingRoles: Bool {
+    scope != nil && roles?.isLoading != false
+  }
+
+  private var hasRoleSetMigration: Bool {
+    roles?.hasRoleSetMigration ?? false
+  }
+
+  private var displayedError: Error? {
+    error ?? roles?.error
+  }
 
   private var canSubmit: Bool {
     !isLoadingRoles
@@ -78,16 +100,19 @@ struct OrganizationInviteMembersView: View {
       }
     }
     .onChange(of: emailAddresses) { _, _ in
-      error = nil
+      clearErrors()
     }
     .onChange(of: selectedRoleKey) { _, _ in
-      error = nil
+      clearErrors()
     }
-    .onChange(of: roleOptions.map(\.key), initial: true) { _, _ in
+    .onChange(of: roleOptions.map(\.key), initial: true) { _, keys in
+      if !keys.contains(selectedRoleKey) {
+        selectedRoleKey = ""
+      }
       selectDefaultRoleIfNeeded()
     }
-    .task(id: clerk.organization?.id) {
-      await loadRoles()
+    .onChange(of: scope, initial: true) {
+      rolesStore.bind(scope)
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520, minHeight: 320)
@@ -114,7 +139,7 @@ struct OrganizationInviteMembersView: View {
           rolePicker
         }
 
-        if let error {
+        if let error = displayedError {
           ErrorText(error: error, alignment: .leading)
             .font(theme.fonts.subheadline)
             .transition(.blurReplace.animation(.default))
@@ -198,44 +223,12 @@ struct OrganizationInviteMembersView: View {
   }
 
   @MainActor
-  private func loadRoles() async {
-    guard let organization = clerk.organization else {
-      roleOptions = []
-      selectedRoleKey = ""
-      hasRoleSetMigration = false
-      isLoadingRoles = false
-      return
-    }
-
-    isLoadingRoles = true
-    defer { isLoadingRoles = false }
-
-    do {
-      let rolesPage = try await organization.getRoles(page: 1, pageSize: 20)
-      let roles = rolesPage.data
-      if !roles.contains(where: { $0.key == selectedRoleKey }) {
-        selectedRoleKey = ""
-      }
-      roleOptions = roles
-      hasRoleSetMigration = rolesPage.hasRoleSetMigration ?? false
-    } catch {
-      guard !error.isCancellationError else { return }
-
-      self.error = error
-      roleOptions = []
-      selectedRoleKey = ""
-      hasRoleSetMigration = false
-      ClerkLogger.error("Failed to load organization roles for invitations", error: error)
-    }
-  }
-
-  @MainActor
   private func submit() async {
     error = nil
 
     let submittedEmailAddresses = emailAddresses
     guard !submittedEmailAddresses.isEmpty, roleOptions.contains(where: { $0.key == selectedRoleKey }) else { return }
-    guard let organization = clerk.organization else {
+    guard let organization = roles?.scope.organization else {
       error = ClerkClientError(message: "Unable to send invitations without an active organization.", localizationBundle: .module)
       return
     }
@@ -255,6 +248,11 @@ struct OrganizationInviteMembersView: View {
     } else {
       dismiss()
     }
+  }
+
+  private func clearErrors() {
+    error = nil
+    roles?.error = nil
   }
 
   private func selectDefaultRoleIfNeeded() {

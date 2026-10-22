@@ -32,13 +32,12 @@ final class ConfigurationManager {
     let normalizedPublishableKey = publishableKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
     try validatePublishableKey(normalizedPublishableKey)
+    let frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
     let proxyConfiguration = try makeProxyConfiguration(for: options)
 
     state.publishableKey = normalizedPublishableKey
     state.options = options
-
-    state.frontendApiUrl = try extractFrontendApiUrl(from: normalizedPublishableKey)
-
+    state.frontendApiUrl = frontendApiUrl
     state.proxyUrl = options.proxyUrl
     state.proxyConfiguration = proxyConfiguration
 
@@ -91,7 +90,7 @@ final class ConfigurationManager {
     }
 
     guard key.starts(with: "pk_test_") || key.starts(with: "pk_live_") else {
-      throw ClerkInitializationError.invalidPublishableKeyFormat(key: key)
+      throw ClerkInitializationError.invalidPublishableKeyFormat
     }
   }
 
@@ -119,7 +118,7 @@ final class ConfigurationManager {
   ///
   /// - Parameter publishableKey: The publishable key to extract the URL from (must be validated).
   /// - Returns: The extracted frontend API URL.
-  /// - Throws: `ClerkInitializationError.invalidPublishableKeyFormat` if the key format is invalid.
+  /// - Throws: `ClerkInitializationError.invalidPublishableKeyFormat` if the key format is invalid or doesn't decode to a URL with a host.
   private func extractFrontendApiUrl(from publishableKey: String) throws -> String {
     let liveRegex = Regex {
       "pk_live_"
@@ -138,9 +137,13 @@ final class ConfigurationManager {
     guard let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
           let apiUrl = String(match).base64String()
     else {
-      throw ClerkInitializationError.invalidPublishableKeyFormat(key: publishableKey)
+      throw ClerkInitializationError.invalidPublishableKeyFormat
     }
 
-    return "https://\(apiUrl.dropLast())"
+    let frontendApiUrl = "https://\(apiUrl.dropLast())"
+    guard URL(string: frontendApiUrl)?.host?.isEmpty == false else {
+      throw ClerkInitializationError.invalidPublishableKeyFormat
+    }
+    return frontendApiUrl
   }
 }

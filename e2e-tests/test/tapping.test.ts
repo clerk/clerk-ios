@@ -2,7 +2,12 @@ import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { busyWaits } from '../specs/support/busy-runner.ts';
-import { tapOnceUncovered } from '../specs/support/tapping.ts';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { tapMarker } from '../specs/support/evidence.ts';
+import { atItsMiddle, backControl, tapMarkedOnceUncovered, tapOnceUncovered } from '../specs/support/tapping.ts';
+import { readTaps } from '../src/core/video.ts';
 
 const REFUSED = 'perform tap failed: Ref @e5 is covered by another visible element and cannot be tapped safely';
 
@@ -82,5 +87,33 @@ describe('a tap that the iOS runner refuses because it is still finishing an ear
     const { waits, busy } = waiting(6);
     await tapOnceUncovered(control.tap, control.settle(20_000), busy);
     assert.deepEqual([control.count(), waits.length], [4, 1]);
+  });
+});
+
+describe('the mark of a tap that a transition covered at first', () => {
+  it('has the box the control had at the attempt that landed, not before the wait', async () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'verify-marks-')), 'evidence-marks.jsonl');
+    const control = taps([REFUSED, null]);
+    const boxes = [{ x: 0, y: 900, width: 100, height: 40 }, { x: 0, y: 500, width: 100, height: 40 }];
+    let reads = 0;
+    const moving = { boundingBox: async () => boxes[Math.min(reads++, boxes.length - 1)]!, tap: control.tap };
+    await tapMarkedOnceUncovered(moving, tapMarker({ marksFile: file, now: () => 7_000 }), control.settle(5_000));
+    assert.equal(control.count(), 2);
+    assert.deepEqual(readTaps(file), [{ sentAt: 7_000, tappedAt: 7_000, x: 50, y: 520 }]);
+  });
+});
+
+describe('a back that a user sees', () => {
+  it('taps the middle of the navigation back button on iOS and of the top bar back arrow on Android, and marks it like any tap', async () => {
+    const file = join(mkdtempSync(join(tmpdir(), 'verify-marks-')), 'evidence-marks.jsonl');
+    const found: string[] = [];
+    const tapped: unknown[] = [];
+    const control = (query: string) => (found.push(query), { boundingBox: async () => ({ x: 8, y: 60, width: 44, height: 24 }), tap: async (options: unknown) => void tapped.push(options) });
+    const screen = { getByTestId: (id: string) => control(`test id ${id}`), getByLabel: (label: string) => control(`label ${label}`) };
+    const settle = { timeoutMs: 5_000, now: () => 0, wait: async () => undefined };
+    for (const platform of ['ios', 'android'] as const) await tapMarkedOnceUncovered(atItsMiddle(backControl(screen, platform)), tapMarker({ marksFile: file, now: () => 7_000 }), settle);
+    assert.deepEqual(found, ['test id BackButton', 'label Back']);
+    assert.deepEqual(tapped, [{ timeout: 5_000, position: { x: 22, y: 12 } }, { timeout: 5_000, position: { x: 22, y: 12 } }]);
+    assert.deepEqual(readTaps(file), [{ sentAt: 7_000, tappedAt: 7_000, x: 30, y: 72 }, { sentAt: 7_000, tappedAt: 7_000, x: 30, y: 72 }]);
   });
 });

@@ -1,5 +1,5 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { isOrphaned, readClaims } from './claims.ts';
 import { check, type AppliedInstance, type Instances } from './instances/instances.ts';
 import { STANDARD, SettingsRefused, planGroups, readSpecText, settingsFileOf, sourceHash, straySettingsFile, type SettingsGroup } from './instances/settings.ts';
@@ -21,6 +21,7 @@ import { isRunning, type Runner } from './exec.ts';
 import { ledgerAgentDeviceDaemon, processesIn, readDaemonInfo, stopProcesses, type ProcessEntry } from './ledgers.ts';
 import { SHARED_ROOTS, manifestDrift } from './manifest.ts';
 import { CannotPostHere, chooseEvidence, missingAttach, postToPullRequest } from './publish.ts';
+import { cutVideo, evidenceTapsOf, readMarks, readTaps, spansOfMarks, tapWindows, type VideoCut } from './video.ts';
 import { redact } from '../../specs/support/secret.ts';
 import { count } from './state.ts';
 import { newEntryId, parseRunId, type Workspace } from './workspace.ts';
@@ -37,8 +38,11 @@ import {
   type DoctorReport,
   type DownResult,
   type EvidenceBundle,
+  type EvidenceFile,
   type EvidencePath,
   type EvidenceRecord,
+  type EvidenceSpan,
+  type Viewport,
   type HandOffReceipt,
   type HostAdapter,
   type InstanceView,
@@ -102,6 +106,30 @@ function readJson(file: string): Record<string, unknown> | null {
   return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>) : null;
 }
 
+const GRAPHQL_PROBE_MS = 10_000;
+
+async function ghAttachCheck(runner: Runner): Promise<DoctorCheck> {
+  const cannotPost = "so `{cli} attach` cannot put a run's video and screenshots in a pull request description from this machine";
+  const noAttach = await missingAttach(runner);
+  if (noAttach !== null) return { id: 'gh-attach', ok: true, state: 'warning', detail: `${noAttach.why}, ${cannotPost}`, fix: noAttach.fix };
+  const graphql = await runner('gh', ['api', 'graphql', '-f', 'query={viewer{login}}'], { timeoutMs: GRAPHQL_PROBE_MS });
+  if (graphql.code === 0) return check('gh-attach', true, 'gh pr edit supports --attach, and gh can use the GitHub GraphQL API', '');
+  const why = graphql.code === 124 ? `no answer in ${GRAPHQL_PROBE_MS / 1000} seconds` : redact(graphql.stderr.trim().split('\n')[0] ?? '');
+  return {
+    id: 'gh-attach',
+    ok: true,
+    state: 'warning',
+    detail: `gh cannot use the GitHub GraphQL API (${why}), which \`gh pr view\` and \`gh pr edit\` need, ${cannotPost}`,
+    fix: "attach a remote run before {cli} down, so that attach hands its evidence to the session's runner, or check `gh auth status`",
+  };
+}
+
+async function videoCutCheck(runner: Runner): Promise<DoctorCheck> {
+  const ffmpeg = await runner('ffmpeg', ['-hide_banner', '-version']);
+  if (ffmpeg.code === 0) return check('video-cut', true, `${ffmpeg.stdout.split('\n')[0]?.trim() ?? 'ffmpeg'}; attach --video posts the part of a run that host.evidence marks`, '');
+  return { id: 'video-cut', ok: true, state: 'warning', detail: 'ffmpeg is not on PATH, so `{cli} attach --video` posts the whole video of a run, uncut', fix: 'install ffmpeg (brew install ffmpeg, or apt-get install ffmpeg)' };
+}
+
 export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doctor' }>): Promise<DoctorReport> {
   const { host, workspace, runner } = deps;
   const platform = platformOf(host, command.platform);
@@ -145,15 +173,11 @@ export async function doctor(deps: Deps, command: Extract<Command, { verb: 'doct
     checks.push(check('build', built !== null, built === null ? `no ${host.appId(platform)} build for ${key}` : `${key} at ${built.path}`, up));
   } else {
     const onSession = held !== null && held.backend === 'remote' && held.installedBuild === key;
-    checks.push(check('build', onSession, onSession ? `${key} (commit ${held.builtSha?.slice(0, 12) ?? 'unknown'}) is on the session's device` : `no session holds a ${host.appId(platform)} build for ${key}`, `commit and push, then ${up}`));
+    checks.push(check('build', onSession, onSession ? `${key} (commit ${held.builtSha?.slice(0, 12) ?? 'unknown'}${held.builtPatch === null ? '' : ' with uncommitted changes'}) is on the session's device` : `no session holds a ${host.appId(platform)} build for ${key}`, `commit and push, then ${up}`));
   }
 
-  const noAttach = await missingAttach(runner);
-  checks.push(
-    noAttach === null
-      ? check('gh-attach', true, 'gh pr edit supports --attach', '')
-      : { id: 'gh-attach', ok: true, state: 'warning', detail: `${noAttach.why}, so \`{cli} attach\` cannot put a run's video and screenshots in a pull request description from this machine`, fix: noAttach.fix },
-  );
+  checks.push(await ghAttachCheck(runner));
+  checks.push(await videoCutCheck(runner));
 
   const stale = readClaims(workspace.claimsDir, platform).filter(isOrphaned);
   checks.push(check('stale-claims', stale.length === 0, stale.length === 0 ? 'none' : `${stale.map((c) => c.deviceName).join(', ')} belong to deleted worktrees`, '{cli} down --stale'));
@@ -180,11 +204,13 @@ async function startRuntime(deps: Deps, lease: Lease): Promise<string | null> {
 
 const agentDeviceSession = (workspace: Workspace, platform: Platform) => `verify-${platform}-${workspace.worktreeId}`;
 const CLOSE_BEFORE_RECORDING_MS = 30_000;
+const EVIDENCE_MARKS_FILE = 'evidence-marks.jsonl';
 
 function agentDeviceFor(deps: Deps, lease: Lease, platform: Platform) {
   const target = agentDeviceOn(deviceOf(lease), platform);
   const env = { ...withoutClerkKeys(deps.env), AGENT_DEVICE_STATE_DIR: deps.workspace.agentDeviceDir, ...target.env };
-  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, ...limit }) };
+  mkdirSync(deps.workspace.agentDeviceDir, { recursive: true });
+  return { selector: target.selector, call: (args: readonly string[], limit: { readonly timeoutMs?: number } = {}) => deps.runner(join(deps.workspace.packageDir, 'node_modules', '.bin', 'agent-device'), args, { env, cwd: deps.workspace.agentDeviceDir, ...limit }) };
 }
 
 const targetOf = (deps: Deps, outcome: RuntimeOutcome): Target => ({
@@ -249,12 +275,13 @@ export async function endRun(
   if (errors.length > 0) throw errors[0];
 }
 
-export function nextStep(run: RunId, dir: EvidencePath, results: readonly SpecResult[], selection: string): string {
+export function nextStep(run: RunId, dir: EvidencePath, results: readonly SpecResult[], selection: string, marked: boolean): string {
   const ran = assertSomethingRan(results, selection);
   const failed = results.filter((r) => r.status === 'failed' || r.status === 'interrupted');
   if (failed.length > 0) return failed[0]?.failurePage ?? join(dir, 'e2e.log');
   if (ran === 'all-left-out') return 'nothing ran: every selected spec was left out by platform, so the run proves nothing to post';
-  return `{cli} attach ${run} --pr <n> --screenshot <label> for a still change, or --video for behavior or a flow; add --before <run-id> when the change is to something that exists`;
+  if (marked) return `{cli} attach ${run} --pr <n> --video, and add --before <run-id> when the change is to something that exists`;
+  return `{cli} attach ${run} --pr <n> --screenshot <label> for a still change, and add --before <run-id> when the change is to something that exists; for behavior or a flow, put the steps that show it in host.evidence, run that spec on its own, and attach that run with --video`;
 }
 
 export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Extract<Command, { verb: 'run' }>, instances: { readonly willChange: boolean }, drive: (outcome: RuntimeOutcome) => Promise<T>): Promise<T> {
@@ -284,6 +311,7 @@ export async function leaseForRun<T>(deps: Deps, platform: Platform, command: Ex
 interface Recorder {
   readonly recording: Recording;
   readonly recorderEntry: string | null;
+  readonly startedAt: number;
 }
 
 interface GroupRun {
@@ -295,6 +323,7 @@ interface GroupRun {
   readonly driver: DriverWatch;
   readonly command: Extract<Command, { verb: 'run' }>;
   readonly agent: Agent | null;
+  readonly evidenceMarks: EvidencePath | null;
 }
 
 interface GroupOutcome {
@@ -360,6 +389,7 @@ async function runGroup(deps: Deps, the: GroupRun, group: SettingsGroup, index: 
         target: the.target,
         clerk: { publishableKey: deps.instances.keys().pk, access: { kind: 'stand-in', url: the.broker.url, tokenFile: the.broker.tokenFile } },
         run: the.run,
+        evidenceMarks: the.evidenceMarks,
       };
       the.driver.startClean(deps.progress);
       invoked = await invokeE2E(planE2E(inputs, specs, the.command, workspace.packageDir, outputDir), the.log, workspace.packageDir, deps.progress, the.agent);
@@ -456,10 +486,12 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         const closed = await device.call(['close', host.appId(platform), ...device.selector, '--session', agentDeviceSession(workspace, platform)], { timeoutMs: CLOSE_BEFORE_RECORDING_MS });
         if (closed.code !== 0) deps.progress(`video   the app could not be closed before the recording, so the video may open on the screen it was showing: ${redact(closed.stderr.trim() || closed.stdout.trim())}`);
         const recording = await backend.startRecording(lease, dir);
-        if (recording.process === null) return { recording, recorderEntry: null };
+        const startedAt = recording.videoStartsAt ?? Date.now();
+        if (recording.videoStartGuess !== undefined) deps.progress(`video   ${recording.videoStartGuess}`);
+        if (recording.process === null) return { recording, recorderEntry: null, startedAt };
         const recorderEntry = newEntryId();
         workspace.append({ id: recorderEntry, kind: 'process', what: 'recorder', pid: recording.process.pid, startedAt: new Date(recording.process.startedAt).toISOString(), platform });
-        return { recording, recorderEntry };
+        return { recording, recorderEntry, startedAt };
       };
       const broker = await startBroker(run, workspace, scratch, {
         keys: () => deps.instances.keys(),
@@ -469,21 +501,32 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         },
       });
 
+      const evidenceMarks = command.video && !('all' in command.selection) ? (join(dir, EVIDENCE_MARKS_FILE) as EvidencePath) : null;
+      if (evidenceMarks !== null) deps.progress(`video   paced for a reviewer to follow; a run with --no-video, or with --all, keeps full speed`);
       const outcomes: GroupOutcome[] = [];
       let endFailure: unknown = null;
+      let videoStartedAt: number | null = null;
       try {
-        const the: GroupRun = { run, dir, log: join(dir, 'e2e.log') as EvidencePath, target: targetOf(deps, outcome), broker, driver, command, agent };
+        const the: GroupRun = { run, dir, log: join(dir, 'e2e.log') as EvidencePath, target: targetOf(deps, outcome), broker, driver, command, agent, evidenceMarks };
         for (const [index, group] of groups.entries()) {
           const stopped = outcomes.find((done) => done.stopsTheRun)?.failure ?? null;
           outcomes.push(await runGroup(deps, the, group, index, outcomes.flatMap((done) => done.identities), stopped));
         }
       } finally {
-        const started = (await recorder?.catch(() => null)) ?? { recording: null, recorderEntry: null };
+        const started = (await recorder?.catch(() => null)) ?? { recording: null, recorderEntry: null, startedAt: null };
+        videoStartedAt = started.startedAt;
         await endRun(workspace, { ...started, broker, scratch })
           .catch((error: unknown) => void (endFailure = error))
           .finally(() => deps.instances.stopDriving());
       }
       if (command.video && recorder === null) deps.progress('video   no test launched the app, so this run has no video');
+      const hasVideo = existsSync(join(dir, 'video.mp4'));
+      const evidenceSpans = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : spansOfMarks(readMarks(evidenceMarks), videoStartedAt);
+      if (evidenceMarks !== null && hasVideo && evidenceSpans.length === 0) deps.progress("video   no test marked the part that shows the change with host.evidence('<label>', async () => { ... }), so attach --video refuses this run");
+      const windows = evidenceMarks === null || videoStartedAt === null || !hasVideo ? [] : tapWindows(readTaps(evidenceMarks), videoStartedAt);
+      const viewport = windows.length === 0 ? null : await viewportOf(deps, lease, platform);
+      const taps = viewport === null ? [] : await evidenceTapsOf(join(dir, 'video.mp4') as EvidencePath, windows, viewport, deps.runner);
+      if (windows.length > 0 && viewport === null) deps.progress('video   the size of the screen could not be read, so attach --video draws no taps for this run');
 
       driver.collect();
       const appLog = join(dir, 'app.log') as EvidencePath;
@@ -502,11 +545,13 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         dirty: git.dirty,
         platform,
         backend: lease.backend,
-        remote: lease.backend === 'remote' ? { provider: lease.provider, runner: lease.runner, builtSha: lease.builtSha } : null,
+        remote: lease.backend === 'remote' ? { provider: lease.provider, runner: lease.runner, builtSha: lease.builtSha, builtPatch: lease.builtPatch } : null,
         device: outcome.view.device,
         build: outcome.app.key,
         results,
-        videos: existsSync(join(dir, 'video.mp4')) ? [join(dir, 'video.mp4') as EvidencePath] : [],
+        videos: hasVideo ? [join(dir, 'video.mp4') as EvidencePath] : [],
+        evidenceSpans,
+        evidenceTaps: viewport === null ? null : { viewport, taps },
         screenshots: [...screenshots.values()],
         appLog,
         e2eReport: join(e2eOutputDir(dir, 0), 'report.json') as EvidencePath,
@@ -525,7 +570,7 @@ export async function runVerb(deps: Deps, command: Extract<Command, { verb: 'run
         deps.progress(`evidence  ${dir}  sealed; the specs ran, and the run still fails because it did not end cleanly`);
         throw endFailure;
       }
-      const next = nextStep(run, dir, results, 'all' in command.selection ? '--all' : command.selection.selectors.join(' '));
+      const next = nextStep(run, dir, results, 'all' in command.selection ? '--all' : command.selection.selectors.join(' '), evidenceSpans.length > 0);
       return { verb: 'run', dir, record, next };
     } finally {
       ledgerAgentDeviceDaemon(workspace);
@@ -540,6 +585,24 @@ interface SnapshotNode {
   readonly value?: string;
   readonly identifier?: string;
   readonly depth?: number;
+}
+
+const VIEWPORT_COMMAND_MS = 30_000;
+
+async function viewportOf(deps: Deps, lease: Lease, platform: Platform): Promise<Viewport | null> {
+  const { selector, call: unbounded } = agentDeviceFor(deps, lease, platform);
+  const call = (args: readonly string[]) => unbounded(args, { timeoutMs: VIEWPORT_COMMAND_MS });
+  const session = ['--session', `${agentDeviceSession(deps.workspace, platform)}-screen`];
+  try {
+    if ((await call(['open', deps.host.appId(platform), '--json', ...selector, ...session])).code !== 0) return null;
+    const snap = await call(['snapshot', '--json', ...selector, ...session]);
+    const viewport = snap.code === 0 ? (JSON.parse(snap.stdout) as { data?: { viewport?: Partial<Viewport> } }).data?.viewport : undefined;
+    return typeof viewport?.width === 'number' && typeof viewport.height === 'number' && viewport.width > 0 && viewport.height > 0 ? { width: viewport.width, height: viewport.height } : null;
+  } catch {
+    return null;
+  } finally {
+    await call(['close', ...selector, ...session]).catch(() => undefined);
+  }
 }
 
 function heldLease(deps: Deps, platform: Platform): { lease: Lease; backend: DeviceBackend } {
@@ -599,7 +662,16 @@ export async function attach(deps: Deps, command: Extract<Command, { verb: 'atta
   if (!existsSync(dir)) throw new VerifyFailure('USAGE', `no run ${run} in ${deps.workspace.root}/runs`, 'pass a run id that `{cli} run` printed');
   const record = readRecord(dir);
   const publishable = assertPublishable(record, loggedUserIds(dir));
-  const bundle = chooseEvidence(command.pr, publishable, command.before === null ? null : beforeRun(deps, command.before, record), command.media);
+  if (command.media.video && (record.evidenceSpans ?? []).length === 0) {
+    throw new VerifyFailure(
+      'USAGE',
+      `run ${run} marks no part of its video as the change, so its video would show the whole run`,
+      `wrap the steps that show the change in host.evidence('<what it shows>', async () => { ... }), run the spec again, and attach that run`,
+    );
+  }
+  const before = command.before === null ? null : beforeRun(deps, command.before, record);
+  const chosen = chooseEvidence(command.pr, publishable, before, command.media);
+  const bundle = command.media.video ? await withCutVideos(deps, chosen, record, before) : chosen;
   try {
     return await postToPullRequest(bundle, deps.host, deps.runner);
   } catch (error) {
@@ -615,6 +687,26 @@ export async function attach(deps: Deps, command: Extract<Command, { verb: 'atta
       throw new VerifyFailure(failure.code, `${error.message}, and ${failure.message}`, `${failure.fix}; until then, ${unattached}`);
     }
   }
+}
+
+async function withCutVideos(deps: Deps, bundle: EvidenceBundle, after: EvidenceRecord, before: EvidenceRecord | null): Promise<EvidenceBundle> {
+  const cut = async (file: EvidenceFile, record: EvidenceRecord): Promise<EvidenceFile> => {
+    if (!file.name.endsWith('.mp4')) return file;
+    const spans = (record.evidenceSpans ?? []).length > 0 ? record.evidenceSpans! : null;
+    const result = await cutVideo(file.path, spans, deps.runner, record.evidenceTaps ?? null);
+    deps.progress(cutLine(record.run, result, spans));
+    return { name: file.name, path: result.path };
+  };
+  const files = await Promise.all(bundle.files.map((file) => cut(file, after)));
+  if (bundle.before === null || before === null) return { ...bundle, files };
+  return { ...bundle, files, before: { ...bundle.before, files: await Promise.all(bundle.before.files.map((file) => cut(file, before))) } };
+}
+
+function cutLine(run: RunId, result: VideoCut, spans: readonly EvidenceSpan[] | null): string {
+  if (result.kind === 'uncut') return `video   run ${run}: ${result.why}, so its whole video goes up uncut; ${basename(result.path)} is what a reviewer sees`;
+  const what = spans === null ? 'the whole run, with each still stretch shortened, because the run marks no evidence' : spans.map((span) => `"${span.label}"`).join(', ');
+  const taps = result.taps === 0 ? '' : `, with ${count(result.taps, 'tap')} marked where ${result.taps === 1 ? 'it' : 'they'} landed`;
+  return `video   run ${run}: ${result.from.toFixed(1)} s cut to ${result.to.toFixed(1)} s, showing ${what}${taps}; ${result.path}`;
 }
 
 function beforeRun(deps: Deps, run: RunId, after: EvidenceRecord): Showable {

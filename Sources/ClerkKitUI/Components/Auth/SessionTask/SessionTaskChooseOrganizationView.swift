@@ -12,7 +12,7 @@ struct SessionTaskChooseOrganizationView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(AuthNavigation.self) private var navigation
 
-  @State private var accountList = OrganizationAccountListDataSource()
+  @State private var accountLists = OrganizationScopedStore { OrganizationAccountListDataSource(scope: $0) }
   @State private var isSelectingOrganization = false
 
   let token: AuthFlowPresentationToken
@@ -21,8 +21,31 @@ struct SessionTaskChooseOrganizationView: View {
     clerk.user
   }
 
+  private var scope: OrganizationUserScope? {
+    OrganizationUserScope(
+      clerk: clerk,
+      includesCreationDefaults: clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
+    )
+  }
+
   var body: some View {
-    Group {
+    ZStack {
+      Color.clear
+        .frame(width: 0, height: 0)
+
+      if let accountList = accountLists.content(for: scope) {
+        content(accountList)
+      }
+    }
+    .onChange(of: scope, initial: true) {
+      accountLists.bind(scope)
+    }
+  }
+
+  private func content(_ accountList: OrganizationAccountListDataSource) -> some View {
+    @Bindable var accountList = accountList
+
+    return Group {
       if !accountList.isLoading, !accountList.hasExistingResources, user?.createOrganizationEnabled == false {
         GetHelpView(context: .sessionTask(.organizationRequired))
           .navigationBarBackButtonHidden()
@@ -45,7 +68,7 @@ struct SessionTaskChooseOrganizationView: View {
               .frame(width: 32, height: 32)
               .frame(maxWidth: .infinity, maxHeight: .infinity)
           } else {
-            chooseOrganizationContent
+            chooseOrganizationContent(accountList)
           }
         }
         .background(theme.colors.background)
@@ -60,17 +83,14 @@ struct SessionTaskChooseOrganizationView: View {
       }
     }
     .clerkErrorPresenting($accountList.error, onDismiss: { _ in
-      guard !accountList.hasExistingResources || accountList.hasFailedLists, user != nil else { return }
-      Task { await fetchOrganizationResources() }
+      guard !accountList.hasExistingResources || accountList.hasFailedLists else { return }
+      accountList.reload()
     })
-    .taskOnce {
-      await fetchOrganizationResources()
-    }
   }
 
   // MARK: - Choose Organization
 
-  private var chooseOrganizationContent: some View {
+  private func chooseOrganizationContent(_ accountList: OrganizationAccountListDataSource) -> some View {
     ScrollView {
       VStack(spacing: 32) {
         VStack(spacing: 8) {
@@ -91,7 +111,7 @@ struct SessionTaskChooseOrganizationView: View {
             case .personalAccount:
               break
             case .organization(let id):
-              Task { await selectOrganization(id: id) }
+              Task { await selectOrganization(id: id, accountList) }
             }
           },
           onCreateOrganization: {
@@ -118,12 +138,7 @@ struct SessionTaskChooseOrganizationView: View {
 
   // MARK: - Actions
 
-  private func fetchOrganizationResources() async {
-    let defaultsEnabled = clerk.environment?.organizationSettings.organizationCreationDefaults.enabled == true
-    await accountList.loadInitial(user: user, includeCreationDefaults: defaultsEnabled)
-  }
-
-  private func selectOrganization(id: String) async {
+  private func selectOrganization(id: String, _ accountList: OrganizationAccountListDataSource) async {
     guard clerk.authFlowPresentationIsCurrent(token),
           !isSelectingOrganization,
           let session = clerk.session

@@ -11,12 +11,14 @@ import type { Runner } from '../src/core/exec.ts';
 import { createInstances } from '../src/core/instances/instances.ts';
 import { SettingsRefused, settingsFileOf } from '../src/core/instances/settings.ts';
 import { summarize } from '../src/core/publish.ts';
-import { runVerb, type Deps } from '../src/core/verbs.ts';
+import { attach, runVerb, type Deps } from '../src/core/verbs.ts';
+import { readMarks } from '../src/core/video.ts';
 import { openWorkspace } from '../src/core/workspace.ts';
-import { VerifyFailure, type BuildKey, type Command, type DeviceBackend, type EvidencePath, type HostAdapter, type InstanceSettings, type LocalLease, type ScratchPath } from '../src/core/types.ts';
+import { VerifyFailure, type BuildKey, type BuiltApp, type RunId, type Command, type DeviceBackend, type EvidencePath, type HostAdapter, type InstanceSettings, type LocalLease, type RemoteLease, type ScratchPath } from '../src/core/types.ts';
 import { PLATFORM_KEY, fakeClerk, type FakeClerkOptions } from '../testing/fake-clerk.ts';
 import { LEFT_OUT, linesLeftOut, watchDriver } from '../src/core/driver.ts';
 import { readAgent } from '../specs/support/agent.ts';
+import { isTestEmailOf, runPassword } from '../specs/support/clerk.ts';
 
 const MFA: InstanceSettings = { config: { auth_multi_factor: { required_for_sign_up: true } }, environment: { 'user_settings.sign_up.mfa.required': true } };
 const FORCED_ORG: InstanceSettings = { config: { organization_settings: { force_organization_selection: true } }, environment: { 'organization_settings.force_organization_selection': true } };
@@ -29,6 +31,8 @@ const SETUP_MFA = 'specs/features/session-tasks/setup-mfa.e2e.ts';
 const SIGN_UP = 'specs/features/sign-up/complete.e2e.ts';
 const COMMITTED: Readonly<Record<string, InstanceSettings | null>> = { [AUTH_START]: null, [CHOOSE_ORG]: FORCED_ORG, [COMPLETE_MFA]: MFA, [SETUP_MFA]: MFA, [SIGN_UP]: null };
 
+const SUPPORT = { clerk: join(import.meta.dirname, '..', 'specs', 'support', 'clerk.ts'), names: join(import.meta.dirname, '..', 'specs', 'support', 'names.ts') };
+
 const FAKE_E2E = `#!${process.execPath}
 const fs = require('node:fs');
 const path = require('node:path');
@@ -40,8 +44,12 @@ fs.appendFileSync('invocations.jsonl', JSON.stringify({ specs, output, args }) +
 fs.appendFileSync('order.log', 'e2e opens the app with no arguments\\n');
 (async () => {
   const token = fs.readFileSync(process.env.CLERK_E2E_API_TOKEN_FILE, 'utf8');
-  const [, runTime, runTag] = process.env.CLERK_E2E_RUN_ID.split('-');
-  const emailOf = () => runTime + runTag + require('node:crypto').randomBytes(2).toString('hex') + '+clerk_test@example.com';
+  const run = process.env.CLERK_E2E_RUN_ID;
+  const { newTestPassword, runPassword, testEmail } = await import(${JSON.stringify(SUPPORT.clerk)});
+  const { runNames } = await import(${JSON.stringify(SUPPORT.names)});
+  const names = runNames(run, path.join(require('node:os').tmpdir(), 'verify-fake-names', run));
+  const emailOf = () => testEmail(run, names.claim('person'));
+  const plain = (secret) => secret.use('device-input', (value) => value);
   const stateDir = process.env.AGENT_DEVICE_STATE_DIR;
   const driver = plan.driver;
   if (driver) {
@@ -60,12 +68,12 @@ fs.appendFileSync('order.log', 'e2e opens the app with no arguments\\n');
     if (driver.rewrites) for (const file of driver.rewrites) fs.writeFileSync(path.join(stateDir, file), '');
     if (driver.writes) {
       const ask = (route, body) => fetch(process.env.CLERK_E2E_API_URL + route, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: JSON.stringify(body) }).then((answer) => answer.json());
-      const seededPassword = require('node:crypto').randomBytes(12).toString('hex') + 'Aa1!';
+      const seededPassword = plain(newTestPassword());
       const user = await ask('/users', { email_address: [emailOf()], password: seededPassword, bypass_client_trust: true });
       const ticket = (await ask('/sign_in_tokens', { user_id: user.id, expires_in_seconds: 60 })).token;
       const part = (claims) => Buffer.from(JSON.stringify(claims)).toString('base64url');
       const sessionToken = [part({ alg: 'RS256', typ: 'JWT' }), part({ sid: 'sess_fake', sub: user.id }), require('node:crypto').randomBytes(32).toString('base64url')].join('.');
-      const secrets = { ...driver.known, standInToken: token, seededPassword, ticket, sessionToken, runPassword: 'Verify-' + process.env.CLERK_E2E_RUN_ID + '-Pw1!' };
+      const secrets = { ...driver.known, standInToken: token, seededPassword, ticket, sessionToken, runPassword: plain(runPassword(run)) };
       fs.writeFileSync('secrets-the-driver-saw.json', JSON.stringify(secrets));
       const named = (line) => Object.entries(secrets).reduce((text, [name, value]) => text.split('{' + name + '}').join(value), line);
       const expanded = (line) => {
@@ -91,12 +99,19 @@ fs.appendFileSync('order.log', 'e2e opens the app with no arguments\\n');
       const ready = await fetch(process.env.CLERK_E2E_API_URL + '/about_to_launch', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
       launchRefused = ready.ok ? null : (await ready.json()).errors[0].long_message;
       fs.appendFileSync('order.log', (launchRefused === null ? 'launches for ' : 'does not launch for ') + path.basename(file) + '\\n');
+      const marks = process.env.CLERK_E2E_EVIDENCE_MARKS;
+      if (marks !== undefined) {
+        const at = Date.now();
+        fs.appendFileSync(marks, JSON.stringify({ label: 'shows ' + path.basename(file), startedAt: at, endedAt: at + 1500, passed: true }) + '\\n');
+        if (plan.taps) fs.appendFileSync(marks, JSON.stringify({ sentAt: at + 700, tappedAt: at + 800, x: 210, y: 450 }) + '\\n');
+        fs.appendFileSync('order.log', 'marks the evidence of ' + path.basename(file) + '\\n');
+      }
     }
     if (plan.retriesTheOpen) {
       const again = await fetch(process.env.CLERK_E2E_API_URL + '/about_to_launch', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
       fs.appendFileSync('order.log', 'retries the open for ' + path.basename(file) + ', answered ' + again.status + ' ' + (await again.text()) + '\\n');
     }
-    const password = require('node:crypto').randomBytes(12).toString('hex') + 'Aa1!';
+    const password = plain(newTestPassword());
     const seeded = await fetch(process.env.CLERK_E2E_API_URL + '/users', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: JSON.stringify({ email_address: [emailOf()], ...(plan.password === true ? { password, bypass_client_trust: true } : { skip_password_requirement: true }) }) });
     const body = await seeded.json();
     if (plan.password) {
@@ -132,6 +147,7 @@ interface FakeE2EPlan {
   readonly edit?: string;
   readonly exitCode?: number;
   readonly password?: boolean;
+  readonly taps?: boolean;
   readonly launches?: boolean;
   readonly retriesTheOpen?: boolean;
   readonly driver?: {
@@ -146,7 +162,9 @@ interface FakeE2EPlan {
 const SPEC_SOURCE = "import { test } from '../../fixtures.ts';\n\ntest('x', async ({ host }) => {\n  await host.seedUser();\n});\n";
 const settingsText = (declared: InstanceSettings): string => `${JSON.stringify(declared, null, 2)}\n`;
 
-function world(options: { readonly specs?: Readonly<Record<string, InstanceSettings | null>>; readonly plan?: FakeE2EPlan; readonly env?: Record<string, string>; readonly clerk?: FakeClerkOptions; readonly logs?: () => Promise<string> } = {}) {
+const SESSION_COMMIT = 'a'.repeat(40);
+
+function world(options: { readonly specs?: Readonly<Record<string, InstanceSettings | null>>; readonly plan?: FakeE2EPlan; readonly env?: Record<string, string>; readonly clerk?: FakeClerkOptions; readonly logs?: () => Promise<string>; readonly session?: { readonly patch: string | null } } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'verify-run-'));
   execFileSync('git', ['init', '-q'], { cwd: dir });
   writeFileSync(join(dir, 'app.swift'), 'app');
@@ -186,10 +204,24 @@ function world(options: { readonly specs?: Readonly<Record<string, InstanceSetti
     logs: options.logs ?? (async () => ''),
     describe: (lease: LocalLease) => lease.deviceName,
   } as unknown as DeviceBackend;
+  const patch = options.session?.patch ?? null;
+  const session = {
+    kind: 'remote',
+    platform: 'ios',
+    availability: () => ({ usable: true, why: 'test' }),
+    reapable: async () => [],
+    check: async () => 'held',
+    sourceCommit: async () => ({ sha: SESSION_COMMIT, patch: patch === null ? null : { sha256: patch, bytes: Buffer.from('uncommitted') } }),
+    acquire: async (): Promise<RemoteLease> => ({ backend: 'remote', provider: 'github-actions', platform: 'ios', session: 'ios0000aa', providerRef: '1', baseUrl: 'https://quick-fox.trycloudflare.com', tokenFile: join(dir, 'token'), deviceId: 'UDID-1', deviceName: 'iPhone Air', runner: 'xcode-27', expiresAt: '2099-01-01T00:00:00Z', builtSha: null, builtPatch: null, acquiredAt: '', installedBuild: null }),
+    install: async (lease: RemoteLease, app: BuiltApp) => ({ ...lease, builtSha: app.source === 'local' ? null : app.sourceSha, builtPatch: app.source === 'local' ? null : (app.patch?.sha256 ?? null) }),
+    release: async () => undefined,
+    logs: async () => '',
+    describe: (lease: RemoteLease) => lease.deviceName,
+  } as unknown as DeviceBackend;
   const host = {
     repo: 'clerk-ios',
     platforms: ['ios'],
-    backends: [backend],
+    backends: [options.session === undefined ? backend : session],
     appId: () => 'com.clerk.E2EHost',
     buildInputs: () => ['app.swift'],
     async build(platform: 'ios', key: BuildKey, into: ScratchPath) {
@@ -300,6 +332,83 @@ describe('a run whose spec files declare different settings', () => {
       assert.deepEqual(r.videoLines(), ['video   the app could not be closed before the recording, so the video may open on the screen it was showing: DEVICE_IN_USE']);
     });
 
+    it('paces a run that names its specs and records a video, and keeps what host.evidence marked in seconds of that video', async () => {
+      const r = recorded({ launches: true });
+      const { record, next } = await runVerb(r.deps, { ...RUN_ALL, selection: { selectors: ['auth-start'] }, video: true });
+      assert.deepEqual(r.order(), ['e2e opens the app with no arguments', r.close, 'recorder starts', 'launches for auth-start.e2e.ts', 'marks the evidence of auth-start.e2e.ts']);
+      assert.deepEqual(r.videoLines(), ['video   paced for a reviewer to follow; a run with --no-video, or with --all, keeps full speed']);
+      const [span, ...others] = record.evidenceSpans ?? [];
+      assert.deepEqual(others, []);
+      assert.equal(span?.label, 'shows auth-start.e2e.ts');
+      assert.ok(span !== undefined && span.from >= 0 && span.from < 5 && Math.abs(span.to - span.from - 1.5) < 0.01, JSON.stringify(span));
+      assert.equal(next, `{cli} attach ${record.run} --pr <n> --video, and add --before <run-id> when the change is to something that exists`);
+    });
+
+    it('times the marks from the first frame when the recorder reports it, as the Android recorder does', async () => {
+      const r = recorded({ launches: true });
+      const videoStartsAt = Date.parse('2026-10-15T09:00:00.000Z');
+      r.backend.startRecording = async (_lease, into) => ({ process: null, videoStartsAt, stop: async () => (writeFileSync(join(into, 'video.mp4'), 'frames'), join(into, 'video.mp4') as EvidencePath) });
+      const { record, dir } = await runVerb(r.deps, { ...RUN_ALL, selection: { selectors: ['auth-start'] }, video: true });
+      const [mark] = readMarks(join(dir, 'evidence-marks.jsonl'));
+      assert.deepEqual(record.evidenceSpans?.[0]?.from, Math.round(mark!.startedAt - videoStartsAt) / 1000);
+    });
+
+    it('says when the recorder could only guess when its video starts', async () => {
+      const r = recorded({ launches: true });
+      r.backend.startRecording = async (_lease, into) => ({ process: null, videoStartsAt: Date.now(), videoStartGuess: 'the recorder never logged its first frame', stop: async () => (writeFileSync(join(into, 'video.mp4'), 'frames'), join(into, 'video.mp4') as EvidencePath) });
+      await runVerb(r.deps, { ...RUN_ALL, selection: { selectors: ['auth-start'] }, video: true });
+      assert.deepEqual(r.videoLines(), ['video   paced for a reviewer to follow; a run with --no-video, or with --all, keeps full speed', 'video   the recorder never logged its first frame']);
+    });
+
+    it('keeps each host.tap in seconds of the video, from when it was sent when the video shows no change at the control, with the size of the screen the points are in', async () => {
+      const r = recorded({ launches: true, taps: true });
+      const snapshot = JSON.stringify({ success: true, data: { viewport: { width: 420, height: 912 }, nodes: [] } });
+      const answering: Runner = async (command, args, options) => (args[0] === 'snapshot' ? (await r.deps.runner(command, args, options), { code: 0, stdout: snapshot, stderr: '' }) : r.deps.runner(command, args, options));
+      const { record } = await runVerb({ ...r.deps, runner: answering }, { ...RUN_ALL, selection: { selectors: ['auth-start'] }, video: true });
+      const screenSession = `--platform ios --udid UDID-1 --session verify-ios-${r.w.workspace.worktreeId}-screen`;
+      assert.deepEqual(r.order().slice(-3), [`agent-device open com.clerk.E2EHost --json ${screenSession}`, `agent-device snapshot --json ${screenSession}`, `agent-device close ${screenSession}`]);
+      const [span] = record.evidenceSpans ?? [];
+      const [tap, ...others] = record.evidenceTaps?.taps ?? [];
+      assert.deepEqual(others, []);
+      assert.deepEqual(record.evidenceTaps?.viewport, { width: 420, height: 912 });
+      assert.ok(span !== undefined && tap !== undefined && Math.abs(tap.at - span.from - 0.7) < 0.002, JSON.stringify({ span, tap }));
+      assert.deepEqual({ x: tap.x, y: tap.y }, { x: 210, y: 450 });
+    });
+
+    it('keeps no taps, and says attach draws none, when the size of the screen cannot be read or the read runs out of its 30 seconds', async () => {
+      for (const answer of [{ code: 0, stdout: '', stderr: '' }, { code: 124, stdout: '', stderr: '' }, { code: 0, stdout: JSON.stringify({ success: true, data: { viewport: { width: 420, height: 0 }, nodes: [] } }), stderr: '' }]) {
+        const r = recorded({ launches: true, taps: true });
+        const limits: [string, number | undefined][] = [];
+        const timing: Runner = async (command, args, options) => {
+          if (args.some((arg) => arg.endsWith('-screen'))) limits.push([args[0]!, options?.timeoutMs]);
+          return args[0] === 'snapshot' ? answer : r.deps.runner(command, args, options);
+        };
+        const { record } = await runVerb({ ...r.deps, runner: timing }, { ...RUN_ALL, selection: { selectors: ['auth-start'] }, video: true });
+        assert.equal(record.evidenceTaps, null);
+        assert.deepEqual(limits, [['open', 30_000], ['snapshot', 30_000], ['close', 30_000]]);
+        assert.deepEqual(r.videoLines().slice(-1), ['video   the size of the screen could not be read, so attach --video draws no taps for this run']);
+      }
+    });
+
+    it('keeps full speed and marks nothing in a run of --all, as the nightly suite runs, or with --no-video', async () => {
+      for (const command of [{ ...RUN_ALL, video: true }, { ...RUN_ALL, selection: { selectors: ['auth-start'] } }]) {
+        const r = recorded({ launches: true });
+        const { record, next } = await runVerb(r.deps, command);
+        assert.equal(r.order().some((line) => line.startsWith('marks')), false);
+        assert.deepEqual(r.videoLines(), []);
+        assert.deepEqual(record.evidenceSpans, []);
+        assert.match(next, /--screenshot <label> for a still change, .*; for behavior or a flow, put the steps that show it in host\.evidence, run that spec on its own, and attach that run with --video$/);
+      }
+    });
+
+    it('runs agent-device in its state folder, so a file it writes to its working folder stays out of the checkout', async () => {
+      const r = recorded({ launches: true });
+      const folders: (string | undefined)[] = [];
+      const watching: Runner = async (command, args, options) => (command.endsWith('agent-device') && folders.push(options?.cwd), r.deps.runner(command, args, options));
+      await runVerb({ ...r.deps, runner: watching }, { ...RUN_ALL, video: true });
+      assert.deepEqual(folders, [r.w.workspace.agentDeviceDir]);
+    });
+
     it('gives the close before the recording 30 seconds, and records all the same when it runs out', async () => {
       const r = recorded({ launches: true });
       const limits: (number | undefined)[] = [];
@@ -358,12 +467,13 @@ describe('a run whose spec files declare different settings', () => {
     assert.equal(record.identities.length, 5);
     assert.ok(record.identities.every((identity) => identity.userId?.startsWith(`user_${application.id}_`)));
     assert.equal(w.workspace.unclosedEntries().filter((entry) => entry.kind === 'user' && entry.run === record.run).length, 5, 'each spec made one user, and the run ledgered it');
-    assert.deepEqual(record.identities.map((identity) => identity.email.startsWith(record.run.split('-').slice(1).join(''))), [true, true, true, true, true]);
+    assert.deepEqual(record.identities.map((identity) => isTestEmailOf(record.run, identity.email)), [true, true, true, true, true]);
+    assert.equal(new Set(record.identities.map((identity) => identity.email)).size, 5, 'the e2e process of each group takes names the others did not');
 
     const log = readFileSync(join(dir, 'e2e.log'), 'utf8').split('\n');
     assert.deepEqual(log.filter((line) => line.startsWith('settings ')), [`settings ${ORG_LABEL}: 1 spec file`, `settings ${MFA_LABEL}: 2 spec files`]);
     assert.ok(log.indexOf(`fake e2e runs ${SIGN_UP}`) < log.indexOf(`settings ${ORG_LABEL}: 1 spec file`) && log.indexOf(`settings ${ORG_LABEL}: 1 spec file`) < log.indexOf(`fake e2e runs ${CHOOSE_ORG}`), 'one log for the whole run, in the order the groups ran');
-    assert.deepEqual(record.screenshots, [{ label: 'home', path: join(dir, 'screenshots', 'home.png') }], 'one screenshot per label across the groups');
+    assert.deepEqual(record.screenshots, [{ label: 'home', path: join(dir, 'screenshots', 'home.png'), test: { spec: SETUP_MFA, title: 'a test of setup-mfa.e2e.ts' } }], 'one screenshot per label across the groups, with the test that took it');
     assert.equal(readFileSync(join(dir, 'screenshots', 'home.png'), 'utf8'), 'e2e-3', 'the last group to take a label keeps it');
 
     assert.match(result.next, /^\{cli\} attach /);
@@ -690,7 +800,7 @@ describe('the driver logs in the evidence of a run', () => {
     const { record, dir } = await runVerb({ ...w.deps(), env: { GITHUB_TOKEN }, agent: () => readAgent({ AI_GATEWAY_API_KEY: GATEWAY_KEY }) }, RUN_ALL);
     const secrets = JSON.parse(readFileSync(join(w.dir, 'secrets-the-driver-saw.json'), 'utf8')) as Record<Kind, string>;
     assert.equal(secrets.secretKey, w.clerk.live()[0]!.sk, 'the key planted is the key of the application the run used');
-    assert.equal(secrets.runPassword, `Verify-${record.run}-Pw1!`);
+    assert.equal(secrets.runPassword, runPassword(record.run).use('device-input', (plain) => plain));
     return { w, record, dir, secrets };
   };
 
@@ -704,8 +814,8 @@ describe('the driver logs in the evidence of a run', () => {
         assert.equal(quotedAlone(copy).includes(secrets[kind].slice(0, 8)), false, `the ${name} spells the ${kind}`);
       }
     }
-    const typedLines = [secrets.runPassword.length, secrets.seededPassword.length, 3, 2];
-    assert.deepEqual(copies.daemon.trim().split('\n'), [`Daemon error: ${LEFT_OUT}`, linesLeftOut(9 + 3 + 2)]);
+    const typedLines = [secrets.runPassword.length, secrets.seededPassword.length, 1, 1];
+    assert.deepEqual(copies.daemon.trim().split('\n'), [`Daemon error: ${LEFT_OUT}`, linesLeftOut(9 + 1 + 1)]);
     assert.deepEqual(copies.runner.trimEnd().split('\n'), [
       `    t =     1.00s Find the "${LEFT_OUT}" SecureTextField`,
       ...['2.00', '3.00', '4.00', '5.00'].flatMap((seconds, at) => Array.from({ length: typedLines[at]! }, () => `    t = ${seconds.padStart(8)}s Type ${LEFT_OUT}`)),
@@ -749,7 +859,7 @@ describe('the driver logs in the evidence of a run', () => {
         ...watch,
         collect: () => {
           watch.collect();
-          writeFileSync(join(runDir, 'driver', 'runner-that-kept-a-secret.log'), `Verify-${runDir.split('/').at(-1)}-Pw1!\n`);
+          writeFileSync(join(runDir, 'driver', 'runner-that-kept-a-secret.log'), `${runPassword(runDir.split('/').at(-1) as RunId).use('device-input', (plain) => plain)}\n`);
         },
       };
     };
@@ -777,5 +887,30 @@ describe('the driver logs in the evidence of a run', () => {
     assert.deepEqual(readdirSync(join(dir, 'driver')), ['summary.txt']);
     assert.match(readFileSync(join(dir, 'driver', 'summary.txt'), 'utf8'), /\nThere is no daemon\.log, so no agent-device daemon on this machine wrote one\.\n/);
     assert.deepEqual(record.tainted, []);
+  });
+});
+
+describe('a run on a session that built uncommitted changes', () => {
+  const PATCH = 'c'.repeat(64);
+
+  it('names the changes the session built in the run.json it writes, and names none for a session that built the commit', async () => {
+    const remoteOf = async (patch: string | null) => {
+      const { dir } = await runVerb(world({ specs: { [AUTH_START]: null }, session: { patch } }).deps(), RUN_ALL);
+      return (JSON.parse(readFileSync(join(dir, 'run.json'), 'utf8')) as { remote: unknown }).remote;
+    };
+    assert.deepEqual(await remoteOf(PATCH), { provider: 'github-actions', runner: 'xcode-27', builtSha: SESSION_COMMIT, builtPatch: PATCH });
+    assert.deepEqual(await remoteOf(null), { provider: 'github-actions', runner: 'xcode-27', builtSha: SESSION_COMMIT, builtPatch: null });
+  });
+
+  it('is refused by attach from what run.json says, before attach runs anything', async () => {
+    const w = world({ specs: { [AUTH_START]: null }, session: { patch: PATCH } });
+    const { record } = await runVerb(w.deps(), RUN_ALL);
+    const ran: string[] = [];
+    const deps = { ...w.deps(), runner: async (command: string) => (ran.push(command), { code: 0, stdout: '', stderr: '' }) };
+    await assert.rejects(attach(deps, { verb: 'attach', run: record.run, pr: 9, media: { screenshots: ['home'], video: false }, before: null }), {
+      code: 'EVIDENCE_UNSAFE',
+      message: `run ${record.run} ran on a session build of ${SESSION_COMMIT.slice(0, 12)} with uncommitted changes (${PATCH.slice(0, 12)}), so no commit holds the app it shows`,
+    });
+    assert.deepEqual(ran, []);
   });
 });

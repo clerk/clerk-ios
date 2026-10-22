@@ -272,7 +272,7 @@ extension Session {
     // Reverification responses omit the user from their embedded session.
     let userID = user?.id ?? Clerk.shared.client?.sessions.first(where: { $0.id == id })?.user?.id
     guard status.allowsBiometricCredentialEnrollment, let userID else {
-      throw ClerkClientError(message: "Biometric reverification requires an active or pending session with a user.")
+      throw ClerkClientError(message: "Biometric reverification requires an active or pending session with a user.", localizationBundle: .module)
     }
 
     let localCredential = try biometricCredentials.localCredential(for: userID)
@@ -295,7 +295,7 @@ extension Session {
       guard factor?.strategy == .biometricCredential,
             let challenge = factor?.biometricCredentialChallenge
       else {
-        throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.")
+        throw ClerkClientError(message: "Biometric reverification did not return a matching challenge.", localizationBundle: .module)
       }
       try _Concurrency.Task.checkCancellation()
       let signature = try await biometricCredentials.sign(

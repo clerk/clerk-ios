@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { heldInstances } from '../testing/fake-instances.ts';
 import { describe, it } from 'node:test';
-import { newTestEmail } from '../specs/support/clerk.ts';
+import { testEmail } from '../specs/support/clerk.ts';
 import { assertPublishable, loggedUserIds, sealEvidence } from '../src/core/evidence.ts';
 import type { Runner } from '../src/core/exec.ts';
 import { evidenceBlock, evidenceMarkers, summarize, withEvidenceBlock } from '../src/core/publish.ts';
@@ -37,10 +37,11 @@ function partialRecord(dir: EvidencePath, run: RunId): Omit<EvidenceRecord, 'sea
       { spec: { kind: 'explored', path: 'specs/explored/a.e2e.ts', feature: null }, title: 'a', platform: 'ios', status: 'passed', seconds: 1, attempts: 1, error: null, skipReason: null, skippedBy: null, tags: [], failurePage: null, failureScreen: null, failureScreenshot: null },
     ],
     videos: [join(dir, 'video.mp4') as EvidencePath],
+    evidenceSpans: [{ label: 'the change', from: 1, to: 3, passed: true }],
     screenshots: [{ label: 'profile', path: join(dir, 'screenshots', 'profile.png') as EvidencePath }],
     appLog: join(dir, 'app.log') as EvidencePath,
     e2eReport: join(dir, 'e2e', 'report.json') as EvidencePath,
-    identities: [{ email: newTestEmail(run), userId: OWN_USER }],
+    identities: [{ email: testEmail(run, 'maya'), userId: OWN_USER }],
     settings: [{ label: 'standard', askedBy: null, specs: ['specs/explored/a.e2e.ts'], application: null, changed: false, held: true, e2eReport: join(dir, 'e2e', 'report.json') as EvidencePath }],
   };
 }
@@ -156,6 +157,15 @@ describe('the evidence block of a pull request description', () => {
     assert.deepEqual(summarize(assertPublishable(record, [OWN_USER])), { run, platform: 'ios', device: 'verify-ios-1', commit: 'abc', passed: 1, flaky: 1, total: 2 });
   });
 
+  it('counts only the tests the run selected', () => {
+    const { dir, run } = runDir();
+    const base = partialRecord(dir, run);
+    const leftOut = { ...base.results[0]!, status: 'skipped' as const, seconds: 0, attempts: 0 };
+    const results = [base.results[0]!, { ...leftOut, title: 'b', skipReason: 'filtered: grep' }, { ...leftOut, title: 'c', skipReason: 'skipped: android only', skippedBy: 'platform' as const }];
+    const record = sealEvidence(dir, { ...base, results }, []);
+    assert.equal(evidenceBlock(summarize(assertPublishable(record, [OWN_USER])), null, []).split('\n')[2], `**Verified on an iOS simulator.** Run \`${run}\` on \`verify-ios-1\` at \`abc\`, 1 of 1 passed.`);
+  });
+
   it('goes after a description that has no block, and leaves that description as it was', () => {
     for (const body of ['## Summary\r\n\r\nFixes the button.  \r\n', 'no newline at the end', 'ends with one\n']) {
       const edit = withEvidenceBlock(body, 'ios', block);
@@ -222,6 +232,13 @@ describe('the evidence block of a pull request description', () => {
     const { start, end } = evidenceMarkers('ios');
     const notes = `${start}\nIMPORTANT reviewer notes that are not evidence\n${end}\n`;
     assert.deepEqual(withEvidenceBlock(notes, 'ios', block), { ok: false, why: `has text between \`${start}\` and \`${end}\` that is not an evidence block`, fix: 'leave one pair of those markers in the description, or none' });
+  });
+
+  it('writes the block in place of an empty pair of markers, so a description may say where the block goes', () => {
+    const { start, end } = evidenceMarkers('ios');
+    assert.deepEqual(withEvidenceBlock(`## Verification\n\n${start}\n\n${end}\n\n## Notes\n`, 'ios', block), { ok: true, body: `## Verification\n\n${block}\n\n## Notes\n`, was: 'replaced' });
+    assert.deepEqual(withEvidenceBlock(`intro\r\n${start}\r\n \t\r\n${end}\r\noutro`, 'ios', block), { ok: true, body: `intro\r\n${block.replaceAll('\n', '\r\n')}\r\noutro`, was: 'replaced' });
+    assert.deepEqual(withEvidenceBlock(`${start}\n${end}`, 'ios', block), { ok: true, body: block, was: 'replaced' });
   });
 
   it('takes no marker from inside a code fence, so a description may show a whole example block', () => {
@@ -302,12 +319,13 @@ describe('attach', () => {
     readonly attached: readonly string[];
   }
 
-  function fakeGh(options: { readonly attachFlag?: boolean; readonly body?: string; readonly onView?: (views: number, pr: { body: string; state: string }) => void; readonly upload?: (reference: string, address: string) => string } = {}) {
+  function fakeGh(options: { readonly ffmpeg?: Runner; readonly attachFlag?: boolean; readonly body?: string; readonly onView?: (views: number, pr: { body: string; state: string }) => void; readonly upload?: (reference: string, address: string) => string } = {}) {
     const pr = { body: options.body ?? DESCRIPTION, state: 'OPEN' };
     const edits: Edit[] = [];
     let views = 0;
     let uploads = 0;
     const runner: Runner = async (command, args, runOptions) => {
+      if (command === 'ffmpeg') return options.ffmpeg?.(command, args, runOptions) ?? { code: 127, stdout: '', stderr: 'spawn ffmpeg ENOENT' };
       assert.equal(command, 'gh');
       if (args.includes('--help')) return { code: 0, stdout: options.attachFlag === false ? '  -b, --body text   Set the new body.\n' : '      --attach file   Attach a file\n', stderr: '' };
       if (args[1] === 'view') {
@@ -331,11 +349,12 @@ describe('attach', () => {
     const packageDir = mkdtempSync(join(tmpdir(), 'verify-attach-'));
     const workspace = openWorkspace({ packageDir, worktree: packageDir, home: join(packageDir, 'home') });
     const deps = { host, workspace, runner: gh.runner, env: {}, progress: () => undefined, instances: heldInstances() };
-    const sealed = (shape: { readonly called: string; readonly shots?: readonly string[]; readonly video?: boolean; readonly failed?: boolean; readonly failureShot?: boolean; readonly change?: Partial<EvidenceRecord>; readonly log?: string }) => {
+    const sealed = (shape: { readonly called: string; readonly shots?: readonly string[]; readonly states?: readonly string[]; readonly spec?: string; readonly specs?: readonly string[]; readonly video?: boolean; readonly failed?: boolean; readonly failureShot?: boolean; readonly recordsTests?: boolean; readonly change?: Partial<EvidenceRecord>; readonly log?: string }) => {
       const { run, dir } = workspace.newRun();
       mkdirSync(join(dir, 'screenshots'), { recursive: true });
       const file = (name: string, holds: string): EvidencePath => (writeFileSync(join(dir, name), holds), join(dir, name) as EvidencePath);
-      const base = partialRecord(dir, run);
+      const recorded = partialRecord(dir, run);
+      const base = shape.spec === undefined ? recorded : { ...recorded, results: [{ ...recorded.results[0]!, spec: { ...recorded.results[0]!.spec, path: shape.spec } }] };
       const failureScreenshot = shape.failureShot === true ? file('001-failure.png', `${shape.called} failure`) : null;
       file('app.log', shape.log ?? hostLogLine(OWN_USER));
       sealEvidence(
@@ -343,9 +362,18 @@ describe('attach', () => {
         {
           ...base,
           gitHead: shape.failed === true ? BEFORE_COMMIT : AFTER_COMMIT,
-          results: [{ ...base.results[0]!, status: shape.failed === true ? 'failed' : 'passed', failureScreenshot }],
+          results:
+            shape.specs !== undefined
+              ? shape.specs.map((path, at) => ({ ...base.results[0]!, spec: { ...base.results[0]!.spec, path }, status: 'failed', failureScreenshot: file(`${at}-failure.png`, `${shape.called} ${path} failure`) }))
+              : shape.states === undefined
+              ? [{ ...base.results[0]!, status: shape.failed === true ? 'failed' : 'passed', failureScreenshot }]
+              : shape.states.map((title) => ({ ...base.results[0]!, title, status: shape.failed === true ? 'failed' : 'passed', failureScreenshot: shape.failed === true ? file(`${title}-failure.png`, `${shape.called} ${title} failure`) : null })),
           videos: shape.video === false ? [] : [file('video.mp4', `${shape.called} video`)],
-          screenshots: (shape.shots ?? ['profile']).map((label) => ({ label, path: file(join('screenshots', `${label}.png`), `${shape.called} ${label}`) })),
+          screenshots: (shape.shots ?? shape.states ?? ['profile']).map((label) => ({
+            label,
+            path: file(join('screenshots', `${label}.png`), `${shape.called} ${label}`),
+            ...(shape.recordsTests === false ? {} : { test: { spec: base.results[0]!.spec.path, title: shape.states === undefined ? base.results[0]!.title : label } }),
+          })),
           ...shape.change,
         },
         [],
@@ -365,6 +393,18 @@ describe('attach', () => {
     const { run } = sealed({ called: 'after', log: hostLogLine('user_foreign') });
     await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, media: still, before: null }), { code: 'EVIDENCE_UNSAFE' });
     assert.equal(calls.length, 0);
+  });
+
+  it('refuses a run on a session build with uncommitted changes, as the run or as its before, calls no gh, and says to commit, push and run again', async () => {
+    const calls: string[] = [];
+    const { deps, sealed } = checkout({ runner: async (command) => (calls.push(command), { code: 0, stdout: '', stderr: '' }) });
+    const onSession = (builtPatch: string | null): Partial<EvidenceRecord> => ({ backend: 'remote', remote: { provider: 'github-actions', runner: 'xcode-27', builtSha: AFTER_COMMIT, builtPatch } });
+    const patched = sealed({ called: 'after', change: onSession('c'.repeat(64)) });
+    const committed = sealed({ called: 'after', change: onSession(null) });
+    const refusal = { code: 'EVIDENCE_UNSAFE', message: `run ${patched.run} ran on a session build of ${AFTER_COMMIT.slice(0, 12)} with uncommitted changes (cccccccccccc), so no commit holds the app it shows`, fix: 'commit and push the changes, {cli} run again, and attach the new run' };
+    await assert.rejects(attach(deps, { verb: 'attach', run: patched.run, pr: 9, media: still, before: null }), refusal);
+    await assert.rejects(attach(deps, { verb: 'attach', run: committed.run, pr: 9, media: still, before: patched.run }), refusal);
+    assert.deepEqual(calls, []);
   });
 
   it('shows a still change to something that exists as before and after screenshots, side by side at a fixed width, and no video', async () => {
@@ -436,6 +476,38 @@ describe('attach', () => {
     assert.deepEqual(gh.edits[0]!.attached, ['after video']);
   });
 
+  it('posts the part of each video that its run marked, cut by ffmpeg, and says how long each was and is', async () => {
+    const ffmpeg: Runner = async (_command, args) => {
+      if (args.some((arg) => arg.includes('freezedetect'))) return { code: 0, stdout: '', stderr: '  Duration: 00:00:40.00, start: 0.000000\nlavfi.freezedetect.freeze_start: 20\nlavfi.freezedetect.freeze_end: 35\n' };
+      writeFileSync(args.at(-1)!, `${readFileSync(args[args.indexOf('-i') + 1]!, 'utf8')} cut`);
+      return { code: 0, stdout: '', stderr: '' };
+    };
+    const gh = fakeGh({ ffmpeg });
+    const { deps, sealed } = checkout(gh);
+    const before = sealed({ called: 'before', failed: true });
+    const after = sealed({ called: 'after' });
+    const lines: string[] = [];
+    await attach({ ...deps, progress: (line) => lines.push(line) }, { verb: 'attach', run: after.run, pr: 9, media: flow, before: before.run });
+    assert.deepEqual(gh.edits[0]!.attached, ['after video cut', 'before video cut']);
+    assert.deepEqual(lines, [
+      `video   run ${after.run}: 40.0 s cut to 3.5 s, showing "the change"; ${join(after.dir, 'video-cut.mp4')}`,
+      `video   run ${before.run}: 40.0 s cut to 3.5 s, showing "the change"; ${join(before.dir, 'video-cut.mp4')}`,
+    ]);
+    assert.equal(readFileSync(join(after.dir, 'video.mp4'), 'utf8'), 'after video', 'the recording stays as it was');
+  });
+
+  it('refuses the video of a run that marks no part of it, and calls no gh', async () => {
+    const gh = fakeGh();
+    const { deps, sealed } = checkout(gh);
+    const { run } = sealed({ called: 'after', change: { evidenceSpans: [] } });
+    await assert.rejects(attach(deps, { verb: 'attach', run, pr: 9, media: flow, before: null }), {
+      code: 'USAGE',
+      message: `run ${run} marks no part of its video as the change, so its video would show the whole run`,
+      fix: "wrap the steps that show the change in host.evidence('<what it shows>', async () => { ... }), run the spec again, and attach that run",
+    });
+    assert.deepEqual(gh.edits, []);
+  });
+
   it('shows both kinds when asked for both: the screenshots first, then the video, each laid out as it is alone', async () => {
     const gh = fakeGh();
     const { deps, sealed } = checkout(gh);
@@ -489,6 +561,41 @@ describe('attach', () => {
     ]);
   });
 
+  it('pairs each screenshot the before run lacks with the failure screenshot of the test that takes it, when each state has a test of its own', async () => {
+    const gh = fakeGh();
+    const { deps, sealed } = checkout(gh);
+    const before = sealed({ called: 'before', failed: true, states: ['start', 'profile'], shots: [], spec: 'specs/explored/states.e2e.ts' });
+    const after = sealed({ called: 'after', states: ['start', 'profile'], spec: 'specs/features/profile/states.e2e.ts' });
+    await attach(deps, { verb: 'attach', run: after.run, pr: 9, media: { screenshots: ['start', 'profile'], video: false }, before: before.run });
+    assert.deepEqual(gh.edits[0]!.attached, ['after start', 'after profile', 'before start failure', 'before profile failure']);
+  });
+
+  it('pairs a screenshot with the failure screenshot of the same spec when another spec of the same name has the same test, and with a copy of it when the copy is the only one', async () => {
+    const pairedWith = async (specs: readonly string[]): Promise<readonly string[]> => {
+      const gh = fakeGh();
+      const { deps, sealed } = checkout(gh);
+      const after = sealed({ called: 'after', spec: 'specs/features/sign-up/complete.e2e.ts' });
+      const before = sealed({ called: 'before', shots: [], specs });
+      await attach(deps, { verb: 'attach', run: after.run, pr: 9, media: still, before: before.run });
+      return gh.edits[0]!.attached;
+    };
+    assert.deepEqual(await pairedWith(['specs/features/sign-in/complete.e2e.ts', 'specs/features/sign-up/complete.e2e.ts']), ['after profile', 'before specs/features/sign-up/complete.e2e.ts failure']);
+    assert.deepEqual(await pairedWith(['specs/features/sign-in/other.e2e.ts', 'specs/explored/complete.e2e.ts']), ['after profile', 'before specs/explored/complete.e2e.ts failure']);
+  });
+
+  it('posts nothing when the before run has the test in more than one spec of the same name and none at the same path, and names each of them', async () => {
+    const gh = fakeGh();
+    const { deps, sealed } = checkout(gh);
+    const after = sealed({ called: 'after', spec: 'specs/features/sign-up/complete.e2e.ts' });
+    const before = sealed({ called: 'before', shots: [], specs: ['specs/features/sign-in/complete.e2e.ts', 'specs/explored/complete.e2e.ts'] });
+    await assert.rejects(attach(deps, { verb: 'attach', run: after.run, pr: 9, media: still, before: before.run }), {
+      code: 'USAGE',
+      message: `run ${before.run} has no screenshot labelled profile, and the test "a" of specs/features/sign-up/complete.e2e.ts could be any of 2 tests in it: specs/features/sign-in/complete.e2e.ts, specs/explored/complete.e2e.ts`,
+      fix: 'run only one spec named complete.e2e.ts on the build without the change and attach that run as --before, or attach without --before',
+    });
+    assert.deepEqual(gh.edits, []);
+  });
+
   it('posts nothing when the before run has nothing to pair with what was asked for, and says what to do', async () => {
     const gh = fakeGh();
     const { deps, sealed } = checkout(gh);
@@ -496,8 +603,21 @@ describe('attach', () => {
     const passedWithoutIt = sealed({ called: 'before', shots: ['start'] });
     await assert.rejects(attach(deps, { verb: 'attach', run: after.run, pr: 9, media: still, before: passedWithoutIt.run }), {
       code: 'USAGE',
-      message: `run ${passedWithoutIt.run} has no screenshot labelled profile, and no failure screenshot to show in its place`,
+      message: `run ${passedWithoutIt.run} has no screenshot labelled profile, and no failure screenshot of the test "a" in a.e2e.ts to show in its place`,
       fix: "call host.screenshot('profile') in the spec and run it on the build without the change, or attach without --before",
+    });
+    const perState = sealed({ called: 'after', states: ['start', 'profile'] });
+    const onlyAnotherFailed = sealed({ called: 'before', failed: true, states: ['start'], shots: [] });
+    await assert.rejects(attach(deps, { verb: 'attach', run: perState.run, pr: 9, media: still, before: onlyAnotherFailed.run }), {
+      code: 'USAGE',
+      message: `run ${onlyAnotherFailed.run} has no screenshot labelled profile, and no failure screenshot of the test "profile" in a.e2e.ts to show in its place`,
+    });
+    const recordedNoTests = sealed({ called: 'after', recordsTests: false });
+    const failedEarly = sealed({ called: 'before', failed: true, failureShot: true, shots: [] });
+    await assert.rejects(attach(deps, { verb: 'attach', run: recordedNoTests.run, pr: 9, media: still, before: failedEarly.run }), {
+      code: 'USAGE',
+      message: `run ${failedEarly.run} has no screenshot labelled profile, and run ${recordedNoTests.run} does not record which test took profile`,
+      fix: '{cli} run the spec again and attach that run, or attach without --before',
     });
     const noVideo = sealed({ called: 'before', failed: true, video: false });
     await assert.rejects(attach(deps, { verb: 'attach', run: after.run, pr: 9, media: flow, before: noVideo.run }), {

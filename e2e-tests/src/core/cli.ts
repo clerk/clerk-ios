@@ -31,9 +31,9 @@ const VERBS: readonly Verb[] = ['doctor', 'up', 'run', 'screen', 'attach', 'down
 const USAGE_FIX = [
   '{cli} doctor [--platform p] [--backend auto|local|remote] [--live [--runner <label>]]',
   '{cli} up [--platform p] [--backend auto|local|remote] [--runner <label>] [--wait <seconds>]',
-  '{cli} run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--backend auto|local|remote] [--runner <label>] [--grep re] [--retries <n>] [--github-report] [--no-video] [--wait <seconds>]',
+  '{cli} run <feature|feature/spec|path.e2e.ts>... | --all [--platform p] [--backend auto|local|remote] [--runner <label>] [--grep re] [--retries <n>] [--max-failures <n>] [--github-report] [--no-video] [--wait <seconds>]',
   '{cli} screen [--platform p] [--png]',
-  '{cli} attach <run-id> --pr <n> [--screenshot <label>]... [--video] [--before <run-id>], with at least one of --screenshot and --video',
+  '{cli} attach <run-id> --pr <n> --screenshot <label>... | --video [--both] [--before <run-id>]',
   '{cli} down [--platform p] [--stale] [--dry-run]',
   'every verb takes --json',
 ].join('; ');
@@ -44,7 +44,7 @@ const nothingToShow = () =>
   new VerifyFailure(
     'USAGE',
     '{cli} attach posts what you choose and nothing by default: screenshots show a still change such as wording, and the video shows behavior, movement or a flow',
-    '{cli} attach <run-id> --pr <n> --screenshot <label> [--screenshot <label>]..., or {cli} attach <run-id> --pr <n> --video; add --before <run-id> to either when the change is to something that already exists, and pass both flags only when one kind does not show the change',
+    '{cli} attach <run-id> --pr <n> --screenshot <label> [--screenshot <label>]..., or {cli} attach <run-id> --pr <n> --video; add --before <run-id> to either when the change is to something that already exists',
   );
 
 type FlagSpec = Readonly<Record<string, 'value' | 'bool' | 'list'>>;
@@ -52,9 +52,9 @@ type FlagSpec = Readonly<Record<string, 'value' | 'bool' | 'list'>>;
 const FLAGS: Readonly<Record<Verb, FlagSpec>> = {
   doctor: { platform: 'value', backend: 'value', runner: 'value', live: 'bool' },
   up: { platform: 'value', backend: 'value', runner: 'value', wait: 'value' },
-  run: { platform: 'value', backend: 'value', runner: 'value', all: 'bool', grep: 'value', retries: 'value', 'github-report': 'bool', 'no-video': 'bool', wait: 'value' },
+  run: { platform: 'value', backend: 'value', runner: 'value', all: 'bool', grep: 'value', retries: 'value', 'max-failures': 'value', 'github-report': 'bool', 'no-video': 'bool', wait: 'value' },
   screen: { platform: 'value', png: 'bool' },
-  attach: { pr: 'value', screenshot: 'list', video: 'bool', before: 'value' },
+  attach: { pr: 'value', screenshot: 'list', video: 'bool', both: 'bool', before: 'value' },
   down: { platform: 'value', stale: 'bool', 'dry-run': 'bool' },
 };
 
@@ -145,6 +145,8 @@ export function parseArgv(argv: readonly string[]): Invocation {
       if (!all && positionals.length === 0) throw usage('{cli} run needs a feature, feature/spec, path.e2e.ts, or --all');
       const grep = values.get('grep');
       const retries = positiveInt('retries', values.get('retries'), 0);
+      const maxFailures = values.has('max-failures') ? positiveInt('max-failures', values.get('max-failures'), undefined) : undefined;
+      if (maxFailures === 0) throw usage('--max-failures must be 1 or more');
       command = {
         verb,
         ...base,
@@ -152,6 +154,7 @@ export function parseArgv(argv: readonly string[]): Invocation {
         ...(grep === undefined ? {} : { grep }),
         video: !bools.has('no-video'),
         retries,
+        ...(maxFailures === undefined ? {} : { maxFailures }),
         githubReport: bools.has('github-report'),
         waitSeconds: positiveInt('wait', values.get('wait'), 0),
       };
@@ -167,6 +170,9 @@ export function parseArgv(argv: readonly string[]): Invocation {
       const pr = positiveInt('pr', values.get('pr'), undefined);
       const media = { screenshots: lists.get('screenshot') ?? [], video: bools.has('video') };
       if (media.screenshots.length === 0 && !media.video) throw nothingToShow();
+      if (media.screenshots.length > 0 && media.video && !bools.has('both')) {
+        throw usage('a change is shown by one video or by screenshots, not both: pass --video alone for a flow or behavior, or --screenshot alone for a still change; add --both only when the reviewer needs both to see the change');
+      }
       const before = values.get('before');
       command = { verb, run, pr, media, before: before === undefined ? null : parseRunId(before) };
       break;

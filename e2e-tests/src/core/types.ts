@@ -65,6 +65,7 @@ export type Command =
       readonly grep?: string;
       readonly video: boolean;
       readonly retries: number;
+      readonly maxFailures?: number;
       readonly githubReport: boolean;
       readonly waitSeconds: number;
     }
@@ -110,7 +111,7 @@ export class VerifyFailure extends Error {
 
 export type DoctorCheckId =
   | 'node' | 'xcode' | 'jdk' | 'e2e-pins' | 'template' | 'proxy-trust'
-  | 'settings' | 'build' | 'gh-attach' | 'core-drift' | 'stale-claims' | 'lane-ports'
+  | 'settings' | 'build' | 'gh-attach' | 'video-cut' | 'core-drift' | 'stale-claims' | 'lane-ports'
   | 'instances' | 'clerk-api' | 'agent'
   | 'backend' | 'remote-env' | 'git-fetch' | 'git-push' | 'github-rest' | 'remote-commit' | 'tunnel-egress' | 'clerk-egress' | 'remote-sessions'
   | `live-${string}`;
@@ -258,10 +259,19 @@ export interface LocalBuild extends BuiltAppBase {
   readonly source: 'local';
   readonly path: ScratchPath;
 }
+export interface TreePatch {
+  readonly sha256: string;
+  readonly bytes: Buffer;
+}
+export interface SessionSource {
+  readonly sha: string;
+  readonly patch: TreePatch | null;
+}
 export interface SessionBuild extends BuiltAppBase {
   readonly source: 'github-actions';
   readonly path: null;
   readonly sourceSha: string;
+  readonly patch: TreePatch | null;
 }
 export type BuiltApp = LocalBuild | SessionBuild;
 export type BuildSource = BuiltApp['source'];
@@ -292,6 +302,7 @@ export interface RemoteLease extends LeaseBase {
   readonly runner: string;
   readonly expiresAt: string;
   readonly builtSha: string | null;
+  readonly builtPatch: string | null;
 }
 export type Lease = LocalLease | RemoteLease;
 
@@ -320,6 +331,30 @@ export interface SpecResult {
   readonly failureScreenshot: EvidencePath | null;
 }
 
+export interface Screenshot {
+  readonly label: string;
+  readonly path: EvidencePath;
+  readonly test?: { readonly spec: string; readonly title: string };
+}
+
+export interface EvidenceSpan {
+  readonly label: string;
+  readonly from: number;
+  readonly to: number;
+  readonly passed: boolean;
+}
+
+export interface EvidenceTap {
+  readonly at: number;
+  readonly x: number;
+  readonly y: number;
+}
+
+export interface Viewport {
+  readonly width: number;
+  readonly height: number;
+}
+
 export interface EvidenceRecord {
   readonly run: RunId;
   readonly startedAt: string;
@@ -329,12 +364,14 @@ export interface EvidenceRecord {
   readonly dirty: boolean;
   readonly platform: Platform;
   readonly backend: BackendKind;
-  readonly remote: { readonly provider: RemoteProvider; readonly runner: string; readonly builtSha: string | null } | null;
+  readonly remote: { readonly provider: RemoteProvider; readonly runner: string; readonly builtSha: string | null; readonly builtPatch?: string | null } | null;
   readonly device: string;
   readonly build: BuildKey;
   readonly results: readonly SpecResult[];
   readonly videos: readonly EvidencePath[];
-  readonly screenshots: readonly { readonly label: string; readonly path: EvidencePath }[];
+  readonly evidenceSpans?: readonly EvidenceSpan[];
+  readonly evidenceTaps?: { readonly viewport: Viewport; readonly taps: readonly EvidenceTap[] } | null;
+  readonly screenshots: readonly Screenshot[];
   readonly appLog: EvidencePath | null;
   readonly e2eReport: EvidencePath;
   readonly identities: readonly { readonly email: TestEmail; readonly userId: string | null }[];
@@ -391,6 +428,8 @@ export interface ProcessRef {
 
 export interface Recording {
   readonly process: ProcessRef | null;
+  readonly videoStartsAt?: number;
+  readonly videoStartGuess?: string;
   stop(): Promise<EvidencePath>;
 }
 
@@ -411,9 +450,9 @@ export interface DeviceBackend<L extends Lease = Lease> {
   readonly kind: BackendKind;
   readonly platform: Platform;
   availability(): Availability;
-  sourceCommit?(input: { readonly worktree: string; readonly inputs: readonly string[] }): Promise<string>;
+  sourceCommit?(input: { readonly worktree: string; readonly inputs: readonly string[] }): Promise<SessionSource>;
   acquire(request: AcquireRequest): Promise<L>;
-  check(lease: L): Promise<'held' | 'lost' | 'expiring'>;
+  check(lease: L): Promise<'held' | 'lost' | 'expiring' | 'other-app'>;
   install(lease: L, app: BuiltApp, progress: (line: string) => void): Promise<L>;
   release(lease: L): Promise<void>;
   reapable(owner?: string): Promise<readonly L[]>;

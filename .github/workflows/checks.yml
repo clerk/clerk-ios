@@ -16,3 +16,70 @@ jobs:
       checks: write
       contents: read
     uses: ./.github/workflows/shared-checks.yml
+    with:
+      build_platforms: '["iOS", "macOS"]'
+
+  notify:
+    name: Notify Slack of failed main checks
+    needs: checks
+    if: >-
+      always() && github.repository == 'clerk/clerk-ios' &&
+      (needs.checks.result == 'failure' || needs.checks.result == 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Notify Slack
+        env:
+          SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification"
+            exit 0
+          fi
+
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          commit_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+          subject="$(head -n 1 <<< "$COMMIT_MESSAGE" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')"
+          message=":red_circle: $GITHUB_REPOSITORY main checks failed on <$commit_url|${GITHUB_SHA:0:9}> $subject · <$run_url|View the run>"
+
+          PAYLOAD=$(jq -n --arg text "$message" '{text: $text, unfurl_links: false, unfurl_media: false}')
+
+          curl --fail-with-body \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-max-time 60 \
+            --retry-all-errors \
+            --request POST \
+            --header "Content-type: application/json" \
+            --data "$PAYLOAD" \
+            "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL"
+
+  delete-replaced-builds:
+    name: Delete the builds this push replaced
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
+      - name: Delete the older saved builds
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for prefix in clerkkitui-derived-data- clerkkit-swiftpm-build-; do
+            keys="$(gh cache list --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF" --key "$prefix" --limit 100 --sort created_at --order desc --json key --jq '.[].key')"
+            if ! grep -q -- "-$GITHUB_SHA\$" <<< "$keys"; then
+              echo "::notice::No $prefix build was saved for $GITHUB_SHA, so none is deleted."
+              continue
+            fi
+            # Keep the newest build rather than this push's own: an earlier push's cleanup can run after a later push saved.
+            while IFS= read -r key; do
+              [ -z "$key" ] || gh cache delete "$key" --repo "$GITHUB_REPOSITORY" || echo "::notice::$key was already deleted."
+            done < <(tail -n +2 <<< "$keys")
+          done

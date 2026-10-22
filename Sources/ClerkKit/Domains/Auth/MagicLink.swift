@@ -159,8 +159,8 @@ final class MagicLinkStore {
     }
   }
 
-  func load() -> PendingMagicLinkFlow? {
-    guard let data = try? keychain.data(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) else {
+  func load() throws -> PendingMagicLinkFlow? {
+    guard let data = try keychain.data(forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue) else {
       return nil
     }
 
@@ -178,7 +178,7 @@ final class MagicLinkStore {
   }
 
   func clear(flow: PendingMagicLinkFlow) {
-    guard load() == flow else {
+    guard (try? load()) == flow else {
       return
     }
 

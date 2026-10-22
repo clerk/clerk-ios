@@ -14,7 +14,7 @@ export function summarize(evidence: Showable): EvidenceSummary {
     commit: evidence.gitHead,
     passed: evidence.results.filter((r) => r.status === 'passed').length,
     flaky: evidence.results.filter((r) => r.status === 'flaky').length,
-    total: evidence.results.length,
+    total: evidence.results.filter((r) => r.status !== 'skipped').length,
   };
 }
 
@@ -126,7 +126,8 @@ export function withEvidenceBlock(body: string, platform: Platform, lines: strin
   }
   if (starts.length !== 1 || ends.length !== 1) return { ok: false, why: `has \`${start}\` ${starts.length} times and \`${end}\` ${ends.length} times`, fix: ONE_PAIR_OF_MARKERS };
   if (ends[0]! < starts[0]!) return { ok: false, why: `has \`${end}\` before \`${start}\``, fix: ONE_PAIR_OF_MARKERS };
-  if (!A_BLOCK_STARTS.test(body.slice(starts[0]! + start.length, ends[0]!).trimStart())) return { ok: false, why: `has text between \`${start}\` and \`${end}\` that is not an evidence block`, fix: ONE_PAIR_OF_MARKERS };
+  const between = body.slice(starts[0]! + start.length, ends[0]!).trimStart();
+  if (between !== '' && !A_BLOCK_STARTS.test(between)) return { ok: false, why: `has text between \`${start}\` and \`${end}\` that is not an evidence block`, fix: ONE_PAIR_OF_MARKERS };
   return { ok: true, body: `${body.slice(0, starts[0]!)}${block}${body.slice(ends[0]! + end.length)}`, was: 'replaced' };
 }
 
@@ -151,13 +152,29 @@ export function chooseEvidence(pr: number, evidence: Publishable, before: Showab
   const summary = summarize(evidence);
   if (before === null) return { pr, summary, files, before: null };
 
-  const failure = before.results.find((r) => r.status === 'failed' && r.failureScreenshot !== null)?.failureScreenshot;
+  const failureShotOf = (label: string, test: { readonly spec: string; readonly title: string }): EvidencePath | null | undefined => {
+    const same = before.results.find((r) => r.spec.path === test.spec && r.title === test.title);
+    if (same !== undefined) return same.failureScreenshot;
+    const copies = before.results.filter((r) => basename(r.spec.path) === basename(test.spec) && r.title === test.title);
+    if (copies.length > 1) {
+      missing(
+        `run ${before.run} has no screenshot labelled ${label}, and the test "${test.title}" of ${test.spec} could be any of ${copies.length} tests in it: ${copies.map((r) => r.spec.path).join(', ')}`,
+        `run only one spec named ${basename(test.spec)} on the build without the change and attach that run as --before, or attach without --before`,
+      );
+    }
+    return copies[0]?.failureScreenshot;
+  };
   const was = [
     ...shots.map(
-      ({ label }) =>
+      ({ label, test }) =>
         before.screenshots.find((s) => s.label === label)?.path ??
-        failure ??
-        missing(`run ${before.run} has no screenshot labelled ${label}, and no failure screenshot to show in its place`, `call host.screenshot('${label}') in the spec and run it on the build without the change, or attach without --before`),
+        (test === undefined ? undefined : failureShotOf(label, test)) ??
+        (test === undefined
+          ? missing(`run ${before.run} has no screenshot labelled ${label}, and run ${evidence.run} does not record which test took ${label}`, '{cli} run the spec again and attach that run, or attach without --before')
+          : missing(
+              `run ${before.run} has no screenshot labelled ${label}, and no failure screenshot of the test "${test.title}" in ${basename(test.spec)} to show in its place`,
+              `call host.screenshot('${label}') in the spec and run it on the build without the change, or attach without --before`,
+            )),
     ),
     ...video.map(() => before.videos[0] ?? missing(noVideo(before.run), '{cli} run it again without --no-video, or attach without --video or without --before')),
   ];

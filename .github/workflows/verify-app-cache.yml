@@ -1,0 +1,154 @@
+name: verify-app-cache
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Sources/**
+      - Examples/E2EHost/**
+      - Examples/Quickstart/Quickstart.xcodeproj/**
+      - Package.swift
+      - Clerk.xcworkspace/**
+      - e2e-tests/package-lock.json
+      - e2e-tests/src/host-app.ts
+      - e2e-tests/src/platform/ios/**
+      - .github/workflows/verify-app-cache.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-app-cache-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PACKAGE: e2e-tests
+  IOS_RUNTIME: iOS-27-0
+  SESSION_BUILD: e2e-tests/src/platform/ios/session-build.ts
+
+jobs:
+  store:
+    name: Store E2EHost and the XCTest runner for verify-remote sessions
+    runs-on: ${{ vars.VERIFY_CI_RUNNER || 'xcode-27' }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      # A cache restores to the path it was saved from, so these are the paths of verify-remote.yml.
+      - name: Name the directories that verify-remote sessions use
+        run: |
+          set -euo pipefail
+          WORK="$RUNNER_TEMP/verify-remote"
+          mkdir -p "$WORK"
+          echo "VERIFY_SESSION_WORK=$WORK" >> "$GITHUB_ENV"
+          echo "start $(date +%s)000" >> "$WORK/marks"
+          xcodebuild -version
+
+      - name: Restore the Swift packages
+        id: packages
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/packages
+          key: verify-packages-unresolved
+          restore-keys: verify-packages-
+
+      - name: Resolve the Swift packages and name the app
+        id: app
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
+          node "$SESSION_BUILD" name "$VERIFY_SESSION_WORK"
+
+      - name: Look for the stored app
+        id: stored
+        if: steps.app.outputs.key != ''
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/apps/${{ steps.app.outputs.key }}
+          key: verify-e2ehost-${{ steps.app.outputs.key }}
+          lookup-only: true
+
+      - name: Build E2EHost from nothing
+        id: report
+        if: steps.app.outputs.key != '' && steps.stored.outputs.cache-hit != 'true'
+        timeout-minutes: 45
+        run: |
+          set -euo pipefail
+          node "$SESSION_BUILD" build "$VERIFY_SESSION_WORK"
+          node "$SESSION_BUILD" outcome "$VERIFY_SESSION_WORK"
+
+      - name: Store the app
+        if: steps.report.outputs.store != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/apps/${{ steps.report.outputs.store }}
+          key: verify-e2ehost-${{ steps.report.outputs.store }}
+
+      - name: Store the Swift packages
+        if: steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/packages
+          key: verify-packages-${{ steps.app.outputs.pins }}
+
+      - name: Store the build state
+        if: steps.report.outputs.built != ''
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/verify-remote/derived
+          key: verify-derived-${{ steps.app.outputs.toolchain }}-${{ steps.report.outputs.built }}
+
+      - name: Install the package's pinned tools
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          npm ci --prefix "$PACKAGE" --no-audit --no-fund
+          "$PACKAGE/node_modules/.bin/agent-device" --version
+
+      - name: Look for the stored XCTest runner
+        id: runner
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.agent-device/apple-runner
+          key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
+          lookup-only: true
+
+      # agent-device starts its daemon and the runner on the simulator, and neither starts reliably while a simulator does the work of its first boot, so this waits for that work the way verify-e2e.yml does.
+      - name: Build the XCTest runner on a new simulator
+        id: prepare
+        if: steps.runner.outputs.cache-hit != 'true'
+        continue-on-error: ${{ steps.stored.outputs.cache-hit == 'true' || steps.report.outputs.store != '' }}
+        timeout-minutes: 45
+        run: |
+          set -uo pipefail
+          udid="$(xcrun simctl create "Clerk Verify Runner" "iPhone Air" "com.apple.CoreSimulator.SimRuntime.$IOS_RUNTIME")"
+          xcrun simctl bootstatus "$udid" -b
+          limit=$(( $(sysctl -n hw.ncpu) * 20 ))
+          for waited in $(seq 0 5 720); do
+            load="$(sysctl -n vm.loadavg | awk '{ print int($2) }')"
+            [ "$load" -lt "$limit" ] && break
+            sleep 5
+          done
+          echo "the 1-minute load average is $load after $waited seconds"
+          "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --udid "$udid" --timeout 900000 && exit 0
+          "$PACKAGE/node_modules/.bin/agent-device" prepare ios-runner --platform ios --udid "$udid" --timeout 900000
+
+      - name: Store the XCTest runner
+        if: steps.prepare.outcome == 'success'
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.agent-device/apple-runner
+          key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}

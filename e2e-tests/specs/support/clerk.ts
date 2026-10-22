@@ -1,10 +1,11 @@
-import { randomBytes, randomInt } from 'node:crypto';
+import { createHash, randomInt } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import net from 'node:net';
 import { runIdParts, type ClerkAccess, type ClerkInstance } from './inputs.ts';
+import { PASSWORD_WORDS, runNames, type RunNames } from './names.ts';
 import { SHORTEST_SECRET, Secret, protect } from './secret.ts';
 import { commandsFor } from './typing.ts';
-import type { RunId, SecretLike, SeedOptions, SeededUser, TestEmail, TestPhone } from './types.ts';
+import type { EmailOptions, OrganizationSeed, RunId, SecretLike, SeedOptions, SeededOrganization, SeededUser, TestEmail, TestPhone } from './types.ts';
 
 export const BACKEND_API_URL = 'https://api.clerk.com/v1';
 
@@ -12,9 +13,32 @@ export const BACKEND_CALLS = {
   createUser: { method: 'POST', path: '/users' },
   signInToken: { method: 'POST', path: '/sign_in_tokens' },
   usersByPhone: { method: 'GET', path: '/users' },
+  createOrganization: { method: 'POST', path: '/organizations' },
+  createMembership: { method: 'POST', path: '/organizations/{organization_id}/memberships' },
+  createDomain: { method: 'POST', path: '/organizations/{organization_id}/domains' },
+  listPermissions: { method: 'GET', path: '/organization_permissions' },
+  listRoles: { method: 'GET', path: '/organization_roles' },
+  createRole: { method: 'POST', path: '/organization_roles' },
 } as const;
 
 export type BackendCall = keyof typeof BACKEND_CALLS;
+
+export const PATH_PARAM = /\{([a-z_]+)\}/g;
+
+export const backendPath = (call: BackendCall, params: Readonly<Record<string, string>> = {}): string =>
+  BACKEND_CALLS[call].path.replace(PATH_PARAM, (_, name: string) => encodeURIComponent(params[name] ?? ''));
+
+export const HARNESS_ROLES = {
+  'org:admin': null,
+  'org:member': null,
+  'org:e2e_domains_reader': { name: 'Domains reader', permissions: ['org:sys_domains:read', 'org:sys_memberships:read'] },
+} as const satisfies Readonly<Record<string, { readonly name: string; readonly permissions: readonly string[] } | null>>;
+
+export type HarnessRole = keyof typeof HARNESS_ROLES;
+
+export const isHarnessRole = (value: unknown): value is HarnessRole => typeof value === 'string' && Object.hasOwn(HARNESS_ROLES, value);
+
+export const SYSTEM_PERMISSIONS = { query: 'org:sys_', limit: '100' } as const;
 
 export const ABOUT_TO_LAUNCH = { method: 'POST', path: '/about_to_launch' } as const;
 
@@ -27,14 +51,19 @@ net.setDefaultAutoSelectFamilyAttemptTimeout(CONNECT_ATTEMPT_MS);
 
 const notTestIdentity = (value: string, kind: string): Error => new Error(`${value} is not a ${kind}; use an address with +clerk_test or a 555-0100..0199 phone that this run created`);
 
-export function runEmailPrefix(run: RunId): string {
-  const { time, tag } = runIdParts(run);
-  return `${time}${tag}`;
-}
+const tagOf = (run: RunId): string => runIdParts(run).tag;
 
-export function newTestEmail(run: RunId): TestEmail {
-  return parseTestEmail(`${runEmailPrefix(run)}${randomInt(36 ** 4).toString(36).padStart(4, '0')}+clerk_test@example.com`);
-}
+export const testEmail = (run: RunId, person: string, domain = 'example.com'): TestEmail => parseTestEmail(`${person}.${tagOf(run)}+clerk_test@${domain}`);
+
+export const isTestEmailOf = (run: RunId, email: string): boolean => new RegExp(`^[a-z]+[0-9]*\\.${tagOf(run)}\\+clerk_test@[a-z0-9.-]+\\.[a-z]+$`).test(email);
+
+export const organizationName = (run: RunId, word: string): string => `${word} ${tagOf(run)}`;
+
+export const isOrganizationNameOf = (run: RunId, name: string): boolean => new RegExp(`^[A-Z][a-z]+[0-9]* ${tagOf(run)}$`).test(name);
+
+export const testDomain = (run: RunId, word: string): string => `${word.toLowerCase()}-${tagOf(run)}.clerk.test`;
+
+export const isTestDomainOf = (run: RunId, domain: string): boolean => new RegExp(`^[a-z]+[0-9]*-${tagOf(run)}\\.clerk\\.test$`).test(domain);
 
 const TEST_EMAIL = /^[a-z0-9._-]+\+clerk_test@[a-z0-9.-]+\.[a-z]+$/;
 export function parseTestEmail(value: string): TestEmail {
@@ -57,16 +86,29 @@ export function typedPassword(value: string): Secret<'password'> {
   return password;
 }
 
-export function newTestPassword(): Secret<'password'> {
-  return typedPassword(`${randomBytes(12).toString('hex')}Aa1!`);
+type Pick = (count: number) => number;
+
+function passwordFrom(pick: Pick): string {
+  const first = PASSWORD_WORDS[pick(PASSWORD_WORDS.length)]!;
+  const others = PASSWORD_WORDS.filter((word) => word !== first);
+  return `${first}-${others[pick(others.length)]}-${String(pick(10_000)).padStart(4, '0')}`;
 }
 
-export const runPassword = (run: RunId): Secret<'password'> => typedPassword(`Verify-${run}-Pw1!`);
+export const newTestPassword = (): Secret<'password'> => typedPassword(passwordFrom(randomInt));
+
+export function runPassword(run: RunId): Secret<'password'> {
+  const digest = createHash('sha256').update(run).digest();
+  let read = 0;
+  const pick: Pick = (count) => digest.readUInt32BE(4 * read++) % count;
+  return typedPassword(passwordFrom(pick));
+}
 
 export interface TestUsers {
-  newEmail(): TestEmail;
+  newEmail(options?: EmailOptions): TestEmail;
+  newOrganizationName(): string;
   newPhone(): Promise<TestPhone>;
   seed(options?: SeedOptions): Promise<SeededUser>;
+  seedOrganization<Seed extends OrganizationSeed>(seed: Seed): Promise<SeededOrganization<Seed>>;
   signInTicket(user: SeededUser): Promise<Secret<'ticket'>>;
 }
 
@@ -79,7 +121,15 @@ const ok = (reply: Reply): boolean => reply.status >= 200 && reply.status < 300;
 
 const errorsOf = (reply: Reply): readonly { readonly code?: string; readonly message?: string; readonly long_message?: string }[] => (reply.json as { errors?: { code?: string; message?: string; long_message?: string }[] } | null)?.errors ?? [];
 
-const phoneIsTaken = (reply: Reply): boolean => reply.status === 422 && errorsOf(reply).some((error) => error.code === 'form_identifier_exists');
+const identifierIsTaken = (reply: Reply): boolean => reply.status === 422 && errorsOf(reply).some((error) => error.code === 'form_identifier_exists');
+
+interface Listed {
+  readonly id: string;
+  readonly key: string;
+  readonly permissions?: readonly { readonly key: string }[];
+}
+
+const listedOf = (reply: Reply): readonly Listed[] => (reply.json as { data?: Listed[] } | null)?.data ?? [];
 
 function refusal(call: BackendCall, reply: Reply): Error {
   const said = errorsOf(reply).map((error) => error.long_message ?? error.message ?? error.code ?? 'no reason given').join('; ');
@@ -103,15 +153,15 @@ export async function aboutToLaunch(access: ClerkAccess, fetchImpl: typeof fetch
   throw new Error(`the verify CLI was not ready for the app to launch: ${said.join('; ') || `it answered ${response.status}`}`);
 }
 
-export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fetch = fetch): TestUsers {
+export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fetch = fetch, names: RunNames = runNames(run)): TestUsers {
   runPassword(run);
   const handedOut = new Set<TestPhone>();
 
-  async function ask(call: BackendCall, sent: { readonly query?: string; readonly body?: unknown }): Promise<Reply> {
-    const { method, path } = BACKEND_CALLS[call];
+  async function ask(call: BackendCall, sent: { readonly params?: Readonly<Record<string, string>>; readonly query?: string; readonly body?: unknown }): Promise<Reply> {
+    const { method } = BACKEND_CALLS[call];
     const { baseUrl, bearer } = endpoint(clerk.access);
     const response = await bearer.use('bapi-authorization', (plain) =>
-      fetchImpl(`${baseUrl}${path}${sent.query === undefined ? '' : `?${sent.query}`}`, {
+      fetchImpl(`${baseUrl}${backendPath(call, sent.params)}${sent.query === undefined ? '' : `?${sent.query}`}`, {
         method,
         headers: { Authorization: `Bearer ${plain}`, 'Content-Type': 'application/json' },
         ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
@@ -131,10 +181,45 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
     return TEST_PHONES.map((_, i) => TEST_PHONES[(first + i) % TEST_PHONES.length]!).filter((phone) => !handedOut.has(phone));
   }
 
+  async function answered(call: BackendCall, sent: Parameters<typeof ask>[1]): Promise<Reply> {
+    const reply = await ask(call, sent);
+    if (!ok(reply)) throw refusal(call, reply);
+    return reply;
+  }
+
+  const roleOnInstance = async (role: HarnessRole): Promise<Listed | undefined> =>
+    listedOf(await answered('listRoles', { query: `query=${encodeURIComponent(role)}` })).find((listed) => listed.key === role);
+
+  function asTheTableSays(role: HarnessRole, listed: Listed): void {
+    const wanted = [...(HARNESS_ROLES[role]?.permissions ?? [])].sort();
+    const has = (listed.permissions ?? []).map((permission) => permission.key).sort();
+    if (has.join() !== wanted.join()) throw new Error(`role ${role} on this instance has the permissions ${has.join(', ')}, and the tests give it ${wanted.join(', ')}; run down so the next run creates a new application`);
+  }
+
+  async function roleReady(role: HarnessRole): Promise<void> {
+    const wanted = HARNESS_ROLES[role];
+    if (wanted === null) return;
+    const existing = await roleOnInstance(role);
+    if (existing !== undefined) return asTheTableSays(role, existing);
+    const permissions = listedOf(await answered('listPermissions', { query: new URLSearchParams(SYSTEM_PERMISSIONS).toString() }));
+    const ids = wanted.permissions.map((key) => {
+      const id = permissions.find((permission) => permission.key === key)?.id;
+      if (id === undefined) throw new Error(`the instance has no permission ${key}, which role ${role} needs`);
+      return id;
+    });
+    const made = await ask('createRole', { body: { name: wanted.name, key: role, permissions: ids } });
+    if (ok(made)) return;
+    if (!identifierIsTaken(made)) throw refusal('createRole', made);
+    const raced = await roleOnInstance(role);
+    if (raced === undefined) throw refusal('createRole', made);
+    asTheTableSays(role, raced);
+  }
+
   const everyPhoneTaken = (otherwise: string): Error => new Error(`every 555-0100..0199 test phone is taken on this instance; delete its test users${otherwise}`);
 
   return {
-    newEmail: () => newTestEmail(run),
+    newEmail: (options = {}) => testEmail(run, names.claim('person'), options.domain),
+    newOrganizationName: () => organizationName(run, names.claim('organization')),
     async newPhone() {
       for (const phone of phonesNotHandedOut()) {
         const holders = await ask('usersByPhone', { query: `phone_number=${encodeURIComponent(phone)}` });
@@ -146,7 +231,7 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
       throw everyPhoneTaken('');
     },
     async seed(options = {}) {
-      const email = newTestEmail(run);
+      const email = testEmail(run, names.claim('person'));
       const password = options.password === true ? newTestPassword() : null;
       for (const phone of options.phone === true ? phonesNotHandedOut() : [null]) {
         const created = await ask('createUser', {
@@ -156,7 +241,7 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
             ...(password === null ? { skip_password_requirement: true } : { password: password.use('bapi-user-password', (plain) => plain), bypass_client_trust: true }),
           },
         });
-        if (phone !== null && phoneIsTaken(created)) continue;
+        if (phone !== null && identifierIsTaken(created)) continue;
         if (!ok(created)) throw refusal('createUser', created);
         const id = (created.json as { id?: unknown } | null)?.id;
         if (typeof id !== 'string') throw new Error('Clerk created a user without an id');
@@ -164,6 +249,20 @@ export function testUsers(clerk: ClerkInstance, run: RunId, fetchImpl: typeof fe
         return { id, email, phone, password };
       }
       throw everyPhoneTaken(', or seed without a phone');
+    },
+    async seedOrganization<Seed extends OrganizationSeed>(seed: Seed): Promise<SeededOrganization<Seed>> {
+      const members = seed.members ?? [];
+      for (const role of new Set(members.map((member) => member.role))) await roleReady(role);
+      const word = names.claim('organization');
+      const name = organizationName(run, word);
+      const made = await answered('createOrganization', { body: { name, created_by: seed.creator.id } });
+      const id = (made.json as { id?: unknown } | null)?.id;
+      if (typeof id !== 'string') throw new Error('Clerk created an organization without an id');
+      const params = { organization_id: id };
+      for (const { user, role } of members) await answered('createMembership', { params, body: { user_id: user.id, role } });
+      const domain = seed.suggestDomain === true ? testDomain(run, word) : null;
+      if (domain !== null) await answered('createDomain', { params, body: { name: domain, enrollment_mode: 'automatic_suggestion', verified: true } });
+      return { id, name, domain } as SeededOrganization<Seed>;
     },
     async signInTicket(user) {
       const minted = await ask('signInToken', { body: { user_id: user.id, expires_in_seconds: TICKET_SECONDS } });

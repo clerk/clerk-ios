@@ -217,6 +217,43 @@ struct ClerkReconfigureTests {
     #expect(Clerk.shared.environment == originalEnvironment)
   }
 
+  @Test(arguments: ["", "   ", "\n\t "])
+  func blankPublishableKeyReconfigureLeavesCurrentInstanceUntouched(_ publishableKey: String) async throws {
+    let original = Clerk.shared
+    let originalDependencies = Clerk.shared.dependencies
+    let originalPublishableKey = Clerk.shared.publishableKey
+    let originalClient = Client.mock
+    try Clerk.shared.seedIdentity(deviceToken: "old-device-token", client: originalClient)
+
+    await #expect {
+      try await Clerk.reconfigure(publishableKey: publishableKey)
+    } throws: { error in
+      guard case .missingPublishableKey = error as? ClerkInitializationError else { return false }
+      return true
+    }
+
+    let dependenciesUnchanged = Clerk.shared.dependencies === originalDependencies
+    #expect(Clerk.shared === original)
+    #expect(dependenciesUnchanged)
+    #expect(Clerk.shared.publishableKey == originalPublishableKey)
+    #expect(Clerk.shared.identityController.currentDeviceToken == "old-device-token")
+    #expect(Clerk.shared.client?.id == originalClient.id)
+  }
+
+  @Test
+  func blankPublishableKeyReconfigureWithoutASharedInstanceInstallsNothing() async {
+    await Clerk.resetSharedInstanceForTesting()
+
+    await #expect {
+      try await Clerk.reconfigure(publishableKey: "")
+    } throws: { error in
+      guard case .missingPublishableKey = error as? ClerkInitializationError else { return false }
+      return true
+    }
+
+    #expect(Clerk.installedLoggingConfiguration == nil)
+  }
+
   @Test
   func invalidProxyUrlReconfigureLeavesCurrentInstanceUntouched() async throws {
     let original = Clerk.shared

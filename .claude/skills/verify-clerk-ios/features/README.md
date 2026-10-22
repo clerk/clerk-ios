@@ -17,11 +17,11 @@ Clerk's test mode makes these identities safe to type into the real app.
 
 | Identity | What to use |
 | --- | --- |
-| Email | Any address that contains `+clerk_test@`. Clerk sends no mail to it and accepts the code below. `host.seedUser()` and `host.newEmail()` mint an address such as `1412107c1ek3x9+clerk_test@example.com`, new for each run |
+| Email | Any address that contains `+clerk_test@`. Clerk sends no mail to it and accepts the code below. `host.seedUser()` and `host.newEmail()` mint an address such as `maya.7c1e+clerk_test@example.com`, a first name and the run tag, new for each test of the run |
 | Phone | A US number from 555-0100 to 555-0199, typed as ten digits such as `2015550142`. Get one from `host.seedUser({ phone: true })`, or from `host.newPhone()` for a sign-up, instead of picking one by hand. Both give `+1` and the ten digits |
 | One-time code | `424242` verifies every email code and SMS code for a test address or number. Specs use the constant `CLERK_TEST_CODE` |
-| Password | The standard settings require a password at sign-up. Use a throwaway one per run, such as `Verify-<runId>-Pw1!`. For a password sign-in, seed the user with `host.seedUser({ password: true })` and fill the field with `host.fill(field, user.password!)` |
-| Authenticator code | Read the setup key from `clerk.auth.sessionTask.totp.secret` and compute the 6-digit RFC 6238 code (SHA-1, 30-second step). `specs/features/session-tasks/complete-setup-mfa.e2e.ts` has a helper |
+| Password | The standard settings require a password at sign-up. Fill it with `runPassword(host.runId)` from `specs/support/clerk.ts`, such as `Otter-Lamp-3917`. For a password sign-in, seed the user with `host.seedUser({ password: true })` and fill the field with `host.fill(field, user.password!)` |
+| Authenticator code | Read the setup key from `clerk.auth.sessionTask.totp.secret` and compute the 6-digit RFC 6238 code (SHA-1, 30-second step). `totp` in `specs/totp.ts` computes it |
 
 | Step | SDK identifier |
 | --- | --- |
@@ -51,21 +51,24 @@ On the standard settings an email sign-in for a user with no password goes strai
 ## Proof
 
 - A proof is a passing `run` whose run directory holds `video.mp4`, `screenshots/`, `app.log`, and `e2e/report.json`.
-- Name the run id and the specs in the PR. Attach with `e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n>` and `--screenshot <label>` for a still change or `--video` for behavior or a flow. Add `--before <run-id>` when the change is to something that exists. `SKILL.md` has the choice under Evidence.
+- Name the run id and the specs in the PR. Attach with `e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n>` and `--screenshot <label>` for a still change or `--video` for behavior or a flow, with the part that shows the change inside `host.evidence`. Add `--before <run-id>` when the change is to something that exists. `SKILL.md` has the choice under Evidence.
 - Report an unreachable path with the attempted command and the unmet precondition.
 
 ## Feature entry contract
 
-Each feature file starts with an H1 title and one paragraph describing the user-visible behavior, then exactly four H2 sections in this order: `Sub-features`, `How to get to it (user POV)`, `Driving it with verify`, and `Gotchas`. `Driving it with verify` starts with `Preconditions:` and names the specs that prove each sub-feature.
+Each feature file starts with an H1 title and one paragraph describing the user-visible behavior, then four H2 sections in this order: `Sub-features`, `How to get to it (user POV)`, `Driving it with verify`, and `Gotchas`. `Driving it with verify` starts with `Preconditions:` and names the specs that prove each sub-feature. A feature with states that no spec can reach has a `States a spec cannot reach` section before `Gotchas`, which names each state, where the app decides it, and what it takes.
 
 ## Features
 
 - [Auth start](./auth-start.md) covers opening AuthView from the home in a sheet and full screen, dismissing it, and opening it with an initial identifier.
 - [Sign in with an email code](./sign-in-email-code.md) covers requesting and entering the email code.
+- [Sign in with an SMS code](./sign-in-phone-code.md) covers requesting and entering the SMS code from the AuthView sheet the home opens.
+- [Custom sign-in flow](./custom-flow-sign-in.md) covers E2EHost's own form on `clerk.auth.signInWithPhoneCode(phoneNumber:)`.
 - [Sign up](./sign-up.md) covers requesting the sign-up code, completing sign-up with a password, and signing up with a phone number.
 - [Session persistence](./session-persistence.md) covers a session that survives a restart of the app.
-- [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, sign-out, and deleting the account.
-- [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in, and the setup-MFA task after sign-up.
-- [Organizations](./organizations.md) covers creating an organization from OrganizationSwitcher.
+- [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, its Manage account and Security screens, sign-out, and deleting the account.
+- [Session tasks](./session-tasks.md) covers the setup-MFA and choose-organization tasks after sign-in, the setup-MFA task after sign-up, and finishing the setup-MFA task with an authenticator code.
+- [Organizations](./organizations.md) covers creating an organization from OrganizationSwitcher, and an account list embedded in a tab that follows an account switch and a sign-out.
+- [Organization profile](./organization-profile.md) covers the profile that `Manage` opens from OrganizationSwitcher: its rows, the Members tabs and search, sending an invitation, verified domains, renaming, and leaving or deleting the organization. It covers a member who can read domains but not manage them, a request to join on the Requests tab, and a profile embedded in a tab that follows an organization switch, with organizations that specs seed, and it lists the states no spec reaches.
 
-Not mapped yet: phone code sign-in, password sign-in, social providers (no real OAuth on simulators), passkeys and biometrics (no associated domains or Secure Enclave on the simulator).
+Not mapped yet: password sign-in, the email link (off on the standard settings), the profile's own flows past its first screens (editing the profile, adding an email address or a phone number, changing the password, adding a second factor, and switching between signed-in accounts), completing the setup-MFA task with an SMS code, the reset-password session task, the choose-organization task's list of memberships, invitations, and suggestions, organization invitations in the switcher (the harness cannot seed them; the Requests test in [Organization profile](./organization-profile.md) covers a suggestion), social providers (no real OAuth on simulators), and passkeys and biometrics (no associated domains or Secure Enclave on the simulator).

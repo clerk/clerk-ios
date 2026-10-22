@@ -58,7 +58,7 @@ struct SignUpTests {
     #expect(call.body?["code_challenge_method"]?.stringValue == PKCE.codeChallengeMethod)
     #expect(call.body?["code_challenge"]?.stringValue?.isEmpty == false)
 
-    let pendingFlow = try #require(magicLinkStore.load())
+    let pendingFlow = try #require(try magicLinkStore.load())
     #expect(pendingFlow.kind == .signUp)
     #expect(pendingFlow.flowId == signUp.id)
     #expect(pendingFlow.codeVerifier.isEmpty == false)
@@ -78,7 +78,7 @@ struct SignUpTests {
     await #expect(throws: ClerkClientError.self) {
       try await signUp.sendEmailLink()
     }
-    let pendingFlow = try #require(magicLinkStore.load())
+    let pendingFlow = try #require(try magicLinkStore.load())
     #expect(pendingFlow.kind == .signUp)
     #expect(pendingFlow.flowId == signUp.id)
     #expect(pendingFlow.codeVerifier.isEmpty == false)

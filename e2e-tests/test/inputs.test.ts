@@ -1,12 +1,18 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { syncBuiltinESMExports } from 'node:module';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import { pathToFileURL } from 'node:url';
+import { keptTags, openWorkspace } from '../src/core/workspace.ts';
 import { PACKAGE_DIR } from '../specs/support/config.ts';
 import { agentDevice } from '../specs/support/device.ts';
-import { INPUT_VARIABLES, inputsEnv, readClerk, readRun, readTarget, type Inputs } from '../specs/support/inputs.ts';
+import { INPUT_VARIABLES, inputsEnv, newRunId, readClerk, readEvidenceMarks, readRun, readTarget, type Inputs } from '../specs/support/inputs.ts';
 import { Secret } from '../specs/support/secret.ts';
+import type { RunId } from '../specs/support/types.ts';
 import { BOTH_PLATFORMS_APP, IOS_APP, SAMPLE_INPUTS, SAMPLE_PUBLISHABLE_KEY, SAMPLE_RUN } from '../testing/sample-inputs.ts';
 
 const UDID = 'FDF0CD9E-CF9E-42B6-AE3A-116A665F7EF3';
@@ -67,6 +73,12 @@ describe('the device and app a run is told to use', () => {
     const target = readTarget(BOTH_PLATFORMS_APP, { CLERK_E2E_PLATFORM: 'ios', CLERK_E2E_DEVICE: UDID, CLERK_E2E_APP_PATH: '/tmp/E2EHost.app', CLERK_E2E_DEV_SERVER: 'http://localhost:8081', CLERK_E2E_DEVICE_SESSION: 'mine' });
     assert.deepEqual([target.build, target.session], [{ path: '/tmp/E2EHost.app', devServer: 'http://localhost:8081' }, 'mine']);
   });
+
+  it('refuses a dev server with a borrowed Android emulator, whose dev-client app would start through adb on this machine', () => {
+    const borrowed = { CLERK_E2E_PLATFORM: 'android', CLERK_E2E_DEVICE: 'emulator-5554', CLERK_E2E_DEVICE_DAEMON_URL: 'https://quick-fox-jumps.trycloudflare.com/agent-device', CLERK_E2E_DEVICE_DAEMON_TOKEN_FILE: '/tmp/token' };
+    assert.equal(readTarget(BOTH_PLATFORMS_APP, borrowed).device.kind, 'borrowed');
+    assert.throws(() => readTarget(BOTH_PLATFORMS_APP, { ...borrowed, CLERK_E2E_DEV_SERVER: 'http://localhost:8081' }), /CLERK_E2E_DEV_SERVER and CLERK_E2E_DEVICE_DAEMON_URL are both set/);
+  });
 });
 
 describe('the Clerk instance a run is told to use', () => {
@@ -108,6 +120,70 @@ describe('the id of a run', () => {
     assert.match(readRun({}), /^r\d{8}-\d{6}-[0-9a-f]{4}$/);
     assert.throws(() => readRun({ CLERK_E2E_RUN_ID: '../../etc' }), /is not a run id/);
   });
+
+  it('never takes the tag of a run this worktree kept, since its users carry only the tag', () => {
+    const kept = Array.from({ length: 0x10000 }, (_, n) => n.toString(16).padStart(4, '0')).filter((tag) => tag !== 'beef');
+    assert.match(newRunId(kept), /^r\d{8}-\d{6}-beef$/);
+  });
+
+  it('says so when the worktree kept every tag, rather than looking for one forever', () => {
+    const kept = Array.from({ length: 0x10000 }, (_, n) => n.toString(16).padStart(4, '0'));
+    assert.throws(() => newRunId(kept), /every run tag is taken; run down to delete the application/);
+  });
+
+  describe('made by the workspace', () => {
+    const drawing = (tags: readonly string[], body: (workspace: ReturnType<typeof openWorkspace>, runs: string) => void, beforeDraw: (runs: string, tag: string) => void = () => {}) => {
+      const dir = mkdtempSync(join(tmpdir(), 'verify-run-tags-'));
+      const queue = [...tags];
+      const draw = mock.method(crypto, 'randomBytes', () => {
+        const tag = queue.shift()!;
+        beforeDraw(join(dir, '.verify', 'runs'), tag);
+        return Buffer.from(tag, 'hex');
+      });
+      syncBuiltinESMExports();
+      try {
+        body(openWorkspace({ packageDir: dir, worktree: dir, home: join(dir, 'home') }), join(dir, '.verify', 'runs'));
+        assert.deepEqual(queue, []);
+      } finally {
+        draw.mock.restore();
+        syncBuiltinESMExports();
+        rmSync(dir, { recursive: true, force: true });
+      }
+    };
+
+    it('skips the tag of a run the worktree kept', () => {
+      drawing(['beef', '1234'], (workspace, runs) => {
+        mkdirSync(join(runs, 'r20261015-120000-beef'), { recursive: true });
+        assert.match(workspace.newRun().run, /^r\d{8}-\d{6}-1234$/);
+      });
+    });
+
+    it('gives one tag to one run when two ask before either has made its directory', () => {
+      const otherRunClaims = (runs: string, tag: string) => {
+        if (tag === 'beef') writeFileSync(join(runs, `.tag-${tag}`), '');
+      };
+      drawing(['beef', '1234'], (workspace) => assert.match(workspace.newRun().run, /^r\d{8}-\d{6}-1234$/), otherRunClaims);
+    });
+
+    it('counts the tag of a claim whose run directory is gone as kept', () => {
+      drawing([], (_workspace, runs) => {
+        mkdirSync(join(runs, 'r20261015-120000-beef'), { recursive: true });
+        writeFileSync(join(runs, '.tag-1234'), '');
+        for (const stray of ['notes.txt', '.tag-notes', '.tag-123', '.tag-12345', '.tag-BEEF']) writeFileSync(join(runs, stray), '');
+        assert.deepEqual(keptTags(runs).sort(), ['1234', 'beef']);
+      });
+    });
+
+    it('claims the tag it hands out', () => {
+      drawing(['beef', 'beef', '1234'], (workspace, runs) => {
+        const first = workspace.newRun();
+        assert.match(first.run, /^r\d{8}-\d{6}-beef$/);
+        assert.ok(existsSync(join(runs, '.tag-beef')));
+        rmSync(first.dir, { recursive: true });
+        assert.match(workspace.newRun().run, /^r\d{8}-\d{6}-1234$/);
+      });
+    });
+  });
 });
 
 describe('the settings the CLI hands to e2e', () => {
@@ -115,6 +191,7 @@ describe('the settings the CLI hands to e2e', () => {
     target: { platform: 'android', device: { kind: 'local', id: 'emulator-5554' }, session: 'verify-android-abc', build: { path: '/builds/e2e-debug.apk', devServer: 'http://localhost:8085' } },
     clerk: { publishableKey: SAMPLE_PUBLISHABLE_KEY, access: { kind: 'secret-key', key: new Secret('clerk-secret-key', SECRET_KEY) } },
     run: SAMPLE_RUN,
+    evidenceMarks: null,
   };
 
   it('read back as the same device, app build, instance and run', () => {
@@ -122,16 +199,18 @@ describe('the settings the CLI hands to e2e', () => {
     assert.deepEqual(readTarget(IOS_APP, env), SAMPLE_INPUTS.target);
     assert.deepEqual(readClerk(env), SAMPLE_INPUTS.clerk);
     assert.equal(readRun(env), SAMPLE_INPUTS.run);
+    assert.equal(readEvidenceMarks(env), SAMPLE_INPUTS.evidenceMarks);
 
     const handEnv = inputsEnv(byHand);
     assert.deepEqual(readTarget(BOTH_PLATFORMS_APP, handEnv), byHand.target);
     const clerk = readClerk(handEnv);
     assert.equal(clerk.access.kind === 'secret-key' && clerk.access.key.use('bapi-authorization', (plain) => plain), SECRET_KEY);
+    assert.equal(readEvidenceMarks(handEnv), null);
   });
 
   it('carry no secret key when the CLI stands in for Clerk, and no app path the CLI did not name', () => {
     const env = inputsEnv(SAMPLE_INPUTS);
-    assert.deepEqual(Object.keys(env).sort(), ['CLERK_E2E_API_TOKEN_FILE', 'CLERK_E2E_API_URL', 'CLERK_E2E_DEVICE', 'CLERK_E2E_DEVICE_SESSION', 'CLERK_E2E_PLATFORM', 'CLERK_E2E_RUN_ID', 'CLERK_PUBLISHABLE_KEY']);
+    assert.deepEqual(Object.keys(env).sort(), ['CLERK_E2E_API_TOKEN_FILE', 'CLERK_E2E_API_URL', 'CLERK_E2E_DEVICE', 'CLERK_E2E_DEVICE_SESSION', 'CLERK_E2E_EVIDENCE_MARKS', 'CLERK_E2E_PLATFORM', 'CLERK_E2E_RUN_ID', 'CLERK_PUBLISHABLE_KEY']);
   });
 
   it('are all named in the list the CLI clears from the environment it inherits', () => {

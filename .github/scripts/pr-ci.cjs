@@ -218,6 +218,7 @@ async function resolveRequest({ github, context, core, prNumber }) {
     ? await github.rest.checks.update({ ...checkData, check_run_id: latest.id })
     : await github.rest.checks.create({ ...checkData, name: 'Manual CI', head_sha: headSha });
   core.setOutput('manual_check_run_id', check.id);
+  core.setOutput('base_ref', current.base.ref);
   core.setOutput('head_repository', pr.head.repo.full_name);
   core.setOutput('head_sha', headSha);
   core.setOutput('should_run', 'true');

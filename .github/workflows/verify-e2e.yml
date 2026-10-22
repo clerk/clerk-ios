@@ -15,7 +15,11 @@ on:
     secrets:
       MOBILE_VERIFICATION_PLATFORM_API_KEY:
         required: false
+      SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL:
+        required: false
   workflow_dispatch:
+  schedule:
+    - cron: "17 7 * * *"
 
 permissions:
   contents: read
@@ -26,6 +30,7 @@ env:
 jobs:
   plan:
     name: Plan verify end-to-end tests
+    if: github.event_name != 'schedule' || github.repository == 'clerk/clerk-ios'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -115,12 +120,13 @@ jobs:
           xcrun simctl create "Clerk Verify Template iOS" "iPhone Air" "com.apple.CoreSimulator.SimRuntime.$IOS_RUNTIME"
 
       - name: Build E2EHost and boot a simulator
+        timeout-minutes: 25
         env:
           CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
         run: |
           "$CLI" up --backend local
 
-      # agent-device compiles its XCTest runner on first use, which would otherwise happen inside the first spec's launch timeout.
+      # agent-device compiles its XCTest runner on first use. e2e would start that before the first test, inside the time limit of the step that runs the tests, so this step does it first with a limit of its own.
       - name: Prepare the XCTest runner
         timeout-minutes: 20
         run: |
@@ -149,7 +155,7 @@ jobs:
           CLERK_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          "$CLI" run --all --backend local --retries 1 --github-report
+          "$CLI" run --all --backend local --retries 1 --max-failures 5 --github-report
 
       - name: Release the simulator and delete the Clerk application
         if: always() && steps.install.outcome == 'success'
@@ -166,7 +172,7 @@ jobs:
             const fs = require("fs");
             const path = require("path");
             const runs = path.join(process.env.PACKAGE, ".verify", "runs");
-            const ids = fs.existsSync(runs) ? fs.readdirSync(runs) : [];
+            const ids = fs.existsSync(runs) ? fs.readdirSync(runs).filter((id) => !id.startsWith(".")) : [];
             let upload = ids.length > 0;
             for (const id of ids) {
               let record = null;
@@ -230,7 +236,7 @@ jobs:
               ;;
             *)
               conclusion="failure"
-              summary="A test failed on both of its attempts, or the end-to-end tests could not run. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
+              summary="A test failed, or the end-to-end tests could not run. A failed assertion, an error the test threw, or a test that ran out of time had two attempts, and a failure of the device driver had one. The job log says which. When the specs ran, the run summary lists each one, and the artifact of the run has the video and failure pages."
               ;;
           esac
 
@@ -241,3 +247,59 @@ jobs:
             -f "output[title]=$CHECK_RUN_NAME" \
             -f "output[summary]=$summary" \
             --silent
+
+  notify:
+    name: Notify Slack of a failed nightly run
+    needs:
+      - plan
+      - e2e-tests
+    if: always() && github.event_name == 'schedule' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out the script that lists the merged pull requests
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts/nightly-failure-message.mjs
+          sparse-checkout-cone-mode: false
+
+      # The message goes out without the list when the checkout or the script fails.
+      - name: Notify Slack
+        if: always()
+        env:
+          SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL: ${{ secrets.SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL" ]; then
+            echo "::warning::SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL is not configured; skipping Slack notification"
+            exit 0
+          fi
+
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          message=":red_circle: $GITHUB_REPOSITORY nightly end-to-end tests failed · <$run_url|View the run>"
+          if since="$(timeout 120 node .github/scripts/nightly-failure-message.mjs verify-e2e.yml 'release-sdk.yml=Verify end-to-end tests / Run verify end-to-end tests on iOS')"; then
+            message="$message"$'\n'"$since"
+          else
+            echo "::warning::Could not list the pull requests merged since the last passing run; the message has only its first line"
+          fi
+
+          PAYLOAD=$(jq -n --arg text "$message" '{text: $text, unfurl_links: false, unfurl_media: false}')
+
+          curl --fail-with-body \
+            --connect-timeout 10 \
+            --max-time 30 \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-max-time 60 \
+            --retry-all-errors \
+            --request POST \
+            --header "Content-type: application/json" \
+            --data "$PAYLOAD" \
+            "$SLACK_MOBILE_TEAM_ALERTS_WEBHOOK_URL"

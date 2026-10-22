@@ -243,16 +243,8 @@ public final class Clerk {
 
   private static func makeUnconfiguredRuntime(clerk: Clerk) -> ClerkRuntime {
     let state = ClerkRuntimeState()
-    do {
-      let dependencies = try DependencyContainer(
-        publishableKey: "",
-        options: .init(),
-        runtimeScope: ClerkRuntimeScope(state: state)
-      )
-      return ClerkRuntime(clerk: clerk, state: state, dependencies: dependencies)
-    } catch {
-      fatalError("Failed to create the unconfigured dependency container: \(error.localizedDescription)")
-    }
+    let dependencies = DependencyContainer.unconfigured(runtimeScope: ClerkRuntimeScope(state: state))
+    return ClerkRuntime(clerk: clerk, state: state, dependencies: dependencies)
   }
 }
 

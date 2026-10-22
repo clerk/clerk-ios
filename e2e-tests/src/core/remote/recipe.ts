@@ -4,10 +4,12 @@ import type { RecipeAnswers, RecipeRequest, SessionDevice, SessionDeviceFactory,
 
 export function answer(device: SessionDevice, request: RecipeRequest): RecipeAnswers[RecipeRequest['op']] {
   switch (request.op) {
+    case 'inputs':
+      return device.inputs;
     case 'build':
       return device.build(request.work);
     case 'record':
-      return { start: device.record.start(request.file), stop: device.record.stop?.(request.file) ?? null, collect: device.record.collect?.(request.file) ?? [] };
+      return { start: device.record.start(request.file), startedWhen: device.record.startedWhen ?? null, stop: device.record.stop?.(request.file) ?? null, collect: device.record.collect?.(request.file) ?? [] };
     case 'logs':
       return device.logs(new Date(request.since), request.predicate);
   }

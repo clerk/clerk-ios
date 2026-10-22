@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       run_integration_tests:
-        description: Run integration tests as part of shared checks
+        description: Run the integration tests and the macOS smoke build as part of shared checks
         required: false
         type: boolean
         default: false
@@ -38,6 +38,21 @@ on:
         required: false
         type: string
         default: Manual CI
+      build_platforms:
+        description: JSON array of the platforms to build ClerkKit for
+        required: false
+        type: string
+        default: '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]'
+      e2e_runner_tests_base:
+        description: Base branch of the PR; the E2E runner tests skip when no file they read changed since it
+        required: false
+        type: string
+        default: ""
+      macos_runner:
+        description: Runner label of the macOS jobs
+        required: false
+        type: string
+        default: macos-26
     secrets:
       CLERK_TEST_KEYS_JSON:
         required: false
@@ -62,6 +77,7 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
+          BUILD_PLATFORMS: ${{ inputs.build_platforms }}
         run: |
           set -euo pipefail
 
@@ -74,14 +90,11 @@ jobs:
             "$CHECK_RUN_NAME_PREFIX / Check formatting and linting"
             "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS"
             "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS"
-            "$CHECK_RUN_NAME_PREFIX / Build iOS"
-            "$CHECK_RUN_NAME_PREFIX / Build macOS"
-            "$CHECK_RUN_NAME_PREFIX / Build macCatalyst"
-            "$CHECK_RUN_NAME_PREFIX / Build watchOS"
-            "$CHECK_RUN_NAME_PREFIX / Build tvOS"
-            "$CHECK_RUN_NAME_PREFIX / Build visionOS"
             "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests"
           )
+          while IFS= read -r platform; do
+            check_run_names+=("$CHECK_RUN_NAME_PREFIX / Build $platform")
+          done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")
 
           check_runs_json="$(jq -cn '{}')"
           started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
@@ -103,7 +116,7 @@ jobs:
 
   format-and-lint:
     name: Check formatting and linting
-    runs-on: macos-26
+    runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 20
     steps:
       - name: Checkout repository
@@ -138,8 +151,7 @@ jobs:
 
   test:
     name: Run ClerkKit tests on macOS
-    needs: format-and-lint
-    runs-on: macos-26
+    runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 30
     steps:
       - name: Checkout repository
@@ -154,18 +166,37 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Cache Swift dependencies
-        uses: actions/cache@v4
+      - name: Name the SwiftPM build cache
+        id: build-cache
+        run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the SwiftPM build of the last main push
+        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        uses: actions/cache/restore@v4
         with:
           path: .build
-          key: swiftpm-macOS-${{ hashFiles('Package.resolved') }}
-          restore-keys: swiftpm-macOS-
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
+          restore-keys: ${{ steps.build-cache.outputs.prefix }}
+
+      - name: Give each file a modification time from its content
+        run: |
+          set -euo pipefail
+          git ls-files -s -z | perl -0ne '
+            my ($mode, $oid, $path) = /\A(\d+) ([0-9a-f]+) \d\t(.*)\0\z/s or die "unexpected ls-files entry: $_";
+            next if $mode eq "120000" || $mode eq "160000";
+            my $time = 946684800 + hex(substr($oid, 0, 7));
+            utime($time, $time, $path) or die "$path: $!";
+          '
 
       - name: Run unit tests
         run: make test
 
-      - name: Run macOS smoke build
-        run: make smoke-macos
+      - name: Save the SwiftPM build for later runs
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: .build
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
 
       - name: Setup integration test keys
         if: inputs.run_integration_tests
@@ -195,10 +226,13 @@ jobs:
           rm -f .keys.json
           echo "✅ Cleaned up .keys.json"
 
+      - name: Run macOS smoke build
+        if: ${{ !cancelled() && inputs.run_integration_tests }}
+        run: make smoke-macos
+
   test-ui:
     name: Run ClerkKitUI tests on iOS
-    needs: format-and-lint
-    runs-on: macos-26
+    runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     steps:
       - name: Checkout repository
@@ -213,24 +247,55 @@ jobs:
           sw_vers
           xcodebuild -version
 
-      - name: Cache Swift dependencies
-        uses: actions/cache@v4
+      - name: Name the Xcode build cache
+        id: build-cache
+        run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
+
+      # PR CI runs on comment and status events, which read and write main's cache scope. So only a push
+      # saves the build, and only PR CI restores one. A push, the nightly and the release build from scratch,
+      # so they never build on what PR CI saved, and they resolve the newest dependency releases.
+      - name: Restore the Xcode build of the last main push
+        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        uses: actions/cache/restore@v4
         with:
-          path: .build
-          key: swiftpm-ios-${{ hashFiles('Package.resolved') }}
-          restore-keys: swiftpm-ios-
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
+          restore-keys: ${{ steps.build-cache.outputs.prefix }}
+
+      # A restored cache gives every file a new inode, which XCBuild otherwise treats as a change.
+      - name: Let Xcode ignore the inodes of a restored build
+        run: defaults write com.apple.dt.XCBuild IgnoreFileSystemDeviceInodeChanges -bool YES
+
+      # Xcode rebuilds a Swift file when its modification time differs from the one it recorded, and a
+      # checkout stamps every file with the current time. A time derived from the content keeps unchanged
+      # files up to date and still rebuilds changed ones.
+      - name: Give each file a modification time from its content
+        run: |
+          set -euo pipefail
+          git ls-files -s -z | perl -0ne '
+            my ($mode, $oid, $path) = /\A(\d+) ([0-9a-f]+) \d\t(.*)\0\z/s or die "unexpected ls-files entry: $_";
+            next if $mode eq "120000" || $mode eq "160000";
+            my $time = 946684800 + hex(substr($oid, 0, 7));
+            utime($time, $time, $path) or die "$path: $!";
+          '
 
       - name: Run ClerkKitUI tests
         run: make test-ui
 
+      - name: Save the Xcode build for later runs
+        if: github.event_name == 'push'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ steps.build-cache.outputs.prefix }}${{ github.sha }}
+
   build:
     name: Build ${{ matrix.platform }}
-    needs: [test, test-ui]
-    runs-on: macos-26
+    runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     strategy:
       matrix:
-        platform: [iOS, macOS, macCatalyst, watchOS, tvOS, visionOS]
+        platform: ${{ fromJSON(inputs.build_platforms) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -263,6 +328,12 @@ jobs:
     name: Run E2E runner tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      WATCHED: >-
+        e2e-tests
+        .github/scripts
+        .github/workflows
+        Examples/Quickstart/Quickstart.xcodeproj/project.pbxproj
     defaults:
       run:
         working-directory: e2e-tests
@@ -272,24 +343,50 @@ jobs:
         with:
           repository: ${{ inputs.checkout_repository || github.repository }}
           ref: ${{ inputs.checkout_ref || github.sha }}
+          fetch-depth: ${{ inputs.e2e_runner_tests_base == '' && 1 || 0 }}
           persist-credentials: false
 
+      - name: Check whether a file the tests read changed
+        id: changed
+        working-directory: .
+        env:
+          BASE: ${{ inputs.e2e_runner_tests_base }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$BASE" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git fetch --no-tags --quiet "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "$BASE"
+          if git diff --quiet "$(git merge-base FETCH_HEAD HEAD)" HEAD -- $WATCHED; then
+            echo "::notice::No file the E2E runner tests read changed since $BASE, so they are skipped."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Node
+        if: steps.changed.outputs.run == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 24
 
       - name: Install dependencies
+        if: steps.changed.outputs.run == 'true'
         run: npm ci
 
       - name: Run unit tests
+        if: steps.changed.outputs.run == 'true'
         run: npm test
 
       - name: Typecheck
+        if: steps.changed.outputs.run == 'true'
         run: npm run typecheck
 
-      - name: Run the verify-attach script tests
-        run: node --test ../.github/scripts/verify-attach.test.mjs
+      - name: Run the tests of the scripts in .github/scripts
+        if: steps.changed.outputs.run == 'true'
+        run: node --test ../.github/scripts/*.test.mjs
 
   report-manual-ci-check-runs:
     name: Report manual CI check runs
@@ -312,6 +409,7 @@ jobs:
           CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUNS_JSON: ${{ needs.prepare-manual-ci-check-runs.outputs.check_runs_json }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
+          BUILD_PLATFORMS: ${{ inputs.build_platforms }}
         run: |
           set -euo pipefail
 
@@ -378,11 +476,8 @@ jobs:
           update_check_run "$CHECK_RUN_NAME_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
-
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build iOS" "$(job_result "Build iOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macOS" "$(job_result "Build macOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build macCatalyst" "$(job_result "Build macCatalyst")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build watchOS" "$(job_result "Build watchOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build tvOS" "$(job_result "Build tvOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Build visionOS" "$(job_result "Build visionOS")"
           update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests" "$(job_result "Run E2E runner tests")"
+
+          while IFS= read -r platform; do
+            update_check_run "$CHECK_RUN_NAME_PREFIX / Build $platform" "$(job_result "Build $platform")"
+          done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")

@@ -12,7 +12,7 @@ On success the object is `{ "ok": true, "verb": "<verb>", ... }`. The remaining 
 
 On failure the object is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`.
 
-Each check of `doctor --json` has `id`, `ok`, `detail`, and a `fix` when there is one. A warning has `ok: true` and `state: "warning"`. A check that did not run has `ok: true` and `state: "not-run"`.
+`doctor --json` prints its report even when a check fails, with `ok: false` and no `error`. Each check has `id`, `ok`, `detail`, and a `fix` when there is one. A warning has `ok: true` and `state: "warning"`. A check that did not run has `ok: true` and `state: "not-run"`.
 
 `attach --json` prints one of two shapes. With `via: "gh"`, this machine edited the description, and the keys are `prUrl`, `posted`, and `alreadyPosted`. With `via: "runner"`, the evidence was handed to the session's runner, and the keys are `pr`, `handedOff`, `because`, `sessionRun`, and `sessionRunUrl`.
 
@@ -38,10 +38,10 @@ Each check of `doctor --json` has `id`, `ok`, `detail`, and a `fix` when there i
 | `POOL_FULL` | All four `verify-ios-<n>` simulators on this Mac are in use |
 | `DEVICE_BUSY` | Another command in this worktree is driving the device |
 | `LEASE_LOST` | The leased device is gone |
-| `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that the app sources have uncommitted changes or that GitHub does not have HEAD |
+| `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that GitHub does not have HEAD, or that the uncommitted changes to the app sources do not apply to it, change a file outside the app sources, or are larger than 16 MiB. A session on `main` refuses uncommitted changes |
 | `KEYS_MISSING` | No Platform API credential works on this machine, or `AI_GATEWAY_API_KEY_FILE` names a file that is missing, empty, or readable by other users |
 | `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs |
-| `NOT_TEST_IDENTITY` | A spec used an email, phone number, or user that the run did not create |
+| `NOT_TEST_IDENTITY` | Reserved. No command raises it. A run whose `app.log` names a user that the run did not create fails `attach` with `EVIDENCE_UNSAFE` |
 | `NO_SPECS` | The selection matched no spec, or no selected spec ran |
 | `E2E_CRASHED` | e2e exited without a readable report. Read `e2e.log` in the run directory |
 | `EVIDENCE_UNSAFE` | The run cannot be attached, or a path is not safe to delete |

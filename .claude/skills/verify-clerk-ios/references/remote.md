@@ -1,6 +1,6 @@
 # Remote devices
 
-A machine that is not a Mac cannot run an iOS simulator. There the CLI starts a job on a GitHub Actions runner through `.github/workflows/verify-remote.yml`. The job boots a simulator, builds E2EHost, and opens a tunnel, and the CLI drives the simulator through that tunnel. The job is called a session. The runner and the tunnel never get the Platform API key or the instance's secret key.
+A machine that is not a Mac cannot run an iOS simulator. There the CLI starts a job on a GitHub Actions runner through `.github/workflows/verify-remote.yml`. The job puts E2EHost on a simulator and opens a tunnel, and the CLI drives the simulator through that tunnel. The job is called a session. The runner and the tunnel never get the Platform API key or the instance's secret key.
 
 ## What the machine needs
 
@@ -10,6 +10,7 @@ A machine that is not a Mac cannot run an iOS simulator. There the CLI starts a 
 - Permission to `git push` your own branch, if you want to verify a commit that you make on this machine. Without it you can still verify commits that GitHub already has.
 - Network access to `api.github.com`, `*.trycloudflare.com`, `api.clerk.com`, and `*.clerk.accounts.dev`.
 - A Clerk Platform API credential. In a cloud environment, add an API credential for `api.clerk.com` with path prefix `/v1/platform/`. The environment then adds the key after a request leaves the machine, and no key is ever in the session.
+- ffmpeg on `PATH`, which `attach --video` uses to cut the video to the part that `host.evidence` marks. Without it, `attach` posts the whole video and says that ffmpeg is not installed.
 
 `doctor` checks each of these and prints the fix. `doctor --live` then proves the path end to end, as `SKILL.md` describes under Doctor.
 
@@ -31,17 +32,25 @@ Without it, `doctor` reports `gh-attach` with its fix, and `attach` hands the ev
 
 ## What a session builds
 
-A session builds a commit that GitHub has, never your working tree. `up` and `run` fail with `BUILD_FAILED` when the app sources have uncommitted changes or when GitHub does not have HEAD, and the fix is to commit and push. The app sources are the build inputs that `SKILL.md` lists under Launch.
+A session builds a commit that GitHub has. `up` and `run` fail with `BUILD_FAILED` when GitHub does not have HEAD, and the fix is to push. The app sources are the build inputs that `SKILL.md` lists under Launch.
+
+When the app sources differ from HEAD, `up` and `run` send the difference as one patch: `git diff --binary HEAD` of the app sources, with new files that git does not ignore. The session resets its checkout to the commit, applies the patch, builds, and installs the app on the same simulator. Edits to a tracked file are sent even when the file matches an ignore rule. When the patch does not apply, the build fails with `BUILD_FAILED` and says so; commit and push the changes, then run again. The patch is at most 16 MiB. The session refuses a patch that changes a file outside the app sources. It also refuses any patch when the session runs on `main`, so work on a branch to send uncommitted changes.
+
+A run on such a build is not tied to a commit. Its `run.json` names the patch under `remote.builtPatch`, and `attach` refuses it, as the run and as a before run. Commit and push the change, `run` again, and attach that run. After a session builds a patch, it stores nothing for later sessions: no app, no XCTest runner, and no Swift packages.
+
+While the session builds, `up` and `run` print each new line of the build output, after `build   |`.
 
 `up` starts the session's run on your branch as GitHub has it. The run builds only the commit it was started on, or a later commit of that branch. When HEAD is not on that branch on GitHub, or is behind it, the run fails at the step `Read the request` and no session starts. Push or pull, then run `up` again. A detached HEAD has no branch, so `doctor` and `up` fail until you switch to a branch that GitHub has.
 
-After you push an edit to the app, `run` asks the same session to build the new commit. The session builds it only when GitHub shows it as a later commit of the branch the session was started on. After a rebase or an amend, the pushed commit is not a later commit of that branch, and the build fails with `BUILD_FAILED`. Run `down`, then `up`. The session keeps its build directory, so a small edit rebuilds in seconds. Specs run from your working tree, so an edit to a spec needs no commit. A session that already holds the build for your app sources is reused as it is.
+After you push an edit to the app, `run` asks the same session to build the new commit, with no patch. The session builds it only when GitHub shows it as a later commit of the branch the session was started on. After a rebase or an amend, the pushed commit is not a later commit of that branch, and the build fails with `BUILD_FAILED`. Run `down`, then `up`. The session keeps its build directory, so a small edit builds incrementally. Specs run from your working tree, so an edit to a spec needs no commit. A session that already holds the build for your app sources is reused as it is.
+
+A session builds nothing when CI already built the app. It names the app by a key made from the app sources at the commit, the package versions that Xcode resolves for it, the Xcode and simulator SDK builds, and the build command. When an app with that key is stored, the session installs it. `verify-app-cache.yml` stores one for each push to `main` that changes the app sources, and once a week when none is stored for the current Xcode, and a session stores the app it builds. A run on a branch finds what that branch stored and what `main` stored, and nothing of other branches. A stored app that nothing reads for 7 days is gone. Every session restores the build state that `main` stored, so the first build of a change is incremental, also in a session that installed a stored app. A build is still slow for several minutes after the ready line, while the simulator finishes its first boot. When no app is stored, the session builds and only then boots the simulator, because on this runner a build is three to four times slower during the first boot of a simulator. A one-file change then builds in under a minute. The `build` line of `up` gives the seconds of the install or of the build and install. The job log has one line, `verify-remote stages`, with the time of each stage.
 
 ## Runners and cost
 
-The default runner label is `xcode-27`, a GitHub-hosted Mac that costs nothing for a public repository. It has Xcode 27 and an `iPhone Air` simulator on iOS 27.0, and it is slow. Plan for 15 to 20 minutes before the first spec runs. The session's 60 minutes start when the runner starts. The workflow names the iOS runtime it uses, `IOS_RUNTIME` in `verify-remote.yml`. On a runner without that runtime, the session fails at `Pick the simulator`, and the step lists the iOS runtimes the runner has.
+The default runner label is `xcode-27`, a GitHub-hosted Mac that costs nothing for a public repository. It has Xcode 27 and an `iPhone Air` simulator on iOS 27.0, and it is slow. Plan for 7 to 10 minutes before the first spec runs. The session's 60 minutes start when the runner starts. The workflow names the iOS runtime it uses, `IOS_RUNTIME` in `verify-remote.yml`. On a runner without that runtime, the session fails at `Pick the simulator`, and the step lists the iOS runtimes the runner has.
 
-`--runner blacksmith-6vcpu-macos-27` uses a Blacksmith runner instead, which is ready in about three minutes and is billed by the minute. `verify-remote.yml` starts a session only on `xcode-27`, `ubuntu-latest` (where the session of `doctor --live` runs), or `blacksmith-6vcpu-macos-27`, and fails its first job for any other label. To add a label, add it to the `Check the runner label` step there; it needs a Mac with Xcode and the iOS runtime that `IOS_RUNTIME` names. A held session keeps its label, and `--runner` with another label fails until `down`. The CLI ends a session that is not ready 40 minutes after it asked for the build, and `up` then fails with `NOT_READY`.
+`verify-remote.yml` starts a session only on `xcode-27` or `ubuntu-latest` (where the session of `doctor --live` runs), and fails its first job for any other label. To add a label, add it to the `Check the runner label` step there; it needs a Mac with Xcode and the iOS runtime that `IOS_RUNTIME` names. A held session keeps its label, and `--runner` with another label fails until `down`. The CLI ends a session that is not ready 40 minutes after it asked for the build, and `up` then fails with `NOT_READY`.
 
 If a run publishes no tunnel within 20 minutes, `up` fails with `NOT_READY`, says whether the run is still queued, and gives its URL. While a run has not published its tunnel, the CLI prints a `wait` line that names the label it is waiting for and for how long:
 
@@ -109,10 +118,10 @@ If the description has no evidence a few minutes after `down`, read the newest r
 
 The CLI goes through `HTTPS_PROXY` when the direct path to GitHub does not work, and `doctor` prints the choice and the reason in `remote-env`.
 
-A host that the environment blocks shows in `doctor` as `blocked:` and what answered. The fix is to add the host to the allowed domains of the environment that the CLI runs in.
+The `tunnel-egress` and `clerk-egress` checks in `doctor` show a host that the environment blocks as `blocked:` and what answered, or as `no response from <host>`. When `api.github.com` does not answer, the `github-rest` check shows `api.github.com did not answer`. For the two egress checks, the fix is to add the host to the allowed domains of the environment that the CLI runs in. For `github-rest`, which reports any failed request this way, timeouts included, first check that `api.github.com` is an allowed domain; if it already is, look at the network or the proxy; the check's fix line also says what GitHub access a cloud session needs.
 
 ## GitHub access
 
 A session uses GitHub in two ways. REST starts, reads, and ends sessions. `git push` gets a commit that you make to GitHub, so that the session can build it.
 
-Claude Code cloud sessions are one example of a sandbox where the two differ. REST there uses the session user's own access. `git push` needs the Claude GitHub App installed on the repository, and a 403 on push means that it is not. The sandbox's `GH_TOKEN` is a placeholder that only the sandbox's proxy turns into a real credential, which is the case above where GitHub rejects the token on a direct connection.
+Claude Code cloud sessions are one example of a sandbox where the two differ. REST there can use a different credential from `git push`, so REST can work while a push is refused. A 403 on push means that this machine's GitHub credential may not push to the repository. In a cloud sandbox that credential belongs to the sandbox's GitHub integration, and an administrator of the organization gives the integration access to the repository. The sandbox's `GH_TOKEN` is a placeholder that only the sandbox's proxy turns into a real credential, which is the case above where GitHub rejects the token on a direct connection.

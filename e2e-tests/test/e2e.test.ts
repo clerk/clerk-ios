@@ -1,6 +1,6 @@
 import '../testing/git-env.ts';
 import assert from 'node:assert/strict';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -34,11 +34,11 @@ describe('resolveSpecs', () => {
 
 describe('planE2E', () => {
   it('passes selection flags through and points output inside the run', () => {
-    const plan = planE2E(SAMPLE_INPUTS, [{ kind: 'committed', path: 'specs/features/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, grep: 'x', video: true, retries: 1, githubReport: false, waitSeconds: 0 }, '/package', e2eOutputDir('/package/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
+    const plan = planE2E(SAMPLE_INPUTS, [{ kind: 'committed', path: 'specs/features/a/b.e2e.ts', feature: null }], { verb: 'run', selection: { all: true }, grep: 'x', video: true, retries: 1, maxFailures: 5, githubReport: false, waitSeconds: 0 }, '/package', e2eOutputDir('/package/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 0));
     assert.deepEqual(plan.args, [
       'run', 'specs/features/a/b.e2e.ts', '--config', 'e2e.config.ts', '--target', 'ios',
       '--output', '.verify/runs/r20261002-141210-7c1e/e2e', '--reporter', 'list,markdown,junit', '--retries', '1',
-      '--grep', 'x', '--pass-with-no-tests',
+      '--grep', 'x', '--max-failures', '5', '--pass-with-no-tests',
     ]);
     assert.deepEqual(plan.env, {
       CLERK_E2E_PLATFORM: 'ios',
@@ -48,12 +48,14 @@ describe('planE2E', () => {
       CLERK_E2E_API_URL: 'http://127.0.0.1:4010/v1',
       CLERK_E2E_API_TOKEN_FILE: '/package/.verify/scratch/r/broker-token',
       CLERK_E2E_RUN_ID: 'r20261002-141210-7c1e',
+      CLERK_E2E_EVIDENCE_MARKS: '/package/.verify/runs/r/evidence-marks.jsonl',
       AGENT_DEVICE_STATE_DIR: '/package/.verify/agent-device',
       E2E_TELEMETRY_DISABLED: '1',
     });
     const later = planE2E(SAMPLE_INPUTS, [], { verb: 'run', selection: { all: true }, video: true, retries: 0, githubReport: false, waitSeconds: 0 }, '/package', e2eOutputDir('/package/.verify/runs/r20261002-141210-7c1e' as EvidencePath, 2));
     assert.equal(later.args[later.args.indexOf('--output') + 1], '.verify/runs/r20261002-141210-7c1e/e2e-3', 'a later group of the run writes beside the first');
     assert.equal(later.args[later.args.indexOf('--retries') + 1], '0', 'e2e retries once by default when CI is set, so the run always says how many it wants');
+    assert.equal(later.args.includes('--max-failures'), false, 'a run that names no limit runs every test');
     assert.equal(later.args.includes('--pass-with-no-tests'), true, 'every invocation is one group of a run, and a group with nothing left to run must not fail it');
   });
 });
@@ -148,18 +150,62 @@ describe('parseE2EReport', () => {
     assert.equal(results[4]!.failurePage, join(dir, 'failures', 'specs_explored_probe-fails-cccccccc.md'));
   });
 
+  it('reports a test that --max-failures stopped before it started as failed and not run, never as passed or skipped', () => {
+    const test = (id: string, file: string, rest: object) => ({ id, kind: 'test', titlePath: [id], file, platform: 'ios', tags: [], ...rest });
+    const stopped = {
+      schemaVersion: 'report-1',
+      run: {
+        results: [
+          test('aaaaaaaa11', 'specs/features/auth-start/opens.e2e.ts', { status: 'failed', attempts: [{ status: 'failed', durationMs: 60_000, error: { message: 'the app did not show the "Sign in" button on the home' } }] }),
+          test('bbbbbbbb22', 'specs/features/sign-up/complete.e2e.ts', { status: 'skipped', skip: { cause: 'failure-limit', reason: 'run stopped after 1 failure (--max-failures 1)' }, attempts: [] }),
+        ],
+      },
+    };
+    const specs = ['specs/features/auth-start/opens.e2e.ts', 'specs/features/sign-up/complete.e2e.ts'].map((path): SpecRef => ({ kind: 'committed', path, feature: null }));
+    const results = parseE2EReport(stopped, specs, mkdtempSync(join(tmpdir(), 'verify-report-')) as EvidencePath);
+    assert.deepEqual(
+      results.map((r) => ({ status: r.status, attempts: r.attempts, error: r.error, skipReason: r.skipReason })),
+      [
+        { status: 'failed', attempts: 1, error: 'the app did not show the "Sign in" button on the home', skipReason: null },
+        { status: 'failed', attempts: 0, error: 'not run: failure-limit run stopped after 1 failure (--max-failures 1)', skipReason: null },
+      ],
+    );
+  });
+
   it('refuses a report of another schema', () => {
     assert.throws(() => parseE2EReport({ schemaVersion: 'report-2', run: { results: [] } }, [], '/x' as EvidencePath), { code: 'E2E_CRASHED' });
   });
 
-  it('copies app.screenshot artifacts under their labels, a later group replacing an earlier one with the same label', () => {
+  it('copies app.screenshot artifacts under their labels with the test that took each, a later group replacing an earlier one with the same label', () => {
     const dir = mkdtempSync(join(tmpdir(), 'verify-shots-')) as EvidencePath;
     for (const [index, bytes] of [[0, 'first'], [1, 'second']] as const) {
       mkdirSync(join(e2eOutputDir(dir, index), 'artifacts', 'ios/x/attempt-0/screenshots'), { recursive: true });
       writeFileSync(join(e2eOutputDir(dir, index), 'artifacts', 'ios/x/attempt-0/screenshots/001-auth.png'), bytes);
-      assert.deepEqual(collectScreenshots(report, dir, e2eOutputDir(dir, index)), [{ label: 'auth', path: join(dir, 'screenshots', 'auth.png') }]);
+      assert.deepEqual(collectScreenshots(report, dir, e2eOutputDir(dir, index)), [{ label: 'auth', path: join(dir, 'screenshots', 'auth.png'), test: { spec: 'specs/features/auth-start/opens.e2e.ts', title: 'opens' } }]);
       assert.equal(readFileSync(join(dir, 'screenshots', 'auth.png'), 'utf8'), bytes);
     }
+  });
+});
+
+describe('the spec files', () => {
+  it('all sit under specs/features/ or specs/explored/, because run --all skips a spec anywhere else and says nothing', () => {
+    const specs = join(import.meta.dirname, '..', 'specs');
+    const stray = readdirSync(specs, { recursive: true, encoding: 'utf8' }).filter((path) => path.endsWith('.e2e.ts') && !/^(features|explored)\//.test(path));
+    assert.deepEqual(stray, [], `run --all would skip specs/${stray.join(' and specs/')}: move it under specs/features/<feature>/ or specs/explored/`);
+  });
+});
+
+describe('the screenshot labels of the committed specs', () => {
+  it('are each used once, because a run keeps one screenshot for a label', () => {
+    const features = join(import.meta.dirname, '..', 'specs', 'features');
+    const takenIn = new Map<string, string[]>();
+    for (const file of readdirSync(features, { recursive: true, encoding: 'utf8' }).filter((path) => path.endsWith('.e2e.ts'))) {
+      const source = readFileSync(join(features, file), 'utf8');
+      const labels = [...source.matchAll(/\.screenshot\('([^']+)'\)/g)].map((match) => match[1]!);
+      assert.equal(labels.length, source.split('.screenshot(').length - 1, `${file} takes a screenshot whose label is not a plain string`);
+      for (const label of labels) takenIn.set(label, [...(takenIn.get(label) ?? []), file]);
+    }
+    assert.deepEqual([...takenIn].filter(([, files]) => files.length > 1), []);
   });
 });
 

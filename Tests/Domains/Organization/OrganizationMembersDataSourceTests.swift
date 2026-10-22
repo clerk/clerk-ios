@@ -9,7 +9,6 @@ struct OrganizationMembersDataSourceTests {
   private let transport = FakeTransport.mockDefaults()
   private let gate = ResponseGate()
   private let memberRequests = RequestLog()
-  private let invitationRequests = RequestLog()
 
   init() {
     configureClerkForTesting()
@@ -21,7 +20,6 @@ struct OrganizationMembersDataSourceTests {
 
   @Test
   func newerSearchWinsWhenAnOlderOneFinishesLast() async throws {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { query, _ in
       if query == "john" {
         await gate.wait("john")
@@ -29,22 +27,21 @@ struct OrganizationMembersDataSourceTests {
       }
       return page(ids: ["mem_1"], totalCount: 1)
     }
-    await loadMembers(dataSource)
+    let dataSource = await loadedMembers()
 
-    dataSource.searchMembers(organization: .mock, query: "john")
+    dataSource.searchMembers(query: "john")
     try await waitUntil { memberRequests.queries.count == 2 }
-    dataSource.searchMembers(organization: .mock, query: "")
+    dataSource.searchMembers(query: "")
     await dataSource.members.refresh()
     gate.open("john")
     try await waitUntil { memberRequests.queries.count == 3 }
 
-    #expect(dataSource.membershipSearchQuery == "")
+    #expect(dataSource.members.query == "")
     #expect(dataSource.members.pager.items.map(\.id) == ["mem_1"])
   }
 
   @Test
   func cancelledRefreshDuringASearchKeepsTheSearch() async throws {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { query, _ in
       if query == "sam" {
         await gate.wait("sam")
@@ -52,11 +49,11 @@ struct OrganizationMembersDataSourceTests {
       }
       return page(ids: ["mem_1", "mem_2"], totalCount: 2)
     }
-    await loadMembers(dataSource)
+    let dataSource = await loadedMembers()
 
-    dataSource.searchMembers(organization: .mock, query: "sam")
+    dataSource.searchMembers(query: "sam")
     try await waitUntil { memberRequests.queries.count == 2 }
-    let refresh = Task { await dataSource.refreshMembers(organization: .mock) }
+    let refresh = Task { await dataSource.refreshMembers() }
     await Task.yield()
     refresh.cancel()
     gate.open("sam")
@@ -64,13 +61,12 @@ struct OrganizationMembersDataSourceTests {
     try await waitUntil { !dataSource.members.isLoading }
 
     #expect(memberRequests.queries == [nil, "sam"])
-    #expect(dataSource.membershipSearchQuery == "sam")
+    #expect(dataSource.members.query == "sam")
     #expect(dataSource.members.pager.items.map(\.id) == ["mem_sam"])
   }
 
   @Test
   func repeatingTheLatestSearchOnlyReloadsAfterItFailed() async {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     let fails = LockedFlag(true)
     stubMemberships { query, _ in
       if query == "john", fails.take() {
@@ -78,15 +74,15 @@ struct OrganizationMembersDataSourceTests {
       }
       return page(ids: query == "john" ? ["mem_john"] : ["mem_1"], totalCount: 1)
     }
-    await loadMembers(dataSource)
+    let dataSource = await loadedMembers()
 
-    dataSource.searchMembers(organization: .mock, query: "john")
+    dataSource.searchMembers(query: "john")
     await dataSource.members.refresh()
     #expect(dataSource.error != nil)
 
-    dataSource.searchMembers(organization: .mock, query: "john")
+    dataSource.searchMembers(query: "john")
     await dataSource.members.refresh()
-    dataSource.searchMembers(organization: .mock, query: "john")
+    dataSource.searchMembers(query: "john")
 
     #expect(memberRequests.queries == [nil, "john", "john"])
     #expect(dataSource.members.pager.items.map(\.id) == ["mem_john"])
@@ -94,16 +90,15 @@ struct OrganizationMembersDataSourceTests {
 
   @Test
   func failedSearchDoesNotPageItsQueryIntoTheShownRows() async {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { query, _ in
       if query == "john" {
         throw URLError(.badServerResponse)
       }
       return page(ids: ["mem_1", "mem_2"], totalCount: 4)
     }
-    await loadMembers(dataSource)
+    let dataSource = await loadedMembers()
 
-    dataSource.searchMembers(organization: .mock, query: "john")
+    dataSource.searchMembers(query: "john")
     await dataSource.members.refresh()
     await dataSource.members.loadMore()?.value
 
@@ -113,12 +108,11 @@ struct OrganizationMembersDataSourceTests {
 
   @Test
   func loadMoreUsesTheSearchedQuery() async {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { _, offset in
       offset == 0 ? page(ids: ["mem_1", "mem_2"], totalCount: 4) : page(ids: ["mem_3", "mem_4"], totalCount: 4)
     }
-    await loadMembers(dataSource)
-    dataSource.searchMembers(organization: .mock, query: "john")
+    let dataSource = await loadedMembers()
+    dataSource.searchMembers(query: "john")
     await dataSource.members.refresh()
 
     await dataSource.members.loadMore()?.value
@@ -128,29 +122,8 @@ struct OrganizationMembersDataSourceTests {
     #expect(dataSource.members.pager.items.map(\.id) == ["mem_1", "mem_2", "mem_3", "mem_4"])
   }
 
-  @Test
-  func cancellingTheInitialLoadStillLoadsTheLists() async throws {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
-    transport.stub(OrganizationAPI.getRoles(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0)) { [gate] _ in
-      await gate.wait("roles")
-      return ClientResponse(response: ClerkPaginatedResponse(data: [RoleResource.mock], totalCount: 1), client: nil)
-    }
-    stubMemberships { _, _ in page(ids: ["mem_1"], totalCount: 1) }
-
-    let initialLoad = Task { await loadMembers(dataSource) }
-    try await waitUntil { dataSource.members.isLoading }
-    initialLoad.cancel()
-    gate.open("roles")
-    await initialLoad.value
-    try await waitUntil { !dataSource.members.isLoading }
-
-    #expect(dataSource.members.pager.items.map(\.id) == ["mem_1"])
-  }
-
   @Test(arguments: [false, true])
-  func loadingAnOrganizationAgainDropsItsOldPages(loadMoreFails: Bool) async {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
-    let isFirstLoad = LockedFlag(true)
+  func switchingOrganizationsDropsTheOldPages(loadMoreFails: Bool) async throws {
     stubMemberships { _, offset in
       if offset > 0 {
         await gate.wait("oldLoadMore")
@@ -159,25 +132,29 @@ struct OrganizationMembersDataSourceTests {
         }
         return page(ids: ["mem_3", "mem_4"], totalCount: 4)
       }
-      return isFirstLoad.take() ? page(ids: ["mem_1", "mem_2"], totalCount: 4) : page(ids: ["new_1"], totalCount: 1)
+      return page(ids: ["mem_1", "mem_2"], totalCount: 4)
     }
-    await loadMembers(dataSource)
-    let oldLoadMore = dataSource.members.loadMore()
+    let store = makeStore()
+    store.bind(scope("org_a", access: [.readMemberships]))
+    let first = try #require(store.content(for: scope("org_a", access: [.readMemberships])))
+    await first.members.refresh()
+    let oldLoadMore = first.members.loadMore()
 
-    await loadMembers(dataSource)
+    store.bind(scope("org_b", access: [.readMemberships]))
+    let second = try #require(store.content(for: scope("org_b", access: [.readMemberships])))
+    await second.members.refresh()
     gate.open("oldLoadMore")
     await oldLoadMore?.value
 
-    #expect(dataSource.members.pager.items.map(\.id) == ["new_1"])
-    #expect(!dataSource.members.pager.isLoadingMore)
-    #expect(dataSource.error == nil)
+    #expect(second.members.pager.items.map(\.id) == ["mem_1", "mem_2"])
+    #expect(!second.members.pager.isLoadingMore)
+    #expect(second.error == nil)
   }
 
   @Test(arguments: [false, true])
   func revokingAnInvitationDropsALoadMoreInFlight(loadMoreFails: Bool) async {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     let isFirstLoad = LockedFlag(true)
-    stubInvitations { offset in
+    stubInvitations { _, offset in
       if offset > 0 {
         await gate.wait("loadMore")
         if loadMoreFails {
@@ -187,13 +164,13 @@ struct OrganizationMembersDataSourceTests {
       }
       return isFirstLoad.take() ? invitationPage(ids: ["inv_1", "inv_2"], totalCount: 4) : invitationPage(ids: ["inv_2"], totalCount: 1)
     }
-    transport.stub(OrganizationAPI.revokeInvitation(organizationId: FakeTransport.anyPathSegment, invitationId: FakeTransport.anyPathSegment)) { _ in
-      ClientResponse(response: OrganizationInvitation.mock, client: nil)
-    }
-    await dataSource.loadInvitations(organization: .mock)
+    stubRevoke()
+    let dataSource = OrganizationMembersDataSource(scope: scope("org_a", access: [.manageMemberships]), pageSize: 2)
+    dataSource.start()
+    await dataSource.invitations.refresh()
     let loadMore = dataSource.invitations.loadMore()
 
-    await dataSource.revokeInvitation(dataSource.invitations.pager.items[0], organization: .mock)
+    await dataSource.revokeInvitation(dataSource.invitations.pager.items[0])
     gate.open("loadMore")
     await loadMore?.value
 
@@ -203,29 +180,143 @@ struct OrganizationMembersDataSourceTests {
 
   @Test
   func acceptingARequestReloadsMembersWithTheCurrentSearch() async {
-    let dataSource = OrganizationMembersDataSource(pageSize: 2)
     stubMemberships { query, _ in page(ids: query == "john" ? ["mem_john"] : ["mem_1"], totalCount: 1) }
-    stubMembershipRequests { _ in requestPage(ids: ["req_1"], totalCount: 1) }
-    transport.stub(OrganizationAPI.acceptMembershipRequest(organizationId: FakeTransport.anyPathSegment, requestId: FakeTransport.anyPathSegment)) { _ in
-      ClientResponse(response: OrganizationMembershipRequest.mock, client: nil)
-    }
-    await loadMembers(dataSource)
-    dataSource.searchMembers(organization: .mock, query: "john")
+    stubMembershipRequests { _, _ in requestPage(ids: ["req_1"], totalCount: 1) }
+    stubAcceptRequest()
+    let dataSource = await loadedMembers(access: [.readMemberships, .manageMemberships, .manageMembershipRequests])
+    dataSource.searchMembers(query: "john")
     await dataSource.members.refresh()
+    await dataSource.membershipRequests.refresh()
 
-    await dataSource.acceptMembershipRequest(.mock, organization: .mock, reloadMembers: true)
+    await dataSource.acceptMembershipRequest(dataSource.membershipRequests.pager.items[0])
 
     #expect(memberRequests.queries == [nil, "john", "john"])
     #expect(dataSource.members.pager.items.map(\.id) == ["mem_john"])
   }
 
-  private func loadMembers(_ dataSource: OrganizationMembersDataSource) async {
-    await dataSource.loadInitial(
-      organization: .mock,
-      includeMembers: true,
-      includeInvitations: false,
-      includeMembershipRequests: false
-    )
+  @Test
+  func revokeFinishingAfterAnOrganizationSwitchLeavesTheNewOrganizationsInvitations() async throws {
+    let invitationLoads = RequestLog()
+    stubInvitations { organizationID, _ in
+      invitationLoads.record(query: organizationID, offset: 0)
+      return invitationPage(ids: ["\(organizationID)_inv"], totalCount: 1)
+    }
+    stubRevoke(waitingFor: "revoke")
+    let store = makeStore()
+    let access: OrganizationAccess = [.manageMemberships]
+    store.bind(scope("org_a", access: access))
+    let first = try #require(store.content(for: scope("org_a", access: access)))
+    await first.invitations.refresh()
+    let revoke = Task { await first.revokeInvitation(first.invitations.pager.items[0]) }
+    try await waitUntil { !first.invitations.mutations.isEmpty }
+
+    store.bind(scope("org_b", access: access))
+    let second = try #require(store.content(for: scope("org_b", access: access)))
+    await second.invitations.refresh()
+    gate.open("revoke")
+    await revoke.value
+
+    #expect(invitationLoads.queries == ["org_a", "org_b"])
+    #expect(second.invitations.pager.items.map(\.id) == ["org_b_inv"])
+    #expect(second.invitations.isLoading == false)
+  }
+
+  @Test(arguments: [true, false])
+  func requestDecisionFinishingAfterAnOrganizationSwitchLeavesTheNewOrganizationsLists(accepts: Bool) async throws {
+    let requestLoads = RequestLog()
+    stubMemberships { _, _ in page(ids: ["mem_1"], totalCount: 1) }
+    stubMembershipRequests { organizationID, _ in
+      requestLoads.record(query: organizationID, offset: 0)
+      return requestPage(ids: ["\(organizationID)_req"], totalCount: 1)
+    }
+    stubAcceptRequest(waitingFor: "decision")
+    stubRejectRequest(waitingFor: "decision")
+    let store = makeStore()
+    let access: OrganizationAccess = [.readMemberships, .manageMemberships, .manageMembershipRequests]
+    store.bind(scope("org_a", access: access))
+    let first = try #require(store.content(for: scope("org_a", access: access)))
+    await first.membershipRequests.refresh()
+    await first.members.refresh()
+    let request = first.membershipRequests.pager.items[0]
+    let decision = Task {
+      if accepts {
+        await first.acceptMembershipRequest(request)
+      } else {
+        await first.rejectMembershipRequest(request)
+      }
+    }
+    try await waitUntil { !first.membershipRequests.mutations.isEmpty }
+
+    store.bind(scope("org_b", access: access))
+    let second = try #require(store.content(for: scope("org_b", access: access)))
+    await second.membershipRequests.refresh()
+    await second.members.refresh()
+    let memberLoadsBeforeDecision = memberRequests.queries.count
+    gate.open("decision")
+    await decision.value
+
+    #expect(requestLoads.queries == ["org_a", "org_b"])
+    #expect(memberRequests.queries.count == memberLoadsBeforeDecision)
+    #expect(second.membershipRequests.pager.items.map(\.id) == ["org_b_req"])
+  }
+
+  @Test
+  func rolesLoadEveryPage() async {
+    transport.stub(OrganizationAPI.getRoles(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0)) { call in
+      let offset = call.query.first { $0.name == "offset" }?.value.flatMap(Int.init) ?? 0
+      let ids = (offset ..< min(offset + 20, 25)).map { "role_\($0)" }
+      return ClientResponse(response: rolePage(ids: ids, totalCount: 25), client: nil)
+    }
+    let roles = OrganizationRolesDataSource(scope: scope("org_a", access: [.readMemberships]))
+
+    roles.start()
+    await roles.refresh()
+
+    #expect(roles.roles.count == 25)
+    #expect(Set(roles.roles.map(\.id)).count == 25)
+  }
+
+  @Test
+  func rolesFromBeforeAnOrganizationSwitchNeverShow() async throws {
+    transport.stub(OrganizationAPI.getRoles(organizationId: FakeTransport.anyPathSegment, offset: 0, pageSize: 0)) { [gate] call in
+      let organizationID = call.path.split(separator: "/")[2]
+      if organizationID == "org_a" {
+        await gate.wait("rolesA")
+      }
+      return ClientResponse(response: rolePage(ids: ["\(organizationID)_role"], totalCount: 1), client: nil)
+    }
+    let store = OrganizationScopedStore { OrganizationRolesDataSource(scope: $0) }
+    store.bind(scope("org_a", access: [.manageMemberships]))
+    let first = try #require(store.content(for: scope("org_a", access: [.manageMemberships])))
+    try await waitUntil { first.isLoading }
+
+    store.bind(scope("org_b", access: [.manageMemberships]))
+    let second = try #require(store.content(for: scope("org_b", access: [.manageMemberships])))
+    await second.refresh()
+    gate.open("rolesA")
+    for _ in 0 ..< 100 {
+      await Task.yield()
+    }
+
+    #expect(second.roles.map(\.id) == ["org_b_role"])
+    #expect(first.roles.isEmpty)
+  }
+
+  private func makeStore() -> OrganizationScopedStore<OrganizationMembersDataSource> {
+    OrganizationScopedStore { OrganizationMembersDataSource(scope: $0, pageSize: 2) }
+  }
+
+  private func scope(_ organizationID: String, access: OrganizationAccess) -> OrganizationScope {
+    var organization = Organization.mock
+    organization.id = organizationID
+    return OrganizationScope(userID: User.mock.id, organization: organization, access: access)
+  }
+
+  private func loadedMembers(access: OrganizationAccess = [.readMemberships]) async -> OrganizationMembersDataSource {
+    let dataSource = OrganizationMembersDataSource(scope: scope("org_a", access: access), pageSize: 2)
+    dataSource.start()
+    await dataSource.members.refresh()
+    return dataSource
   }
 
   private func stubMemberships(
@@ -246,22 +337,21 @@ struct OrganizationMembersDataSourceTests {
   }
 
   private func stubInvitations(
-    _ respond: @escaping @MainActor (_ offset: Int) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
+    _ respond: @escaping @MainActor (_ organizationID: String, _ offset: Int) async throws -> ClerkPaginatedResponse<OrganizationInvitation>
   ) {
     transport.stub(OrganizationAPI.getInvitations(
       organizationId: FakeTransport.anyPathSegment,
       offset: 0,
       pageSize: 0,
       status: []
-    )) { [invitationRequests] call in
+    )) { call in
       let offset = call.query.first { $0.name == "offset" }?.value.flatMap(Int.init) ?? 0
-      invitationRequests.record(query: nil, offset: offset)
-      return try await ClientResponse(response: respond(offset), client: nil)
+      return try await ClientResponse(response: respond(call.organizationID, offset), client: nil)
     }
   }
 
   private func stubMembershipRequests(
-    _ respond: @escaping @MainActor (_ offset: Int) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>
+    _ respond: @escaping @MainActor (_ organizationID: String, _ offset: Int) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest>
   ) {
     transport.stub(OrganizationAPI.getMembershipRequests(
       organizationId: FakeTransport.anyPathSegment,
@@ -270,7 +360,32 @@ struct OrganizationMembersDataSourceTests {
       status: nil
     )) { call in
       let offset = call.query.first { $0.name == "offset" }?.value.flatMap(Int.init) ?? 0
-      return try await ClientResponse(response: respond(offset), client: nil)
+      return try await ClientResponse(response: respond(call.organizationID, offset), client: nil)
+    }
+  }
+
+  private func stubRevoke(waitingFor key: String? = nil) {
+    transport.stub(OrganizationAPI.revokeInvitation(organizationId: FakeTransport.anyPathSegment, invitationId: FakeTransport.anyPathSegment)) { [gate] _ in
+      if let key {
+        await gate.wait(key)
+      }
+      return ClientResponse(response: OrganizationInvitation.mock, client: nil)
+    }
+  }
+
+  private func stubAcceptRequest(waitingFor key: String? = nil) {
+    transport.stub(OrganizationAPI.acceptMembershipRequest(organizationId: FakeTransport.anyPathSegment, requestId: FakeTransport.anyPathSegment)) { [gate] _ in
+      if let key {
+        await gate.wait(key)
+      }
+      return ClientResponse(response: OrganizationMembershipRequest.mock, client: nil)
+    }
+  }
+
+  private func stubRejectRequest(waitingFor key: String) {
+    transport.stub(OrganizationAPI.rejectMembershipRequest(organizationId: FakeTransport.anyPathSegment, requestId: FakeTransport.anyPathSegment)) { [gate] _ in
+      await gate.wait(key)
+      return ClientResponse(response: OrganizationMembershipRequest.mock, client: nil)
     }
   }
 
@@ -279,6 +394,12 @@ struct OrganizationMembersDataSourceTests {
       await Task.yield()
     }
     try #require(condition())
+  }
+}
+
+extension FakeTransport.Call {
+  fileprivate var organizationID: String {
+    String(path.split(separator: "/")[2])
   }
 }
 
@@ -310,6 +431,18 @@ private func requestPage(ids: [String], totalCount: Int) -> ClerkPaginatedRespon
       var request = OrganizationMembershipRequest.mock
       request.id = id
       return request
+    },
+    totalCount: totalCount
+  )
+}
+
+private func rolePage(ids: [String], totalCount: Int) -> ClerkPaginatedResponse<RoleResource> {
+  ClerkPaginatedResponse(
+    data: ids.map { id in
+      var role = RoleResource.mock
+      role.id = id
+      role.key = id
+      return role
     },
     totalCount: totalCount
   )

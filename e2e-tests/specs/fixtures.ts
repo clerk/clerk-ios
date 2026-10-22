@@ -8,11 +8,12 @@ import { busyWaits, onceTheRunnerIsFree, type BusyWait } from './support/busy-ru
 import { aboutToLaunch, testUsers } from './support/clerk.ts';
 import { ASSERTION_TIMEOUT_MS, PACKAGE_DIR } from './support/config.ts';
 import { agentDevice, deviceCommand } from './support/device.ts';
+import { EVIDENCE_PACE, evidenceBlock, tapMarker } from './support/evidence.ts';
 import { fillField } from './support/fill.ts';
-import { readClerk, readRun, readTarget, type Target } from './support/inputs.ts';
+import { readClerk, readEvidenceMarks, readRun, readTarget, type Target } from './support/inputs.ts';
 import { appLauncher } from './support/launch.ts';
 import { redact } from './support/secret.ts';
-import { tapOnceUncovered } from './support/tapping.ts';
+import { atItsMiddle, backControl, tapMarkedOnceUncovered } from './support/tapping.ts';
 import {
   APP_ELEMENT_IDS,
   CLERK_TEST_CODE,
@@ -23,7 +24,7 @@ import {
   type SeededUser,
   type TestEmail,
 } from './support/types.ts';
-import { errorScreenElseSavePasswordPrompt, onScreen, signedInAs, signedOut, until, type Sight, type WaitScreen } from './support/waiting.ts';
+import { errorScreenElseSavePasswordPrompt, onScreen, signedInAs, signedOut, until, untilVisible, type Sight, type WaitPace, type WaitScreen } from './support/waiting.ts';
 
 export { expect, CLERK_TEST_CODE };
 
@@ -34,6 +35,7 @@ const CONFIRM_READS = 5;
 const ONLY_E2E_WORKER_SLOT = 0;
 
 const RUN = readRun(process.env);
+const EVIDENCE_MARKS = readEvidenceMarks(process.env);
 
 const AGENT_DEVICE = join(PACKAGE_DIR, 'node_modules', '.bin', 'agent-device');
 
@@ -87,7 +89,8 @@ export const test = base.extend<{ host: HostFixture }>({
       errorScreenElsePrompt: device.locator(errorScreenElseSavePasswordPrompt(APP_ELEMENT_IDS.error)),
       dismissPrompt: () => screen.getByRole('button', { name: 'Not Now' }).tap({ timeout: ASSERTION_TIMEOUT_MS }),
     };
-    const waitFor = (sight: Sight, what: string, timeoutMs: number): Promise<void> => until(sight, what, waitScreen, { timeoutMs, now: Date.now, wait: () => sleep(POLL_MS) });
+    const pace = (timeoutMs: number): WaitPace => ({ timeoutMs, now: Date.now, wait: () => sleep(POLL_MS) });
+    const waitFor = (sight: Sight, what: string, timeoutMs: number): Promise<void> => until(sight, what, waitScreen, pace(timeoutMs));
 
     const describeSignedIn = (who: SeededUser | TestEmail): string =>
       typeof who === 'string' ? `"${signedInText(who)}" with a user ID and a session ID on the home` : `"${signedInText(who.email)}" with user ID ${who.id} and a session ID on the home`;
@@ -103,15 +106,26 @@ export const test = base.extend<{ host: HostFixture }>({
       return on(app.signIn, 'the "Sign in" button on the home');
     }
 
+    const beat = async (control: Locator): Promise<void> => {
+      if (EVIDENCE_MARKS === null) return;
+      await control.waitFor({ timeout: ASSERTION_TIMEOUT_MS }).catch(() => undefined);
+      await sleep(EVIDENCE_PACE.beatMs);
+    };
+
+    const marker = { marksFile: EVIDENCE_MARKS, now: Date.now, hold: sleep };
+    const markTap = tapMarker(marker);
+
     const tap = (control: Locator, busy: BusyWait): Promise<void> =>
-      tapOnceUncovered(() => control.tap({ timeout: ASSERTION_TIMEOUT_MS }), { timeoutMs: ASSERTION_TIMEOUT_MS, now: Date.now, wait: () => sleep(POLL_MS) }, busy);
+      tapMarkedOnceUncovered(control, markTap, { timeoutMs: ASSERTION_TIMEOUT_MS, now: Date.now, wait: () => sleep(POLL_MS) }, busy);
 
     const host: HostFixture = {
       runId: RUN,
       app,
-      newEmail: async () => users.newEmail(),
+      newEmail: async (options) => users.newEmail(options),
+      newOrganizationName: users.newOrganizationName,
       newPhone: users.newPhone,
       seedUser: users.seed,
+      seedOrganization: users.seedOrganization,
       async launch(options = {}) {
         const lands = landing(options);
         const launchId = await launchApp(options);
@@ -119,18 +133,30 @@ export const test = base.extend<{ host: HostFixture }>({
       },
       expectSignedInAs: (who, timeoutMs = ASSERTION_TIMEOUT_MS) => waitFor(signedInAs(app, who), describeSignedIn(who), timeoutMs),
       expectSignedOut: (timeoutMs = ASSERTION_TIMEOUT_MS) => waitFor(signedOut(app), '"Signed out" and no user ID or session ID on the home', timeoutMs),
+      expectVisible: (target, what, timeoutMs = ASSERTION_TIMEOUT_MS) => untilVisible(target, what, waitScreen, pace(timeoutMs)),
       async screenshot(label) {
         await onceTheRunnerIsFree(() => e2eApp.screenshot(label), runnerBusy());
       },
-      tap: (control) => tap(control, runnerBusy()),
-      fill: async (field, text) =>
-        fillField(
-          field,
+      async tap(control) {
+        await beat(control);
+        await tap(control, runnerBusy());
+      },
+      async back() {
+        const control = backControl(screen, platform);
+        await beat(control);
+        await tapMarkedOnceUncovered(atItsMiddle(control), markTap, { timeoutMs: ASSERTION_TIMEOUT_MS, now: Date.now, wait: () => sleep(POLL_MS) }, runnerBusy());
+      },
+      async fill(field, text) {
+        await beat(field);
+        await fillField(
+          { tap: (options) => markTap(field, () => field.tap(options)), all: () => field.all() },
           typeof text === 'string' ? text : text.use('device-input', (value) => value),
           { platform, focused: device.locator('role=textbox focused'), texts: device.locator('role=text'), type: (command) => typeOnDevice(target, command) },
           { tapTimeoutMs: ASSERTION_TIMEOUT_MS, reads: CONFIRM_READS, now: Date.now, wait: () => sleep(POLL_MS) },
           runnerBusy(),
-        ),
+        );
+      },
+      evidence: evidenceBlock(marker),
     };
     await use(host);
   },

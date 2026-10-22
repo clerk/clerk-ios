@@ -36,6 +36,16 @@ describe('the workflow step that waits for the tunnel', () => {
     assert.ok(stdout.includes('failed to request quick Tunnel'), stdout);
   });
 
+  it('does not take the agent for ended while its process is still starting', () => {
+    const work = mkdtempSync(join(tmpdir(), 'verify-tunnel-start-'));
+    mkdirSync(join(work, 'bin'));
+    writeFileSync(join(work, 'started'), String(Date.now()));
+    writeFileSync(join(work, 'bin', 'pgrep'), `#!${process.execPath}\nconst fs = require('fs');\nif (Date.now() - Number(fs.readFileSync('${join(work, 'started')}', 'utf8')) < 500) process.exit(1);\nfs.writeFileSync('${join(work, 'tunnel')}', 'quick-fox.trycloudflare.com');\n`, { mode: 0o755 });
+    const ran = spawnSync('bash', ['-c', wait], { env: { PATH: `${join(work, 'bin')}:${process.env.PATH}`, WORK: work }, encoding: 'utf8', timeout: 20_000 });
+    rmSync(work, { recursive: true, force: true });
+    assert.deepEqual({ status: ran.status, stdout: ran.stdout }, { status: 0, stdout: '' });
+  });
+
   it('goes on as soon as the tunnel is published', () => {
     assert.deepEqual(waited('running', 'published'), { status: 0, stdout: '' });
   });
