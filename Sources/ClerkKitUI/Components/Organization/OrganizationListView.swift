@@ -142,11 +142,6 @@ public struct OrganizationListView: View {
   }
 
   public var body: some View {
-    bodyContent
-      .recordsThemeForUpdateRequiredView()
-  }
-
-  private var bodyContent: some View {
     ZStack {
       Color.clear
         .frame(width: 0, height: 0)

@@ -155,11 +155,6 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 
   public var body: some View {
-    bodyContent
-      .recordsThemeForUpdateRequiredView()
-  }
-
-  private var bodyContent: some View {
     ZStack {
       if let user = clerk.user {
         Group {

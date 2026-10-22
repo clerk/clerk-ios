@@ -20,7 +20,6 @@ struct UpdateRequiredAppearance {
 final class UpdateRequiredAppearanceStore {
   static let shared = UpdateRequiredAppearanceStore()
 
-  var shownTheme: ClerkTheme?
   var appliedTheme: ClerkTheme?
   var appliedAppIcon: Image?
   var appliedAppIconMaxHeight: CGFloat?
@@ -28,7 +27,7 @@ final class UpdateRequiredAppearanceStore {
   func presentedAppearance(dashboardLogoURL: String?, bundleIcon: () -> Image? = { nil }) -> UpdateRequiredAppearance {
     let hasDashboardLogo = !(dashboardLogoURL?.isEmpty ?? true)
     return UpdateRequiredAppearance(
-      theme: shownTheme ?? appliedTheme ?? .default,
+      theme: appliedTheme ?? .default,
       appIcon: appliedAppIcon ?? (hasDashboardLogo ? nil : bundleIcon()),
       appIconMaxHeight: appliedAppIconMaxHeight ?? 44
     )
@@ -40,18 +39,6 @@ extension View {
     environment(\.clerkThemeWithoutRecording, appearance.theme)
       .environment(\.clerkAppIcon, appearance.appIcon)
       .environment(\.clerkAppIconMaxHeight, appearance.appIconMaxHeight)
-  }
-}
-
-struct RecordThemeForUpdateRequiredViewModifier: ViewModifier {
-  @Environment(\.clerkTheme) private var theme
-
-  var store = UpdateRequiredAppearanceStore.shared
-
-  func body(content: Content) -> some View {
-    content.onAppear {
-      store.shownTheme = theme
-    }
   }
 }
 
@@ -140,12 +127,6 @@ struct ClerkAppIconMaxHeightModifier: ViewModifier {
   func body(content: Content) -> some View {
     recorder.record(.appIconMaxHeight(maxHeight))
     return content.environment(\.clerkAppIconMaxHeight, maxHeight)
-  }
-}
-
-extension View {
-  func recordsThemeForUpdateRequiredView() -> some View {
-    modifier(RecordThemeForUpdateRequiredViewModifier())
   }
 }
 

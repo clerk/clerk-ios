@@ -151,11 +151,6 @@ public struct OrganizationSwitcher<Route: Hashable, LabelContent: View, Destinat
   }
 
   public var body: some View {
-    bodyContent
-      .recordsThemeForUpdateRequiredView()
-  }
-
-  private var bodyContent: some View {
     Group {
       if organizationsEnabled, let user {
         Button {

@@ -170,12 +170,6 @@ public struct AuthView: View {
   }
 
   public var body: some View {
-    bodyContent
-      .recordsThemeForUpdateRequiredView()
-  }
-
-  @ViewBuilder
-  private var bodyContent: some View {
     NavigationStack(path: $navigation.path) {
       AuthStartView()
         #if os(iOS)

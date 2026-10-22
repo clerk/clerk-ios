@@ -15,34 +15,7 @@ struct UpdateRequiredAppearanceTests {
   }
 
   @Test
-  func usesTheThemeOfAShownClerkView() async throws {
-    let store = UpdateRequiredAppearanceStore()
-    var theme = ClerkTheme()
-    theme.colors.primary = .orange
-    let shown = Color.clear
-      .modifier(RecordThemeForUpdateRequiredViewModifier(store: store))
-      .environment(\.clerkTheme, theme)
-
-    try await render(shown) { store.shownTheme != nil }
-
-    #expect(store.presentedAppearance(dashboardLogoURL: logoURL).theme.colors.primary == .orange)
-  }
-
-  @Test
-  func aShownClerkViewsThemeWinsOverTheAppsRootTheme() {
-    let store = UpdateRequiredAppearanceStore()
-    var shown = ClerkTheme()
-    shown.colors.primary = .orange
-    var applied = ClerkTheme()
-    applied.colors.primary = .mint
-    store.shownTheme = shown
-    store.appliedTheme = applied
-
-    #expect(store.presentedAppearance(dashboardLogoURL: logoURL).theme.colors.primary == .orange)
-  }
-
-  @Test
-  func usesTheAppsRootThemeBeforeAnyClerkViewIsShown() {
+  func usesTheAppsTheme() {
     let store = UpdateRequiredAppearanceStore()
     var applied = ClerkTheme()
     applied.colors.primary = .mint
