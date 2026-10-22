@@ -177,7 +177,7 @@ bot token, and without one the workflow publishes nothing. To set it up:
 A repository secret can be read by a workflow that anyone with write access adds on any branch.
 A secret of an environment that allows only the default branch cannot.
 
-The `Run E2E runner tests` job of `shared-checks.yml` runs the script's tests. Run them locally
+The `E2E runner tests` job of `shared-checks.yml` runs the script's tests. Run them locally
 with Node.js 24 or later:
 
 ```sh
