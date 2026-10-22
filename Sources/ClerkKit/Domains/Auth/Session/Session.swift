@@ -31,14 +31,6 @@ public struct Session: Codable, Identifiable, Equatable, Sendable {
   /// The expiration deadline. Unix epoch zero means there is no maximum lifetime.
   public var expireAt: Date
 
-  /// Whether the session has a configured expiration deadline.
-  ///
-  /// This describes the lifetime policy only. A session without a maximum lifetime can still be revoked or ended,
-  /// so check ``status`` to determine whether it is active.
-  public var hasMaximumLifetime: Bool {
-    expireAt.timeIntervalSince1970 > 0
-  }
-
   /// The abandonment deadline. Unix epoch zero means there is no abandonment deadline.
   public var abandonAt: Date
 
