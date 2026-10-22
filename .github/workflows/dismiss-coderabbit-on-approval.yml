@@ -29,7 +29,7 @@ jobs:
           APPROVED_AT: ${{ github.event.review.submitted_at }}
         run: |
           ids=$(gh api --paginate "repos/${REPO}/pulls/${PR_NUMBER}/reviews" \
-            --jq '.[] | select(.user.id == 136622811 and .state == "CHANGES_REQUESTED" and .submitted_at <= $ENV.APPROVED_AT) | .id')
+            --jq '.[] | select(.user.id == 136622811 and .state == "CHANGES_REQUESTED" and .submitted_at < $ENV.APPROVED_AT) | .id')
           for id in $ids; do
             gh api -X PUT "repos/${REPO}/pulls/${PR_NUMBER}/reviews/${id}/dismissals" \
               -f message="Approved by @${APPROVER}." -f event=DISMISS --jq '.state'
