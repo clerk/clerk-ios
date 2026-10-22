@@ -1,4 +1,14 @@
-# Preserve organization settings while keeping CI separate from approving reviews.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
 inheritance: true
 reviews:
-  request_changes_workflow: false
+  request_changes_workflow: true
+  allow_author_approval: false
+  pre_merge_checks:
+    override_requested_reviewers_only: true
+    custom_checks:
+      - name: "Needs human review"
+        mode: error
+        instructions: |
+          Decide whether a human should review this PR, and if so, say why.
+          PASS if no human review is needed. FAIL if one is.
