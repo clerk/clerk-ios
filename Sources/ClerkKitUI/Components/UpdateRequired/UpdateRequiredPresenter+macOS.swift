@@ -97,6 +97,8 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     let sheet = NSWindow(contentViewController: hostingController)
     // Not closable, so File > Close can't end the sheet while the window stays open.
     sheet.styleMask = [.titled]
+    // A sheet blocks Quit by default, and the user may need to quit to update.
+    sheet.preventsApplicationTerminationWhenModal = false
     sheet.setContentSize(Self.sheetSize)
 
     // A window shows one sheet at a time, and a new one waits for the current one
