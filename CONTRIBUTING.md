@@ -122,12 +122,9 @@ SwiftLint checks for:
 
 ### Pull request CI
 
-CI starts automatically on every push to a ready PR authored by a Clerk organization
-member, and a new push cancels the run for the previous one. Draft PRs and external
-contributions need a Clerk member to comment `/run ci`, or a Clerk member with write
-access to check **Run CI** in the instructions comment. Use the same controls to retry
-a run. Automatic and manual runs use the same checks, pinned to the requested commit.
-CI must pass on the latest commit before merging.
+CI runs automatically on every push to a non-draft PR by a Clerk member, and a new push
+cancels the previous run. For a draft, a PR from an outside contributor, or a retry, a
+Clerk member comments `/run ci`. CI must pass on the latest commit before merging.
 
 CodeRabbit requests changes when it leaves comments and approves once they're
 resolved. Its approval counts toward the one approval `main` requires. Authors can't

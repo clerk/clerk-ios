@@ -1,13 +1,7 @@
-const INSTRUCTIONS_MARKER = '<!-- clerk-ios-manual-ci -->';
 const COMMAND = /^\s*\/run\s+ci\s*$/im;
-const CHECKBOX = /^- \[[xX]\] Run CI\s*$/m;
 const MEMBER_ASSOCIATIONS = new Set(['MEMBER', 'OWNER']);
 const WAITING_STATUSES = new Set(['queued', 'requested', 'waiting', 'pending']);
 const PUSH_ACTIONS = new Set(['opened', 'synchronize', 'reopened', 'ready_for_review']);
-
-function isActionsBot(user) {
-  return user?.id === 41898282 && user.login === 'github-actions[bot]' && user.type === 'Bot';
-}
 
 function requestKind(context) {
   const { payload, eventName } = context;
@@ -16,10 +10,7 @@ function requestKind(context) {
   }
   if (eventName !== 'issue_comment' || !payload.issue?.pull_request) return null;
   const { comment, action } = payload;
-  if (action === 'created' && COMMAND.test(comment.body)) return 'comment command';
-  if (action === 'edited' && isActionsBot(comment.user)
-    && comment.body.includes(INSTRUCTIONS_MARKER) && CHECKBOX.test(comment.body)) return 'checkbox';
-  return null;
+  return action === 'created' && COMMAND.test(comment.body) ? 'comment command' : null;
 }
 
 async function findPullRequests({ github, context }) {
@@ -69,19 +60,8 @@ async function resolveRequest({ github, context, core, prNumber }) {
     // A newer push's run claims its own commit. A cancelled run that claimed it
     // would mark that commit's Manual CI as cancelled.
     if (context.payload.pull_request.head.sha !== headSha) return skip('a newer commit was pushed.');
-  } else if (kind === 'comment command') {
-    if (!MEMBER_ASSOCIATIONS.has(context.payload.comment.author_association)) {
-      return skip('the command author is not a Clerk organization member.');
-    }
-  } else {
-    // Reset the existing quick action, retaining its original access policy.
-    const { comment, sender } = context.payload;
-    await github.rest.issues.updateComment({
-      ...repo, comment_id: comment.id, body: comment.body.replace(CHECKBOX, '- [ ] Run CI'),
-    });
-    if (sender.type !== 'User') return skip('the checkbox editor is not a GitHub user.');
-    const issue = await internalWriterIssue(github, repo, sender.login);
-    if (issue) return skip(`the checkbox editor ${issue}.`);
+  } else if (!MEMBER_ASSOCIATIONS.has(context.payload.comment.author_association)) {
+    return skip('the command author is not a Clerk organization member.');
   }
 
   const checks = (await github.paginate(github.rest.checks.listForRef, {
