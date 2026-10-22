@@ -215,6 +215,7 @@ jobs:
       check_run_sha: ${{ needs.prepare-release.outputs.release_sha }}
       check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run_integration_tests: true
+      macos_runner: blacksmith-6vcpu-macos-26
     secrets: inherit
 
   e2e-tests:
@@ -229,6 +230,7 @@ jobs:
     with:
       checkout_ref: ${{ needs.prepare-release.outputs.release_sha }}
       check_run_sha: ${{ needs.prepare-release.outputs.version_already_set != 'true' && needs.prepare-release.outputs.release_sha || '' }}
+      macos_runner: blacksmith-6vcpu-macos-27
     secrets:
       MOBILE_VERIFICATION_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
 
