@@ -5,7 +5,6 @@
 
 #if os(iOS) || os(macOS)
 
-import ClerkKit
 import os
 import SwiftUI
 
@@ -24,11 +23,10 @@ final class UpdateRequiredAppearanceStore {
   var appliedAppIcon: Image?
   var appliedAppIconMaxHeight: CGFloat?
 
-  func presentedAppearance(dashboardLogoURL: String?, bundleIcon: () -> Image? = { nil }) -> UpdateRequiredAppearance {
-    let hasDashboardLogo = !(dashboardLogoURL?.isEmpty ?? true)
-    return UpdateRequiredAppearance(
+  var presentedAppearance: UpdateRequiredAppearance {
+    UpdateRequiredAppearance(
       theme: appliedTheme ?? .default,
-      appIcon: appliedAppIcon ?? (hasDashboardLogo ? nil : bundleIcon()),
+      appIcon: appliedAppIcon,
       appIconMaxHeight: appliedAppIconMaxHeight ?? 44
     )
   }
@@ -131,49 +129,11 @@ struct ClerkAppIconMaxHeightModifier: ViewModifier {
 }
 
 struct PresentedUpdateRequiredView: View {
-  @Environment(Clerk.self) private var clerk
   private let store = UpdateRequiredAppearanceStore.shared
 
   var body: some View {
     UpdateRequiredView()
-      .updateRequiredAppearance(
-        store.presentedAppearance(dashboardLogoURL: clerk.environment?.displayConfig.logoImageUrl, bundleIcon: { Image.appIcon })
-      )
-  }
-}
-
-#endif
-
-#if os(macOS)
-
-import AppKit
-import SwiftUI
-
-extension Image {
-  @MainActor static let appIcon: Image? = Image(nsImage: NSApplication.shared.applicationIconImage)
-}
-
-#elseif os(iOS)
-
-import SwiftUI
-import UIKit
-
-extension Image {
-  @MainActor static let appIcon: Image? = makeAppIcon()
-
-  private static func makeAppIcon() -> Image? {
-    guard let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any],
-          let primaryIcon = icons["CFBundlePrimaryIcon"] as? [String: Any],
-          let name = (primaryIcon["CFBundleIconFiles"] as? [String])?.last,
-          let icon = UIImage(named: name)
-    else {
-      return nil
-    }
-    let rounded = UIGraphicsImageRenderer(size: icon.size).image { _ in
-      UIBezierPath(roundedRect: CGRect(origin: .zero, size: icon.size), cornerRadius: icon.size.width * 0.2237).addClip()
-      icon.draw(at: .zero)
-    }
-    return Image(uiImage: rounded)
+      .updateRequiredAppearance(store.presentedAppearance)
   }
 }
 

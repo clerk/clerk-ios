@@ -8,8 +8,6 @@ import UIKit
 @MainActor
 @Suite(.serialized)
 struct UpdateRequiredAppearanceTests {
-  private let logoURL = "https://img.clerk.com/logo.png"
-
   init() {
     AppearanceProbe.reset()
   }
@@ -21,38 +19,33 @@ struct UpdateRequiredAppearanceTests {
     applied.colors.primary = .mint
     store.appliedTheme = applied
 
-    #expect(store.presentedAppearance(dashboardLogoURL: logoURL).theme.colors.primary == .mint)
+    #expect(store.presentedAppearance.theme.colors.primary == .mint)
   }
 
   @Test
   func usesTheDefaultThemeBeforeAnyThemeIsSet() {
     let store = UpdateRequiredAppearanceStore()
 
-    #expect(store.presentedAppearance(dashboardLogoURL: logoURL).theme.colors.primary == ClerkTheme.default.colors.primary)
+    #expect(store.presentedAppearance.theme.colors.primary == ClerkTheme.default.colors.primary)
   }
 
   @Test
-  func usesTheAppsIconOverTheDashboardLogo() {
+  func usesTheAppsIcon() {
     let store = UpdateRequiredAppearanceStore()
     store.appliedAppIcon = Image(systemName: "star")
     store.appliedAppIconMaxHeight = 72
 
-    let presented = store.presentedAppearance(dashboardLogoURL: logoURL)
+    let presented = store.presentedAppearance
     #expect(presented.appIcon == Image(systemName: "star"))
     #expect(presented.appIconMaxHeight == 72)
   }
 
   @Test
-  func fallsBackToTheAppIconOnlyWithoutADashboardLogoOrASetIcon() {
+  func leavesTheLogoToTheDashboardWithoutASetIcon() {
     let store = UpdateRequiredAppearanceStore()
-    let bundleIcon = { Image(systemName: "app") }
 
-    #expect(store.presentedAppearance(dashboardLogoURL: "", bundleIcon: bundleIcon).appIcon == Image(systemName: "app"))
-    #expect(store.presentedAppearance(dashboardLogoURL: nil, bundleIcon: bundleIcon).appIcon == Image(systemName: "app"))
-    #expect(store.presentedAppearance(dashboardLogoURL: logoURL, bundleIcon: bundleIcon).appIcon == nil)
-
-    store.appliedAppIcon = Image(systemName: "star")
-    #expect(store.presentedAppearance(dashboardLogoURL: "", bundleIcon: bundleIcon).appIcon == Image(systemName: "star"))
+    #expect(store.presentedAppearance.appIcon == nil)
+    #expect(store.presentedAppearance.appIconMaxHeight == 44)
   }
 
   @Test
@@ -220,7 +213,7 @@ private struct StoreBackedProbeView: View {
   let store: UpdateRequiredAppearanceStore
 
   var body: some View {
-    AppearanceProbeView().updateRequiredAppearance(store.presentedAppearance(dashboardLogoURL: nil))
+    AppearanceProbeView().updateRequiredAppearance(store.presentedAppearance)
   }
 }
 
