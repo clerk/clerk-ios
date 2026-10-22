@@ -16,8 +16,8 @@ function passed(caller: string, name: string): string | undefined {
   return new RegExp(`^ {6}${name}: (.+)$`, 'm').exec(job)?.[1];
 }
 
-function declaredDefault(name: string): string | undefined {
-  const declared = shared.slice(shared.search(new RegExp(`^ {6}${name}:$`, 'm'))).split(/\n(?= {6}\w+:\n)/)[0]!;
+function declaredDefault(name: string, workflow = shared): string | undefined {
+  const declared = workflow.slice(workflow.search(new RegExp(`^ {6}${name}:$`, 'm'))).split(/\n(?= {6}\w+:\n)/)[0]!;
   return /^ {8}default: (.+)$/m.exec(declared)?.[1];
 }
 
@@ -141,7 +141,7 @@ describe('the jobs of the shared checks', () => {
 });
 
 describe('the runners of the macOS jobs', () => {
-  it("are GitHub's free macOS runners in every workflow, but the remote session, which runs on the label its request names", () => {
+  it("are Blacksmith's for the release checks and end-to-end tests, and GitHub's free runners for everything else, the release's publish job and the nightly included", () => {
     const runners = globSync('*.yml', { cwd: WORKFLOWS })
       .sort()
       .flatMap((file) => {
@@ -152,10 +152,11 @@ describe('the runners of the macOS jobs', () => {
           .slice(1)
           .flatMap((job): [string, string][] => {
             const id = `${file} ${/^ {2}([\w-]+):/.exec(job)![1]}`;
-            if (/^ {4}uses: \.\/\.github\/workflows\/shared-checks\.yml$/m.test(job)) return [[id, input(file, 'macos_runner')]];
+            const called = /^ {4}uses: \.\/\.github\/workflows\/(shared-checks|verify-e2e)\.yml$/m.exec(job)?.[1];
+            if (called !== undefined) return [[id, /^ {6}macos_runner: (.+)$/m.exec(job)?.[1] ?? declaredDefault('macos_runner', read(`${called}.yml`)) ?? 'no macos_runner input']];
             const runsOn = /^ {4}runs-on: (.+)$/m.exec(job)?.[1];
             if (runsOn === undefined || runsOn === '${{ needs.plan.outputs.runner }}') return [];
-            const label = (runsOn === '${{ inputs.macos_runner }}' ? declaredDefault('macos_runner') : /^\$\{\{ vars\.VERIFY_CI_RUNNER \|\| '([\w-]+)' \}\}$/.exec(runsOn)?.[1]) ?? runsOn;
+            const label = (runsOn === '${{ inputs.macos_runner }}' ? declaredDefault('macos_runner') : /^\$\{\{ (?:inputs\.macos_runner \|\| )?vars\.VERIFY_CI_RUNNER \|\| '([\w-]+)' \}\}$/.exec(runsOn)?.[1]) ?? runsOn;
             return label.includes('ubuntu') ? [] : [[id, label]];
           });
       });
@@ -164,7 +165,8 @@ describe('the runners of the macOS jobs', () => {
       'checks.yml checks': 'macos-26',
       'docs.yml deploy': 'macos-26',
       'nightly-checks.yml checks': 'macos-26',
-      'release-sdk.yml checks': 'macos-26',
+      'release-sdk.yml checks': 'blacksmith-6vcpu-macos-26',
+      'release-sdk.yml e2e-tests': 'blacksmith-6vcpu-macos-27',
       'release-sdk.yml publish': 'macos-26',
       'run-pr-ci.yml pr-checks': 'macos-26',
       'shared-checks.yml format-and-lint': 'macos-26',
@@ -176,8 +178,13 @@ describe('the runners of the macOS jobs', () => {
     });
   });
 
-  it('are named by no Blacksmith label anywhere, the ubuntu jobs included', () => {
-    assert.deepEqual(globSync('*.yml', { cwd: WORKFLOWS }).filter((file) => read(file).includes('blacksmith')), []);
+  it('take the end-to-end runner from the caller, so the nightly and a dispatch, which pass no input, fall back to xcode-27', () => {
+    const workflow = read('verify-e2e.yml');
+    assert.equal(/^ {4}runs-on: (.+)$/m.exec(workflow.slice(workflow.indexOf('\n  e2e-tests:\n')))?.[1], "${{ inputs.macos_runner || vars.VERIFY_CI_RUNNER || 'xcode-27' }}");
+  });
+
+  it('are named by a Blacksmith label only in the release workflow', () => {
+    assert.deepEqual(globSync('*.yml', { cwd: WORKFLOWS }).filter((file) => read(file).includes('blacksmith')), ['release-sdk.yml']);
   });
 });
 
