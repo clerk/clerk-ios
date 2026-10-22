@@ -19,7 +19,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     self?.update()
   }
 
-  private var sheets: [ObjectIdentifier: NSWindow] = [:]
+  private var sheets: [ObjectIdentifier: PresentedSheet] = [:]
   private var windowObservers: [NSObjectProtocol] = []
 
   func start(clerk: Clerk) {
@@ -62,7 +62,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
         MainActor.assumeIsolated {
           guard let self else { return }
           self.sheets[windowID] = nil
-          self.sheets = self.sheets.filter { ObjectIdentifier($0.value) != windowID }
+          self.sheets = self.sheets.filter { ObjectIdentifier($0.value.sheet) != windowID }
           self.loop.scheduleUpdate()
         }
       }
@@ -75,7 +75,10 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
       return
     }
 
-    sheets = sheets.filter { $0.value.sheetParent != nil || $0.value.isVisible }
+    for (windowID, presented) in sheets where !presented.isCovering {
+      sheets[windowID] = nil
+      presented.dismiss()
+    }
 
     for window in NSApplication.shared.windows where needsSheet(window) {
       show(on: window, clerk: clerk)
@@ -88,7 +91,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
       && window.sheetParent == nil
       && !window.isSheet
       && !(window is NSPanel)
-      && !sheets.values.contains { $0 === window }
+      && !sheets.values.contains { $0.sheet === window }
       && sheets[ObjectIdentifier(window)] == nil
   }
 
@@ -109,7 +112,7 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     }
     // Recorded before beginSheet, which makes the sheet key at once, so no update
     // that runs before it returns can treat this window as uncovered.
-    sheets[ObjectIdentifier(window)] = sheet
+    sheets[ObjectIdentifier(window)] = PresentedSheet(window: window, sheet: sheet)
     parent.beginSheet(sheet)
   }
 
@@ -118,10 +121,35 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
 
     let shownSheets = Array(sheets.values)
     sheets = [:]
-    for sheet in shownSheets {
-      sheet.sheetParent?.endSheet(sheet)
-      sheet.orderOut(nil)
+    for presented in shownSheets {
+      presented.dismiss()
     }
+  }
+}
+
+@MainActor
+private struct PresentedSheet {
+  weak var window: NSWindow?
+  let sheet: NSWindow
+
+  /// Ending a sheet also hides any sheet presented on top of it, which keeps its
+  /// sheetParent, so the whole chain back to the window has to still be showing.
+  var isCovering: Bool {
+    guard let window, sheet.isVisible else { return false }
+    var parent = sheet.sheetParent
+    while let current = parent {
+      if current === window {
+        return true
+      }
+      guard current.isVisible else { return false }
+      parent = current.sheetParent
+    }
+    return false
+  }
+
+  func dismiss() {
+    sheet.sheetParent?.endSheet(sheet)
+    sheet.orderOut(nil)
   }
 }
 
