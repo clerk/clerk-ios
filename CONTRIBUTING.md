@@ -129,13 +129,13 @@ status and review thread state), so CI doesn't depend on the wording of CodeRabb
 comments. CodeRabbit resolves its own threads once they're addressed; resolving a
 thread yourself also counts. Unresolved threads from people don't block the run.
 
-CodeRabbit approves a PR when its "Needs human review" check decides no human
-review is needed, and requests changes otherwise. Its approval counts toward the one
-approval `main` requires. Authors can't approve their own PRs through CodeRabbit, so
-when it asks for a human, someone else signs off: a Clerk member's or
-collaborator's approval dismisses CodeRabbit's "changes requested" review. On PRs from forks, dismiss it by
-hand. Admins can merge their own work after dismissing that review themselves. The approval workflow
-doesn't change when CI starts.
+CodeRabbit approves a PR when its "Needs human review" check decides no human review
+is needed, and requests changes otherwise. Its approval counts toward the one approval
+`main` requires. Authors can't approve their own PRs through CodeRabbit, so when it
+asks for a human, someone else signs off: a Clerk member's or collaborator's approval
+dismisses CodeRabbit's "changes requested" review. On PRs from forks, dismiss it by
+hand. Admins can merge their own work after dismissing that review themselves. The
+approval workflow doesn't change when CI starts.
 
 After the first CI kickoff, new commits and retries require a Clerk member to comment
 `/run ci`, or a Clerk member with write access to check **Run CI** in the instructions
