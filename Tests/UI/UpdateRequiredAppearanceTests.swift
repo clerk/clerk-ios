@@ -13,39 +13,28 @@ struct UpdateRequiredAppearanceTests {
   }
 
   @Test
-  func usesTheAppsTheme() {
+  func presentsTheRecordedValues() async throws {
     let store = UpdateRequiredAppearanceStore()
-    var applied = ClerkTheme()
-    applied.colors.primary = .mint
-    store.appliedTheme = applied
+    var theme = ClerkTheme()
+    theme.colors.primary = .orange
+    store.theme = theme
+    store.appIcon = Image(systemName: "star")
+    store.appIconMaxHeight = 72
 
-    #expect(store.presentedAppearance.theme.colors.primary == .mint)
+    try await render(StoreBackedProbeView(store: store)) { AppearanceProbe.primaryColor != nil }
+
+    #expect(AppearanceProbe.primaryColor == .orange)
+    #expect(AppearanceProbe.appIcon == Image(systemName: "star"))
+    #expect(AppearanceProbe.appIconMaxHeight == 72)
   }
 
   @Test
-  func usesTheDefaultThemeBeforeAnyThemeIsSet() {
-    let store = UpdateRequiredAppearanceStore()
+  func presentsTheDefaultsBeforeAnythingIsRecorded() async throws {
+    try await render(StoreBackedProbeView(store: UpdateRequiredAppearanceStore())) { AppearanceProbe.primaryColor != nil }
 
-    #expect(store.presentedAppearance.theme.colors.primary == ClerkTheme.default.colors.primary)
-  }
-
-  @Test
-  func usesTheAppsIcon() {
-    let store = UpdateRequiredAppearanceStore()
-    store.appliedAppIcon = Image(systemName: "star")
-    store.appliedAppIconMaxHeight = 72
-
-    let presented = store.presentedAppearance
-    #expect(presented.appIcon == Image(systemName: "star"))
-    #expect(presented.appIconMaxHeight == 72)
-  }
-
-  @Test
-  func leavesTheLogoToTheDashboardWithoutASetIcon() {
-    let store = UpdateRequiredAppearanceStore()
-
-    #expect(store.presentedAppearance.appIcon == nil)
-    #expect(store.presentedAppearance.appIconMaxHeight == 44)
+    #expect(AppearanceProbe.primaryColor == ClerkTheme.default.colors.primary)
+    #expect(AppearanceProbe.appIcon == nil)
+    #expect(AppearanceProbe.appIconMaxHeight == 44)
   }
 
   @Test
@@ -63,11 +52,11 @@ struct UpdateRequiredAppearanceTests {
     recorder.record(.appIcon(Image(systemName: "moon")))
     recorder.record(.appIconMaxHeight(72))
     recorder.record(.appIconMaxHeight(96))
-    try await waitUntil { store.appliedTheme != nil }
+    try await waitUntil { store.theme != nil }
 
-    #expect(store.appliedTheme?.colors.primary == .mint)
-    #expect(store.appliedAppIcon == Image(systemName: "star"))
-    #expect(store.appliedAppIconMaxHeight == 72)
+    #expect(store.theme?.colors.primary == .mint)
+    #expect(store.appIcon == Image(systemName: "star"))
+    #expect(store.appIconMaxHeight == 72)
   }
 
   @Test
@@ -79,9 +68,9 @@ struct UpdateRequiredAppearanceTests {
       .environment(\.clerkTheme, theme)
       .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
 
-    try await render(app) { store.appliedTheme != nil }
+    try await render(app) { store.theme != nil }
 
-    #expect(store.appliedTheme?.colors.primary == .mint)
+    #expect(store.theme?.colors.primary == .mint)
   }
 
   @Test
@@ -96,10 +85,10 @@ struct UpdateRequiredAppearanceTests {
     .environment(\.clerkTheme, root)
     .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
 
-    try await render(app) { store.appliedTheme != nil }
+    try await render(app) { store.theme != nil }
     try await Task.sleep(for: .milliseconds(50))
 
-    #expect(store.appliedTheme?.colors.primary == .mint)
+    #expect(store.theme?.colors.primary == .mint)
   }
 
   @Test
@@ -110,38 +99,28 @@ struct UpdateRequiredAppearanceTests {
       .clerkAppIcon(maxHeight: 72)
       .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
 
-    try await render(app) { store.appliedAppIcon != nil && store.appliedAppIconMaxHeight != nil }
+    try await render(app) { store.appIcon != nil && store.appIconMaxHeight != nil }
 
-    #expect(store.appliedAppIcon == Image(systemName: "star"))
-    #expect(store.appliedAppIconMaxHeight == 72)
+    #expect(store.appIcon == Image(systemName: "star"))
+    #expect(store.appIconMaxHeight == 72)
   }
 
   @Test
   func theUpdateWindowsOwnValuesAreNotRecorded() async throws {
     let store = UpdateRequiredAppearanceStore()
-    let window = AppearanceProbeView()
-      .updateRequiredAppearance(.init(theme: .default, appIcon: Image(systemName: "star"), appIconMaxHeight: 72))
+    let presented = UpdateRequiredAppearanceStore()
+    presented.theme = .default
+    presented.appIcon = Image(systemName: "star")
+    presented.appIconMaxHeight = 72
+    let window = StoreBackedProbeView(store: presented)
       .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
 
     try await render(window) { AppearanceProbe.primaryColor != nil }
     try await Task.sleep(for: .milliseconds(50))
 
-    #expect(store.appliedTheme == nil)
-    #expect(store.appliedAppIcon == nil)
-    #expect(store.appliedAppIconMaxHeight == nil)
-  }
-
-  @Test
-  func appearanceReachesThePresentedView() async throws {
-    var theme = ClerkTheme()
-    theme.colors.primary = .orange
-    let appearance = UpdateRequiredAppearance(theme: theme, appIcon: Image(systemName: "star"), appIconMaxHeight: 72)
-
-    try await render(AppearanceProbeView().updateRequiredAppearance(appearance)) { AppearanceProbe.primaryColor != nil }
-
-    #expect(AppearanceProbe.primaryColor == .orange)
-    #expect(AppearanceProbe.appIcon == Image(systemName: "star"))
-    #expect(AppearanceProbe.appIconMaxHeight == 72)
+    #expect(store.theme == nil)
+    #expect(store.appIcon == nil)
+    #expect(store.appIconMaxHeight == nil)
   }
 
   @Test
@@ -149,7 +128,7 @@ struct UpdateRequiredAppearanceTests {
     let store = UpdateRequiredAppearanceStore()
     let window = try await render(StoreBackedProbeView(store: store)) { AppearanceProbe.appIconMaxHeight == 44 }
 
-    store.appliedAppIconMaxHeight = 96
+    store.appIconMaxHeight = 96
     try await layout(window) { AppearanceProbe.appIconMaxHeight == 96 }
 
     #expect(AppearanceProbe.appIconMaxHeight == 96)
@@ -213,7 +192,7 @@ private struct StoreBackedProbeView: View {
   let store: UpdateRequiredAppearanceStore
 
   var body: some View {
-    AppearanceProbeView().updateRequiredAppearance(store.presentedAppearance)
+    AppearanceProbeView().updateRequiredAppearance(store)
   }
 }
 

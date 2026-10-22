@@ -6,33 +6,20 @@
 import Foundation
 
 enum AppVersionComparator {
-  static func isValid(_ version: String) -> Bool {
-    version.range(of: #"^\d+(?:\.\d+){0,2}$"#, options: .regularExpression) != nil
-  }
-
-  static func parse(_ version: String) -> [Int]? {
-    guard isValid(version) else { return nil }
-    let segments = version.split(separator: ".")
-    let values = segments.compactMap { Int($0) }
-    return values.count == segments.count ? values : nil
-  }
-
-  static func compare(_ lhs: String, _ rhs: String) -> Int? {
-    guard let lhsSegments = parse(lhs), let rhsSegments = parse(rhs) else {
+  static func isSupported(current: String, minimum: String) -> Bool? {
+    guard let current = segments(current), let minimum = segments(minimum) else {
       return nil
     }
-
-    for index in 0 ..< max(lhsSegments.count, rhsSegments.count) {
-      let lhsValue = index < lhsSegments.count ? lhsSegments[index] : 0
-      let rhsValue = index < rhsSegments.count ? rhsSegments[index] : 0
-      if lhsValue < rhsValue { return -1 }
-      if lhsValue > rhsValue { return 1 }
-    }
-
-    return 0
+    return !current.lexicographicallyPrecedes(minimum)
   }
 
-  static func isSupported(current: String, minimum: String) -> Bool? {
-    compare(current, minimum).map { $0 >= 0 }
+  private static func segments(_ version: String) -> [Int]? {
+    guard version.range(of: #"^\d+(?:\.\d+){0,2}$"#, options: .regularExpression) != nil else {
+      return nil
+    }
+    let parts = version.split(separator: ".")
+    let values = parts.compactMap { Int($0) }
+    guard values.count == parts.count else { return nil }
+    return values + Array(repeating: 0, count: 3 - values.count)
   }
 }

@@ -18,7 +18,7 @@ struct ClerkAppVersionSupportResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for _: URLRequest) async throws {
     if response.statusCode == 403,
        let error = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data).errors.first,
-       error.isUnsupportedAppVersion
+       error.code == "unsupported_app_version"
     {
       try? await runtimeScope.withCurrentClerk { $0.applyUnsupportedAppVersion(meta: error.meta) }
     } else if response.value(forHTTPHeaderField: Self.statusHeader)?.lowercased() == Self.supportedStatus {

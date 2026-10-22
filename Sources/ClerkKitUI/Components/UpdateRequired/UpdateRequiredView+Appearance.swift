@@ -8,35 +8,21 @@
 import os
 import SwiftUI
 
-struct UpdateRequiredAppearance {
-  var theme: ClerkTheme
-  var appIcon: Image?
-  var appIconMaxHeight: CGFloat
-}
-
 @MainActor
 @Observable
 final class UpdateRequiredAppearanceStore {
   static let shared = UpdateRequiredAppearanceStore()
 
-  var appliedTheme: ClerkTheme?
-  var appliedAppIcon: Image?
-  var appliedAppIconMaxHeight: CGFloat?
-
-  var presentedAppearance: UpdateRequiredAppearance {
-    UpdateRequiredAppearance(
-      theme: appliedTheme ?? .default,
-      appIcon: appliedAppIcon,
-      appIconMaxHeight: appliedAppIconMaxHeight ?? 44
-    )
-  }
+  var theme: ClerkTheme?
+  var appIcon: Image?
+  var appIconMaxHeight: CGFloat?
 }
 
 extension View {
-  func updateRequiredAppearance(_ appearance: UpdateRequiredAppearance) -> some View {
-    environment(\.clerkThemeWithoutRecording, appearance.theme)
-      .environment(\.clerkAppIcon, appearance.appIcon)
-      .environment(\.clerkAppIconMaxHeight, appearance.appIconMaxHeight)
+  func updateRequiredAppearance(_ store: UpdateRequiredAppearanceStore) -> some View {
+    environment(\.clerkThemeWithoutRecording, store.theme ?? .default)
+      .environment(\.clerkAppIcon, store.appIcon)
+      .environment(\.clerkAppIconMaxHeight, store.appIconMaxHeight ?? 44)
   }
 }
 
@@ -92,9 +78,9 @@ final class UpdateRequiredAppearanceRecorder: Sendable {
       }
       MainActor.assumeIsolated {
         let store = store()
-        store.appliedTheme = recorded.theme
-        store.appliedAppIcon = recorded.appIcon
-        store.appliedAppIconMaxHeight = recorded.appIconMaxHeight
+        store.theme = recorded.theme
+        store.appIcon = recorded.appIcon
+        store.appIconMaxHeight = recorded.appIconMaxHeight
       }
     }
   }
@@ -129,11 +115,9 @@ struct ClerkAppIconMaxHeightModifier: ViewModifier {
 }
 
 struct PresentedUpdateRequiredView: View {
-  private let store = UpdateRequiredAppearanceStore.shared
-
   var body: some View {
     UpdateRequiredView()
-      .updateRequiredAppearance(store.presentedAppearance)
+      .updateRequiredAppearance(.shared)
   }
 }
 
