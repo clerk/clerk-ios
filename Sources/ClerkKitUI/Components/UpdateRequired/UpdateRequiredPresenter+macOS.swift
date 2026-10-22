@@ -110,8 +110,8 @@ final class UpdateRequiredPresenter: NSObject, ClerkAutomaticPresenter {
     while let attachedSheet = parent.attachedSheet {
       parent = attachedSheet
     }
-    // Recorded before beginSheet, which makes the sheet key at once, so no update
-    // that runs before it returns can treat this window as uncovered.
+    // beginSheet makes the sheet key at once, and that posts the window notifications
+    // that run update(), so the sheet has to be recorded before it's begun.
     sheets[ObjectIdentifier(window)] = PresentedSheet(window: window, sheet: sheet)
     parent.beginSheet(sheet)
   }

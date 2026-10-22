@@ -149,7 +149,8 @@ public final class Clerk {
   /// that shares that bundle ID.
   ///
   /// Read this to show your own update screen when you set
-  /// ``Clerk/Options/updateRequiredViewEnabled`` to `false`.
+  /// ``Clerk/Options/updateRequiredViewEnabled`` to `false`, and on watchOS, tvOS and visionOS,
+  /// where ClerkKitUI has no update screen.
   public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supported(currentVersion: AppBuild.current.version)
 
   @ObservationIgnored

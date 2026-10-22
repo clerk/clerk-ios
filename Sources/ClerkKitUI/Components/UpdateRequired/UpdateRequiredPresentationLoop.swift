@@ -8,7 +8,6 @@
 import Foundation
 import Observation
 
-/// Runs a presenter's update whenever the values it reads change, and on request.
 @MainActor
 final class UpdateRequiredPresentationLoop {
   private let update: @MainActor () -> Void

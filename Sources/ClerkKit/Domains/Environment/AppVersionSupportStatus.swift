@@ -9,8 +9,9 @@ extension Clerk {
   /// Whether this build of your app meets the minimum version set for it in the Clerk Dashboard.
   ///
   /// When the version is unsupported, Clerk rejects your app's requests until the user updates.
-  /// ClerkKitUI shows its update-required screen automatically; set
+  /// On iOS and macOS, ClerkKitUI shows its update-required screen automatically; set
   /// ``Clerk/Options/updateRequiredViewEnabled`` to `false` to show your own UI instead.
+  /// On watchOS, tvOS and visionOS, show your own UI from this status.
   public struct AppVersionSupportStatus: Sendable, Equatable {
     /// Whether this app version is supported.
     public let isSupported: Bool
