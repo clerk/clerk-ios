@@ -10,7 +10,7 @@
     "node": ">=24.8.0 <25"
   },
   "devDependencies": {
-    "@clerk/internal-mobile-e2e": "github:clerk/internal-mobile-e2e#ad396e6014ad86cd3d29e58933c75ab59905b7ab",
+    "@clerk/internal-mobile-e2e": "github:clerk/internal-mobile-e2e#b436cb07c6aadad608082fb05055a355121b1bbb",
     "@types/node": "24.19.1",
     "e2e": "0.18.0",
     "typescript": "7.0.2"
