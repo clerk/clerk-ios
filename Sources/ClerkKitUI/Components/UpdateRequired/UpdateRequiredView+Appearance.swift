@@ -22,7 +22,7 @@ extension View {
   func updateRequiredAppearance(_ store: UpdateRequiredAppearanceStore) -> some View {
     environment(\.clerkThemeWithoutRecording, store.theme ?? .default)
       .environment(\.clerkAppIcon, store.appIcon)
-      .environment(\.clerkAppIconMaxHeight, store.appIconMaxHeight ?? 44)
+      .environment(\.clerkAppIconMaxHeight, store.appIconMaxHeight ?? EnvironmentValues().clerkAppIconMaxHeight)
   }
 }
 
