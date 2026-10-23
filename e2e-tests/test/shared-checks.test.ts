@@ -164,10 +164,10 @@ describe('the runners of the macOS jobs', () => {
       'checks.yml checks': 'macos-26',
       'docs.yml deploy': 'macos-26',
       'nightly-checks.yml checks': 'macos-26',
+      'pr-ci.yml checks': 'macos-26',
       'release-sdk.yml checks': 'blacksmith-6vcpu-macos-26',
       'release-sdk.yml e2e-tests': 'blacksmith-6vcpu-macos-27',
       'release-sdk.yml publish': 'macos-26',
-      'run-pr-ci.yml pr-checks': 'macos-26',
       'shared-checks.yml format-and-lint': 'macos-26',
       'shared-checks.yml test': 'macos-26',
       'shared-checks.yml test-ui': 'macos-26',
@@ -189,7 +189,7 @@ describe('the runners of the macOS jobs', () => {
 
 describe('the platforms the shared checks build', () => {
   it('are iOS and macOS for a pull request and for a push to main', () => {
-    assert.deepEqual([buildPlatforms('run-pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
+    assert.deepEqual([buildPlatforms('pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
   });
 
   it('are all six each night and for a release, so a break on macCatalyst, watchOS, tvOS or visionOS shows up by the next morning and stops the release', () => {
@@ -206,7 +206,7 @@ describe('the platforms the shared checks build', () => {
 describe('the ClerkKit tests on macOS', () => {
   it('run the unit tests alone for a pull request and a push to main, and add the integration tests and the macOS smoke build each night and for a release', () => {
     assert.deepEqual(
-      ['run-pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => macOSTestTargets(caller)),
+      ['pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => macOSTestTargets(caller)),
       [['test'], ['test'], ['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
     );
   });
@@ -219,18 +219,14 @@ describe('the ClerkKit tests on macOS', () => {
   });
 });
 
-describe('the Manual CI check runs of the shared checks', () => {
+describe('the per-job check runs of the shared checks', () => {
   const tests = { 'Lint': 'success', 'ClerkKit tests (macOS)': 'success', 'ClerkKitUI tests (iOS)': 'success', 'E2E runner tests': 'success' };
 
-  it('are made for each job that a pull request runs, and each one completes with the result of its job', () => {
-    assert.deepEqual(checkRuns(buildPlatforms('run-pr-ci.yml'), { ...tests, 'Build iOS': 'success', 'Build macOS': 'failure' }), {
-      'Lint': 'success',
-      'ClerkKit tests (macOS)': 'success',
-      'ClerkKitUI tests (iOS)': 'success',
-      'E2E runner tests': 'success',
-      'Build iOS': 'success',
-      'Build macOS': 'failure',
-    });
+  it('are made only for a release, since PR CI and a push to main get a check for each job from GitHub', () => {
+    assert.deepEqual(
+      ['pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'report_check_runs')),
+      [undefined, undefined, undefined, "${{ needs.prepare-release.outputs.version_already_set != 'true' }}"],
+    );
   });
 
   it('are made for each build of a release, and each one completes with the result of its job', () => {
@@ -538,9 +534,9 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     };
     const prCiRestoresMainSaves = {
       'checks.yml': { restores: [], saves: ['push'] },
-      'manual-pr-ci.yml': { restores: ['issue_comment', 'pull_request_target'], saves: [] },
-      'nightly-checks.yml': { restores: [], saves: [] },
+            'nightly-checks.yml': { restores: [], saves: [] },
       'release-sdk.yml': { restores: [], saves: [] },
+      'pr-ci.yml': { restores: ['pull_request'], saves: [] },
     };
 
     assert.deepEqual({ test: events('test'), 'test-ui': events('test-ui') }, { test: prCiRestoresMainSaves, 'test-ui': prCiRestoresMainSaves });
@@ -652,8 +648,8 @@ describe('the E2E runner tests', () => {
   it('run in full when no branch is given to diff against, and only PR CI gives one', () => {
     assert.equal(ran('', 'Sources/ClerkKit/Clerk.swift'), 'run=true\n');
     assert.deepEqual(
-      ['run-pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'e2e_runner_tests_base')),
-      ['${{ needs.resolve-pr-ci-request.outputs.base_ref }}', undefined, undefined, undefined],
+      ['pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'e2e_runner_tests_base')),
+      ['${{ github.base_ref }}', undefined, undefined, undefined],
     );
   });
 
@@ -685,5 +681,40 @@ describe('the E2E runner tests', () => {
     assert.deepEqual([...reads].filter((path) => !watched.some((entry) => path === entry || path.startsWith(`${entry}/`))), []);
     assert.deepEqual(['e2e-tests', '.github/scripts'].filter((path) => !watched.includes(path)), []);
     assert.deepEqual(watched.filter((path) => !existsSync(join(root, path))), []);
+  });
+});
+
+describe('PR CI', () => {
+  const workflow = read('pr-ci.yml');
+  const job = (name: string): string => workflow.split(/\n(?= {2}[\w-]+:\n)/).find((text) => text.startsWith(`  ${name}:\n`)) ?? assert.fail(`no job ${name}`);
+
+  function runs(name: string, draft: boolean, checks = 'success'): boolean {
+    const written = /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true';
+    const expression = (written.includes('always()') ? written : `success() && (${written})`)
+      .replaceAll('always()', 'true')
+      .replaceAll('success()', String(checks === 'success'))
+      .replaceAll('github.event.pull_request.draft', String(draft))
+      .replaceAll(' == ', ' === ');
+    return new Function(`return ${expression};`)() as boolean;
+  }
+
+  function passes(result: string): boolean {
+    return spawnSync('bash', ['-c', script('Require the checks to pass', job('ci-passed'))], { env: { PATH: process.env.PATH, RESULT: result }, encoding: 'utf8' }).status === 0;
+  }
+
+  it('runs on each push to a pull request through pull_request, which gives a fork no secrets and a read-only token, and a new push cancels the last run', () => {
+    assert.deepEqual([.../^on:\n((?: {2}.*\n|\n)*)/m.exec(workflow)![1]!.matchAll(/^ {2}([\w-]+):/gm)].map((match) => match[1]), ['pull_request']);
+    assert.match(workflow, /^ {4}types:\n {6}- opened\n {6}- synchronize\n {6}- reopened\n {6}- ready_for_review\n/m);
+    assert.match(workflow, /^concurrency:\n {2}group: ci-\$\{\{ github\.event\.pull_request\.number \}\}\n {2}cancel-in-progress: true\n/m);
+  });
+
+  it('skips a draft, so a draft has no CI passed check until it is marked ready for review', () => {
+    assert.deepEqual([runs('checks', true), runs('ci-passed', true), runs('checks', false), runs('ci-passed', false)], [false, false, true, true]);
+  });
+
+  it('reports CI passed after the checks whatever their result, and passes only when they succeeded', () => {
+    assert.match(job('ci-passed'), /^ {4}needs: checks$/m);
+    assert.deepEqual(['failure', 'cancelled', 'skipped'].map((result) => runs('ci-passed', false, result)), [true, true, true]);
+    assert.deepEqual(['success', 'failure', 'cancelled', 'skipped'].map(passes), [true, false, false, false]);
   });
 });

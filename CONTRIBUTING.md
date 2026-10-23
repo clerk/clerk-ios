@@ -122,15 +122,15 @@ SwiftLint checks for:
 
 ### Pull request CI
 
-CI runs automatically on every push to a non-draft PR by a Clerk member, and a new push
-cancels the previous run. For a draft, a PR from an outside contributor, or a retry, a
-Clerk member comments `/run ci`. CI must pass on the latest commit before merging.
+CI runs on every push to a pull request that isn't a draft, and a new push cancels the
+previous run. For a pull request from an outside contributor, a maintainer approves each
+run in the pull request first. To retry a run, use GitHub's **Re-run** button. The
+`CI passed` check must pass before merging.
 
 CodeRabbit requests changes when it leaves comments and approves once they're
 resolved. Its approval counts toward the one approval `main` requires. Authors can't
 use `@coderabbitai approve` on their own PRs. Admins can merge their own work after
-dismissing a CodeRabbit "changes requested" review. The approval workflow doesn't
-change when CI starts.
+dismissing a CodeRabbit "changes requested" review.
 
 PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
 the iOS and macOS builds. On a PR, the E2E runner tests skip when no file they read
@@ -138,14 +138,7 @@ changed. Every night at 07:17 UTC on `main`, and before each release, the checks
 run the integration tests and the macCatalyst, watchOS, tvOS, and visionOS builds. A
 failed nightly run posts to Slack.
 
-The CI gate runs trusted scripts from the default branch, so workflow changes become
-active after they land there. Run its regression tests locally with Node.js 22 or later:
-
-```sh
-node --test .github/scripts/pr-ci.test.cjs
-```
-
-`.github/workflows/verify-attach.yml` runs a second trusted script from the default branch,
+`.github/workflows/verify-attach.yml` runs a trusted script from the default branch,
 `.github/scripts/verify-attach.mjs`. It puts the video and screenshots that a borrowed-device
 verify session handed off into the description of that session's pull request. GitHub starts it
 only when it and `.github/workflows/verify-remote.yml` are both on the default branch. It needs a
