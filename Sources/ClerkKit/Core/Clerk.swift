@@ -84,8 +84,17 @@ public final class Clerk {
   }
 
   /// The current session for the device.
+  ///
+  /// The session can be ``Session/SessionStatus/pending`` while the user still has session tasks to complete.
+  /// Use ``activeSession`` when you need a session whose status is ``Session/SessionStatus/active``.
   public var session: Session? {
     client?.currentSession
+  }
+
+  /// The current session, only if its status is ``Session/SessionStatus/active``.
+  public var activeSession: Session? {
+    guard let session, session.status == .active else { return nil }
+    return session
   }
 
   /// The current user for the device.

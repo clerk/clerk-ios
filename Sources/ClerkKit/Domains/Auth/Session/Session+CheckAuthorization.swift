@@ -115,9 +115,4 @@ extension Clerk {
   public func has(reverification: ReverificationConfig) -> Bool {
     activeSession?.checkAuthorization(reverification: reverification) ?? false
   }
-
-  private var activeSession: Session? {
-    guard let session, session.status == .active else { return nil }
-    return session
-  }
 }
