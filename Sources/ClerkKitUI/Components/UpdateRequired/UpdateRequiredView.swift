@@ -57,7 +57,7 @@ struct UpdateRequiredContentView: View {
           HeaderView(style: .title, text: "Update required")
           HeaderView(
             style: .subtitle,
-            text: "This version of \(displayedAppName) is no longer supported. To keep your account secure, please update to continue."
+            text: "This version of \(displayedAppName) is no longer supported. Please update to continue."
           )
         }
         .padding(.bottom, 24)

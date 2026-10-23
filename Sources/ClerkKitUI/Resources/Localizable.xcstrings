@@ -25640,103 +25640,103 @@
         }
       }
     },
-    "This version of %@ is no longer supported. To keep your account secure, please update to continue." : {
+    "This version of %@ is no longer supported. Please update to continue." : {
       "comment" : "Message on the update-required screen. %@ is the app's name.",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لم يعد هذا الإصدار من %@ مدعومًا. للحفاظ على أمان حسابك، يُرجى التحديث للمتابعة."
+            "value" : "لم يعد هذا الإصدار من %@ مدعومًا. يُرجى التحديث للمتابعة."
           }
         },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diese Version von %@ wird nicht mehr unterstützt. Bitte aktualisieren Sie die App, um Ihr Konto zu schützen und fortzufahren."
+            "value" : "Diese Version von %@ wird nicht mehr unterstützt. Bitte aktualisieren Sie die App, um fortzufahren."
           }
         },
         "el" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Αυτή η έκδοση του %@ δεν υποστηρίζεται πλέον. Για να διατηρήσετε τον λογαριασμό σας ασφαλή, ενημερώστε την εφαρμογή για να συνεχίσετε."
+            "value" : "Αυτή η έκδοση του %@ δεν υποστηρίζεται πλέον. Ενημερώστε την εφαρμογή για να συνεχίσετε."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esta versión de %@ ya no es compatible. Para mantener tu cuenta segura, actualiza la app para continuar."
+            "value" : "Esta versión de %@ ya no es compatible. Actualiza la app para continuar."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cette version de %@ n'est plus prise en charge. Pour sécuriser votre compte, veuillez mettre à jour l'application pour continuer."
+            "value" : "Cette version de %@ n'est plus prise en charge. Veuillez mettre à jour l'application pour continuer."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ का यह संस्करण अब समर्थित नहीं है। अपने खाते को सुरक्षित रखने के लिए, जारी रखने हेतु कृपया अपडेट करें।"
+            "value" : "%@ का यह संस्करण अब समर्थित नहीं है। जारी रखने के लिए कृपया अपडेट करें।"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Questa versione di %@ non è più supportata. Per mantenere sicuro il tuo account, aggiorna l'app per continuare."
+            "value" : "Questa versione di %@ non è più supportata. Aggiorna l'app per continuare."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このバージョンの%@はサポートされなくなりました。アカウントを安全に保つため、アップデートしてから続行してください。"
+            "value" : "このバージョンの%@はサポートされなくなりました。アップデートしてから続行してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 버전의 %@은(는) 더 이상 지원되지 않습니다. 계정을 안전하게 보호하려면 업데이트한 후 계속하세요."
+            "value" : "이 버전의 %@은(는) 더 이상 지원되지 않습니다. 업데이트한 후 계속하세요."
           }
         },
         "pl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ta wersja %@ nie jest już obsługiwana. Aby chronić swoje konto, zaktualizuj aplikację, aby kontynuować."
+            "value" : "Ta wersja %@ nie jest już obsługiwana. Zaktualizuj aplikację, aby kontynuować."
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esta versão de %@ não é mais compatível. Para manter sua conta segura, atualize o app para continuar."
+            "value" : "Esta versão de %@ não é mais compatível. Atualize o app para continuar."
           }
         },
         "ro" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Această versiune a %@ nu mai este acceptată. Pentru a-ți păstra contul în siguranță, actualizează aplicația pentru a continua."
+            "value" : "Această versiune a %@ nu mai este acceptată. Actualizează aplicația pentru a continua."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Эта версия %@ больше не поддерживается. Чтобы защитить вашу учетную запись, обновите приложение, чтобы продолжить."
+            "value" : "Эта версия %@ больше не поддерживается. Обновите приложение, чтобы продолжить."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ uygulamasının bu sürümü artık desteklenmiyor. Hesabınızı güvende tutmak için devam etmeden önce lütfen güncelleyin."
+            "value" : "%@ uygulamasının bu sürümü artık desteklenmiyor. Devam etmek için lütfen güncelleyin."
           }
         },
         "uk" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ця версія %@ більше не підтримується. Щоб захистити ваш обліковий запис, оновіть застосунок, щоб продовжити."
+            "value" : "Ця версія %@ більше не підтримується. Оновіть застосунок, щоб продовжити."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此版本的 %@ 已不再受支持。为确保您的账户安全，请更新后继续。"
+            "value" : "此版本的 %@ 已不再受支持。请更新后继续。"
           }
         }
       }
