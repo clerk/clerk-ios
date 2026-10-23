@@ -139,7 +139,7 @@ run the integration tests and the macCatalyst, watchOS, tvOS, and visionOS build
 failed nightly run posts to Slack.
 
 `.github/workflows/verify-attach.yml` runs a trusted script from the default branch,
-`.github/scripts/verify-attach.mjs`. It puts the video and screenshots that a borrowed-device
+`.github/scripts/verify-attach.mjs`. It puts the video or screenshots that a borrowed-device
 verify session handed off into the description of that session's pull request. GitHub starts it
 only when it and `.github/workflows/verify-remote.yml` are both on the default branch. It needs a
 bot token, and without one the workflow publishes nothing. To set it up:
