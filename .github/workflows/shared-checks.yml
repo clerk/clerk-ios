@@ -19,17 +19,17 @@ on:
         type: string
         default: ""
       report_check_runs:
-        description: Report per-job check runs for manual PR CI
+        description: Report a check run for each job on check_run_sha
         required: false
         type: boolean
         default: false
       check_run_sha:
-        description: Commit SHA to receive manual CI check runs
+        description: Commit SHA to receive the per-job check runs
         required: false
         type: string
         default: ""
       check_run_target_url:
-        description: Target URL for manual CI check runs
+        description: Target URL for the per-job check runs
         required: false
         type: string
         default: ""
@@ -57,7 +57,7 @@ permissions:
 
 jobs:
   prepare-manual-ci-check-runs:
-    name: Prepare manual CI check runs
+    name: Prepare per-job check runs
     if: inputs.report_check_runs && inputs.check_run_sha != ''
     runs-on: ubuntu-latest
     permissions:
@@ -165,7 +165,7 @@ jobs:
         run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Restore the SwiftPM build of the last main push
-        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        if: github.event_name == 'pull_request'
         uses: actions/cache/restore@v4
         with:
           path: .build
@@ -245,11 +245,10 @@ jobs:
         id: build-cache
         run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
-      # PR CI runs on comment and status events, which read and write main's cache scope. So only a push
-      # saves the build, and only PR CI restores one. A push, the nightly and the release build from scratch,
-      # so they never build on what PR CI saved, and they resolve the newest dependency releases.
+      # Only a push to main saves the build, and only PR CI restores one, so a PR builds on main. A push,
+      # the nightly and the release build from scratch and resolve the newest dependency releases.
       - name: Restore the Xcode build of the last main push
-        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        if: github.event_name == 'pull_request'
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
@@ -383,7 +382,7 @@ jobs:
         run: node --test ../.github/scripts/*.test.mjs
 
   report-manual-ci-check-runs:
-    name: Report manual CI check runs
+    name: Report per-job check runs
     needs:
       - prepare-manual-ci-check-runs
       - format-and-lint
@@ -441,19 +440,19 @@ jobs:
             case "$result" in
               success)
                 conclusion="success"
-                summary="Manual CI completed successfully."
+                summary="The job succeeded."
                 ;;
               cancelled)
                 conclusion="cancelled"
-                summary="Manual CI was cancelled."
+                summary="The job was cancelled."
                 ;;
               skipped)
                 conclusion="skipped"
-                summary="Manual CI did not run because a dependency did not complete."
+                summary="The job did not run because a dependency did not complete."
                 ;;
               *)
                 conclusion="failure"
-                summary="Manual CI failed."
+                summary="The job failed."
                 ;;
             esac
 
