@@ -140,6 +140,22 @@ struct ClerkLoggingMiddlewareTests {
   }
 
   @Test
+  func requestBodiesThatStartWithASecretAreLoggedWithoutIt() async throws {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .verbose))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+
+    var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client/sign_ins/sia_1/attempt_first_factor")))
+    request.httpMethod = "POST"
+    request.httpBody = Data("code=424242&strategy=email_code".utf8)
+    try await ClerkRequestLoggingMiddleware().prepare(&request)
+
+    let bodyLine = try await #require(lines.firstLine(containing: "Request Body:"))
+    #expect(bodyLine.hasSuffix("Request Body: code=\(ClerkLogRedaction.placeholder)&strategy=email_code"))
+    #expect(!bodyLine.contains("424242"))
+  }
+
+  @Test
   func responsesAreLoggedWithoutSecrets() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .verbose))
     let (lines, restoreSink) = captureLogLines()

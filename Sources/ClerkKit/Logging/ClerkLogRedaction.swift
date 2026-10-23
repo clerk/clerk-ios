@@ -36,7 +36,7 @@ enum ClerkLogRedaction {
 
   private static let rules: [(pattern: NSRegularExpression, template: String)] = [
     (
-      regex("(^|[?&])(\(sensitiveFormFields.joined(separator: "|")))=[^&\\s]*"),
+      regex("(^|[?&\\s])(\(sensitiveFormFields.joined(separator: "|")))=[^&\\s]*"),
       "$1$2=\(placeholder)"
     ),
     (
