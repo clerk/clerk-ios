@@ -8,30 +8,10 @@
 import ClerkKit
 import SwiftUI
 
-/// A full-screen view telling the user to update the app because its version is older than the
-/// minimum set in the Clerk Dashboard.
-///
-/// Clerk presents this view over your app automatically: in its own window on iOS, and as a sheet
-/// on each of your app's main windows on macOS. It uses the theme your app sets with
-/// `.environment(\.clerkTheme, ...)` and the logo it sets with `.clerkAppIcon(_:)`, or the logo set
-/// in the Clerk Dashboard. Because Clerk draws it outside your view hierarchy, it doesn't use a logo
-/// view set with `.clerkAppIconView(content:)`. To place it yourself, set
-/// ``Clerk/Options/updateRequiredViewEnabled`` to `false`, for example:
-///
-/// ```swift
-/// ContentView()
-///   .overlay {
-///     if !clerk.appVersionSupportStatus.isSupported {
-///       UpdateRequiredView()
-///     }
-///   }
-/// ```
-public struct UpdateRequiredView: View {
+struct UpdateRequiredView: View {
   @Environment(Clerk.self) private var clerk
 
-  public init() {}
-
-  public var body: some View {
+  var body: some View {
     UpdateRequiredContentView(
       status: clerk.appVersionSupportStatus,
       appName: clerk.environment?.displayConfig.applicationName,

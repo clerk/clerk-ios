@@ -139,12 +139,12 @@ extension Clerk {
     /// ```
     public let middleware: MiddlewareConfig
 
-    /// Presents ClerkKitUI's `UpdateRequiredView` over your app automatically when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
+    /// Presents ClerkKitUI's update-required screen over your app automatically when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
     ///
-    /// The view covers every window, in its own window on iOS and as a sheet on each main window on macOS, and can't be dismissed until the user updates.
+    /// The screen covers every window, in its own window on iOS and as a sheet on each main window on macOS, and can't be dismissed until the user updates.
     /// On macOS it doesn't cover panels or menu bar extra windows, so an app that lives in the menu bar should show its own UI from ``Clerk/appVersionSupportStatus``.
     /// It only appears when your app links ClerkKitUI, and only on iOS and macOS: on watchOS, tvOS and visionOS, show your own UI
-    /// from ``Clerk/appVersionSupportStatus``. Set this to false to show your own UI on iOS and macOS too, or to place `UpdateRequiredView` yourself.
+    /// from ``Clerk/appVersionSupportStatus``. Set this to false to show your own UI on iOS and macOS too.
     public let updateRequiredViewEnabled: Bool
 
     /// Initializes a ``Options`` instance.
@@ -157,7 +157,7 @@ extension Clerk {
     ///   - watchConnectivityEnabled: Keeps the iOS app and its watchOS companion signed in as the same user. Defaults to false.
     ///   - loggerHandler: A closure that receives callbacks when Clerk logs errors. Set this to forward Clerk errors to your own logging system. Defaults to nil.
     ///   - middleware: Middleware configuration for requests and responses. Defaults to an empty configuration.
-    ///   - updateRequiredViewEnabled: Presents ClerkKitUI's `UpdateRequiredView` over your app automatically on iOS and macOS when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
+    ///   - updateRequiredViewEnabled: Presents ClerkKitUI's update-required screen over your app automatically on iOS and macOS when its version is older than the minimum set in the Clerk Dashboard. Defaults to true.
     public init(
       logLevel: LogLevel = .error,
       telemetryEnabled: Bool = true,
