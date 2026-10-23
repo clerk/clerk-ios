@@ -436,7 +436,7 @@ extension AuthStartView {
       ContinueButtonLabelView(isActive: isRunning)
     }
     .buttonStyle(.primary())
-    .disabled(activeIdentifier.isEmpty)
+    .disabled(activeIdentifier.trimmingCharacters(in: .whitespaces).count < 3)
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.continueButton)
     .simultaneousGesture(TapGesture())
   }
