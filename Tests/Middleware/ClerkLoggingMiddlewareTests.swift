@@ -78,6 +78,14 @@ struct ClerkLogRedactionTests {
   }
 
   @Test
+  func passkeyCredentialsAreRedactedFromRequests() {
+    #expect(
+      ClerkLogRedaction.redactingSecrets(in: "strategy=passkey&public_key_credential=%7B%22id%22%7D")
+        == "strategy=passkey&public_key_credential=\(redacted)"
+    )
+  }
+
+  @Test
   func totpSecretsAndBackupCodesAreRedactedFromResponses() {
     let body = #"{"secret":"JBSWY3DPEHPK3PXP","uri":"otpauth://totp/Clerk:user?secret=JBSWY3DPEHPK3PXP","backup_codes":["aaaa1111","bbbb2222"]}"#
 
