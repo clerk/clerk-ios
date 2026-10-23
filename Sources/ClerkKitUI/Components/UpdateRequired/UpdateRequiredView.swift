@@ -12,7 +12,7 @@ import SwiftUI
 /// minimum set in the Clerk Dashboard.
 ///
 /// Clerk presents this view over your app automatically: in its own window on iOS, and as a sheet
-/// on each of your app's windows on macOS. It uses the theme your app sets with
+/// on each of your app's main windows on macOS. It uses the theme your app sets with
 /// `.environment(\.clerkTheme, ...)` and the logo it sets with `.clerkAppIcon(_:)`, or the logo set
 /// in the Clerk Dashboard. Because Clerk draws it outside your view hierarchy, it doesn't use a logo
 /// view set with `.clerkAppIconView(content:)`. To place it yourself, set
