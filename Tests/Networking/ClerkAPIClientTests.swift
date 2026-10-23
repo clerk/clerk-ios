@@ -12,6 +12,15 @@ struct ClerkAPIClientTests {
   }
 
   @Test
+  func sessionConfigurationKeepsNoCacheOrCookies() {
+    let configuration = APIClient.Configuration(runtimeScope: Clerk.shared.runtimeScope).sessionConfiguration
+
+    #expect(configuration.urlCache == nil)
+    #expect(configuration.httpCookieStorage == nil)
+    #expect(configuration.httpShouldSetCookies == false)
+  }
+
+  @Test
   func requestHeaders() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!

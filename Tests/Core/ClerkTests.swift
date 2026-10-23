@@ -1982,6 +1982,40 @@ struct ClerkTests {
     #expect(Clerk.shared.user?.id == User.mock.id)
   }
 
+  @Test
+  func activeSessionIsNilForPendingSession() {
+    let pendingSession = createSession(id: "session1", status: .pending)
+    Clerk.shared.client = Client(
+      id: "client1",
+      sessions: [pendingSession],
+      lastActiveSessionId: "session1",
+      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
+    )
+
+    #expect(Clerk.shared.session?.id == "session1")
+    #expect(Clerk.shared.activeSession == nil)
+  }
+
+  @Test
+  func activeSessionReturnsActiveSession() {
+    let activeSession = createSession(id: "session1", status: .active)
+    Clerk.shared.client = Client(
+      id: "client1",
+      sessions: [activeSession],
+      lastActiveSessionId: "session1",
+      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
+    )
+
+    #expect(Clerk.shared.activeSession?.id == "session1")
+  }
+
+  @Test
+  func activeSessionIsNilWithoutSession() {
+    Clerk.shared.client = nil
+
+    #expect(Clerk.shared.activeSession == nil)
+  }
+
   private struct AwaitingAuthFlow {
     let work: AuthFlowWork
     let completion: TransferFlowResult?
