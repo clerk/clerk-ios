@@ -205,6 +205,7 @@ jobs:
           [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -n 20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
           echo "tunnel-up $(date +%s)000" >> "$WORK/marks"
           echo "host=$(cat "$WORK/tunnel")" >> "$GITHUB_OUTPUT"
+          echo "::notice title=verify-remote tunnel::$(cat "$WORK/tunnel")"
 
       # GitHub's jobs API returns a step's name while the job still runs, so the tunnel host travels in this name.
       - name: verify-remote tunnel ${{ steps.tunnel.outputs.host }}
