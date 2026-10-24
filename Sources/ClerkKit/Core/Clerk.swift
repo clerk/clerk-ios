@@ -147,6 +147,29 @@ public final class Clerk {
     }
   }
 
+  /// Whether this build of your app meets the minimum version set for it in the Clerk Dashboard.
+  ///
+  /// Minimums are set per bundle ID under iOS applications, so on macOS your app is checked
+  /// against the minimum for its bundle ID too. A minimum applies to every Apple build of your app
+  /// that shares that bundle ID.
+  ///
+  /// Read this to show your own update screen when you set
+  /// ``Clerk/Options/updateRequiredViewEnabled`` to `false`, and on watchOS, tvOS and visionOS,
+  /// where ClerkKitUI has no update screen.
+  public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supported(currentVersion: AppBuild.current.version)
+
+  @ObservationIgnored
+  var environmentVersionStatus: AppVersionSupportStatus?
+
+  @ObservationIgnored
+  var serverVersionAnswer: AppVersionServerAnswer?
+
+  @ObservationIgnored
+  var appBuild = AppBuild.current
+
+  @ObservationIgnored
+  var automaticPresenter: (any ClerkAutomaticPresenter)?
+
   package struct EnvironmentRefreshCheckpoint: Equatable {
     fileprivate let revision: Int
   }
@@ -486,6 +509,7 @@ extension Clerk {
   func applyRefreshedEnvironment(_ environment: Environment) {
     self.environment = environment
     environmentRefreshRevision += 1
+    applyEnvironmentAppVersionSupport(environment)
   }
 
   @discardableResult
@@ -542,6 +566,7 @@ extension Clerk: CacheCoordinator {
     // This prevents cached data from overwriting fresh data loaded from the API
     guard self.environment == nil else { return }
     self.environment = environment
+    applyEnvironmentAppVersionSupport(environment)
   }
 }
 
@@ -636,6 +661,7 @@ extension Clerk {
 
   private func resetPerConfigurationState() {
     environmentRefreshRevision = 0
+    resetAppVersionSupport()
     callbackContinuation = nil
     identityController.resetOrderingState()
   }

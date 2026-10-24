@@ -9,6 +9,7 @@ import Testing
 @MainActor
 final class MockSessionProvider: SessionProviding {
   var sessionToReturn: Session?
+  var appVersionSupportStatus = Clerk.AppVersionSupportStatus.supported(currentVersion: "1.0")
   private(set) var sessionReadCount = 0
 
   var session: Session? {
@@ -61,6 +62,20 @@ struct SessionPollingManagerTests {
     try await waitUntil { provider.sessionReadCount == 2 }
 
     manager.stopPolling()
+  }
+
+  @Test
+  func unsupportedAppVersionSkipsTokenRefresh() async {
+    let provider = MockSessionProvider()
+    provider.appVersionSupportStatus = .init(isSupported: false, currentVersion: "1.0", minimumVersion: "2.0", updateURL: nil)
+    let manager = SessionPollingManager(sessionProvider: provider, pollInterval: 60)
+
+    await manager.refreshNowIfNeeded()
+    #expect(provider.sessionReadCount == 0)
+
+    provider.appVersionSupportStatus = .supported(currentVersion: "2.0")
+    await manager.refreshNowIfNeeded()
+    #expect(provider.sessionReadCount == 1)
   }
 
   @Test

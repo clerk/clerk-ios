@@ -72,7 +72,7 @@ struct AuthFieldAccessibilityTests {
 }
 
 @MainActor
-private final class AccessibilityHost {
+final class AccessibilityHost {
   private let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
   private let controller: UIViewController
 
