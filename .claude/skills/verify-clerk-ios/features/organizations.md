@@ -29,8 +29,8 @@ Preconditions:
 ## Gotchas
 
 - The switcher label has no SDK identifier. The spec taps its visible text, `Personal account`.
-- `host.expectSignedInAs` waits for the switcher's sheet to close.
-- The invite step appears only when the organization allows more than one member. The standard settings allow three.
+- `host.expectSignedInAs` waits for the home to show the user's email, user ID, and a session ID. The home is readable only once the switcher's sheet has closed, so the wait also covers the close.
+- The invite step appears unless the organization allows exactly one member. A limit of 0 means no limit and shows the step too. The standard settings allow three.
 - The slug of an organization comes from its name, and Clerk refuses a second organization with the same slug in the instance with "That slug is taken. Please try another." Every test in a run shares the run id, and so does every attempt of a test that `--retries` runs again. So each spec that creates an organization names it with `host.newOrganizationName()`, which claims a word for the run on this machine and adds the run tag, as `Harbor 7c1e`. No other test of the run and no retry gets that word, so a retry does not create the slug its first attempt took.
 - The tab bar's buttons have the identifiers of their SF Symbols, `house`, `person.2`, and `building.2`. agent-device reports them as `button` on some reads and as `tab` on others, so the spec taps them by identifier.
 - With an organization active, a tap on the switcher opens a sheet with `Manage` and `Switch account` instead of the account list. [Organization profile](./organization-profile.md) covers that sheet and the profile behind `Manage`.
