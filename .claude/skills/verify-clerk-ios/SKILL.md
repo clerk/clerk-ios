@@ -21,6 +21,7 @@ Set up each machine once.
 2. Create the template simulator, which the CLI clones to make each simulator it drives, with `xcrun simctl create "Clerk Verify Template iOS" "iPhone Air"`. That makes a new simulator that holds only the system's apps. Do not clone a simulator you already use: a clone holds every app of the original, and those apps show on the home screen at the start of a video. Boot the template once and shut it down: a clone of a template that never booted takes about twenty seconds longer to boot. `doctor` says when a system HTTPS proxy needs its CA trusted there.
 3. Give the machine the team's Clerk Platform API key. Set `CLERK_PLATFORM_API_KEY`, or set `CLERK_PLATFORM_API_KEY_FILE` to a file that only you can read (mode 0600). With neither set, the CLI reads the key from 1Password through the secret reference in `VERIFY_PLATFORM_KEY_REFERENCE`. A command that reads the key from 1Password waits up to 60 seconds for a person to approve the request in the 1Password app. Never put the key in a file inside a repository.
 4. Install ffmpeg (`brew install ffmpeg`), which `attach --video` uses to cut the video to the part that `host.evidence` marks. Without it, `attach` posts the whole video and says that ffmpeg is not installed.
+5. Install simslim (`brew install mobai-app/tap/simslim`), so that each local simulator boots without its background services and uses about a quarter of the memory. `doctor` says whether it is installed. Set `VERIFY_SIMSLIM=0` to boot stock simulators.
 
 Then, in each worktree:
 
