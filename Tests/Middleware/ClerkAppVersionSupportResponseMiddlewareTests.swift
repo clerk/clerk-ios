@@ -10,7 +10,7 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     let clerk = Clerk()
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 403),
       data: Data(#"{"errors":[{"code":"unsupported_app_version","message":"Unsupported app version","meta":{"minimum_version":"2.0","update_url":"https://apps.apple.com/app/id123"}}]}"#.utf8),
       for: request()
@@ -27,7 +27,7 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     clerk.applyUnsupportedAppVersion(meta: nil)
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 200, headers: ["X-Clerk-App-Version-Status": "supported"]),
       data: Data(),
       for: request()
@@ -42,8 +42,8 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     clerk.applyUnsupportedAppVersion(meta: nil)
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
-    try await middleware.validate(response(statusCode: 200), data: Data(), for: request())
-    try await middleware.validate(
+    try await middleware.observe(response(statusCode: 200), data: Data(), for: request())
+    try await middleware.observe(
       response(statusCode: 403),
       data: Data(#"{"errors":[{"code":"authorization_invalid","message":"Forbidden"}]}"#.utf8),
       for: request()
@@ -58,7 +58,7 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     let replacedRuntime = ClerkRuntimeScope(state: ClerkRuntimeState(), clerkProvider: { clerk })
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: replacedRuntime)
 
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 403),
       data: Data(#"{"errors":[{"code":"unsupported_app_version","message":"Unsupported app version","meta":{"minimum_version":"2.0"}}]}"#.utf8),
       for: request()
@@ -66,7 +66,7 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     #expect(clerk.appVersionSupportStatus.isSupported)
 
     clerk.applyUnsupportedAppVersion(meta: nil)
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 200, headers: ["X-Clerk-App-Version-Status": "supported"]),
       data: Data(),
       for: request()
@@ -104,12 +104,12 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     let clerk = Clerk()
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 200, headers: ["X-Clerk-App-Version-Status": "supported"]),
       data: Data(),
       for: request(sequence: 2)
     )
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 403),
       data: Data(#"{"errors":[{"code":"unsupported_app_version","message":"Unsupported app version"}]}"#.utf8),
       for: request(sequence: 1)
@@ -123,12 +123,12 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     let clerk = Clerk()
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 403),
       data: Data(#"{"errors":[{"code":"unsupported_app_version","message":"Unsupported app version"}]}"#.utf8),
       for: request(sequence: 2)
     )
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 200, headers: ["X-Clerk-App-Version-Status": "supported"]),
       data: Data(),
       for: request(sequence: 1)
@@ -142,13 +142,13 @@ struct ClerkAppVersionSupportResponseMiddlewareTests {
     let clerk = Clerk()
     let middleware = ClerkAppVersionSupportResponseMiddleware(runtimeScope: .current(clerkProvider: { clerk }))
 
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 200, headers: ["X-Clerk-App-Version-Status": "supported"]),
       data: Data(),
       for: request(sequence: 5)
     )
     clerk.resetAppVersionSupport()
-    try await middleware.validate(
+    try await middleware.observe(
       response(statusCode: 403),
       data: Data(#"{"errors":[{"code":"unsupported_app_version","message":"Unsupported app version"}]}"#.utf8),
       for: request(sequence: 1)

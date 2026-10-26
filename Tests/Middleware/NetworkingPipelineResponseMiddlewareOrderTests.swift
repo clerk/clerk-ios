@@ -31,6 +31,15 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
     }
   }
 
+  private struct RecordingResponseObserver: ClerkResponseObserver {
+    let name: String
+    let recorder: OrderRecorder
+
+    func observe(_: HTTPURLResponse, data _: Data, for _: URLRequest) async {
+      recorder.record(name)
+    }
+  }
+
   @Test
   func customResponseMiddlewareRunsFirst() async throws {
     let recorder = OrderRecorder()
@@ -56,13 +65,13 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
   }
 
   @Test
-  func nonThrowingResponseMiddlewareRunsBeforeCustomResponseMiddleware() async throws {
+  func responseObserversRunBeforeCustomResponseMiddleware() async throws {
     let recorder = OrderRecorder()
-    let nonThrowing = RecordingResponseMiddleware(name: "nonThrowing", recorder: recorder)
+    let observer = RecordingResponseObserver(name: "observer", recorder: recorder)
     let builtIn = RecordingResponseMiddleware(name: "builtIn", recorder: recorder)
     let custom = RecordingResponseMiddleware(name: "custom", recorder: recorder)
 
-    let pipeline = NetworkingPipeline(nonThrowingResponseMiddleware: [nonThrowing], responseMiddleware: [builtIn])
+    let pipeline = NetworkingPipeline(responseObservers: [observer], responseMiddleware: [builtIn])
       .appendingResponseMiddleware([custom])
 
     let url = try #require(URL(string: "https://example.com"))
@@ -77,6 +86,6 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
 
     try await pipeline.validate(response, data: Data(), for: request)
 
-    #expect(recorder.snapshot() == ["nonThrowing", "custom", "builtIn"])
+    #expect(recorder.snapshot() == ["observer", "custom", "builtIn"])
   }
 }

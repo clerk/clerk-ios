@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ClerkAppVersionSupportResponseMiddleware: ClerkResponseMiddleware {
+struct ClerkAppVersionSupportResponseMiddleware: ClerkResponseObserver {
   static let statusHeader = "X-Clerk-App-Version-Status"
   static let supportedStatus = "supported"
 
@@ -15,7 +15,7 @@ struct ClerkAppVersionSupportResponseMiddleware: ClerkResponseMiddleware {
     self.runtimeScope = runtimeScope
   }
 
-  func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
+  func observe(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async {
     let requestSequence = request.clerkRequestSequence
     if response.statusCode == 403,
        let error = try? JSONDecoder.clerkDecoder.decode(ClerkErrorResponse.self, from: data).errors.first,
