@@ -165,7 +165,7 @@ jobs:
         run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Restore the SwiftPM build of the last main push
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: actions/cache/restore@v4
         with:
           path: .build
@@ -245,10 +245,10 @@ jobs:
         id: build-cache
         run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
-      # Only a push to main saves the build, and only PR CI restores one, so a PR builds on main. A push,
+      # Only a push to main saves the build, and only PR and merge queue CI restore one, so both build on main. A push,
       # the nightly and the release build from scratch and resolve the newest dependency releases.
       - name: Restore the Xcode build of the last main push
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
