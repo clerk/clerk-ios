@@ -19,7 +19,7 @@ concurrency:
 jobs:
   checks:
     name: Checks
-    if: ${{ !github.event.pull_request.draft }}
+    if: github.event_name == 'merge_group' || github.event.pull_request.draft == false
     # The shared checks also hold the release's check run jobs, which ask for these. GitHub rejects
     # the call when a called job asks for more than the caller grants, even a job that is skipped.
     permissions:
@@ -36,7 +36,7 @@ jobs:
   ci-passed:
     name: CI passed
     needs: checks
-    if: always() && !github.event.pull_request.draft
+    if: always() && (github.event_name == 'merge_group' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     permissions: {}
     steps:
