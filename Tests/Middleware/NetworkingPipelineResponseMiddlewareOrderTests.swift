@@ -54,4 +54,29 @@ struct NetworkingPipelineResponseMiddlewareOrderTests {
 
     #expect(recorder.snapshot() == ["custom", "builtIn"])
   }
+
+  @Test
+  func nonThrowingResponseMiddlewareRunsBeforeCustomResponseMiddleware() async throws {
+    let recorder = OrderRecorder()
+    let nonThrowing = RecordingResponseMiddleware(name: "nonThrowing", recorder: recorder)
+    let builtIn = RecordingResponseMiddleware(name: "builtIn", recorder: recorder)
+    let custom = RecordingResponseMiddleware(name: "custom", recorder: recorder)
+
+    let pipeline = NetworkingPipeline(nonThrowingResponseMiddleware: [nonThrowing], responseMiddleware: [builtIn])
+      .appendingResponseMiddleware([custom])
+
+    let url = try #require(URL(string: "https://example.com"))
+    let request = URLRequest(url: url)
+    let requestURL = try #require(request.url)
+    let response = try #require(HTTPURLResponse(
+      url: requestURL,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: nil
+    ))
+
+    try await pipeline.validate(response, data: Data(), for: request)
+
+    #expect(recorder.snapshot() == ["nonThrowing", "custom", "builtIn"])
+  }
 }

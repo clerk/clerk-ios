@@ -28,17 +28,20 @@ protocol NetworkRetryMiddleware: Sendable {
 struct NetworkingPipeline {
   private let requestMiddleware: [any ClerkRequestMiddleware]
   private let customRequestMiddleware: [any ClerkRequestMiddleware]
+  private let nonThrowingResponseMiddleware: [any ClerkResponseMiddleware]
   private let responseMiddleware: [any ClerkResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]
 
   init(
     requestMiddleware: [any ClerkRequestMiddleware] = [],
     customRequestMiddleware: [any ClerkRequestMiddleware] = [],
+    nonThrowingResponseMiddleware: [any ClerkResponseMiddleware] = [],
     responseMiddleware: [any ClerkResponseMiddleware] = [],
     retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
     self.requestMiddleware = requestMiddleware
     self.customRequestMiddleware = customRequestMiddleware
+    self.nonThrowingResponseMiddleware = nonThrowingResponseMiddleware
     self.responseMiddleware = responseMiddleware
     self.retryMiddleware = retryMiddleware
   }
@@ -61,7 +64,7 @@ struct NetworkingPipeline {
   }
 
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
-    for middleware in responseMiddleware {
+    for middleware in nonThrowingResponseMiddleware + responseMiddleware {
       try await middleware.validate(response, data: data, for: request)
     }
   }
@@ -84,6 +87,7 @@ extension NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware,
       customRequestMiddleware: customRequestMiddleware + middleware,
+      nonThrowingResponseMiddleware: nonThrowingResponseMiddleware,
       responseMiddleware: responseMiddleware,
       retryMiddleware: retryMiddleware
     )
@@ -93,6 +97,7 @@ extension NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware,
       customRequestMiddleware: customRequestMiddleware,
+      nonThrowingResponseMiddleware: nonThrowingResponseMiddleware,
       responseMiddleware: middleware + responseMiddleware,
       retryMiddleware: retryMiddleware
     )
@@ -109,12 +114,14 @@ extension NetworkingPipeline {
         ClerkURLEncodedFormEncoderMiddleware(),
         ClerkRequestLoggingMiddleware(),
       ],
+      nonThrowingResponseMiddleware: [
+        ClerkAppVersionSupportResponseMiddleware(runtimeScope: runtimeScope),
+      ],
       responseMiddleware: [
         ClerkResponseLoggingMiddleware(),
         ClerkClientSyncResponseMiddleware(runtimeScope: runtimeScope),
         ClerkAuthEventEmitterResponseMiddleware(runtimeScope: runtimeScope),
         ClerkInvalidAuthResponseMiddleware(runtimeScope: runtimeScope),
-        ClerkAppVersionSupportResponseMiddleware(runtimeScope: runtimeScope),
         ClerkErrorThrowingResponseMiddleware(),
       ],
       retryMiddleware: [

@@ -38,7 +38,7 @@ struct UpdateRequiredAppearanceTests {
   }
 
   @Test
-  func theRecorderKeepsTheFirstValuesAndPublishesThem() async throws {
+  func theRecorderKeepsTheFirstValuesAndPublishesThem() async {
     let store = UpdateRequiredAppearanceStore()
     let recorder = UpdateRequiredAppearanceRecorder { store }
     var first = ClerkTheme()
@@ -52,7 +52,7 @@ struct UpdateRequiredAppearanceTests {
     recorder.record(.appIcon(Image(systemName: "moon")))
     recorder.record(.appIconMaxHeight(72))
     recorder.record(.appIconMaxHeight(96))
-    try await waitUntil { store.theme != nil }
+    await mainQueueTurn()
 
     #expect(store.theme?.colors.primary == .mint)
     #expect(store.appIcon == Image(systemName: "star"))
@@ -86,7 +86,7 @@ struct UpdateRequiredAppearanceTests {
     .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
 
     try await render(app) { store.theme != nil }
-    try await Task.sleep(for: .milliseconds(50))
+    await mainQueueTurn()
 
     #expect(store.theme?.colors.primary == .mint)
   }
@@ -116,7 +116,7 @@ struct UpdateRequiredAppearanceTests {
       .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
 
     try await render(window) { AppearanceProbe.primaryColor != nil }
-    try await Task.sleep(for: .milliseconds(50))
+    await mainQueueTurn()
 
     #expect(store.theme == nil)
     #expect(store.appIcon == nil)
@@ -151,9 +151,9 @@ struct UpdateRequiredAppearanceTests {
     }
   }
 
-  private func waitUntil(_ condition: () -> Bool) async throws {
-    for _ in 0 ..< 100 where !condition() {
-      try await Task.sleep(for: .milliseconds(10))
+  private func mainQueueTurn() async {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.main.async { continuation.resume() }
     }
   }
 }
