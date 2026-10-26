@@ -13,7 +13,7 @@ struct AppVersionSupportTests {
 
   private func makeClerk() -> Clerk {
     let clerk = Clerk()
-    clerk.appBuild = .init(bundleID: "com.example.app", version: "1.0")
+    clerk.appVersionSupport.appBuild = .init(bundleID: "com.example.app", version: "1.0")
     return clerk
   }
 
@@ -45,7 +45,7 @@ struct AppVersionSupportTests {
   @Test
   func cachedEnvironmentAllowsAnUpdatedApp() {
     let clerk = makeClerk()
-    clerk.appBuild = .init(bundleID: "com.example.app", version: "2.0")
+    clerk.appVersionSupport.appBuild = .init(bundleID: "com.example.app", version: "2.0")
 
     clerk.setEnvironmentIfNeeded(Self.blockingEnvironment)
 
@@ -65,7 +65,7 @@ struct AppVersionSupportTests {
   @Test
   func supportedResponseKeepsTheMinimumTheEnvironmentSet() {
     let clerk = makeClerk()
-    clerk.appBuild = .init(bundleID: "com.example.app", version: "2.1")
+    clerk.appVersionSupport.appBuild = .init(bundleID: "com.example.app", version: "2.1")
     clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
 
     clerk.applySupportedAppVersion()
@@ -143,7 +143,7 @@ struct AppVersionSupportTests {
   @Test
   func supportedResponseShowsTheMinimumALaterEnvironmentSets() {
     let clerk = makeClerk()
-    clerk.appBuild = .init(bundleID: "com.example.app", version: "2.1")
+    clerk.appVersionSupport.appBuild = .init(bundleID: "com.example.app", version: "2.1")
     clerk.applySupportedAppVersion()
 
     clerk.applyRefreshedEnvironment(Self.blockingEnvironment)

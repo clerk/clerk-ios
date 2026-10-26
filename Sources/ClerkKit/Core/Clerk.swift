@@ -154,16 +154,7 @@ public final class Clerk {
   public internal(set) var appVersionSupportStatus: AppVersionSupportStatus = .supported(currentVersion: AppBuild.current.version)
 
   @ObservationIgnored
-  var environmentVersionStatus: AppVersionSupportStatus?
-
-  @ObservationIgnored
-  var serverVersionAnswer: AppVersionServerAnswer?
-
-  @ObservationIgnored
-  var serverVersionAnswerRequestSequence: Int?
-
-  @ObservationIgnored
-  var appBuild = AppBuild.current
+  var appVersionSupport = AppVersionSupportState()
 
   @ObservationIgnored
   var automaticPresenter: (any ClerkAutomaticPresenter)?

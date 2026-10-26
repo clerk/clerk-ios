@@ -5,75 +5,26 @@
 
 import Foundation
 
-struct AppBuild {
-  let bundleID: String
-  let version: String
-
-  static var current: Self {
-    .init(bundleID: DeviceHelper.bundleID, version: DeviceHelper.appVersion)
-  }
-}
-
-enum AppVersionServerAnswer: Equatable {
-  case supported
-  case unsupported(Clerk.AppVersionSupportStatus)
-}
-
 extension Clerk {
   func applyEnvironmentAppVersionSupport(_ environment: Environment) {
-    environmentVersionStatus = versionStatus(in: environment)
-    updateAppVersionSupportStatus()
+    updateAppVersionSupport { $0.applyEnvironment(environment) }
   }
 
   func applyUnsupportedAppVersion(meta: JSON?, requestSequence: Int? = nil) {
-    guard acceptServerVersionAnswer(requestSequence: requestSequence) else { return }
-    serverVersionAnswer = .unsupported(AppVersionSupportStatusResolver.resolve(
-      unsupportedAppVersionMeta: meta,
-      currentVersion: appBuild.version,
-      environmentStatus: environmentVersionStatus
-    ))
-    updateAppVersionSupportStatus()
+    updateAppVersionSupport { $0.applyUnsupported(meta: meta, requestSequence: requestSequence) }
   }
 
   func applySupportedAppVersion(requestSequence: Int? = nil) {
-    guard acceptServerVersionAnswer(requestSequence: requestSequence) else { return }
-    serverVersionAnswer = .supported
-    updateAppVersionSupportStatus()
+    updateAppVersionSupport { $0.applySupported(requestSequence: requestSequence) }
   }
 
   func resetAppVersionSupport() {
-    environmentVersionStatus = nil
-    serverVersionAnswer = nil
-    serverVersionAnswerRequestSequence = nil
-    updateAppVersionSupportStatus()
+    updateAppVersionSupport { $0.reset() }
   }
 
-  private func acceptServerVersionAnswer(requestSequence: Int?) -> Bool {
-    guard let requestSequence else { return true }
-    if let lastSequence = serverVersionAnswerRequestSequence, requestSequence < lastSequence {
-      return false
-    }
-    serverVersionAnswerRequestSequence = requestSequence
-    return true
-  }
-
-  private func versionStatus(in environment: Environment) -> AppVersionSupportStatus {
-    AppVersionSupportStatusResolver.resolve(
-      environment: environment,
-      bundleID: appBuild.bundleID,
-      currentVersion: appBuild.version
-    )
-  }
-
-  private func updateAppVersionSupportStatus() {
-    let status: AppVersionSupportStatus = switch serverVersionAnswer {
-    case let .unsupported(rejection):
-      rejection
-    case .supported:
-      environmentVersionStatus.flatMap { $0.isSupported ? $0 : nil } ?? .supported(currentVersion: appBuild.version)
-    case nil:
-      environmentVersionStatus ?? .supported(currentVersion: appBuild.version)
-    }
+  private func updateAppVersionSupport(_ change: (inout AppVersionSupportState) -> Void) {
+    change(&appVersionSupport)
+    let status = appVersionSupport.status
     if appVersionSupportStatus != status {
       appVersionSupportStatus = status
     }
