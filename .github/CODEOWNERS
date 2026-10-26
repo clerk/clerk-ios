@@ -2,6 +2,9 @@
 /.github/workflows/ @clerk/team-mobile
 /.github/scripts/ @clerk/team-mobile
 /.coderabbit.yaml @clerk/team-mobile
+/AGENTS.md @clerk/team-mobile
+/CLAUDE.md @clerk/team-mobile
+/REVIEW.md @clerk/team-mobile
 /scripts/check-version-consistency.sh @clerk/team-mobile
 /Sources/ClerkKit/Utils/Version.swift @clerk/team-mobile
 /Package.swift @clerk/team-mobile
