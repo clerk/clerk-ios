@@ -180,7 +180,8 @@ smoke-macos:
 	xcodebuild build -workspace Clerk.xcworkspace -scheme MacExampleApp -destination "$(MACOS_DESTINATION)" CODE_SIGNING_ALLOWED=NO
 	@echo "✅ macOS smoke build completed!"
 
-# Run ClerkKitUI tests on iOS Simulator
+# Run ClerkKitUI tests on iOS Simulator. TEST_UI_ACTION=build-for-testing builds them without running them.
+TEST_UI_ACTION ?= test
 test-ui:
 	@echo "Running ClerkKitUI tests on iOS Simulator..."
 	@mkdir -p .swiftpm/xcode/package.xcworkspace/xcshareddata
@@ -210,7 +211,7 @@ test-ui:
 		exit 1; \
 	fi; \
 	echo "Using simulator destination: $$destination"; \
-	xcodebuild test -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
+	xcodebuild $(TEST_UI_ACTION) -workspace .swiftpm/xcode/package.xcworkspace -scheme Clerk-Package -destination "$$destination" -only-testing:ClerkKitUITests
 	@echo "✅ ClerkKitUI tests completed!"
 
 # Run only integration tests

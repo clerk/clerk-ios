@@ -43,6 +43,11 @@ on:
         required: false
         type: string
         default: ""
+      build_only:
+        description: Build what the test jobs build and save it for later runs, without running any check
+        required: false
+        type: boolean
+        default: false
       macos_runner:
         description: Runner label of the macOS jobs
         required: false
@@ -110,6 +115,7 @@ jobs:
 
   format-and-lint:
     name: Lint
+    if: ${{ !inputs.build_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 20
     steps:
@@ -183,7 +189,12 @@ jobs:
           '
 
       - name: Run unit tests
+        if: ${{ !inputs.build_only }}
         run: make test
+
+      - name: Build the unit tests
+        if: inputs.build_only
+        run: swift build --build-tests
 
       - name: Save the SwiftPM build for later runs
         if: github.event_name == 'push'
@@ -281,6 +292,7 @@ jobs:
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
 
       - name: Install simslim
+        if: ${{ !inputs.build_only }}
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/simslim.tar.gz"
@@ -295,13 +307,19 @@ jobs:
       # starve the tests. simslim turns them off before the first boot. WatchConnectivityTransportTests
       # use WCSession, so wcd stays on.
       - name: Boot the simulator without its background services
+        if: ${{ !inputs.build_only }}
         env:
           SIMSLIM_BOOT_TIMEOUT: 15m
           SIMSLIM_SPAWN_TIMEOUT: 5m
         run: simslim on "${{ steps.simulator.outputs.udid }}" --keep com.apple.wcd
 
       - name: Run ClerkKitUI tests
+        if: ${{ !inputs.build_only }}
         run: make test-ui IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}'
+
+      - name: Build the ClerkKitUI tests
+        if: inputs.build_only
+        run: make test-ui IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' TEST_UI_ACTION=build-for-testing
 
       - name: Save the Xcode build for later runs
         if: github.event_name == 'push'
@@ -312,6 +330,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.platform }}
+    if: ${{ !inputs.build_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     strategy:
@@ -347,6 +366,7 @@ jobs:
 
   e2e-runner-tests:
     name: E2E runner tests
+    if: ${{ !inputs.build_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

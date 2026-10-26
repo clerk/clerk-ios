@@ -187,9 +187,40 @@ describe('the runners of the macOS jobs', () => {
   });
 });
 
+describe('a push to main', () => {
+  const jobs = shared.split(/\n(?= {2}[\w-]+:\n)/);
+  const job = (name: string): string => jobs.find((text) => text.startsWith(`  ${name}:\n`)) ?? assert.fail(`no job ${name}`);
+  const steps = (name: string, buildOnly: boolean): string[] =>
+    job(name)
+      .split(/\n(?= {6}- name: )/)
+      .slice(1)
+      .filter((step) => {
+        const written = (/^ {8}if: (.+)$/m.exec(step)?.[1] ?? 'true').replace(/^\$\{\{ (.+) \}\}$/, '$1');
+        return !written.includes('inputs.build_only') || (new Function('inputs', `return ${written};`)({ build_only: buildOnly }) as boolean);
+      })
+      .map((step) => /- name: (.+)/.exec(step)![1]!);
+
+  it('only builds the test jobs and saves their builds, since the merge queue already ran every check on the commit it pushed', () => {
+    assert.equal(passed('checks.yml', 'build_only'), 'true');
+    assert.deepEqual(
+      ['format-and-lint', 'build', 'e2e-runner-tests', 'test', 'test-ui'].map((name) => /^ {4}if: (.+)$/m.exec(job(name))?.[1]),
+      ['${{ !inputs.build_only }}', '${{ !inputs.build_only }}', '${{ !inputs.build_only }}', undefined, undefined],
+    );
+    const buildOnly = { test: steps('test', true), 'test-ui': steps('test-ui', true) };
+    assert.ok(buildOnly.test.includes('Build the unit tests') && !buildOnly.test.includes('Run unit tests'));
+    assert.ok(buildOnly['test-ui'].includes('Build the ClerkKitUI tests') && !buildOnly['test-ui'].includes('Run ClerkKitUI tests'));
+    assert.ok(!buildOnly['test-ui'].some((name) => name.includes('simslim') || name.startsWith('Boot the simulator')));
+  });
+
+  it('builds the ClerkKitUI tests with the command a pull request tests them with', () => {
+    const run = (name: string): string => /^ {8}run: (.+)$/m.exec(job('test-ui').split(/\n(?= {6}- name: )/).find((step) => step.includes(`- name: ${name}\n`))!)![1]!;
+    assert.equal(run('Build the ClerkKitUI tests'), `${run('Run ClerkKitUI tests')} TEST_UI_ACTION=build-for-testing`);
+  });
+});
+
 describe('the platforms the shared checks build', () => {
-  it('are iOS and macOS for a pull request and for a push to main', () => {
-    assert.deepEqual([buildPlatforms('pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
+  it('are iOS and macOS for a pull request', () => {
+    assert.equal(buildPlatforms('pr-ci.yml'), '["iOS", "macOS"]');
   });
 
   it('are all six each night and for a release, so a break on macCatalyst, watchOS, tvOS or visionOS shows up by the next morning and stops the release', () => {
@@ -204,10 +235,10 @@ describe('the platforms the shared checks build', () => {
 });
 
 describe('the ClerkKit tests on macOS', () => {
-  it('run the unit tests alone for a pull request and a push to main, and add the integration tests and the macOS smoke build each night and for a release', () => {
+  it('run the unit tests alone for a pull request, none for a push to main, and add the integration tests and the macOS smoke build each night and for a release', () => {
     assert.deepEqual(
       ['pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => macOSTestTargets(caller)),
-      [['test'], ['test'], ['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
+      [['test'], [], ['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
     );
   });
 
