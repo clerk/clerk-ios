@@ -78,6 +78,14 @@ struct ClerkLogRedactionTests {
   }
 
   @Test
+  func passkeyCredentialsAreRedactedFromRequests() {
+    #expect(
+      ClerkLogRedaction.redactingSecrets(in: "strategy=passkey&public_key_credential=%7B%22id%22%7D")
+        == "strategy=passkey&public_key_credential=\(redacted)"
+    )
+  }
+
+  @Test
   func totpSecretsAndBackupCodesAreRedactedFromResponses() {
     let body = #"{"secret":"JBSWY3DPEHPK3PXP","uri":"otpauth://totp/Clerk:user?secret=JBSWY3DPEHPK3PXP","backup_codes":["aaaa1111","bbbb2222"]}"#
 
@@ -129,6 +137,22 @@ struct ClerkLoggingMiddlewareTests {
     let bodyLine = try await #require(lines.firstLine(containing: "Request Body:"))
     #expect(bodyLine.hasSuffix("identifier=user%40example.com&password=\(ClerkLogRedaction.placeholder)"))
     #expect(!bodyLine.contains("hunter2"))
+  }
+
+  @Test
+  func requestBodiesThatStartWithASecretAreLoggedWithoutIt() async throws {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .verbose))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+
+    var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client/sign_ins/sia_1/attempt_first_factor")))
+    request.httpMethod = "POST"
+    request.httpBody = Data("code=424242&strategy=email_code".utf8)
+    try await ClerkRequestLoggingMiddleware().prepare(&request)
+
+    let bodyLine = try await #require(lines.firstLine(containing: "Request Body:"))
+    #expect(bodyLine.hasSuffix("Request Body: code=\(ClerkLogRedaction.placeholder)&strategy=email_code"))
+    #expect(!bodyLine.contains("424242"))
   }
 
   @Test

@@ -89,9 +89,7 @@ extension Clerk {
   package func completeAuthFlow(
     _ work: AuthFlowWork
   ) -> Bool {
-    guard session?.id == work.sessionId,
-          session?.status == .active
-    else {
+    guard activeSession?.id == work.sessionId else {
       return false
     }
     return authFlowCoordinator.complete(work: work)
@@ -155,7 +153,7 @@ extension Clerk {
   }
 
   private var hasActiveUserSession: Bool {
-    user != nil && session?.status == .active
+    activeSession?.user != nil
   }
 
   private func unregisterAuthFlow(registrationId: UUID) {

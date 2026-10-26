@@ -1,15 +1,16 @@
-import '../testing/git-env.ts';
+import '@clerk/internal-mobile-e2e/testing/git-env';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { describe, it } from 'node:test';
-import { selectBackend } from '../src/core/devices.ts';
-import { resolveSpecs } from '../src/core/e2e.ts';
-import { STANDARD, declaredIn, planGroups, readSpecText, settingsOf } from '../src/core/instances/settings.ts';
-import type { BuildKey, InstanceSettings, ScratchPath } from '../src/core/types.ts';
+import { selectBackend } from '@clerk/internal-mobile-e2e/core/devices';
+import { resolveSpecs } from '@clerk/internal-mobile-e2e/core/e2e';
+import { STANDARD, declaredIn, planGroups, readSpecText, settingsOf } from '@clerk/internal-mobile-e2e/core/instances/settings';
+import type { BuildKey, InstanceSettings, ScratchPath } from '@clerk/internal-mobile-e2e/core/types';
 import { host } from '../src/host.ts';
+import { BUILD_INPUTS } from '../src/host-app.ts';
 import { localIosBackend } from '../src/platform/ios/local.ts';
 import sessionDevice from '../src/platform/ios/session-device.ts';
 
@@ -99,6 +100,11 @@ describe('the clerk-ios host with a remote device', () => {
   it('has a session run one build command for the device, in the checkout, that installs a stored app or builds one', () => {
     const steps = sessionDevice({ id: 'UDID-1', platform: 'ios' }).build('/work');
     assert.deepEqual(steps, [{ command: process.execPath, args: [join(PACKAGE_DIR, 'src', 'platform', 'ios', 'session-build.ts'), 'build', '/work', 'UDID-1'], cwd: `${WORKTREE}/` }]);
+  });
+
+  it('has a session build uncommitted changes only to the paths the app builds from', () => {
+    assert.equal(sessionDevice({ id: 'UDID-1', platform: 'ios' }).inputs, BUILD_INPUTS);
+    assert.ok(BUILD_INPUTS.includes('Sources'));
   });
 
   it('has the session workflow start on the two runner labels this repository uses, and fail for any other', () => {

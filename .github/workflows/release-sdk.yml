@@ -139,7 +139,7 @@ jobs:
           echo "Release commit: $release_sha"
 
   start-manual-ci:
-    name: Start Manual CI check
+    name: Start CI passed check
     needs: prepare-release
     if: needs.prepare-release.outputs.version_already_set != 'true'
     runs-on: ubuntu-latest
@@ -147,9 +147,9 @@ jobs:
       checks: write
       contents: read
     outputs:
-      manual_check_run_id: ${{ steps.start.outputs.manual_check_run_id }}
+      ci_passed_check_run_id: ${{ steps.start.outputs.ci_passed_check_run_id }}
     steps:
-      - name: Create or update Manual CI check
+      - name: Create or update CI passed check
         id: start
         env:
           GH_TOKEN: ${{ github.token }}
@@ -161,42 +161,42 @@ jobs:
           set -euo pipefail
 
           run_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID"
-          latest_manual_ci="$(
+          latest_ci_passed="$(
             gh api --method GET "repos/$REPO/commits/$RELEASE_SHA/check-runs" \
-              -f check_name="Manual CI" \
+              -f check_name="CI passed" \
               --jq '.check_runs | sort_by(.started_at // .created_at) | last // {}'
           )"
-          latest_manual_ci_id="$(jq -r '.id // ""' <<< "$latest_manual_ci")"
-          latest_manual_ci_status="$(jq -r '.status // ""' <<< "$latest_manual_ci")"
+          latest_ci_passed_id="$(jq -r '.id // ""' <<< "$latest_ci_passed")"
+          latest_ci_passed_status="$(jq -r '.status // ""' <<< "$latest_ci_passed")"
 
-          if [ -n "$latest_manual_ci_id" ] \
-            && { [ "$latest_manual_ci_status" = "queued" ] \
-              || [ "$latest_manual_ci_status" = "requested" ] \
-              || [ "$latest_manual_ci_status" = "waiting" ] \
-              || [ "$latest_manual_ci_status" = "pending" ] \
-              || [ "$latest_manual_ci_status" = "in_progress" ]; }; then
-            gh api --method PATCH "repos/$REPO/check-runs/$latest_manual_ci_id" \
+          if [ -n "$latest_ci_passed_id" ] \
+            && { [ "$latest_ci_passed_status" = "queued" ] \
+              || [ "$latest_ci_passed_status" = "requested" ] \
+              || [ "$latest_ci_passed_status" = "waiting" ] \
+              || [ "$latest_ci_passed_status" = "pending" ] \
+              || [ "$latest_ci_passed_status" = "in_progress" ]; }; then
+            gh api --method PATCH "repos/$REPO/check-runs/$latest_ci_passed_id" \
               -f status=in_progress \
               -f details_url="$run_url" \
               -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-              -f "output[title]=Manual CI" \
+              -f "output[title]=CI passed" \
               -f "output[summary]=Release CI is running for this commit."
-            manual_check_run_id="$latest_manual_ci_id"
+            ci_passed_check_run_id="$latest_ci_passed_id"
           else
-            manual_check_run_id="$(
+            ci_passed_check_run_id="$(
               gh api --method POST "repos/$REPO/check-runs" \
-                -f name="Manual CI" \
+                -f name="CI passed" \
                 -f head_sha="$RELEASE_SHA" \
                 -f status=in_progress \
                 -f details_url="$run_url" \
                 -f started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-                -f "output[title]=Manual CI" \
+                -f "output[title]=CI passed" \
                 -f "output[summary]=Release CI is running for this commit." \
                 --jq '.id'
             )"
           fi
 
-          echo "manual_check_run_id=$manual_check_run_id" >> "$GITHUB_OUTPUT"
+          echo "ci_passed_check_run_id=$ci_passed_check_run_id" >> "$GITHUB_OUTPUT"
 
   checks:
     name: Shared checks (with integration tests)
@@ -214,8 +214,8 @@ jobs:
       report_check_runs: ${{ needs.prepare-release.outputs.version_already_set != 'true' }}
       check_run_sha: ${{ needs.prepare-release.outputs.release_sha }}
       check_run_target_url: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      check_run_name_prefix: Manual CI
       run_integration_tests: true
+      macos_runner: blacksmith-6vcpu-macos-26
     secrets: inherit
 
   e2e-tests:
@@ -230,11 +230,12 @@ jobs:
     with:
       checkout_ref: ${{ needs.prepare-release.outputs.release_sha }}
       check_run_sha: ${{ needs.prepare-release.outputs.version_already_set != 'true' && needs.prepare-release.outputs.release_sha || '' }}
+      macos_runner: blacksmith-6vcpu-macos-27
     secrets:
       MOBILE_VERIFICATION_PLATFORM_API_KEY: ${{ secrets.MOBILE_VERIFICATION_PLATFORM_API_KEY }}
 
   report-manual-ci:
-    name: Report Manual CI check
+    name: Report CI passed check
     needs:
       - prepare-release
       - start-manual-ci
@@ -244,10 +245,10 @@ jobs:
     permissions:
       checks: write
     steps:
-      - name: Report Manual CI result
+      - name: Report CI passed result
         env:
           GH_TOKEN: ${{ github.token }}
-          MANUAL_CHECK_RUN_ID: ${{ needs.start-manual-ci.outputs.manual_check_run_id }}
+          CI_PASSED_CHECK_RUN_ID: ${{ needs.start-manual-ci.outputs.ci_passed_check_run_id }}
           REPO: ${{ github.repository }}
           RESULT: ${{ needs.checks.result }}
           RUN_ID: ${{ github.run_id }}
@@ -258,27 +259,27 @@ jobs:
           case "$RESULT" in
             success)
               conclusion="success"
-              summary="Manual CI completed successfully."
+              summary="The release checks passed."
               exit_status=0
               ;;
             cancelled)
               conclusion="cancelled"
-              summary="Manual CI was cancelled."
+              summary="The release checks were cancelled."
               exit_status=1
               ;;
             *)
               conclusion="failure"
-              summary="Manual CI failed."
+              summary="The release checks failed."
               exit_status=1
               ;;
           esac
 
-          gh api --method PATCH "repos/$REPO/check-runs/$MANUAL_CHECK_RUN_ID" \
+          gh api --method PATCH "repos/$REPO/check-runs/$CI_PASSED_CHECK_RUN_ID" \
             -f status=completed \
             -f conclusion="$conclusion" \
             -f completed_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             -f details_url="$SERVER_URL/$REPO/actions/runs/$RUN_ID" \
-            -f "output[title]=Manual CI" \
+            -f "output[title]=CI passed" \
             -f "output[summary]=$summary"
 
           exit "$exit_status"
@@ -406,7 +407,7 @@ jobs:
           fi
 
           run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          if ! blocked="$(RELEASE="$RELEASE_VERSION" node .github/scripts/nightly-failure-message.mjs --release 'checks=shared checks' 'e2e-tests=end-to-end tests' 'start-manual-ci=starting the Manual CI check')"; then
+          if ! blocked="$(RELEASE="$RELEASE_VERSION" node .github/scripts/nightly-failure-message.mjs --release 'checks=shared checks' 'e2e-tests=end-to-end tests' 'start-manual-ci=starting the CI passed check')"; then
             echo "::warning::Could not name the release or the gates that stopped it; the message names neither"
             blocked="release blocked"
           fi

@@ -233,6 +233,7 @@ package enum ClerkLogger {
     forceLog: Bool,
     context: Context
   ) -> Task<Void, Never>? {
+    let message = ClerkLogRedaction.redactingSecrets(in: message)
     let file = context.file
     let function = context.function
     let line = context.line
@@ -259,6 +260,7 @@ package enum ClerkLogger {
       }
     }
 
+    logMessage = ClerkLogRedaction.redactingSecrets(in: logMessage)
     sink(level, logMessage)
 
     if level == .error {

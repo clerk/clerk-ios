@@ -410,7 +410,7 @@ extension BiometricCredentials {
   ) async throws -> LocalCredentialResult<BiometricCredentialLocalRecord> {
     switch try localCredentialCandidates(id: id, identifierHint: identifierHint, userID: userID) {
     case let .available(supportedCredentials):
-      guard Clerk.shared.session?.status == .active else {
+      guard Clerk.shared.activeSession != nil else {
         return .available(supportedCredentials[0])
       }
 

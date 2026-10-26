@@ -1,4 +1,16 @@
-# Preserve organization settings while keeping CI separate from approving reviews.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
 inheritance: true
 reviews:
-  request_changes_workflow: false
+  request_changes_workflow: true
+  allow_author_approval: false
+  path_filters:
+    - "!Tests/UI/__Snapshots__/**"
+    - "!**/*.xcassets/**"
+    - "!Examples/**/project.pbxproj"
+    - "!e2e-tests/package-lock.json"
+knowledge_base:
+  code_guidelines:
+    filePatterns:
+      - "AGENTS.md"
+      - "REVIEW.md"

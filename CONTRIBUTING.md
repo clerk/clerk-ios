@@ -122,28 +122,15 @@ SwiftLint checks for:
 
 ### Pull request CI
 
-For non-draft PRs authored by Clerk organization members, CI starts once after
-CodeRabbit completes a review of the current commit and every review thread it
-opened is resolved. Both signals are structured GitHub data (CodeRabbit's commit
-status and review thread state), so CI doesn't depend on the wording of CodeRabbit's
-comments. CodeRabbit resolves its own threads once they're addressed; resolving a
-thread yourself also counts. Unresolved threads from people don't block the run.
+CI runs on every push to a pull request that isn't a draft, and a new push cancels the
+previous run. For a pull request from an outside contributor, a maintainer approves each
+run in the pull request first. To retry a run, use GitHub's **Re-run** button. The
+`CI passed` check must pass before merging.
 
-CodeRabbit's automatic approval/request-changes workflow is explicitly disabled in
-`.coderabbit.yaml`, with the organization's other settings inherited. CodeRabbit
-never approves PRs.
-
-After the first CI kickoff, new commits and retries require a Clerk member to comment
-`/run ci`, or a Clerk member with write access to check **Run CI** in the instructions
-comment. A manual kickoff before CodeRabbit finishes also counts as the first run.
-External contributions and draft PRs use these manual controls.
-
-Automatic and manual runs use the same checks, pinned to the requested commit. GitHub
-has no workflow event for resolving a thread, so CI re-checks after CodeRabbit's own
-review comment activity. If you resolve the last thread yourself after CodeRabbit
-finishes, or CodeRabbit skips a review or is unavailable, use the manual controls.
-The first kickoff is recorded in a separate bot comment so pushes, force-pushes, and
-reopening the PR do not reset it.
+CodeRabbit requests changes when it leaves comments and approves once they're
+resolved. Its approval counts toward the one approval `main` requires. Authors can't
+use `@coderabbitai approve` on their own PRs. Admins can merge their own work after
+dismissing a CodeRabbit "changes requested" review.
 
 PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
 the iOS and macOS builds. On a PR, the E2E runner tests skip when no file they read
@@ -151,15 +138,8 @@ changed. Every night at 07:17 UTC on `main`, and before each release, the checks
 run the integration tests and the macCatalyst, watchOS, tvOS, and visionOS builds. A
 failed nightly run posts to Slack.
 
-The CI gate runs trusted scripts from the default branch, so workflow changes become
-active after they land there. Run its regression tests locally with Node.js 22 or later:
-
-```sh
-node --test .github/scripts/pr-ci.test.cjs
-```
-
-`.github/workflows/verify-attach.yml` runs a second trusted script from the default branch,
-`.github/scripts/verify-attach.mjs`. It puts the video and screenshots that a borrowed-device
+`.github/workflows/verify-attach.yml` runs a trusted script from the default branch,
+`.github/scripts/verify-attach.mjs`. It puts the video or screenshots that a borrowed-device
 verify session handed off into the description of that session's pull request. GitHub starts it
 only when it and `.github/workflows/verify-remote.yml` are both on the default branch. It needs a
 bot token, and without one the workflow publishes nothing. To set it up:
@@ -174,7 +154,7 @@ bot token, and without one the workflow publishes nothing. To set it up:
 A repository secret can be read by a workflow that anyone with write access adds on any branch.
 A secret of an environment that allows only the default branch cannot.
 
-The `Run E2E runner tests` job of `shared-checks.yml` runs the script's tests. Run them locally
+The `E2E runner tests` job of `shared-checks.yml` runs the script's tests. Run them locally
 with Node.js 24 or later:
 
 ```sh
