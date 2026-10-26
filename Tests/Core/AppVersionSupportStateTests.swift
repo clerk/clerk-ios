@@ -20,6 +20,19 @@ struct AppVersionSupportStateTests {
   }
 
   @Test
+  func aRejectionUsesTheLatestEnvironmentForWhatItsMetaLeavesOut() {
+    var state = makeState()
+    state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "2.0", updateURL: "https://apps.apple.com/app/id1"))
+    state.applyUnsupported(meta: ["current_version": "1.0"], requestSequence: 1)
+
+    state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "3.0", updateURL: "https://apps.apple.com/app/id2"))
+
+    #expect(!state.status.isSupported)
+    #expect(state.status.minimumVersion == "3.0")
+    #expect(state.status.updateURL == URL(string: "https://apps.apple.com/app/id2"))
+  }
+
+  @Test
   func anAnswerToAnOlderRequestIsIgnored() {
     var state = makeState()
 

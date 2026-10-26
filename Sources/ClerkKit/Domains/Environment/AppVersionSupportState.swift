@@ -17,7 +17,7 @@ struct AppBuild {
 struct AppVersionSupportState {
   private enum ServerAnswer {
     case supported
-    case unsupported(Clerk.AppVersionSupportStatus)
+    case unsupported(meta: JSON?)
   }
 
   var appBuild = AppBuild.current
@@ -27,8 +27,12 @@ struct AppVersionSupportState {
 
   var status: Clerk.AppVersionSupportStatus {
     switch serverAnswer {
-    case let .unsupported(rejection):
-      rejection
+    case let .unsupported(meta):
+      AppVersionSupportStatusResolver.resolve(
+        unsupportedAppVersionMeta: meta,
+        currentVersion: appBuild.version,
+        environmentStatus: environmentStatus
+      )
     case .supported:
       environmentStatus.flatMap { $0.isSupported ? $0 : nil } ?? .supported(currentVersion: appBuild.version)
     case nil:
@@ -46,11 +50,7 @@ struct AppVersionSupportState {
 
   mutating func applyUnsupported(meta: JSON?, requestSequence: Int?) {
     guard acceptAnswer(requestSequence: requestSequence) else { return }
-    serverAnswer = .unsupported(AppVersionSupportStatusResolver.resolve(
-      unsupportedAppVersionMeta: meta,
-      currentVersion: appBuild.version,
-      environmentStatus: environmentStatus
-    ))
+    serverAnswer = .unsupported(meta: meta)
   }
 
   mutating func applySupported(requestSequence: Int?) {
