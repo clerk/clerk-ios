@@ -25,7 +25,7 @@ Preconditions:
 
 ## Gotchas
 
-- The form trims spaces from what is typed and changes nothing else, so fill the whole number, `user.phone`, with its `+1`.
+- The form trims spaces from the start and end of what is typed and changes nothing else, so fill the whole number, `user.phone`, with its `+1`.
 - A sign-in error shows in `verify.customSignIn.error`, and the form stays on screen.
 - E2EHost shows the form until the form reports that its sign-in is complete. An active session alone does not close it. A sign-in whose code is verified is complete and its session is already active, so the form calls no `setActive`.
 - `Couldn't find your account.` is Clerk's message for an identifier no user holds. It comes from the API, so a change of that wording fails `request-code`.
