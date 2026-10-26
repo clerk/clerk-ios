@@ -25,7 +25,8 @@ extension Clerk {
     updateAppVersionSupportStatus()
   }
 
-  func applyUnsupportedAppVersion(meta: JSON?) {
+  func applyUnsupportedAppVersion(meta: JSON?, requestSequence: Int? = nil) {
+    guard acceptServerVersionAnswer(requestSequence: requestSequence) else { return }
     serverVersionAnswer = .unsupported(AppVersionSupportStatusResolver.resolve(
       unsupportedAppVersionMeta: meta,
       currentVersion: appBuild.version,
@@ -34,7 +35,8 @@ extension Clerk {
     updateAppVersionSupportStatus()
   }
 
-  func applySupportedAppVersion() {
+  func applySupportedAppVersion(requestSequence: Int? = nil) {
+    guard acceptServerVersionAnswer(requestSequence: requestSequence) else { return }
     serverVersionAnswer = .supported
     updateAppVersionSupportStatus()
   }
@@ -42,7 +44,17 @@ extension Clerk {
   func resetAppVersionSupport() {
     environmentVersionStatus = nil
     serverVersionAnswer = nil
+    serverVersionAnswerRequestSequence = nil
     updateAppVersionSupportStatus()
+  }
+
+  private func acceptServerVersionAnswer(requestSequence: Int?) -> Bool {
+    guard let requestSequence else { return true }
+    if let lastSequence = serverVersionAnswerRequestSequence, requestSequence < lastSequence {
+      return false
+    }
+    serverVersionAnswerRequestSequence = requestSequence
+    return true
   }
 
   private func versionStatus(in environment: Environment) -> AppVersionSupportStatus {

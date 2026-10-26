@@ -160,6 +160,9 @@ public final class Clerk {
   var serverVersionAnswer: AppVersionServerAnswer?
 
   @ObservationIgnored
+  var serverVersionAnswerRequestSequence: Int?
+
+  @ObservationIgnored
   var appBuild = AppBuild.current
 
   @ObservationIgnored
