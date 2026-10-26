@@ -7,18 +7,19 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+  merge_group:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   checks:
     name: Checks
-    if: github.event.pull_request.draft == false
+    if: github.event_name == 'merge_group' || github.event.pull_request.draft == false
     # The shared checks also hold the release's check run jobs, which ask for these. GitHub rejects
     # the call when a called job asks for more than the caller grants, even a job that is skipped.
     permissions:
@@ -28,14 +29,14 @@ jobs:
     uses: ./.github/workflows/shared-checks.yml
     with:
       build_platforms: '["iOS", "macOS"]'
-      e2e_runner_tests_base: ${{ github.base_ref }}
+      e2e_runner_tests_base: ${{ github.base_ref || github.event.merge_group.base_ref }}
 
   # The one required check. A skipped job counts as passing, so this one runs even when the checks
   # failed or were cancelled, and fails then.
   ci-passed:
     name: CI passed
     needs: checks
-    if: always() && github.event.pull_request.draft == false
+    if: always() && (github.event_name == 'merge_group' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     permissions: {}
     steps:

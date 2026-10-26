@@ -43,6 +43,11 @@ on:
         required: false
         type: string
         default: ""
+      build_only:
+        description: Build what the test jobs build and save it for later runs, without running any check
+        required: false
+        type: boolean
+        default: false
       macos_runner:
         description: Runner label of the macOS jobs
         required: false
@@ -110,6 +115,7 @@ jobs:
 
   format-and-lint:
     name: Lint
+    if: ${{ !inputs.build_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 20
     steps:
@@ -165,7 +171,7 @@ jobs:
         run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Restore the SwiftPM build of the last main push
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: actions/cache/restore@v4
         with:
           path: .build
@@ -183,7 +189,12 @@ jobs:
           '
 
       - name: Run unit tests
+        if: ${{ !inputs.build_only }}
         run: make test
+
+      - name: Build the unit tests
+        if: inputs.build_only
+        run: swift build --build-tests
 
       - name: Save the SwiftPM build for later runs
         if: github.event_name == 'push'
@@ -245,10 +256,10 @@ jobs:
         id: build-cache
         run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
-      # Only a push to main saves the build, and only PR CI restores one, so a PR builds on main. A push,
+      # Only a push to main saves the build, and only PR and merge queue CI restore one, so both build on main. A push,
       # the nightly and the release build from scratch and resolve the newest dependency releases.
       - name: Restore the Xcode build of the last main push
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
@@ -281,6 +292,7 @@ jobs:
           echo "udid=$udid" >> "$GITHUB_OUTPUT"
 
       - name: Install simslim
+        if: ${{ !inputs.build_only }}
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/simslim.tar.gz"
@@ -295,13 +307,19 @@ jobs:
       # starve the tests. simslim turns them off before the first boot. WatchConnectivityTransportTests
       # use WCSession, so wcd stays on.
       - name: Boot the simulator without its background services
+        if: ${{ !inputs.build_only }}
         env:
           SIMSLIM_BOOT_TIMEOUT: 15m
           SIMSLIM_SPAWN_TIMEOUT: 5m
         run: simslim on "${{ steps.simulator.outputs.udid }}" --keep com.apple.wcd
 
       - name: Run ClerkKitUI tests
+        if: ${{ !inputs.build_only }}
         run: make test-ui IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}'
+
+      - name: Build the ClerkKitUI tests
+        if: inputs.build_only
+        run: make test-ui IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' TEST_UI_ACTION=build-for-testing
 
       - name: Save the Xcode build for later runs
         if: github.event_name == 'push'
@@ -312,6 +330,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.platform }}
+    if: ${{ !inputs.build_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     strategy:
@@ -347,6 +366,7 @@ jobs:
 
   e2e-runner-tests:
     name: E2E runner tests
+    if: ${{ !inputs.build_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

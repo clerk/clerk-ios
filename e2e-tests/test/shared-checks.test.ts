@@ -187,9 +187,40 @@ describe('the runners of the macOS jobs', () => {
   });
 });
 
+describe('a push to main', () => {
+  const jobs = shared.split(/\n(?= {2}[\w-]+:\n)/);
+  const job = (name: string): string => jobs.find((text) => text.startsWith(`  ${name}:\n`)) ?? assert.fail(`no job ${name}`);
+  const steps = (name: string, buildOnly: boolean): string[] =>
+    job(name)
+      .split(/\n(?= {6}- name: )/)
+      .slice(1)
+      .filter((step) => {
+        const written = (/^ {8}if: (.+)$/m.exec(step)?.[1] ?? 'true').replace(/^\$\{\{ (.+) \}\}$/, '$1');
+        return !written.includes('inputs.build_only') || (new Function('inputs', `return ${written};`)({ build_only: buildOnly }) as boolean);
+      })
+      .map((step) => /- name: (.+)/.exec(step)![1]!);
+
+  it('only builds the test jobs and saves their builds, since the merge queue already ran every check on the commit it pushed', () => {
+    assert.equal(passed('checks.yml', 'build_only'), 'true');
+    assert.deepEqual(
+      ['format-and-lint', 'build', 'e2e-runner-tests', 'test', 'test-ui'].map((name) => /^ {4}if: (.+)$/m.exec(job(name))?.[1]),
+      ['${{ !inputs.build_only }}', '${{ !inputs.build_only }}', '${{ !inputs.build_only }}', undefined, undefined],
+    );
+    const buildOnly = { test: steps('test', true), 'test-ui': steps('test-ui', true) };
+    assert.ok(buildOnly.test.includes('Build the unit tests') && !buildOnly.test.includes('Run unit tests'));
+    assert.ok(buildOnly['test-ui'].includes('Build the ClerkKitUI tests') && !buildOnly['test-ui'].includes('Run ClerkKitUI tests'));
+    assert.ok(!buildOnly['test-ui'].some((name) => name.includes('simslim') || name.startsWith('Boot the simulator')));
+  });
+
+  it('builds the ClerkKitUI tests with the command a pull request tests them with', () => {
+    const run = (name: string): string => /^ {8}run: (.+)$/m.exec(job('test-ui').split(/\n(?= {6}- name: )/).find((step) => step.includes(`- name: ${name}\n`))!)![1]!;
+    assert.equal(run('Build the ClerkKitUI tests'), `${run('Run ClerkKitUI tests')} TEST_UI_ACTION=build-for-testing`);
+  });
+});
+
 describe('the platforms the shared checks build', () => {
-  it('are iOS and macOS for a pull request and for a push to main', () => {
-    assert.deepEqual([buildPlatforms('pr-ci.yml'), buildPlatforms('checks.yml')], ['["iOS", "macOS"]', '["iOS", "macOS"]']);
+  it('are iOS and macOS for a pull request', () => {
+    assert.equal(buildPlatforms('pr-ci.yml'), '["iOS", "macOS"]');
   });
 
   it('are all six each night and for a release, so a break on macCatalyst, watchOS, tvOS or visionOS shows up by the next morning and stops the release', () => {
@@ -204,10 +235,10 @@ describe('the platforms the shared checks build', () => {
 });
 
 describe('the ClerkKit tests on macOS', () => {
-  it('run the unit tests alone for a pull request and a push to main, and add the integration tests and the macOS smoke build each night and for a release', () => {
+  it('run the unit tests alone for a pull request, none for a push to main, and add the integration tests and the macOS smoke build each night and for a release', () => {
     assert.deepEqual(
       ['pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => macOSTestTargets(caller)),
-      [['test'], ['test'], ['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
+      [['test'], [], ['test', 'test-integration', 'smoke-macos'], ['test', 'test-integration', 'smoke-macos']],
     );
   });
 
@@ -510,7 +541,7 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
     assert.deepEqual({ test: stamped('test'), 'test-ui': stamped('test-ui') }, { test: [1162696418, 1160997964, 1162696418], 'test-ui': [1162696418, 1160997964, 1162696418] });
   });
 
-  it('restore a build only in PR CI and save one only from a push to main, so main, the nightly and the release always build from scratch', () => {
+  it('restore a build only in PR and merge queue CI and save one only from a push to main, so main, the nightly and the release always build from scratch', () => {
     const entryPoints = (file: string): [string, string[]][] => {
       const on = /^on:\n((?: {2}.*\n|\n)*)/m.exec(read(file))?.[1] ?? '';
       const events = [...on.matchAll(/^ {2}([\w-]+):/gm)].map((match) => match[1]!);
@@ -536,7 +567,7 @@ describe('the saved builds of the ClerkKit tests on macOS and the ClerkKitUI tes
       'checks.yml': { restores: [], saves: ['push'] },
             'nightly-checks.yml': { restores: [], saves: [] },
       'release-sdk.yml': { restores: [], saves: [] },
-      'pr-ci.yml': { restores: ['pull_request'], saves: [] },
+      'pr-ci.yml': { restores: ['pull_request', 'merge_group'], saves: [] },
     };
 
     assert.deepEqual({ test: events('test'), 'test-ui': events('test-ui') }, { test: prCiRestoresMainSaves, 'test-ui': prCiRestoresMainSaves });
@@ -645,11 +676,11 @@ describe('the E2E runner tests', () => {
     assert.deepEqual([ran('mike/parent', 'e2e-tests/src/cli.ts', 'mike/parent'), ran('main', 'e2e-tests/src/cli.ts', 'mike/parent')], ['run=true\n', '']);
   });
 
-  it('run in full when no branch is given to diff against, and only PR CI gives one', () => {
+  it('run in full when no branch is given to diff against, and only PR and merge queue CI give one', () => {
     assert.equal(ran('', 'Sources/ClerkKit/Clerk.swift'), 'run=true\n');
     assert.deepEqual(
       ['pr-ci.yml', 'checks.yml', 'nightly-checks.yml', 'release-sdk.yml'].map((caller) => passed(caller, 'e2e_runner_tests_base')),
-      ['${{ github.base_ref }}', undefined, undefined, undefined],
+      ['${{ github.base_ref || github.event.merge_group.base_ref }}', undefined, undefined, undefined],
     );
   });
 
@@ -688,11 +719,12 @@ describe('PR CI', () => {
   const workflow = read('pr-ci.yml');
   const job = (name: string): string => workflow.split(/\n(?= {2}[\w-]+:\n)/).find((text) => text.startsWith(`  ${name}:\n`)) ?? assert.fail(`no job ${name}`);
 
-  function runs(name: string, draft: boolean, checks = 'success'): boolean {
+  function runs(name: string, draft: boolean, checks = 'success', event = 'pull_request'): boolean {
     const written = /^ {4}if: (.+)$/m.exec(job(name))?.[1] ?? 'true';
     const expression = (written.includes('always()') ? written : `success() && (${written})`)
       .replaceAll('always()', 'true')
       .replaceAll('success()', String(checks === 'success'))
+      .replaceAll('github.event_name', JSON.stringify(event))
       .replaceAll('github.event.pull_request.draft', String(draft))
       .replaceAll(' == ', ' === ');
     return new Function(`return ${expression};`)() as boolean;
@@ -702,14 +734,18 @@ describe('PR CI', () => {
     return spawnSync('bash', ['-c', script('Require the checks to pass', job('ci-passed'))], { env: { PATH: process.env.PATH, RESULT: result }, encoding: 'utf8' }).status === 0;
   }
 
-  it('runs on each push to a pull request through pull_request, which gives a fork no secrets and a read-only token, and a new push cancels the last run', () => {
-    assert.deepEqual([.../^on:\n((?: {2}.*\n|\n)*)/m.exec(workflow)![1]!.matchAll(/^ {2}([\w-]+):/gm)].map((match) => match[1]), ['pull_request']);
+  it('runs on each push to a pull request through pull_request, which gives a fork no secrets and a read-only token, and in the merge queue, and a new push cancels the last run', () => {
+    assert.deepEqual([.../^on:\n((?: {2}.*\n|\n)*)/m.exec(workflow)![1]!.matchAll(/^ {2}([\w-]+):/gm)].map((match) => match[1]), ['pull_request', 'merge_group']);
     assert.match(workflow, /^ {4}types:\n {6}- opened\n {6}- synchronize\n {6}- reopened\n {6}- ready_for_review\n/m);
-    assert.match(workflow, /^concurrency:\n {2}group: ci-\$\{\{ github\.event\.pull_request\.number \}\}\n {2}cancel-in-progress: true\n/m);
+    assert.match(workflow, /^concurrency:\n {2}group: ci-\$\{\{ github\.event\.pull_request\.number \|\| github\.ref \}\}\n {2}cancel-in-progress: true\n/m);
   });
 
   it('skips a draft, so a draft has no CI passed check until it is marked ready for review', () => {
     assert.deepEqual([runs('checks', true), runs('ci-passed', true), runs('checks', false), runs('ci-passed', false)], [false, false, true, true]);
+  });
+
+  it('runs every job in the merge queue, where there is no pull request to be a draft', () => {
+    assert.deepEqual([runs('checks', undefined as unknown as boolean, 'success', 'merge_group'), runs('ci-passed', undefined as unknown as boolean, 'success', 'merge_group')], [true, true]);
   });
 
   it('reports CI passed after the checks whatever their result, and passes only when they succeeded', () => {
