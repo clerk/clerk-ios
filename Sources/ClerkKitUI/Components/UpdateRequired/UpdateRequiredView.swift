@@ -126,7 +126,8 @@ struct UpdateRequiredContentView: View {
               .fontWeight(.semibold)
               .foregroundStyle(theme.colors.primary)
           }
-          .frame(maxWidth: .infinity)
+          // With the button style's 8pt padding, this reaches Apple's 44pt minimum touch target.
+          .frame(maxWidth: .infinity, minHeight: 28)
         }
         .buttonStyle(.secondary(config: .init(emphasis: .none, size: .small)))
         .simultaneousGesture(TapGesture())
