@@ -18,8 +18,8 @@ reviews:
         mode: error
         instructions: |
           The PR description has a Testing, a Risk, and a How to revert section, and each one says something specific to this PR.
-          FAIL if any of the three is missing, empty, a lone "-", or only the template's HTML comment.
-          PASS otherwise. "A plain revert is enough" counts as a real answer for How to revert.
+          FAIL if any of the three is missing, empty, a lone "-", only the template's HTML comment, or a placeholder with no reason, such as "TBD", "N/A", "none", or "n/a".
+          PASS when each section names something about this PR. A short answer with a reason passes, such as "Low: docs only" for Risk or "A plain revert is enough" for How to revert.
       - name: "Device evidence"
         mode: error
         instructions: |
