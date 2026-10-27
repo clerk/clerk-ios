@@ -29,6 +29,19 @@ reviews:
           (b) Says why the change could not be run on one.
           If a local patch forced a state, the description must also say what the patch changed and why.
           FAIL if the evidence is missing, has no before, leaves out a screen or state the diff touches, isn't laid out as a before and after table, or forces a state without saying how. A link to CI, a test run, or snapshot images is not device evidence.
+  finishing_touches:
+    autofix:
+      enabled: false
+    unit_tests:
+      enabled: false
+    docstrings:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+    simplify:
+      enabled: false
   collapse_walkthrough: false
   high_level_summary_in_walkthrough: true
   high_level_summary_instructions: |
