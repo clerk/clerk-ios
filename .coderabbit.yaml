@@ -24,8 +24,8 @@ reviews:
         mode: error
         instructions: |
           PASS if the diff changes no file under `Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`.
-          Otherwise PASS only if the PR description has screenshots or a video of the change on a simulator or device, or says why it could not be run on one.
-          FAIL otherwise. A link to CI, a test run, or snapshot images is not device evidence.
+          Otherwise PASS only if the PR description shows a before and an after, as screenshots or video on a simulator or device, for every screen and state the diff touches, or says why the change could not be run on one.
+          FAIL if the evidence is missing, has no before, or leaves out a screen or state the diff changes. A link to CI, a test run, or snapshot images is not device evidence.
   auto_review:
     auto_pause_after_reviewed_commits: 3
   collapse_walkthrough: false
