@@ -23,5 +23,5 @@ Preconditions:
 
 ## Gotchas
 
-- The code screen shows the number as `+1 (201) 555‑01xx`, with a non-breaking hyphen (U+2011) before the last four digits. `asShownByClerk` in `specs/phone.ts` builds that text. The number is both a button and the text inside it, so the spec takes `.first()`.
+- The code screen shows the number as `+1 (201) 555‑01xx`, with non-breaking spaces (U+00A0) and a non-breaking hyphen (U+2011) before the last four digits. `asShownByClerk` in `specs/phone.ts` builds that text with the hyphen and plain spaces, and text matching treats the two kinds of space alike. The number is both a button and the text inside it, so the spec takes `.first()`.
 - `Check your phone` has no identifier, so that check uses text.
