@@ -2,13 +2,36 @@
 
 inheritance: true
 reviews:
-  request_changes_workflow: true
-  allow_author_approval: false
   path_filters:
     - "!Tests/UI/__Snapshots__/**"
     - "!**/*.xcassets/**"
     - "!Examples/**/project.pbxproj"
     - "!e2e-tests/package-lock.json"
+  auto_approvals:
+    enabled: true
+    allow_author_approval: false
+    max_merge_risk: moderate
+  pre_merge_checks:
+    override_requested_reviewers_only: true
+    custom_checks:
+      - name: "Testing, risk, and revert"
+        mode: error
+        instructions: |
+          The PR description has a Testing, a Risk, and a How to revert section, and each one says something specific to this PR.
+          FAIL if any of the three is missing, empty, a lone "-", or only the template's HTML comment.
+          PASS otherwise. "A plain revert is enough" counts as a real answer for How to revert.
+      - name: "Device evidence"
+        mode: error
+        instructions: |
+          PASS if the diff changes no file under `Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`.
+          Otherwise PASS only if the PR description has screenshots or a video of the change on a simulator or device, or says why it could not be run on one.
+          FAIL otherwise. A link to CI, a test run, or snapshot images is not device evidence.
+  auto_review:
+    auto_pause_after_reviewed_commits: 3
+  collapse_walkthrough: false
+  high_level_summary_in_walkthrough: true
+  high_level_summary_instructions: |
+    Write an explainer for a teammate who doesn't know this part of the code. In three to six plain sentences, say how the touched area worked before this PR, what changes, and where a reviewer should look first. Don't repeat the file list.
 knowledge_base:
   code_guidelines:
     filePatterns:

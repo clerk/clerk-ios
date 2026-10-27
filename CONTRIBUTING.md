@@ -127,16 +127,22 @@ previous run. For a pull request from an outside contributor, a maintainer appro
 run in the pull request first. To retry a run, use GitHub's **Re-run** button. The
 `CI passed` check must pass before merging.
 
-CodeRabbit requests changes when it leaves comments and approves once they're
-resolved. Its approval counts toward the one approval `main` requires. Authors can't
-use `@coderabbitai approve` on their own PRs. Admins can merge their own work after
-dismissing a CodeRabbit "changes requested" review.
+CodeRabbit requests changes when it leaves comments. It approves once they're resolved,
+its pre-merge checks pass, and it rates the PR's merge risk moderate or lower. High and
+critical PRs need a human. The pre-merge checks ask for the Testing, Risk, and How to
+revert sections of the PR template, and for device evidence when the PR changes
+`Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`. Its approval counts
+toward the one approval `main` requires, except on paths in `.github/CODEOWNERS`, which
+need a team-mobile approval. Authors can't use `@coderabbitai approve` on their own PRs
+or override a failing check. Admins can still merge their own work after dismissing a
+CodeRabbit "changes requested" review.
 
-PR CI and each push to `main` run the lint, the unit tests, the E2E runner tests, and
-the iOS and macOS builds. On a PR, the E2E runner tests skip when no file they read
-changed. Every night at 07:17 UTC on `main`, and before each release, the checks also
-run the integration tests and the macCatalyst, watchOS, tvOS, and visionOS builds. A
-failed nightly run posts to Slack.
+PRs merge through a merge queue. PR CI and each queue run do the lint, the unit tests,
+the E2E runner tests, and the iOS and macOS builds. On a PR, the E2E runner tests skip
+when no file they read changed. A push to `main` only builds the tests and saves the
+builds that PR CI starts from. Every night at 07:17 UTC on `main`, and before each
+release, the checks also run the integration tests and the macCatalyst, watchOS, tvOS,
+and visionOS builds. A failed nightly run posts to Slack.
 
 `.github/workflows/verify-attach.yml` runs a trusted script from the default branch,
 `.github/scripts/verify-attach.mjs`. It puts the video or screenshots that a borrowed-device
