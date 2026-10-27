@@ -2,8 +2,8 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { defaultClaimsDir, freeSlot, isOrphaned, readClaim, readClaims, takeSlot, type Claim } from '../../core/claims.ts';
-import { run, sleep } from '../../core/exec.ts';
+import { defaultClaimsDir, freeSlot, isOrphaned, readClaim, readClaims, takeSlot, type Claim } from '@clerk/internal-mobile-e2e/core/claims';
+import { run, sleep } from '@clerk/internal-mobile-e2e/core/exec';
 import {
   LOCAL_POOL,
   VerifyFailure,
@@ -13,7 +13,7 @@ import {
   type EvidencePath,
   type LocalLease,
   type Recording,
-} from '../../core/types.ts';
+} from '@clerk/internal-mobile-e2e/core/types';
 
 import { recordVideo, showLogs } from './simulator.ts';
 
@@ -39,6 +39,20 @@ async function simctl(args: readonly string[], what: string): Promise<string> {
   const result = await run('xcrun', ['simctl', ...args]);
   if (result.code !== 0) throw new VerifyFailure('NOT_READY', `${what} failed: ${result.stderr.trim() || result.stdout.trim()}`, 'run `{cli} doctor`');
   return result.stdout;
+}
+
+// A clone does not inherit simslim's overrides, so each lane is slimmed before its first boot, when
+// the background services it turns off would otherwise keep a CI runner's cores busy for minutes.
+async function boot(udid: string, name: string): Promise<void> {
+  if (process.env.VERIFY_SIMSLIM !== '1') {
+    await simctl(['boot', udid], `simctl boot ${name}`);
+    await simctl(['bootstatus', udid, '-b'], `simctl bootstatus ${name}`);
+    return;
+  }
+  const slim = await run('simslim', ['on', udid]);
+  if (slim.code !== 0) {
+    throw new VerifyFailure('NOT_READY', `simslim on ${name} failed: ${slim.stderr.trim() || slim.stdout.trim()}`, 'install simslim, or unset VERIFY_SIMSLIM');
+  }
 }
 
 function simulatorDataDir(udid: string): string {
@@ -116,8 +130,7 @@ export function localIosBackend(options: { readonly os?: NodeJS.Platform } = {})
         await deleteSimulators((d) => d.name === claim.deviceName);
         request.progress(`device  ${claim.deviceName}  cloning ${TEMPLATE_NAME}`);
         udid = (await simctl(['clone', template.udid, claim.deviceName], `simctl clone ${claim.deviceName}`)).trim();
-        await simctl(['boot', udid], `simctl boot ${claim.deviceName}`);
-        await simctl(['bootstatus', udid, '-b'], `simctl bootstatus ${claim.deviceName}`);
+        await boot(udid, claim.deviceName);
       } catch (error) {
         await clearSlot(claim, request.worktree).catch(() => undefined);
         throw error;

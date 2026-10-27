@@ -62,7 +62,7 @@ public struct OrganizationListView: View {
   private let title: LocalizedStringKey
   private let subtitle: LocalizedStringKey?
 
-  @State var accountList = OrganizationAccountListDataSource()
+  @State var accountLists = OrganizationScopedStore { OrganizationAccountListDataSource(scope: $0) }
   @State private var internalPath = NavigationPath()
   @State private var isSelectingAccount = false
 
@@ -82,7 +82,12 @@ public struct OrganizationListView: View {
     user != nil && !hidePersonal && !forceOrganizationSelection
   }
 
-  private var shouldStartCreateOrganizationFlow: Bool {
+  private var scope: OrganizationUserScope? {
+    guard organizationsEnabled else { return nil }
+    return OrganizationUserScope(clerk: clerk, includesCreationDefaults: false)
+  }
+
+  private func shouldStartCreateOrganizationFlow(_ accountList: OrganizationAccountListDataSource) -> Bool {
     !accountList.isLoading
       && !accountList.hasExistingResources
       && !shouldShowPersonalAccount
@@ -137,47 +142,55 @@ public struct OrganizationListView: View {
   }
 
   public var body: some View {
-    if organizationsEnabled, user != nil {
-      Group {
-        if navigationPath == nil {
-          NavigationStack(path: $internalPath) {
-            content
-          }
-        } else {
-          content
-        }
+    ZStack {
+      Color.clear
+        .frame(width: 0, height: 0)
+
+      if let accountList = accountLists.content(for: scope) {
+        list(accountList)
       }
-      .tint(theme.colors.primary)
-      .presentationBackground(theme.colors.background)
-      .background(theme.colors.background)
-      .clerkErrorPresenting($accountList.error, onDismiss: { _ in
-        guard !accountList.hasExistingResources || accountList.hasFailedLists, user != nil else { return }
-        Task { await fetchOrganizationResources() }
-      })
-      .taskOnce {
-        await fetchOrganizationResources()
-      }
-      .onChange(of: user?.id) {
-        Task { await fetchOrganizationResources() }
-      }
-      #if os(macOS)
-      .frame(width: 560, height: 620, alignment: .topLeading)
-      #endif
     }
+    .onChange(of: scope, initial: true) {
+      accountLists.bind(scope)
+    }
+  }
+
+  private func list(_ accountList: OrganizationAccountListDataSource) -> some View {
+    @Bindable var accountList = accountList
+
+    return Group {
+      if navigationPath == nil {
+        NavigationStack(path: $internalPath) {
+          content(accountList)
+        }
+      } else {
+        content(accountList)
+      }
+    }
+    .tint(theme.colors.primary)
+    .presentationBackground(theme.colors.background)
+    .background(theme.colors.background)
+    .clerkErrorPresenting($accountList.error, onDismiss: { _ in
+      guard !accountList.hasExistingResources || accountList.hasFailedLists else { return }
+      accountList.reload()
+    })
+    #if os(macOS)
+    .frame(width: 560, height: 620, alignment: .topLeading)
+    #endif
   }
 
   // MARK: - Content
 
-  private var content: some View {
+  private func content(_ accountList: OrganizationAccountListDataSource) -> some View {
     Group {
       if accountList.isLoading {
         SpinnerView()
           .frame(width: 32, height: 32)
           .frame(maxWidth: .infinity, maxHeight: .infinity)
-      } else if shouldStartCreateOrganizationFlow {
+      } else if shouldStartCreateOrganizationFlow(accountList) {
         createOrganizationContent
       } else {
-        listContent
+        listContent(accountList)
       }
     }
     .background(theme.colors.background)
@@ -201,7 +214,7 @@ public struct OrganizationListView: View {
       }
       #endif
 
-      if !accountList.isLoading, !shouldStartCreateOrganizationFlow, !shouldShowContentHeader {
+      if !accountList.isLoading, !shouldStartCreateOrganizationFlow(accountList), !shouldShowContentHeader {
         ToolbarItem(placement: .principal) {
           Text(title, bundle: .module)
             .font(theme.fonts.headline)
@@ -211,7 +224,7 @@ public struct OrganizationListView: View {
     }
   }
 
-  private var listContent: some View {
+  private func listContent(_ accountList: OrganizationAccountListDataSource) -> some View {
     ScrollView {
       VStack(spacing: 32) {
         if shouldShowContentHeader {
@@ -224,9 +237,9 @@ public struct OrganizationListView: View {
           onSelection: { selection in
             switch selection {
             case .personalAccount:
-              Task { await selectPersonalAccount() }
+              Task { await selectPersonalAccount(accountList) }
             case .organization(let id):
-              Task { await selectOrganization(id: id) }
+              Task { await selectOrganization(id: id, accountList) }
             }
           },
           onCreateOrganization: navigateToCreateOrganization
@@ -263,11 +276,7 @@ public struct OrganizationListView: View {
 // MARK: - Actions
 
 extension OrganizationListView {
-  private func fetchOrganizationResources() async {
-    await accountList.loadInitial(user: user, includeCreationDefaults: false)
-  }
-
-  private func selectPersonalAccount() async {
+  private func selectPersonalAccount(_ accountList: OrganizationAccountListDataSource) async {
     guard !isSelectingAccount, let session = clerk.session else { return }
 
     isSelectingAccount = true
@@ -281,7 +290,7 @@ extension OrganizationListView {
     }
   }
 
-  private func selectOrganization(id: String) async {
+  private func selectOrganization(id: String, _ accountList: OrganizationAccountListDataSource) async {
     guard !isSelectingAccount, let session = clerk.session else { return }
 
     isSelectingAccount = true
@@ -313,7 +322,7 @@ extension OrganizationListView {
       dismiss()
     } else {
       popCreateOrganizationFlow()
-      Task { await fetchOrganizationResources() }
+      accountLists.content(for: scope)?.reload()
     }
   }
 

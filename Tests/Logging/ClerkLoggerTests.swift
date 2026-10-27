@@ -89,6 +89,33 @@ struct ClerkLoggerTests {
   }
 
   @Test
+  func networkErrorsReachTheHandlerWithSecretsRedacted() async throws {
+    let entries = LockIsolated<[LogEntry]>([])
+    let options = Clerk.Options(
+      logLevel: .error,
+      loggerHandler: { entry in
+        entries.withValue { $0.append(entry) }
+      }
+    )
+    Clerk.configure(publishableKey: testPublishableKey, options: options)
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+
+    let endpoint = "https://clerk.example.com/v1/client/sessions/sess_1/touch?rotating_token_nonce=abc"
+    let error = try URLError(.timedOut, userInfo: [NSURLErrorFailingURLErrorKey: #require(URL(string: endpoint))])
+    await ClerkLogger.logNetworkError(error, endpoint: endpoint, statusCode: 500).value
+
+    let entry = try #require(entries.value.only)
+    let redactedQuery = "rotating_token_nonce=\(ClerkLogRedaction.placeholder)"
+    #expect(entry.message.contains(redactedQuery))
+    #expect(entry.formattedMessage.contains(redactedQuery))
+    #expect(!entry.message.contains("=abc"))
+    #expect(!entry.formattedMessage.contains("=abc"))
+    let line = try #require(lines.lines(containing: "Network request failed").only)
+    #expect(!line.text.contains("=abc"))
+  }
+
+  @Test
   func error_AlwaysLogsRegardlessOfLogLevel() async throws {
     Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
     let (lines, restoreSink) = captureLogLines()

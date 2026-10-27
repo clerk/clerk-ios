@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "command -v node >/dev/null 2>&1 || exit 0; node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/format-swift.mjs\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -8,21 +8,7 @@ import ClerkKit
 import SwiftUI
 
 struct OrganizationInvitationsTabView: View {
-  @Environment(Clerk.self) private var clerk
-
   let dataSource: OrganizationMembersDataSource
-
-  private var organization: Organization? {
-    clerk.organization
-  }
-
-  private var organizationMembership: OrganizationMembership? {
-    clerk.organizationMembership
-  }
-
-  private var canManageMemberships: Bool {
-    organizationMembership?.canManageMemberships == true
-  }
 
   var body: some View {
     OrganizationAccountPaginatedList(
@@ -41,9 +27,9 @@ struct OrganizationInvitationsTabView: View {
       OrganizationInvitationRow(
         invitation: invitation,
         roleName: dataSource.roleName(for: invitation),
-        isRevoking: dataSource.revokingInvitationIds.contains(invitation.id),
+        isRevoking: dataSource.invitations.mutations[invitation.id] != nil,
         onRevoke: {
-          await revokeInvitation(invitation)
+          await dataSource.revokeInvitation(invitation)
         }
       )
     }
@@ -55,20 +41,12 @@ struct OrganizationInvitationsTabView: View {
 extension OrganizationInvitationsTabView {
   @MainActor
   private func refresh() async {
-    guard canManageMemberships, let organization else { return }
-    await dataSource.refreshInvitations(organization: organization)
+    await dataSource.refreshInvitations()
   }
 
   @MainActor
   private func loadMore() async {
-    guard canManageMemberships else { return }
     dataSource.invitations.loadMore()
-  }
-
-  @MainActor
-  private func revokeInvitation(_ invitation: OrganizationInvitation) async {
-    guard canManageMemberships, let organization else { return }
-    await dataSource.revokeInvitation(invitation, organization: organization)
   }
 }
 

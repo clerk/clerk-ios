@@ -11,7 +11,7 @@ on:
         description: Session id the driver chose
         required: true
       request:
-        description: The session request as one JSON string (src/core/remote/protocol.ts)
+        description: The session request as one JSON string (src/core/remote/protocol.ts of @clerk/internal-mobile-e2e)
         required: true
 
 permissions:
@@ -35,17 +35,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          sparse-checkout: e2e-tests/src/core
+          sparse-checkout: e2e-tests
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install the package's pinned tools
+        timeout-minutes: 3
+        run: npm ci --prefix "$PACKAGE" --no-audit --no-fund
       - name: Read the request
         id: plan
         env:
           VERIFY_REQUEST: ${{ inputs.request }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: node "$PACKAGE/src/core/remote/session-agent.ts" plan
+        run: '"$PACKAGE/node_modules/.bin/internal-mobile-e2e-session-agent" plan'
       - name: Check the runner label
         if: steps.plan.outputs.mode == 'session'
         env:
@@ -191,13 +194,13 @@ jobs:
           if [ "${ASSET%.tgz}" != "$ASSET" ]; then tar -xzf "$WORK/$ASSET" -C "$WORK"; else mv "$WORK/$ASSET" "$WORK/cloudflared"; fi
           chmod +x "$WORK/cloudflared"
           VERIFY_SESSION_WORK="$WORK" VERIFY_SESSION_CLOUDFLARED="$WORK/cloudflared" \
-            nohup node "$PACKAGE/src/core/remote/session-agent.ts" serve > "$WORK/agent.log" 2>&1 &
+            nohup "$PACKAGE/node_modules/.bin/internal-mobile-e2e-session-agent" serve > "$WORK/agent.log" 2>&1 &
           disown
           echo "agent-started $(date +%s)000" >> "$WORK/marks"
           for _ in $(seq 1 600); do
             sleep 1
             [ -s "$WORK/tunnel" ] && break
-            pgrep -f 'session-agent.ts serve' > /dev/null || { echo "::error::the session agent ended before a tunnel came up"; break; }
+            pgrep -f 'internal-mobile-e2e-session-agent serve' > /dev/null || { echo "::error::the session agent ended before a tunnel came up"; break; }
           done
           [ -s "$WORK/tunnel" ] || { echo "::error::no tunnel came up"; tail -n 20 "$WORK/agent.log" "$WORK/tunnel.log" || true; exit 1; }
           echo "tunnel-up $(date +%s)000" >> "$WORK/marks"
@@ -299,7 +302,7 @@ jobs:
           set -uo pipefail
           next=0
           while [ ! -f "$VERIFY_SESSION_WORK/ended" ]; do
-            pgrep -f 'session-agent.ts serve' > /dev/null || [ -f "$VERIFY_SESSION_WORK/ended" ] || { echo "::error::the session agent died"; tail -30 "$VERIFY_SESSION_WORK/agent.log"; exit 1; }
+            pgrep -f 'internal-mobile-e2e-session-agent serve' > /dev/null || [ -f "$VERIFY_SESSION_WORK/ended" ] || { echo "::error::the session agent died"; tail -30 "$VERIFY_SESSION_WORK/agent.log"; exit 1; }
             if [ -n "$UDID" ] && [ "$next" -ge 0 ] && [ "$SECONDS" -ge "$next" ]; then
               limit=$(( $(sysctl -n hw.ncpu) * 20 ))
               load="$(sysctl -n vm.loadavg | awk '{ print int($2) }')"
@@ -315,7 +318,7 @@ jobs:
         env:
           UDID: ${{ steps.device.outputs.udid }}
         run: |
-          pkill -f 'session-agent.ts serve' || true
+          pkill -f 'internal-mobile-e2e-session-agent serve' || true
           if [ -n "$UDID" ]; then xcrun simctl shutdown "$UDID" || true; fi
 
       - name: Keep the evidence that attach handed off

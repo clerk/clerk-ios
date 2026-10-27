@@ -19,25 +19,20 @@ on:
         type: string
         default: ""
       report_check_runs:
-        description: Report per-job check runs for manual PR CI
+        description: Report a check run for each job on check_run_sha
         required: false
         type: boolean
         default: false
       check_run_sha:
-        description: Commit SHA to receive manual CI check runs
+        description: Commit SHA to receive the per-job check runs
         required: false
         type: string
         default: ""
       check_run_target_url:
-        description: Target URL for manual CI check runs
+        description: Target URL for the per-job check runs
         required: false
         type: string
         default: ""
-      check_run_name_prefix:
-        description: Prefix for manual CI check run names
-        required: false
-        type: string
-        default: Manual CI
       build_platforms:
         description: JSON array of the platforms to build ClerkKit for
         required: false
@@ -48,6 +43,11 @@ on:
         required: false
         type: string
         default: ""
+      build_only:
+        description: Build what the test jobs build and save it for later runs, without running any check
+        required: false
+        type: boolean
+        default: false
       macos_runner:
         description: Runner label of the macOS jobs
         required: false
@@ -62,7 +62,7 @@ permissions:
 
 jobs:
   prepare-manual-ci-check-runs:
-    name: Prepare manual CI check runs
+    name: Prepare per-job check runs
     if: inputs.report_check_runs && inputs.check_run_sha != ''
     runs-on: ubuntu-latest
     permissions:
@@ -74,7 +74,6 @@ jobs:
         id: create
         env:
           GH_TOKEN: ${{ github.token }}
-          CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUN_SHA: ${{ inputs.check_run_sha }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
           BUILD_PLATFORMS: ${{ inputs.build_platforms }}
@@ -87,13 +86,13 @@ jobs:
           fi
 
           check_run_names=(
-            "$CHECK_RUN_NAME_PREFIX / Check formatting and linting"
-            "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS"
-            "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS"
-            "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests"
+            "Lint"
+            "ClerkKit tests (macOS)"
+            "ClerkKitUI tests (iOS)"
+            "E2E runner tests"
           )
           while IFS= read -r platform; do
-            check_run_names+=("$CHECK_RUN_NAME_PREFIX / Build $platform")
+            check_run_names+=("Build $platform")
           done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")
 
           check_runs_json="$(jq -cn '{}')"
@@ -115,7 +114,8 @@ jobs:
           echo "check_runs_json=$check_runs_json" >> "$GITHUB_OUTPUT"
 
   format-and-lint:
-    name: Check formatting and linting
+    name: Lint
+    if: ${{ !inputs.build_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 20
     steps:
@@ -150,7 +150,7 @@ jobs:
           make check
 
   test:
-    name: Run ClerkKit tests on macOS
+    name: ClerkKit tests (macOS)
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 30
     steps:
@@ -171,7 +171,7 @@ jobs:
         run: echo "prefix=clerkkit-swiftpm-build-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Restore the SwiftPM build of the last main push
-        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: actions/cache/restore@v4
         with:
           path: .build
@@ -189,7 +189,12 @@ jobs:
           '
 
       - name: Run unit tests
+        if: ${{ !inputs.build_only }}
         run: make test
+
+      - name: Build the unit tests
+        if: inputs.build_only
+        run: swift build --build-tests
 
       - name: Save the SwiftPM build for later runs
         if: github.event_name == 'push'
@@ -231,7 +236,7 @@ jobs:
         run: make smoke-macos
 
   test-ui:
-    name: Run ClerkKitUI tests on iOS
+    name: ClerkKitUI tests (iOS)
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     steps:
@@ -251,11 +256,10 @@ jobs:
         id: build-cache
         run: echo "prefix=clerkkitui-derived-data-${{ runner.arch }}-$(xcodebuild -version | tr -s ' \n' '-')" >> "$GITHUB_OUTPUT"
 
-      # PR CI runs on comment and status events, which read and write main's cache scope. So only a push
-      # saves the build, and only PR CI restores one. A push, the nightly and the release build from scratch,
-      # so they never build on what PR CI saved, and they resolve the newest dependency releases.
+      # Only a push to main saves the build, and only PR and merge queue CI restore one, so both build on main. A push,
+      # the nightly and the release build from scratch and resolve the newest dependency releases.
       - name: Restore the Xcode build of the last main push
-        if: github.event_name == 'issue_comment' || github.event_name == 'status' || github.event_name == 'pull_request_target' || github.event_name == 'workflow_run'
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
@@ -279,8 +283,43 @@ jobs:
             utime($time, $time, $path) or die "$path: $!";
           '
 
+      - name: Pick the simulator
+        id: simulator
+        run: |
+          set -euo pipefail
+          udid="$(xcrun simctl list devices available | sed -nE 's/^    (iPhone[^()]*) \(([0-9A-F-]{36})\) \(.*$/\2/p' | head -n1)"
+          test -n "$udid"
+          echo "udid=$udid" >> "$GITHUB_OUTPUT"
+
+      - name: Install simslim
+        if: ${{ !inputs.build_only }}
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/simslim.tar.gz"
+          curl --fail --silent --show-error --location --retry 3 --output "$archive" \
+            https://github.com/MobAI-App/simslim/releases/download/v0.12.2/simslim-v0.12.2-macos-arm64.tar.gz
+          echo "b47302da6fb83b8b4c21f4fdd61507469770c07b0ff07fd1f48207bda4270887  $archive" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/bin" simslim
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+
+      # A fresh simulator's background services keep the runner's cores busy for minutes after boot and
+      # starve the tests. simslim turns them off before the first boot. WatchConnectivityTransportTests
+      # use WCSession, so wcd stays on.
+      - name: Boot the simulator without its background services
+        if: ${{ !inputs.build_only }}
+        env:
+          SIMSLIM_BOOT_TIMEOUT: 15m
+          SIMSLIM_SPAWN_TIMEOUT: 5m
+        run: simslim on "${{ steps.simulator.outputs.udid }}" --keep com.apple.wcd
+
       - name: Run ClerkKitUI tests
-        run: make test-ui
+        if: ${{ !inputs.build_only }}
+        run: make test-ui IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}'
+
+      - name: Build the ClerkKitUI tests
+        if: inputs.build_only
+        run: make test-ui IOS_SIMULATOR_DESTINATION='platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}' TEST_UI_ACTION=build-for-testing
 
       - name: Save the Xcode build for later runs
         if: github.event_name == 'push'
@@ -291,6 +330,7 @@ jobs:
 
   build:
     name: Build ${{ matrix.platform }}
+    if: ${{ !inputs.build_only }}
     runs-on: ${{ inputs.macos_runner }}
     timeout-minutes: 45
     strategy:
@@ -325,7 +365,8 @@ jobs:
           xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
 
   e2e-runner-tests:
-    name: Run E2E runner tests
+    name: E2E runner tests
+    if: ${{ !inputs.build_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -389,7 +430,7 @@ jobs:
         run: node --test ../.github/scripts/*.test.mjs
 
   report-manual-ci-check-runs:
-    name: Report manual CI check runs
+    name: Report per-job check runs
     needs:
       - prepare-manual-ci-check-runs
       - format-and-lint
@@ -406,7 +447,6 @@ jobs:
       - name: Report final check runs
         env:
           GH_TOKEN: ${{ github.token }}
-          CHECK_RUN_NAME_PREFIX: ${{ inputs.check_run_name_prefix }}
           CHECK_RUNS_JSON: ${{ needs.prepare-manual-ci-check-runs.outputs.check_runs_json }}
           CHECK_RUN_TARGET_URL: ${{ inputs.check_run_target_url }}
           BUILD_PLATFORMS: ${{ inputs.build_platforms }}
@@ -421,9 +461,9 @@ jobs:
           jobs_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs?per_page=100")"
 
           job_result() {
-            local job_suffix="$1"
-            jq -r --arg job_suffix "$job_suffix" '
-              [.jobs[] | select(.name | endswith($job_suffix)) | .conclusion] | last // "skipped"
+            local job_name="$1"
+            jq -r --arg job_name "$job_name" '
+              [.jobs[] | select(.name == $job_name or (.name | endswith(" / " + $job_name))) | .conclusion] | last // "skipped"
             ' <<< "$jobs_json"
           }
 
@@ -448,19 +488,19 @@ jobs:
             case "$result" in
               success)
                 conclusion="success"
-                summary="Manual CI completed successfully."
+                summary="The job succeeded."
                 ;;
               cancelled)
                 conclusion="cancelled"
-                summary="Manual CI was cancelled."
+                summary="The job was cancelled."
                 ;;
               skipped)
                 conclusion="skipped"
-                summary="Manual CI did not run because a dependency did not complete."
+                summary="The job did not run because a dependency did not complete."
                 ;;
               *)
                 conclusion="failure"
-                summary="Manual CI failed."
+                summary="The job failed."
                 ;;
             esac
 
@@ -473,11 +513,11 @@ jobs:
               -f "output[summary]=$summary"
           }
 
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Check formatting and linting" "$(job_result "Check formatting and linting")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKit tests on macOS" "$(job_result "Run ClerkKit tests on macOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Run ClerkKitUI tests on iOS" "$(job_result "Run ClerkKitUI tests on iOS")"
-          update_check_run "$CHECK_RUN_NAME_PREFIX / Run E2E runner tests" "$(job_result "Run E2E runner tests")"
+          update_check_run "Lint" "$(job_result "Lint")"
+          update_check_run "ClerkKit tests (macOS)" "$(job_result "ClerkKit tests (macOS)")"
+          update_check_run "ClerkKitUI tests (iOS)" "$(job_result "ClerkKitUI tests (iOS)")"
+          update_check_run "E2E runner tests" "$(job_result "E2E runner tests")"
 
           while IFS= read -r platform; do
-            update_check_run "$CHECK_RUN_NAME_PREFIX / Build $platform" "$(job_result "Build $platform")"
+            update_check_run "Build $platform" "$(job_result "Build $platform")"
           done < <(jq -r '.[]' <<< "$BUILD_PLATFORMS")

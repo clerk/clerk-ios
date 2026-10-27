@@ -88,6 +88,11 @@ public final class Clerk {
     client?.currentSession
   }
 
+  package var activeSession: Session? {
+    guard let session, session.status == .active else { return nil }
+    return session
+  }
+
   /// The current user for the device.
   public var user: User? {
     session?.user

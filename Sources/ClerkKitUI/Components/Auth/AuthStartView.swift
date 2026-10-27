@@ -358,7 +358,7 @@ extension AuthStartView {
   private var biometricCredentialAvailabilityRefreshState: AuthStartBiometricCredentialRefreshState {
     .state(
       biometricCredentialFeatureIsEnabled: biometricCredentialFeatureIsEnabled,
-      activeSessionID: clerk.session?.status == .active ? clerk.session?.id : nil,
+      activeSessionID: clerk.activeSession?.id,
       clientID: clerk.client?.id
     )
   }

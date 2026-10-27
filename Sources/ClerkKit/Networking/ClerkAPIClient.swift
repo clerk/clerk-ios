@@ -24,6 +24,9 @@ actor APIClient {
   struct Configuration {
     var sessionConfiguration: URLSessionConfiguration = {
       let configuration = URLSessionConfiguration.default
+      configuration.urlCache = nil
+      configuration.httpCookieStorage = nil
+      configuration.httpShouldSetCookies = false
       configuration.httpAdditionalHeaders = [
         "Accept": "application/json",
       ]

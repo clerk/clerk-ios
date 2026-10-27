@@ -1,10 +1,10 @@
 import { cpSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { run } from './core/exec.ts';
-import { withoutClerkKeys } from './core/keys.ts';
-import { remoteBackend } from './core/remote/backend.ts';
-import { VerifyFailure, type HostAdapter, type ScratchPath } from './core/types.ts';
+import { run } from '@clerk/internal-mobile-e2e/core/exec';
+import { withoutClerkKeys } from '@clerk/internal-mobile-e2e/core/keys';
+import { remoteBackend } from '@clerk/internal-mobile-e2e/core/remote/backend';
+import { VerifyFailure, type HostAdapter, type ScratchPath } from '@clerk/internal-mobile-e2e/core/types';
 import { localIosBackend } from './platform/ios/local.ts';
 import { APP_ID, app } from '../specs/app.ts';
 import { BUILD_HOST, BUILD_INPUTS, builtHost } from './host-app.ts';
