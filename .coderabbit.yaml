@@ -2,13 +2,52 @@
 
 inheritance: true
 reviews:
-  request_changes_workflow: true
-  allow_author_approval: false
   path_filters:
     - "!Tests/UI/__Snapshots__/**"
     - "!**/*.xcassets/**"
     - "!Examples/**/project.pbxproj"
     - "!e2e-tests/package-lock.json"
+  auto_approvals:
+    enabled: true
+    allow_author_approval: false
+    max_merge_risk: moderate
+  pre_merge_checks:
+    override_requested_reviewers_only: true
+    custom_checks:
+      - name: "Testing, risk, and revert"
+        mode: error
+        instructions: |
+          The PR description has a Testing, a Risk, and a How to revert section, and each one says something specific to this PR.
+          FAIL if any of the three is missing, empty, a lone "-", only the template's HTML comment, or a placeholder with no reason, such as "TBD", "N/A", "none", or "n/a".
+          PASS when each section names something about this PR. A short answer with a reason passes, such as "Low: docs only" for Risk or "A plain revert is enough" for How to revert.
+      - name: "Device evidence"
+        mode: error
+        instructions: |
+          PASS if the diff changes no file under `Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`.
+          Otherwise PASS only if the PR description does one of these:
+          (a) Shows a before and an after, as screenshots or video on a simulator or device, for every screen the diff touches and every state of those screens, including states that should look the same after the change. The pairs sit in a table, each before beside its after.
+          (b) Says why the change could not be run on one.
+          FAIL when the diff touches those paths and either of these is true:
+          - Neither (a) nor (b) holds. For example, the evidence is missing, has no before, leaves out a touched screen or one of its states, or isn't laid out as a before and after table.
+          - A local patch forced a state, and the description doesn't say what the patch changed, why, and that both the before and the after build used it. This fails even when (a) holds.
+          A link to CI, a test run, or snapshot images is not device evidence.
+  finishing_touches:
+    autofix:
+      enabled: false
+    unit_tests:
+      enabled: false
+    docstrings:
+      enabled: false
+    fix_ci:
+      enabled: false
+    resolve_merge_conflict:
+      enabled: false
+    simplify:
+      enabled: false
+  collapse_walkthrough: false
+  high_level_summary_in_walkthrough: true
+  high_level_summary_instructions: |
+    Write an explainer for a teammate who doesn't know this part of the code. In three to six plain sentences, say how the touched area worked before this PR, what changes, and where a reviewer should look first. Don't repeat the file list.
 knowledge_base:
   code_guidelines:
     filePatterns:
