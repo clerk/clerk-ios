@@ -17,13 +17,16 @@ extension EnvironmentValues {
 }
 
 private struct DismissKeyboardKey: @preconcurrency EnvironmentKey {
-  @MainActor static let defaultValue: @MainActor () -> Void = {
-    #if os(iOS)
-    _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    #elseif os(macOS)
-    let window = NSApp.keyWindow ?? NSApp.mainWindow
-    _ = window?.makeFirstResponder(nil)
-    #endif
-  }
+  @MainActor static let defaultValue: @MainActor () -> Void = dismissKeyboard
+}
+
+@MainActor
+func dismissKeyboard() {
+  #if os(iOS)
+  _ = UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+  #elseif os(macOS)
+  let window = NSApp.keyWindow ?? NSApp.mainWindow
+  _ = window?.makeFirstResponder(nil)
+  #endif
 }
 #endif
