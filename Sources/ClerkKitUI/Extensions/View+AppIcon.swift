@@ -24,7 +24,7 @@ extension View {
   /// - Parameter image: The custom image to render above auth content.
   /// - Returns: A view with a custom Clerk app icon configuration.
   public func clerkAppIcon(_ image: Image?) -> some View {
-    environment(\.clerkAppIcon, image)
+    modifier(ClerkAppIconModifier(appIcon: image))
   }
 
   /// Overrides the maximum height of the app logo shown by ClerkKitUI authentication screens.
@@ -37,7 +37,7 @@ extension View {
   /// - Parameter maxHeight: The maximum height of the app logo, in points.
   /// - Returns: A view with a custom Clerk app icon maximum height.
   public func clerkAppIcon(maxHeight: CGFloat) -> some View {
-    environment(\.clerkAppIconMaxHeight, maxHeight)
+    modifier(ClerkAppIconMaxHeightModifier(maxHeight: maxHeight))
   }
 
   /// Replaces the entire app logo slot shown by ClerkKitUI authentication screens.

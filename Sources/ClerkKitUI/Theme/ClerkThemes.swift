@@ -32,6 +32,14 @@ extension ClerkTheme {
 extension EnvironmentValues {
   public var clerkTheme: ClerkTheme {
     get { self[ClerkThemeEnvironmentKey.self] }
+    set {
+      self[ClerkThemeEnvironmentKey.self] = newValue
+      updateRequiredAppearanceRecorder.record(.theme(newValue))
+    }
+  }
+
+  var clerkThemeWithoutRecording: ClerkTheme {
+    get { self[ClerkThemeEnvironmentKey.self] }
     set { self[ClerkThemeEnvironmentKey.self] = newValue }
   }
 }
