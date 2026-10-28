@@ -1,0 +1,39 @@
+name: Code owner approval
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  code-owner-approval:
+    name: Code owner approval
+    if: github.event_name == 'merge_group' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Pass in the merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "Each pull request passed this check before it entered the queue."
+
+      - name: Checkout the script
+        if: github.event_name != 'merge_group'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+
+      - name: Check for a code owner's approval
+        if: github.event_name != 'merge_group'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: node .github/scripts/code-owner-approval.mjs
