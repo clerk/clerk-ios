@@ -14,7 +14,10 @@ function patternRegex(pattern) {
     .split(/(\*\*\/|\/\*\*|\*\*|\*|\?)/)
     .map(part => GLOB[part] ?? part.replace(/[.+^${}()|[\]\\]/g, '\\$&'))
     .join('');
-  return new RegExp(`^${anchored ? '' : '(?:.*/)?'}${body}${directory ? '/.*' : '(?:/.*)?'}$`);
+  // On GitHub `docs/*` owns docs/a.md but not docs/b/c.md, so a wildcard last segment matches no descendants.
+  const last = trimmed.slice(trimmed.lastIndexOf('/') + 1);
+  const descendants = directory ? '/.*' : /[*?]/.test(last) && last !== '**' ? '' : '(?:/.*)?';
+  return new RegExp(`^${anchored ? '' : '(?:.*/)?'}${body}${descendants}$`);
 }
 
 function parseCodeowners(text) {
@@ -79,6 +82,10 @@ async function codeOwnerApproval({ fetch, api, token, repo, number, author, base
   const codeowners = await get(`/contents/.github/CODEOWNERS?ref=${encodeURIComponent(baseRef)}`, { missing: null });
   const rules = codeowners === null ? [] : parseCodeowners(Buffer.from(codeowners.content, 'base64').toString('utf8'));
   const files = await paged(get, `/pulls/${number}/files`);
+  const { changed_files: changed } = await get(`/pulls/${number}`);
+  if (files.length < changed) {
+    return { pass: false, message: `GitHub listed ${files.length} of the ${changed} changed files, so this check can't tell which are under CODEOWNERS. Split the pull request.` };
+  }
   const owned = ownedFiles(rules, [...new Set(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)))]);
   if (owned.length === 0) {
     return { pass: true, message: 'No file under CODEOWNERS changed.' };

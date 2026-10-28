@@ -14,7 +14,7 @@ const CODEOWNERS = `# High-risk paths
 *.pem @clerk/team-mobile
 `;
 
-function fakeGitHub({ codeowners = CODEOWNERS, files, reviews = [], roles = {} }) {
+function fakeGitHub({ codeowners = CODEOWNERS, files, changed = files.length, reviews = [], roles = {} }) {
   const reply = body => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
   const notFound = { ok: false, status: 404, json: async () => ({}), text: async () => 'Not Found' };
   return async (url, { headers }) => {
@@ -24,6 +24,9 @@ function fakeGitHub({ codeowners = CODEOWNERS, files, reviews = [], roles = {} }
     if (path === '/contents/.github/CODEOWNERS') {
       assert.equal(searchParams.get('ref'), 'main');
       return codeowners === null ? notFound : reply({ content: Buffer.from(codeowners).toString('base64') });
+    }
+    if (path === '/pulls/7') {
+      return reply({ changed_files: changed });
     }
     const page = Number(searchParams.get('page'));
     const slice = items => items.slice((page - 1) * 100, page * 100);
@@ -60,6 +63,11 @@ describe('ownedFiles', () => {
       ownedFiles(rules, ['.github/workflows/pr-ci.yml', 'Package.swift', 'Tools/Nested/Package.swift', 'certs/dev.pem', 'Sources/ClerkKit/Clerk.swift', '.github/workflowsX/a.yml']),
       ['.github/workflows/pr-ci.yml', 'Package.swift', 'certs/dev.pem'],
     );
+  });
+
+  it('matches only direct children for a wildcard last segment, as on GitHub', () => {
+    const wildcard = parseCodeowners('* @clerk/team-mobile\ndocs/*\n');
+    assert.deepEqual(ownedFiles(wildcard, ['docs/a.md', 'docs/private/b.md']), ['docs/private/b.md']);
   });
 
   it('lets a later line with no owners take files back out', () => {
@@ -127,6 +135,12 @@ describe('code owner approval', () => {
     files.push({ filename: '.github/workflows/late.yml' });
     const { pass } = await run({ files });
     assert.equal(pass, false);
+  });
+
+  it('fails when GitHub lists fewer files than the pull request changed', async () => {
+    const { pass, output } = await run({ files: [{ filename: 'Sources/ClerkKit/Clerk.swift' }], changed: 3001 });
+    assert.equal(pass, false);
+    assert.match(output, /listed 1 of the 3001 changed files/);
   });
 
   it('passes when the base branch has no CODEOWNERS', async () => {
