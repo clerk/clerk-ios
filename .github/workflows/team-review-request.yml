@@ -1,7 +1,7 @@
 name: Team review request
 
-# pull_request_target and issue_comment run this file and its script from main, with a token that can request reviews on fork pull requests too.
-# The job never checks out or runs the pull request's code.
+# pull_request_target and issue_comment run this file and its script from main, also for fork pull requests.
+# The job never checks out or runs the pull request's code. The Actions token can't see org teams, so a GitHub App token requests the review.
 on:
   pull_request_target:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -23,8 +23,6 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      issues: read
-      pull-requests: write
     steps:
       - name: Checkout the scripts from main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,8 +30,18 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           sparse-checkout: .github/scripts
           persist-credentials: false
+      - name: Create a token that can request a team
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.TEAM_REVIEW_APP_CLIENT_ID }}
+          private-key: ${{ secrets.TEAM_REVIEW_APP_PRIVATE_KEY }}
+          permission-contents: read
+          permission-issues: read
+          permission-members: read
+          permission-pull-requests: write
       - name: Request Team Mobile when CodeRabbit can't approve
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
         run: node .github/scripts/team-review-request.mjs
