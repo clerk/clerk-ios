@@ -54,7 +54,9 @@ async function trusted(get, login) {
 // reason says why the check failed: 'author', 'files', 'protected' or 'coderabbit'.
 async function codeOwnerApproval({ fetch, api, token, repo, number, author, baseRef }) {
   const get = client({ fetch, api, token, repo });
-  const approved = approvers(await paged(get, `/pulls/${number}/reviews`), author);
+  const pull = await get(`/pulls/${number}`);
+  const reviews = await paged(get, `/pulls/${number}/reviews`);
+  const approved = approvers(reviews, author);
   for (const login of approved) {
     if (await trusted(get, login)) {
       return { pass: true, message: `${login} approved, and has maintain or admin access.` };
@@ -66,7 +68,7 @@ async function codeOwnerApproval({ fetch, api, token, repo, number, author, base
   const list = await get(`/contents/${PROTECTED_PATHS}?ref=${encodeURIComponent(baseRef)}`, { missing: null });
   const patterns = list === null ? [] : parseProtectedPaths(Buffer.from(list.content, 'base64').toString('utf8'));
   const files = await paged(get, `/pulls/${number}/files`);
-  const { changed_files: changed } = await get(`/pulls/${number}`);
+  const changed = pull.changed_files;
   if (files.length < changed) {
     return { pass: false, reason: 'files', message: `GitHub listed ${files.length} of the ${changed} changed files, so this check can't tell which are protected. Split the pull request.` };
   }
@@ -79,7 +81,8 @@ async function codeOwnerApproval({ fetch, api, token, repo, number, author, base
       message: `This changes ${owned.length} protected file(s) (${shown}${owned.length > 10 ? ', ...' : ''}), so it needs an approval from another Team Mobile member.`,
     };
   }
-  if (!approved.includes(CODERABBIT)) {
+  const coderabbit = reviews.findLast(review => review.user?.login === CODERABBIT && review.state !== 'COMMENTED' && review.state !== 'PENDING');
+  if (coderabbit?.state !== 'APPROVED' || coderabbit.commit_id !== pull.head.sha) {
     return { pass: false, reason: 'coderabbit', message: "CodeRabbit hasn't approved this commit. If it rates the merge risk high or critical, it won't, and this needs an approval from another Team Mobile member." };
   }
   return { pass: true, message: `${author} has maintain or admin access, and CodeRabbit approved.` };

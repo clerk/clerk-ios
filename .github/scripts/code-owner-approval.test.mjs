@@ -25,7 +25,7 @@ function fakeGitHub({ list = PROTECTED_PATHS, files, changed = files.length, rev
       return list === null ? notFound : reply({ content: Buffer.from(list).toString('base64') });
     }
     if (path === '/pulls/7') {
-      return reply({ changed_files: changed });
+      return reply({ changed_files: changed, head: { sha: HEAD } });
     }
     const page = Number(searchParams.get('page'));
     const slice = items => items.slice((page - 1) * 100, page * 100);
@@ -52,7 +52,8 @@ async function run(github, author = 'outside-dev') {
   return { pass, output: lines.join('') };
 }
 
-const review = (login, state) => ({ user: { login }, state });
+const HEAD = 'c14cacc2763d2dfc271d9c286b09376a90c5b9ff';
+const review = (login, state, commit = HEAD) => ({ user: { login }, state, commit_id: commit });
 
 describe('protectedFiles', () => {
   const patterns = parseProtectedPaths(PROTECTED_PATHS);
@@ -84,6 +85,12 @@ describe('code owner approval', () => {
     const { pass, output } = await run({ files: ordinary, reviews: [review('coderabbitai[bot]', 'COMMENTED')], roles: { mikepitre: 'admin' } }, 'mikepitre');
     assert.equal(pass, false);
     assert.match(output, /CodeRabbit hasn't approved this commit/);
+  });
+
+  it('fails a Team Mobile author when CodeRabbit approved an earlier commit', async () => {
+    const stale = review('coderabbitai[bot]', 'APPROVED', 'e225ce56d448093f7910a36cf47bcc9a664e04d0');
+    const { pass } = await run({ files: ordinary, reviews: [stale], roles: { mikepitre: 'admin' } }, 'mikepitre');
+    assert.equal(pass, false);
   });
 
   it('fails a Team Mobile author on protected files even after CodeRabbit approves', async () => {
