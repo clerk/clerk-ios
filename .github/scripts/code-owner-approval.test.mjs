@@ -70,40 +70,57 @@ describe('protectedFiles', () => {
 });
 
 describe('code owner approval', () => {
-  it('passes when no protected file changed', async () => {
-    const { pass, output } = await run({ files: [{ filename: 'Sources/ClerkKit/Clerk.swift' }] });
+  const coderabbit = review('coderabbitai[bot]', 'APPROVED');
+  const ordinary = [{ filename: 'Sources/ClerkKit/Clerk.swift' }];
+  const workflow = [{ filename: '.github/workflows/pr-ci.yml' }];
+
+  it('passes a Team Mobile author on ordinary files once CodeRabbit approves', async () => {
+    const { pass, output } = await run({ files: ordinary, reviews: [coderabbit], roles: { mikepitre: 'admin' } }, 'mikepitre');
     assert.equal(pass, true);
-    assert.match(output, /No file listed in \.github\/protected-paths changed/);
+    assert.match(output, /mikepitre has maintain or admin access, and CodeRabbit approved/);
   });
 
-  it('passes when the author has maintain or admin access', async () => {
-    const { pass } = await run({ files: [{ filename: '.github/workflows/pr-ci.yml' }], roles: { mikepitre: 'admin' } }, 'mikepitre');
-    assert.equal(pass, true);
+  it('fails a Team Mobile author until CodeRabbit approves, as when it rates the risk high', async () => {
+    const { pass, output } = await run({ files: ordinary, reviews: [review('coderabbitai[bot]', 'COMMENTED')], roles: { mikepitre: 'admin' } }, 'mikepitre');
+    assert.equal(pass, false);
+    assert.match(output, /CodeRabbit hasn't approved this commit/);
   });
 
-  it('fails for an author with write access and no trusted approval', async () => {
+  it('fails a Team Mobile author on protected files even after CodeRabbit approves', async () => {
+    const { pass, output } = await run({ files: workflow, reviews: [coderabbit], roles: { swolfand: 'maintain' } }, 'swolfand');
+    assert.equal(pass, false);
+    assert.match(output, /This changes 1 protected file\(s\) \(\.github\/workflows\/pr-ci\.yml\), so it needs an approval from another Team Mobile member/);
+  });
+
+  it('passes a Team Mobile author on protected files once another member approves', async () => {
+    const { pass, output } = await run({ files: workflow, reviews: [review('seanperez29', 'APPROVED')], roles: { swolfand: 'maintain', seanperez29: 'admin' } }, 'swolfand');
+    assert.equal(pass, true);
+    assert.match(output, /seanperez29 approved/);
+  });
+
+  it('fails an author with write access on ordinary files even after CodeRabbit and a writer approve', async () => {
     const { pass, output } = await run({
-      files: [{ filename: '.github/workflows/pr-ci.yml' }],
-      reviews: [review('coderabbitai[bot]', 'APPROVED'), review('writer', 'APPROVED')],
+      files: ordinary,
+      reviews: [coderabbit, review('writer', 'APPROVED')],
       roles: { 'outside-dev': 'write', writer: 'write' },
     });
     assert.equal(pass, false);
-    assert.match(output, /^::error title=Code owner approval::This changes 1 protected file\(s\) \(\.github\/workflows\/pr-ci\.yml\)/);
+    assert.match(output, /^::error title=Code owner approval::outside-dev doesn't have maintain or admin access/);
   });
 
-  it('passes on an approval from someone with maintain access', async () => {
-    const { pass, output } = await run({
-      files: [{ filename: 'Package.swift' }],
-      reviews: [review('swolfand', 'APPROVED')],
-      roles: { 'outside-dev': 'write', swolfand: 'maintain' },
-    });
+  it('fails a contributor with no access to the repository', async () => {
+    const { pass } = await run({ files: ordinary, reviews: [coderabbit] }, 'fork-contributor');
+    assert.equal(pass, false);
+  });
+
+  it('passes an author with write access once Team Mobile approves', async () => {
+    const { pass } = await run({ files: workflow, reviews: [review('wobsoriano', 'APPROVED')], roles: { 'outside-dev': 'write', wobsoriano: 'maintain' } });
     assert.equal(pass, true);
-    assert.match(output, /swolfand approved/);
   });
 
   it('ignores an approval that was later dismissed or followed by a change request', async () => {
     const { pass } = await run({
-      files: [{ filename: 'Package.swift' }],
+      files: ordinary,
       reviews: [review('swolfand', 'APPROVED'), review('swolfand', 'DISMISSED'), review('seanperez29', 'APPROVED'), review('seanperez29', 'COMMENTED'), review('seanperez29', 'CHANGES_REQUESTED')],
       roles: { swolfand: 'maintain', seanperez29: 'admin' },
     });
@@ -112,7 +129,7 @@ describe('code owner approval', () => {
 
   it('keeps an approval when a later review only comments', async () => {
     const { pass } = await run({
-      files: [{ filename: 'Package.swift' }],
+      files: ordinary,
       reviews: [review('seanperez29', 'APPROVED'), review('seanperez29', 'COMMENTED')],
       roles: { seanperez29: 'admin' },
     });
@@ -120,25 +137,25 @@ describe('code owner approval', () => {
   });
 
   it('counts the old path of a renamed file', async () => {
-    const { pass } = await run({ files: [{ filename: 'Old/Identity.swift', previous_filename: 'Sources/ClerkKit/Identity/Store.swift' }] });
+    const { pass } = await run({ files: [{ filename: 'Old/Identity.swift', previous_filename: 'Sources/ClerkKit/Identity/Store.swift' }], reviews: [coderabbit], roles: { mikepitre: 'admin' } }, 'mikepitre');
     assert.equal(pass, false);
   });
 
   it('reads every page of changed files', async () => {
     const files = Array.from({ length: 150 }, (_, i) => ({ filename: `Sources/File${i}.swift` }));
     files.push({ filename: '.github/workflows/late.yml' });
-    const { pass } = await run({ files });
+    const { pass } = await run({ files, reviews: [coderabbit], roles: { mikepitre: 'admin' } }, 'mikepitre');
     assert.equal(pass, false);
   });
 
   it('fails when GitHub lists fewer files than the pull request changed', async () => {
-    const { pass, output } = await run({ files: [{ filename: 'Sources/ClerkKit/Clerk.swift' }], changed: 3001 });
+    const { pass, output } = await run({ files: ordinary, changed: 3001, reviews: [coderabbit], roles: { mikepitre: 'admin' } }, 'mikepitre');
     assert.equal(pass, false);
     assert.match(output, /listed 1 of the 3001 changed files/);
   });
 
-  it('passes when the base branch has no protected-paths list', async () => {
-    const { pass } = await run({ list: null, files: [{ filename: '.github/workflows/pr-ci.yml' }] });
+  it('treats every file as unprotected when the base branch has no protected-paths list', async () => {
+    const { pass } = await run({ list: null, files: workflow, reviews: [coderabbit], roles: { mikepitre: 'admin' } }, 'mikepitre');
     assert.equal(pass, true);
   });
 });
