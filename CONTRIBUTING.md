@@ -135,9 +135,8 @@ revert sections of the PR template, and for device evidence when the PR changes
 toward the one approval `main` requires. A PR that changes a path in `.github/protected-paths`
 also needs the `Code owner approval` check. It passes when the author, or someone who
 approved, has maintain or admin access to the repository, as the mobile team does.
-Team Mobile is asked to review only when CodeRabbit's approval can't merge the PR: it
-withheld approval, the author is a bot it skips, or the PR changes a protected path and
-the author lacks maintain or admin access. Authors can't use `@coderabbitai approve` on their own PRs
+GitHub requests no reviewers on its own. When CodeRabbit withholds approval or
+`Code owner approval` fails, ask someone on the mobile team to review. Authors can't use `@coderabbitai approve` on their own PRs
 or override a failing check. Admins can still merge their own work after dismissing a
 CodeRabbit "changes requested" review.
 
