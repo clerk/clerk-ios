@@ -19,6 +19,7 @@ const review = (login, state) => ({ user: { login }, state });
 
 function fakeGitHub({ author = 'outside-dev', draft = false, state = 'open', files = [{ filename: 'Sources/ClerkKit/Clerk.swift' }], pending = [], reviews = [], comments = [] }) {
   const requested = [];
+  const posted = [];
   const reply = body => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
   const notFound = { ok: false, status: 404, json: async () => ({}), text: async () => 'Not Found' };
   const fetch = async (url, { method = 'GET', body }) => {
@@ -26,6 +27,10 @@ function fakeGitHub({ author = 'outside-dev', draft = false, state = 'open', fil
     const path = pathname.replace(`/repos/${REPO}`, '');
     if (method === 'POST' && path === '/pulls/7/requested_reviewers') {
       requested.push(...JSON.parse(body).reviewers);
+      return reply({});
+    }
+    if (method === 'POST' && path === '/issues/7/comments') {
+      posted.push(JSON.parse(body).body);
       return reply({});
     }
     if (path === '/pulls/7') {
@@ -45,17 +50,17 @@ function fakeGitHub({ author = 'outside-dev', draft = false, state = 'open', fil
     }
     throw new Error(`unexpected ${method} ${path}`);
   };
-  return { fetch, requested };
+  return { fetch, requested, posted };
 }
 
 async function run(github) {
-  const { fetch, requested } = fakeGitHub(github);
+  const { fetch, requested, posted } = fakeGitHub(github);
   const lines = [];
   await main(
     { GITHUB_API_URL: API, GITHUB_REPOSITORY: REPO, GITHUB_TOKEN: 'test-token', PR_NUMBER: '7' },
     { fetch, out: { write: line => lines.push(line) }, teamText: TEAM },
   );
-  return { requested, output: lines.join('') };
+  return { requested, posted, output: lines.join('') };
 }
 
 describe('ratedHighRisk', () => {
@@ -85,20 +90,37 @@ describe('team review request', () => {
   });
 
   it('requests the other members when CodeRabbit rates a Team Mobile author\'s commit high risk', async () => {
-    const { requested, output } = await run({ author: 'swolfand', comments: [riskComment('High')] });
+    const { requested, posted, output } = await run({ author: 'swolfand', comments: [riskComment('High')] });
     assert.deepEqual(requested, ['mikepitre', 'seanperez29', 'wobsoriano']);
+    assert.deepEqual(posted, []);
     assert.match(output, /CodeRabbit rated this commit high or critical risk/);
   });
 
-  it('requests the other members when a Team Mobile author changes a protected file', async () => {
-    const { requested } = await run({ author: 'mikepitre', files: [{ filename: '.github/workflows/pr-ci.yml' }] });
+  it('requests the other members and explains why when a Team Mobile author changes a protected file', async () => {
+    const files = [{ filename: '.github/workflows/pr-ci.yml' }, { filename: 'Sources/ClerkKit/Clerk.swift' }];
+    const { requested, posted } = await run({ author: 'mikepitre', files });
     assert.deepEqual(requested, ['seanperez29', 'swolfand', 'wobsoriano']);
+    assert.equal(posted.length, 1);
+    assert.match(posted[0], /changes files listed in `\.github\/protected-paths`/);
+    assert.match(posted[0], /^- `\.github\/workflows\/pr-ci\.yml`$/m);
+    assert.doesNotMatch(posted[0], /Clerk\.swift/);
+  });
+
+  it('comments only when it requests someone new', async () => {
+    const { requested, posted } = await run({
+      author: 'mikepitre',
+      files: [{ filename: '.github/workflows/pr-ci.yml' }],
+      pending: ['seanperez29', 'swolfand', 'wobsoriano'],
+    });
+    assert.deepEqual(requested, []);
+    assert.deepEqual(posted, []);
   });
 
   it('requests Team Mobile for an author with write access, a fork contributor and a bot', async () => {
     for (const author of ['outside-dev', 'fork-contributor', 'dependabot[bot]']) {
-      const { requested } = await run({ author });
+      const { requested, posted } = await run({ author });
       assert.deepEqual(requested, ['mikepitre', 'seanperez29', 'swolfand', 'wobsoriano']);
+      assert.deepEqual(posted, []);
     }
   });
 
