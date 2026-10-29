@@ -140,7 +140,8 @@ unless the PR changes a path in `.github/protected-paths` or CodeRabbit rates it
 critical risk. Then another Team Mobile member has to approve. Anyone else needs an
 approval from Team Mobile. The `Team review request` workflow requests the members listed
 in `.github/team-mobile` when a PR needs one, so keep that list in step with the team.
-For a protected path, it also comments on the PR with the protected files it found.
+When it requests reviewers because a Team Mobile author changed a protected path, it also
+comments on the PR with the protected files.
 Authors can't use `@coderabbitai approve` on their own PRs or override a failing check.
 
 PRs merge through a merge queue. PR CI and each queue run do the lint, the unit tests,
