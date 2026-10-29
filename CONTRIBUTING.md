@@ -132,9 +132,12 @@ its pre-merge checks pass, and it rates the PR's merge risk moderate or lower. H
 critical PRs need a human. The pre-merge checks ask for the Testing, Risk, and How to
 revert sections of the PR template, and for device evidence when the PR changes
 `Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`. Its approval counts
-toward the one approval `main` requires. A PR that changes a path in `.github/CODEOWNERS`
+toward the one approval `main` requires. A PR that changes a path in `.github/protected-paths`
 also needs the `Code owner approval` check. It passes when the author, or someone who
-approved, has maintain or admin access to the repository, as the mobile team does. Authors can't use `@coderabbitai approve` on their own PRs
+approved, has maintain or admin access to the repository, as the mobile team does.
+Team Mobile is asked to review only when CodeRabbit's approval can't merge the PR: it
+withheld approval, the author is a bot it skips, or the PR changes a protected path and
+the author lacks maintain or admin access. Authors can't use `@coderabbitai approve` on their own PRs
 or override a failing check. Admins can still merge their own work after dismissing a
 CodeRabbit "changes requested" review.
 

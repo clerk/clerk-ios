@@ -1,0 +1,39 @@
+name: Team review request
+
+# pull_request_target and issue_comment run this file and its script from main, with a token that can request reviews on fork pull requests too.
+# The job never checks out or runs the pull request's code.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+  issue_comment:
+    types: [created, edited]
+
+permissions: {}
+
+concurrency:
+  group: team-review-request-${{ github.event.pull_request.number || github.event.issue.number }}
+
+jobs:
+  team-review-request:
+    name: Team review request
+    if: >-
+      (github.event_name == 'pull_request_target' && github.event.pull_request.draft == false) ||
+      (github.event.issue.pull_request && github.event.comment.user.login == 'coderabbitai[bot]' && contains(github.event.comment.body, 'Automatic approval withheld'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: write
+    steps:
+      - name: Checkout the scripts from main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+          persist-credentials: false
+      - name: Request Team Mobile when CodeRabbit can't approve
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: node .github/scripts/team-review-request.mjs

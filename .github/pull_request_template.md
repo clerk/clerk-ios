@@ -11,7 +11,7 @@
 -
 
 ### Risk
-<!-- What could break, and for whom? Say whether this touches a path in .github/CODEOWNERS, a public API, or stored session data. -->
+<!-- What could break, and for whom? Say whether this touches a path in .github/protected-paths, a public API, or stored session data. -->
 -
 
 ### How to revert

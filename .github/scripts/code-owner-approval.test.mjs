@@ -1,29 +1,28 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { main, ownedFiles, parseCodeowners } from './code-owner-approval.mjs';
+import { main, parseProtectedPaths, protectedFiles } from './code-owner-approval.mjs';
 
 const REPO = 'clerk/clerk-ios';
 const API = 'https://api.github.test';
 
-const CODEOWNERS = `# High-risk paths
-/.github/workflows/ @clerk/team-mobile
-/Package.swift @clerk/team-mobile
-/Sources/ClerkKit/Identity/ @clerk/team-mobile
-/Sources/ClerkKit/Identity/Generated/
-*.pem @clerk/team-mobile
+const PROTECTED_PATHS = `# High-risk paths
+/.github/workflows/
+/Package.swift
+/Sources/ClerkKit/Identity/ # session identity
+*.pem
 `;
 
-function fakeGitHub({ codeowners = CODEOWNERS, files, changed = files.length, reviews = [], roles = {} }) {
+function fakeGitHub({ list = PROTECTED_PATHS, files, changed = files.length, reviews = [], roles = {} }) {
   const reply = body => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) });
   const notFound = { ok: false, status: 404, json: async () => ({}), text: async () => 'Not Found' };
   return async (url, { headers }) => {
     assert.equal(headers.authorization, 'Bearer test-token');
     const { pathname, searchParams } = new URL(url);
     const path = pathname.replace(`/repos/${REPO}`, '');
-    if (path === '/contents/.github/CODEOWNERS') {
+    if (path === '/contents/.github/protected-paths') {
       assert.equal(searchParams.get('ref'), 'main');
-      return codeowners === null ? notFound : reply({ content: Buffer.from(codeowners).toString('base64') });
+      return list === null ? notFound : reply({ content: Buffer.from(list).toString('base64') });
     }
     if (path === '/pulls/7') {
       return reply({ changed_files: changed });
@@ -55,31 +54,26 @@ async function run(github, author = 'outside-dev') {
 
 const review = (login, state) => ({ user: { login }, state });
 
-describe('ownedFiles', () => {
-  const rules = parseCodeowners(CODEOWNERS);
+describe('protectedFiles', () => {
+  const patterns = parseProtectedPaths(PROTECTED_PATHS);
 
   it('matches anchored directories, exact files, and unanchored globs', () => {
     assert.deepEqual(
-      ownedFiles(rules, ['.github/workflows/pr-ci.yml', 'Package.swift', 'Tools/Nested/Package.swift', 'certs/dev.pem', 'Sources/ClerkKit/Clerk.swift', '.github/workflowsX/a.yml']),
-      ['.github/workflows/pr-ci.yml', 'Package.swift', 'certs/dev.pem'],
+      protectedFiles(patterns, ['.github/workflows/pr-ci.yml', 'Package.swift', 'Tools/Nested/Package.swift', 'certs/dev.pem', 'Sources/ClerkKit/Clerk.swift', '.github/workflowsX/a.yml', 'Sources/ClerkKit/Identity/Store.swift']),
+      ['.github/workflows/pr-ci.yml', 'Package.swift', 'certs/dev.pem', 'Sources/ClerkKit/Identity/Store.swift'],
     );
   });
 
-  it('matches only direct children for a wildcard last segment, as on GitHub', () => {
-    const wildcard = parseCodeowners('* @clerk/team-mobile\ndocs/*\n');
-    assert.deepEqual(ownedFiles(wildcard, ['docs/a.md', 'docs/private/b.md']), ['docs/private/b.md']);
-  });
-
-  it('lets a later line with no owners take files back out', () => {
-    assert.deepEqual(ownedFiles(rules, ['Sources/ClerkKit/Identity/Store.swift', 'Sources/ClerkKit/Identity/Generated/Ids.swift']), ['Sources/ClerkKit/Identity/Store.swift']);
+  it('matches only direct children for a wildcard last segment, as CODEOWNERS does', () => {
+    assert.deepEqual(protectedFiles(parseProtectedPaths('docs/*\n'), ['docs/a.md', 'docs/private/b.md']), ['docs/a.md']);
   });
 });
 
 describe('code owner approval', () => {
-  it('passes when no file under CODEOWNERS changed', async () => {
+  it('passes when no protected file changed', async () => {
     const { pass, output } = await run({ files: [{ filename: 'Sources/ClerkKit/Clerk.swift' }] });
     assert.equal(pass, true);
-    assert.match(output, /No file under CODEOWNERS changed/);
+    assert.match(output, /No file listed in \.github\/protected-paths changed/);
   });
 
   it('passes when the author has maintain or admin access', async () => {
@@ -94,7 +88,7 @@ describe('code owner approval', () => {
       roles: { 'outside-dev': 'write', writer: 'write' },
     });
     assert.equal(pass, false);
-    assert.match(output, /^::error title=Code owner approval::This changes 1 CODEOWNERS file\(s\) \(\.github\/workflows\/pr-ci\.yml\)/);
+    assert.match(output, /^::error title=Code owner approval::This changes 1 protected file\(s\) \(\.github\/workflows\/pr-ci\.yml\)/);
   });
 
   it('passes on an approval from someone with maintain access', async () => {
@@ -143,8 +137,8 @@ describe('code owner approval', () => {
     assert.match(output, /listed 1 of the 3001 changed files/);
   });
 
-  it('passes when the base branch has no CODEOWNERS', async () => {
-    const { pass } = await run({ codeowners: null, files: [{ filename: '.github/workflows/pr-ci.yml' }] });
+  it('passes when the base branch has no protected-paths list', async () => {
+    const { pass } = await run({ list: null, files: [{ filename: '.github/workflows/pr-ci.yml' }] });
     assert.equal(pass, true);
   });
 });
