@@ -26,3 +26,7 @@ The verification skill is `.claude/skills/verify-clerk-ios/` (Cursor sees it as 
 `e2e-tests/bin/control-clerk-ios` has the verbs `doctor`, `up`, `run`, `screen`, `attach`, and `down`, and `SKILL.md` has the steps. Run `make check` before you push, as `CONTRIBUTING.md` says.
 
 Type only test identities: `+clerk_test` emails, phones 555-0100 to 555-0199, and the code `424242`. Never enter real credentials.
+
+## Threat model
+
+`.oss-scanner/threat_model.md` tells Anthropic's OSS Scanner where untrusted input enters the SDK, what we trust, how we rate severity, and what not to report. When a change adds or alters a way untrusted input enters (deep links, OAuth, SSO or hosted-auth callbacks, passkeys, response headers, other processes), a sign-in method, where tokens or secrets are stored, or anything the file says we trust or should not be reported, update the file in the same pull request.
