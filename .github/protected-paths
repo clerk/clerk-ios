@@ -1,4 +1,4 @@
-# A change to these paths needs an approval from someone with maintain or admin access, unless one of them wrote it.
+# A change to these paths needs an approval from a Team Mobile member (maintain or admin access) other than the author.
 # The `Code owner approval` check enforces this. Patterns follow CODEOWNERS syntax, without owners.
 
 /.github/protected-paths

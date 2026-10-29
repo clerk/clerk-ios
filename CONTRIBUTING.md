@@ -132,13 +132,15 @@ its pre-merge checks pass, and it rates the PR's merge risk moderate or lower. H
 critical PRs need a human. The pre-merge checks ask for the Testing, Risk, and How to
 revert sections of the PR template, and for device evidence when the PR changes
 `Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`. Its approval counts
-toward the one approval `main` requires. A PR that changes a path in `.github/protected-paths`
-also needs the `Code owner approval` check. It passes when the author, or someone who
-approved, has maintain or admin access to the repository, as the mobile team does.
-GitHub requests no reviewers on its own. When CodeRabbit withholds approval or
-`Code owner approval` fails, ask someone on the mobile team to review. Authors can't use `@coderabbitai approve` on their own PRs
-or override a failing check. Admins can still merge their own work after dismissing a
-CodeRabbit "changes requested" review.
+toward the one approval `main` requires.
+
+Every PR also needs the `Code owner approval` check. Team Mobile means anyone with maintain
+or admin access to the repository. A Team Mobile author needs only CodeRabbit's approval,
+unless the PR changes a path in `.github/protected-paths` or CodeRabbit rates it high or
+critical risk. Then another Team Mobile member has to approve. Anyone else needs an
+approval from Team Mobile. The `Team review request` workflow requests the members listed
+in `.github/team-mobile` when a PR needs one, so keep that list in step with the team.
+Authors can't use `@coderabbitai approve` on their own PRs or override a failing check.
 
 PRs merge through a merge queue. PR CI and each queue run do the lint, the unit tests,
 the E2E runner tests, and the iOS and macOS builds. On a PR, the E2E runner tests skip

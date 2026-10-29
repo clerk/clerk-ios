@@ -5,6 +5,7 @@ import { client, paged } from './github.mjs';
 
 const TRUSTED_ROLES = new Set(['admin', 'maintain']);
 const PROTECTED_PATHS = '.github/protected-paths';
+const CODERABBIT = 'coderabbitai[bot]';
 
 const GLOB = { '**/': '(?:.*/)?', '/**': '(?:/.*)?', '**': '.*', '*': '[^/]*', '?': '[^/]' };
 
@@ -50,32 +51,41 @@ async function trusted(get, login) {
   return TRUSTED_ROLES.has(role);
 }
 
+// reason says why the check failed: 'author', 'files', 'protected' or 'coderabbit'.
 async function codeOwnerApproval({ fetch, api, token, repo, number, author, baseRef }) {
   const get = client({ fetch, api, token, repo });
-  const list = await get(`/contents/${PROTECTED_PATHS}?ref=${encodeURIComponent(baseRef)}`, { missing: null });
-  const patterns = list === null ? [] : parseProtectedPaths(Buffer.from(list.content, 'base64').toString('utf8'));
-  const files = await paged(get, `/pulls/${number}/files`);
-  const { changed_files: changed } = await get(`/pulls/${number}`);
-  if (files.length < changed) {
-    return { pass: false, message: `GitHub listed ${files.length} of the ${changed} changed files, so this check can't tell which are protected. Split the pull request.` };
-  }
-  const owned = protectedFiles(patterns, [...new Set(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)))]);
-  if (owned.length === 0) {
-    return { pass: true, message: `No file listed in ${PROTECTED_PATHS} changed.` };
-  }
-  if (await trusted(get, author)) {
-    return { pass: true, message: `${author} has maintain or admin access, so their change to protected files needs no other approval.` };
-  }
-  for (const login of approvers(await paged(get, `/pulls/${number}/reviews`), author)) {
+  const pull = await get(`/pulls/${number}`);
+  const reviews = await paged(get, `/pulls/${number}/reviews`);
+  const approved = approvers(reviews, author);
+  for (const login of approved) {
     if (await trusted(get, login)) {
       return { pass: true, message: `${login} approved, and has maintain or admin access.` };
     }
   }
-  const shown = owned.slice(0, 10).join(', ');
-  return {
-    pass: false,
-    message: `This changes ${owned.length} protected file(s) (${shown}${owned.length > 10 ? ', ...' : ''}). It needs an approval from someone with maintain or admin access.`,
-  };
+  if (!(await trusted(get, author))) {
+    return { pass: false, reason: 'author', message: `${author} doesn't have maintain or admin access, so this needs an approval from Team Mobile.` };
+  }
+  const list = await get(`/contents/${PROTECTED_PATHS}?ref=${encodeURIComponent(baseRef)}`, { missing: null });
+  const patterns = list === null ? [] : parseProtectedPaths(Buffer.from(list.content, 'base64').toString('utf8'));
+  const files = await paged(get, `/pulls/${number}/files`);
+  const changed = pull.changed_files;
+  if (files.length < changed) {
+    return { pass: false, reason: 'files', message: `GitHub listed ${files.length} of the ${changed} changed files, so this check can't tell which are protected. Split the pull request.` };
+  }
+  const owned = protectedFiles(patterns, [...new Set(files.flatMap(file => [file.filename, file.previous_filename].filter(Boolean)))]);
+  if (owned.length > 0) {
+    const shown = owned.slice(0, 10).join(', ');
+    return {
+      pass: false,
+      reason: 'protected',
+      message: `This changes ${owned.length} protected file(s) (${shown}${owned.length > 10 ? ', ...' : ''}), so it needs an approval from another Team Mobile member.`,
+    };
+  }
+  const coderabbit = reviews.findLast(review => review.user?.login === CODERABBIT && review.state !== 'COMMENTED' && review.state !== 'PENDING');
+  if (coderabbit?.state !== 'APPROVED' || coderabbit.commit_id !== pull.head.sha) {
+    return { pass: false, reason: 'coderabbit', message: "CodeRabbit hasn't approved this commit. If it rates the merge risk high or critical, it won't, and this needs an approval from another Team Mobile member." };
+  }
+  return { pass: true, message: `${author} has maintain or admin access, and CodeRabbit approved.` };
 }
 
 async function main(env, { fetch = globalThis.fetch, out = process.stdout } = {}) {
