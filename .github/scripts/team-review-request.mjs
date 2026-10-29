@@ -28,7 +28,7 @@ function ratedHighRisk(comments, head) {
   });
 }
 
-function protectedComment(files, reviewers) {
+function protectedComment(files) {
   const shown = files.slice(0, 20).map(file => `- \`${file}\``);
   if (files.length > 20) {
     shown.push(`- and ${files.length - 20} more`);
@@ -37,8 +37,6 @@ function protectedComment(files, reviewers) {
     "This pull request changes files listed in `.github/protected-paths`, so it needs an approval from another Team Mobile member before it can merge. CodeRabbit's approval isn't enough for these files.",
     '',
     ...shown,
-    '',
-    `Requested reviews from ${reviewers.join(', ')}.`,
   ].join('\n');
 }
 
@@ -66,7 +64,7 @@ async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
   }
   await get(`/pulls/${number}/requested_reviewers`, { method: 'POST', body: { reviewers } });
   if (check.reason === 'protected') {
-    await get(`/issues/${number}/comments`, { method: 'POST', body: { body: protectedComment(check.files, reviewers) } });
+    await get(`/issues/${number}/comments`, { method: 'POST', body: { body: protectedComment(check.files) } });
   }
   const why = check.reason === 'coderabbit' ? 'CodeRabbit rated this commit high or critical risk.' : check.message;
   return `Requested ${reviewers.join(', ')}. ${why}`;

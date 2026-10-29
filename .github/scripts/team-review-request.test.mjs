@@ -104,7 +104,6 @@ describe('team review request', () => {
     assert.match(posted[0], /changes files listed in `\.github\/protected-paths`/);
     assert.match(posted[0], /^- `\.github\/workflows\/pr-ci\.yml`$/m);
     assert.doesNotMatch(posted[0], /Clerk\.swift/);
-    assert.match(posted[0], /Requested reviews from seanperez29, swolfand, wobsoriano\./);
   });
 
   it('comments only when it requests someone new', async () => {
