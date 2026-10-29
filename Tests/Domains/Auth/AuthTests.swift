@@ -938,17 +938,32 @@ struct AuthTests {
       createdSessionId: "sess_123"
     ))
 
-    async let first = coordinator.handle(route) {
-      invocationCount.withValue { $0 += 1 }
-      try await Task.sleep(for: .milliseconds(50))
-      return expectedResult
-    }
-    async let second = coordinator.handle(route) {
-      invocationCount.withValue { $0 += 1 }
-      return expectedResult
-    }
+    let gate = ResponseGate()
 
-    let (firstResult, secondResult) = try await (first, second)
+    let first = Task {
+      try await coordinator.handle(route) {
+        invocationCount.withValue { $0 += 1 }
+        gate.open("firstStarted")
+        await gate.wait("releaseFirst")
+        return expectedResult
+      }
+    }
+    await gate.wait("firstStarted")
+
+    let second = Task {
+      gate.open("secondJoining")
+      return try await coordinator.handle(route) {
+        invocationCount.withValue { $0 += 1 }
+        return expectedResult
+      }
+    }
+    // Everything here runs on the main actor, so this resumes only after the
+    // second call suspends inside `handle`, waiting on the first call's task.
+    await gate.wait("secondJoining")
+    gate.open("releaseFirst")
+
+    let firstResult = try await first.value
+    let secondResult = try await second.value
     let firstSignIn = switch firstResult {
     case .signIn(let signIn):
       signIn
