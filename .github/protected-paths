@@ -1,0 +1,21 @@
+# A change to these paths needs an approval from someone with maintain or admin access, unless one of them wrote it.
+# The `Code owner approval` check enforces this. Patterns follow CODEOWNERS syntax, without owners.
+
+/.github/protected-paths
+/.github/workflows/
+/.github/scripts/
+/.coderabbit.yaml
+/AGENTS.md
+/CLAUDE.md
+/REVIEW.md
+/scripts/check-version-consistency.sh
+/Sources/ClerkKit/Utils/Version.swift
+/Package.swift
+/Sources/ClerkKit/Storage/Keychain/
+/Sources/ClerkKit/Identity/
+/Sources/ClerkKit/Domains/Auth/Session/
+/Sources/ClerkKit/Domains/Auth/TokenResource.swift
+/Sources/ClerkKit/Domains/Auth/TokenFreshness.swift
+/Sources/ClerkKit/Core/Clerk+DeviceToken.swift
+/Sources/ClerkKit/Networking/Middleware/ClerkDeviceTokenResponseMiddleware.swift
+/Sources/ClerkKit/Logging/ClerkLogRedaction.swift
