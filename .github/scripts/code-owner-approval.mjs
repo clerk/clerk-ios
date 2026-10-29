@@ -78,6 +78,7 @@ async function codeOwnerApproval({ fetch, api, token, repo, number, author, base
     return {
       pass: false,
       reason: 'protected',
+      files: owned,
       message: `This changes ${owned.length} protected file(s) (${shown}${owned.length > 10 ? ', ...' : ''}), so it needs an approval from another Team Mobile member.`,
     };
   }
