@@ -8,7 +8,6 @@ on:
   merge_group:
 
 permissions:
-  actions: write
   contents: read
   pull-requests: read
 
@@ -39,9 +38,17 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: node .github/scripts/code-owner-approval.mjs
 
-      # GitHub counts every run of this check on the commit, so a run that failed before this review keeps blocking the merge until it passes too.
+  # GitHub counts every run of the check on the commit, so a run that failed before this review keeps blocking the merge until it passes too.
+  rerun-failed:
+    name: Rerun failed code owner runs
+    needs: code-owner-approval
+    if: github.event_name == 'pull_request_review'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+    steps:
       - name: Rerun the runs that failed before this review
-        if: github.event_name == 'pull_request_review'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
