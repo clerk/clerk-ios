@@ -265,6 +265,121 @@ struct SessionTests {
   }
 
   @Test
+  func sendResetPasswordEmailCodeCallsPrepareFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedEmailAddressId = LockIsolated<String?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedEmailAddressId.setValue(call.body?["email_address_id"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport
+    )
+
+    let verification = try await session.sendResetPasswordEmailCode(emailAddressId: "idn_email")
+
+    #expect(capturedStrategy.value == .resetPasswordEmailCode)
+    #expect(capturedEmailAddressId.value == "idn_email")
+    #expect(verification.status == .needsFirstFactor)
+  }
+
+  @Test
+  func sendResetPasswordPhoneCodeCallsPrepareFirstFactor() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedPhoneNumberId = LockIsolated<String?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.prepareFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedPhoneNumberId.setValue(call.body?["phone_number_id"]?.stringValue)
+      return ClientResponse(response: .mockNeedsFirstFactor, client: nil)
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport
+    )
+
+    let verification = try await session.sendResetPasswordPhoneCode(phoneNumberId: "idn_phone")
+
+    #expect(capturedStrategy.value == .resetPasswordPhoneCode)
+    #expect(capturedPhoneNumberId.value == "idn_phone")
+    #expect(verification.status == .needsFirstFactor)
+  }
+
+  @Test
+  func verifyWithResetPasswordEmailCodeSendsCodeAndNewPassword() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let capturedPassword = LockIsolated<String?>(nil)
+    let capturedSignOut = LockIsolated<Bool?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      capturedPassword.setValue(call.body?["password"]?.stringValue)
+      capturedSignOut.setValue(call.body?["sign_out_of_other_sessions"]?.boolValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport
+    )
+
+    let verification = try await session.verifyWithResetPasswordEmailCode(
+      code: "424242",
+      newPassword: "new-password-123",
+      signOutOfOtherSessions: true
+    )
+
+    #expect(capturedStrategy.value == .resetPasswordEmailCode)
+    #expect(capturedCode.value == "424242")
+    #expect(capturedPassword.value == "new-password-123")
+    #expect(capturedSignOut.value == true)
+    #expect(verification.status == .complete)
+  }
+
+  @Test
+  func verifyWithResetPasswordPhoneCodeKeepsOtherSessionsByDefault() async throws {
+    let session = Session.mock
+    let capturedStrategy = LockIsolated<FactorStrategy?>(nil)
+    let capturedCode = LockIsolated<String?>(nil)
+    let capturedPassword = LockIsolated<String?>(nil)
+    let capturedSignOut = LockIsolated<Bool?>(nil)
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { call in
+      capturedStrategy.setValue(call.body?["strategy"]?.stringValue.map(FactorStrategy.init(rawValue:)))
+      capturedCode.setValue(call.body?["code"]?.stringValue)
+      capturedPassword.setValue(call.body?["password"]?.stringValue)
+      capturedSignOut.setValue(call.body?["sign_out_of_other_sessions"]?.boolValue)
+      return ClientResponse(response: .mockComplete, client: nil)
+    }
+
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport
+    )
+
+    let verification = try await session.verifyWithResetPasswordPhoneCode(
+      code: "424242",
+      newPassword: "new-password-123"
+    )
+
+    #expect(capturedStrategy.value == .resetPasswordPhoneCode)
+    #expect(capturedCode.value == "424242")
+    #expect(capturedPassword.value == "new-password-123")
+    #expect(capturedSignOut.value == false)
+    #expect(verification.status == .complete)
+  }
+
+  @Test
   func startEnterpriseSSOCallsPrepareFirstFactor() async throws {
     let session = Session.mock
     let capturedStrategy = LockIsolated<FactorStrategy?>(nil)

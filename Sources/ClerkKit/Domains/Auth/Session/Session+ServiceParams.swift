@@ -47,6 +47,7 @@ extension Session {
     let strategy: FactorStrategy
     let code: String?
     let password: String?
+    let signOutOfOtherSessions: Bool?
     let publicKeyCredential: String?
     let biometricCredentialId: String?
     let clientData: String?
@@ -57,6 +58,7 @@ extension Session {
       case strategy
       case code
       case password
+      case signOutOfOtherSessions
       case publicKeyCredential
       case biometricCredentialId = "trustedDeviceId"
       case clientData
@@ -68,6 +70,7 @@ extension Session {
       strategy: FactorStrategy,
       code: String? = nil,
       password: String? = nil,
+      signOutOfOtherSessions: Bool? = nil,
       publicKeyCredential: String? = nil,
       biometricCredentialId: String? = nil,
       clientData: String? = nil,
@@ -77,6 +80,7 @@ extension Session {
       self.strategy = strategy
       self.code = code
       self.password = password
+      self.signOutOfOtherSessions = signOutOfOtherSessions
       self.publicKeyCredential = publicKeyCredential
       self.biometricCredentialId = biometricCredentialId
       self.clientData = clientData

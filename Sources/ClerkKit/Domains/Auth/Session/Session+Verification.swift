@@ -110,6 +110,84 @@ extension Session {
     try await attemptFirstFactorVerification(strategy: .password, password: password)
   }
 
+  /// Sends a reset password code to the email address for first-factor reverification.
+  ///
+  /// Use this when the user can't verify with their password, for example after
+  /// ``verifyWithPassword(_:)`` fails because the password was found in a data breach.
+  /// Offer it when ``SessionVerification/supportedFirstFactors`` contains a
+  /// `resetPasswordEmailCode` factor, and pass that factor's ``Factor/emailAddressId``.
+  /// Complete it with ``verifyWithResetPasswordEmailCode(code:newPassword:signOutOfOtherSessions:)``.
+  @discardableResult @MainActor
+  public func sendResetPasswordEmailCode(emailAddressId: String) async throws -> SessionVerification {
+    try await prepareFirstFactorVerification(strategy: .resetPasswordEmailCode, emailAddressId: emailAddressId)
+  }
+
+  /// Sends a reset password code to the phone number for first-factor reverification.
+  ///
+  /// Use this when the user can't verify with their password, for example after
+  /// ``verifyWithPassword(_:)`` fails because the password was found in a data breach.
+  /// Offer it when ``SessionVerification/supportedFirstFactors`` contains a
+  /// `resetPasswordPhoneCode` factor, and pass that factor's ``Factor/phoneNumberId``.
+  /// Complete it with ``verifyWithResetPasswordPhoneCode(code:newPassword:signOutOfOtherSessions:)``.
+  @discardableResult @MainActor
+  public func sendResetPasswordPhoneCode(phoneNumberId: String) async throws -> SessionVerification {
+    try await prepareFirstFactorVerification(strategy: .resetPasswordPhoneCode, phoneNumberId: phoneNumberId)
+  }
+
+  /// Verifies the current session with a reset password code sent to an email address,
+  /// and replaces the user's password with a new one.
+  ///
+  /// If the verification still needs a second factor, the returned status is
+  /// ``SessionVerification/Status/needsSecondFactor``, and the new password is set only
+  /// once that factor is verified.
+  ///
+  /// - Parameters:
+  ///   - code: The code sent by ``sendResetPasswordEmailCode(emailAddressId:)``.
+  ///   - newPassword: The password that replaces the user's current password.
+  ///   - signOutOfOtherSessions: Whether to sign out of the user's other sessions when the
+  ///     new password is set (default is `false`). The current session stays signed in.
+  /// - Returns: The resulting ``SessionVerification``.
+  @discardableResult @MainActor
+  public func verifyWithResetPasswordEmailCode(
+    code: String,
+    newPassword: String,
+    signOutOfOtherSessions: Bool = false
+  ) async throws -> SessionVerification {
+    try await attemptFirstFactorVerification(
+      strategy: .resetPasswordEmailCode,
+      code: code,
+      password: newPassword,
+      signOutOfOtherSessions: signOutOfOtherSessions
+    )
+  }
+
+  /// Verifies the current session with a reset password code sent to a phone number,
+  /// and replaces the user's password with a new one.
+  ///
+  /// If the verification still needs a second factor, the returned status is
+  /// ``SessionVerification/Status/needsSecondFactor``, and the new password is set only
+  /// once that factor is verified.
+  ///
+  /// - Parameters:
+  ///   - code: The code sent by ``sendResetPasswordPhoneCode(phoneNumberId:)``.
+  ///   - newPassword: The password that replaces the user's current password.
+  ///   - signOutOfOtherSessions: Whether to sign out of the user's other sessions when the
+  ///     new password is set (default is `false`). The current session stays signed in.
+  /// - Returns: The resulting ``SessionVerification``.
+  @discardableResult @MainActor
+  public func verifyWithResetPasswordPhoneCode(
+    code: String,
+    newPassword: String,
+    signOutOfOtherSessions: Bool = false
+  ) async throws -> SessionVerification {
+    try await attemptFirstFactorVerification(
+      strategy: .resetPasswordPhoneCode,
+      code: code,
+      password: newPassword,
+      signOutOfOtherSessions: signOutOfOtherSessions
+    )
+  }
+
   /// Starts Enterprise SSO for first-factor reverification.
   @discardableResult @MainActor
   public func startEnterpriseSSO(
@@ -361,6 +439,7 @@ extension Session {
     strategy: FactorStrategy,
     code: String? = nil,
     password: String? = nil,
+    signOutOfOtherSessions: Bool? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
     try await Clerk.currentDependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
@@ -369,6 +448,7 @@ extension Session {
         strategy: strategy,
         code: code,
         password: password,
+        signOutOfOtherSessions: signOutOfOtherSessions,
         publicKeyCredential: publicKeyCredential
       )
     )).value.response
