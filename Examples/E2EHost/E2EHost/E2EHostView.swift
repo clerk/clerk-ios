@@ -17,6 +17,7 @@ struct E2EHostView: View {
   private enum Destination {
     case authView
     case customSignIn
+    case customReverify
     case organizationTabs
   }
 
@@ -26,6 +27,7 @@ struct E2EHostView: View {
     case home
     case auth
     case customSignIn
+    case customReverify
     case organizationTabs
 
     var name: String {
@@ -35,6 +37,7 @@ struct E2EHostView: View {
       case .home: "home"
       case .auth: "auth"
       case .customSignIn: "customSignIn"
+      case .customReverify: "customReverify"
       case .organizationTabs: "organizationTabs"
       }
     }
@@ -77,6 +80,7 @@ struct E2EHostView: View {
       switch destination {
       case .authView? where !clerk.isAuthFlowComplete: .auth
       case .customSignIn?: .customSignIn
+      case .customReverify?: .customReverify
       case .organizationTabs?: .organizationTabs
       default: .home
       }
@@ -96,6 +100,10 @@ struct E2EHostView: View {
       authView
     case .customSignIn:
       CustomSignInView {
+        destination = nil
+      }
+    case .customReverify:
+      CustomReverifyView {
         destination = nil
       }
     case .organizationTabs:
@@ -162,6 +170,11 @@ struct E2EHostView: View {
             destination = .organizationTabs
           }
           .accessibilityIdentifier(E2EIdentifiers.Home.organizationTabs)
+
+          Button("Custom reverification") {
+            destination = .customReverify
+          }
+          .accessibilityIdentifier(E2EIdentifiers.Home.customReverify)
         }
 
         Button("Sign out") {
