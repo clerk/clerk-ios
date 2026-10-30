@@ -141,7 +141,9 @@ critical risk. Then another Team Mobile member has to approve. Anyone else needs
 approval from Team Mobile. The `Team review request` workflow requests the members listed
 in `.github/team-mobile` when a PR needs one, so keep that list in step with the team.
 When it requests reviewers because a Team Mobile author changed a protected path, it also
-comments on the PR with the protected files.
+comments on the PR with the protected files. GitHub counts every run of the check on a
+commit, so when a review makes the check pass, that run also reruns the ones that failed
+before the review.
 Authors can't use `@coderabbitai approve` on their own PRs or override a failing check.
 
 PRs merge through a merge queue. PR CI and each queue run do the lint, the unit tests,

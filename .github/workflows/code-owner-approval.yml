@@ -8,6 +8,7 @@ on:
   merge_group:
 
 permissions:
+  actions: write
   contents: read
   pull-requests: read
 
@@ -37,3 +38,14 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: node .github/scripts/code-owner-approval.mjs
+
+      # GitHub counts every run of this check on the commit, so a run that failed before this review keeps blocking the merge until it passes too.
+      - name: Rerun the runs that failed before this review
+        if: github.event_name == 'pull_request_review'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow code-owner-approval.yml --commit "$HEAD_SHA" --event pull_request --status failure --limit 100 --json databaseId --jq '.[].databaseId' |
+            xargs -r -n1 gh run rerun --repo "$GITHUB_REPOSITORY" --failed
