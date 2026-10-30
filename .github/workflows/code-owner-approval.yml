@@ -47,5 +47,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          gh run list --repo "$GITHUB_REPOSITORY" --workflow code-owner-approval.yml --commit "$HEAD_SHA" --event pull_request --status failure --limit 100 --json databaseId --jq '.[].databaseId' |
+          gh run list --repo "$GITHUB_REPOSITORY" --workflow code-owner-approval.yml --commit "$HEAD_SHA" --status failure --limit 100 --json databaseId --jq '.[].databaseId' |
             xargs -r -n1 gh run rerun --repo "$GITHUB_REPOSITORY" --failed

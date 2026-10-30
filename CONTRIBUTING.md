@@ -143,7 +143,8 @@ in `.github/team-mobile` when a PR needs one, so keep that list in step with the
 When it requests reviewers because a Team Mobile author changed a protected path, it also
 comments on the PR with the protected files. GitHub counts every run of the check on a
 commit, so when a review makes the check pass, that run also reruns the ones that failed
-before the review.
+before the review. A fork PR's token is read-only and can't rerun them, so a maintainer
+reruns the failed runs by hand.
 Authors can't use `@coderabbitai approve` on their own PRs or override a failing check.
 
 PRs merge through a merge queue. PR CI and each queue run do the lint, the unit tests,
