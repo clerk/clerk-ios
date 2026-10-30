@@ -35,3 +35,21 @@ test('reverifies with a reset password email code and signs in with the new pass
   });
   await host.screenshot('signed-in-with-new-password');
 });
+
+test('a wrong reset password code shows the error and keeps the form', async ({ host, screen }) => {
+  const user = await host.seedUser({ password: true });
+  await host.launch({ signedInAs: user });
+  await host.tap(screen.getByTestId('e2e.home.customReverify'));
+
+  await host.evidence('a wrong reset password code shows the error', async () => {
+    await host.tap(screen.getByTestId('verify.customReverify.sendCode'));
+    const code = screen.getByTestId('verify.customReverify.code');
+    await expect(code).toBeVisible({ timeout: 20_000 });
+    await host.fill(code, '000000');
+    await host.fill(screen.getByTestId('verify.customReverify.newPassword'), runPassword(host.runId));
+    await host.tap(screen.getByTestId('verify.customReverify.verifyCode'));
+    await expect(screen.getByTestId('verify.customReverify.error')).toHaveText('Incorrect code', { timeout: 20_000 });
+    await expect(code).toBeVisible();
+  });
+  await host.screenshot('reverify-wrong-code');
+});
