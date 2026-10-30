@@ -18,14 +18,14 @@ Preconditions:
 - The new password is `runPassword(host.runId)`, which differs from the password the user was seeded with.
 
 - **Send the code.** Run `e2e-tests/bin/control-clerk-ios run custom-flow-reverification/reset-password-code`. The test launches signed in with a ticket and taps `e2e.home.customReverify`. It taps `verify.customReverify.sendCode`, which calls `Session.startVerification(level: .firstFactor)`, takes the `emailAddressId` of the `resetPasswordEmailCode` factor in `supportedFirstFactors`, and calls `Session.sendResetPasswordEmailCode(emailAddressId:)`. It expects `verify.customReverify.code` with no `verify.customReverify.error`. Screenshot `reverify-code`.
-- **Verify and set the new password.** The test fills `verify.customReverify.code` with `CLERK_TEST_CODE` and `verify.customReverify.newPassword` with the new password, then taps `verify.customReverify.verify`, which calls `Session.verifyWithResetPasswordEmailCode(code:newPassword:)`. The form returns to the home only when that call returns a `complete` verification, so `host.expectSignedInAs(user)` proves it. Screenshot `reverified`.
-- **Sign in with the new password.** The test taps `Sign out`, opens the AuthView sheet, fills `clerk.auth.start.identifier` with the user's email, fills `clerk.auth.signIn.password` with the new password, taps `clerk.auth.signIn.continue`, and expects the home to show the user again. That sign-in succeeds only if the reverification changed the password. Screenshot `signed-in-with-new-password`.
+- **Verify and set the new password.** The test fills `verify.customReverify.code` with `CLERK_TEST_CODE` and `verify.customReverify.newPassword` with the new password, then taps `verify.customReverify.verifyCode`, which calls `Session.verifyWithResetPasswordEmailCode(code:newPassword:)`. The form returns to the home only when that call returns a `complete` verification, so `host.expectSignedInAs(user)` proves it. Screenshot `reverified`.
+- **Sign in with the new password.** The test taps `Sign out`, opens the AuthView sheet, fills `clerk.auth.start.identifier` with the user's email, taps `clerk.auth.start.continue`, waits for `clerk.auth.signIn.password`, fills it with the new password, taps `clerk.auth.signIn.continue`, and expects the home to show the user again. That sign-in succeeds only if the reverification changed the password. Screenshot `signed-in-with-new-password`.
 - **Proof.** The spec passes.
 
 ## Gotchas
 
 - A first-factor reverification started right after a ticket sign-in still needs a factor: the server starts each new reverification with no verified factor unless an earlier one in the same session already verified one. So `Send reset code` always leads to the code step.
-- The new password field uses the `.oneTimeCode` content type. With a password content type, iOS covers the field with its strong password suggestion, which swallows text typed by UI automation.
+- The new password field sets no content type, like the SDK's password fields in E2E mode (`ClerkE2EEnvironment`). With a password content type, iOS covers the field with its strong password suggestion, which swallows text typed by UI automation.
 - XCTest screenshots blank secure fields, so the new password field shows as a black box in `reverify-code`.
 - A reverification error, such as a wrong code or a rejected password, shows in `verify.customReverify.error`, and the form stays on screen.
 - `Custom reverification` sits with `Organization tabs`, so the home inside the organization tabs does not show it.

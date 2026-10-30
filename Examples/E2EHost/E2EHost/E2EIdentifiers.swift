@@ -32,7 +32,7 @@ enum E2EIdentifiers {
     static let sendCode = "verify.customReverify.sendCode"
     static let code = "verify.customReverify.code"
     static let newPassword = "verify.customReverify.newPassword"
-    static let verify = "verify.customReverify.verify"
+    static let verifyCode = "verify.customReverify.verifyCode"
     static let error = "verify.customReverify.error"
   }
 

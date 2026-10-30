@@ -39,16 +39,13 @@ struct CustomReverifyView: View {
           .textContentType(.oneTimeCode)
           .accessibilityIdentifier(E2EIdentifiers.CustomReverify.code)
 
-        // iOS covers a secure field it takes for a new password with its strong password
-        // suggestion, which swallows text typed by UI automation.
         SecureField("New password", text: $newPassword)
-          .textContentType(.oneTimeCode)
           .accessibilityIdentifier(E2EIdentifiers.CustomReverify.newPassword)
 
         Button("Verify and set password") {
           Task { await verifyCode() }
         }
-        .accessibilityIdentifier(E2EIdentifiers.CustomReverify.verify)
+        .accessibilityIdentifier(E2EIdentifiers.CustomReverify.verifyCode)
       }
 
       if let error {

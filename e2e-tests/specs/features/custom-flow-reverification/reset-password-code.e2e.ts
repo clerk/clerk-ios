@@ -5,9 +5,9 @@ test('reverifies with a reset password email code and signs in with the new pass
   const user = await host.seedUser({ password: true });
   const newPassword = runPassword(host.runId);
   await host.launch({ signedInAs: user });
+  await host.tap(screen.getByTestId('e2e.home.customReverify'));
 
   await host.evidence('reverify with a reset password code that sets a new password', async () => {
-    await host.tap(screen.getByTestId('e2e.home.customReverify'));
     await host.tap(screen.getByTestId('verify.customReverify.sendCode'));
     const code = screen.getByTestId('verify.customReverify.code');
     await expect(code).toBeVisible({ timeout: 20_000 });
@@ -15,16 +15,16 @@ test('reverifies with a reset password email code and signs in with the new pass
     await host.screenshot('reverify-code');
     await host.fill(code, CLERK_TEST_CODE);
     await host.fill(screen.getByTestId('verify.customReverify.newPassword'), newPassword);
-    await host.tap(screen.getByTestId('verify.customReverify.verify'));
+    await host.tap(screen.getByTestId('verify.customReverify.verifyCode'));
     await host.expectSignedInAs(user, 30_000);
   });
   await host.screenshot('reverified');
 
   await host.tap(host.app.signOut);
   await host.expectSignedOut();
+  await host.tap(host.app.signIn);
 
   await host.evidence('sign in with the new password', async () => {
-    await host.tap(host.app.signIn);
     await host.fill(screen.getByTestId('clerk.auth.start.identifier'), user.email);
     await host.tap(screen.getByTestId('clerk.auth.start.continue'));
     const password = screen.getByTestId('clerk.auth.signIn.password').first();
