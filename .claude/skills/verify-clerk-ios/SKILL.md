@@ -131,7 +131,7 @@ The specs under `specs/features/<feature>/` are committed and cover the feature 
 4. Fix the locators from that output until the spec passes.
 5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a committed spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
 
-A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/failures/*.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
+A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/results/<test>/trace.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
 
 With `--retries`, a test that fails and then passes prints `flaky` and the error of its failed attempt, and a `flaky` line under the results counts such tests. `run.json` records the test as `flaky` with its `attempts`, never as passed, and `run` exits 0. The failure page of the failed attempt and the files of every attempt stay in the run directory. A test that fails on every attempt prints `FAIL`, and `run` exits 1.
 
