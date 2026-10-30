@@ -28,16 +28,15 @@ function ratedHighRisk(comments, head) {
   });
 }
 
+const PROTECTED_NOTICE =
+  "This pull request changes files listed in `.github/protected-paths`, so it needs an approval from another Team Mobile member before it can merge. CodeRabbit's approval isn't enough for these files.";
+
 function protectedComment(files) {
   const shown = files.slice(0, 20).map(file => `- \`${file}\``);
   if (files.length > 20) {
     shown.push(`- and ${files.length - 20} more`);
   }
-  return [
-    "This pull request changes files listed in `.github/protected-paths`, so it needs an approval from another Team Mobile member before it can merge. CodeRabbit's approval isn't enough for these files.",
-    '',
-    ...shown,
-  ].join('\n');
+  return [PROTECTED_NOTICE, '', ...shown].join('\n');
 }
 
 async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
@@ -54,6 +53,14 @@ async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
   if (check.reason === 'coderabbit' && !ratedHighRisk(await paged(get, `/issues/${number}/comments`), pull.head.sha)) {
     return 'Waiting on CodeRabbit, which hasn\'t rated this commit high or critical risk.';
   }
+  if (check.reason === 'protected') {
+    const comments = await paged(get, `/issues/${number}/comments`);
+    if (comments.some(comment => comment.body?.startsWith(PROTECTED_NOTICE))) {
+      return `Already commented. ${check.message}`;
+    }
+    await get(`/issues/${number}/comments`, { method: 'POST', body: { body: protectedComment(check.files) } });
+    return `Commented. ${check.message}`;
+  }
   const asked = new Set([author, ...pull.requested_reviewers.map(user => user.login)]);
   for (const review of await paged(get, `/pulls/${number}/reviews`)) {
     asked.add(review.user?.login);
@@ -63,9 +70,6 @@ async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
     return 'Every Team Mobile member is already requested or has reviewed.';
   }
   await get(`/pulls/${number}/requested_reviewers`, { method: 'POST', body: { reviewers } });
-  if (check.reason === 'protected') {
-    await get(`/issues/${number}/comments`, { method: 'POST', body: { body: protectedComment(check.files) } });
-  }
   const why = check.reason === 'coderabbit' ? 'CodeRabbit rated this commit high or critical risk.' : check.message;
   return `Requested ${reviewers.join(', ')}. ${why}`;
 }

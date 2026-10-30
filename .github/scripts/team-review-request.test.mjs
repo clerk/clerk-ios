@@ -96,24 +96,23 @@ describe('team review request', () => {
     assert.match(output, /CodeRabbit rated this commit high or critical risk/);
   });
 
-  it('requests the other members and explains why when a Team Mobile author changes a protected file', async () => {
+  it('comments with the protected files and requests nobody when a Team Mobile author changes a protected file', async () => {
     const files = [{ filename: '.github/workflows/pr-ci.yml' }, { filename: 'Sources/ClerkKit/Clerk.swift' }];
     const { requested, posted } = await run({ author: 'mikepitre', files });
-    assert.deepEqual(requested, ['seanperez29', 'swolfand', 'wobsoriano']);
+    assert.deepEqual(requested, []);
     assert.equal(posted.length, 1);
     assert.match(posted[0], /changes files listed in `\.github\/protected-paths`/);
     assert.match(posted[0], /^- `\.github\/workflows\/pr-ci\.yml`$/m);
     assert.doesNotMatch(posted[0], /Clerk\.swift/);
   });
 
-  it('comments only when it requests someone new', async () => {
-    const { requested, posted } = await run({
-      author: 'mikepitre',
-      files: [{ filename: '.github/workflows/pr-ci.yml' }],
-      pending: ['seanperez29', 'swolfand', 'wobsoriano'],
-    });
-    assert.deepEqual(requested, []);
-    assert.deepEqual(posted, []);
+  it('comments on protected files once per pull request', async () => {
+    const files = [{ filename: '.github/workflows/pr-ci.yml' }];
+    const first = await run({ author: 'mikepitre', files });
+    const again = await run({ author: 'mikepitre', files, comments: [{ user: { login: 'github-actions[bot]' }, body: first.posted[0] }] });
+    assert.deepEqual(again.requested, []);
+    assert.deepEqual(again.posted, []);
+    assert.match(again.output, /Already commented/);
   });
 
   it('requests Team Mobile for an author with write access, a fork contributor and a bot', async () => {
