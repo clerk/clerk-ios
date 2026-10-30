@@ -55,11 +55,16 @@ async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
   }
   if (check.reason === 'protected') {
     const comments = await paged(get, `/issues/${number}/comments`);
-    if (comments.some(comment => comment.body?.startsWith(PROTECTED_NOTICE))) {
-      return `Already commented. ${check.message}`;
+    const body = protectedComment(check.files);
+    const notice = comments.find(comment => comment.body?.startsWith(PROTECTED_NOTICE));
+    if (notice === undefined) {
+      await get(`/issues/${number}/comments`, { method: 'POST', body: { body } });
+    } else if (notice.body !== body) {
+      await get(`/issues/comments/${notice.id}`, { method: 'PATCH', body: { body } });
     }
-    await get(`/issues/${number}/comments`, { method: 'POST', body: { body: protectedComment(check.files) } });
-    return `Commented. ${check.message}`;
+    if (!ratedHighRisk(comments, pull.head.sha)) {
+      return `Requested nobody. ${check.message}`;
+    }
   }
   const asked = new Set([author, ...pull.requested_reviewers.map(user => user.login)]);
   for (const review of await paged(get, `/pulls/${number}/reviews`)) {
@@ -70,7 +75,7 @@ async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
     return 'Every Team Mobile member is already requested or has reviewed.';
   }
   await get(`/pulls/${number}/requested_reviewers`, { method: 'POST', body: { reviewers } });
-  const why = check.reason === 'coderabbit' ? 'CodeRabbit rated this commit high or critical risk.' : check.message;
+  const why = check.reason === 'coderabbit' || check.reason === 'protected' ? 'CodeRabbit rated this commit high or critical risk.' : check.message;
   return `Requested ${reviewers.join(', ')}. ${why}`;
 }
 
