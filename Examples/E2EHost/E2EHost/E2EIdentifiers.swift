@@ -16,6 +16,7 @@ enum E2EIdentifiers {
 
   enum Home {
     static let customSignIn = "e2e.home.customSignIn"
+    static let customReverify = "e2e.home.customReverify"
     static let organizationTabs = "e2e.home.organizationTabs"
   }
 
@@ -25,6 +26,14 @@ enum E2EIdentifiers {
     static let code = "verify.customSignIn.code"
     static let verifyCode = "verify.customSignIn.verifyCode"
     static let error = "verify.customSignIn.error"
+  }
+
+  enum CustomReverify {
+    static let sendCode = "verify.customReverify.sendCode"
+    static let code = "verify.customReverify.code"
+    static let newPassword = "verify.customReverify.newPassword"
+    static let verifyCode = "verify.customReverify.verifyCode"
+    static let error = "verify.customReverify.error"
   }
 
   enum Launch {

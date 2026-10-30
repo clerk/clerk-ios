@@ -781,6 +781,48 @@ extension SessionAPIAndTokenFetcherTests {
   }
 
   @Test
+  func attemptFirstFactorVerificationResetPasswordEmailCode() async throws {
+    let session = Session.mock
+    let requestHandled = LockIsolated(false)
+    let originalURL = URL(
+      string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/verify/attempt_first_factor"
+    )!
+
+    var mock = try Mock(
+      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .post: JSONEncoder.clerkEncoder.encode(
+          ClientResponse<SessionVerification>(response: .mockComplete, client: .mock)
+        ),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.httpMethod == "POST")
+      let body = request.urlEncodedFormBody!
+      #expect(body["strategy"] == "reset_password_email_code")
+      #expect(body["code"] == "424242")
+      #expect(body["password"] == "new-password-123")
+      #expect(body["sign_out_of_other_sessions"] == "1")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    let verification = try await Clerk.shared.dependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
+      sessionId: session.id,
+      params: .init(
+        strategy: .resetPasswordEmailCode,
+        code: "424242",
+        password: "new-password-123",
+        signOutOfOtherSessions: true
+      )
+    )).value.response
+
+    #expect(requestHandled.value)
+    #expect(verification.status == .complete)
+  }
+
+  @Test
   func attemptSecondFactorVerificationTOTP() async throws {
     let session = Session.mock
     let requestHandled = LockIsolated(false)
