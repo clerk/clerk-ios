@@ -23,12 +23,17 @@ Preconditions:
 - **Wrong code.** The second test sends the code, fills `000000` and a new password, taps `verify.customReverify.verifyCode`, and expects `verify.customReverify.error` to read `Incorrect code` with `verify.customReverify.code` still on screen. Screenshot `reverify-wrong-code`.
 - **Proof.** Both tests pass.
 
+## States a spec cannot reach
+
+| State | Where the app decides | What it takes |
+| --- | --- | --- |
+| The form after a code that still needs a second factor | `CustomReverifyView.swift`, `verifyCode()`, when `verifyWithResetPasswordEmailCode` returns `needsSecondFactor` | A user with a second factor. `host.seedUser` seeds none, so a spec would first have to enroll one, such as through the setup-MFA task on settings that require it. The form has no second-factor step, so it shows `Reverification is needs_second_factor.` in `verify.customReverify.error` and stays on screen. The server holds the new password until a second factor passes, so the password does not change. |
+
 ## Gotchas
 
 - A first-factor reverification started right after a ticket sign-in still needs a factor: the server starts each new reverification with no verified factor unless an earlier one in the same session already verified one. So `Send reset code` always leads to the code step.
 - The new password field sets no content type, like the SDK's password fields in E2E mode (`ClerkE2EEnvironment`). With a password content type, iOS covers the field with its strong password suggestion, which swallows text typed by UI automation.
 - XCTest screenshots blank secure fields, so the new password field shows as a black box in `reverify-code`.
 - A reverification error, such as a wrong code or a rejected password, shows in `verify.customReverify.error`, and the form stays on screen. `Incorrect code` is Clerk's message for a wrong code. It comes from the API, so a change of that wording fails the second test. A wrong code also counts toward the code's attempt limit.
-- The form has no second-factor step. For a user with a second factor, `verifyWithResetPasswordEmailCode` returns `needsSecondFactor`, and the form shows `Reverification is needs_second_factor.` in `verify.customReverify.error` and stays on screen. The server holds the new password until a second factor passes, so that user's password does not change. The specs seed users without a second factor.
 - `Custom reverification` sits with `Organization tabs`, so the home inside the organization tabs does not show it.
 - The screen keeps no state across launches. Every launch starts on the home.
