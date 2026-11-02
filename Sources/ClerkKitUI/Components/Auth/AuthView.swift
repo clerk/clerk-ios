@@ -286,6 +286,8 @@ extension AuthView {
   /// and routed to the appropriate field.
   ///
   /// - Parameter identifier: The email address, username, or phone number to pre-fill.
+  ///   Give a phone number its country code with a leading `+`. A number without one may not
+  ///   be detected as a phone number, and otherwise uses the country the phone field has selected.
   /// - Returns: A view with the initial identifier configured.
   public func initialIdentifier(_ identifier: String) -> AuthView {
     var config = config

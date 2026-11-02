@@ -23,5 +23,6 @@ Preconditions:
 
 ## Gotchas
 
+- The spec types the ten digits and assumes a US field. The field sends the calling code of the country it shows, even for a number PhoneNumberKit rejects. On a simulator whose region is not the US, choose United States in the field first, or the number goes out under that region's code and matches no user.
 - The code screen shows the number as `+1 (201) 555‑01xx`, with non-breaking spaces (U+00A0) and a non-breaking hyphen (U+2011) before the last four digits. `asShownByClerk` in `specs/phone.ts` builds that text with the hyphen and plain spaces, and text matching treats the two kinds of space alike. The number is both a button and the text inside it, so the spec takes `.first()`.
 - `Check your phone` has no identifier, so that check uses text.

@@ -79,7 +79,7 @@ extension ClerkPhoneNumberField {
         )
       }
 
-      let digits = digitsAfterCallingCode(in: text)
+      let digits = digitsAfterSelectingCallingCodeCountry(in: text)
       guard !digits.isEmpty else { return ("", "") }
 
       return (
@@ -88,7 +88,7 @@ extension ClerkPhoneNumberField {
       )
     }
 
-    private func digitsAfterCallingCode(in text: String) -> String {
+    private func digitsAfterSelectingCallingCodeCountry(in text: String) -> String {
       let digits = text.filter(\.isWholeNumber)
       guard text.first(where: { $0 == "+" || $0.isWholeNumber }) == "+" else { return digits }
 

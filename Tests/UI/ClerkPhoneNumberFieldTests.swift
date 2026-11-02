@@ -39,6 +39,24 @@ struct ClerkPhoneNumberFieldTests {
     #expect(model.currentCountry.code == "AU")
   }
 
+  @Test(arguments: [
+    (selected: "US", digits: "4362345678", expected: "+14362345678"),
+    (selected: "AU", digits: "2015550142", expected: "+612015550142"),
+    (selected: "US", digits: "447400123456", expected: "+1447400123456"),
+  ])
+  func rejectedNumberWithoutPlusIsNeverReadAsAnotherCountry(
+    selected: String,
+    digits: String,
+    expected: String
+  ) throws {
+    let model = try makeModel(selecting: selected)
+
+    let formattedText = model.formattedText(for: digits)
+
+    #expect(formattedText.dataText == expected)
+    #expect(model.currentCountry.code == selected)
+  }
+
   @Test
   func emptyValueStaysEmpty() throws {
     let model = try makeModel(selecting: "AU")
