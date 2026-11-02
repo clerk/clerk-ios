@@ -12,6 +12,8 @@ extension ClerkPhoneNumberField {
   @Observable
   @MainActor
   final class PhoneNumberModel {
+    private static let maxCallingCodeLength = 3
+
     private let utility = PhoneNumberUtility.shared
     let partialFormatter: PartialFormatter
 
@@ -77,11 +79,36 @@ extension ClerkPhoneNumberField {
         )
       }
 
-      let rawText = text.filter(\.isWholeNumber)
+      let digits = digitsAfterCallingCode(in: text)
+      guard !digits.isEmpty else { return ("", "") }
+
       return (
-        partialFormatter.formatPartial(rawText),
-        rawText
+        partialFormatter.formatPartial(digits),
+        currentCountry.prefix + digits
       )
+    }
+
+    private func digitsAfterCallingCode(in text: String) -> String {
+      let digits = text.filter(\.isWholeNumber)
+      guard text.first(where: { $0 == "+" || $0.isWholeNumber }) == "+" else { return digits }
+
+      let selectedCallingCode = currentCountry.prefix.dropFirst()
+      if digits.hasPrefix(selectedCallingCode) {
+        return String(digits.dropFirst(selectedCallingCode.count))
+      }
+
+      for length in 1 ... Self.maxCallingCodeLength {
+        guard
+          let callingCode = UInt64(digits.prefix(length)),
+          let region = utility.mainCountry(forCode: callingCode),
+          let country = ClerkPhoneCountry(for: region, with: utility)
+        else { continue }
+
+        currentCountry = country
+        return String(digits.dropFirst(length))
+      }
+
+      return digits
     }
 
     private func updateCurrentCountry(for phoneNumber: PhoneNumber) {
