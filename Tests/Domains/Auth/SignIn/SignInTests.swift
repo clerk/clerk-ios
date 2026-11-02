@@ -348,6 +348,21 @@ struct SignInTests {
   }
 
   @Test
+  func sendEmailLinkRestoresEarlierFlowWhenEmailSendIsBlocked() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    let earlierFlow = try #require(try store.load())
+    let rejection = ClerkAPIError(code: "action_blocked", statusCode: 403)
+    transport.stubSignInPrepareFirstFactor { _, _ in throw rejection }
+
+    await #expect(throws: rejection) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    #expect(try store.load() == earlierFlow)
+  }
+
+  @Test
   func sendMfaEmailLinkRestoresEarlierFlowWhenServerRejectsPrepare() async throws {
     let store = useKeychain(InMemoryKeychain())
     try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")

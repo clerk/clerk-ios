@@ -160,7 +160,7 @@ extension SignUp {
   /// This prepares the `email_link` verification using PKCE and stores the verifier locally
   /// so the callback can be completed inside the app. Only one pending native
   /// magic-link flow is stored locally at a time; starting a new flow replaces
-  /// the previously stored verifier, unless the server rejects the request.
+  /// the previously stored verifier, unless the server rate limits the request.
   ///
   /// - Parameter redirectUri: Optional redirect URI override. Defaults to the Clerk redirect configuration.
   /// - Returns: An updated `SignUp` object with the email-link verification started.

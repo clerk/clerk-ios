@@ -97,7 +97,7 @@ struct SignUpTests {
   }
 
   @Test
-  func sendEmailLinkRestoresEarlierFlowWhenServerRejectsPrepare() async throws {
+  func sendEmailLinkRestoresEarlierFlowWhenServerRateLimitsPrepare() async throws {
     let signUp = SignUp.mock
     let rejection = ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
     transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
@@ -117,7 +117,7 @@ struct SignUpTests {
   }
 
   @Test
-  func sendEmailLinkLeavesNoFlowWhenServerRejectsPrepareWithNoEarlierFlow() async throws {
+  func sendEmailLinkLeavesNoFlowWhenServerRateLimitsPrepareWithNoEarlierFlow() async throws {
     let signUp = SignUp.mock
     transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
       throw ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
@@ -133,11 +133,15 @@ struct SignUpTests {
     #expect(try magicLinkStore.load() == nil)
   }
 
-  @Test
-  func sendEmailLinkKeepsNewFlowWhenServerFailsPrepare() async throws {
+  @Test(arguments: [
+    ClerkAPIError(code: "action_blocked", statusCode: 403),
+    ClerkAPIError(code: "dev_monthly_email_limit_exceeded", statusCode: 400),
+    ClerkAPIError(code: "internal_clerk_error", statusCode: 500),
+  ])
+  func sendEmailLinkKeepsNewFlowWhenPrepareMayHaveReplacedTheChallenge(failure: ClerkAPIError) async throws {
     let signUp = SignUp.mock
     transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
-      throw ClerkAPIError(code: "internal_clerk_error", statusCode: 500)
+      throw failure
     }
 
     useTransport(keychain: InMemoryKeychain())

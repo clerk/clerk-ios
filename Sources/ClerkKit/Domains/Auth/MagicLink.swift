@@ -172,7 +172,7 @@ final class MagicLinkStore {
     do {
       return try await prepare()
     } catch {
-      if isServerRejection(error) {
+      if serverKeptEarlierChallenge(after: error, kind: kind) {
         undoReplacement(of: earlierFlow, ownerId: earlierOwnerId, byFlowWith: codeVerifier)
       }
       throw error
@@ -220,11 +220,17 @@ final class MagicLinkStore {
     }
   }
 
-  private func isServerRejection(_ error: Error) -> Bool {
-    guard let statusCode = (error as? ClerkAPIError)?.statusCode else {
+  private func serverKeptEarlierChallenge(after error: Error, kind: PendingMagicLinkFlow.Kind) -> Bool {
+    guard let apiError = error as? ClerkAPIError else {
       return false
     }
-    return (400 ..< 500).contains(statusCode)
+
+    switch kind {
+    case .signIn:
+      return apiError.statusCode.map((400 ..< 500).contains) ?? false
+    case .signUp:
+      return apiError.code == "verification_code_rate_limit_exceeded"
+    }
   }
 
   private func undoReplacement(
