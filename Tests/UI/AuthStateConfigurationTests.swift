@@ -27,7 +27,7 @@ struct AuthStateConfigurationTests {
 
     authState.authStartIdentifier = typed
 
-    #expect(authState.submittedAuthStartIdentifier == "me@example.com")
+    #expect(authState.trimmedAuthStartIdentifier == "me@example.com")
     #expect(authState.authStartIdentifier == typed)
   }
 
@@ -37,7 +37,7 @@ struct AuthStateConfigurationTests {
 
     authState.authStartIdentifier = "   "
 
-    #expect(authState.submittedAuthStartIdentifier.isEmpty)
+    #expect(authState.trimmedAuthStartIdentifier.isEmpty)
   }
 
   @Test

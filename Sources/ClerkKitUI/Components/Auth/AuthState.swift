@@ -167,7 +167,7 @@ extension AuthState {
     return checkpoint
   }
 
-  var submittedAuthStartIdentifier: String {
+  var trimmedAuthStartIdentifier: String {
     authStartIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
   }
 
