@@ -14,7 +14,7 @@ A signed-in user quits the app and opens it again. The app starts signed in, wit
 
 Preconditions:
 
-- The spec declares no settings, so it runs on the standard settings.
+- The spec changes no settings, so it runs on the standard settings.
 - The spec seeds a `+clerk_test` user and signs in with a ticket on the home.
 
 - **Relaunch.** Run `e2e-tests/bin/control-clerk-ios run session-persistence`. The spec reads the session ID on the home (`e2e.auth.sessionId`), then launches again with `keepStorage: true` and no `signedInAs`. That launch kills the process and starts it with the same storage scope and no sign-in ticket. The spec waits for the home to show the same user, and expects the same session ID. Screenshot `relaunched`.

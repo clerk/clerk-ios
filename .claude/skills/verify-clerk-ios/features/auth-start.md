@@ -21,7 +21,7 @@ A signed-out user opens AuthView and sees the start screen, where they enter an 
 Preconditions:
 
 - `e2e-tests/bin/control-clerk-ios doctor` fails no check other than `build`.
-- The spec declares no settings, so it runs on the standard settings.
+- The spec changes no settings, so it runs on the standard settings.
 - The first two tests need no user. The third seeds one with `host.seedUser({ phone: true, password: true })`.
 
 - **Full screen.** Run `e2e-tests/bin/control-clerk-ios run auth-start`. The first test taps `e2e.auth.signInFullScreen` and expects `clerk.auth.start.identifier` and no `clerk.dismissButton`, because E2EHost shows that AuthView with `isDismissible: false`. Screenshot `auth-full-screen`.
