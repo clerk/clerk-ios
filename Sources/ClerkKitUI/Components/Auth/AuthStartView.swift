@@ -79,7 +79,7 @@ struct AuthStartView: View {
       return true
     }
 
-    if !authState.authStartPhoneNumber.isEmpty, authState.authStartIdentifier.isEmpty {
+    if !authState.authStartPhoneNumber.isEmpty, authState.trimmedAuthStartIdentifier.isEmpty {
       return true
     }
 
