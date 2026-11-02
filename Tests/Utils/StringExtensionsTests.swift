@@ -61,29 +61,23 @@ struct StringExtensionsTests {
     #expect("hello123".capitalizedSentence == "Hello123")
   }
 
-  @Test
-  func testIsEmailAddress() {
-    // Valid email addresses
-    #expect("test@example.com".isEmailAddress == true)
-    #expect("user.name@example.com".isEmailAddress == true)
-    #expect("user+tag@example.com".isEmailAddress == true)
-    #expect("user_name@example.co.uk".isEmailAddress == true)
-    #expect("user123@example123.com".isEmailAddress == true)
-    #expect("a@b.co".isEmailAddress == true)
+  @Test(arguments: [
+    "test@example.com",
+    "user+tag@example.com",
+    "o'brien@example.com",
+    "josé@example.com",
+    "me@example.xn--p1ai",
+    "me@example.com ",
+    " me@example.com",
+    "user@",
+  ])
+  func looksLikeEmailAddressWhenItHasAnAtSign(_ identifier: String) {
+    #expect(identifier.looksLikeEmailAddress)
+  }
 
-    // Invalid email addresses
-    #expect("notanemail".isEmailAddress == false)
-    #expect("@example.com".isEmailAddress == false)
-    #expect("user@".isEmailAddress == false)
-    #expect("user@example".isEmailAddress == false)
-    #expect("user @example.com".isEmailAddress == false)
-    #expect("user@exam ple.com".isEmailAddress == false)
-    #expect("".isEmailAddress == false)
-    #expect("user@example..com".isEmailAddress == false)
-    #expect("user@.example.com".isEmailAddress == false)
-    #expect("user@-example.com".isEmailAddress == false)
-    #expect("user@example-.com".isEmailAddress == false)
-    #expect("user@sub-domain.example.com".isEmailAddress == true)
+  @Test(arguments: ["", "   ", "notanemail", "clerk_user", "o'brien", "user.name+tag"])
+  func doesNotLookLikeEmailAddressWithoutAnAtSign(_ identifier: String) {
+    #expect(!identifier.looksLikeEmailAddress)
   }
 
   // MARK: - String+Base64.swift Tests
