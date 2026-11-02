@@ -47,6 +47,7 @@ These test files change the instance's settings with `host.useSettings`:
 - `specs/features/session-tasks/choose-organization.e2e.ts`
 - `specs/features/session-tasks/complete-setup-mfa.e2e.ts`
 - `specs/features/session-tasks/setup-mfa.e2e.ts`
+- `specs/features/session-tasks/setup-mfa-sms-only.e2e.ts`
 - `specs/features/session-tasks/sign-up-setup-mfa.e2e.ts`
 
 A run by hand fails them at that call, because the Platform API key that changes an instance's settings stays with the CLI. Run them through the CLI, for example `e2e-tests/bin/control-clerk-ios run session-tasks` from the repo root.
