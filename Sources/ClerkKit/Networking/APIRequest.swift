@@ -58,6 +58,7 @@ package struct Request<Response: Decodable & Sendable> {
   let method: HTTPMethod
   let headers: [String: String]
   let canEstablishClientWhenTokenless: Bool
+  let independentOfClient: Bool
 
   private let scopedToActiveSession: Bool
   private let queryItems: [URLQueryItem]
@@ -71,6 +72,7 @@ package struct Request<Response: Decodable & Sendable> {
     method: HTTPMethod = .get,
     headers: [String: String] = [:],
     canEstablishClientWhenTokenless: Bool = false,
+    independentOfClient: Bool = false,
     scopedToActiveSession: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
@@ -92,6 +94,7 @@ package struct Request<Response: Decodable & Sendable> {
     self.method = method
     self.headers = headers
     self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
+    self.independentOfClient = independentOfClient
     self.scopedToActiveSession = scopedToActiveSession
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
@@ -156,6 +159,9 @@ package struct Request<Response: Decodable & Sendable> {
   private func applyPipelineFlags(to urlRequest: inout URLRequest) {
     if scopedToActiveSession {
       urlRequest.scopeToClerkActiveSession()
+    }
+    if independentOfClient {
+      urlRequest.markIndependentOfClerkClient()
     }
     if !automaticallySyncClient {
       urlRequest.disableAutomaticClerkClientSync()

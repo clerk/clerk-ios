@@ -105,10 +105,12 @@ extension ClerkIdentityController {
   }
 
   func captureRequestIdentity(
-    startupClientRefreshTakeoverID: UUID? = nil
+    startupClientRefreshTakeoverID: UUID? = nil,
+    independentOfClient: Bool = false
   ) async throws -> ClerkIdentityRequestSnapshot {
     guard let clerk else { throw CancellationError() }
     adoptStoredDeviceToken()
+    guard !hydrationFailed || independentOfClient else { throw storedTokenUnreadableError }
     clerk.runtime.startupClientRefreshTakeover.beginIfNeeded(
       id: startupClientRefreshTakeoverID,
       deviceToken: currentDeviceToken
@@ -120,6 +122,10 @@ extension ClerkIdentityController {
       clientResponseGeneration: clientResponseGeneration,
       authFlowRegistrationId: AuthFlowRequestScope.ownerId
     )
+  }
+
+  private var storedTokenUnreadableError: ClerkClientError {
+    ClerkClientError(message: "Your saved sign-in couldn't be read. Try again.", localizationBundle: .module)
   }
 }
 
@@ -168,6 +174,7 @@ extension ClerkIdentityController {
     clerk.setClientFromIdentityController(nil)
     clerk.emitInternalStateChange(.localStorageDidClear)
     try store?.delete()
+    hydrationFailed = false
   }
 
   private func commit(
@@ -176,8 +183,9 @@ extension ClerkIdentityController {
     preservingInvalidatedSessionTokens invalidatedSessionIds: Set<String> = [],
     authFlowUpdate: AuthFlowIdentityUpdate = .ordinary
   ) throws {
-    prepareSessionTokensForIdentityChange(to: identity)
     let tokenChanged = identity.deviceToken != currentDeviceToken
+    guard !(tokenChanged && hydrationFailed) else { throw storedTokenUnreadableError }
+    prepareSessionTokensForIdentityChange(to: identity)
     let reconciled = reconcilingSessionTokens(in: identity)
     var identity = reconciled.identity
     if !tokenChanged, let watermark = lastServerDate, identity.serverDate.map({ $0 < watermark }) ?? true {

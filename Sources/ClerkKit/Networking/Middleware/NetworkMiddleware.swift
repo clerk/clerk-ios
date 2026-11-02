@@ -199,6 +199,7 @@ extension URLRequest {
   private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
   private static let clerkBodyLoggingKey = "com.clerk.body-logging"
   private static let clerkActiveSessionScopeKey = "com.clerk.active-session-scope"
+  private static let clerkClientIndependentKey = "com.clerk.client-independent"
 
   var clerkRequestCheckpoint: ClerkRequestCheckpoint {
     ClerkRequestCheckpoint(request: self)
@@ -255,6 +256,14 @@ extension URLRequest {
 
   var isScopedToClerkActiveSession: Bool {
     URLProtocol.property(forKey: Self.clerkActiveSessionScopeKey, in: self) as? Bool ?? false
+  }
+
+  var isIndependentOfClerkClient: Bool {
+    URLProtocol.property(forKey: Self.clerkClientIndependentKey, in: self) as? Bool ?? false
+  }
+
+  mutating func markIndependentOfClerkClient() {
+    setClerkProperty(NSNumber(value: true), key: Self.clerkClientIndependentKey)
   }
 
   mutating func setClerkRequestSequence(_ sequence: Int) {

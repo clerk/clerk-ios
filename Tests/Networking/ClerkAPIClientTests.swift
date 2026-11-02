@@ -450,6 +450,63 @@ struct ClerkAPIClientTests {
   }
 
   @Test
+  func requestRefusedForAnUnreadableTokenLeavesStartupClientRefreshRunning() async throws {
+    let clerk = Clerk()
+    let startupGate = APIClientStartupGate()
+    let refreshCount = LockIsolated(0)
+    let keychain = UnreadableKeychain()
+    keychain.readsFail = true
+    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    let dependencies = MockDependencyContainer(
+      apiClient: apiClient,
+      transport: FakeTransport.answeringClient {
+        refreshCount.withValue { $0 += 1 }
+        await startupGate.suspend()
+        return Client.mockSignedOut
+      },
+      identityKeychain: keychain
+    )
+    clerk.performConfiguration(dependencies: dependencies)
+    defer {
+      startupGate.resume()
+      clerk.cleanupManagers()
+    }
+    try await waitUntil { startupGate.isSuspended }
+
+    await #expect(throws: ClerkClientError.self) {
+      try await apiClient.send(Request<EmptyResponse>(
+        path: "/v1/client/sign_ups",
+        method: .post,
+        canEstablishClientWhenTokenless: true
+      ))
+    }
+
+    #expect(clerk.runtime.isStartupClientRefreshInProgress)
+    #expect(refreshCount.value == 1)
+  }
+
+  @Test
+  func environmentStillLoadsWhileTheTokenIsUnreadable() async throws {
+    let clerk = Clerk()
+    let keychain = UnreadableKeychain()
+    keychain.readsFail = true
+    let url = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!
+    let mock = try Mock(
+      url: url,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder.clerkEncoder.encode(Clerk.Environment.mock)]
+    )
+    mock.register()
+    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    clerk.dependencies = MockDependencyContainer(apiClient: apiClient, identityKeychain: keychain)
+    clerk.identityController.hydrate()
+
+    _ = try await apiClient.send(EnvironmentAPI.get())
+  }
+
+  @Test
   func retryPreservesFirstPreparedSharedIdentityContext() async throws {
     let prepareCount = LockIsolated(0)
     let observedContexts = LockIsolated<[(String?, String?, Bool, String?)]>([])

@@ -29,7 +29,12 @@ struct ClerkIdentityStore {
   }
 
   func deviceToken() throws -> String? {
-    try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue).nilIfEmpty
+    do {
+      return try keychain.string(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue).nilIfEmpty
+    } catch KeychainError.invalidStringEncoding {
+      ClerkLogger.logError(KeychainError.invalidStringEncoding, message: "Ignoring an undecodable Clerk device token")
+      return nil
+    }
   }
 
   func load() throws -> ClerkIdentitySnapshot? {

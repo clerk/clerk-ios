@@ -267,6 +267,81 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test
+  func tokenThatCannotBeReadSurvivesARequestAndAResponse() async throws {
+    let keychain = UnreadableKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
+
+    keychain.readsFail = true
+    clerk.identityController.hydrate()
+
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.identityController.captureRequestIdentity()
+    }
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.identityController.applyNetworkResponse(
+        context(.client(makeClient(id: "minted")), token: .set("minted-token"), requestToken: nil, clerk: clerk)
+      )
+    }
+    await clerk.waitForCacheWrites()
+
+    keychain.readsFail = false
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == "saved-token")
+    #expect(clerk.client?.id == "saved")
+  }
+
+  @Test
+  func writersCannotReplaceATokenThatCannotBeRead() async throws {
+    let keychain = UnreadableKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try clerk.dependencies.identityStore.saveDeviceToken("saved-token")
+
+    keychain.readsFail = true
+    clerk.identityController.hydrate()
+
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.setDeviceToken("minted-token", expected: nil)
+    }
+    #expect(throws: ClerkClientError.self) {
+      try clerk.identityController.adoptDeviceToken("handed-off-token")
+    }
+
+    keychain.readsFail = false
+    #expect(try clerk.dependencies.identityStore.deviceToken() == "saved-token")
+  }
+
+  @Test
+  func clearingAnUnreadableTokenAllowsRequestsAgain() async throws {
+    let keychain = UnreadableKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try clerk.dependencies.identityStore.saveDeviceToken("saved-token")
+
+    keychain.readsFail = true
+    clerk.identityController.hydrate()
+    try clerk.identityController.clearIdentity()
+
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == nil)
+  }
+
+  @Test
+  func undecodableTokenCountsAsNoTokenSoANewOneCanReplaceIt() async throws {
+    let keychain = InMemoryKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try keychain.set(Data([0xFF, 0xFE]), forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
+
+    clerk.identityController.hydrate()
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == nil)
+
+    try await clerk.identityController.applyNetworkResponse(
+      context(.client(makeClient(id: "client")), token: .set("new-token"), requestToken: nil, clerk: clerk)
+    )
+    #expect(try clerk.dependencies.identityStore.deviceToken() == "new-token")
+  }
+
+  @Test
   func failedWriteOfANewTokenLeavesMemoryUnchanged() async throws {
     let (clerk, _) = makeClerk(identityKeychain: SetFailingKeychain())
 
@@ -497,6 +572,34 @@ private final class FailingAfterFirstWriteKeychain: @unchecked Sendable, Keychai
 
   func data(forKey key: String) throws -> Data? {
     try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
+final class UnreadableKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+  private let lock = NSLock()
+  private var failingReads = false
+
+  var readsFail: Bool {
+    get { lock.withLock { failingReads } }
+    set { lock.withLock { failingReads = newValue } }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    if readsFail { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
+    return try backing.data(forKey: key)
   }
 
   func deleteItem(forKey key: String) throws {
