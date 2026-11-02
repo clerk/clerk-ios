@@ -69,7 +69,7 @@ struct AuthStartView: View {
   }
 
   var activeIdentifier: String {
-    phoneNumberInputIsActive ? authState.authStartPhoneNumber : authState.authStartIdentifier
+    phoneNumberInputIsActive ? authState.authStartPhoneNumber : authState.trimmedAuthStartIdentifier
   }
 
   var shouldStartOnPhoneNumber: Bool {
@@ -79,7 +79,7 @@ struct AuthStartView: View {
       return true
     }
 
-    if !authState.authStartPhoneNumber.isEmpty, authState.authStartIdentifier.isEmpty {
+    if !authState.authStartPhoneNumber.isEmpty, authState.trimmedAuthStartIdentifier.isEmpty {
       return true
     }
 
@@ -702,14 +702,14 @@ extension AuthStartView {
         phoneNumber: authState.authStartPhoneNumber,
         unsafeMetadata: authState.unsafeMetadata
       )
-    } else if authState.authStartIdentifier.isEmailAddress {
+    } else if authState.trimmedAuthStartIdentifier.looksLikeEmailAddress {
       try await clerk.auth.signUp(
-        emailAddress: authState.authStartIdentifier,
+        emailAddress: authState.trimmedAuthStartIdentifier,
         unsafeMetadata: authState.unsafeMetadata
       )
     } else {
       try await clerk.auth.signUp(
-        username: authState.authStartIdentifier,
+        username: authState.trimmedAuthStartIdentifier,
         unsafeMetadata: authState.unsafeMetadata
       )
     }
@@ -727,7 +727,7 @@ extension AuthStartView {
   private func storeIdentifierType() {
     if phoneNumberInputIsActive {
       authState.storeLastUsedIdentifierType(.phone)
-    } else if authState.authStartIdentifier.isEmailAddress {
+    } else if authState.trimmedAuthStartIdentifier.looksLikeEmailAddress {
       authState.storeLastUsedIdentifierType(.email)
     } else {
       authState.storeLastUsedIdentifierType(.username)

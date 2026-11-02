@@ -21,6 +21,25 @@ struct AuthStateConfigurationTests {
     #expect(authState.authStartPhoneNumberFieldIsActive)
   }
 
+  @Test(arguments: ["me@example.com ", " me@example.com", "me@example.com\n", "\tme@example.com  "])
+  func submittedIdentifierDropsSurroundingWhitespace(_ typed: String) {
+    let authState = AuthState(userDefaults: makeUserDefaults())
+
+    authState.authStartIdentifier = typed
+
+    #expect(authState.trimmedAuthStartIdentifier == "me@example.com")
+    #expect(authState.authStartIdentifier == typed)
+  }
+
+  @Test
+  func whitespaceOnlyIdentifierHasNothingToSubmit() {
+    let authState = AuthState(userDefaults: makeUserDefaults())
+
+    authState.authStartIdentifier = "   "
+
+    #expect(authState.trimmedAuthStartIdentifier.isEmpty)
+  }
+
   @Test
   func defaultConfigurationPersistsEdits() {
     let defaults = makeUserDefaults()

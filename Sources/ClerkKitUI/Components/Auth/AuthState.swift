@@ -167,6 +167,10 @@ extension AuthState {
     return checkpoint
   }
 
+  var trimmedAuthStartIdentifier: String {
+    authStartIdentifier.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
   var authStartIdentifierIsLocked: Bool {
     prefilledFieldsAreLocked && authStartIdentifierWasPrefilled && !authStartIdentifier.isEmptyTrimmed
   }
