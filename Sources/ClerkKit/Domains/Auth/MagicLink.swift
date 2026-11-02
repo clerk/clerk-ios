@@ -145,17 +145,37 @@ final class MagicLinkStore {
     authFlowOwnerId: UUID? = nil
   ) throws {
     let createdAt = Date()
-    let pendingFlow = PendingMagicLinkFlow(
-      kind: kind,
-      flowId: flowId,
-      codeVerifier: codeVerifier,
-      createdAt: createdAt,
-      expiresAt: createdAt.addingTimeInterval(ttl)
+    try store(
+      PendingMagicLinkFlow(
+        kind: kind,
+        flowId: flowId,
+        codeVerifier: codeVerifier,
+        createdAt: createdAt,
+        expiresAt: createdAt.addingTimeInterval(ttl)
+      ),
+      authFlowOwnerId: authFlowOwnerId
     )
-    let data = try JSONEncoder.clerkEncoder.encode(pendingFlow)
-    try keychain.set(data, forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
-    inMemoryAuthFlowOwnership = authFlowOwnerId.map {
-      (flowIdentity: FlowIdentity(pendingFlow), ownerId: $0)
+  }
+
+  @MainActor
+  func replacingPendingFlow<Response>(
+    kind: PendingMagicLinkFlow.Kind,
+    flowId: String,
+    codeVerifier: String,
+    authFlowOwnerId: UUID?,
+    prepare: @MainActor () async throws -> Response
+  ) async throws -> Response {
+    let earlierFlow = try load()
+    let earlierOwnerId = earlierFlow.flatMap(self.authFlowOwnerId(for:))
+    try save(kind: kind, flowId: flowId, codeVerifier: codeVerifier, authFlowOwnerId: authFlowOwnerId)
+
+    do {
+      return try await prepare()
+    } catch {
+      if isServerRejection(error) {
+        undoReplacement(of: earlierFlow, ownerId: earlierOwnerId, byFlowWith: codeVerifier)
+      }
+      throw error
     }
   }
 
@@ -190,6 +210,42 @@ final class MagicLinkStore {
       return nil
     }
     return inMemoryAuthFlowOwnership?.ownerId
+  }
+
+  private func store(_ flow: PendingMagicLinkFlow, authFlowOwnerId: UUID?) throws {
+    let data = try JSONEncoder.clerkEncoder.encode(flow)
+    try keychain.set(data, forKey: ClerkKeychainKey.pendingMagicLinkFlow.rawValue)
+    inMemoryAuthFlowOwnership = authFlowOwnerId.map {
+      (flowIdentity: FlowIdentity(flow), ownerId: $0)
+    }
+  }
+
+  private func isServerRejection(_ error: Error) -> Bool {
+    guard let statusCode = (error as? ClerkAPIError)?.statusCode else {
+      return false
+    }
+    return (400 ..< 500).contains(statusCode)
+  }
+
+  private func undoReplacement(
+    of earlierFlow: PendingMagicLinkFlow?,
+    ownerId: UUID?,
+    byFlowWith codeVerifier: String
+  ) {
+    guard (try? load())?.codeVerifier == codeVerifier else {
+      return
+    }
+    guard let earlierFlow else {
+      deletePendingFlow()
+      return
+    }
+
+    do {
+      try store(earlierFlow, authFlowOwnerId: ownerId)
+    } catch {
+      ClerkLogger.error("Failed to restore the earlier magic link flow.", error: error)
+      deletePendingFlow()
+    }
   }
 
   private func deletePendingFlow() {

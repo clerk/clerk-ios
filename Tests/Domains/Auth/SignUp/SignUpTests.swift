@@ -97,6 +97,62 @@ struct SignUpTests {
   }
 
   @Test
+  func sendEmailLinkRestoresEarlierFlowWhenServerRejectsPrepare() async throws {
+    let signUp = SignUp.mock
+    let rejection = ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
+      throw rejection
+    }
+
+    useTransport(keychain: InMemoryKeychain())
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+    try magicLinkStore.save(kind: .signUp, flowId: signUp.id, codeVerifier: "earlier_verifier")
+    let earlierFlow = try #require(try magicLinkStore.load())
+
+    await #expect(throws: rejection) {
+      try await signUp.sendEmailLink()
+    }
+
+    #expect(try magicLinkStore.load() == earlierFlow)
+  }
+
+  @Test
+  func sendEmailLinkLeavesNoFlowWhenServerRejectsPrepareWithNoEarlierFlow() async throws {
+    let signUp = SignUp.mock
+    transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
+      throw ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    }
+
+    useTransport(keychain: InMemoryKeychain())
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await signUp.sendEmailLink()
+    }
+
+    #expect(try magicLinkStore.load() == nil)
+  }
+
+  @Test
+  func sendEmailLinkKeepsNewFlowWhenServerFailsPrepare() async throws {
+    let signUp = SignUp.mock
+    transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
+      throw ClerkAPIError(code: "internal_clerk_error", statusCode: 500)
+    }
+
+    useTransport(keychain: InMemoryKeychain())
+    let magicLinkStore = Clerk.shared.dependencies.magicLinkStore
+    try magicLinkStore.save(kind: .signUp, flowId: signUp.id, codeVerifier: "earlier_verifier")
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await signUp.sendEmailLink()
+    }
+
+    let pendingFlow = try #require(try magicLinkStore.load())
+    #expect(pendingFlow.codeVerifier != "earlier_verifier")
+  }
+
+  @Test
   func sendEmailCodePreparesEmailCodeVerification() async throws {
     let signUp = SignUp.mock
 

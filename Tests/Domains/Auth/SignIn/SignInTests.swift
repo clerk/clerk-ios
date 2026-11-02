@@ -306,6 +306,131 @@ struct SignInTests {
     #expect(prepareWasCalled.value == false)
   }
 
+  private func emailLinkSignIn() -> SignIn {
+    let emailLinkFactor = Factor(
+      strategy: .emailLink,
+      emailAddressId: "ema_123",
+      safeIdentifier: "test@example.com"
+    )
+    return SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      identifier: "test@example.com",
+      supportedFirstFactors: [emailLinkFactor],
+      supportedSecondFactors: [emailLinkFactor]
+    )
+  }
+
+  private func useKeychain(_ keychain: any KeychainStorage) -> MagicLinkStore {
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport,
+      keychain: keychain
+    )
+    return Clerk.shared.dependencies.magicLinkStore
+  }
+
+  @Test
+  func sendEmailLinkRestoresEarlierFlowWhenServerRejectsPrepare() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    let ownerId = UUID()
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier", authFlowOwnerId: ownerId)
+    let earlierFlow = try #require(try store.load())
+    let rejection = ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    transport.stubSignInPrepareFirstFactor { _, _ in throw rejection }
+
+    await #expect(throws: rejection) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    #expect(try store.load() == earlierFlow)
+    #expect(store.authFlowOwnerId(for: earlierFlow) == ownerId)
+  }
+
+  @Test
+  func sendMfaEmailLinkRestoresEarlierFlowWhenServerRejectsPrepare() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    let earlierFlow = try #require(try store.load())
+    let rejection = ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    transport.stubSignInPrepareSecondFactor { _, _ in throw rejection }
+
+    await #expect(throws: rejection) {
+      try await emailLinkSignIn().sendMfaEmailLink()
+    }
+
+    #expect(try store.load() == earlierFlow)
+  }
+
+  @Test
+  func sendEmailLinkLeavesNoFlowWhenServerRejectsPrepareWithNoEarlierFlow() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    transport.stubSignInPrepareFirstFactor { _, _ in
+      throw ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    }
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    #expect(try store.load() == nil)
+  }
+
+  @Test(arguments: [
+    ClerkAPIError(code: "internal_clerk_error", statusCode: 500) as any Error,
+    ClerkAPIError(code: "status_not_known") as any Error,
+    URLError(.timedOut) as any Error,
+    CancellationError() as any Error,
+  ])
+  func sendEmailLinkKeepsNewFlowWhenPrepareMayHaveReachedTheServer(failure: any Error) async throws {
+    let store = useKeychain(InMemoryKeychain())
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    let challenge = LockIsolated<String?>(nil)
+    transport.stubSignInPrepareFirstFactor { _, params in
+      challenge.setValue(params?["code_challenge"]?.stringValue)
+      throw failure
+    }
+
+    await #expect(throws: (any Error).self) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    let pendingFlow = try #require(try store.load())
+    #expect(pendingFlow.codeVerifier != "earlier_verifier")
+    #expect(PKCE.challenge(for: pendingFlow.codeVerifier) == challenge.value)
+  }
+
+  @Test
+  func sendEmailLinkKeepsNewerFlowStartedWhileRejectedPrepareWasInFlight() async throws {
+    let keychain = InMemoryKeychain()
+    let store = useKeychain(keychain)
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    transport.stubSignInPrepareFirstFactor { _, _ in
+      try MagicLinkStore(keychain: keychain).save(kind: .signUp, flowId: "sign_up_456", codeVerifier: "newer_verifier")
+      throw ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    }
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    #expect(try store.load()?.codeVerifier == "newer_verifier")
+  }
+
+  @Test
+  func sendEmailLinkThrowsServerRejectionAndDropsNewFlowWhenRestoringEarlierFlowFails() async throws {
+    let store = useKeychain(SetFailingAfterWritesKeychain(allowedWrites: 2))
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier", authFlowOwnerId: UUID())
+    let rejection = ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    transport.stubSignInPrepareFirstFactor { _, _ in throw rejection }
+
+    await #expect(throws: rejection) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    #expect(try store.load() == nil)
+  }
+
   @Test
   func sendMfaEmailLinkPreparesSecondFactor() async throws {
     let keychain = InMemoryKeychain()
