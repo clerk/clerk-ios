@@ -78,10 +78,6 @@ extension ClerkIdentityController {
     clientResponseGeneration = clientResponseGeneration.next()
     responseOrderingGate.resetSequence()
   }
-
-  func persistedClientID() -> String? {
-    try? store?.load()?.client?.id
-  }
 }
 
 extension ClerkIdentityController {
@@ -92,13 +88,16 @@ extension ClerkIdentityController {
     let identity: ClerkIdentitySnapshot?
     do {
       let storedToken = try store.deviceToken()
-      hydrationFailed = false
-      guard storedToken != currentDeviceToken else { return false }
+      guard storedToken != currentDeviceToken else {
+        hydrationFailed = false
+        return false
+      }
       identity = try store.load()
     } catch {
       ClerkLogger.logError(error, message: "Failed to read the stored Clerk identity")
       return false
     }
+    hydrationFailed = false
     prepareSessionTokensForIdentityChange(to: identity ?? .signedOut)
     apply(identity ?? .signedOut, fenceResponses: true, authFlowUpdate: .authoritativeIdentityChanged)
     return true
