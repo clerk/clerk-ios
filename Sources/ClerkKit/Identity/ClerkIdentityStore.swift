@@ -55,6 +55,7 @@ struct ClerkIdentityStore {
         }
       }
     } catch {
+      // Still adopt the token: without it the next response would replace it, and `GET /client` rebuilds the client.
       ClerkLogger.logError(error, message: "Failed to read the cached Clerk client")
       return nil
     }

@@ -284,7 +284,7 @@ struct ClerkIdentityControllerTests {
   }
 
   @Test(arguments: [false, true])
-  func tokenBecomingReadableBeforeTheCachedClientIsAdopted(identityIsInAccessGroup: Bool) async throws {
+  func tokenBecomingReadableIsAdoptedWhileTheCachedClientStaysUnreadable(identityIsInAccessGroup: Bool) async throws {
     let keychain = ReadFailingKeychain()
     let (clerk, _) = makeClerk(identityKeychain: keychain, identityIsInAccessGroup: identityIsInAccessGroup)
     try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
