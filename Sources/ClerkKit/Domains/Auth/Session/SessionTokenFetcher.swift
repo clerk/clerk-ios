@@ -158,7 +158,7 @@ actor SessionTokenFetcher {
     }
     if !options.skipCache, let token = cachedToken,
        let expiresAt = token.decodedJWT?.expiresAt,
-       Date.now.distance(to: expiresAt) > options.expirationBuffer
+       controller.serverClock.now.distance(to: expiresAt) > options.expirationBuffer
     {
       return token
     }
@@ -180,7 +180,7 @@ actor SessionTokenFetcher {
     controller.adoptStoredDeviceToken()
     if options.template != nil {
       if controller.currentSession(for: context) != nil {
-        let stored = SessionTemplateTokensCache.shared.storeIfFresher(token, cacheKey: cacheKey)
+        let stored = SessionTemplateTokensCache.shared.storeIfFresher(token, cacheKey: cacheKey, now: controller.serverClock.now)
         if stored.didChangeCanonicalToken {
           clerk.auth.send(.tokenRefreshed(token: stored.canonicalToken.jwt))
         }

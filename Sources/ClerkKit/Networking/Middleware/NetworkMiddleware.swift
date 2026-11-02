@@ -122,6 +122,7 @@ extension NetworkingPipeline {
         ClerkRequestLoggingMiddleware(),
       ],
       responseObservers: [
+        ClerkServerClockResponseMiddleware(runtimeScope: runtimeScope),
         ClerkAppVersionSupportResponseMiddleware(runtimeScope: runtimeScope),
       ],
       responseMiddleware: [

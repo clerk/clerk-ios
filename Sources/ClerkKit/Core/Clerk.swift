@@ -658,5 +658,6 @@ extension Clerk {
     resetAppVersionSupport()
     callbackContinuation = nil
     identityController.resetOrderingState()
+    identityController.resetServerClock()
   }
 }

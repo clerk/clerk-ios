@@ -16,7 +16,7 @@ Untrusted input enters at:
 - **OAuth, SSO and hosted-auth callbacks.** `ASWebAuthenticationSession` returns them (`Utils/WebAuthentication.swift`, `Utils/ExternalAuthUtils.swift`, `Core/Auth+HostedAuth.swift`, `Domains/Auth/HostedAuth.swift`, the `handleRedirectCallbackUrl` paths in `SignIn.swift` and `SignUp.swift`).
 - **Content from other end users.** Names, organization names, emails, avatar and logo URLs, and custom fields come back from the API and are rendered in ClerkKitUI (Nuke `LazyImage`, `SafariView`, markdown in `LocalizedStringKey`).
 - **Other processes on the same device.** The Darwin `notify` channel (`Identity/SharedIdentityNotifier.swift`), Keychain items in a shared access group, and WatchConnectivity payloads (`WatchSync/`).
-- **Response headers.** The `Authorization` response header replaces the stored device token (`Networking/Middleware/ClerkDeviceTokenResponseMiddleware.swift`, `ClerkClientSyncResponseMiddleware.swift`).
+- **Response headers.** The `Authorization` response header replaces the stored device token (`Networking/Middleware/ClerkDeviceTokenResponseMiddleware.swift`, `ClerkClientSyncResponseMiddleware.swift`). The `Date` response header sets how far the device clock lags the server when `getToken()` decides whether a cached token has expired (`Networking/Middleware/ClerkServerClockResponseMiddleware.swift`, `Identity/ServerClock.swift`). A wrong date can only make a token look expired early, which costs extra token requests.
 
 ## Components that matter most / least
 
