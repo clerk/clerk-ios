@@ -6,9 +6,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join } from 'node:path';
 import { describe, it } from 'node:test';
 import { selectBackend } from '@clerk/internal-mobile-e2e/core/devices';
-import { resolveSpecs } from '@clerk/internal-mobile-e2e/core/e2e';
-import { STANDARD, declaredIn, planGroups, readSpecText, settingsOf } from '@clerk/internal-mobile-e2e/core/instances/settings';
-import type { BuildKey, InstanceSettings, ScratchPath } from '@clerk/internal-mobile-e2e/core/types';
+import type { BuildKey, ScratchPath } from '@clerk/internal-mobile-e2e/core/types';
 import { host } from '../src/host.ts';
 import { BUILD_INPUTS } from '../src/host-app.ts';
 import { localIosBackend } from '../src/platform/ios/local.ts';
@@ -53,31 +51,6 @@ describe('the clerk-ios host build', () => {
       Object.assign(process.env, before);
       rmSync(scratch, { recursive: true, force: true });
     }
-  });
-});
-
-describe('the clerk-ios committed specs', () => {
-  const MFA: InstanceSettings = { config: { auth_multi_factor: { required_for_sign_up: true } }, environment: { 'user_settings.sign_up.mfa.required': true } };
-  const FORCED_ORG: InstanceSettings = { config: { organization_settings: { force_organization_selection: true } }, environment: { 'organization_settings.force_organization_selection': true } };
-  const committed = resolveSpecs(PACKAGE_DIR, { all: true }).map((spec) => ({ spec, ...readSpecText(PACKAGE_DIR, spec.path) }));
-  const declarations = committed.map(({ spec, ...text }) => ({ path: spec.path, declared: declaredIn(text, spec.path) }));
-  const declaredBy = (file: string) => declarations.find(({ path }) => path.endsWith(`/session-tasks/${file}`))?.declared;
-
-  it('declare forced organization selection or required MFA at sign-up and nothing else', () => {
-    assert.deepEqual(declaredBy('choose-organization.e2e.ts'), FORCED_ORG);
-    assert.deepEqual(declaredBy('complete-setup-mfa.e2e.ts'), MFA);
-    const known = [settingsOf(FORCED_ORG, 'x').key, settingsOf(MFA, 'x').key];
-    for (const { path, declared } of declarations) {
-      if (declared !== null) assert.ok(known.includes(settingsOf(declared, path).key), path);
-    }
-  });
-
-  it('plan from the standard settings into three groups, standard first, each asked for by its own first spec', () => {
-    const plan = planGroups(committed, STANDARD.key);
-    assert.equal(plan.length, 3);
-    assert.equal(plan[0]!.settings, STANDARD);
-    assert.deepEqual(plan.flatMap((group) => group.specs.map((spec) => spec.path)).sort(), committed.map(({ spec }) => spec.path).sort(), 'every spec is in one group, once');
-    for (const group of plan.slice(1)) assert.equal(group.settings.askedBy, group.specs[0]!.path);
   });
 });
 

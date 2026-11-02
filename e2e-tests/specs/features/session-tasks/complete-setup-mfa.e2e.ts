@@ -2,6 +2,10 @@ import { test, expect } from '../../fixtures.ts';
 import { totp } from '../../totp.ts';
 
 test('enrolls an authenticator app to finish the setup-MFA task', async ({ host, screen }) => {
+  await host.useSettings({
+    config: { 'auth_multi_factor.required_for_sign_up': true },
+    environment: { 'user_settings.sign_up.mfa.required': true },
+  });
   const user = await host.seedUser();
   const authenticatorApp = screen.getByTestId('clerk.auth.sessionTask.setupMfa.authenticatorApp');
   await host.launch({ signedInAs: user, landsOn: host.app.signedOut });
