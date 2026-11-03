@@ -254,35 +254,17 @@ extension SignInFactorCodeView {
     code = ""
     verificationState = .default
 
-    guard var signIn else {
+    guard let signIn else {
       navigation.path = []
       return
     }
 
     do {
-      switch factor.strategy {
-      case .emailCode:
-        if mode.usesSecondFactorAPI {
-          signIn = try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
-        } else {
-          signIn = try await signIn.sendEmailCode(emailAddressId: factor.emailAddressId)
-        }
+      let updatedSignIn = try await sendCode(signIn: signIn)
 
-      case .phoneCode:
-        if mode.usesSecondFactorAPI {
-          signIn = try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
-        } else {
-          signIn = try await signIn.sendPhoneCode(phoneNumberId: factor.phoneNumberId)
-        }
-
-      case .resetPasswordEmailCode:
-        signIn = try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
-
-      case .resetPasswordPhoneCode:
-        signIn = try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
-
-      default:
-        break
+      if navigation.reportUnrecognizedStatus(of: updatedSignIn) {
+        otpFieldIsFocused = false
+        return
       }
 
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
@@ -292,6 +274,29 @@ extension SignInFactorCodeView {
       otpFieldIsFocused = false
       self.error = error
       ClerkLogger.error("Failed to prepare factor for sign in", error: error)
+    }
+  }
+
+  private func sendCode(signIn: SignIn) async throws -> SignIn {
+    switch factor.strategy {
+    case .emailCode:
+      if mode.usesSecondFactorAPI {
+        try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
+      } else {
+        try await signIn.sendEmailCode(emailAddressId: factor.emailAddressId)
+      }
+    case .phoneCode:
+      if mode.usesSecondFactorAPI {
+        try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
+      } else {
+        try await signIn.sendPhoneCode(phoneNumberId: factor.phoneNumberId)
+      }
+    case .resetPasswordEmailCode:
+      try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
+    case .resetPasswordPhoneCode:
+      try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
+    default:
+      signIn
     }
   }
 
@@ -312,8 +317,8 @@ extension SignInFactorCodeView {
         return .stop
       }
       otpFieldIsFocused = false
-      verificationState = .success
       navigation.setToStepForStatus(signIn: signIn)
+      verificationState = navigation.error == nil ? .success : .default
       return .stop
     } catch {
       guard !Task.isCancelled, !error.isCancellationError else {

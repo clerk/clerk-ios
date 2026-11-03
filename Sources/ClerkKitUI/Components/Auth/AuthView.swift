@@ -79,8 +79,6 @@ public struct AuthView: View {
 
   let onAuthComplete: @MainActor () -> Void
 
-  @State private var error: Error?
-
   @State var authFlowRegistration: AuthFlowRegistration?
 
   /// Prevents an explicitly finished flow from reacquiring coordinator ownership.
@@ -202,7 +200,7 @@ public struct AuthView: View {
     )
     #endif
     .tint(theme.colors.primary)
-    .clerkErrorPresenting($error)
+    .clerkErrorPresenting($navigation.error)
     .environment(navigation)
     .environment(authState)
     .environment(codeLimiter)
@@ -257,9 +255,11 @@ public struct AuthView: View {
     .onOpenURL { url in
       Task {
         do {
-          try await clerk.handle(url)
+          if try await clerk.handle(url), let signIn = clerk.auth.currentSignIn {
+            navigation.reportUnrecognizedStatus(of: signIn)
+          }
         } catch {
-          self.error = error
+          navigation.error = error
         }
       }
     }

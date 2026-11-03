@@ -231,8 +231,8 @@ extension SignUpCodeView {
         return .stop
       }
       otpFieldIsFocused = false
-      verificationState = .success
       navigation.setToStepForStatus(signUp: signUp)
+      verificationState = navigation.error == nil ? .success : .default
       return .stop
     } catch {
       guard !Task.isCancelled, !error.isCancellationError else {

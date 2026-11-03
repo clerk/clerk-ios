@@ -200,6 +200,75 @@ struct AuthNavigationTests {
   }
 
   @Test
+  func signInUnrecognizedStatusPresentsAnErrorWithoutNavigating() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signUpCompleteProfile]
+    let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+
+    navigation.setToStepForStatus(signIn: signIn)
+
+    #expect(navigation.path == [.signUpCompleteProfile])
+    #expect(navigation.error?.localizedDescription == "Something went wrong. Please try again.")
+  }
+
+  @Test
+  func signUpUnrecognizedStatusPresentsAnErrorWithoutNavigating() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signUpCompleteProfile]
+    var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
+    signUp.status = .init(rawValue: "needs_protect_check")
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCompleteProfile])
+    #expect(navigation.error?.localizedDescription == "Something went wrong. Please try again.")
+  }
+
+  @Test(arguments: [
+    SignIn.Status.complete,
+    .needsIdentifier,
+    .needsSecondFactor,
+    .needsNewPassword,
+    .needsClientTrust,
+  ])
+  func recognizedSignInStatusesPresentNoError(status: SignIn.Status) {
+    let navigation = AuthNavigation()
+
+    navigation.setToStepForStatus(signIn: SignIn(id: "sign_in_123", status: status))
+
+    #expect(navigation.error == nil)
+  }
+
+  @Test(arguments: [SignUp.Status.complete, .abandoned, .missingRequirements])
+  func recognizedSignUpStatusesPresentNoError(status: SignUp.Status) {
+    let navigation = AuthNavigation()
+    var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
+    signUp.status = status
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.error == nil)
+  }
+
+  @Test
+  func preparingAFactorReportsAnUnrecognizedStatus() {
+    let navigation = AuthNavigation()
+    let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+
+    #expect(navigation.reportUnrecognizedStatus(of: signIn))
+    #expect(navigation.error != nil)
+  }
+
+  @Test
+  func preparingAFactorDoesNotReportARecognizedStatus() {
+    let navigation = AuthNavigation()
+    let signIn = SignIn(id: "sign_in_123", status: .needsFirstFactor)
+
+    #expect(navigation.reportUnrecognizedStatus(of: signIn) == false)
+    #expect(navigation.error == nil)
+  }
+
+  @Test
   func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
     let navigation = AuthNavigation()
     let signUp = signUp(

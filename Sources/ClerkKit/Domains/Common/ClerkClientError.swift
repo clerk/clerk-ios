@@ -76,4 +76,8 @@ extension ClerkClientError {
   public var errorDescription: String? {
     message
   }
+
+  package static var somethingWentWrong: ClerkClientError {
+    ClerkClientError(message: "Something went wrong. Please try again.", localizationBundle: .module)
+  }
 }
