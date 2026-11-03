@@ -226,6 +226,7 @@ struct ConfigurationManagerTests {
       guard case .invalidPublishableKeyFormat = error as? ClerkInitializationError else { return false }
       return true
     }
+    #expect(manager.publishableKey.isEmpty)
     #expect(manager.frontendApiUrl.isEmpty)
   }
 
