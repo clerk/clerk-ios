@@ -8,7 +8,7 @@ A verb prints progress lines to stderr while it works and its result to stdout w
 
 Every verb takes `--json`. The verb then prints no progress lines, and prints one JSON object to stdout.
 
-On success the object is `{ "ok": true, "verb": "<verb>", ... }`. The remaining keys depend on the verb. `src/core/types.ts` of `@clerk/internal-mobile-e2e` defines them as `DoctorReport`, `UpResult`, `RunResult`, `ScreenResult`, `AttachResult`, and `DownResult`.
+On success the object is `{ "ok": true, "verb": "<verb>", ... }`. The remaining keys depend on the verb. `src/core/types.ts` of `@clerk/internal-mobile-e2e` defines them as `DoctorReport`, `UpResult`, `RunResult`, `ScreenResult`, `AttachResult`, `DownResult`, and `SettingsResult`.
 
 On failure the object is `{ "ok": false, "error": { "code", "message", "fix", "retryable" } }`.
 
@@ -33,14 +33,14 @@ On failure the object is `{ "ok": false, "error": { "code", "message", "fix", "r
 
 | Code | Meaning |
 | --- | --- |
-| `USAGE` | The command line, a spec's declaration, or an environment variable is malformed |
+| `USAGE` | The command line or an environment variable is malformed |
 | `NOT_READY` | A precondition is missing. The fix names it |
 | `POOL_FULL` | All four `verify-ios-<n>` simulators on this Mac are in use |
 | `DEVICE_BUSY` | Another command in this worktree is driving the device |
 | `LEASE_LOST` | The leased device is gone |
 | `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that GitHub does not have HEAD, or that the uncommitted changes to the app sources do not apply to it, change a file outside the app sources, or are larger than 16 MiB. A session on `main` refuses uncommitted changes |
 | `KEYS_MISSING` | No Platform API credential works on this machine, or `AI_GATEWAY_API_KEY_FILE` names a file that is missing, empty, or readable by other users |
-| `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs |
+| `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs, or Clerk refused the change that a `host.useSettings` call asked for |
 | `NOT_TEST_IDENTITY` | Reserved. No command raises it. A run whose `app.log` names a user that the run did not create fails `attach` with `EVIDENCE_UNSAFE` |
 | `NO_SPECS` | The selection matched no spec, or no selected spec ran |
 | `E2E_CRASHED` | e2e exited without a readable report. Read `e2e.log` in the run directory |

@@ -3,6 +3,10 @@ import { totp } from '../../totp.ts';
 import { runPassword } from '@clerk/internal-mobile-e2e/specs/support/clerk';
 
 test('a sign-up on an MFA-required instance moves straight into the setup-MFA task, and an authenticator code finishes it', async ({ host, screen }) => {
+  await host.useSettings({
+    config: { 'auth_multi_factor.required_for_sign_up': true },
+    environment: { 'user_settings.sign_up.mfa.required': true },
+  });
   const email = await host.newEmail();
   await host.launch({ authMode: 'signUp' });
   await host.tap(host.app.signInFullScreen);

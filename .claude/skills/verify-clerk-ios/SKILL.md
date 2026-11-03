@@ -11,7 +11,7 @@ The tests are an ordinary e2e project. `e2e.config.ts` and `specs/` run under `n
 
 No change to clerk-ios UI or auth behavior is done until a simulator shows the changed behavior. A `run` in E2EHost is one way to show it. An app of your own that exercises the change is just as good.
 
-Run every command from the repo root. In the prose below, `doctor`, `up`, `run`, `screen`, `attach`, and `down` are verbs of that CLI. The tests and the CLI are the Node package `e2e-tests/`, and paths that begin `specs/`, `src/`, or `.verify/` are inside it. `features/` and `references/` are beside this file. Every error prints a `fix` line. Every verb takes `--json`, and [CLI output](references/output.md) has its shape and the exit codes.
+Run every command from the repo root. In the prose below, `doctor`, `up`, `run`, `screen`, `attach`, `down`, and `settings` are verbs of that CLI. The tests and the CLI are the Node package `e2e-tests/`, and paths that begin `specs/`, `src/`, or `.verify/` are inside it. `features/` and `references/` are beside this file. Every error prints a `fix` line. Every verb takes `--json`, and [CLI output](references/output.md) has its shape and the exit codes.
 
 ## Launch
 
@@ -36,7 +36,7 @@ device  verify-ios-<n>  local  leased by this worktree  installed <build key>
 
 `up` is idempotent. It keeps a lease this worktree already holds, and it reuses a build whose key matches the current tree. The key is a hash of the tracked and untracked files under `Sources`, `Examples/E2EHost`, `Package.swift`, and `Clerk.xcworkspace`, minus Markdown. A change to any of those files changes the key, so the next `up` or `run` builds that key, unless this worktree already built it, and reinstalls.
 
-The Clerk application is this worktree's own. `up` creates it through Clerk's Platform API, in the team's verification workspace, and puts its development instance on the standard settings in `src/core/instances/base.json` of `@clerk/internal-mobile-e2e`. It holds only the users that this worktree's runs create, and `down` deletes it. A spec file that needs other settings declares them (see [Drive](#drive)). [Test instances](references/instances.md) has the credential lookup, the application's lifetime, and its limits.
+The Clerk application is this worktree's own. `up` creates it through Clerk's Platform API, in the team's verification workspace, and puts its development instance on the standard settings in `src/core/instances/base.json` of `@clerk/internal-mobile-e2e`. It holds only the users that this worktree's runs create, and `down` deletes it. A test that needs other settings changes them with `host.useSettings` (see [Drive](#drive)). [Test instances](references/instances.md) has the credential lookup, the application's lifetime, and its limits.
 
 The CLI drives only `verify-ios-<n>`, which it creates. A Mac has four of these simulators, shared by every worktree on it. When all four are taken, `up` and `run` fail with `POOL_FULL`, and `--wait <seconds>` on either verb waits for one.
 
@@ -80,7 +80,7 @@ $ e2e-tests/bin/control-clerk-ios run auth-start sign-up organizations  # severa
 $ e2e-tests/bin/control-clerk-ios screen                                # the UI tree that is on screen now; --png adds a screenshot
 ```
 
-`run --all` runs every committed spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--max-failures <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a test again, up to `n` more times, when an assertion failed, the test threw an error, or the test ran out of time. A test that e2e reports as a machine failure, such as an `ENGINE_FAILURE` when an `open` or a screenshot times out in agent-device, gets one attempt whatever `n` is. A driver error e2e reports as a test error, such as a stale node or an action that timed out, is retried like any other. The default is 0, so a run of your own change shows exactly what happened. `--max-failures <n>` stops a settings group once `n` of its tests have failed. A test that the limit stopped before it started prints `FAIL` with `not run: failure-limit`, and `run` exits 1. Without the flag, a run has no limit. The wait covers a free simulator and another `run` in this worktree that holds the device.
+`run --all` runs every committed spec. `run` also takes `--grep <regex>`, `--retries <n>`, `--max-failures <n>`, `--no-video`, and `--wait <seconds>`. `--retries <n>` runs a test again, up to `n` more times, when an assertion failed, the test threw an error, or the test ran out of time. A test that e2e reports as a machine failure, such as an `ENGINE_FAILURE` when an `open` or a screenshot times out in agent-device, gets one attempt whatever `n` is. A driver error e2e reports as a test error, such as a stale node or an action that timed out, is retried like any other. The default is 0, so a run of your own change shows exactly what happened. `--max-failures <n>` stops the run once `n` of its tests have failed. A test that the limit stopped before it started prints `FAIL` with `not run: failure-limit`, and `run` exits 1. Without the flag, a run has no limit. The wait covers a free simulator and another `run` in this worktree that holds the device.
 
 ### Sign in with the form or with a ticket
 
@@ -119,7 +119,7 @@ E2EHost has a small flow of its own only where the SDK has no view for one. `Cus
 
 Locate nodes with `screen.getByTestId(...)`. The SDK's identifiers start with `clerk.`, and `Sources/ClerkKitUI/Components/Auth/ClerkAccessibilityIdentifiers.swift` lists them. E2EHost's own identifiers start with `e2e.`, except those of the custom sign-in and reverification forms, which start with `verify.customSignIn.` and `verify.customReverify.`, and `Examples/E2EHost/E2EHost/E2EIdentifiers.swift` lists them. All of these identifiers are internal test hooks, not public API, and they can change. Every spec keeps at least one exact assertion on an identifier or on visible text. To assert on the text of a node, use `await expect(locator).toHaveText('...')`.
 
-A spec file that needs other settings than the standard ones declares them in a JSON file beside it, which has the name of the spec with `.settings.json` in place of `.e2e.ts`. `run` puts the application on those settings before the tests in that spec file start. [Test instances](references/instances.md) has the rules for a declaration.
+A test that needs other settings than the standard ones calls `host.useSettings` with the config leaves to change, as in `await host.useSettings({ config: { 'auth_multi_factor.required_for_sign_up': true } })`. The CLI puts them back when the test ends, pass or fail. `e2e-tests/bin/control-clerk-ios settings <prefix>` prints which settings of this worktree's application are on or off, one leaf per line. [Test instances](references/instances.md) has the call, the restore, and the leaves that tests often change.
 
 ### Check your work
 
@@ -129,7 +129,7 @@ The specs under `specs/features/<feature>/` are committed and cover the feature 
 2. Run it by path.
 3. Run `screen` after the run, pass or fail. It prints the tree the app is on now, one line per node with its role, label, `id=<identifier>`, and a ready `screen.getByTestId('<identifier>')` when the identifier is unique. The role there is agent-device's type for the node, which can differ from the role that `getByRole` matches: `screen` prints a segment of a segmented control as `button`, and `getByRole('tab')` matches it. The tree on a failure page shows the roles that locators match.
 4. Fix the locators from that output until the spec passes.
-5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/` with its settings file if it has one, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a committed spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
+5. When the change adds or changes what the SDK does, move the spec to `specs/features/<feature>/`, change its import to `'../../fixtures.ts'`, `git add` what you moved, and update the feature's page and its line in `features/README.md`. A change to wording or appearance alone does not earn a committed spec, because a spec that pins a label fails on the next change of wording: leave that spec in `specs/explored/`. The run directory keeps a copy of every spec the run used.
 
 A failing spec prints `FAIL`, the first assertion message, and the path of its failure page, and `run` exits 1. The failure page (`.verify/runs/<run-id>/e2e/results/<test>/trace.md`) lists every step, the screen tree at the failure, and a screenshot. The `next` line of the run points at it.
 
@@ -147,15 +147,15 @@ Every `run` writes `.verify/runs/<run-id>/` and prints its path.
 
 | File | What it holds |
 | --- | --- |
-| `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build`, `device`, `identities`, `settings`, and `tainted` |
+| `run.json` | The sealed record: `results` per spec, `gitHead`, `dirty`, `build`, `device`, `identities`, `settings` (one entry for each `host.useSettings` call), and `tainted` |
 | `video.mp4` | `simctl io recordVideo` of the run, from the first `host.launch` to the end. Just before that launch, `run` closes the app and starts the recorder, so the video opens on the simulator's home screen for a moment and then on the app being launched. A run in which no test calls `host.launch` has no video, and `run` prints a `video` line that says so |
 | `evidence-marks.jsonl` | When each `host.evidence` block started and ended, and when and where each `host.tap` and `host.fill` tapped, in a run that records evidence. `run.json` keeps them as `evidenceSpans` and `evidenceTaps`, in seconds of the video |
 | `video-cut.mp4` | What `attach --video` last posted for this run: the marked part of `video.mp4`. `video.mp4` stays as recorded |
 | `screenshots/<label>.png` | Every `host.screenshot(label)` |
 | `app.log` | The `com.clerk.verify` and `com.clerk.sdk` log lines of the run. E2EHost writes one `com.clerk.verify` line each time its screen, user, session, or launch error changes, with the `launchId` that a failed `host.launch` names. No spec reads these lines. They are for diagnosing a failure that the screen does not explain. The SDK logs errors only, unless the launch passes `debugLogs: true` |
-| `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output. A run with several settings groups also has `e2e-2/`, `e2e-3/`, and so on |
+| `e2e/`, `e2e.log` | e2e's `report.json` and `junit.xml`, its failure pages, and its console output |
 | `driver/` | `summary.txt`, which says what agent-device state the run found and what it copied, and the part of agent-device's `daemon.log` and of the XCTest runner's `runner.log` that the run added. The copies leave out typed text. They are for a failure that the driver caused, such as a daemon that did not start or a screen read that hung |
-| `specs/` | A copy of every spec the run used, and of its settings file |
+| `specs/` | A copy of every spec the run used |
 
 A proof drives the real user path. The video and the screenshots show the action and its result as a user sees them. It checks side effects where the app shows them, such as the user ID on the home or the organization name on the switcher, not only that the last screen appeared.
 
@@ -195,7 +195,7 @@ To make the before run, `run` the spec of your change on the build without the c
 
 For screenshots, show each screen the change touches, and each state of a screen that it touches, in a before and after of its own. That includes a state the change should leave as it was, because its pair shows that it did. Write one spec file with one test per state, each ending in its own `host.screenshot(label)`. Run it once without the change and once with it, and pass every label to one `attach`, one `--screenshot <label>` each. The table then has a row for each state.
 
-Some states are out of reach for a test user on the standard settings with the default roles. Try a settings file for the spec, or test data that the spec seeds with `host.seedUser` and `host.seedOrganization`, first. When neither reaches it, force the state with a small local patch to the build. Never commit or push the patch. Put the same patch on the before build and the after build, and run both on a local simulator, because `attach` refuses a run on a session build with uncommitted changes. In the pull request, say exactly what the patch changed and why no test user could reach the state without it.
+Some states are out of reach for a test user on the standard settings with the default roles. Try `host.useSettings` in the spec, or test data that the spec seeds with `host.seedUser` and `host.seedOrganization`, first. When neither reaches it, force the state with a small local patch to the build. Never commit or push the patch. Put the same patch on the before build and the after build, and run both on a local simulator, because `attach` refuses a run on a session build with uncommitted changes. In the pull request, say exactly what the patch changed and why no test user could reach the state without it.
 
 `attach` puts the files in the description of the pull request with `gh pr edit --attach`. It writes one block between the comments `<!-- verify-evidence:ios -->` and `<!-- /verify-evidence:ios -->`. The block is a line and then one or more tables. The line leads with the result and names the run, the device, the commit, and how many tests passed. With `--before` it also names the before run, its commit, and how many of its tests passed. With `--before`, one table has a `Before` and an `After` column, and a row for each screenshot or one row for the video. Without it, the screenshots are two across, each under its label in code font, and the video is alone in a table under its name. Each screenshot is 280 pixels wide.
 
@@ -219,7 +219,7 @@ Work in this order, with one `up` for both runs: make the branch and `git push` 
 
 On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
 
-When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it, and its settings file if it has one, to `specs/explored/` first and change its import to `'../fixtures.ts'`.
+When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it to `specs/explored/` first and change its import to `'../fixtures.ts'`.
 
 ```console
 $ git switch -c <branch>-before "$(git merge-base origin/main HEAD)"
