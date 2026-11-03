@@ -175,6 +175,60 @@ struct ConfigurationManagerTests {
     #expect(manager.frontendApiUrl.isEmpty)
   }
 
+  @Test(arguments: [
+    ("pk_test_Zm9vLWJhci0xMy5jbGVyay5hY2NvdW50cy5kZXYk", "https://foo-bar-13.clerk.accounts.dev"),
+    ("pk_test_Y2xlcmsuYm9yaW5nLnNhd2ZseS05MS5sY2wuZGV2JA", "https://clerk.boring.sawfly-91.lcl.dev"),
+    ("pk_test_Y2xlcmsuY2xlcmsuZGV2JA==", "https://clerk.clerk.dev"),
+    ("pk_live_Y2xlcmsucHJvZC5sY2xjbGVyay5jb20k", "https://clerk.prod.lclclerk.com"),
+    ("pk_live_ZmFrZS1jbGVyay10ZXN0LmNsZXJrLmFjY291bnRzLmRldiQ=", "https://fake-clerk-test.clerk.accounts.dev"),
+    ("pk_live_Y2xlcmsuc2F0ZWxsaXRlLmV4YW1wbGUuY28udWsk", "https://clerk.satellite.example.co.uk"),
+  ])
+  func configureDerivesTheFrontendApiUrlFromAGeneratedKey(_ publishableKey: String, _ frontendApiUrl: String) throws {
+    let manager = ConfigurationManager()
+
+    try manager.configure(publishableKey: publishableKey, options: .init())
+
+    #expect(manager.frontendApiUrl == frontendApiUrl)
+  }
+
+  @Test(arguments: ["pk_test_", "pk_live_"], [
+    "foo.clerk.accounts.dev",
+    "clerk.acme.com",
+    "foo.clerk.accounts.dev$$",
+    "foo$.clerk.accounts.dev$",
+    "foo.clerk.accounts.dev$extra",
+    "invalidkey$",
+    "localhost:3000$",
+    "localhost/a.b$",
+  ])
+  func configureRejectsAKeyWithoutOneTrailingDollarAfterADottedHost(_ prefix: String, _ decodedKey: String) {
+    let manager = ConfigurationManager()
+    let payload = Data(decodedKey.utf8).base64EncodedString().base64URLFromBase64String()
+
+    #expect {
+      try manager.configure(publishableKey: prefix + payload, options: .init())
+    } throws: { error in
+      guard case .invalidPublishableKeyFormat = error as? ClerkInitializationError else { return false }
+      return true
+    }
+    #expect(manager.publishableKey.isEmpty)
+    #expect(manager.frontendApiUrl.isEmpty)
+  }
+
+  @Test
+  func configureRejectsALiveKeyCutByOneCharacter() {
+    let completeKey = createLivePublishableKey(for: "clerk.acme.com")
+    let manager = ConfigurationManager()
+
+    #expect {
+      try manager.configure(publishableKey: String(completeKey.dropLast()), options: .init())
+    } throws: { error in
+      guard case .invalidPublishableKeyFormat = error as? ClerkInitializationError else { return false }
+      return true
+    }
+    #expect(manager.frontendApiUrl.isEmpty)
+  }
+
   @Test
   func instanceTypeDevelopment() throws {
     let manager = ConfigurationManager()
