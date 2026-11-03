@@ -140,16 +140,6 @@ extension AuthView {
     dismiss()
   }
 
-  func clearSensitiveFieldsAfterSavePasswordWindow() async {
-    guard authFlowRegistrationIsTerminated else { return }
-
-    // iOS offers to save a password only if its field still holds it when the field leaves the
-    // view hierarchy, so a field must outlast the dismissal that follows a completed flow.
-    try? await Task.sleep(for: .seconds(1))
-    guard !Task.isCancelled else { return }
-    authState.clearSensitiveFields()
-  }
-
   private func reconcileObserving(owner: AuthFlowRegistration) {
     guard navigation.presentedAuthFlowToken != nil else {
       adoptPendingSessionIfNeeded(clerk.session)

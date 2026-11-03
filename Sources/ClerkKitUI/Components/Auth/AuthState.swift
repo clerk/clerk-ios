@@ -30,12 +30,6 @@ final class AuthState {
 
   private(set) var unsafeMetadata: JSON?
 
-  private var initialIdentifier: String?
-
-  private var initialFirstName: String?
-
-  private var initialLastName: String?
-
   private var environmentRefreshCheckpoint: Clerk.EnvironmentRefreshCheckpoint?
 
   private let userDefaults: UserDefaults
@@ -89,12 +83,10 @@ final class AuthState {
 
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
-    initialIdentifier = config.initialIdentifier
+    let initialIdentifier = config.initialIdentifier
     hasInitialIdentifier = initialIdentifier?.isEmptyTrimmed == false
     authStartPhoneNumberWasPrefilled = hasInitialIdentifier && initialIdentifier?.looksLikePhoneNumber == true
     authStartIdentifierWasPrefilled = hasInitialIdentifier && !authStartPhoneNumberWasPrefilled
-    initialFirstName = config.initialFirstName
-    initialLastName = config.initialLastName
     hasInitialFirstName = config.initialFirstName?.isEmptyTrimmed == false
     hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
     prefilledFieldsAreLocked = config.prefilledFieldsAreLocked
@@ -107,8 +99,20 @@ final class AuthState {
       LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
     }
 
-    if config.initialIdentifier != nil || !config.persistsIdentifiers {
-      restoreConfiguredIdentifier()
+    if let identifier = config.initialIdentifier {
+      if identifier.looksLikePhoneNumber {
+        authStartPhoneNumberFieldIsActive = true
+        authStartPhoneNumber = identifier
+        authStartIdentifier = ""
+      } else {
+        authStartPhoneNumberFieldIsActive = false
+        authStartIdentifier = identifier
+        authStartPhoneNumber = ""
+      }
+    } else if !config.persistsIdentifiers {
+      authStartIdentifier = ""
+      authStartPhoneNumber = ""
+      authStartPhoneNumberFieldIsActive = false
     }
 
     if let firstName = config.initialFirstName {
@@ -128,25 +132,9 @@ final class AuthState {
     signUpPassword = ""
   }
 
-  func resetForNextPerson() {
+  func resetForSignOut() {
     clearSensitiveFields()
-    if !persistsIdentifiers {
-      restoreConfiguredIdentifier()
-    }
-    signUpFirstName = initialFirstName ?? ""
-    signUpLastName = initialLastName ?? ""
-    signUpUsername = ""
-    signUpEmailAddress = ""
-    signUpPhoneNumber = ""
     signUpLegalAccepted = false
-  }
-
-  private func restoreConfiguredIdentifier() {
-    let identifier = initialIdentifier ?? ""
-    let isPhoneNumber = identifier.looksLikePhoneNumber
-    authStartPhoneNumberFieldIsActive = isPhoneNumber
-    authStartPhoneNumber = isPhoneNumber ? identifier : ""
-    authStartIdentifier = isPhoneNumber ? "" : identifier
   }
 
   func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {
