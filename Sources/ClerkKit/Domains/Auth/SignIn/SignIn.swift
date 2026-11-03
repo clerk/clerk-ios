@@ -102,10 +102,14 @@ extension SignIn {
       kind: .signIn,
       flowId: id,
       codeVerifier: pkcePair.verifier,
-      authFlowOwnerId: AuthFlowRequestScope.ownerId
-    ) {
-      try await prepare(resolvedRedirectUri, pkcePair.challenge)
-    }
+      authFlowOwnerId: AuthFlowRequestScope.ownerId,
+      responseKeptEarlierChallenge: { signIn in
+        if case .unknown = signIn.status { true } else { false }
+      },
+      prepare: {
+        try await prepare(resolvedRedirectUri, pkcePair.challenge)
+      }
+    )
   }
 
   // MARK: - First Factor Verification
@@ -133,7 +137,8 @@ extension SignIn {
   /// This prepares the `email_link` first factor using PKCE and stores the verifier locally
   /// so the callback can be completed inside the app. Only one pending native
   /// magic-link flow is stored locally at a time; starting a new flow replaces
-  /// the previously stored verifier, unless the server rejects the request.
+  /// the previously stored verifier, unless the server rejects the request or responds
+  /// with a status the SDK doesn't recognize.
   ///
   /// - Parameters:
   ///   - emailAddressId: Optional email address ID. If not provided, uses the identifying email-link factor.
@@ -370,7 +375,8 @@ extension SignIn {
   /// `email_link`. This prepares the `email_link` second factor using PKCE and stores the
   /// verifier locally so the callback can be completed inside the app. Only one pending native
   /// magic-link flow is stored locally at a time; starting a new flow replaces
-  /// the previously stored verifier, unless the server rejects the request.
+  /// the previously stored verifier, unless the server rejects the request or responds
+  /// with a status the SDK doesn't recognize.
   ///
   /// - Parameters:
   ///   - emailAddressId: Optional email address ID. If not provided, uses the email-link second factor.
