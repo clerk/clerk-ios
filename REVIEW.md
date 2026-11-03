@@ -27,7 +27,7 @@ This file tells AI reviewers what matters in this repository. `AGENTS.md` has th
 - E2EHost screens that match the clerk-android test app on purpose.
 - A claim about a GitHub or Clerk API response format that rests on docs alone. Cite a real response or leave it out.
 - Style that SwiftFormat or SwiftLint would change. `make check` runs both.
-- A failing `Code owner approval` check, or the comment that a protected path needs a Team Mobile approval. The check waits for an approval, from CodeRabbit on the latest commit or from another Team Mobile member, not for a code change.
+- A failing `Code owner approval` check, or the comment that a protected path needs a Team Mobile approval. The check waits for approvals, not for a code change. A protected path, or an author without maintain or admin access, needs another Team Mobile member's approval, and CodeRabbit's approval isn't enough there.
 
 ## Skip these paths
 
