@@ -123,13 +123,44 @@ jobs:
           NODE
 
           mkdir -p .changeset
-          cat > ".changeset/$CHANGESET_FILE" <<EOF
-          ---
-          '$package_name': patch
-          ---
+          PACKAGE_NAME="$package_name" CURRENT_VERSION="$current_version" node <<'NODE'
+          const fs = require('fs');
 
-          Bump the bundled \`clerk-ios\` SDK from \`$current_version\` to \`$IOS_VERSION\`. See the Clerk iOS release: $RELEASE_URL.
-          EOF
+          const { CHANGESET_FILE, CURRENT_VERSION, IOS_VERSION, PACKAGE_NAME, RELEASE_URL } = process.env;
+
+          const pending = fs
+            .readdirSync('.changeset')
+            .filter(file => /^expo-bump-clerk-ios-.+\.md$/.test(file))
+            .map(file => {
+              const body = fs.readFileSync(`.changeset/${file}`, 'utf8');
+              const [, from, to] = body.match(/from `([^`]+)` to `([^`]+)`/) ?? [];
+              const links = (body.match(/https:\/\/github\.com\/clerk\/clerk-ios\/releases\/tag\/[^\s,]+/g) ?? []).map(url =>
+                url.replace(/\.$/, ''),
+              );
+              return { file, from, to, links };
+            });
+
+          const tos = new Set(pending.map(changeset => changeset.to));
+          const from = pending.find(changeset => !tos.has(changeset.from))?.from ?? CURRENT_VERSION;
+          const remaining = [...pending];
+          const links = [];
+          for (let cursor = from, i; (i = remaining.findIndex(changeset => changeset.from === cursor)) !== -1; ) {
+            const [changeset] = remaining.splice(i, 1);
+            links.push(...changeset.links);
+            cursor = changeset.to;
+          }
+          const releases = [...new Set([...links, ...remaining.flatMap(changeset => changeset.links), RELEASE_URL])];
+
+          for (const { file } of pending) {
+            fs.unlinkSync(`.changeset/${file}`);
+          }
+
+          const label = releases.length === 1 ? 'release' : 'releases';
+          fs.writeFileSync(
+            `.changeset/${CHANGESET_FILE}`,
+            `---\n'${PACKAGE_NAME}': patch\n---\n\nBump the bundled \`clerk-ios\` SDK from \`${from}\` to \`${IOS_VERSION}\`. See the Clerk iOS ${label}: ${releases.join(', ')}.\n`,
+          );
+          NODE
 
           echo "should_open=true" >> "$GITHUB_OUTPUT"
 
@@ -154,7 +185,7 @@ jobs:
           git config user.name "clerk-cookie"
           git config user.email "cookie@clerk.dev"
           git checkout -B "$BRANCH_NAME"
-          git add "$PODSPEC_FILE" ".changeset/$CHANGESET_FILE"
+          git add "$PODSPEC_FILE" .changeset
 
           if git diff --cached --quiet; then
             echo "No changes to commit; no PR needed."
