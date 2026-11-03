@@ -54,16 +54,6 @@ final class AuthNavigation {
   }
 
   @MainActor
-  func replaceStep(_ step: AuthView.Destination?, withGetHelpIfUnrecognized signIn: SignIn) -> Bool {
-    guard case .unknown(let status) = signIn.status else { return false }
-    guard path.last == step else { return true }
-    ClerkLogger.info("Navigating to GetHelp: Sign-in has a status this SDK can't continue from: \(status)", force: true)
-    _ = path.popLast()
-    path.append(AuthView.Destination.getHelp(.signIn))
-    return true
-  }
-
-  @MainActor
   func setToStepForStatus(signUp: SignUp) {
     switch signUp.status {
     case .abandoned:

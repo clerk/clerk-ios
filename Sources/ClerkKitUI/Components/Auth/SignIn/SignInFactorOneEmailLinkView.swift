@@ -240,11 +240,8 @@ extension EmailLinkVerificationView {
   @MainActor
   private func sendLink() async {
     deliveryState = .sending
-    let step = navigation.path.last
 
     do {
-      let updatedSignIn: SignIn?
-
       switch mode {
       case .signIn(let factor):
         guard let signIn = clerk.auth.currentSignIn else {
@@ -252,7 +249,8 @@ extension EmailLinkVerificationView {
           navigation.path = []
           return
         }
-        updatedSignIn = try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+        let updatedSignIn = try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+        try TransferFlowResult.signIn(updatedSignIn).throwIfStatusIsUnrecognized()
 
       case .signInClientTrust(let factor):
         guard let signIn = clerk.auth.currentSignIn else {
@@ -260,7 +258,8 @@ extension EmailLinkVerificationView {
           navigation.path = []
           return
         }
-        updatedSignIn = try await signIn.sendMfaEmailLink(emailAddressId: factor.emailAddressId)
+        let updatedSignIn = try await signIn.sendMfaEmailLink(emailAddressId: factor.emailAddressId)
+        try TransferFlowResult.signIn(updatedSignIn).throwIfStatusIsUnrecognized()
 
       case .signUp:
         guard let signUp = clerk.auth.currentSignUp else {
@@ -269,12 +268,6 @@ extension EmailLinkVerificationView {
           return
         }
         try await signUp.sendEmailLink()
-        updatedSignIn = nil
-      }
-
-      if let updatedSignIn, navigation.replaceStep(step, withGetHelpIfUnrecognized: updatedSignIn) {
-        deliveryState = .idle
-        return
       }
       deliveryState = .sent
     } catch {

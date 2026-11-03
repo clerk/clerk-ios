@@ -222,42 +222,23 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func sendingAFactorWithAnUnrecognizedStatusReplacesTheStepWithGetHelp() {
-    let navigation = AuthNavigation()
-    navigation.path = [.signInForgotPassword, .signInSetNewPassword(token: nil)]
-    let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
-
-    #expect(navigation.replaceStep(.signInSetNewPassword(token: nil), withGetHelpIfUnrecognized: signIn))
-    #expect(navigation.path == [.signInForgotPassword, .getHelp(.signIn)])
-  }
-
-  @Test
-  func sendingAFactorWithARecognizedStatusKeepsTheStep() {
-    let navigation = AuthNavigation()
-    navigation.path = [.signInForgotPassword]
-    let signIn = SignIn(id: "sign_in_123", status: .needsFirstFactor)
-
-    #expect(navigation.replaceStep(.signInForgotPassword, withGetHelpIfUnrecognized: signIn) == false)
-    #expect(navigation.path == [.signInForgotPassword])
-  }
-
-  @Test
-  func lateSendResponseKeepsTheStepTheUserMovedTo() {
-    let navigation = AuthNavigation()
-    navigation.path = [.signUpCompleteProfile]
-    let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
-
-    #expect(navigation.replaceStep(.signInSetNewPassword(token: nil), withGetHelpIfUnrecognized: signIn))
-    #expect(navigation.path == [.signUpCompleteProfile])
-  }
-
-  @Test
-  func callbackWithAnUnrecognizedStatusNeedsContinuation() {
+  func unrecognizedStatusesThrowAndNeedNoContinuation() {
     var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
     signUp.status = .init(rawValue: "some_new_status")
+    let results: [TransferFlowResult] = [
+      .signIn(SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))),
+      .signUp(signUp),
+    ]
 
-    #expect(TransferFlowResult.signIn(SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))).needsContinuation)
-    #expect(TransferFlowResult.signUp(signUp).needsContinuation)
+    for result in results {
+      #expect(throws: ClerkClientError.self) { try result.throwIfStatusIsUnrecognized() }
+      #expect(result.needsContinuation == false)
+    }
+  }
+
+  @Test
+  func recognizedStatusDoesNotThrow() throws {
+    try TransferFlowResult.signIn(SignIn(id: "sign_in_123", status: .needsFirstFactor)).throwIfStatusIsUnrecognized()
   }
 
   @Test

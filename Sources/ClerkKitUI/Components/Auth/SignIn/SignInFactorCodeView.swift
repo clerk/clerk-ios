@@ -254,21 +254,38 @@ extension SignInFactorCodeView {
     code = ""
     verificationState = .default
 
-    guard let signIn else {
+    guard var signIn else {
       navigation.path = []
       return
     }
 
-    let step = navigation.path.last
-
     do {
-      let updatedSignIn = try await sendCode(signIn: signIn)
+      switch factor.strategy {
+      case .emailCode:
+        if mode.usesSecondFactorAPI {
+          signIn = try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
+        } else {
+          signIn = try await signIn.sendEmailCode(emailAddressId: factor.emailAddressId)
+        }
 
-      if navigation.replaceStep(step, withGetHelpIfUnrecognized: updatedSignIn) {
-        otpFieldIsFocused = false
-        return
+      case .phoneCode:
+        if mode.usesSecondFactorAPI {
+          signIn = try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
+        } else {
+          signIn = try await signIn.sendPhoneCode(phoneNumberId: factor.phoneNumberId)
+        }
+
+      case .resetPasswordEmailCode:
+        signIn = try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
+
+      case .resetPasswordPhoneCode:
+        signIn = try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
+
+      default:
+        break
       }
 
+      try TransferFlowResult.signIn(signIn).throwIfStatusIsUnrecognized()
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       guard !error.isCancellationError else { return }
@@ -276,29 +293,6 @@ extension SignInFactorCodeView {
       otpFieldIsFocused = false
       self.error = error
       ClerkLogger.error("Failed to prepare factor for sign in", error: error)
-    }
-  }
-
-  private func sendCode(signIn: SignIn) async throws -> SignIn {
-    switch factor.strategy {
-    case .emailCode:
-      if mode.usesSecondFactorAPI {
-        try await signIn.sendMfaEmailCode(emailAddressId: factor.emailAddressId)
-      } else {
-        try await signIn.sendEmailCode(emailAddressId: factor.emailAddressId)
-      }
-    case .phoneCode:
-      if mode.usesSecondFactorAPI {
-        try await signIn.sendMfaPhoneCode(phoneNumberId: factor.phoneNumberId)
-      } else {
-        try await signIn.sendPhoneCode(phoneNumberId: factor.phoneNumberId)
-      }
-    case .resetPasswordEmailCode:
-      try await signIn.sendResetPasswordEmailCode(emailAddressId: factor.emailAddressId)
-    case .resetPasswordPhoneCode:
-      try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
-    default:
-      signIn
     }
   }
 

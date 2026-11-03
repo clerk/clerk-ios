@@ -736,7 +736,7 @@ extension AuthStartView {
 
   private func signInStatusStaysOnStart(_ status: SignIn.Status) -> Bool {
     switch status {
-    case .needsIdentifier, .unknown:
+    case .needsIdentifier:
       true
     default:
       false
@@ -745,7 +745,7 @@ extension AuthStartView {
 
   private func signUpStatusStaysOnStart(_ status: SignUp.Status) -> Bool {
     switch status {
-    case .abandoned, .unknown:
+    case .abandoned:
       true
     default:
       false

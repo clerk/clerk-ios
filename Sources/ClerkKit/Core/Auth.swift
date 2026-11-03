@@ -850,10 +850,12 @@ extension Auth {
     try await urlHandlingCoordinator.handle(route) {
       switch route {
       case .magicLink(let flowId, let approvalToken):
-        try await completeMagicLink(
+        let result = try await completeMagicLink(
           flowId: flowId,
           approvalToken: approvalToken
         )
+        try result.throwIfStatusIsUnrecognized()
+        return result
       }
     }
   }

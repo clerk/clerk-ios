@@ -60,4 +60,19 @@ extension TransferFlowResult {
       signUp.status.needsContinuation
     }
   }
+
+  private var unrecognizedStatus: String? {
+    switch self {
+    case .signIn(let signIn):
+      if case .unknown(let status) = signIn.status { status } else { nil }
+    case .signUp(let signUp):
+      if case .unknown(let status) = signUp.status { status } else { nil }
+    }
+  }
+
+  package func throwIfStatusIsUnrecognized() throws {
+    guard let unrecognizedStatus else { return }
+    ClerkLogger.error("Auth flow returned a status this SDK can't continue from: \(unrecognizedStatus)")
+    throw ClerkClientError(message: "Something went wrong. Please try again.", localizationBundle: .module)
+  }
 }
