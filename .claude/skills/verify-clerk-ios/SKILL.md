@@ -215,9 +215,9 @@ When this machine cannot attach and there is no session to hand the files to, or
 
 Attach the run of your own change. Run your new or changed spec on its own and attach that run, so the screenshots or the video show only what the change is about. A run of `--all` marks nothing, so `attach --video` refuses it. If you ran other committed specs too, cite that run's id in the PR.
 
-Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request, `attach` with the before run as `--before <run-id>`, `down`. Open the pull request after the last run, so that it is not left open without its evidence. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
+Work in this order, with one `up` for both runs: make the branch and `git push` it, `up`, `run` the spec without your change when it changes something that exists, make the change, commit, `git push`, `run` the spec again, open the pull request as a draft with `gh pr create --draft`, `attach` with the before run as `--before <run-id>`, `down`, then `gh pr ready <n>` once the description holds the evidence tables. Open the pull request after the last run, so that it is not left open without its evidence. Open it as a draft because review bots such as CodeRabbit review a pull request when it opens or turns ready, and judge the description they read then. A pull request opened ready is reviewed before `attach` writes the evidence, and fails the device evidence check. Commit before the second `run`, so that the line `attach` writes names a commit the pull request holds. In the pull request, name the run id and the specs you ran, and say what you did not run.
 
-On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`.
+On a local simulator `attach` writes the description itself, and no run needs a push. A remote session builds only the commit it was started on and later commits of the branch, so its before run comes before the push of the change. Its evidence reaches the description about a minute after `down`, so check that `gh pr view <n> --json body` shows the `verify-evidence` block with its table, not the list of files that the first of its two writes leaves, before `gh pr ready <n>`. Its table has a `| :---:` row, and the list does not. In a Claude Code cloud session GitHub's GraphQL API is blocked, so `gh pr create`, `gh pr view`, and `gh pr ready` fail there. Open the draft with `gh api repos/clerk/clerk-ios/pulls -f title='<title>' -f head=<branch> -f base=main -F draft=true -F body=@<file>`, read the description with `gh api repos/clerk/clerk-ios/pulls/<n> --jq .body`, and mark it ready with `gh api -X POST repos/clerk/clerk-ios/pulls/<n>/ccr/ready_for_review`.
 
 When the change is already committed or pushed, make the before run on its base commit in this worktree, so the run lands in this checkout's `.verify/runs/`. A spec in `specs/explored/` stays through the switch, because that directory is gitignored. A committed spec of the change is not on the base, so copy it to `specs/explored/` first and change its import to `'../fixtures.ts'`.
 
@@ -238,8 +238,11 @@ $ e2e-tests/bin/control-clerk-ios down
 $ git switch <branch>
 $ e2e-tests/bin/control-clerk-ios up --backend remote
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
+$ gh pr create --draft
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
 $ e2e-tests/bin/control-clerk-ios down
+$ sh -c 'for i in $(seq 40); do gh api repos/clerk/clerk-ios/pulls/<n> --jq .body | sed -n "/<!-- verify-evidence:ios -->/,/<!-- \/verify-evidence:ios -->/p" | grep -q "| :---:" && exit 0; sleep 15; done; exit 1' && gh pr ready <n>
+$ # in a Claude Code cloud session, end the line above with && gh api -X POST repos/clerk/clerk-ios/pulls/<n>/ccr/ready_for_review in place of gh pr ready
 $ git push origin --delete <branch>-before && git branch -D <branch>-before
 ```
 
