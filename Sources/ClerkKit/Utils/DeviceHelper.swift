@@ -10,18 +10,6 @@ import UIKit
 #endif
 
 enum DeviceHelper {
-  /// The device's vendor identifier UUID string.
-  ///
-  /// Returns `nil` if unavailable or on watchOS/macOS.
-  @MainActor
-  static var deviceID: String? {
-    #if !os(watchOS) && !os(macOS)
-    UIDevice.current.identifierForVendor?.uuidString
-    #else
-    nil
-    #endif
-  }
-
   /// The device's interface type based on `UIDevice.userInterfaceIdiom`.
   ///
   /// Returns one of: "ipad", "iphone", "mac", "carplay", "tv", "vision", "watch", or "unspecified".

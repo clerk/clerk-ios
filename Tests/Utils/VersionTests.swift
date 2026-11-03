@@ -20,14 +20,4 @@ struct VersionTests {
       #expect(part.allSatisfy { $0.isNumber })
     }
   }
-
-  @Test
-  func testDeviceID() throws {
-    #if os(watchOS) || os(macOS)
-    #expect(DeviceHelper.deviceID == nil)
-    #else
-    let id = try #require(DeviceHelper.deviceID)
-    #expect(UUID(uuidString: id) != nil)
-    #endif
-  }
 }
