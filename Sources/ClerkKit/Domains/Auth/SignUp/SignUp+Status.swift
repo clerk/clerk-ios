@@ -66,9 +66,9 @@ extension SignUp {
 extension SignUp.Status {
   var needsContinuation: Bool {
     switch self {
-    case .missingRequirements:
+    case .missingRequirements, .unknown:
       true
-    case .abandoned, .complete, .unknown:
+    case .abandoned, .complete:
       false
     }
   }

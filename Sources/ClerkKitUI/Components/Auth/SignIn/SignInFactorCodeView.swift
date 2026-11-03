@@ -259,10 +259,12 @@ extension SignInFactorCodeView {
       return
     }
 
+    let step = navigation.path.last
+
     do {
       let updatedSignIn = try await sendCode(signIn: signIn)
 
-      if navigation.reportUnrecognizedStatus(of: updatedSignIn) {
+      if navigation.replaceStep(step, withGetHelpIfUnrecognized: updatedSignIn) {
         otpFieldIsFocused = false
         return
       }
@@ -317,8 +319,8 @@ extension SignInFactorCodeView {
         return .stop
       }
       otpFieldIsFocused = false
+      verificationState = .success
       navigation.setToStepForStatus(signIn: signIn)
-      verificationState = navigation.error == nil ? .success : .default
       return .stop
     } catch {
       guard !Task.isCancelled, !error.isCancellationError else {

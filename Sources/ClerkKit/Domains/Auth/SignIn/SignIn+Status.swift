@@ -93,9 +93,9 @@ extension SignIn {
 extension SignIn.Status {
   var needsContinuation: Bool {
     switch self {
-    case .needsIdentifier, .needsFirstFactor, .needsSecondFactor, .needsNewPassword, .needsClientTrust:
+    case .needsIdentifier, .needsFirstFactor, .needsSecondFactor, .needsNewPassword, .needsClientTrust, .unknown:
       true
-    case .complete, .unknown:
+    case .complete:
       false
     }
   }

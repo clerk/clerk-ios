@@ -15,14 +15,18 @@ public enum AuthEvent: Sendable {
   /// The created session may still be pending, and post-authentication presentation may
   /// still be in progress.
   case signInCompleted(signIn: SignIn)
-  /// A Clerk callback recovered an incomplete sign-in flow that can continue.
+  /// A Clerk callback recovered an incomplete sign-in flow.
+  ///
+  /// The status is `.unknown` when this SDK version can't continue the flow.
   case signInNeedsContinuation(signIn: SignIn)
   /// A completed sign-up response was accepted for Clerk's current authentication state.
   ///
   /// The created session may still be pending, and post-authentication presentation may
   /// still be in progress.
   case signUpCompleted(signUp: SignUp)
-  /// A Clerk callback recovered an incomplete sign-up flow that can continue.
+  /// A Clerk callback recovered an incomplete sign-up flow.
+  ///
+  /// The status is `.unknown` when this SDK version can't continue the flow.
   case signUpNeedsContinuation(signUp: SignUp)
   /// A session was signed out.
   case signedOut(session: Session)

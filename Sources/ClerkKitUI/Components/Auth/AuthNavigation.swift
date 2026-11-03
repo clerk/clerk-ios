@@ -13,21 +13,8 @@ import SwiftUI
 @Observable
 final class AuthNavigation {
   var path: [AuthView.Destination] = []
-  var error: Error?
 
   init() {}
-
-  @discardableResult
-  func reportUnrecognizedStatus(of signIn: SignIn) -> Bool {
-    guard case .unknown(let status) = signIn.status else { return false }
-    presentUnrecognizedStatusError(status)
-    return true
-  }
-
-  private func presentUnrecognizedStatusError(_ status: String) {
-    ClerkLogger.error("Auth flow returned a status this SDK can't continue from: \(status)")
-    error = ClerkClientError.somethingWentWrong
-  }
 
   @MainActor
   func setToStepForStatus(signIn: SignIn) {
@@ -60,9 +47,20 @@ final class AuthNavigation {
         return
       }
       path.append(AuthView.Destination.signInClientTrust(factor: factor))
-    case .unknown:
-      reportUnrecognizedStatus(of: signIn)
+    case .unknown(let status):
+      ClerkLogger.info("Navigating to GetHelp: Sign-in has a status this SDK can't continue from: \(status)", force: true)
+      path.append(AuthView.Destination.getHelp(.signIn))
     }
+  }
+
+  @MainActor
+  func replaceStep(_ step: AuthView.Destination?, withGetHelpIfUnrecognized signIn: SignIn) -> Bool {
+    guard case .unknown(let status) = signIn.status else { return false }
+    guard path.last == step else { return true }
+    ClerkLogger.info("Navigating to GetHelp: Sign-in has a status this SDK can't continue from: \(status)", force: true)
+    _ = path.popLast()
+    path.append(AuthView.Destination.getHelp(.signIn))
+    return true
   }
 
   @MainActor
@@ -75,7 +73,8 @@ final class AuthNavigation {
     case .complete:
       return
     case .unknown(let status):
-      presentUnrecognizedStatusError(status)
+      ClerkLogger.info("Navigating to GetHelp: Sign-up has a status this SDK can't continue from: \(status)", force: true)
+      path.append(AuthView.Destination.getHelp(.signUp))
     }
   }
 

@@ -200,72 +200,64 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func signInUnrecognizedStatusPresentsAnErrorWithoutNavigating() {
+  func signInUnrecognizedStatusRoutesToGetHelp() {
     let navigation = AuthNavigation()
-    navigation.path = [.signUpCompleteProfile]
-    let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+    navigation.path = [.signInForgotPassword]
 
-    navigation.setToStepForStatus(signIn: signIn)
+    navigation.setToStepForStatus(signIn: SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check")))
 
-    #expect(navigation.path == [.signUpCompleteProfile])
-    #expect(navigation.error?.localizedDescription == "Something went wrong. Please try again.")
+    #expect(navigation.path == [.signInForgotPassword, .getHelp(.signIn)])
   }
 
   @Test
-  func signUpUnrecognizedStatusPresentsAnErrorWithoutNavigating() {
+  func signUpUnrecognizedStatusRoutesToGetHelp() {
     let navigation = AuthNavigation()
     navigation.path = [.signUpCompleteProfile]
     var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
-    signUp.status = .init(rawValue: "needs_protect_check")
+    signUp.status = .init(rawValue: "some_new_status")
 
     navigation.setToStepForStatus(signUp: signUp)
 
-    #expect(navigation.path == [.signUpCompleteProfile])
-    #expect(navigation.error?.localizedDescription == "Something went wrong. Please try again.")
-  }
-
-  @Test(arguments: [
-    SignIn.Status.complete,
-    .needsIdentifier,
-    .needsSecondFactor,
-    .needsNewPassword,
-    .needsClientTrust,
-  ])
-  func recognizedSignInStatusesPresentNoError(status: SignIn.Status) {
-    let navigation = AuthNavigation()
-
-    navigation.setToStepForStatus(signIn: SignIn(id: "sign_in_123", status: status))
-
-    #expect(navigation.error == nil)
-  }
-
-  @Test(arguments: [SignUp.Status.complete, .abandoned, .missingRequirements])
-  func recognizedSignUpStatusesPresentNoError(status: SignUp.Status) {
-    let navigation = AuthNavigation()
-    var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
-    signUp.status = status
-
-    navigation.setToStepForStatus(signUp: signUp)
-
-    #expect(navigation.error == nil)
+    #expect(navigation.path == [.signUpCompleteProfile, .getHelp(.signUp)])
   }
 
   @Test
-  func preparingAFactorReportsAnUnrecognizedStatus() {
+  func sendingAFactorWithAnUnrecognizedStatusReplacesTheStepWithGetHelp() {
     let navigation = AuthNavigation()
+    navigation.path = [.signInForgotPassword, .signInSetNewPassword(token: nil)]
     let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
 
-    #expect(navigation.reportUnrecognizedStatus(of: signIn))
-    #expect(navigation.error != nil)
+    #expect(navigation.replaceStep(.signInSetNewPassword(token: nil), withGetHelpIfUnrecognized: signIn))
+    #expect(navigation.path == [.signInForgotPassword, .getHelp(.signIn)])
   }
 
   @Test
-  func preparingAFactorDoesNotReportARecognizedStatus() {
+  func sendingAFactorWithARecognizedStatusKeepsTheStep() {
     let navigation = AuthNavigation()
+    navigation.path = [.signInForgotPassword]
     let signIn = SignIn(id: "sign_in_123", status: .needsFirstFactor)
 
-    #expect(navigation.reportUnrecognizedStatus(of: signIn) == false)
-    #expect(navigation.error == nil)
+    #expect(navigation.replaceStep(.signInForgotPassword, withGetHelpIfUnrecognized: signIn) == false)
+    #expect(navigation.path == [.signInForgotPassword])
+  }
+
+  @Test
+  func lateSendResponseKeepsTheStepTheUserMovedTo() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signUpCompleteProfile]
+    let signIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+
+    #expect(navigation.replaceStep(.signInSetNewPassword(token: nil), withGetHelpIfUnrecognized: signIn))
+    #expect(navigation.path == [.signUpCompleteProfile])
+  }
+
+  @Test
+  func callbackWithAnUnrecognizedStatusNeedsContinuation() {
+    var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
+    signUp.status = .init(rawValue: "some_new_status")
+
+    #expect(TransferFlowResult.signIn(SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))).needsContinuation)
+    #expect(TransferFlowResult.signUp(signUp).needsContinuation)
   }
 
   @Test
