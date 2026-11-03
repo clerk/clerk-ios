@@ -109,6 +109,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   private let oauthConfig: UserProfileOAuthConfiguration
 
   @State private var updateProfileIsPresented = false
+  @State private var signOutConfirmationIsPresented = false
   @State private var initialPathCount = 0
   @State private var internalPath = NavigationPath()
   @State private var sheetNavigation = UserProfileSheetNavigation()
@@ -202,6 +203,23 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         }
         .clerkSheet(isPresented: $updateProfileIsPresented) {
           UserProfileUpdateProfileView(user: user)
+        }
+        .alert(
+          Text("Sign out?", bundle: .module),
+          isPresented: $signOutConfirmationIsPresented
+        ) {
+          Button(role: .cancel) {} label: {
+            Text("Cancel", bundle: .module)
+          }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.SignOutConfirmation.cancelButton)
+
+          AsyncButton(role: .destructive) {
+            guard let sessionId = clerk.session?.id else { return }
+            await signOut(sessionId: sessionId)
+          } label: { _ in
+            Text("Sign out", bundle: .module)
+          }
+          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.SignOutConfirmation.confirmButton)
         }
         .clerkSheet(isPresented: $sheetNavigation.authViewIsPresented) {
           // The add-account sheet is modal over the host, so it dismisses itself
@@ -480,8 +498,7 @@ extension UserProfileView {
       case .addAccount:
         sheetNavigation.authViewIsPresented = true
       case .signOut:
-        guard let sessionId = clerk.session?.id else { return }
-        await signOut(sessionId: sessionId)
+        signOutConfirmationIsPresented = true
       }
     }
     .accessibilityIdentifier(rowType.accessibilityIdentifier)

@@ -55,10 +55,31 @@ test('the home sign-out button ends the session', async ({ host }) => {
   await host.screenshot('signed-out');
 });
 
-test('the profile Sign out row ends the session', async ({ host, screen }) => {
+test('the profile Sign out row asks before it ends the session', async ({ host, screen }) => {
   const user = await host.seedUser();
   await host.launch({ signedInAs: user });
   await host.tap(screen.getByTestId('clerk.userButton.profile'));
-  await host.tap(screen.getByTestId('clerk.userProfile.row.signOut'));
-  await host.expectSignedOut();
+  await expect(screen.getByRole('button', { name: 'Edit profile' })).toBeVisible({ timeout: 20_000 });
+  await host.evidence('Sign out, then confirm', async () => {
+    await host.tap(screen.getByTestId('clerk.userProfile.row.signOut'));
+    await expect(screen.getByText('Sign out?')).toBeVisible({ timeout: 10_000 });
+    await host.tap(screen.getByTestId('clerk.userProfile.signOutConfirmation.confirm').first());
+    await host.expectSignedOut();
+  });
+});
+
+test('Cancel in the sign-out confirmation keeps the user signed in', async ({ host, screen }) => {
+  const user = await host.seedUser();
+  await host.launch({ signedInAs: user });
+  await host.tap(screen.getByTestId('clerk.userButton.profile'));
+  const profileRoot = screen.getByRole('button', { name: 'Edit profile' });
+  await expect(profileRoot).toBeVisible({ timeout: 20_000 });
+  await host.evidence('Sign out, then cancel', async () => {
+    await host.tap(screen.getByTestId('clerk.userProfile.row.signOut'));
+    await expect(screen.getByText('Sign out?')).toBeVisible({ timeout: 10_000 });
+    await host.tap(screen.getByTestId('clerk.userProfile.signOutConfirmation.cancel').first());
+    await expect(screen.getByText('Sign out?')).toHaveCount(0);
+    await expect(profileRoot).toBeVisible();
+    await expect(screen.getByTestId(`clerk.userProfile.currentUser.${user.id}`).first()).toBeVisible();
+  });
 });

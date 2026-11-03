@@ -35,6 +35,11 @@ enum ClerkAccessibilityIdentifiers {
       static let signOut = "clerk.userProfile.row.signOut"
     }
 
+    enum SignOutConfirmation {
+      static let confirmButton = "clerk.userProfile.signOutConfirmation.confirm"
+      static let cancelButton = "clerk.userProfile.signOutConfirmation.cancel"
+    }
+
     enum Security {
       static let changePassword = "clerk.userProfile.security.changePassword"
       static let biometricCredentialToggle = "clerk.userProfile.security.biometricCredentialToggle"
