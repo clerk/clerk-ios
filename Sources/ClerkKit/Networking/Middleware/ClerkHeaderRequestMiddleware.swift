@@ -50,10 +50,6 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
       request.setValue(clientId, forHTTPHeaderField: "x-clerk-client-id")
     }
 
-    if let deviceId = DeviceHelper.deviceID {
-      request.setValue(deviceId, forHTTPHeaderField: "x-native-device-id")
-    }
-
     request.setValue(DeviceHelper.deviceType, forHTTPHeaderField: "x-device-type")
     request.setValue(DeviceHelper.deviceModel, forHTTPHeaderField: "x-device-model")
     request.setValue(DeviceHelper.osVersion, forHTTPHeaderField: "x-os-version")

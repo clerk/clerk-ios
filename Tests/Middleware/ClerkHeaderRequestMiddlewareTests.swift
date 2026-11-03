@@ -243,20 +243,15 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func addsNativeDeviceIdHeaderWhenAvailable() async throws {
+  func neverSendsNativeDeviceIdHeader() async throws {
+    Clerk.shared.client = .mock
+
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
 
     try await middleware.prepare(&request)
 
-    if let deviceId = DeviceHelper.deviceID {
-      let headerValue = request.value(forHTTPHeaderField: "x-native-device-id")
-      #expect(headerValue != nil, "Should include device ID header when available")
-      #expect(headerValue == deviceId)
-    } else {
-      let headerValue = request.value(forHTTPHeaderField: "x-native-device-id")
-      #expect(headerValue == nil, "Should not include device ID header when unavailable")
-    }
+    #expect(request.value(forHTTPHeaderField: "x-native-device-id") == nil)
   }
 
   @Test
