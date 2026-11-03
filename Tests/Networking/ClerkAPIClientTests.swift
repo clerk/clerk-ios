@@ -454,8 +454,8 @@ struct ClerkAPIClientTests {
     let clerk = Clerk()
     let startupGate = APIClientStartupGate()
     let refreshCount = LockIsolated(0)
-    let keychain = UnreadableKeychain()
-    keychain.readsFail = true
+    let keychain = ReadFailingKeychain()
+    keychain.failReads(of: .clerkDeviceToken)
     let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
     let dependencies = MockDependencyContainer(
       apiClient: apiClient,
@@ -488,8 +488,8 @@ struct ClerkAPIClientTests {
   @Test
   func environmentStillLoadsWhileTheTokenIsUnreadable() async throws {
     let clerk = Clerk()
-    let keychain = UnreadableKeychain()
-    keychain.readsFail = true
+    let keychain = ReadFailingKeychain()
+    keychain.failReads(of: .clerkDeviceToken)
     let url = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!
     let mock = try Mock(
       url: url,

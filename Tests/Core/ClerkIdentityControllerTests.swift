@@ -337,11 +337,11 @@ struct ClerkIdentityControllerTests {
 
   @Test
   func tokenThatCannotBeReadSurvivesARequestAndAResponse() async throws {
-    let keychain = UnreadableKeychain()
+    let keychain = ReadFailingKeychain()
     let (clerk, _) = makeClerk(identityKeychain: keychain)
     try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
 
-    keychain.readsFail = true
+    keychain.failReads(of: .clerkDeviceToken)
     clerk.identityController.hydrate()
 
     await #expect(throws: ClerkClientError.self) {
@@ -354,7 +354,7 @@ struct ClerkIdentityControllerTests {
     }
     await clerk.waitForCacheWrites()
 
-    keychain.readsFail = false
+    keychain.restoreReads()
     let request = try await clerk.identityController.captureRequestIdentity()
     #expect(request.deviceToken == "saved-token")
     #expect(clerk.client?.id == "saved")
@@ -362,11 +362,11 @@ struct ClerkIdentityControllerTests {
 
   @Test
   func writersCannotReplaceATokenThatCannotBeRead() async throws {
-    let keychain = UnreadableKeychain()
+    let keychain = ReadFailingKeychain()
     let (clerk, _) = makeClerk(identityKeychain: keychain)
     try clerk.dependencies.identityStore.saveDeviceToken("saved-token")
 
-    keychain.readsFail = true
+    keychain.failReads(of: .clerkDeviceToken)
     clerk.identityController.hydrate()
 
     await #expect(throws: ClerkClientError.self) {
@@ -376,17 +376,17 @@ struct ClerkIdentityControllerTests {
       try clerk.identityController.adoptDeviceToken("handed-off-token")
     }
 
-    keychain.readsFail = false
+    keychain.restoreReads()
     #expect(try clerk.dependencies.identityStore.deviceToken() == "saved-token")
   }
 
   @Test
   func clearingAnUnreadableTokenAllowsRequestsAgain() async throws {
-    let keychain = UnreadableKeychain()
+    let keychain = ReadFailingKeychain()
     let (clerk, _) = makeClerk(identityKeychain: keychain)
     try clerk.dependencies.identityStore.saveDeviceToken("saved-token")
 
-    keychain.readsFail = true
+    keychain.failReads(of: .clerkDeviceToken)
     clerk.identityController.hydrate()
     try clerk.identityController.clearIdentity()
 
@@ -652,34 +652,6 @@ private final class FailingAfterFirstWriteKeychain: @unchecked Sendable, Keychai
   }
 }
 
-final class UnreadableKeychain: @unchecked Sendable, KeychainStorage {
-  private let backing = InMemoryKeychain()
-  private let lock = NSLock()
-  private var failingReads = false
-
-  var readsFail: Bool {
-    get { lock.withLock { failingReads } }
-    set { lock.withLock { failingReads = newValue } }
-  }
-
-  func set(_ data: Data, forKey key: String) throws {
-    try backing.set(data, forKey: key)
-  }
-
-  func data(forKey key: String) throws -> Data? {
-    if readsFail { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
-    return try backing.data(forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
-  }
-}
-
 private final class LockableKeychain: @unchecked Sendable, KeychainStorage {
   private let backing = InMemoryKeychain()
   private let lock = NSLock()
@@ -712,41 +684,5 @@ private final class LockableKeychain: @unchecked Sendable, KeychainStorage {
   func hasItem(forKey key: String) throws -> Bool {
     try checkUnlocked()
     return try backing.hasItem(forKey: key)
-  }
-}
-
-private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
-  private let backing = InMemoryKeychain()
-  private let lock = NSLock()
-  private var successfulReadsLeft: [String: Int] = [:]
-
-  func failReads(of key: ClerkKeychainKey, afterSuccessfulReads count: Int = 0) {
-    lock.withLock { successfulReadsLeft[key.rawValue] = count }
-  }
-
-  func restoreReads() {
-    lock.withLock { successfulReadsLeft.removeAll() }
-  }
-
-  func set(_ data: Data, forKey key: String) throws {
-    try backing.set(data, forKey: key)
-  }
-
-  func data(forKey key: String) throws -> Data? {
-    let shouldFail = lock.withLock {
-      guard let reads = successfulReadsLeft[key] else { return false }
-      successfulReadsLeft[key] = max(reads - 1, 0)
-      return reads == 0
-    }
-    if shouldFail { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
-    return try backing.data(forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
   }
 }

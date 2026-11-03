@@ -81,6 +81,42 @@ struct MissingEntitlementKeychain: KeychainStorage {
   }
 }
 
+final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+  private let lock = NSLock()
+  private var successfulReadsLeft: [String: Int] = [:]
+
+  func failReads(of key: ClerkKeychainKey, afterSuccessfulReads count: Int = 0) {
+    lock.withLock { successfulReadsLeft[key.rawValue] = count }
+  }
+
+  func restoreReads() {
+    lock.withLock { successfulReadsLeft.removeAll() }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    let shouldFail = lock.withLock {
+      guard let reads = successfulReadsLeft[key] else { return false }
+      successfulReadsLeft[key] = max(reads - 1, 0)
+      return reads == 0
+    }
+    if shouldFail { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
+    return try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
+  }
+}
+
 final class ThreadRecordingKeychain: @unchecked Sendable, KeychainStorage {
   private let storage = InMemoryKeychain()
   private let lock = NSLock()

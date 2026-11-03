@@ -262,10 +262,6 @@ extension URLRequest {
     URLProtocol.property(forKey: Self.clerkClientIndependentKey, in: self) as? Bool ?? false
   }
 
-  mutating func markIndependentOfClerkClient() {
-    setClerkProperty(NSNumber(value: true), key: Self.clerkClientIndependentKey)
-  }
-
   mutating func setClerkRequestSequence(_ sequence: Int) {
     setClerkProperty(sequence, key: Self.clerkRequestSequenceKey)
   }
@@ -360,5 +356,9 @@ extension URLRequest {
 
   mutating func scopeToClerkActiveSession() {
     setClerkProperty(NSNumber(value: true), key: Self.clerkActiveSessionScopeKey)
+  }
+
+  mutating func markIndependentOfClerkClient() {
+    setClerkProperty(NSNumber(value: true), key: Self.clerkClientIndependentKey)
   }
 }

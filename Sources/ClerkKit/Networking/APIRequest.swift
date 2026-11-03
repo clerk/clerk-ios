@@ -58,9 +58,9 @@ package struct Request<Response: Decodable & Sendable> {
   let method: HTTPMethod
   let headers: [String: String]
   let canEstablishClientWhenTokenless: Bool
-  let independentOfClient: Bool
 
   private let scopedToActiveSession: Bool
+  private let independentOfClient: Bool
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
   private let automaticallySyncClient: Bool
