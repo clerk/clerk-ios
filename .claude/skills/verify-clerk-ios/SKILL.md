@@ -241,7 +241,7 @@ $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
 $ gh pr create --draft
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
 $ e2e-tests/bin/control-clerk-ios down
-$ timeout 600 sh -c 'until gh api repos/clerk/clerk-ios/pulls/<n> --jq .body | sed -n "/<!-- verify-evidence:ios -->/,/<!-- \/verify-evidence:ios -->/p" | grep -q "| :---:"; do sleep 15; done' && gh pr ready <n>
+$ sh -c 'for i in $(seq 40); do gh api repos/clerk/clerk-ios/pulls/<n> --jq .body | sed -n "/<!-- verify-evidence:ios -->/,/<!-- \/verify-evidence:ios -->/p" | grep -q "| :---:" && exit 0; sleep 15; done; exit 1' && gh pr ready <n>
 $ # in a Claude Code cloud session, end the line above with && gh api -X POST repos/clerk/clerk-ios/pulls/<n>/ccr/ready_for_review in place of gh pr ready
 $ git push origin --delete <branch>-before && git branch -D <branch>-before
 ```
