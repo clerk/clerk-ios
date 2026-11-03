@@ -148,6 +148,8 @@ public struct Auth {
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
   public func signInWithOAuth(
@@ -343,6 +345,8 @@ public struct Auth {
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the Enterprise SSO flow fails.
   @discardableResult
   public func signInWithEnterpriseSSO(

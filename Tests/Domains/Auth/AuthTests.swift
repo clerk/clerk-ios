@@ -175,6 +175,90 @@ struct AuthTests {
     #expect(prepared["enterprise_connection_id"]?.stringValue == "ent_123")
   }
 
+  private nonisolated static let blockedPrepareVerifications: [Verification?] = [
+    nil,
+    .mockExternalAccountUnverifiedVerification,
+  ]
+
+  private func stubPrepareBlockedByUnrecognizedStatus(
+    verification: Verification?
+  ) -> LockIsolated<Int> {
+    let prepareCount = LockIsolated(0)
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in
+      SignIn(id: "sign_in_123", status: .needsFirstFactor)
+    }
+    transport.stubSignInPrepareFirstFactor { id, _ in
+      prepareCount.withValue { $0 += 1 }
+      return SignIn(
+        id: id,
+        status: .init(rawValue: "needs_protect_check"),
+        firstFactorVerification: verification
+      )
+    }
+    configureDependencies(transport: transport)
+    return prepareCount
+  }
+
+  private func expectBlockedByUnrecognizedStatus(_ result: TransferFlowResult) {
+    guard case .signIn(let signIn) = result else {
+      Issue.record("Expected a sign-in result, got \(result)")
+      return
+    }
+    #expect(signIn.id == "sign_in_123")
+    #expect(signIn.status == .init(rawValue: "needs_protect_check"))
+  }
+
+  @Test(arguments: blockedPrepareVerifications)
+  func authenticateWithOAuthReturnsAnUnrecognizedStatusInsteadOfRedirecting(
+    verification: Verification?
+  ) async throws {
+    let prepareCount = stubPrepareBlockedByUnrecognizedStatus(verification: verification)
+
+    let result = try await SignIn(id: "sign_in_123", status: .needsFirstFactor)
+      .authenticateWithOAuth(provider: .google)
+
+    expectBlockedByUnrecognizedStatus(result)
+    #expect(prepareCount.value == 1)
+  }
+
+  @Test(arguments: blockedPrepareVerifications)
+  func authenticateWithEnterpriseSSOReturnsAnUnrecognizedStatusInsteadOfRedirecting(
+    verification: Verification?
+  ) async throws {
+    let prepareCount = stubPrepareBlockedByUnrecognizedStatus(verification: verification)
+
+    let result = try await SignIn(id: "sign_in_123", status: .needsFirstFactor)
+      .authenticateWithEnterpriseSSO()
+
+    expectBlockedByUnrecognizedStatus(result)
+    #expect(prepareCount.value == 1)
+  }
+
+  @Test(arguments: blockedPrepareVerifications)
+  func signInWithOAuthReturnsAnUnrecognizedStatusInsteadOfRedirecting(
+    verification: Verification?
+  ) async throws {
+    let prepareCount = stubPrepareBlockedByUnrecognizedStatus(verification: verification)
+
+    let result = try await Clerk.shared.auth.signInWithOAuth(provider: .google)
+
+    expectBlockedByUnrecognizedStatus(result)
+    #expect(prepareCount.value == 1)
+  }
+
+  @Test(arguments: blockedPrepareVerifications)
+  func signInWithEnterpriseSSOReturnsAnUnrecognizedStatusInsteadOfRedirecting(
+    verification: Verification?
+  ) async throws {
+    let prepareCount = stubPrepareBlockedByUnrecognizedStatus(verification: verification)
+
+    let result = try await Clerk.shared.auth.signInWithEnterpriseSSO(emailAddress: "user@enterprise.com")
+
+    expectBlockedByUnrecognizedStatus(result)
+    #expect(prepareCount.value == 1)
+  }
+
   @Test
   func startEnterpriseSSOCreatesAndPreparesFirstFactor() async throws {
     let signInParams = LockIsolated<JSON?>(nil)
