@@ -15,6 +15,10 @@ rename it, give it a type, extract a helper, or pin it with a test.
 Keep license headers, doc comments on public API, and `// MARK:` markers.
 Don't leave commented-out code.
 
+## Pull requests
+
+Follow `.github/pull_request_template.md` in every pull request description.
+
 ## Verifying changes
 
 Prove every change to ClerkKit, ClerkKitUI, or E2EHost on a simulator before calling it done, and put the screenshots or video in the pull request's description, never in a comment. How you prove it is up to you. The verification skill in this repository is one way, and it also works on a machine with no device. An app of your own that exercises the change is just as good. If you could not run it on a device at all, say so in the pull request.
