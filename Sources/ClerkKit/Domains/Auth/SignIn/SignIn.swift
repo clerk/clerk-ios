@@ -88,21 +88,24 @@ extension SignIn {
   }
 
   @MainActor
-  private func startNativeMagicLink(redirectUri: String?) throws -> (redirectUri: String, codeChallenge: String) {
+  private func sendNativeMagicLink(
+    redirectUri: String?,
+    prepare: @MainActor (_ redirectUri: String, _ codeChallenge: String) async throws -> SignIn
+  ) async throws -> SignIn {
     let resolvedRedirectUri = redirectUri ?? Clerk.shared.options.redirectConfig.redirectUrl
     guard !resolvedRedirectUri.isEmpty else {
       throw ClerkClientError(message: "Redirect URI is missing. Unable to start email link sign-in.", localizationBundle: .module)
     }
 
     let pkcePair = try PKCE.generatePair()
-    try magicLinkStore.save(
+    return try await magicLinkStore.replacingPendingFlow(
       kind: .signIn,
       flowId: id,
       codeVerifier: pkcePair.verifier,
       authFlowOwnerId: AuthFlowRequestScope.ownerId
-    )
-
-    return (resolvedRedirectUri, pkcePair.challenge)
+    ) {
+      try await prepare(resolvedRedirectUri, pkcePair.challenge)
+    }
   }
 
   // MARK: - First Factor Verification
@@ -130,7 +133,7 @@ extension SignIn {
   /// This prepares the `email_link` first factor using PKCE and stores the verifier locally
   /// so the callback can be completed inside the app. Only one pending native
   /// magic-link flow is stored locally at a time; starting a new flow replaces
-  /// the previously stored verifier.
+  /// the previously stored verifier, unless the server rejects the request.
   ///
   /// - Parameters:
   ///   - emailAddressId: Optional email address ID. If not provided, uses the identifying email-link factor.
@@ -152,18 +155,18 @@ extension SignIn {
       throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
     }
 
-    let magicLink = try startNativeMagicLink(redirectUri: redirectUri)
-
-    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
-      signInId: id,
-      params: .init(
-        strategy: .emailLink,
-        emailAddressId: emailId,
-        redirectUri: magicLink.redirectUri,
-        codeChallenge: magicLink.codeChallenge,
-        codeChallengeMethod: PKCE.codeChallengeMethod
-      )
-    )).value.response
+    return try await sendNativeMagicLink(redirectUri: redirectUri) { resolvedRedirectUri, codeChallenge in
+      try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
+        signInId: id,
+        params: .init(
+          strategy: .emailLink,
+          emailAddressId: emailId,
+          redirectUri: resolvedRedirectUri,
+          codeChallenge: codeChallenge,
+          codeChallengeMethod: PKCE.codeChallengeMethod
+        )
+      )).value.response
+    }
   }
 
   /// Sends a verification code to the specified phone number.
@@ -367,7 +370,7 @@ extension SignIn {
   /// `email_link`. This prepares the `email_link` second factor using PKCE and stores the
   /// verifier locally so the callback can be completed inside the app. Only one pending native
   /// magic-link flow is stored locally at a time; starting a new flow replaces
-  /// the previously stored verifier.
+  /// the previously stored verifier, unless the server rejects the request.
   ///
   /// - Parameters:
   ///   - emailAddressId: Optional email address ID. If not provided, uses the email-link second factor.
@@ -388,18 +391,18 @@ extension SignIn {
       throw ClerkClientError(message: "Email link sign-in is not available for this sign-in.", localizationBundle: .module)
     }
 
-    let magicLink = try startNativeMagicLink(redirectUri: redirectUri)
-
-    return try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
-      signInId: id,
-      params: .init(
-        strategy: .emailLink,
-        emailAddressId: emailId,
-        redirectUri: magicLink.redirectUri,
-        codeChallenge: magicLink.codeChallenge,
-        codeChallengeMethod: PKCE.codeChallengeMethod
-      )
-    )).value.response
+    return try await sendNativeMagicLink(redirectUri: redirectUri) { resolvedRedirectUri, codeChallenge in
+      try await Clerk.currentDependencies.transport.send(SignInAPI.prepareSecondFactor(
+        signInId: id,
+        params: .init(
+          strategy: .emailLink,
+          emailAddressId: emailId,
+          redirectUri: resolvedRedirectUri,
+          codeChallenge: codeChallenge,
+          codeChallengeMethod: PKCE.codeChallengeMethod
+        )
+      )).value.response
+    }
   }
 
   /// Verifies the MFA code with the specified type.
