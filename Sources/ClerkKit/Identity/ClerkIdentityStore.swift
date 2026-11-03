@@ -39,21 +39,31 @@ struct ClerkIdentityStore {
 
   func load() throws -> ClerkIdentitySnapshot? {
     guard let token = try deviceToken() else { return nil }
-    let cached = try clientKeychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue).flatMap { data in
-      if let cached = try? JSONDecoder.clerkDecoder.decode(CachedClient.self, from: data) {
-        return cached.deviceToken == token ? cached : nil
-      }
-      // Earlier SDK versions cached the Client alone, always together with the token.
-      return (try? JSONDecoder.clerkDecoder.decode(Client.self, from: data)).map {
-        CachedClient(deviceToken: token, client: $0, serverDate: nil)
-      }
-    }
+    let cached = readableCachedClient(for: token)
     return ClerkIdentitySnapshot(
       state: cached == nil ? .cleared : .present,
       deviceToken: token,
       client: cached?.client,
       serverDate: cached?.serverDate
     )
+  }
+
+  private func readableCachedClient(for token: String) -> CachedClient? {
+    do {
+      return try clientKeychain.data(forKey: ClerkKeychainKey.cachedClient.rawValue).flatMap { data in
+        if let cached = try? JSONDecoder.clerkDecoder.decode(CachedClient.self, from: data) {
+          return cached.deviceToken == token ? cached : nil
+        }
+        // Earlier SDK versions cached the Client alone, always together with the token.
+        return (try? JSONDecoder.clerkDecoder.decode(Client.self, from: data)).map {
+          CachedClient(deviceToken: token, client: $0, serverDate: nil)
+        }
+      }
+    } catch {
+      // Still adopt the token: without it the next response would replace it, and `GET /client` rebuilds the client.
+      ClerkLogger.logError(error, message: "Failed to read the cached Clerk client")
+      return nil
+    }
   }
 
   func save(_ identity: ClerkIdentitySnapshot) throws {

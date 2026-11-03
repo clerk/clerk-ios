@@ -107,7 +107,7 @@ async function main(env, { fetch = globalThis.fetch, out = process.stdout } = {}
   return pass;
 }
 
-export { codeOwnerApproval, main, parseProtectedPaths, protectedFiles };
+export { codeOwnerApproval, main, parseProtectedPaths, protectedFiles, trusted };
 
 if (process.argv[1] !== undefined && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {

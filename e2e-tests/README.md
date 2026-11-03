@@ -34,7 +34,7 @@ npx e2e run specs/features/sign-in-email-code/complete.e2e.ts
 
 ## The instance
 
-The tests expect the settings in `src/core/instances/base.json` of `@clerk/internal-mobile-e2e`, which the CLI puts on the application it creates. On an instance with those settings, every test file that has no settings file beside it passes by hand.
+The tests expect the settings in `src/core/instances/base.json` of `@clerk/internal-mobile-e2e`, which the CLI puts on the application it creates. On an instance with those settings, every test file that does not call `host.useSettings` passes by hand.
 
 An instance left at Clerk's defaults passes only part of the suite. The tests that sign in with a ticket, or sign up with an email address and a password, pass. The tests that need a phone number, an email code at sign-in, organizations, or a second account on the device fail, because a new instance has none of those turned on.
 
@@ -42,14 +42,15 @@ Every run creates users with addresses like `maya.7c1e+clerk_test@example.com` a
 
 ## Test files that need the CLI
 
-These test files have a `.settings.json` file beside them, and pass only on an instance with those settings:
+These test files change the instance's settings with `host.useSettings`:
 
 - `specs/features/session-tasks/choose-organization.e2e.ts`
 - `specs/features/session-tasks/complete-setup-mfa.e2e.ts`
 - `specs/features/session-tasks/setup-mfa.e2e.ts`
+- `specs/features/session-tasks/setup-mfa-sms-only.e2e.ts`
 - `specs/features/session-tasks/sign-up-setup-mfa.e2e.ts`
 
-The CLI's `run` puts the instance on the declared settings before the file starts, and e2e alone does not. Run them through the CLI, for example `e2e-tests/bin/control-clerk-ios run session-tasks` from the repo root.
+A run by hand fails them at that call, because the Platform API key that changes an instance's settings stays with the CLI. Run them through the CLI, for example `e2e-tests/bin/control-clerk-ios run session-tasks` from the repo root.
 
 ## What a run by hand does not do
 

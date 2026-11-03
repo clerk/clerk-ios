@@ -25,4 +25,4 @@ Preconditions:
 ## Gotchas
 
 - The test code works only for `+clerk_test` emails. Any other address sends a real email.
-- The standard settings have the email link off, because a test address gets no mail, so a run has no link to follow. With the link on, AuthView opens the email-link screen first ("Check your email", "Open email app"), which has no code field, and a spec that expects `clerk.auth.signIn.code` right after Continue times out with match count 0. A spec that needs the link declares `auth_email.sign_in_strategies` in a settings file.
+- The standard settings have the email link off, because a test address gets no mail, so a run has no link to follow. With the link on, AuthView opens the email-link screen first ("Check your email", "Open email app"), which has no code field, and a spec that expects `clerk.auth.signIn.code` right after Continue times out with match count 0. A test that needs the link sets `auth_email.sign_in_strategies` and `auth_email.verification_strategies` with `host.useSettings`.

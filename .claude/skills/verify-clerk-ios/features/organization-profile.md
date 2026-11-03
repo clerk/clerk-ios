@@ -42,7 +42,7 @@ Preconditions:
 
 Seeding also reaches these states, and no spec drives them yet: the Members screen with no tab control (it shows only when the member can see two or more of `Members`, `Invitations`, and `Requests`) and no `Invite`, and no `Update profile` or `Delete organization`, for the `org:e2e_domains_reader` member; another member's row with `Change role` and `Remove member`, for an admin with a second member.
 
-These states need other settings, which a spec file can declare, and no spec drives them yet. With `domains_enabled` off, the profile has no `Verified domains` row and Members has no `Requests` tab. An organization created while `admin_delete_enabled` is off has no `Delete organization` row. `Invite` is off once the members and the pending invitations reach `max_allowed_memberships`, which is three on the standard settings, so two invitations turn it off.
+These states need other settings, which a test can set with `host.useSettings`, and no spec drives them yet. With `domains_enabled` off, the profile has no `Verified domains` row and Members has no `Requests` tab. An organization created while `admin_delete_enabled` is off has no `Delete organization` row. `Invite` is off once the members and the pending invitations reach `max_allowed_memberships`, which is three on the standard settings, so two invitations turn it off.
 
 A change to the role-set warning is shown on a build with a local change that is not part of the pull request, and the pull request says so. Name the change and the screens it affects, and keep the spec in `specs/explored/`.
 

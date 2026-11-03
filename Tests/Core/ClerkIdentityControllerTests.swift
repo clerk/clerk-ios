@@ -266,6 +266,75 @@ struct ClerkIdentityControllerTests {
     #expect(clerk.client?.id == "saved")
   }
 
+  @Test(arguments: [false, true])
+  func cachedClientReadErrorStillSendsTheStoredToken(identityIsInAccessGroup: Bool) async throws {
+    let keychain = ReadFailingKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain, identityIsInAccessGroup: identityIsInAccessGroup)
+    try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
+
+    keychain.failReads(of: .cachedClient)
+    clerk.identityController.hydrate()
+    #expect(clerk.deviceToken == "saved-token")
+    #expect(clerk.client == nil)
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == "saved-token")
+
+    keychain.restoreReads()
+    #expect(try clerk.dependencies.identityStore.load()?.client?.id == "saved")
+  }
+
+  @Test(arguments: [false, true])
+  func tokenBecomingReadableIsAdoptedWhileTheCachedClientStaysUnreadable(identityIsInAccessGroup: Bool) async throws {
+    let keychain = ReadFailingKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain, identityIsInAccessGroup: identityIsInAccessGroup)
+    try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
+
+    keychain.failReads(of: .clerkDeviceToken)
+    clerk.identityController.hydrate()
+    #expect(clerk.deviceToken == nil)
+
+    keychain.restoreReads()
+    keychain.failReads(of: .cachedClient)
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == "saved-token")
+    #expect(clerk.client == nil)
+  }
+
+  @Test
+  func tokenReadErrorDuringAdoptionIsRetriedOnTheNextRequest() async throws {
+    let keychain = ReadFailingKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain)
+    try clerk.dependencies.identityStore.save(identity(token: "saved-token", client: makeClient(id: "saved"), date: 100))
+
+    keychain.failReads(of: .clerkDeviceToken)
+    clerk.identityController.hydrate()
+    #expect(clerk.deviceToken == nil)
+
+    keychain.restoreReads()
+    keychain.failReads(of: .clerkDeviceToken, afterSuccessfulReads: 1)
+    #expect(!clerk.identityController.adoptStoredDeviceToken())
+    #expect(clerk.deviceToken == nil)
+
+    keychain.restoreReads()
+    let request = try await clerk.identityController.captureRequestIdentity()
+    #expect(request.deviceToken == "saved-token")
+    #expect(clerk.client?.id == "saved")
+  }
+
+  @Test
+  func adoptsATokenAnotherAppStoredWhenTheCachedClientIsUnreadable() throws {
+    let keychain = ReadFailingKeychain()
+    let (clerk, _) = makeClerk(identityKeychain: keychain, identityIsInAccessGroup: true)
+    try clerk.seedIdentity(deviceToken: "token", client: makeClient(id: "current"), serverDate: date(100))
+    try clerk.dependencies.identityStore.saveDeviceToken("other-token")
+
+    keychain.failReads(of: .cachedClient)
+
+    #expect(clerk.identityController.adoptStoredDeviceToken())
+    #expect(clerk.deviceToken == "other-token")
+    #expect(clerk.client == nil)
+  }
+
   @Test
   func tokenThatCannotBeReadSurvivesARequestAndAResponse() async throws {
     let keychain = UnreadableKeychain()
@@ -643,5 +712,41 @@ private final class LockableKeychain: @unchecked Sendable, KeychainStorage {
   func hasItem(forKey key: String) throws -> Bool {
     try checkUnlocked()
     return try backing.hasItem(forKey: key)
+  }
+}
+
+private final class ReadFailingKeychain: @unchecked Sendable, KeychainStorage {
+  private let backing = InMemoryKeychain()
+  private let lock = NSLock()
+  private var successfulReadsLeft: [String: Int] = [:]
+
+  func failReads(of key: ClerkKeychainKey, afterSuccessfulReads count: Int = 0) {
+    lock.withLock { successfulReadsLeft[key.rawValue] = count }
+  }
+
+  func restoreReads() {
+    lock.withLock { successfulReadsLeft.removeAll() }
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try backing.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    let shouldFail = lock.withLock {
+      guard let reads = successfulReadsLeft[key] else { return false }
+      successfulReadsLeft[key] = max(reads - 1, 0)
+      return reads == 0
+    }
+    if shouldFail { throw KeychainError.unexpectedStatus(errSecInteractionNotAllowed) }
+    return try backing.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try backing.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try backing.hasItem(forKey: key)
   }
 }

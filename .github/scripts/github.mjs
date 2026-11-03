@@ -1,6 +1,6 @@
 function client({ fetch, api, token, repo }) {
   return async (path, { missing, method = 'GET', body } = {}) => {
-    const response = await fetch(`${api}/repos/${repo}${path}`, {
+    const response = await fetch(`${api}${repo === undefined ? '' : `/repos/${repo}`}${path}`, {
       method,
       headers: { accept: 'application/vnd.github+json', authorization: `Bearer ${token}`, 'x-github-api-version': '2022-11-28' },
       body: body === undefined ? undefined : JSON.stringify(body),

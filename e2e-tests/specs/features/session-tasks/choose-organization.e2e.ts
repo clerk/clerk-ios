@@ -1,6 +1,10 @@
 import { test, expect } from '../../fixtures.ts';
 
 test('a ticket sign-in with forced organization selection stops on the organization task', async ({ host, screen }) => {
+  await host.useSettings({
+    config: { 'organization_settings.force_organization_selection': true },
+    environment: { 'organization_settings.force_organization_selection': true },
+  });
   const user = await host.seedUser();
   await host.launch({ signedInAs: user, landsOn: host.app.signedOut });
   await host.tap(host.app.signInFullScreen);

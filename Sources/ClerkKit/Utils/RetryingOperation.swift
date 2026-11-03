@@ -84,7 +84,7 @@ func retryingOperation<T>(
   }
 }
 
-private func isClientError(_ error: any Error) -> Bool {
+func isClientError(_ error: any Error) -> Bool {
   let statusCode = (error as? ClerkAPIError)?.statusCode
     ?? (error as? URLError)?.userInfo[URLError.clerkStatusCodeKey] as? Int
   return (400 ..< 500).contains(statusCode ?? 0)
