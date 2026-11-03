@@ -1816,7 +1816,8 @@ struct AuthTests {
     expired.id = "sess_expired"
     var client = Client.mock
     client.sessions = [active, pending, expired]
-    try Clerk.shared.seedIdentity(deviceToken: "token", client: client)
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = client
     try Mock(
       url: mockBaseUrl.appending(path: "/v1/client/sessions"),
       ignoreQuery: true,
@@ -1836,8 +1837,8 @@ struct AuthTests {
 
   @Test
   func signOutOfOneSessionEmitsSignedOutOnce() async throws {
-    configureDependencies(keychain: InMemoryKeychain())
-    try Clerk.shared.seedIdentity(deviceToken: "token", client: .mock)
+    configureDependencies()
+    Clerk.shared.client = .mock
     var removed = Session.mock
     removed.status = .removed
     var remaining = Client.mock
