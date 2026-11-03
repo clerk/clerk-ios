@@ -348,6 +348,21 @@ struct SignInTests {
   }
 
   @Test
+  func sendEmailLinkRestoresEarlierFlowWhenARejectionHasNoClerkErrorBody() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    let earlierFlow = try #require(try store.load())
+    let rejection = URLError(.unknown, userInfo: [URLError.clerkStatusCodeKey: 403])
+    transport.stubSignInPrepareFirstFactor { _, _ in throw rejection }
+
+    await #expect(throws: rejection) {
+      try await emailLinkSignIn().sendEmailLink()
+    }
+
+    #expect(try store.load() == earlierFlow)
+  }
+
+  @Test
   func sendEmailLinkRestoresEarlierFlowWhenEmailSendIsBlocked() async throws {
     let store = useKeychain(InMemoryKeychain())
     try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
@@ -395,6 +410,7 @@ struct SignInTests {
     ClerkAPIError(code: "internal_clerk_error", statusCode: 500) as any Error,
     ClerkAPIError(code: "status_not_known") as any Error,
     URLError(.timedOut) as any Error,
+    URLError(.unknown, userInfo: [URLError.clerkStatusCodeKey: 502]) as any Error,
     CancellationError() as any Error,
   ])
   func sendEmailLinkKeepsNewFlowWhenPrepareMayHaveReachedTheServer(failure: any Error) async throws {
@@ -1184,5 +1200,39 @@ extension FakeTransport {
       let nonce = call.query.first { $0.name == "rotating_token_nonce" }?.value
       return try await ClientResponse(response: get(String(call.path.split(separator: "/")[3]), nonce), client: nil)
     }
+  }
+}
+
+private final class SetFailingAfterWritesKeychain: @unchecked Sendable, KeychainStorage {
+  enum Failure: Error {
+    case set
+  }
+
+  private let storage = InMemoryKeychain()
+  private let lock = NSLock()
+  private var remainingWrites: Int
+
+  init(allowedWrites: Int) {
+    remainingWrites = allowedWrites
+  }
+
+  func set(_ data: Data, forKey key: String) throws {
+    try lock.withLock {
+      guard remainingWrites > 0 else { throw Failure.set }
+      remainingWrites -= 1
+    }
+    try storage.set(data, forKey: key)
+  }
+
+  func data(forKey key: String) throws -> Data? {
+    try storage.data(forKey: key)
+  }
+
+  func deleteItem(forKey key: String) throws {
+    try storage.deleteItem(forKey: key)
+  }
+
+  func hasItem(forKey key: String) throws -> Bool {
+    try storage.hasItem(forKey: key)
   }
 }

@@ -59,40 +59,6 @@ final class SetFailingKeychain: @unchecked Sendable, KeychainStorage {
   }
 }
 
-final class SetFailingAfterWritesKeychain: @unchecked Sendable, KeychainStorage {
-  enum Failure: Error {
-    case set
-  }
-
-  private let storage = InMemoryKeychain()
-  private let lock = NSLock()
-  private var remainingWrites: Int
-
-  init(allowedWrites: Int) {
-    remainingWrites = allowedWrites
-  }
-
-  func set(_ data: Data, forKey key: String) throws {
-    try lock.withLock {
-      guard remainingWrites > 0 else { throw Failure.set }
-      remainingWrites -= 1
-    }
-    try storage.set(data, forKey: key)
-  }
-
-  func data(forKey key: String) throws -> Data? {
-    try storage.data(forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    try storage.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try storage.hasItem(forKey: key)
-  }
-}
-
 struct MissingEntitlementKeychain: KeychainStorage {
   private var error: KeychainError {
     .unexpectedStatus(errSecMissingEntitlement)

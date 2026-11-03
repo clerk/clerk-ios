@@ -221,15 +221,11 @@ final class MagicLinkStore {
   }
 
   private func serverKeptEarlierChallenge(after error: Error, kind: PendingMagicLinkFlow.Kind) -> Bool {
-    guard let apiError = error as? ClerkAPIError else {
-      return false
-    }
-
     switch kind {
     case .signIn:
-      return apiError.statusCode.map((400 ..< 500).contains) ?? false
+      isClientError(error)
     case .signUp:
-      return apiError.code == "verification_code_rate_limit_exceeded"
+      (error as? ClerkAPIError)?.code == "verification_code_rate_limit_exceeded"
     }
   }
 
@@ -238,7 +234,14 @@ final class MagicLinkStore {
     ownerId: UUID?,
     byFlowWith codeVerifier: String
   ) {
-    guard (try? load())?.codeVerifier == codeVerifier else {
+    let currentFlow: PendingMagicLinkFlow?
+    do {
+      currentFlow = try load()
+    } catch {
+      ClerkLogger.error("Failed to read the pending magic link flow", error: error)
+      return
+    }
+    guard currentFlow?.codeVerifier == codeVerifier else {
       return
     }
     guard let earlierFlow else {
@@ -249,7 +252,7 @@ final class MagicLinkStore {
     do {
       try store(earlierFlow, authFlowOwnerId: ownerId)
     } catch {
-      ClerkLogger.error("Failed to restore the earlier magic link flow.", error: error)
+      ClerkLogger.error("Failed to restore the earlier magic link flow", error: error)
       deletePendingFlow()
     }
   }
