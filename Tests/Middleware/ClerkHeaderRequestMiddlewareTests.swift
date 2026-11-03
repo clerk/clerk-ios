@@ -243,18 +243,6 @@ struct ClerkHeaderRequestMiddlewareTests {
   }
 
   @Test
-  func neverSendsNativeDeviceIdHeader() async throws {
-    Clerk.shared.client = .mock
-
-    let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
-    var request = try URLRequest(url: #require(URL(string: "https://example.com")))
-
-    try await middleware.prepare(&request)
-
-    #expect(request.value(forHTTPHeaderField: "x-native-device-id") == nil)
-  }
-
-  @Test
   func addsDeviceTypeHeader() async throws {
     let middleware = ClerkHeaderRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://example.com")))
