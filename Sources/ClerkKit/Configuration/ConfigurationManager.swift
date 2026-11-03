@@ -143,7 +143,7 @@ final class ConfigurationManager {
 
     let frontendApiHost = decodedKey.dropLast()
     let frontendApiUrl = "https://\(frontendApiHost)"
-    guard frontendApiHost.allSatisfy({ !"$/?#@:".contains($0) }),
+    guard frontendApiHost.allSatisfy({ !"$/?#@:% ".contains($0) }),
           URL(string: frontendApiUrl)?.host?.contains(".") == true
     else {
       throw ClerkInitializationError.invalidPublishableKeyFormat

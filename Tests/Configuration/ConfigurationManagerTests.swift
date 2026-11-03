@@ -205,6 +205,8 @@ struct ConfigurationManagerTests {
     "user@clerk.acme.com$",
     "clerk.acme.com?a=b$",
     "clerk.acme.com#a$",
+    "clerk.acme.com%2Fpath$",
+    "clerk.acme .com$",
   ])
   func configureRejectsAKeyWithoutOneTrailingDollarAfterADottedHost(_ prefix: String, _ decodedKey: String) {
     let manager = ConfigurationManager()
