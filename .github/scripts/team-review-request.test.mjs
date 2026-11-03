@@ -33,6 +33,10 @@ function fakeGitHub({ author = 'outside-dev', draft = false, state = 'open', fil
       teams.push(...team_reviewers);
       return reply({});
     }
+    if (method === 'GET' && path === '/pulls/7/requested_reviewers') {
+      assert.equal(headers.authorization, 'Bearer app-token');
+      return reply({ users: pending.map(login => ({ login })), teams: pendingTeams.map(slug => ({ slug })) });
+    }
     if (path === '/orgs/clerk/teams/team-mobile/members') {
       assert.equal(headers.authorization, 'Bearer app-token');
       return reply(Number(searchParams.get('page')) === 1 ? TEAM.map(login => ({ login })) : []);
@@ -47,7 +51,7 @@ function fakeGitHub({ author = 'outside-dev', draft = false, state = 'open', fil
       return reply({});
     }
     if (path === '/pulls/7') {
-      return reply({ state, draft, user: { login: author }, head: { sha: HEAD }, base: { ref: 'main' }, changed_files: files.length, requested_reviewers: pending.map(login => ({ login })), requested_teams: pendingTeams.map(slug => ({ slug })) });
+      return reply({ state, draft, user: { login: author }, head: { sha: HEAD }, base: { ref: 'main' }, changed_files: files.length });
     }
     if (path === '/contents/.github/protected-paths') {
       return reply({ content: Buffer.from('/.github/workflows/\n').toString('base64') });
