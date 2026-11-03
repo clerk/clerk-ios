@@ -6,8 +6,8 @@ import { main, ratedHighRisk } from './team-review-request.mjs';
 const REPO = 'clerk/clerk-ios';
 const API = 'https://api.github.test';
 const HEAD = 'c14cacc2763d2dfc271d9c286b09376a90c5b9ff';
-const TEAM = ['swolfand', 'mikepitre', 'wobsoriano', 'seanperez29'];
-const ROLES = { mikepitre: 'admin', seanperez29: 'admin', swolfand: 'maintain', wobsoriano: 'maintain', 'outside-dev': 'write' };
+const TEAM = ['swolfand', 'mikepitre', 'wobsoriano', 'seanperez29', 'team-newcomer'];
+const ROLES = { mikepitre: 'admin', seanperez29: 'admin', swolfand: 'maintain', wobsoriano: 'maintain', 'outside-dev': 'write', 'team-newcomer': 'write' };
 
 // The shape CodeRabbit writes into its summary comment.
 const riskComment = (level, commit = HEAD) => ({
@@ -158,6 +158,11 @@ describe('team review request', () => {
       assert.deepEqual(teams, []);
       assert.match(output, /Team Mobile is already requested/);
     }
+  });
+
+  it('still requests the team after a review from a member who has only write access', async () => {
+    const { teams } = await run({ reviews: [review('team-newcomer', 'COMMENTED')] });
+    assert.deepEqual(teams, ['team-mobile']);
   });
 
   it('requests nobody once Team Mobile approved', async () => {
