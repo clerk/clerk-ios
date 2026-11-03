@@ -138,11 +138,11 @@ Every PR also needs the `Code owner approval` check. Team Mobile means anyone wi
 or admin access to the repository. A Team Mobile author needs only CodeRabbit's approval,
 unless the PR changes a path in `.github/protected-paths` or CodeRabbit rates it high or
 critical risk. Then another Team Mobile member has to approve. Anyone else needs an
-approval from Team Mobile. The `Team review request` workflow requests the members listed
-in `.github/team-mobile` when a PR needs one, so keep that list in step with the team.
+approval from Team Mobile. The `Team review request` workflow requests `@clerk/team-mobile`
+when a PR needs one.
 When a Team Mobile author changes a protected path, it comments on the PR with the protected
 files and requests nobody, so the author asks a member to review. It still requests the
-members if CodeRabbit rates that PR high or critical. GitHub counts every run of the check
+team if CodeRabbit rates that PR high or critical. GitHub counts every run of the check
 on a commit, so when a review makes the check pass, that run also reruns the ones that
 failed before the review. A fork PR's token is read-only and can't rerun them, so a
 maintainer reruns the failed runs by hand.

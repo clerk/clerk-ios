@@ -4,16 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { codeOwnerApproval } from './code-owner-approval.mjs';
 import { client, paged } from './github.mjs';
 
-const TEAM_FILE = new URL('../team-mobile', import.meta.url);
+const TEAM = 'team-mobile';
 const CODERABBIT = 'coderabbitai[bot]';
 const HIGH_RISK = new Set(['high', 'critical']);
-
-function parseTeam(text) {
-  return text
-    .split('\n')
-    .map(line => line.replace(/#.*$/, '').trim())
-    .filter(line => line !== '');
-}
 
 // CodeRabbit's summary comment carries its merge risk for the commit it last reviewed, and rewrites it after each review.
 function ratedHighRisk(comments, head) {
@@ -39,8 +32,10 @@ function protectedComment(files) {
   return [PROTECTED_NOTICE, '', ...shown].join('\n');
 }
 
-async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
+async function teamReviewRequest({ fetch, api, token, teamToken, repo, number }) {
   const get = client({ fetch, api, token, repo });
+  // Only the app token can see org teams, so it reads the team and makes the review request.
+  const teamGet = client({ fetch, api, token: teamToken });
   const pull = await get(`/pulls/${number}`);
   if (pull.state !== 'open' || pull.draft) {
     return 'The pull request is closed or a draft.';
@@ -66,21 +61,21 @@ async function teamReviewRequest({ fetch, api, token, repo, number, team }) {
       return `Requested nobody. ${check.message}`;
     }
   }
+  const team = (await paged(teamGet, `/orgs/${repo.split('/')[0]}/teams/${TEAM}/members`)).map(user => user.login);
   const asked = new Set([author, ...pull.requested_reviewers.map(user => user.login)]);
   for (const review of await paged(get, `/pulls/${number}/reviews`)) {
     asked.add(review.user?.login);
   }
-  const reviewers = team.filter(login => !asked.has(login));
-  if (reviewers.length === 0) {
-    return 'Every Team Mobile member is already requested or has reviewed.';
+  if (pull.requested_teams.some(requested => requested.slug === TEAM) || team.some(login => login !== author && asked.has(login))) {
+    return 'Team Mobile is already requested, or a member is requested or has reviewed.';
   }
-  await get(`/pulls/${number}/requested_reviewers`, { method: 'POST', body: { reviewers } });
+  await teamGet(`/repos/${repo}/pulls/${number}/requested_reviewers`, { method: 'POST', body: { team_reviewers: [TEAM] } });
   const why = check.reason === 'coderabbit' || check.reason === 'protected' ? 'CodeRabbit rated this commit high or critical risk.' : check.message;
-  return `Requested ${reviewers.join(', ')}. ${why}`;
+  return `Requested @${repo.split('/')[0]}/${TEAM}. ${why}`;
 }
 
-async function main(env, { fetch = globalThis.fetch, out = process.stdout, teamText = fs.readFileSync(TEAM_FILE, 'utf8') } = {}) {
-  const missing = ['GITHUB_REPOSITORY', 'GITHUB_TOKEN', 'PR_NUMBER'].filter(name => !env[name]);
+async function main(env, { fetch = globalThis.fetch, out = process.stdout } = {}) {
+  const missing = ['GITHUB_REPOSITORY', 'GITHUB_TOKEN', 'TEAM_REVIEW_TOKEN', 'PR_NUMBER'].filter(name => !env[name]);
   if (missing.length > 0) {
     throw new Error(`missing ${missing.join(', ')}`);
   }
@@ -88,14 +83,14 @@ async function main(env, { fetch = globalThis.fetch, out = process.stdout, teamT
     fetch,
     api: env.GITHUB_API_URL || 'https://api.github.com',
     token: env.GITHUB_TOKEN,
+    teamToken: env.TEAM_REVIEW_TOKEN,
     repo: env.GITHUB_REPOSITORY,
     number: env.PR_NUMBER,
-    team: parseTeam(teamText),
   });
   out.write(`${message}\n`);
 }
 
-export { main, parseTeam, ratedHighRisk };
+export { main, ratedHighRisk };
 
 if (process.argv[1] !== undefined && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
