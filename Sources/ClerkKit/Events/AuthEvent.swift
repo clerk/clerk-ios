@@ -25,6 +25,8 @@ public enum AuthEvent: Sendable {
   /// A Clerk callback recovered an incomplete sign-up flow that can continue.
   case signUpNeedsContinuation(signUp: SignUp)
   /// A session was signed out.
+  ///
+  /// Signing out of all sessions sends this event once for each session that was signed in.
   case signedOut(session: Session)
   /// The current account was deleted.
   case accountDeleted

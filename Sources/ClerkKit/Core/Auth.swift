@@ -613,8 +613,12 @@ extension Auth {
       _ = try await transport.send(SessionAPI.remove(sessionId: sessionId))
       Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
     } else {
+      let signedInSessions = Clerk.shared.client?.signedInSessions ?? []
       _ = try await transport.send(SessionAPI.removeAll())
       Clerk.shared.identityController.invalidateAllSessionTokens()
+      for session in signedInSessions {
+        send(.signedOut(session: session.removedFromClient))
+      }
     }
   }
 
