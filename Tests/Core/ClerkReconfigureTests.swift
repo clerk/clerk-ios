@@ -373,6 +373,7 @@ struct ClerkReconfigureTests {
     )
     clerk.performConfiguration(dependencies: sourceDependencies)
     try clerk.seedIdentity(deviceToken: "shared-token", client: .mock, serverDate: Date(timeIntervalSince1970: 100))
+    clerk.identityController.recordServerDate(.now.addingTimeInterval(300), receivedAt: .now)
     clerk.environment = .mock
     clerk.sessionsByUserId = [User.mock.id: [.mock]]
 
@@ -390,6 +391,7 @@ struct ClerkReconfigureTests {
     )
     defer { reconfigured.cleanupManagers() }
 
+    #expect(reconfigured.identityController.serverClock.deviceLag == 0)
     #expect(try sourceDependencies.identityStore.load()?.deviceToken == "shared-token")
     #expect(reconfigured.client == nil)
     #expect(reconfigured.session == nil)

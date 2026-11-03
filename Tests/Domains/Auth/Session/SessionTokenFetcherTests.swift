@@ -1,6 +1,7 @@
 @testable import ClerkKit
 import ConcurrencyExtras
 import Foundation
+import Mocker
 import Testing
 
 @MainActor
@@ -1112,6 +1113,148 @@ struct SessionAPIAndTokenFetcherTests {
     await secondGate.resume()
     #expect(try await second.value == secondResponse)
     #expect(callCount.value == 2)
+  }
+
+  @Test(arguments: [nil, "firebase"] as [String?])
+  func cachedTokenExpiredOnTheServerIsRefetchedWhenTheDeviceClockIsBehind(template: String?) async throws {
+    let serverNow = Date.now.addingTimeInterval(300)
+    let session = prepareLiveTokenRequests()
+    defer { Clerk.shared.identityController.resetServerClock() }
+    let expired = try token(session: session, issuedAt: serverNow - 90, expiresAt: serverNow - 30, signature: "expired")
+    let fresh = try token(session: session, issuedAt: serverNow, expiresAt: serverNow + 60, signature: "fresh")
+
+    try registerTokenResponse(expired, session: session, template: template, serverDate: serverNow)
+    _ = try await SessionTokenFetcher.shared.getToken(session, options: .init(template: template))
+
+    try registerTokenResponse(fresh, session: session, template: template, serverDate: serverNow)
+    let result = try await SessionTokenFetcher.shared.getToken(session, options: .init(template: template))
+
+    #expect(result == fresh)
+  }
+
+  @Test
+  func anyClerkResponseTeachesTheServerClockToTheCachedTokenCheck() async throws {
+    let serverNow = Date.now.addingTimeInterval(300)
+    var session = prepareLiveTokenRequests()
+    defer { Clerk.shared.identityController.resetServerClock() }
+    let expired = try token(session: session, issuedAt: serverNow - 90, expiresAt: serverNow - 30, signature: "expired")
+    let fresh = try token(session: session, issuedAt: serverNow, expiresAt: serverNow + 60, signature: "fresh")
+    session.lastActiveToken = expired
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+
+    let unrelatedURL = try #require(URL(string: mockBaseUrl.absoluteString + "/v1/unrelated"))
+    try Mock(
+      url: unrelatedURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])],
+      additionalHeaders: ["Date": HTTPURLResponse.httpDateFormatter.string(from: serverNow)]
+    ).register()
+    _ = try await Clerk.shared.dependencies.transport.send(
+      Request<EmptyResponse>(path: "/v1/unrelated", method: .get)
+    )
+
+    try registerTokenResponse(fresh, session: session, template: nil, serverDate: serverNow)
+    let result = try await SessionTokenFetcher.shared.getToken(session)
+
+    #expect(result == fresh)
+  }
+
+  @Test
+  func serverDateBehindTheDeviceNeverKeepsAnExpiringTokenLonger() async throws {
+    let deviceNow = Date.now
+    let serverNow = deviceNow.addingTimeInterval(-300)
+    let session = prepareLiveTokenRequests()
+    defer { Clerk.shared.identityController.resetServerClock() }
+    let expiring = try token(session: session, issuedAt: deviceNow - 55, expiresAt: deviceNow + 5, signature: "expiring")
+    let fresh = try token(session: session, issuedAt: deviceNow, expiresAt: deviceNow + 60, signature: "fresh")
+
+    try registerTokenResponse(expiring, session: session, template: "firebase", serverDate: serverNow)
+    _ = try await SessionTokenFetcher.shared.getToken(session, options: .init(template: "firebase"))
+
+    try registerTokenResponse(fresh, session: session, template: "firebase", serverDate: serverNow)
+    let result = try await SessionTokenFetcher.shared.getToken(session, options: .init(template: "firebase"))
+
+    #expect(result == fresh)
+  }
+
+  @Test(arguments: [nil, "firebase"] as [String?])
+  func validTokenReplacesOneExpiredOnTheServerDespiteAnOlderOrigin(template: String?) async throws {
+    let serverNow = Date.now.addingTimeInterval(300)
+    let session = prepareLiveTokenRequests()
+    defer { Clerk.shared.identityController.resetServerClock() }
+    let expired = try token(
+      session: session,
+      originIssuedAt: 200,
+      issuedAt: serverNow - 90,
+      expiresAt: serverNow - 30,
+      signature: "expired"
+    )
+    let valid = try token(
+      session: session,
+      originIssuedAt: 100,
+      issuedAt: serverNow,
+      expiresAt: serverNow + 60,
+      signature: "valid"
+    )
+
+    try registerTokenResponse(expired, session: session, template: template, serverDate: serverNow)
+    _ = try await SessionTokenFetcher.shared.getToken(session, options: .init(template: template))
+
+    try registerTokenResponse(valid, session: session, template: template, serverDate: serverNow)
+    let result = try await SessionTokenFetcher.shared.getToken(
+      session,
+      options: .init(template: template, skipCache: true)
+    )
+
+    #expect(result == valid)
+  }
+
+  private func prepareLiveTokenRequests() -> Session {
+    SessionTemplateTokensCache.shared.clear()
+    Clerk.shared.identityController.resetServerClock()
+    var session = Session.mock
+    session.lastActiveToken = nil
+    configureCurrentState(session: session, sessionMinterEnabled: false)
+    let apiClient = createMockAPIClient()
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: apiClient, transport: apiClient)
+    return session
+  }
+
+  private func registerTokenResponse(
+    _ response: TokenResource,
+    session: Session,
+    template: String?,
+    serverDate: Date
+  ) throws {
+    let templatePath = template.map { "/\($0)" } ?? ""
+    let url = try #require(URL(string: "\(mockBaseUrl.absoluteString)/v1/client/sessions/\(session.id)/tokens\(templatePath)"))
+    try Mock(
+      url: url,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.post: JSONEncoder().encode(response)],
+      additionalHeaders: ["Date": HTTPURLResponse.httpDateFormatter.string(from: serverDate)]
+    ).register()
+  }
+
+  private func token(
+    session: Session,
+    originIssuedAt: Int = 100,
+    issuedAt: Date,
+    expiresAt: Date,
+    signature: String
+  ) throws -> TokenResource {
+    try token(
+      sessionId: session.id,
+      organizationId: session.lastActiveOrganizationId,
+      originIssuedAt: originIssuedAt,
+      issuedAt: Int(issuedAt.timeIntervalSince1970),
+      expiresAt: Int(expiresAt.timeIntervalSince1970),
+      signature: signature
+    )
   }
 
   private func configureCurrentState(

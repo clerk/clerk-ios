@@ -110,7 +110,7 @@ extension ClerkIdentityController {
     let existing = previous?.lastActiveToken.flatMap {
       tokenMatchesSession($0, session: incomingSession) ? $0 : nil
     }
-    return TokenFreshness.pickFreshest(existing: existing, incoming: token, tieBreaker: .incoming)
+    return TokenFreshness.pickFreshest(existing: existing, incoming: token, now: serverClock.now, tieBreaker: .incoming)
   }
 
   func reconcilingSessionTokens(

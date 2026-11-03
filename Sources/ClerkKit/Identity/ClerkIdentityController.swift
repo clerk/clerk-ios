@@ -16,6 +16,7 @@ final class ClerkIdentityController {
   var sessionTokenEpoch: UInt64 = 0
   var invalidatedSessionTokens: Set<String> = []
 
+  private(set) var serverClock = ServerClock()
   private(set) var clientResponseGeneration: ClientResponseGeneration = .initial
   private var responseOrderingGate = ClientResponseOrderingGate()
   var lastServerDate: Date? {
@@ -64,6 +65,14 @@ extension ClerkIdentityController {
 
   func resetOrderingState() {
     responseOrderingGate.reset()
+  }
+
+  func recordServerDate(_ serverDate: Date, receivedAt: Date) {
+    serverClock.record(serverDate: serverDate, receivedAt: receivedAt)
+  }
+
+  func resetServerClock() {
+    serverClock = ServerClock()
   }
 
   func resetRuntimeIdentity() {
