@@ -238,8 +238,11 @@ $ e2e-tests/bin/control-clerk-ios down
 $ git switch <branch>
 $ e2e-tests/bin/control-clerk-ios up --backend remote
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
+$ gh pr create --draft
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
 $ e2e-tests/bin/control-clerk-ios down
+$ gh pr view <n> --json body   # wait for the verify-evidence block, about a minute after down
+$ gh pr ready <n>
 $ git push origin --delete <branch>-before && git branch -D <branch>-before
 ```
 
