@@ -30,6 +30,10 @@ final class AuthState {
 
   private(set) var unsafeMetadata: JSON?
 
+  private var initialFirstName: String?
+
+  private var initialLastName: String?
+
   private var environmentRefreshCheckpoint: Clerk.EnvironmentRefreshCheckpoint?
 
   private let userDefaults: UserDefaults
@@ -87,6 +91,8 @@ final class AuthState {
     hasInitialIdentifier = initialIdentifier?.isEmptyTrimmed == false
     authStartPhoneNumberWasPrefilled = hasInitialIdentifier && initialIdentifier?.looksLikePhoneNumber == true
     authStartIdentifierWasPrefilled = hasInitialIdentifier && !authStartPhoneNumberWasPrefilled
+    initialFirstName = config.initialFirstName
+    initialLastName = config.initialLastName
     hasInitialFirstName = config.initialFirstName?.isEmptyTrimmed == false
     hasInitialLastName = config.initialLastName?.isEmptyTrimmed == false
     prefilledFieldsAreLocked = config.prefilledFieldsAreLocked
@@ -130,6 +136,16 @@ final class AuthState {
     signInConfirmNewPassword = ""
     signInBackupCode = ""
     signUpPassword = ""
+  }
+
+  func resetForNextPerson() {
+    clearSensitiveFields()
+    signUpFirstName = initialFirstName ?? ""
+    signUpLastName = initialLastName ?? ""
+    signUpUsername = ""
+    signUpEmailAddress = ""
+    signUpPhoneNumber = ""
+    signUpLegalAccepted = false
   }
 
   func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {

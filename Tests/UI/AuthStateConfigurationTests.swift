@@ -186,6 +186,27 @@ struct AuthStateConfigurationTests {
   }
 
   @Test
+  func resetForNextPersonUsesTheLatestConfiguredNamesAndKeepsTheIdentifier() {
+    let authState = AuthState(
+      config: AuthConfig(initialIdentifier: "me@example.com", initialFirstName: "Old"),
+      userDefaults: makeUserDefaults()
+    )
+    authState.configure(AuthConfig(
+      initialIdentifier: "me@example.com",
+      initialFirstName: "Jane",
+      initialLastName: "Doe"
+    ))
+    authState.signUpFirstName = "Typed"
+    authState.signUpLastName = "Typed"
+
+    authState.resetForNextPerson()
+
+    #expect(authState.signUpFirstName == "Jane")
+    #expect(authState.signUpLastName == "Doe")
+    #expect(authState.authStartIdentifier == "me@example.com")
+  }
+
+  @Test
   func disablingPersistenceClearsStoredValues() {
     let defaults = makeUserDefaults()
     defaults.set("stored@example.com", forKey: AuthState.identifierStorageKey)

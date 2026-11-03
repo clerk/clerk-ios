@@ -82,6 +82,7 @@ struct AuthSensitiveFieldsTests {
     ]
     try await layout(window)
     enterSecrets(into: authState)
+    enterSignUpDetails(into: authState)
 
     clerk.setClientFromIdentityController(.mockSignedOut)
     try await layout(window)
@@ -91,6 +92,122 @@ struct AuthSensitiveFieldsTests {
     #expect(authState.signInConfirmNewPassword.isEmpty)
     #expect(authState.signInBackupCode.isEmpty)
     #expect(authState.signUpPassword.isEmpty)
+    #expect(authState.signUpEmailAddress.isEmpty)
+    #expect(authState.signUpLegalAccepted == false)
+  }
+
+  @Test(arguments: [true, false])
+  func completingTheFlowClearsEnteredSecretsOnlyAfterTheSavePasswordWindow(isDismissible: Bool) async throws {
+    let clerk = Clerk.mockSignedOut
+    let view = AuthView(isDismissible: isDismissible)
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+    enterSecrets(into: authState)
+
+    try await completeAuthFlow(in: clerk, window: window)
+    #expect(authState.signInPassword == "password-for-a")
+
+    try await waitUntil(window) { authState.signInPassword.isEmpty }
+    #expect(authState.signInPassword.isEmpty)
+    #expect(authState.signInNewPassword.isEmpty)
+    #expect(authState.signInConfirmNewPassword.isEmpty)
+    #expect(authState.signInBackupCode.isEmpty)
+    #expect(authState.signUpPassword.isEmpty)
+  }
+
+  @Test
+  func leavingTheScreenAfterCompletionClearsEnteredSecrets() async throws {
+    let clerk = Clerk.mockSignedOut
+    let view = AuthView(isDismissible: false)
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+    enterSecrets(into: authState)
+
+    try await completeAuthFlow(in: clerk, window: window)
+    window.rootViewController = UIViewController()
+
+    try await waitUntil(window) { authState.signInPassword.isEmpty }
+    #expect(authState.signInPassword.isEmpty)
+  }
+
+  @Test
+  func signingOutSoonAfterCompletionKeepsWhatTheNextPersonTypes() async throws {
+    let clerk = Clerk.mockSignedOut
+    let view = AuthView(isDismissible: false)
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+
+    try await completeAuthFlow(in: clerk, window: window)
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    try await layout(window)
+    authState.signInPassword = "password-for-b"
+
+    try await Task.sleep(for: .seconds(1.5))
+    #expect(authState.signInPassword == "password-for-b")
+  }
+
+  @Test
+  func signingOutResetsSignUpDetailsAndConsentForTheNextPerson() async throws {
+    let clerk = Clerk.mock
+    let view = AuthView(isDismissible: false)
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+    enterSignUpDetails(into: authState)
+
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    try await layout(window)
+
+    #expect(authState.signUpFirstName.isEmpty)
+    #expect(authState.signUpLastName.isEmpty)
+    #expect(authState.signUpUsername.isEmpty)
+    #expect(authState.signUpEmailAddress.isEmpty)
+    #expect(authState.signUpPhoneNumber.isEmpty)
+    #expect(authState.signUpLegalAccepted == false)
+  }
+
+  @Test
+  func signingOutRestoresConfiguredInitialNames() async throws {
+    let clerk = Clerk.mock
+    let view = AuthView(isDismissible: false)
+      .initialFirstName("Jane")
+      .lockPrefilledFields()
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+    enterSignUpDetails(into: authState)
+
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    try await layout(window)
+
+    #expect(authState.signUpFirstName == "Jane")
+    #expect(authState.signUpFirstNameIsEnabled == false)
+    #expect(authState.signUpLastName.isEmpty)
+  }
+
+  private func enterSignUpDetails(into authState: AuthState) {
+    authState.signUpFirstName = "Ann"
+    authState.signUpLastName = "Other"
+    authState.signUpUsername = "ann"
+    authState.signUpEmailAddress = "ann+clerk_test@example.com"
+    authState.signUpPhoneNumber = "+15555550100"
+    authState.signUpLegalAccepted = true
+  }
+
+  private func completeAuthFlow(in clerk: Clerk, window: UIWindow) async throws {
+    clerk.setClientFromIdentityController(.mock)
+    try await waitUntil(window) { clerk.isAuthFlowComplete }
+    #expect(clerk.isAuthFlowComplete)
+  }
+
+  private func waitUntil(_ window: UIWindow, _ condition: () -> Bool) async throws {
+    for _ in 0 ..< 300 where !condition() {
+      window.layoutIfNeeded()
+      try await Task.sleep(for: .milliseconds(10))
+    }
   }
 
   private func enterSecrets(into authState: AuthState) {

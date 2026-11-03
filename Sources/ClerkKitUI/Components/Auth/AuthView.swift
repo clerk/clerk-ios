@@ -234,9 +234,18 @@ public struct AuthView: View {
       registerAuthFlowIfNeeded()
       await reconcileAuthFlow()
     }
+    .task(id: authFlowRegistrationIsTerminated) {
+      await clearSensitiveFieldsAfterSavePasswordWindow()
+    }
+    .onDisappear {
+      if authFlowRegistrationIsTerminated {
+        authState.clearSensitiveFields()
+      }
+    }
     .onChange(of: clerk.user) { _, newUser in
       guard newUser == nil else { return }
 
+      authState.resetForNextPerson()
       if isDismissible, navigation.presentedAuthFlowToken != nil {
         dismissAuthView()
       } else {
