@@ -32,9 +32,9 @@ describe('the clerk-ios host build', () => {
     writeFileSync(join(scratch, 'bin', 'xcodebuild'), '#!/bin/sh\nfor derived; do :; done\nmkdir -p "$derived/Build/Products/Debug-iphonesimulator/E2EHost.app"\nenv > "$derived/env"\n', { mode: 0o755 });
     const before = { ...process.env };
     const set = {
-      CLERK_PLATFORM_API_KEY: 'ak_platform',
-      CLERK_PLATFORM_API_KEY_FILE: '/home/x/key',
-      VERIFY_PLATFORM_KEY_REFERENCE: 'op://vault/item',
+      MOBILE_VERIFICATION_PLATFORM_API_KEY: 'ak_platform',
+      MOBILE_VERIFICATION_PLATFORM_API_KEY_FILE: '/home/x/key',
+      MOBILE_VERIFICATION_PLATFORM_API_KEY_REFERENCE: 'op://vault/item',
       CLERK_SECRET_KEY: 'sk_test_instance',
       AI_GATEWAY_API_KEY: 'vck_gateway',
       AI_GATEWAY_API_KEY_FILE: '/home/x/gateway',
