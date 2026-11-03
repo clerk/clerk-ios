@@ -30,6 +30,8 @@ final class AuthState {
 
   private(set) var unsafeMetadata: JSON?
 
+  private var initialIdentifier: String?
+
   private var initialFirstName: String?
 
   private var initialLastName: String?
@@ -87,7 +89,7 @@ final class AuthState {
 
   func configure(_ config: AuthConfig) {
     persistsIdentifiers = config.persistsIdentifiers
-    let initialIdentifier = config.initialIdentifier
+    initialIdentifier = config.initialIdentifier
     hasInitialIdentifier = initialIdentifier?.isEmptyTrimmed == false
     authStartPhoneNumberWasPrefilled = hasInitialIdentifier && initialIdentifier?.looksLikePhoneNumber == true
     authStartIdentifierWasPrefilled = hasInitialIdentifier && !authStartPhoneNumberWasPrefilled
@@ -105,20 +107,8 @@ final class AuthState {
       LastUsedAuth.clearStoredIdentifierType(userDefaults: userDefaults)
     }
 
-    if let identifier = config.initialIdentifier {
-      if identifier.looksLikePhoneNumber {
-        authStartPhoneNumberFieldIsActive = true
-        authStartPhoneNumber = identifier
-        authStartIdentifier = ""
-      } else {
-        authStartPhoneNumberFieldIsActive = false
-        authStartIdentifier = identifier
-        authStartPhoneNumber = ""
-      }
-    } else if !config.persistsIdentifiers {
-      authStartIdentifier = ""
-      authStartPhoneNumber = ""
-      authStartPhoneNumberFieldIsActive = false
+    if config.initialIdentifier != nil || !config.persistsIdentifiers {
+      restoreConfiguredIdentifier()
     }
 
     if let firstName = config.initialFirstName {
@@ -140,12 +130,23 @@ final class AuthState {
 
   func resetForNextPerson() {
     clearSensitiveFields()
+    if !persistsIdentifiers {
+      restoreConfiguredIdentifier()
+    }
     signUpFirstName = initialFirstName ?? ""
     signUpLastName = initialLastName ?? ""
     signUpUsername = ""
     signUpEmailAddress = ""
     signUpPhoneNumber = ""
     signUpLegalAccepted = false
+  }
+
+  private func restoreConfiguredIdentifier() {
+    let identifier = initialIdentifier ?? ""
+    let isPhoneNumber = identifier.looksLikePhoneNumber
+    authStartPhoneNumberFieldIsActive = isPhoneNumber
+    authStartPhoneNumber = isPhoneNumber ? identifier : ""
+    authStartIdentifier = isPhoneNumber ? "" : identifier
   }
 
   func storeLastUsedIdentifierType(_ identifierType: LastUsedAuth) {

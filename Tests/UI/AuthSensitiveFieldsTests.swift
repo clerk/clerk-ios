@@ -188,6 +188,24 @@ struct AuthSensitiveFieldsTests {
     #expect(authState.signUpLastName.isEmpty)
   }
 
+  @Test
+  func signingOutClearsTheIdentifierWhenTheHostOptedOutOfRememberingIt() async throws {
+    let clerk = Clerk.mock
+    let view = AuthView(isDismissible: false)
+      .persistsIdentifiers(false)
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+    authState.authStartIdentifier = "a+clerk_test@example.com"
+
+    clerk.setClientFromIdentityController(.mockSignedOut)
+    try await layout(window)
+
+    #expect(authState.authStartIdentifier.isEmpty)
+    #expect(authState.authStartPhoneNumber.isEmpty)
+    #expect(authState.authStartPhoneNumberFieldIsActive == false)
+  }
+
   private func enterSignUpDetails(into authState: AuthState) {
     authState.signUpFirstName = "Ann"
     authState.signUpLastName = "Other"
