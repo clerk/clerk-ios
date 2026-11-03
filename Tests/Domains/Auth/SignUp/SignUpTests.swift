@@ -96,10 +96,10 @@ struct SignUpTests {
     #expect(!transport.calls.contains { $0.path.hasSuffix("/prepare_verification") })
   }
 
-  @Test
-  func sendEmailLinkRestoresEarlierFlowWhenServerRateLimitsPrepare() async throws {
+  @Test(arguments: ["verification_code_rate_limit_exceeded", "too_many_requests"])
+  func sendEmailLinkRestoresEarlierFlowWhenServerRateLimitsPrepare(code: String) async throws {
     let signUp = SignUp.mock
-    let rejection = ClerkAPIError(code: "verification_code_rate_limit_exceeded", statusCode: 429)
+    let rejection = ClerkAPIError(code: code, statusCode: 429)
     transport.stub(SignUpAPI.prepareVerification(signUpId: FakeTransport.anyPathSegment, params: .init(strategy: .emailLink))) { _ in
       throw rejection
     }

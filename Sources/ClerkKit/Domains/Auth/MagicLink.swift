@@ -225,7 +225,7 @@ final class MagicLinkStore {
     case .signIn:
       isClientError(error)
     case .signUp:
-      (error as? ClerkAPIError)?.code == "verification_code_rate_limit_exceeded"
+      ["verification_code_rate_limit_exceeded", "too_many_requests"].contains((error as? ClerkAPIError)?.code)
     }
   }
 
