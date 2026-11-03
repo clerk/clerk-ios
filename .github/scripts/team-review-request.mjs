@@ -21,6 +21,18 @@ function ratedHighRisk(comments, head) {
   });
 }
 
+function latestReviews(reviews) {
+  const latest = new Map();
+  for (const review of reviews) {
+    if (review.user && review.state !== 'COMMENTED' && review.state !== 'PENDING') {
+      latest.set(review.user.login, review);
+    } else if (review.user && !latest.has(review.user.login)) {
+      latest.set(review.user.login, review);
+    }
+  }
+  return latest;
+}
+
 const PROTECTED_NOTICE =
   "This pull request changes files listed in `.github/protected-paths`, so it needs an approval from another Team Mobile member before it can merge. CodeRabbit's approval isn't enough for these files.";
 
@@ -66,8 +78,11 @@ async function teamReviewRequest({ fetch, api, token, teamToken, repo, number })
   const team = (await Promise.all(members.map(async login => ((await trusted(get, login)) ? login : null)))).filter(login => login !== null);
   const pending = await teamGet(`/repos/${repo}/pulls/${number}/requested_reviewers`);
   const asked = new Set([author, ...pending.users.map(user => user.login)]);
-  for (const review of await paged(get, `/pulls/${number}/reviews`)) {
-    asked.add(review.user?.login);
+  // A push dismisses earlier approvals, so a member whose approval was dismissed counts as not asked yet.
+  for (const [login, review] of latestReviews(await paged(get, `/pulls/${number}/reviews`))) {
+    if (review.state !== 'DISMISSED') {
+      asked.add(login);
+    }
   }
   if (pending.teams.some(requested => requested.slug === TEAM) || team.some(login => login !== author && asked.has(login))) {
     return 'Team Mobile is already requested, or a member is requested or has reviewed.';

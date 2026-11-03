@@ -169,6 +169,16 @@ describe('team review request', () => {
     assert.deepEqual(teams, ['team-mobile']);
   });
 
+  it('requests the team again when a push dismissed the only member review', async () => {
+    const { teams } = await run({ reviews: [review('wobsoriano', 'APPROVED'), review('wobsoriano', 'DISMISSED')] });
+    assert.deepEqual(teams, ['team-mobile']);
+  });
+
+  it('requests nobody while a member who requested changes is still reviewing', async () => {
+    const { teams } = await run({ reviews: [review('swolfand', 'CHANGES_REQUESTED'), review('swolfand', 'COMMENTED')] });
+    assert.deepEqual(teams, []);
+  });
+
   it('requests nobody once Team Mobile approved', async () => {
     const { requested, teams } = await run({ reviews: [review('wobsoriano', 'APPROVED')] });
     assert.deepEqual(requested, []);
