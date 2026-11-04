@@ -526,7 +526,13 @@ extension Clerk {
   ///
   /// ```swift
   /// .onOpenURL { url in
-  ///   Task { try? await clerk.handle(url) }
+  ///   Task {
+  ///     do {
+  ///       try await clerk.handle(url)
+  ///     } catch {
+  ///       // Show the error to the user.
+  ///     }
+  ///   }
   /// }
   /// ```
   @discardableResult
