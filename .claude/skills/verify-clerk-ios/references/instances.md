@@ -40,9 +40,19 @@ Call `host.useSettings` anywhere in a test, as many times as it needs. A call ch
 
 Any leaf of the instance config works, not only the leaves in `base.json`. Clerk checks the request with a dry run before anything changes. A leaf that does not exist fails the call and lists the leaves beside it. A value Clerk refuses, or would store differently, also fails the call, and nothing changes. The Platform API cannot turn off reverification, the development-mode banner, test mode, or PII protection.
 
+## Require a minimum app version
+
+A minimum app version isn't a leaf that `host.useSettings` can name, because the bundle ID in its path holds dots and the app must be registered first. A test calls this instead:
+
+```ts
+await host.useMinimumAppVersion({ minimumVersion: '2.0', updateUrl: 'https://apps.apple.com/app/id000000000' });
+```
+
+The CLI registers the app under test with the application, which a later call finds already done, and sets the minimum through the Platform API config key `native_app_minimum_versions`. It then waits until `native_app_settings.minimum_supported_version` in the public `/v1/environment` shows it. Call it again in the same test to change the minimum. Clerk's `native_app_force_update` flag must be on for the instance.
+
 ## Restore
 
-When a test ends, pass or fail, the CLI puts back every leaf that the test changed, to the value it read before the first change. A leaf changed twice goes back to its value before the first change. The next test starts on the standard settings again.
+When a test ends, pass or fail, the CLI puts back every leaf that the test changed, to the value it read before the first change. A leaf changed twice goes back to its value before the first change. It deletes any minimum app version the test set and leaves the app registered. The next test starts on the standard settings again.
 
 The restore runs in three places, so a crash does not leave the application changed:
 

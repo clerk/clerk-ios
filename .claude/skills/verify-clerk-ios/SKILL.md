@@ -121,6 +121,8 @@ Locate nodes with `screen.getByTestId(...)`. The SDK's identifiers start with `c
 
 A test that needs other settings than the standard ones calls `host.useSettings` with the config leaves to change, as in `await host.useSettings({ config: { 'auth_multi_factor.required_for_sign_up': true } })`. The CLI puts them back when the test ends, pass or fail. `e2e-tests/bin/control-clerk-ios settings <prefix>` prints which settings of this worktree's application are on or off, one leaf per line. [Test instances](references/instances.md) has the call, the restore, and the leaves that tests often change.
 
+A test of the update screen calls `host.useMinimumAppVersion({ minimumVersion, updateUrl })`, which registers the app under test with the application and sets its minimum. The CLI removes the minimum when the test ends, pass or fail. [Test instances](references/instances.md) has the details.
+
 ### Check your work
 
 The specs under `specs/features/<feature>/` are committed and cover the feature map in `features/`. Prove your own change, and leave the rest of the committed specs to CI. `.github/workflows/verify-e2e.yml` runs every one of them on `main` each night at 07:17 UTC, and the release workflow (`.github/workflows/release-sdk.yml`) runs them again before an SDK version is published. When your change is to behavior a committed spec already covers, that spec is your proof: run it. A spec covers a behavior only when it asserts on it. A spec that passes through the screen you changed without checking what you changed is not your proof. Run another feature's specs yourself when you changed code that feature shares, because nothing runs them on a pull request. For new work:
