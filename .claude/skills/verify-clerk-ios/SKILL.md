@@ -239,6 +239,7 @@ $ git switch <branch>
 $ e2e-tests/bin/control-clerk-ios up --backend remote
 $ e2e-tests/bin/control-clerk-ios run specs/explored/<name>.e2e.ts
 $ gh pr create --draft
+$ # in a Claude Code cloud session, open the draft with gh api repos/clerk/clerk-ios/pulls -f title='<title>' -f head=<branch> -f base=main -F draft=true -F body=@<file> instead
 $ e2e-tests/bin/control-clerk-ios attach <run-id> --pr <n> --screenshot <label> --before <before-run-id>
 $ e2e-tests/bin/control-clerk-ios down
 $ sh -c 'for i in $(seq 40); do gh api repos/clerk/clerk-ios/pulls/<n> --jq .body | sed -n "/<!-- verify-evidence:ios -->/,/<!-- \/verify-evidence:ios -->/p" | grep -q "| :---:" && exit 0; sleep 15; done; exit 1' && gh pr ready <n>
