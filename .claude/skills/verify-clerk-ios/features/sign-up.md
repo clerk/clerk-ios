@@ -30,7 +30,7 @@ Preconditions:
 
 ## Gotchas
 
-- Sign-up mode still uses the start screen's `clerk.auth.start.identifier` field for the email.
+- Sign-up mode still uses the start screen's `clerk.auth.start.identifier` field for the email. AuthView trims what is typed there, then signs up with it as an email address when it holds `@` and as a username when it does not (`AuthStartView.swift`).
 - Always take the email from `host.newEmail`. The run finds the user that the form created by the run tag in that email, and `attach` refuses a run that shows a user it cannot account for.
 - `clerk.auth.signUp.password` matches more than one node, because the SDK sets the identifier on the row that holds the secure field and the reveal button. The field comes first. Find it with `.first()`, wait for it to be visible, and fill that locator.
 - The password field is a secure field, and the screen withholds its value. `host.fill` types the password once and cannot confirm that it landed, so assert on what the form does next.

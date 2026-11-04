@@ -35,5 +35,5 @@ Preconditions:
 - Behind an HTTPS debugging proxy, a simulator that does not trust the proxy's CA shows only the AuthView header. See `doctor`'s `proxy-trust` check.
 - `Signed out` on the home is readable only after the sheet has closed, which is how the dismiss test knows the sheet is gone.
 - AuthView remembers identifiers between launches by default. E2EHost turns that off with `persistsIdentifiers(false)`, so the field starts empty on every launch that passes no `initialIdentifier`.
-- The identifier is a launch input, `verifyInitialIdentifier`. E2EHost has no element of its own for it. The full-screen AuthView reads it, and the AuthView in the home's sheet does not.
+- The identifier is a launch input, `verifyInitialIdentifier`. E2EHost has no element of its own for it. The full-screen AuthView reads it, and the AuthView in the home's sheet does not. Pass a phone number with its leading `+` and country code, as `user.phone` holds it. `AuthView.initialIdentifier(_:)` may not take a number without them for a phone number, and otherwise sends it under the country that the phone field has selected.
 - The phone text field reports the number as its value and has no text, so assert on it with `toHaveValue`.
