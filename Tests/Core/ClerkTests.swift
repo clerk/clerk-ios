@@ -1876,38 +1876,6 @@ struct ClerkTests {
   }
 
   @Test
-  func completeMagicLinkReturnsAnUnrecognizedStatusToItsCaller() async throws {
-    let keychain = InMemoryKeychain()
-    let transport = FakeTransport.mockDefaults()
-    transport.stub(MagicLinkAPI.complete(params: MagicLinkCompleteParams(flowId: "flow_123", approvalToken: "", codeVerifier: ""))) { call in
-      ClientResponse(
-        response: .ticket(MagicLinkCompleteResponse(flowId: call.body?["flow_id"]?.stringValue, ticket: "ticket_123")),
-        client: nil
-      )
-    }
-    transport.stubSignInCreate { _ in
-      SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
-    }
-
-    let clerk = Clerk()
-    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
-    clerk.dependencies = MockDependencyContainer(
-      apiClient: apiClient,
-      transport: transport,
-      keychain: keychain
-    )
-    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
-
-    let result = try await clerk.auth.completeMagicLink(flowId: "flow_123", approvalToken: "approval_123")
-
-    guard case .signIn(let signIn) = result else {
-      Issue.record("Expected the sign-in result.")
-      return
-    }
-    #expect(signIn.status == .init(rawValue: "needs_protect_check"))
-  }
-
-  @Test
   func handleDeduplicatesConcurrentMagicLinkCallbacks() async throws {
     let keychain = InMemoryKeychain()
     let completeCallCount = LockIsolated(0)

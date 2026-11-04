@@ -854,7 +854,7 @@ extension Auth {
           flowId: flowId,
           approvalToken: approvalToken
         )
-        try result.throwIfStatusIsUnrecognized()
+        try result.ensureStatusIsKnown()
         return result
       }
     }

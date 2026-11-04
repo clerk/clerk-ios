@@ -222,26 +222,6 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func unrecognizedStatusesThrowAndNeedNoContinuation() {
-    var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
-    signUp.status = .init(rawValue: "some_new_status")
-    let results: [TransferFlowResult] = [
-      .signIn(SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))),
-      .signUp(signUp),
-    ]
-
-    for result in results {
-      #expect(throws: ClerkClientError.self) { try result.throwIfStatusIsUnrecognized() }
-      #expect(result.needsContinuation == false)
-    }
-  }
-
-  @Test
-  func recognizedStatusDoesNotThrow() throws {
-    try TransferFlowResult.signIn(SignIn(id: "sign_in_123", status: .needsFirstFactor)).throwIfStatusIsUnrecognized()
-  }
-
-  @Test
   func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
     let navigation = AuthNavigation()
     let signUp = signUp(

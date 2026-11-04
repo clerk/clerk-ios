@@ -99,4 +99,16 @@ extension SignIn.Status {
       false
     }
   }
+
+  var isUnknown: Bool {
+    if case .unknown = self { true } else { false }
+  }
+}
+
+extension SignIn {
+  package func ensureStatusIsKnown() throws {
+    if status.isUnknown {
+      throw unknownAuthStatusError(status.rawValue)
+    }
+  }
 }
