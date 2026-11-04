@@ -558,6 +558,27 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    try await authenticateWithOAuth(
+      provider: provider,
+      createHandOffUrl: nil,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata
+    ) { url in
+      try await WebAuthentication(
+        url: url,
+        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+      ).start()
+    }
+  }
+
+  @MainActor
+  func authenticateWithOAuth(
+    provider: OAuthProvider,
+    createHandOffUrl: URL?,
+    transferable: Bool,
+    unsafeMetadata: JSON?,
+    openBrowser: @MainActor (URL) async throws -> URL
+  ) async throws -> TransferFlowResult {
     let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
@@ -566,26 +587,37 @@ extension SignIn {
       )
     )).value.response
 
+    let url: URL
     if signIn.status.isUnknown {
-      return .signIn(signIn)
+      // A blocked prepare builds no verification, so a URL on its response is left over from an earlier attempt.
+      guard let createHandOffUrl else {
+        return .signIn(signIn)
+      }
+      url = createHandOffUrl
+    } else {
+      guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+            let redirectUrl = URL(string: externalVerificationRedirectUrl)
+      else {
+        throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
+      }
+      url = redirectUrl
     }
 
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
-    }
-
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
+    let callbackUrl = try await openBrowser(url)
     return try await signIn.handleRedirectCallbackUrl(
       callbackUrl,
       transferable: transferable,
       unsafeMetadata: unsafeMetadata
     )
+  }
+
+  var oauthHandOffUrl: URL? {
+    guard firstFactorVerification?.status == .unverified,
+          let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl
+    else {
+      return nil
+    }
+    return URL(string: redirectUrl)
   }
   #endif
 

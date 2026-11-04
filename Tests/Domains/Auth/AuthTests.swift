@@ -247,6 +247,80 @@ struct AuthTests {
     #expect(prepareCount.value == 1)
   }
 
+  private func stubOAuthStart(
+    createVerification: Verification,
+    prepared: SignIn
+  ) {
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in
+      SignIn(id: "sign_in_123", status: .needsFirstFactor, firstFactorVerification: createVerification)
+    }
+    transport.stubSignInPrepareFirstFactor { _, _ in prepared }
+    transport.stub(SignInAPI.get(signInId: FakeTransport.anyPathSegment, params: .init())) { _ in
+      ClientResponse(response: SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check")), client: nil)
+    }
+    configureDependencies(transport: transport)
+  }
+
+  private func startOAuthRecordingBrowser() async throws -> (TransferFlowResult, [URL]) {
+    var openedUrls: [URL] = []
+    let result = try await Clerk.shared.auth.signInWithOAuth(
+      provider: .google,
+      transferable: true,
+      unsafeMetadata: nil
+    ) { url in
+      openedUrls.append(url)
+      return try #require(URL(string: "myapp://callback"))
+    }
+    return (result, openedUrls)
+  }
+
+  @Test(arguments: blockedPrepareVerifications)
+  func signInWithOAuthOpensTheUrlFromCreateWhenPrepareIsBlocked(
+    verification: Verification?
+  ) async throws {
+    let createUrl = "https://accounts.example.com/from-create"
+    stubOAuthStart(
+      createVerification: Verification(status: .unverified, strategy: .oauth(.google), externalVerificationRedirectUrl: createUrl),
+      prepared: SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"), firstFactorVerification: verification)
+    )
+
+    let (result, openedUrls) = try await startOAuthRecordingBrowser()
+
+    #expect(openedUrls.map(\.absoluteString) == [createUrl])
+    expectBlockedByUnrecognizedStatus(result)
+  }
+
+  @Test
+  func signInWithOAuthDoesNotOpenAUrlFromCreateThatIsNotUnverified() async throws {
+    stubOAuthStart(
+      createVerification: Verification(status: .verified, strategy: .oauth(.google), externalVerificationRedirectUrl: "https://accounts.example.com/from-create"),
+      prepared: SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+    )
+
+    let (result, openedUrls) = try await startOAuthRecordingBrowser()
+
+    #expect(openedUrls.isEmpty)
+    expectBlockedByUnrecognizedStatus(result)
+  }
+
+  @Test
+  func signInWithOAuthOpensThePreparedUrlWhenPrepareIsNotBlocked() async throws {
+    let preparedUrl = "https://accounts.example.com/from-prepare"
+    stubOAuthStart(
+      createVerification: Verification(status: .unverified, strategy: .oauth(.google), externalVerificationRedirectUrl: "https://accounts.example.com/from-create"),
+      prepared: SignIn(
+        id: "sign_in_123",
+        status: .needsFirstFactor,
+        firstFactorVerification: Verification(status: .unverified, strategy: .oauth(.google), externalVerificationRedirectUrl: preparedUrl)
+      )
+    )
+
+    let (_, openedUrls) = try await startOAuthRecordingBrowser()
+
+    #expect(openedUrls.map(\.absoluteString) == [preparedUrl])
+  }
+
   @Test(arguments: blockedPrepareVerifications)
   func signInWithEnterpriseSSOReturnsAnUnrecognizedStatusInsteadOfRedirecting(
     verification: Verification?
