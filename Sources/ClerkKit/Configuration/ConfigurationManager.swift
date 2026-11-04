@@ -118,7 +118,7 @@ final class ConfigurationManager {
   ///
   /// - Parameter publishableKey: The publishable key to extract the URL from (must be validated).
   /// - Returns: The extracted frontend API URL.
-  /// - Throws: `ClerkInitializationError.invalidPublishableKeyFormat` if the key format is invalid or doesn't decode to a URL with a host.
+  /// - Throws: `ClerkInitializationError.invalidPublishableKeyFormat` if the key format is invalid or doesn't decode to only a host containing a `.`, followed by exactly one `$`.
   private func extractFrontendApiUrl(from publishableKey: String) throws -> String {
     let liveRegex = Regex {
       "pk_live_"
@@ -135,13 +135,17 @@ final class ConfigurationManager {
     }
 
     guard let match = publishableKey.firstMatch(of: liveRegex)?.output.1 ?? publishableKey.firstMatch(of: testRegex)?.output.1,
-          let apiUrl = String(match).base64String()
+          let decodedKey = String(match).base64String(),
+          decodedKey.hasSuffix("$")
     else {
       throw ClerkInitializationError.invalidPublishableKeyFormat
     }
 
-    let frontendApiUrl = "https://\(apiUrl.dropLast())"
-    guard URL(string: frontendApiUrl)?.host?.isEmpty == false else {
+    let frontendApiHost = decodedKey.dropLast()
+    let frontendApiUrl = "https://\(frontendApiHost)"
+    guard frontendApiHost.allSatisfy({ !"$/?#@:% ".contains($0) }),
+          URL(string: frontendApiUrl)?.host?.contains(".") == true
+    else {
       throw ClerkInitializationError.invalidPublishableKeyFormat
     }
     return frontendApiUrl
