@@ -36,7 +36,7 @@ extension Clerk {
     guard Self.shouldWarnAboutMissingUpdateScreen(
       status: status,
       updateRequiredViewEnabled: options.updateRequiredViewEnabled,
-      updateScreenIsAvailable: ClerkAutomaticPresenterLoader.isAvailable,
+      updateScreenIsAvailable: updateScreenIsAvailable(),
       alreadyWarned: warnedAboutMissingUpdateScreen
     ) else {
       return

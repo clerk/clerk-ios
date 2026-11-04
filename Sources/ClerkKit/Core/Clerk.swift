@@ -167,6 +167,9 @@ public final class Clerk {
   @ObservationIgnored
   var warnedAboutMissingUpdateScreen = false
 
+  @ObservationIgnored
+  var updateScreenIsAvailable: () -> Bool = { ClerkAutomaticPresenterLoader.isAvailable }
+
   package struct EnvironmentRefreshCheckpoint: Equatable {
     fileprivate let revision: Int
   }

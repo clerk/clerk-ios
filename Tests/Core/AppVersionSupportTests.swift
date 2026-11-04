@@ -40,6 +40,16 @@ struct AppVersionSupportTests {
     ) == expected)
   }
 
+  @Test(arguments: [(updateScreenIsAvailable: false, warns: true), (updateScreenIsAvailable: true, warns: false)])
+  func aBlockedAppRecordsTheWarningOnlyWhenItHasNoUpdateScreen(updateScreenIsAvailable: Bool, warns: Bool) {
+    let clerk = makeClerk()
+    clerk.updateScreenIsAvailable = { updateScreenIsAvailable }
+
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
+
+    #expect(clerk.warnedAboutMissingUpdateScreen == warns)
+  }
+
   @Test
   func warnsAboutAMissingUpdateScreenWhenABuildMeetsItsMinimum() {
     let clerk = makeClerk()
