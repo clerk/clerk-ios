@@ -60,7 +60,7 @@ The restore runs in three places, so a crash does not leave the application chan
 - `run` restores after e2e exits, in case e2e was stopped before the fixture could.
 - The next `run` or `up` restores what a crashed CLI left. The CLI writes the old values to the worktree's state file before it changes anything, so it can always put them back.
 
-`run.json` has one `settings` entry per call: `at` is the spec line that called `host.useSettings`, `changed` lists each leaf with `from` and `to`, `shown` lists the environment leaves that showed the change, and `restored` says the leaves went back. `attach` refuses a run with an entry that was not restored.
+`run.json` has one `settings` entry per call: `at` is the spec line that called `host.useSettings` or `host.useMinimumAppVersion`, `changed` lists each leaf with `from` and `to`, `shown` lists the environment leaves that showed the change, and `restored` says the leaves went back. `attach` refuses a run with an entry that was not restored.
 
 ## See the settings
 

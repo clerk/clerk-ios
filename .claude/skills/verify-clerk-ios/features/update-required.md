@@ -4,10 +4,9 @@ An instance sets a minimum version for an app. A build below it can't use Clerk:
 
 ## Sub-features
 
-- The update screen covers a signed-in user's app on a build below the minimum, with `Your version`, `Required`, and `Go to App Store`.
-- Lowering the minimum returns the same user and session.
-- The update screen covers a signed-out user's app too.
-- A build at the minimum opens as usual.
+- `signed-in` covers a signed-in user's app with the update screen on a build below the minimum, showing `Your version`, `Required`, and `Go to App Store`. Lowering the minimum returns the same user and session.
+- `signed-out` covers a signed-out user's app with the update screen too.
+- `at-the-minimum` leaves a build at the minimum to open as usual.
 
 ## How to get to it (user POV)
 
@@ -21,20 +20,22 @@ Preconditions:
 - Clerk's `native_app_force_update` flag must be on for the instance. It's on globally, and with it off the call fails.
 - E2EHost's version is `1.0`, its `MARKETING_VERSION` in `Examples/Quickstart/Quickstart.xcodeproj`. The spec uses `2.0` to block it.
 
-- **Blocked, then allowed.** Run `e2e-tests/bin/control-clerk-ios run update-required --grep "signed-in user"`. The spec signs in with a ticket, sets the minimum to `2.0`, and relaunches with `keepStorage: true`. It then lowers the minimum to `1.0`, relaunches, and checks the session ID has not changed.
-- **Signed out.** Run `e2e-tests/bin/control-clerk-ios run update-required --grep "signed-out user"`.
-- **At the minimum.** Run `e2e-tests/bin/control-clerk-ios run update-required --grep "at the minimum"`.
+- **Signed in.** Run `e2e-tests/bin/control-clerk-ios run update-required --grep "signed-in user"`. The spec signs in with a ticket, sets the minimum to `2.0`, and relaunches with `keepStorage: true`. It expects `1.0`, `2.0+`, and `Go to App Store` (screenshot `update-required`). It then lowers the minimum to `1.0`, relaunches, and expects the same user and session ID on the home (screenshot `signed-in-after-lowering`).
+- **Signed out.** Run `e2e-tests/bin/control-clerk-ios run update-required --grep "signed-out user"`. The spec sets the minimum to `2.0` before the first launch, then expects the update screen and `2.0+` (screenshot `update-required-signed-out`).
+- **At the minimum.** Run `e2e-tests/bin/control-clerk-ios run update-required --grep "at the minimum"`. The spec sets the minimum to `1.0`, signs in with a ticket, and expects the signed-in home with no update screen.
 - **Proof.** `specs/features/update-required/update-required.e2e.ts` passes. The video shows the update screen with `1.0` and `2.0+`, then the home with the same user and session ID.
 
 ## States a spec cannot reach
 
-- `Can't update? Get Help` shows only when the instance has a support email (`displayConfig.supportEmail` in `UpdateRequiredView.swift`). The Platform API config has no support email leaf, so a spec cannot set one.
-- A screen with no `Go to App Store` needs a minimum with no update URL, and Clerk requires one (`validateNativeAppMinimum` in clerk_go), so only a local patch reaches it.
-- An app's own screen needs `updateRequiredViewEnabled: false`, which E2EHost's `Clerk.Options` does not pass, and the home would need to show `appVersionSupportStatus`.
-- `Go to App Store` opens an outside app with a placeholder URL, so the spec checks that the button shows and does not tap it.
+| State | Where the app decides | What it takes |
+| --- | --- | --- |
+| `Can't update? Get Help` | `UpdateRequiredView.swift`, `supportURL`, from `displayConfig.supportEmail` | A support email on the instance. The Platform API config has no leaf for it, so a spec cannot set one |
+| The screen with no `Go to App Store` | `UpdateRequiredView.swift`, `actions`, when `status.updateURL` is nil | A minimum with no update URL. Clerk requires one (`validateNativeAppMinimum` in clerk_go), so only a local patch reaches it |
+| An app's own screen instead of Clerk's | `ClerkAutomaticPresenter.swift`, `options.updateRequiredViewEnabled` | `updateRequiredViewEnabled: false` in E2EHost's `Clerk.Options`, and a home that shows `appVersionSupportStatus` |
 
 ## Gotchas
 
+- `Go to App Store` opens an outside app with a placeholder URL, so the spec checks that the button shows and does not tap it.
 - The screen has no accessibility identifiers, so the spec finds it by its text. A change to that wording changes the spec.
 - A minimum applies to the next request or launch. The spec relaunches instead of waiting for a running app to foreground.
 - The subtitle names the application, which here is the `verify-throwaway-...` name. Don't assert on it.
