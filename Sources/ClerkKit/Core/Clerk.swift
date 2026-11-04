@@ -164,6 +164,9 @@ public final class Clerk {
   @ObservationIgnored
   var automaticPresenter: (any ClerkAutomaticPresenter)?
 
+  @ObservationIgnored
+  var warnedAboutMissingUpdateScreen = false
+
   package struct EnvironmentRefreshCheckpoint: Equatable {
     fileprivate let revision: Int
   }

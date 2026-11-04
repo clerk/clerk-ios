@@ -17,6 +17,57 @@ struct AppVersionSupportTests {
     return clerk
   }
 
+  @Test(arguments: [
+    (updateRequiredViewEnabled: true, updateScreenIsAvailable: false, alreadyWarned: false, expected: true),
+    (updateRequiredViewEnabled: false, updateScreenIsAvailable: false, alreadyWarned: false, expected: false),
+    (updateRequiredViewEnabled: true, updateScreenIsAvailable: true, alreadyWarned: false, expected: false),
+    (updateRequiredViewEnabled: true, updateScreenIsAvailable: false, alreadyWarned: true, expected: false),
+  ])
+  func warnsOnceWhenABlockedAppHasNoUpdateScreen(
+    updateRequiredViewEnabled: Bool,
+    updateScreenIsAvailable: Bool,
+    alreadyWarned: Bool,
+    expected: Bool
+  ) {
+    let clerk = makeClerk()
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
+
+    #expect(Clerk.shouldWarnAboutMissingUpdateScreen(
+      status: clerk.appVersionSupportStatus,
+      updateRequiredViewEnabled: updateRequiredViewEnabled,
+      updateScreenIsAvailable: updateScreenIsAvailable,
+      alreadyWarned: alreadyWarned
+    ) == expected)
+  }
+
+  @Test
+  func warnsAboutAMissingUpdateScreenWhenABuildMeetsItsMinimum() {
+    let clerk = makeClerk()
+    clerk.applyRefreshedEnvironment(.withIOSPolicy(
+      bundleID: "com.example.app",
+      minimumVersion: "1.0",
+      updateURL: "https://apps.apple.com/app/id123"
+    ))
+
+    #expect(clerk.appVersionSupportStatus.isSupported)
+    #expect(Clerk.shouldWarnAboutMissingUpdateScreen(
+      status: clerk.appVersionSupportStatus,
+      updateRequiredViewEnabled: true,
+      updateScreenIsAvailable: false,
+      alreadyWarned: false
+    ))
+  }
+
+  @Test
+  func doesNotWarnAboutAMissingUpdateScreenWithoutAMinimum() {
+    #expect(!Clerk.shouldWarnAboutMissingUpdateScreen(
+      status: makeClerk().appVersionSupportStatus,
+      updateRequiredViewEnabled: true,
+      updateScreenIsAvailable: false,
+      alreadyWarned: false
+    ))
+  }
+
   @Test
   func appVersionIsSupportedByDefault() {
     #expect(makeClerk().appVersionSupportStatus.isSupported)
