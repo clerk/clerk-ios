@@ -286,6 +286,8 @@ public struct Auth {
   /// attempt and authenticates it immediately.
   ///
   /// - Returns: A `SignIn` object representing the sign-in attempt.
+  ///   If preparing returns a status this SDK version doesn't recognize, the passkey request doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the passkey sign-in fails.
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
