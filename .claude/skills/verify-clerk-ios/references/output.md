@@ -40,7 +40,7 @@ On failure the object is `{ "ok": false, "error": { "code", "message", "fix", "r
 | `LEASE_LOST` | The leased device is gone |
 | `BUILD_FAILED` | The E2EHost build failed. The message has the last lines of the build output. With the remote backend, also that GitHub does not have HEAD, or that the uncommitted changes to the app sources do not apply to it, change a file outside the app sources, or are larger than 16 MiB. A session on `main` refuses uncommitted changes |
 | `KEYS_MISSING` | No Platform API credential works on this machine, or `AI_GATEWAY_API_KEY_FILE` names a file that is missing, empty, or readable by other users |
-| `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs, or Clerk refused the change that a `host.useSettings` call asked for |
+| `INSTANCE_MISCONFIGURED` | The Clerk instance does not show the settings a spec needs, or Clerk refused the change that a `host.useSettings` or `host.useMinimumAppVersion` call asked for |
 | `NOT_TEST_IDENTITY` | Reserved. No command raises it. A run whose `app.log` names a user that the run did not create fails `attach` with `EVIDENCE_UNSAFE` |
 | `NO_SPECS` | The selection matched no spec, or no selected spec ran |
 | `E2E_CRASHED` | e2e exited without a readable report. Read `e2e.log` in the run directory |
