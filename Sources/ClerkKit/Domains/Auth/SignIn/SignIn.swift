@@ -687,6 +687,7 @@ extension SignIn {
           params: .init(strategy: .passkey, redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl)
         )).value.response
       }
+      try signIn.ensureStatusIsKnown()
     } catch {
       throw PasskeyAuthenticationFailure(
         stage: usesSecondFactor ? .preparingSecondFactor : .preparingFirstFactor,
