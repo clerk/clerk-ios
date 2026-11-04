@@ -312,6 +312,8 @@ public struct Auth {
   ///     Pass the ``Factor/enterpriseConnectionId`` of one of the sign-in's `enterpriseSSO` supported first factors.
   ///   - redirectUrl: Optional callback URL to override the global Clerk redirect configuration.
   /// - Returns: A prepared `SignIn` object configured for Enterprise SSO.
+  ///   Check its status before opening the URL. If preparing returns a status this SDK version doesn't
+  ///   recognize, the status is ``SignIn/Status/unknown(_:)`` and the flow can't continue.
   /// - Throws: An error if creating or preparing the Enterprise SSO sign-in fails.
   @discardableResult
   public func startEnterpriseSSO(

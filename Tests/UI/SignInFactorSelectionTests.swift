@@ -11,6 +11,32 @@ struct SignInFactorSelectionTests {
   }
 
   @Test
+  func startScreenLeavesAnUnrecognizedStatusToNavigationInsteadOfStartingEnterpriseSSO() {
+    Clerk.shared.environment = .mock
+
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .init(rawValue: "needs_protect_check"),
+      supportedFirstFactors: [Factor(strategy: .enterpriseSSO)]
+    )
+
+    #expect(!AuthStartView.startsEnterpriseSSO(signIn))
+  }
+
+  @Test
+  func startScreenStartsEnterpriseSSOForARecognizedStatus() {
+    Clerk.shared.environment = .mock
+
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsFirstFactor,
+      supportedFirstFactors: [Factor(strategy: .enterpriseSSO)]
+    )
+
+    #expect(AuthStartView.startsEnterpriseSSO(signIn))
+  }
+
+  @Test
   func startingFirstFactorUsesPreferenceOverPreparedVerificationStrategy() {
     var environment = Clerk.Environment.mock
     environment.displayConfig.preferredSignInStrategy = .password

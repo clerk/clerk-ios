@@ -222,28 +222,6 @@ struct AuthNavigationTests {
   }
 
   @Test
-  func startScreenLeavesAnUnrecognizedStatusToNavigationInsteadOfStartingEnterpriseSSO() {
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .init(rawValue: "needs_protect_check"),
-      supportedFirstFactors: [Factor(strategy: .enterpriseSSO)]
-    )
-
-    #expect(!AuthStartView.startsEnterpriseSSO(signIn))
-  }
-
-  @Test
-  func startScreenStartsEnterpriseSSOForARecognizedStatus() {
-    let signIn = SignIn(
-      id: "sign_in_123",
-      status: .needsFirstFactor,
-      supportedFirstFactors: [Factor(strategy: .enterpriseSSO)]
-    )
-
-    #expect(AuthStartView.startsEnterpriseSSO(signIn))
-  }
-
-  @Test
   func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
     let navigation = AuthNavigation()
     let signUp = signUp(
