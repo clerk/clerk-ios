@@ -32,6 +32,7 @@ Preconditions:
 | `Can't update? Get Help` | `UpdateRequiredView.swift`, `supportURL`, from `displayConfig.supportEmail` | A support email on the instance. The Platform API config has no leaf for it, so a spec cannot set one |
 | The screen with no `Go to App Store` | `UpdateRequiredView.swift`, `actions`, when `status.updateURL` is nil | A minimum with no update URL. Clerk requires one (`validateNativeAppMinimum` in clerk_go), so only a local patch reaches it |
 | An app's own screen instead of Clerk's | `ClerkAutomaticPresenter.swift`, `options.updateRequiredViewEnabled` | `updateRequiredViewEnabled: false` in E2EHost's `Clerk.Options`, and a home that shows `appVersionSupportStatus` |
+| The debug warning that the update screen can't show | `Clerk+AppVersionSupport.swift`, `warnIfUpdateScreenIsMissing` | A Debug app on iOS or macOS that links only ClerkKit. E2EHost links ClerkKitUI, so only a local patch to `updateScreenIsAvailable` reaches it. It's a log line with no UI |
 
 ## Gotchas
 

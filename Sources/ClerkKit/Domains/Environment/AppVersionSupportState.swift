@@ -21,9 +21,11 @@ struct AppVersionSupportState {
   }
 
   var appBuild = AppBuild.current
+  var updateScreenIsAvailable = ClerkAutomaticPresenterLoader.isAvailable
   private var environmentStatus: Clerk.AppVersionSupportStatus?
   private var serverAnswer: ServerAnswer?
   private var lastAnswerRequestSequence: Int?
+  private var warnedAboutMissingUpdateScreen = false
 
   var status: Clerk.AppVersionSupportStatus {
     switch serverAnswer {
@@ -62,6 +64,18 @@ struct AppVersionSupportState {
     environmentStatus = nil
     serverAnswer = nil
     lastAnswerRequestSequence = nil
+    warnedAboutMissingUpdateScreen = false
+  }
+
+  /// Returns `true` the first time this app has a minimum version but no update screen to show.
+  mutating func claimMissingUpdateScreenWarning(updateRequiredViewEnabled: Bool) -> Bool {
+    let currentStatus = status
+    let appHasMinimum = !currentStatus.isSupported || currentStatus.minimumVersion != nil
+    guard appHasMinimum, updateRequiredViewEnabled, !updateScreenIsAvailable, !warnedAboutMissingUpdateScreen else {
+      return false
+    }
+    warnedAboutMissingUpdateScreen = true
+    return true
   }
 
   private mutating func acceptAnswer(requestSequence: Int?) -> Bool {

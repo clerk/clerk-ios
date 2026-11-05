@@ -130,13 +130,15 @@ package enum ClerkLogger {
     logSync(level: .error, message: message, error: error, forceLog: true, file: file, function: function, line: line)
   }
 
+  @discardableResult
   static func warning(
     _ message: String,
+    force: Bool = false,
     file: String = #file,
     function: String = #function,
     line: Int = #line
-  ) {
-    logSync(level: .warning, message: message, file: file, function: function, line: line)
+  ) -> Task<Void, Never> {
+    logSync(level: .warning, message: message, forceLog: force, file: file, function: function, line: line)
   }
 
   /// Log an info message (only logs when log level is set to info or lower)

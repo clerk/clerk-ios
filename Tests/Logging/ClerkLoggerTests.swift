@@ -89,6 +89,31 @@ struct ClerkLoggerTests {
   }
 
   @Test
+  func warning_WithDefaultForce_RespectsLogLevel() async {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+
+    await ClerkLogger.warning("default-force warning").value
+
+    #expect(lines.lines(containing: "default-force warning").isEmpty)
+  }
+
+  @Test
+  func warning_WithForceTrue_AlwaysLogs() async throws {
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+
+    await ClerkLogger.warning("forced warning", force: true).value
+
+    let line = try #require(lines.lines(containing: "forced warning").only)
+    #expect(line.level == .warning)
+    #expect(line.text.contains("[WARNING]"))
+    #expect(line.text.hasSuffix("- 🚨 forced warning"))
+  }
+
+  @Test
   func networkErrorsReachTheHandlerWithSecretsRedacted() async throws {
     let entries = LockIsolated<[LogEntry]>([])
     let options = Clerk.Options(
