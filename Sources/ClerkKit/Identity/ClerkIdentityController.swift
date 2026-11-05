@@ -212,7 +212,7 @@ extension ClerkIdentityController {
 
   private func endsSignedInSession(_ incoming: Client?) -> Bool {
     func signedInSessionIds(_ client: Client?) -> Set<String> {
-      Set((client?.sessions ?? []).filter { $0.status == .active || $0.status == .pending }.map(\.id))
+      Set((client?.signedInSessions ?? []).map(\.id))
     }
     return !signedInSessionIds(clerk?.client).isSubset(of: signedInSessionIds(incoming))
   }

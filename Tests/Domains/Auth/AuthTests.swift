@@ -1485,6 +1485,35 @@ struct AuthTests {
     #expect(activatedSessionId.value == "sess_123")
   }
 
+  private func signedOutSessions(during operation: () async throws -> Void) async throws -> [Session] {
+    let events = Clerk.shared.auth.events
+    try await operation()
+    Clerk.shared.auth.send(.accountDeleted)
+
+    var sessions: [Session] = []
+    for await event in events {
+      switch event {
+      case .signedOut(let session):
+        sessions.append(session)
+      case .accountDeleted:
+        return sessions
+      default:
+        continue
+      }
+    }
+    return sessions
+  }
+
+  private func signOutResponseData(object: String, response: some Encodable, client: Client?) throws -> Data {
+    let encoded = try JSONEncoder.clerkEncoder.encode(response)
+    var payload = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+    payload["object"] = object
+    let clientPayload: Any = try client.map {
+      try JSONSerialization.jsonObject(with: JSONEncoder.clerkEncoder.encode($0))
+    } ?? NSNull()
+    return try JSONSerialization.data(withJSONObject: ["response": payload, "client": clientPayload])
+  }
+
   private func captureNextAuthEvent(
     from clerk: Clerk,
     timeout: Duration = .milliseconds(250),
@@ -1774,6 +1803,78 @@ struct AuthTests {
       #expect(call.method == .delete)
       #expect(call.path == "/v1/client/sessions")
     }
+  }
+
+  @Test
+  func signOutOfAllSessionsEmitsSignedOutForEachSignedInSession() async throws {
+    configureDependencies(keychain: InMemoryKeychain())
+    var active = Session.mock
+    active.lastActiveToken = .mock
+    var pending = Session.mock2
+    pending.status = .pending
+    var expired = Session.mockExpired
+    expired.id = "sess_expired"
+    var client = Client.mock
+    client.sessions = [active, pending, expired]
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = client
+    try Mock(
+      url: URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.delete: signOutResponseData(object: "client", response: Client.mockSignedOut, client: .mockSignedOut)]
+    ).register()
+
+    let signedOut = try await signedOutSessions {
+      try await Clerk.shared.auth.signOut()
+    }
+
+    #expect(signedOut.map(\.id) == [active.id, pending.id])
+    #expect(signedOut.allSatisfy { $0.status == .removed && $0.lastActiveToken == nil })
+    #expect(Clerk.shared.client?.sessions.isEmpty == true)
+  }
+
+  @Test
+  func signOutOfOneSessionEmitsSignedOutOnce() async throws {
+    configureDependencies()
+    Clerk.shared.client = .mock
+    var removed = Session.mock
+    removed.status = .removed
+    var remaining = Client.mock
+    remaining.sessions = [.mock2]
+    remaining.lastActiveSessionId = Session.mock2.id
+    try Mock(
+      url: URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(removed.id)/remove")!,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.post: signOutResponseData(object: "session", response: removed, client: remaining)]
+    ).register()
+
+    let signedOut = try await signedOutSessions {
+      try await Clerk.shared.auth.signOut(sessionId: removed.id)
+    }
+
+    #expect(signedOut.map(\.id) == [removed.id])
+  }
+
+  @Test
+  func signOutEmitsNothingWhenTheRequestFails() async throws {
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.removeAll()) { _ in
+      throw URLError(.notConnectedToInternet)
+    }
+    configureDependencies(transport: transport)
+    Clerk.shared.client = .mock
+
+    let signedOut = try await signedOutSessions {
+      await #expect(throws: URLError.self) {
+        try await Clerk.shared.auth.signOut()
+      }
+    }
+
+    #expect(signedOut.isEmpty)
   }
 
   @Test(
