@@ -160,22 +160,19 @@ public struct Auth {
   ) async throws -> TransferFlowResult {
     try await signInWithOAuth(
       provider: provider,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    ) { url in
-      try await WebAuthentication(
-        url: url,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-      ).start()
-    }
+      unsafeMetadata: unsafeMetadata,
+      webAuthentication: SignIn.startOAuthWebAuthentication
+    )
   }
 
-  @MainActor
   func signInWithOAuth(
     provider: OAuthProvider,
+    prefersEphemeralWebBrowserSession: Bool,
     transferable: Bool,
     unsafeMetadata: JSON?,
-    openBrowser: @MainActor (URL) async throws -> URL
+    webAuthentication: OAuthWebAuthentication
   ) async throws -> TransferFlowResult {
     let signIn = try await transport.send(SignInAPI.create(params: .init(
       strategy: .oauth(provider),
@@ -184,9 +181,10 @@ public struct Auth {
     return try await signIn.authenticateWithOAuth(
       provider: provider,
       createHandOffUrl: signIn.oauthHandOffUrl,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable,
       unsafeMetadata: unsafeMetadata,
-      openBrowser: openBrowser
+      webAuthentication: webAuthentication
     )
   }
   #endif

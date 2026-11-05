@@ -79,6 +79,11 @@ public struct SignIn: Codable, Sendable, Equatable {
   }
 }
 
+typealias OAuthWebAuthentication = @MainActor (
+  _ url: URL,
+  _ prefersEphemeralWebBrowserSession: Bool
+) async throws -> URL
+
 extension SignIn {
   @MainActor
   private var magicLinkStore: MagicLinkStore {
@@ -561,23 +566,21 @@ extension SignIn {
     try await authenticateWithOAuth(
       provider: provider,
       createHandOffUrl: nil,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable,
-      unsafeMetadata: unsafeMetadata
-    ) { url in
-      try await WebAuthentication(
-        url: url,
-        prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-      ).start()
-    }
+      unsafeMetadata: unsafeMetadata,
+      webAuthentication: Self.startOAuthWebAuthentication
+    )
   }
 
   @MainActor
   func authenticateWithOAuth(
     provider: OAuthProvider,
     createHandOffUrl: URL?,
+    prefersEphemeralWebBrowserSession: Bool,
     transferable: Bool,
     unsafeMetadata: JSON?,
-    openBrowser: @MainActor (URL) async throws -> URL
+    webAuthentication: OAuthWebAuthentication
   ) async throws -> TransferFlowResult {
     let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
@@ -589,7 +592,6 @@ extension SignIn {
 
     let url: URL
     if signIn.status.isUnknown {
-      // A blocked prepare builds no verification, so a URL on its response is left over from an earlier attempt.
       guard let createHandOffUrl else {
         return .signIn(signIn)
       }
@@ -603,7 +605,7 @@ extension SignIn {
       url = redirectUrl
     }
 
-    let callbackUrl = try await openBrowser(url)
+    let callbackUrl = try await webAuthentication(url, prefersEphemeralWebBrowserSession)
     return try await signIn.handleRedirectCallbackUrl(
       callbackUrl,
       transferable: transferable,
@@ -611,13 +613,15 @@ extension SignIn {
     )
   }
 
-  var oauthHandOffUrl: URL? {
-    guard firstFactorVerification?.status == .unverified,
-          let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl
-    else {
-      return nil
-    }
-    return URL(string: redirectUrl)
+  @MainActor
+  static func startOAuthWebAuthentication(
+    url: URL,
+    prefersEphemeralWebBrowserSession: Bool
+  ) async throws -> URL {
+    try await WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    ).start()
   }
   #endif
 
@@ -820,6 +824,12 @@ extension SignIn {
       return .signIn(updatedSignIn)
     } else {
       let signIn = try await reload()
+      if signIn.status.isUnknown {
+        if !(transferable && signIn.needsTransferToSignUp), let error = signIn.firstFactorVerification?.error {
+          throw error
+        }
+        return .signIn(signIn)
+      }
       let result = try await signIn.handleTransferFlow(
         transferable: transferable,
         unsafeMetadata: unsafeMetadata
@@ -863,6 +873,15 @@ extension SignIn {
 
   var needsTransferToSignUp: Bool {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+  }
+
+  var oauthHandOffUrl: URL? {
+    guard firstFactorVerification?.status == .unverified,
+          let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl
+    else {
+      return nil
+    }
+    return URL(string: redirectUrl)
   }
 
   var usesPasskeyAsSecondFactor: Bool {

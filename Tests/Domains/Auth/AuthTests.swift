@@ -247,28 +247,35 @@ struct AuthTests {
     #expect(prepareCount.value == 1)
   }
 
+  @discardableResult
   private func stubOAuthStart(
     createVerification: Verification,
-    prepared: SignIn
-  ) {
+    prepared: SignIn,
+    reloaded: SignIn = SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+  ) -> LockIsolated<Int> {
+    let signUpCount = LockIsolated(0)
     let transport = FakeTransport.mockDefaults()
     transport.stubSignInCreate { _ in
       SignIn(id: "sign_in_123", status: .needsFirstFactor, firstFactorVerification: createVerification)
     }
     transport.stubSignInPrepareFirstFactor { _, _ in prepared }
-    transport.stub(SignInAPI.get(signInId: FakeTransport.anyPathSegment, params: .init())) { _ in
-      ClientResponse(response: SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check")), client: nil)
+    transport.stubSignInGet { _, _ in reloaded }
+    transport.stubSignUpCreate { _ in
+      signUpCount.withValue { $0 += 1 }
+      return .mock
     }
     configureDependencies(transport: transport)
+    return signUpCount
   }
 
-  private func startOAuthRecordingBrowser() async throws -> (TransferFlowResult, [URL]) {
+  private func startOAuthRecordingBrowser(transferable: Bool = true) async throws -> (TransferFlowResult, [URL]) {
     var openedUrls: [URL] = []
     let result = try await Clerk.shared.auth.signInWithOAuth(
       provider: .google,
-      transferable: true,
+      prefersEphemeralWebBrowserSession: false,
+      transferable: transferable,
       unsafeMetadata: nil
-    ) { url in
+    ) { url, _ in
       openedUrls.append(url)
       return try #require(URL(string: "myapp://callback"))
     }
@@ -289,6 +296,79 @@ struct AuthTests {
 
     #expect(openedUrls.map(\.absoluteString) == [createUrl])
     expectBlockedByUnrecognizedStatus(result)
+  }
+
+  @Test
+  func signInWithOAuthDoesNotTransferToSignUpWhileTheCallbackIsBlocked() async throws {
+    let blocked = SignIn.Status(rawValue: "needs_protect_check")
+    let signUpCount = stubOAuthStart(
+      createVerification: Verification(status: .unverified, strategy: .oauth(.google), externalVerificationRedirectUrl: "https://accounts.example.com/from-create"),
+      prepared: SignIn(id: "sign_in_123", status: blocked),
+      reloaded: SignIn(
+        id: "sign_in_123",
+        status: blocked,
+        firstFactorVerification: Verification(
+          status: .transferable,
+          strategy: .oauth(.google),
+          error: ClerkAPIError(code: "external_account_not_found", message: "The External Account was not found.")
+        )
+      )
+    )
+
+    let (result, _) = try await startOAuthRecordingBrowser()
+
+    expectBlockedByUnrecognizedStatus(result)
+    #expect(signUpCount.value == 0)
+  }
+
+  @Test
+  func signInWithOAuthThrowsWhenTheCallbackIsBlockedAndCannotTransfer() async throws {
+    let blocked = SignIn.Status(rawValue: "needs_protect_check")
+    let signUpCount = stubOAuthStart(
+      createVerification: Verification(status: .unverified, strategy: .oauth(.google), externalVerificationRedirectUrl: "https://accounts.example.com/from-create"),
+      prepared: SignIn(id: "sign_in_123", status: blocked),
+      reloaded: SignIn(
+        id: "sign_in_123",
+        status: blocked,
+        firstFactorVerification: Verification(
+          status: .transferable,
+          strategy: .oauth(.google),
+          error: ClerkAPIError(code: "external_account_not_found", message: "The External Account was not found.")
+        )
+      )
+    )
+
+    await #expect {
+      _ = try await startOAuthRecordingBrowser(transferable: false)
+    } throws: { error in
+      (error as? ClerkAPIError)?.code == "external_account_not_found"
+    }
+    #expect(signUpCount.value == 0)
+  }
+
+  @Test
+  func signInWithOAuthThrowsARealFailureWhileTheCallbackIsBlocked() async throws {
+    let blocked = SignIn.Status(rawValue: "needs_protect_check")
+    let signUpCount = stubOAuthStart(
+      createVerification: Verification(status: .unverified, strategy: .oauth(.google), externalVerificationRedirectUrl: "https://accounts.example.com/from-create"),
+      prepared: SignIn(id: "sign_in_123", status: blocked),
+      reloaded: SignIn(
+        id: "sign_in_123",
+        status: blocked,
+        firstFactorVerification: Verification(
+          status: .failed,
+          strategy: .oauth(.google),
+          error: ClerkAPIError(code: "oauth_access_denied", message: "Access denied.")
+        )
+      )
+    )
+
+    await #expect {
+      _ = try await startOAuthRecordingBrowser()
+    } throws: { error in
+      (error as? ClerkAPIError)?.code == "oauth_access_denied"
+    }
+    #expect(signUpCount.value == 0)
   }
 
   @Test
