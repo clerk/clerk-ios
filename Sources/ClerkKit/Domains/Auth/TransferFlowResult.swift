@@ -60,4 +60,18 @@ extension TransferFlowResult {
       signUp.status.needsContinuation
     }
   }
+
+  package func ensureStatusIsKnown() throws {
+    switch self {
+    case .signIn(let signIn):
+      try signIn.ensureStatusIsKnown()
+    case .signUp(let signUp):
+      try signUp.ensureStatusIsKnown()
+    }
+  }
+}
+
+func unknownAuthStatusError(_ status: String) -> ClerkClientError {
+  ClerkLogger.error("Auth flow returned a status this SDK can't continue from: \(status)")
+  return ClerkClientError(message: "Something went wrong. Please try again.", localizationBundle: .module)
 }
