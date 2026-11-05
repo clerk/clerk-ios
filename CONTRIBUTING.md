@@ -132,7 +132,8 @@ its pre-merge checks pass, and it rates the PR's merge risk moderate or lower. H
 critical PRs need a human. The pre-merge checks ask for the Testing, Risk, and How to
 revert sections of the PR template, and for device evidence when the PR changes
 `Sources/ClerkKit/`, `Sources/ClerkKitUI/`, or `Examples/E2EHost/`. Its approval counts
-toward the one approval `main` requires.
+toward the one approval `main` requires. CodeRabbit can't be relied on to reread an edited
+description, so comment `@coderabbitai run pre-merge checks` to rerun the checks.
 
 Every PR also needs the `Code owner approval` check. Team Mobile means anyone with maintain
 or admin access to the repository. A Team Mobile author needs only CodeRabbit's approval,
