@@ -27,33 +27,19 @@ extension Clerk {
     let status = appVersionSupport.status
     if appVersionSupportStatus != status {
       appVersionSupportStatus = status
-      warnIfUpdateScreenIsMissing(for: status)
+      warnIfUpdateScreenIsMissing()
     }
   }
 
-  private func warnIfUpdateScreenIsMissing(for status: AppVersionSupportStatus) {
+  private func warnIfUpdateScreenIsMissing() {
     #if DEBUG && (os(iOS) || os(macOS))
-    guard Self.shouldWarnAboutMissingUpdateScreen(
-      status: status,
-      updateRequiredViewEnabled: options.updateRequiredViewEnabled,
-      updateScreenIsAvailable: updateScreenIsAvailable(),
-      alreadyWarned: warnedAboutMissingUpdateScreen
+    guard appVersionSupport.claimMissingUpdateScreenWarning(
+      updateRequiredViewEnabled: options.updateRequiredViewEnabled
     ) else {
       return
     }
-    warnedAboutMissingUpdateScreen = true
     ClerkLogger.warning(Self.missingUpdateScreenWarning, force: true)
     #endif
-  }
-
-  static func shouldWarnAboutMissingUpdateScreen(
-    status: AppVersionSupportStatus,
-    updateRequiredViewEnabled: Bool,
-    updateScreenIsAvailable: Bool,
-    alreadyWarned: Bool
-  ) -> Bool {
-    let appHasMinimum = !status.isSupported || status.minimumVersion != nil
-    return appHasMinimum && updateRequiredViewEnabled && !updateScreenIsAvailable && !alreadyWarned
   }
 
   static let missingUpdateScreenWarning = """

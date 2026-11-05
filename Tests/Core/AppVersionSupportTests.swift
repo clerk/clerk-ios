@@ -21,29 +21,6 @@ struct AppVersionSupportTests {
     return clerk
   }
 
-  @Test(arguments: [
-    (updateRequiredViewEnabled: true, updateScreenIsAvailable: false, alreadyWarned: false, expected: true),
-    (updateRequiredViewEnabled: false, updateScreenIsAvailable: false, alreadyWarned: false, expected: false),
-    (updateRequiredViewEnabled: true, updateScreenIsAvailable: true, alreadyWarned: false, expected: false),
-    (updateRequiredViewEnabled: true, updateScreenIsAvailable: false, alreadyWarned: true, expected: false),
-  ])
-  func warnsOnceWhenABlockedAppHasNoUpdateScreen(
-    updateRequiredViewEnabled: Bool,
-    updateScreenIsAvailable: Bool,
-    alreadyWarned: Bool,
-    expected: Bool
-  ) {
-    let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
-
-    #expect(Clerk.shouldWarnAboutMissingUpdateScreen(
-      status: clerk.appVersionSupportStatus,
-      updateRequiredViewEnabled: updateRequiredViewEnabled,
-      updateScreenIsAvailable: updateScreenIsAvailable,
-      alreadyWarned: alreadyWarned
-    ) == expected)
-  }
-
   @Test
   func logsTheMissingUpdateScreenWarningOnceAtTheDefaultLogLevel() async throws {
     configureClerkForTesting()
@@ -51,7 +28,7 @@ struct AppVersionSupportTests {
     let (lines, restoreSink) = captureLogLines()
     defer { restoreSink() }
     let clerk = makeClerk()
-    clerk.updateScreenIsAvailable = { false }
+    clerk.appVersionSupport.updateScreenIsAvailable = false
 
     clerk.applyRefreshedEnvironment(.mock)
     try await Task.sleep(for: Self.logSettleTime)
@@ -75,40 +52,12 @@ struct AppVersionSupportTests {
     let (lines, restoreSink) = captureLogLines()
     defer { restoreSink() }
     let clerk = makeClerk()
-    clerk.updateScreenIsAvailable = { true }
+    clerk.appVersionSupport.updateScreenIsAvailable = true
 
     clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
     try await Task.sleep(for: Self.logSettleTime)
 
     #expect(lines.missingUpdateScreenWarnings.isEmpty)
-  }
-
-  @Test
-  func warnsAboutAMissingUpdateScreenWhenABuildMeetsItsMinimum() {
-    let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(.withIOSPolicy(
-      bundleID: "com.example.app",
-      minimumVersion: "1.0",
-      updateURL: "https://apps.apple.com/app/id123"
-    ))
-
-    #expect(clerk.appVersionSupportStatus.isSupported)
-    #expect(Clerk.shouldWarnAboutMissingUpdateScreen(
-      status: clerk.appVersionSupportStatus,
-      updateRequiredViewEnabled: true,
-      updateScreenIsAvailable: false,
-      alreadyWarned: false
-    ))
-  }
-
-  @Test
-  func doesNotWarnAboutAMissingUpdateScreenWithoutAMinimum() {
-    #expect(!Clerk.shouldWarnAboutMissingUpdateScreen(
-      status: makeClerk().appVersionSupportStatus,
-      updateRequiredViewEnabled: true,
-      updateScreenIsAvailable: false,
-      alreadyWarned: false
-    ))
   }
 
   @Test
