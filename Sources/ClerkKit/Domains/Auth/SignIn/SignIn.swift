@@ -79,6 +79,11 @@ public struct SignIn: Codable, Sendable, Equatable {
   }
 }
 
+typealias OAuthWebAuthentication = @MainActor (
+  _ url: URL,
+  _ prefersEphemeralWebBrowserSession: Bool
+) async throws -> URL
+
 extension SignIn {
   @MainActor
   private var magicLinkStore: MagicLinkStore {
@@ -492,6 +497,8 @@ extension SignIn {
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the enterprise SSO flow fails.
   @discardableResult
   @MainActor
@@ -509,6 +516,10 @@ extension SignIn {
         redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
       )
     )).value.response
+
+    if signIn.status.isUnknown {
+      return .signIn(signIn)
+    }
 
     guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
           let url = URL(string: externalVerificationRedirectUrl)
@@ -541,6 +552,8 @@ extension SignIn {
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
   @MainActor
@@ -550,6 +563,25 @@ extension SignIn {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    try await authenticateWithOAuth(
+      provider: provider,
+      createHandOffUrl: nil,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata,
+      webAuthentication: Self.startOAuthWebAuthentication
+    )
+  }
+
+  @MainActor
+  func authenticateWithOAuth(
+    provider: OAuthProvider,
+    createHandOffUrl: URL?,
+    prefersEphemeralWebBrowserSession: Bool,
+    transferable: Bool,
+    unsafeMetadata: JSON?,
+    webAuthentication: OAuthWebAuthentication
+  ) async throws -> TransferFlowResult {
     let signIn = try await Clerk.currentDependencies.transport.send(SignInAPI.prepareFirstFactor(
       signInId: id,
       params: .init(
@@ -558,22 +590,38 @@ extension SignIn {
       )
     )).value.response
 
-    guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
-          let url = URL(string: externalVerificationRedirectUrl)
-    else {
-      throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
+    let url: URL
+    if signIn.status.isUnknown {
+      guard let createHandOffUrl else {
+        return .signIn(signIn)
+      }
+      url = createHandOffUrl
+    } else {
+      guard let externalVerificationRedirectUrl = signIn.firstFactorVerification?.externalVerificationRedirectUrl,
+            let redirectUrl = URL(string: externalVerificationRedirectUrl)
+      else {
+        throw ClerkClientError(message: "Redirect URL is missing or invalid. Unable to start external authentication flow.", localizationBundle: .module)
+      }
+      url = redirectUrl
     }
 
-    let authSession = WebAuthentication(
-      url: url,
-      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
-    )
-    let callbackUrl = try await authSession.start()
+    let callbackUrl = try await webAuthentication(url, prefersEphemeralWebBrowserSession)
     return try await signIn.handleRedirectCallbackUrl(
       callbackUrl,
       transferable: transferable,
       unsafeMetadata: unsafeMetadata
     )
+  }
+
+  @MainActor
+  static func startOAuthWebAuthentication(
+    url: URL,
+    prefersEphemeralWebBrowserSession: Bool
+  ) async throws -> URL {
+    try await WebAuthentication(
+      url: url,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession
+    ).start()
   }
   #endif
 
@@ -776,6 +824,12 @@ extension SignIn {
       return .signIn(updatedSignIn)
     } else {
       let signIn = try await reload()
+      if signIn.status.isUnknown {
+        if !(transferable && signIn.needsTransferToSignUp), let error = signIn.firstFactorVerification?.error {
+          throw error
+        }
+        return .signIn(signIn)
+      }
       let result = try await signIn.handleTransferFlow(
         transferable: transferable,
         unsafeMetadata: unsafeMetadata
@@ -819,6 +873,15 @@ extension SignIn {
 
   var needsTransferToSignUp: Bool {
     firstFactorVerification?.status == .transferable || secondFactorVerification?.status == .transferable
+  }
+
+  var oauthHandOffUrl: URL? {
+    guard firstFactorVerification?.status == .unverified,
+          let redirectUrl = firstFactorVerification?.externalVerificationRedirectUrl
+    else {
+      return nil
+    }
+    return URL(string: redirectUrl)
   }
 
   var usesPasskeyAsSecondFactor: Bool {

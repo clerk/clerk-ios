@@ -560,7 +560,7 @@ extension AuthStartView {
 
       let signIn = try await clerk.auth.signIn(activeIdentifier)
 
-      if signIn.startingFirstFactor?.strategy == .enterpriseSSO {
+      if Self.startsEnterpriseSSO(signIn) {
         let result = try await signIn.authenticateWithEnterpriseSSO(
           transferable: authState.transferable,
           unsafeMetadata: authState.unsafeMetadata
@@ -732,6 +732,11 @@ extension AuthStartView {
     } else {
       authState.storeLastUsedIdentifierType(.username)
     }
+  }
+
+  static func startsEnterpriseSSO(_ signIn: SignIn) -> Bool {
+    if case .unknown = signIn.status { return false }
+    return signIn.startingFirstFactor?.strategy == .enterpriseSSO
   }
 
   private func signInStatusStaysOnStart(_ status: SignIn.Status) -> Bool {
