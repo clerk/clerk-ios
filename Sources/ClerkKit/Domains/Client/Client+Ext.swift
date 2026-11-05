@@ -19,12 +19,3 @@ extension Client {
     sessions.filter { $0.status == .active || $0.status == .pending }
   }
 }
-
-extension Session {
-  var removedFromClient: Session {
-    var session = self
-    session.status = .removed
-    session.lastActiveToken = nil
-    return session
-  }
-}

@@ -1819,7 +1819,7 @@ struct AuthTests {
     try Clerk.shared.seedIdentity(deviceToken: "token")
     Clerk.shared.client = client
     try Mock(
-      url: mockBaseUrl.appending(path: "/v1/client/sessions"),
+      url: URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions")!,
       ignoreQuery: true,
       contentType: .json,
       statusCode: 200,
@@ -1845,7 +1845,7 @@ struct AuthTests {
     remaining.sessions = [.mock2]
     remaining.lastActiveSessionId = Session.mock2.id
     try Mock(
-      url: mockBaseUrl.appending(path: "/v1/client/sessions/\(removed.id)/remove"),
+      url: URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(removed.id)/remove")!,
       ignoreQuery: true,
       contentType: .json,
       statusCode: 200,
