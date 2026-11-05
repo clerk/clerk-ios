@@ -115,6 +115,9 @@ struct AuthSensitiveFieldsTests {
   @Test
   func signingOutResetsConsentAndKeepsOtherEnteredDetails() async throws {
     let clerk = Clerk.mock
+    // With persistence off, AuthView's state removes the stored identifiers from the standard defaults.
+    let restoreStoredIdentifiers = storedIdentifiersRestorer()
+    defer { restoreStoredIdentifiers() }
     let view = AuthView(isDismissible: false)
       .persistsIdentifiers(false)
     let authState = view.authState
@@ -144,14 +147,49 @@ struct AuthSensitiveFieldsTests {
     enterSecrets(into: authState)
 
     clerk.setClientFromIdentityController(.mock)
-    for _ in 0 ..< 300 where !clerk.isAuthFlowComplete {
-      window.layoutIfNeeded()
-      try await Task.sleep(for: .milliseconds(10))
-    }
+    try await layout(window, until: { clerk.isAuthFlowComplete })
     #expect(clerk.isAuthFlowComplete)
 
     try await Task.sleep(for: .seconds(1.5))
     #expect(authState.signInPassword == "password-for-a")
+  }
+
+  @Test
+  func leavingTheScreenAfterACompletedFlowClearsEnteredSecrets() async throws {
+    let clerk = Clerk.mockSignedOut
+    let view = AuthView(isDismissible: false)
+    let authState = view.authState
+    let window = try await show(view, clerk: clerk)
+    defer { hide(window) }
+    enterSecrets(into: authState)
+
+    clerk.setClientFromIdentityController(.mock)
+    try await layout(window, until: { clerk.isAuthFlowComplete })
+    #expect(clerk.isAuthFlowComplete)
+
+    window.rootViewController = UIViewController()
+    try await layout(window)
+
+    #expect(authState.signInPassword.isEmpty)
+    #expect(authState.signInNewPassword.isEmpty)
+    #expect(authState.signInConfirmNewPassword.isEmpty)
+    #expect(authState.signInBackupCode.isEmpty)
+    #expect(authState.signUpPassword.isEmpty)
+  }
+
+  @Test
+  func leavingTheScreenDuringTheFlowKeepsEnteredSecrets() async throws {
+    let view = AuthView(isDismissible: false)
+    let authState = view.authState
+    let window = try await show(view)
+    defer { hide(window) }
+    enterSecrets(into: authState)
+
+    window.rootViewController = UIViewController()
+    try await layout(window)
+
+    #expect(authState.signInPassword == "password-for-a")
+    #expect(authState.signUpPassword == "sign-up-password-for-a")
   }
 
   private func enterSecrets(into authState: AuthState) {
@@ -180,6 +218,34 @@ struct AuthSensitiveFieldsTests {
     for _ in 0 ..< 10 {
       window.layoutIfNeeded()
       try await Task.sleep(for: .milliseconds(10))
+    }
+  }
+
+  private func layout(_ window: UIWindow, until condition: () -> Bool) async throws {
+    for _ in 0 ..< 300 where !condition() {
+      window.layoutIfNeeded()
+      try await Task.sleep(for: .milliseconds(10))
+    }
+  }
+
+  private func storedIdentifiersRestorer() -> () -> Void {
+    let defaults = UserDefaults.standard
+    let keys = [
+      AuthState.identifierStorageKey,
+      AuthState.phoneNumberStorageKey,
+      AuthState.phoneNumberFieldIsActiveStorageKey,
+    ]
+    let storedValues = keys.map { defaults.object(forKey: $0) }
+    let storedIdentifierType = LastUsedAuth.retrieveStoredIdentifierType(userDefaults: defaults)
+    return {
+      for (key, value) in zip(keys, storedValues) {
+        defaults.set(value, forKey: key)
+      }
+      if let storedIdentifierType {
+        LastUsedAuth.storeIdentifierType(storedIdentifierType, userDefaults: defaults)
+      } else {
+        LastUsedAuth.clearStoredIdentifierType(userDefaults: defaults)
+      }
     }
   }
 }

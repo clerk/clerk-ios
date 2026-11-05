@@ -214,6 +214,13 @@ public struct AuthView: View {
         resumeAuth(callbackContinuation)
       }
     }
+    .onDisappear {
+      // AutoFill offers to save a password when its field leaves the view hierarchy, so the
+      // secrets are cleared only once a completed flow's form has left the screen.
+      if authFlowRegistrationIsTerminated {
+        authState.clearSensitiveFields()
+      }
+    }
     .task {
       let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
       _ = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint)
