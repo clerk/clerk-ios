@@ -32,7 +32,7 @@ extension Clerk {
   }
 
   private func warnIfUpdateScreenIsMissing(for status: AppVersionSupportStatus) {
-    #if DEBUG
+    #if DEBUG && (os(iOS) || os(macOS))
     guard Self.shouldWarnAboutMissingUpdateScreen(
       status: status,
       updateRequiredViewEnabled: options.updateRequiredViewEnabled,
@@ -57,8 +57,8 @@ extension Clerk {
   }
 
   static let missingUpdateScreenWarning = """
-  This app has a minimum version set, and Clerk rejects requests from builds below it, but no update screen can \
-  show them: ClerkKitUI isn't linked, or this platform has no update screen. Link ClerkKitUI, or show your own \
-  screen from Clerk.shared.appVersionSupportStatus and set updateRequiredViewEnabled to false.
+  This app has a minimum version set, and Clerk rejects requests from builds below it, but the update screen \
+  can't show because ClerkKitUI isn't linked. Link ClerkKitUI, or show your own screen from \
+  Clerk.shared.appVersionSupportStatus and set updateRequiredViewEnabled to false.
   """
 }

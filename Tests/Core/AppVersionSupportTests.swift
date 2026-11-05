@@ -1,4 +1,5 @@
 @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -10,6 +11,9 @@ struct AppVersionSupportTests {
     minimumVersion: "2.0",
     updateURL: "https://apps.apple.com/app/id123"
   )
+
+  /// Long enough for a log line that was going to appear to reach the sink, since logging happens in an unawaited task.
+  private static let logSettleTime = Duration.milliseconds(100)
 
   private func makeClerk() -> Clerk {
     let clerk = Clerk()
@@ -40,14 +44,43 @@ struct AppVersionSupportTests {
     ) == expected)
   }
 
-  @Test(arguments: [(updateScreenIsAvailable: false, warns: true), (updateScreenIsAvailable: true, warns: false)])
-  func aBlockedAppRecordsTheWarningOnlyWhenItHasNoUpdateScreen(updateScreenIsAvailable: Bool, warns: Bool) {
+  @Test
+  func logsTheMissingUpdateScreenWarningOnceAtTheDefaultLogLevel() async throws {
+    configureClerkForTesting()
+    Clerk.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .error))
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
     let clerk = makeClerk()
-    clerk.updateScreenIsAvailable = { updateScreenIsAvailable }
+    clerk.updateScreenIsAvailable = { false }
+
+    clerk.applyRefreshedEnvironment(.mock)
+    try await Task.sleep(for: Self.logSettleTime)
+    #expect(lines.missingUpdateScreenWarnings.isEmpty)
 
     clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
+    try await #require(lines.firstMissingUpdateScreenWarning() != nil)
 
-    #expect(clerk.warnedAboutMissingUpdateScreen == warns)
+    clerk.applyRefreshedEnvironment(.withIOSPolicy(
+      bundleID: "com.example.app",
+      minimumVersion: "3.0",
+      updateURL: "https://apps.apple.com/app/id123"
+    ))
+    try await Task.sleep(for: Self.logSettleTime)
+    #expect(clerk.appVersionSupportStatus.minimumVersion == "3.0")
+    #expect(lines.missingUpdateScreenWarnings.count == 1)
+  }
+
+  @Test
+  func doesNotLogTheWarningWhenTheUpdateScreenIsAvailable() async throws {
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+    let clerk = makeClerk()
+    clerk.updateScreenIsAvailable = { true }
+
+    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
+    try await Task.sleep(for: Self.logSettleTime)
+
+    #expect(lines.missingUpdateScreenWarnings.isEmpty)
   }
 
   @Test
@@ -267,4 +300,31 @@ struct AppVersionSupportTests {
 
     #expect(clerk.appVersionSupportStatus.isSupported)
   }
+}
+
+@MainActor
+extension LockIsolated<[String]> {
+  fileprivate var missingUpdateScreenWarnings: [String] {
+    value.filter { $0.contains(Clerk.missingUpdateScreenWarning) }
+  }
+
+  fileprivate func firstMissingUpdateScreenWarning() async -> String? {
+    for _ in 0 ..< 100 {
+      if let line = missingUpdateScreenWarnings.first {
+        return line
+      }
+      try? await Task.sleep(for: .milliseconds(10))
+    }
+    return nil
+  }
+}
+
+@MainActor
+private func captureLogLines() -> (LockIsolated<[String]>, @MainActor () -> Void) {
+  let original = ClerkLogger.sink
+  let lines = LockIsolated<[String]>([])
+  ClerkLogger.sink = { _, text in
+    lines.withValue { $0.append(text) }
+  }
+  return (lines, { ClerkLogger.sink = original })
 }
