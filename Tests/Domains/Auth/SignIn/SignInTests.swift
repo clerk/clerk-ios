@@ -20,11 +20,14 @@ struct SignInTests {
     configureClerkForTesting()
   }
 
-  private let earlierPasskeyChallenge = Verification(
-    status: .unverified,
-    strategy: .passkey,
-    nonce: "{\"challenge\":\"challenge\"}"
-  )
+  private nonisolated static let blockedPasskeyPrepareVerifications: [Verification?] = [
+    nil,
+    Verification(
+      status: .unverified,
+      strategy: .passkey,
+      nonce: "{\"challenge\":\"challenge\"}"
+    ),
+  ]
 
   private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
@@ -88,9 +91,9 @@ struct SignInTests {
     }
   }
 
-  @Test(arguments: [false, true])
+  @Test(arguments: blockedPasskeyPrepareVerifications)
   func passkeyFirstFactorPrepareBlockedByUnknownStatusFailsBeforeRequestingACredential(
-    earlierChallengeWasLeftBehind: Bool
+    earlierVerification: Verification?
   ) async {
     let signIn = SignIn.mock
     let credentialWasRequested = LockIsolated(false)
@@ -98,7 +101,7 @@ struct SignInTests {
       SignIn(
         id: id,
         status: .init(rawValue: "needs_protect_check"),
-        firstFactorVerification: earlierChallengeWasLeftBehind ? earlierPasskeyChallenge : nil
+        firstFactorVerification: earlierVerification
       )
     }
     transport.stubSignInAttemptFirstFactor { _, _ in .mock }
@@ -119,9 +122,9 @@ struct SignInTests {
     #expect(!credentialWasRequested.value)
   }
 
-  @Test(arguments: [false, true])
+  @Test(arguments: blockedPasskeyPrepareVerifications)
   func passkeySecondFactorPrepareBlockedByUnknownStatusFailsBeforeRequestingACredential(
-    earlierChallengeWasLeftBehind: Bool
+    earlierVerification: Verification?
   ) async {
     let signIn = SignIn(
       id: "sign_in_123",
@@ -134,7 +137,7 @@ struct SignInTests {
         id: id,
         status: .init(rawValue: "needs_protect_check"),
         supportedSecondFactors: [Factor(strategy: .passkey)],
-        secondFactorVerification: earlierChallengeWasLeftBehind ? earlierPasskeyChallenge : nil
+        secondFactorVerification: earlierVerification
       )
     }
     transport.stubSignInAttemptSecondFactor { _, _ in signIn }
