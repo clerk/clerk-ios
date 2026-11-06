@@ -609,6 +609,21 @@ struct AuthTests {
   }
 
   @Test
+  func signInWithPasskeyReturnsTheBlockedStatusFromPrepare() async throws {
+    let transport = FakeTransport.mockDefaults()
+    transport.stubSignInCreate { _ in .mock }
+    transport.stubSignInPrepareFirstFactor { id, _ in
+      SignIn(id: id, status: .init(rawValue: "needs_protect_check"))
+    }
+
+    configureDependencies(transport: transport)
+
+    let result = try await Clerk.shared.auth.signInWithPasskey()
+
+    #expect(result.status == .init(rawValue: "needs_protect_check"))
+  }
+
+  @Test
   func signInWithBiometricsDelegatesToBiometricCredentials() async throws {
     Clerk.shared.environment = enabledBiometricCredentialEnvironment()
     Clerk.shared.client = .mockSignedOut

@@ -14,4 +14,11 @@ package struct PasskeyAuthenticationFailure: Error {
 
   package let stage: Stage
   package let underlyingError: any Error
+  let blockedSignIn: SignIn?
+
+  init(stage: Stage, underlyingError: any Error, blockedSignIn: SignIn? = nil) {
+    self.stage = stage
+    self.underlyingError = underlyingError
+    self.blockedSignIn = blockedSignIn
+  }
 }

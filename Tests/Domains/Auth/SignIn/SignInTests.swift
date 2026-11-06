@@ -20,6 +20,15 @@ struct SignInTests {
     configureClerkForTesting()
   }
 
+  private nonisolated static let blockedPasskeyPrepareVerifications: [Verification?] = [
+    nil,
+    Verification(
+      status: .unverified,
+      strategy: .passkey,
+      nonce: "{\"challenge\":\"challenge\"}"
+    ),
+  ]
+
   private func configureTransport() {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
@@ -80,6 +89,150 @@ struct SignInTests {
     await #expect(throws: PasskeyTestError.self) {
       try await signIn.authenticateWithPasskey()
     }
+  }
+
+  @Test(arguments: blockedPasskeyPrepareVerifications)
+  func passkeyFirstFactorPrepareBlockedByUnknownStatusFailsBeforeRequestingACredential(
+    earlierVerification: Verification?
+  ) async {
+    let signIn = SignIn.mock
+    let credentialWasRequested = LockIsolated(false)
+    transport.stubSignInPrepareFirstFactor { id, _ in
+      SignIn(
+        id: id,
+        status: .init(rawValue: "needs_protect_check"),
+        firstFactorVerification: earlierVerification
+      )
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in .mock }
+
+    configureTransport()
+
+    do {
+      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in
+        credentialWasRequested.setValue(true)
+        return "credential"
+      }
+      Issue.record("Expected passkey authentication to fail.")
+    } catch {
+      #expect(error.stage == .preparingFirstFactor)
+      #expect(error.underlyingError.localizedDescription == "Something went wrong. Please try again.")
+      #expect(error.blockedSignIn?.status == .init(rawValue: "needs_protect_check"))
+    }
+    #expect(!credentialWasRequested.value)
+  }
+
+  @Test(arguments: blockedPasskeyPrepareVerifications)
+  func passkeySecondFactorPrepareBlockedByUnknownStatusFailsBeforeRequestingACredential(
+    earlierVerification: Verification?
+  ) async {
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsSecondFactor,
+      supportedSecondFactors: [Factor(strategy: .passkey)]
+    )
+    let credentialWasRequested = LockIsolated(false)
+    transport.stubSignInPrepareSecondFactor { id, _ in
+      SignIn(
+        id: id,
+        status: .init(rawValue: "needs_protect_check"),
+        supportedSecondFactors: [Factor(strategy: .passkey)],
+        secondFactorVerification: earlierVerification
+      )
+    }
+    transport.stubSignInAttemptSecondFactor { _, _ in signIn }
+
+    configureTransport()
+
+    do {
+      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in
+        credentialWasRequested.setValue(true)
+        return "credential"
+      }
+      Issue.record("Expected passkey authentication to fail.")
+    } catch {
+      #expect(error.stage == .preparingSecondFactor)
+      #expect(error.underlyingError.localizedDescription == "Something went wrong. Please try again.")
+      #expect(error.blockedSignIn?.status == .init(rawValue: "needs_protect_check"))
+    }
+    #expect(!credentialWasRequested.value)
+  }
+
+  @Test
+  func passkeyPrepareFailureCarriesNoBlockedSignIn() async {
+    let signIn = SignIn.mock
+    transport.stubSignInPrepareFirstFactor { _, _ in
+      throw PasskeyTestError.preparationFailed
+    }
+
+    configureTransport()
+
+    do {
+      _ = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
+      Issue.record("Expected passkey authentication to fail.")
+    } catch {
+      #expect(error.stage == .preparingFirstFactor)
+      #expect(error.blockedSignIn == nil)
+    }
+  }
+
+  @Test
+  func passkeyAttemptReturningAnUnknownStatusIsReturnedWithoutAFailure() async throws {
+    let signIn = SignIn.mock
+    transport.stubSignInPrepareFirstFactor { _, _ in .mock }
+    transport.stubSignInAttemptFirstFactor { id, _ in
+      SignIn(id: id, status: .init(rawValue: "needs_protect_check"))
+    }
+
+    configureTransport()
+
+    let result = try await signIn.authenticateWithPasskeyWithFailureContext { _ in "credential" }
+
+    #expect(result.status == .init(rawValue: "needs_protect_check"))
+  }
+
+  @Test
+  func publicPasskeyAuthenticationReturnsTheBlockedStatusFromFirstFactorPrepare() async throws {
+    let signIn = SignIn.mock
+    let attemptWasSent = LockIsolated(false)
+    transport.stubSignInPrepareFirstFactor { id, _ in
+      SignIn(id: id, status: .init(rawValue: "needs_protect_check"))
+    }
+    transport.stubSignInAttemptFirstFactor { _, _ in
+      attemptWasSent.setValue(true)
+      return .mock
+    }
+
+    configureTransport()
+
+    let result = try await signIn.authenticateWithPasskey()
+
+    #expect(result.status == .init(rawValue: "needs_protect_check"))
+    #expect(!attemptWasSent.value)
+  }
+
+  @Test
+  func publicPasskeyAuthenticationReturnsTheBlockedStatusFromSecondFactorPrepare() async throws {
+    let signIn = SignIn(
+      id: "sign_in_123",
+      status: .needsSecondFactor,
+      supportedSecondFactors: [Factor(strategy: .passkey)]
+    )
+    let attemptWasSent = LockIsolated(false)
+    transport.stubSignInPrepareSecondFactor { id, _ in
+      SignIn(id: id, status: .init(rawValue: "needs_protect_check"))
+    }
+    transport.stubSignInAttemptSecondFactor { _, _ in
+      attemptWasSent.setValue(true)
+      return signIn
+    }
+
+    configureTransport()
+
+    let result = try await signIn.authenticateWithPasskey()
+
+    #expect(result.status == .init(rawValue: "needs_protect_check"))
+    #expect(!attemptWasSent.value)
   }
 
   private func passkeyTestError(

@@ -643,6 +643,8 @@ extension SignIn {
   ///     This value is ignored when passkey is used as a second factor.
   ///   - preferImmediatelyAvailableCredentials: Whether to prefer immediately available credentials (default is `true`).
   /// - Returns: An updated `SignIn` object reflecting the authentication result.
+  ///   If preparing returns a status this SDK version doesn't recognize, the passkey request doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if passkey authentication fails.
   @discardableResult
   @MainActor
@@ -653,6 +655,9 @@ extension SignIn {
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
     } catch {
+      if let blockedSignIn = error.blockedSignIn {
+        return blockedSignIn
+      }
       throw error.underlyingError
     }
   }
@@ -678,6 +683,7 @@ extension SignIn {
     credentialProvider: @MainActor (SignIn) async throws -> String
   ) async throws(PasskeyAuthenticationFailure) -> SignIn {
     let usesSecondFactor = usesPasskeyAsSecondFactor
+    let preparingStage: PasskeyAuthenticationFailure.Stage = usesSecondFactor ? .preparingSecondFactor : .preparingFirstFactor
     let signIn: SignIn
     do {
       if usesSecondFactor {
@@ -692,10 +698,13 @@ extension SignIn {
         )).value.response
       }
     } catch {
-      throw PasskeyAuthenticationFailure(
-        stage: usesSecondFactor ? .preparingSecondFactor : .preparingFirstFactor,
-        underlyingError: error
-      )
+      throw PasskeyAuthenticationFailure(stage: preparingStage, underlyingError: error)
+    }
+
+    do {
+      try signIn.ensureStatusIsKnown()
+    } catch {
+      throw PasskeyAuthenticationFailure(stage: preparingStage, underlyingError: error, blockedSignIn: signIn)
     }
 
     let credential: String

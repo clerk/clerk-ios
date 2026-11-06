@@ -156,14 +156,15 @@ extension SignInPasskeyView {
     defer { passkeyInProgress = false }
 
     do {
-      signIn = try await signIn.authenticateWithPasskey()
+      signIn = try await signIn.authenticateWithPasskeyWithFailureContext()
 
       error = nil
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
-      if Task.isCancelled || error.isCancellationError || error.isUserCancelledError { return }
-      self.error = error
-      ClerkLogger.error("Failed to authenticate with passkey", error: error)
+      let underlyingError = error.underlyingError
+      if Task.isCancelled || underlyingError.isCancellationError || underlyingError.isUserCancelledError { return }
+      self.error = underlyingError
+      ClerkLogger.error("Failed to authenticate with passkey", error: underlyingError)
     }
   }
 }
