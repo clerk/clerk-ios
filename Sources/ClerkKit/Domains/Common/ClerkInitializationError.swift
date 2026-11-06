@@ -77,7 +77,7 @@ enum ClerkInitializationError: Error, LocalizedError, ClerkError {
       "No publishable key was provided to Clerk.configure()."
 
     case .invalidPublishableKeyFormat:
-      "The provided publishable key does not match the expected format (pk_test_... or pk_live_...)."
+      "The provided publishable key is not a pk_test_ or pk_live_ key whose payload decodes to a Frontend API host."
 
     case .invalidProxyUrl:
       "Clerk.Options.proxyUrl has no http or https scheme or no host, so requests can't be sent through it."

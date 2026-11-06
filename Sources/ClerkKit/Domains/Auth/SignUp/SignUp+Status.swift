@@ -72,4 +72,16 @@ extension SignUp.Status {
       false
     }
   }
+
+  var isUnknown: Bool {
+    if case .unknown = self { true } else { false }
+  }
+}
+
+extension SignUp {
+  func ensureStatusIsKnown() throws {
+    if status.isUnknown {
+      throw unknownAuthStatusError(status.rawValue)
+    }
+  }
 }

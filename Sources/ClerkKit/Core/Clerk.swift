@@ -521,9 +521,18 @@ extension Clerk {
   /// be processed automatically and this method returns `true`. Unrecognized
   /// URLs are ignored and this method returns `false`.
   ///
+  /// - Throws: An error if the callback fails, including when it returns a
+  ///   status this SDK version can't continue from.
+  ///
   /// ```swift
   /// .onOpenURL { url in
-  ///   Task { try? await clerk.handle(url) }
+  ///   Task {
+  ///     do {
+  ///       try await clerk.handle(url)
+  ///     } catch {
+  ///       // Show the error to the user.
+  ///     }
+  ///   }
   /// }
   /// ```
   @discardableResult

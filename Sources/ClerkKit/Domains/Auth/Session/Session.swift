@@ -315,6 +315,13 @@ extension Session {
     }
     return organizationKey
   }
+
+  var removedFromClient: Session {
+    var session = self
+    session.status = .removed
+    session.lastActiveToken = nil
+    return session
+  }
 }
 
 extension Session {

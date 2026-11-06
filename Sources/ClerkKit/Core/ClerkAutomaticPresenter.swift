@@ -16,6 +16,10 @@ enum ClerkAutomaticPresenterLoader {
   /// cycle, so ClerkKit finds ClerkKitUI's presenter through the Objective-C runtime.
   static let presenterClassName = "ClerkKitUIAutomaticPresenter"
 
+  static var isAvailable: Bool {
+    NSClassFromString(presenterClassName) != nil
+  }
+
   @MainActor
   static func load() -> (any ClerkAutomaticPresenter)? {
     guard let presenterType = NSClassFromString(presenterClassName) as? NSObject.Type else {

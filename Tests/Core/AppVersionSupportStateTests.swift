@@ -53,4 +53,77 @@ struct AppVersionSupportStateTests {
     #expect(!state.status.isSupported)
     #expect(state.status.currentVersion == "1.0")
   }
+
+  @Test(arguments: [
+    (updateRequiredViewEnabled: true, updateScreenIsAvailable: false, expected: true),
+    (updateRequiredViewEnabled: false, updateScreenIsAvailable: false, expected: false),
+    (updateRequiredViewEnabled: true, updateScreenIsAvailable: true, expected: false),
+  ])
+  func aBlockedAppWarnsOnlyWhenItsUpdateScreenCanNotShow(
+    updateRequiredViewEnabled: Bool,
+    updateScreenIsAvailable: Bool,
+    expected: Bool
+  ) {
+    var state = makeState()
+    state.updateScreenIsAvailable = updateScreenIsAvailable
+    state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "2.0", updateURL: "https://apps.apple.com/app/id123"))
+
+    let warned = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: updateRequiredViewEnabled)
+
+    #expect(warned == expected)
+  }
+
+  @Test
+  func theMissingUpdateScreenWarningIsClaimedOnce() {
+    var state = makeState()
+    state.updateScreenIsAvailable = false
+    state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "2.0", updateURL: "https://apps.apple.com/app/id123"))
+
+    let first = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+    let second = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+
+    #expect(first)
+    #expect(!second)
+  }
+
+  @Test
+  func aBuildAtItsMinimumStillWarnsAboutAMissingUpdateScreen() {
+    var state = makeState()
+    state.updateScreenIsAvailable = false
+    state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "1.0", updateURL: "https://apps.apple.com/app/id123"))
+
+    let warned = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+
+    #expect(state.status.isSupported)
+    #expect(warned)
+  }
+
+  @Test
+  func anAppWithoutAMinimumDoesNotWarnAboutAMissingUpdateScreen() {
+    var state = makeState()
+    state.updateScreenIsAvailable = false
+
+    let warned = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+
+    #expect(!warned)
+  }
+
+  @Test
+  func resetLetsTheNextConfigurationWarnAgain() {
+    var state = makeState()
+    state.updateScreenIsAvailable = false
+    let environment = Clerk.Environment.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "2.0", updateURL: "https://apps.apple.com/app/id123")
+    state.applyEnvironment(environment)
+    let beforeReset = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+
+    state.reset()
+    let afterResetWithoutAMinimum = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+
+    state.applyEnvironment(environment)
+    let afterResetWithAMinimum = state.claimMissingUpdateScreenWarning(updateRequiredViewEnabled: true)
+
+    #expect(beforeReset)
+    #expect(!afterResetWithoutAMinimum)
+    #expect(afterResetWithAMinimum)
+  }
 }

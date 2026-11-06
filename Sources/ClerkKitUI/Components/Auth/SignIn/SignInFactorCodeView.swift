@@ -282,9 +282,11 @@ extension SignInFactorCodeView {
         signIn = try await signIn.sendResetPasswordPhoneCode(phoneNumberId: factor.phoneNumberId)
 
       default:
-        break
+        codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
+        return
       }
 
+      try signIn.ensureStatusIsKnown()
       codeLimiter.recordCodeSent(for: codeLimiterIdentifier)
     } catch {
       guard !error.isCancellationError else { return }

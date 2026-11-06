@@ -148,6 +148,8 @@ public struct Auth {
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  ///   If preparing returns a status this SDK version doesn't recognize, the redirect starts only when creating
+  ///   the sign-in returned a redirect URL, and the result can be a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the OAuth flow fails.
   @discardableResult
   public func signInWithOAuth(
@@ -156,15 +158,33 @@ public struct Auth {
     transferable: Bool = true,
     unsafeMetadata: JSON? = nil
   ) async throws -> TransferFlowResult {
+    try await signInWithOAuth(
+      provider: provider,
+      prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
+      transferable: transferable,
+      unsafeMetadata: unsafeMetadata,
+      webAuthentication: SignIn.startOAuthWebAuthentication
+    )
+  }
+
+  func signInWithOAuth(
+    provider: OAuthProvider,
+    prefersEphemeralWebBrowserSession: Bool,
+    transferable: Bool,
+    unsafeMetadata: JSON?,
+    webAuthentication: OAuthWebAuthentication
+  ) async throws -> TransferFlowResult {
     let signIn = try await transport.send(SignInAPI.create(params: .init(
       strategy: .oauth(provider),
       redirectUrl: Clerk.shared.options.redirectConfig.redirectUrl
     ))).value.response
     return try await signIn.authenticateWithOAuth(
       provider: provider,
+      createHandOffUrl: signIn.oauthHandOffUrl,
       prefersEphemeralWebBrowserSession: prefersEphemeralWebBrowserSession,
       transferable: transferable,
-      unsafeMetadata: unsafeMetadata
+      unsafeMetadata: unsafeMetadata,
+      webAuthentication: webAuthentication
     )
   }
   #endif
@@ -310,6 +330,8 @@ public struct Auth {
   ///     Pass the ``Factor/enterpriseConnectionId`` of one of the sign-in's `enterpriseSSO` supported first factors.
   ///   - redirectUrl: Optional callback URL to override the global Clerk redirect configuration.
   /// - Returns: A prepared `SignIn` object configured for Enterprise SSO.
+  ///   Check its status before opening the URL. If preparing returns a status this SDK version doesn't
+  ///   recognize, the status is ``SignIn/Status/unknown(_:)`` and the flow can't continue.
   /// - Throws: An error if creating or preparing the Enterprise SSO sign-in fails.
   @discardableResult
   public func startEnterpriseSSO(
@@ -343,6 +365,8 @@ public struct Auth {
   ///     Defaults to `true`. When `false`, the flow returns `.signIn` and skips sign-up creation.
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
+  ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
+  ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the Enterprise SSO flow fails.
   @discardableResult
   public func signInWithEnterpriseSSO(
@@ -589,8 +613,12 @@ extension Auth {
       _ = try await transport.send(SessionAPI.remove(sessionId: sessionId))
       Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
     } else {
+      let signedInSessions = Clerk.shared.client?.signedInSessions ?? []
       _ = try await transport.send(SessionAPI.removeAll())
       Clerk.shared.identityController.invalidateAllSessionTokens()
+      for session in signedInSessions {
+        send(.signedOut(session: session.removedFromClient))
+      }
     }
   }
 
@@ -850,10 +878,12 @@ extension Auth {
     try await urlHandlingCoordinator.handle(route) {
       switch route {
       case .magicLink(let flowId, let approvalToken):
-        try await completeMagicLink(
+        let result = try await completeMagicLink(
           flowId: flowId,
           approvalToken: approvalToken
         )
+        try result.ensureStatusIsKnown()
+        return result
       }
     }
   }

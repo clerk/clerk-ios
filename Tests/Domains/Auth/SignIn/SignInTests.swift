@@ -1259,13 +1259,6 @@ extension FakeTransport {
       try await ClientResponse(response: reset(String(call.path.split(separator: "/")[3]), call.body), client: nil)
     }
   }
-
-  fileprivate func stubSignInGet(_ get: @escaping @MainActor (_ signInId: String, _ rotatingTokenNonce: String?) async throws -> SignIn) {
-    stub(SignInAPI.get(signInId: FakeTransport.anyPathSegment, params: .init())) { call in
-      let nonce = call.query.first { $0.name == "rotating_token_nonce" }?.value
-      return try await ClientResponse(response: get(String(call.path.split(separator: "/")[3]), nonce), client: nil)
-    }
-  }
 }
 
 private final class SetFailingAfterWritesKeychain: @unchecked Sendable, KeychainStorage {

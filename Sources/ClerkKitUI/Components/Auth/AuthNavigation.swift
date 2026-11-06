@@ -47,8 +47,9 @@ final class AuthNavigation {
         return
       }
       path.append(AuthView.Destination.signInClientTrust(factor: factor))
-    case .unknown:
-      return
+    case .unknown(let status):
+      ClerkLogger.info("Navigating to GetHelp: Sign-in has a status this SDK can't continue from: \(status)", force: true)
+      path.append(AuthView.Destination.getHelp(.signIn))
     }
   }
 
@@ -61,8 +62,9 @@ final class AuthNavigation {
       handleMissingRequirements(signUp: signUp)
     case .complete:
       return
-    case .unknown:
-      return
+    case .unknown(let status):
+      ClerkLogger.info("Navigating to GetHelp: Sign-up has a status this SDK can't continue from: \(status)", force: true)
+      path.append(AuthView.Destination.getHelp(.signUp))
     }
   }
 

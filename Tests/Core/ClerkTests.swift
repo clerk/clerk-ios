@@ -1837,6 +1837,45 @@ struct ClerkTests {
   }
 
   @Test
+  func handleThrowsWhenAMagicLinkCallbackReturnsAnUnrecognizedStatus() async throws {
+    let keychain = InMemoryKeychain()
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(MagicLinkAPI.complete(params: MagicLinkCompleteParams(flowId: "flow_123", approvalToken: "", codeVerifier: ""))) { call in
+      ClientResponse(
+        response: .ticket(MagicLinkCompleteResponse(flowId: call.body?["flow_id"]?.stringValue, ticket: "ticket_123")),
+        client: nil
+      )
+    }
+    transport.stubSignInCreate { _ in
+      SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check"))
+    }
+
+    let clerk = Clerk()
+    let apiClient = createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: apiClient,
+      transport: transport,
+      keychain: keychain
+    )
+    try (#require(clerk.dependencies as? MockDependencyContainer))
+      .configurationManager
+      .configure(
+        publishableKey: testPublishableKey,
+        options: .init(
+          redirectConfig: .init(redirectUrl: "com.clerk.isolated://callback")
+        )
+      )
+    clerk.environment = .mock
+    let callbackUrl = try #require(URL(string: "\(clerk.options.redirectConfig.redirectUrl)?flow_id=flow_123&approval_token=approval_123"))
+    try clerk.dependencies.magicLinkStore.save(kind: .signIn, flowId: "flow_123", codeVerifier: "verifier_123")
+
+    await #expect(throws: ClerkClientError.self) {
+      try await clerk.handle(callbackUrl)
+    }
+    #expect(Clerk.shared.callbackContinuation == nil)
+  }
+
+  @Test
   func handleDeduplicatesConcurrentMagicLinkCallbacks() async throws {
     let keychain = InMemoryKeychain()
     let completeCallCount = LockIsolated(0)

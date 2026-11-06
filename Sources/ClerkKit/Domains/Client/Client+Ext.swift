@@ -14,4 +14,8 @@ extension Client {
     }
     return sessions.first(where: { $0.id == sessionId })
   }
+
+  var signedInSessions: [Session] {
+    sessions.filter { $0.status == .active || $0.status == .pending }
+  }
 }

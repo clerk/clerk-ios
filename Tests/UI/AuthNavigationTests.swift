@@ -200,6 +200,28 @@ struct AuthNavigationTests {
   }
 
   @Test
+  func signInUnrecognizedStatusRoutesToGetHelp() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signInForgotPassword]
+
+    navigation.setToStepForStatus(signIn: SignIn(id: "sign_in_123", status: .init(rawValue: "needs_protect_check")))
+
+    #expect(navigation.path == [.signInForgotPassword, .getHelp(.signIn)])
+  }
+
+  @Test
+  func signUpUnrecognizedStatusRoutesToGetHelp() {
+    let navigation = AuthNavigation()
+    navigation.path = [.signUpCompleteProfile]
+    var signUp = signUp(missingFields: [], unverifiedFields: [], verifications: [:])
+    signUp.status = .init(rawValue: "some_new_status")
+
+    navigation.setToStepForStatus(signUp: signUp)
+
+    #expect(navigation.path == [.signUpCompleteProfile, .getHelp(.signUp)])
+  }
+
+  @Test
   func signUpEmailLinkVerificationRunsBeforeCollectingMissingFields() {
     let navigation = AuthNavigation()
     let signUp = signUp(

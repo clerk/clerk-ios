@@ -31,9 +31,9 @@ Preconditions:
 
 ## Gotchas
 
-- A missing or malformed publishable key shows the host's error screen, `Something went wrong` with the reason, instead of an empty AuthView. `host.launch` fails with that reason. Read the `instances` and `settings` checks of `e2e-tests/bin/control-clerk-ios doctor` first.
+- A missing publishable key, or one that is not a `pk_test_` or `pk_live_` key with a base64 payload, shows the host's error screen, `Something went wrong` with the reason, instead of an empty AuthView. `host.launch` fails with that reason. A key that passes that check but does not decode to a host with a `.` and exactly one trailing `$`, such as a key cut short when it was pasted, fails `Clerk.configure`, which stops the Debug build with an assertion. Read the `instances` and `settings` checks of `e2e-tests/bin/control-clerk-ios doctor` first.
 - Behind an HTTPS debugging proxy, a simulator that does not trust the proxy's CA shows only the AuthView header. See `doctor`'s `proxy-trust` check.
 - `Signed out` on the home is readable only after the sheet has closed, which is how the dismiss test knows the sheet is gone.
 - AuthView remembers identifiers between launches by default. E2EHost turns that off with `persistsIdentifiers(false)`, so the field starts empty on every launch that passes no `initialIdentifier`.
-- The identifier is a launch input, `verifyInitialIdentifier`. E2EHost has no element of its own for it. The full-screen AuthView reads it, and the AuthView in the home's sheet does not.
+- The identifier is a launch input, `verifyInitialIdentifier`. E2EHost has no element of its own for it. The full-screen AuthView reads it, and the AuthView in the home's sheet does not. Pass a phone number with its leading `+` and country code, as `user.phone` holds it. `AuthView.initialIdentifier(_:)` may not take a number without them for a phone number, and otherwise sends it under the country that the phone field has selected.
 - The phone text field reports the number as its value and has no text, so assert on it with `toHaveValue`.

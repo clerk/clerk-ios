@@ -249,7 +249,7 @@ extension EmailLinkVerificationView {
           navigation.path = []
           return
         }
-        try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId)
+        try await signIn.sendEmailLink(emailAddressId: factor.emailAddressId).ensureStatusIsKnown()
 
       case .signInClientTrust(let factor):
         guard let signIn = clerk.auth.currentSignIn else {
@@ -257,7 +257,7 @@ extension EmailLinkVerificationView {
           navigation.path = []
           return
         }
-        try await signIn.sendMfaEmailLink(emailAddressId: factor.emailAddressId)
+        try await signIn.sendMfaEmailLink(emailAddressId: factor.emailAddressId).ensureStatusIsKnown()
 
       case .signUp:
         guard let signUp = clerk.auth.currentSignUp else {

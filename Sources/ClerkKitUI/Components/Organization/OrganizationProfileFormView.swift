@@ -146,7 +146,7 @@ struct OrganizationProfileFormView: View {
     }
     .onChange(of: organizationName) { _, newValue in
       if mode.isCreate {
-        slug = createSlug(from: newValue)
+        slug = Self.createSlug(from: newValue)
       }
       slugValidationError = nil
     }
@@ -376,8 +376,8 @@ extension OrganizationProfileFormView {
     let name = trimmedOrganizationName
     guard !name.isEmpty else { return }
 
-    guard !slugEnabled || isValidSlug(trimmedSlug) else {
-      slugValidationError = ClerkClientError(message: "Enter a slug using lowercase letters, numbers, and hyphens.", localizationBundle: .module)
+    guard !slugEnabled || Self.isValidSlug(trimmedSlug) else {
+      slugValidationError = ClerkClientError(message: "Enter a slug using lowercase letters, numbers, and hyphens. Start and end with a letter or number.", localizationBundle: .module)
       return
     }
 
@@ -610,7 +610,7 @@ extension OrganizationProfileFormView {
     #endif
   }
 
-  private func createSlug(from name: String) -> String {
+  static func createSlug(from name: String) -> String {
     name
       .trimmingCharacters(in: .whitespacesAndNewlines)
       .lowercased()
@@ -619,10 +619,11 @@ extension OrganizationProfileFormView {
         with: "-",
         options: .regularExpression
       )
+      .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
   }
 
-  private func isValidSlug(_ slug: String) -> Bool {
-    slug.range(of: "^(?=.*[a-z0-9])[a-z0-9\\-]+$", options: .regularExpression) != nil
+  static func isValidSlug(_ slug: String) -> Bool {
+    slug.range(of: "^[a-z0-9](?:[a-z0-9\\-]*[a-z0-9])?$", options: .regularExpression) != nil
   }
 }
 
