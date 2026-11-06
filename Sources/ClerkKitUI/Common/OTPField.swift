@@ -181,13 +181,8 @@ struct OTPField: View {
     Rectangle()
       .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)
       .foregroundStyle(theme.colors.primary)
-      .animation(
-        .easeInOut.speed(0.75).repeatForever(),
-        body: { content in
-          content
-            .opacity(cursorAnimating ? 1 : 0)
-        }
-      )
+      .mainThreadOpacity(cursorAnimating ? 1 : 0)
+      .animation(.easeInOut.speed(0.75).repeatForever(), value: cursorAnimating)
       .onAppear {
         cursorAnimating.toggle()
       }

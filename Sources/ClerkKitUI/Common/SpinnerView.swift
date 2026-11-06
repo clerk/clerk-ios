@@ -18,7 +18,7 @@ struct SpinnerView: View {
       .resizable()
       .foregroundStyle(color ?? theme.colors.mutedForeground)
       .scaledToFit()
-      .rotationEffect(.degrees(rotation))
+      .mainThreadRotation(degrees: rotation)
       .onAppear {
         withAnimation(
           .linear(duration: 1.0)
