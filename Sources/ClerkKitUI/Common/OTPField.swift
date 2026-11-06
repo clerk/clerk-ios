@@ -178,6 +178,13 @@ struct OTPField: View {
   }
 
   private var cursorOverlay: some View {
+    #if os(iOS)
+    ClerkRepeatingAnimation(kind: .cursor(isOn: cursorAnimating), color: theme.colors.primary)
+      .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)
+      .onAppear {
+        cursorAnimating.toggle()
+      }
+    #else
     Rectangle()
       .frame(maxWidth: 2, maxHeight: 0.35 * inputSize.height)
       .foregroundStyle(theme.colors.primary)
@@ -191,6 +198,7 @@ struct OTPField: View {
       .onAppear {
         cursorAnimating.toggle()
       }
+    #endif
   }
 }
 
