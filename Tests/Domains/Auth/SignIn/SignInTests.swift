@@ -321,6 +321,12 @@ struct SignInTests {
     )
   }
 
+  private func protectGatedSignIn() -> SignIn {
+    var signIn = emailLinkSignIn()
+    signIn.status = .init(rawValue: "needs_protect_check")
+    return signIn
+  }
+
   private func useKeychain(_ keychain: any KeychainStorage) -> MagicLinkStore {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(),
@@ -390,6 +396,65 @@ struct SignInTests {
     }
 
     #expect(try store.load() == earlierFlow)
+  }
+
+  @Test
+  func sendEmailLinkRestoresEarlierFlowWhenResponseStatusIsUnknown() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    let ownerId = UUID()
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier", authFlowOwnerId: ownerId)
+    let earlierFlow = try #require(try store.load())
+    let gatedSignIn = protectGatedSignIn()
+    transport.stubSignInPrepareFirstFactor { _, _ in gatedSignIn }
+
+    let response = try await emailLinkSignIn().sendEmailLink()
+
+    #expect(response.status == .init(rawValue: "needs_protect_check"))
+    #expect(try store.load() == earlierFlow)
+    #expect(store.authFlowOwnerId(for: earlierFlow) == ownerId)
+  }
+
+  @Test
+  func sendMfaEmailLinkRestoresEarlierFlowWhenResponseStatusIsUnknown() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    let earlierFlow = try #require(try store.load())
+    let gatedSignIn = protectGatedSignIn()
+    transport.stubSignInPrepareSecondFactor { _, _ in gatedSignIn }
+
+    let response = try await emailLinkSignIn().sendMfaEmailLink()
+
+    #expect(response.status == .init(rawValue: "needs_protect_check"))
+    #expect(try store.load() == earlierFlow)
+  }
+
+  @Test
+  func sendEmailLinkLeavesNoFlowWhenResponseStatusIsUnknownWithNoEarlierFlow() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    let gatedSignIn = protectGatedSignIn()
+    transport.stubSignInPrepareFirstFactor { _, _ in gatedSignIn }
+
+    _ = try await emailLinkSignIn().sendEmailLink()
+
+    #expect(try store.load() == nil)
+  }
+
+  @Test
+  func sendEmailLinkReplacesEarlierFlowWhenResponseStatusIsKnown() async throws {
+    let store = useKeychain(InMemoryKeychain())
+    try store.save(kind: .signIn, flowId: "sign_in_123", codeVerifier: "earlier_verifier")
+    let challenge = LockIsolated<String?>(nil)
+    let signIn = emailLinkSignIn()
+    transport.stubSignInPrepareFirstFactor { _, params in
+      challenge.setValue(params?["code_challenge"]?.stringValue)
+      return signIn
+    }
+
+    _ = try await signIn.sendEmailLink()
+
+    let pendingFlow = try #require(try store.load())
+    #expect(pendingFlow.codeVerifier != "earlier_verifier")
+    #expect(PKCE.challenge(for: pendingFlow.codeVerifier) == challenge.value)
   }
 
   @Test

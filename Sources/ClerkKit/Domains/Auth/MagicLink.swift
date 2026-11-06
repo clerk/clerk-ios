@@ -163,6 +163,7 @@ final class MagicLinkStore {
     flowId: String,
     codeVerifier: String,
     authFlowOwnerId: UUID?,
+    responseKeptEarlierChallenge: (Response) -> Bool = { _ in false },
     prepare: @MainActor () async throws -> Response
   ) async throws -> Response {
     let earlierFlow = try load()
@@ -170,7 +171,11 @@ final class MagicLinkStore {
     try save(kind: kind, flowId: flowId, codeVerifier: codeVerifier, authFlowOwnerId: authFlowOwnerId)
 
     do {
-      return try await prepare()
+      let response = try await prepare()
+      if responseKeptEarlierChallenge(response) {
+        undoReplacement(of: earlierFlow, ownerId: earlierOwnerId, byFlowWith: codeVerifier)
+      }
+      return response
     } catch {
       if serverKeptEarlierChallenge(after: error, kind: kind) {
         undoReplacement(of: earlierFlow, ownerId: earlierOwnerId, byFlowWith: codeVerifier)
