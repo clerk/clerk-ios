@@ -71,9 +71,8 @@ struct ClerkTextField: View {
               .accessibilityHidden(isSecure && !revealText)
               .zIndex(revealText ? 1 : 0)
               .focused($focused, equals: .regular)
-              .animation(.default) {
-                $0.opacity(!isSecure || revealText ? 1 : 0)
-              }
+              .modifier(ClerkFieldOpacity(opacity: !isSecure || revealText ? 1 : 0))
+              .animation(.default, value: revealText)
 
             if isSecure {
               SecureField("", text: $text)
@@ -81,9 +80,8 @@ struct ClerkTextField: View {
                 .accessibilityHidden(revealText)
                 .zIndex(revealText ? 0 : 1)
                 .focused($focused, equals: .secure)
-                .animation(.default) {
-                  $0.opacity(isSecure && !revealText ? 1 : 0)
-                }
+                .modifier(ClerkFieldOpacity(opacity: isSecure && !revealText ? 1 : 0))
+                .animation(.default, value: revealText)
             }
           }
           .lineLimit(1)
@@ -120,8 +118,7 @@ struct ClerkTextField: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .allowsHitTesting(false)
           .accessibilityHidden(true)
-          .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
-          .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
+          .modifier(ClerkFloatingLabel(progress: isFocusedOrFilled ? 1 : 0, offset: offsetAmount))
           .animation(.default, value: isFocusedOrFilled)
       }
 

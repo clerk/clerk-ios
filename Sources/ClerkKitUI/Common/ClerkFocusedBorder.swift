@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ClerkFocusedBorder: ViewModifier {
   @Environment(\.clerkTheme) private var theme
+  @Environment(\.self) private var environment
 
   enum BorderState {
     case `default`
@@ -38,20 +39,51 @@ struct ClerkFocusedBorder: ViewModifier {
 
   func body(content: Content) -> some View {
     content
-      .animation(
-        .default,
-        body: { content in
-          content
-            .overlay {
-              RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                .strokeBorder(innerBorderColor, lineWidth: 1)
-            }
-            .background {
-              RoundedRectangle(cornerRadius: theme.design.borderRadius)
-                .stroke(outerBorderColor, lineWidth: isFocused ? 4 : 0)
-            }
-        }
-      )
+      .overlay {
+        ring(color: innerBorderColor, width: 1, isInset: true)
+      }
+      .background {
+        ring(color: outerBorderColor, width: isFocused ? 4 : 0, isInset: false)
+      }
+  }
+
+  private func ring(color: Color, width: CGFloat, isInset: Bool) -> some View {
+    let resolvedColor = color.resolve(in: environment)
+    let ring = AnimatedFocusRing(
+      color: resolvedColor,
+      width: width,
+      cornerRadius: theme.design.borderRadius,
+      isInset: isInset
+    )
+    return ring.animation(.default, value: ring.animatableData)
+  }
+}
+
+private nonisolated struct AnimatedFocusRing: View, Animatable {
+  var color: Color.Resolved
+  var width: CGFloat
+  var cornerRadius: CGFloat
+  let isInset: Bool
+
+  var animatableData: AnimatablePair<AnimatablePair<CGFloat, CGFloat>, Color.Resolved.AnimatableData> {
+    get { AnimatablePair(AnimatablePair(width, cornerRadius), color.animatableData) }
+    set {
+      width = newValue.first.first
+      cornerRadius = newValue.first.second
+      color.animatableData = newValue.second
+    }
+  }
+
+  @MainActor
+  var body: some View {
+    let shape = RoundedRectangle(cornerRadius: cornerRadius)
+    if isInset {
+      shape.strokeBorder(Color(color), lineWidth: width)
+        .transaction { $0.animation = nil }
+    } else {
+      shape.stroke(Color(color), lineWidth: width)
+        .transaction { $0.animation = nil }
+    }
   }
 }
 
