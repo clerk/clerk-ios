@@ -323,7 +323,7 @@ struct SignInTests {
 
   private func protectGatedSignIn() -> SignIn {
     var signIn = emailLinkSignIn()
-    signIn.status = .unknown("needs_protect_check")
+    signIn.status = .init(rawValue: "needs_protect_check")
     return signIn
   }
 
@@ -409,7 +409,7 @@ struct SignInTests {
 
     let response = try await emailLinkSignIn().sendEmailLink()
 
-    #expect(response.status == .unknown("needs_protect_check"))
+    #expect(response.status == .init(rawValue: "needs_protect_check"))
     #expect(try store.load() == earlierFlow)
     #expect(store.authFlowOwnerId(for: earlierFlow) == ownerId)
   }
@@ -424,7 +424,7 @@ struct SignInTests {
 
     let response = try await emailLinkSignIn().sendMfaEmailLink()
 
-    #expect(response.status == .unknown("needs_protect_check"))
+    #expect(response.status == .init(rawValue: "needs_protect_check"))
     #expect(try store.load() == earlierFlow)
   }
 

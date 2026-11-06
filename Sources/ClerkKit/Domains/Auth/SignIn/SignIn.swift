@@ -108,9 +108,7 @@ extension SignIn {
       flowId: id,
       codeVerifier: pkcePair.verifier,
       authFlowOwnerId: AuthFlowRequestScope.ownerId,
-      responseKeptEarlierChallenge: { signIn in
-        if case .unknown = signIn.status { true } else { false }
-      },
+      responseKeptEarlierChallenge: { $0.status.isUnknown },
       prepare: {
         try await prepare(resolvedRedirectUri, pkcePair.challenge)
       }
