@@ -236,8 +236,8 @@ struct ClerkPhoneNumberField: View {
                 .accessibilityHidden(true)
                 .transition(
                   .asymmetric(
-                    insertion: .opacity.animation(.default.delay(0.1)),
-                    removal: .opacity.animation(nil)
+                    insertion: .clerkFieldOpacity.animation(.default.delay(0.1)),
+                    removal: .clerkFieldOpacity.animation(nil)
                   )
                 )
             }
@@ -275,8 +275,7 @@ struct ClerkPhoneNumberField: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           .allowsHitTesting(false)
           .accessibilityHidden(true)
-          .offset(y: isFocusedOrFilled ? -offsetAmount : 0)
-          .scaleEffect(isFocusedOrFilled ? (12 / 17) : 1, anchor: .topLeading)
+          .modifier(ClerkFloatingLabel(progress: isFocusedOrFilled ? 1 : 0, offset: offsetAmount))
           .animation(.default, value: isFocusedOrFilled)
       }
       .accessibilityIdentifier(accessibilityIdentifier)

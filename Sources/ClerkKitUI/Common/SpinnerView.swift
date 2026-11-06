@@ -14,6 +14,9 @@ struct SpinnerView: View {
   var color: Color?
 
   var body: some View {
+    #if os(iOS)
+    ClerkRepeatingAnimation(kind: .spinner, color: color ?? theme.colors.mutedForeground)
+    #else
     Image("icon-spinner", bundle: .module)
       .resizable()
       .foregroundStyle(color ?? theme.colors.mutedForeground)
@@ -27,6 +30,7 @@ struct SpinnerView: View {
           rotation = 360
         }
       }
+    #endif
   }
 }
 
