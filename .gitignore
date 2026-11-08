@@ -110,3 +110,6 @@ e2e-tests/specs/explored/
 .verify/
 .cursor/skills/*
 !.cursor/skills/verify-clerk-ios
+
+# Claude Code local settings
+.claude/settings.local.json
