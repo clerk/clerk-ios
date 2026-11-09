@@ -13,6 +13,8 @@ reviews:
     max_merge_risk: moderate
   pre_merge_checks:
     override_requested_reviewers_only: true
+    docstrings:
+      mode: "off"
     custom_checks:
       - name: "Testing, risk, and revert"
         mode: error
@@ -28,8 +30,11 @@ reviews:
           (a) Shows a before and an after, as screenshots or video on a simulator or device, for every screen the diff touches and every state of those screens, including states that should look the same after the change. The pairs sit in a table, each before beside its after.
           (b) Says why the change could not be run on one.
           A screen that doesn't exist on the base branch, as the diff shows, has no before, so it needs only an after of each of its states.
-          FAIL when the diff touches those paths and either of these is true:
+          A language is not a separate state. Screens shown in English, the default language, cover every language.
+          When the diff adds or changes translations, the description also shows them on one screen, ideally the one where the text has the least room, or says why it doesn't. That one screen is enough, in whichever languages the author picks, with or without a before.
+          FAIL when the diff touches those paths and any of these is true:
           - Neither (a) nor (b) holds. For example, the evidence is missing, leaves out a touched screen or one of its states, or, for a screen that exists on the base branch, has no before or isn't laid out as a before and after table.
+          - The diff adds or changes translations, and the description neither shows them on one screen nor says why it doesn't.
           - A local patch forced a state, and the description doesn't say what the patch changed, why, and that both the before and the after build used it, or the after build alone for a screen that doesn't exist on the base branch. This fails even when (a) holds.
           A before build that only leaves out this PR's changes to the app, so the PR's tests can run against the old behavior, is not a local patch.
           A link to CI, a test run, or snapshot images is not device evidence.
