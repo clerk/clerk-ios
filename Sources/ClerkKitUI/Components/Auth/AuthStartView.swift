@@ -28,6 +28,7 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
   @State private var automaticPasskeySignInHasStarted = false
+  @State private var automaticPasskeyModalIsAvailable = true
   @State private var biometricCredentialAvailability: BiometricCredentialAvailability?
   @State private var biometryDisplayName: BiometryDisplayName?
 
@@ -286,7 +287,7 @@ struct AuthStartView: View {
     #if os(iOS) && !targetEnvironment(macCatalyst)
     .task(id: passkeySignInTaskID) {
       guard let passkeySignInTaskID else { return }
-      let includeAutomaticModal = !automaticPasskeySignInHasStarted
+      let includeAutomaticModal = automaticPasskeyModalIsAvailable
       automaticPasskeySignInTaskGeneration += 1
       let taskGeneration = automaticPasskeySignInTaskGeneration
       let task = Task {
@@ -536,6 +537,7 @@ extension AuthStartView {
   }
 
   private func cancelAutomaticPasskeySignIn() {
+    automaticPasskeyModalIsAvailable = false
     automaticPasskeySignInTaskGeneration += 1
     automaticPasskeySignInTask?.cancel()
     automaticPasskeySignInTask = nil
@@ -655,8 +657,9 @@ extension AuthStartView {
     let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
     guard let environment = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint) else { return }
     guard !Task.isCancelled, navigation.path.isEmpty else { return }
+    automaticPasskeySignInHasStarted = true
     if includeAutomaticModal {
-      automaticPasskeySignInHasStarted = true
+      automaticPasskeyModalIsAvailable = false
     }
 
     let shouldPresentAutomaticModal = includeAutomaticModal && passkeyAutomaticModalIsEnabled(environment: environment)

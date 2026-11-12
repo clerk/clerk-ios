@@ -156,7 +156,9 @@ extension SignInPasskeyView {
     defer { passkeyInProgress = false }
 
     do {
-      signIn = try await signIn.authenticateWithPasskeyWithFailureContext()
+      signIn = try await signIn.authenticateWithPasskeyWithFailureContext(
+        preferImmediatelyAvailableCredentials: false
+      )
 
       error = nil
       navigation.setToStepForStatus(signIn: signIn)
