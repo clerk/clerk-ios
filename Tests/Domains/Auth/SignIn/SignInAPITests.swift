@@ -734,14 +734,15 @@ struct SignInAPITests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "GET")
-      #expect(request.url?.query?.contains("rotating_token_nonce=test_nonce") == true)
+      let components = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+      #expect(components?.percentEncodedQuery?.contains("rotating_token_nonce=a%2Bb%20c/%3D") == true)
       requestHandled.setValue(true)
     }
     mock.register()
 
     _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.get(
       signInId: signIn.id,
-      params: .init(rotatingTokenNonce: "test_nonce")
+      params: .init(rotatingTokenNonce: "a+b c/=")
     ))
     #expect(requestHandled.value)
   }

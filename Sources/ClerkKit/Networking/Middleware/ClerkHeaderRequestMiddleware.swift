@@ -43,7 +43,7 @@ struct ClerkHeaderRequestMiddleware: ClerkRequestMiddleware {
     }
 
     if request.isScopedToClerkActiveSession {
-      request.url?.append(queryItems: [URLQueryItem(name: "_clerk_session_id", value: identity.activeSessionID)])
+      request.appendQueryItems([URLQueryItem(name: "_clerk_session_id", value: identity.activeSessionID)])
     }
 
     if !skipClientId, let clientId = identity.clientID {
