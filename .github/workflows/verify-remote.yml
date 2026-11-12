@@ -33,11 +33,11 @@ jobs:
       timeout: ${{ steps.plan.outputs.timeout }}
       request: ${{ steps.plan.outputs.request }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           sparse-checkout: e2e-tests
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
       - name: Install the package's pinned tools
@@ -76,11 +76,11 @@ jobs:
       AGENT_DEVICE_LEASE_MAX_TTL_MS: "21600000"
       SESSION_BUILD: e2e-tests/src/platform/ios/session-build.ts
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           ref: ${{ needs.plan.outputs.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
 
@@ -323,7 +323,7 @@ jobs:
 
       - name: Keep the evidence that attach handed off
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: verify-evidence
           path: ${{ runner.temp }}/verify-remote/evidence/
