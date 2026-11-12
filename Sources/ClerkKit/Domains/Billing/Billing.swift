@@ -23,8 +23,10 @@ public struct Billing {
   /// - Parameters:
   ///   - payerType: Whether to list user Plans or Organization Plans. Defaults to `.user`.
   ///   - orgId: The Organization to fetch Plans for. Populates each Plan's available prices for
-  ///     that Organization.
-  ///   - minSeats: The minimum number of seats the returned Plans need to support.
+  ///     that Organization. Pass it together with `minSeats` and `.organization` as the payer type,
+  ///     or not at all.
+  ///   - minSeats: The minimum number of seats the returned Plans need to support, as a positive
+  ///     number. Pass it together with `orgId` and `.organization` as the payer type, or not at all.
   ///   - page: The 1-based page number to fetch. Defaults to `1`.
   ///   - pageSize: The maximum number of Plans to return per page. Defaults to `20`.
   public func getPlans(
