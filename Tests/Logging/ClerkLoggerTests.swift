@@ -191,6 +191,19 @@ struct ClerkLoggerTests {
     })
     #expect(keychainEntry.level == .error)
   }
+
+  @Test(arguments: [
+    (LogLevel.error, false),
+    (.warning, false),
+    (.info, false),
+    (.debug, true),
+    (.verbose, true),
+  ])
+  func debugMessagesAreLoggedFromTheDebugLevelUp(configuredLevel: LogLevel, logsDebug: Bool) {
+    let configuration = ClerkLogger.Configuration(options: Clerk.Options(logLevel: configuredLevel))
+
+    #expect(ClerkLogger.shouldLog(level: .debug, configuration: configuration) == logsDebug)
+  }
 }
 
 extension Array {
