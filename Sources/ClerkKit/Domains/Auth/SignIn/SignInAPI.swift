@@ -58,12 +58,7 @@ package enum SignInAPI {
   static func get(signInId: String, params: SignIn.GetParams) -> Request<ClientResponse<SignIn>> {
     var queryParams: [(String, String?)] = []
     if let rotatingTokenNonce = params.rotatingTokenNonce {
-      queryParams.append(
-        (
-          "rotating_token_nonce",
-          rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        )
-      )
+      queryParams.append(("rotating_token_nonce", rotatingTokenNonce))
     }
 
     return Request(

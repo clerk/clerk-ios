@@ -42,12 +42,7 @@ package enum SignUpAPI {
   static func get(signUpId: String, params: SignUp.GetParams) -> Request<ClientResponse<SignUp>> {
     var queryParams: [(String, String?)] = []
     if let rotatingTokenNonce = params.rotatingTokenNonce {
-      queryParams.append(
-        (
-          "rotating_token_nonce",
-          rotatingTokenNonce.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        )
-      )
+      queryParams.append(("rotating_token_nonce", rotatingTokenNonce))
     }
 
     return Request(

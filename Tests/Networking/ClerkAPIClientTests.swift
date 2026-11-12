@@ -267,6 +267,34 @@ struct ClerkAPIClientTests {
   }
 
   @Test
+  func plusInAQueryValueReachesTheServerEscaped() async throws {
+    let percentEncodedQuery = LockIsolated<String?>(nil)
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
+
+    var mock = try Mock(
+      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder().encode(["success": true]),
+      ]
+    )
+
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      let components = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
+      percentEncodedQuery.setValue(components?.percentEncodedQuery)
+    }
+    mock.register()
+
+    let request = Request<EmptyResponse>(
+      path: "/v1/test",
+      method: .get,
+      query: [("query", "john+test@acme.com")]
+    )
+
+    _ = try await Clerk.shared.dependencies.apiClient.send(request)
+    #expect(percentEncodedQuery.value == "query=john%2Btest%40acme.com&_is_native=true")
+  }
+
+  @Test
   func multipartUpload() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!

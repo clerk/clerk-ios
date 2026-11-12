@@ -119,8 +119,7 @@ package struct Request<Response: Decodable & Sendable> {
     }
 
     if !queryItems.isEmpty {
-      let existing = components.queryItems ?? []
-      components.queryItems = existing + queryItems
+      components.appendQueryItems(queryItems)
     }
 
     guard let finalURL = components.url else {

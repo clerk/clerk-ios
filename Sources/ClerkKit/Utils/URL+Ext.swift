@@ -42,3 +42,24 @@ extension URLComponents {
       .value
   }
 }
+
+extension URLComponents {
+  /// Foundation leaves `+` unescaped in query values, and servers decode an unescaped `+` as a space.
+  mutating func appendQueryItems(_ items: [URLQueryItem]) {
+    let encodedItems = items.map {
+      URLQueryItem(
+        name: $0.name.addingPercentEncoding(withAllowedCharacters: .afURLQueryAllowed) ?? $0.name,
+        value: $0.value?.addingPercentEncoding(withAllowedCharacters: .afURLQueryAllowed)
+      )
+    }
+    percentEncodedQueryItems = (percentEncodedQueryItems ?? []) + encodedItems
+  }
+}
+
+extension URLRequest {
+  mutating func appendQueryItems(_ items: [URLQueryItem]) {
+    guard let url, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return }
+    components.appendQueryItems(items)
+    self.url = components.url ?? url
+  }
+}
