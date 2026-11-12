@@ -365,7 +365,8 @@ jobs:
             prerelease=true
           fi
 
-          status="$(gh api --include "repos/$GH_REPO/releases/tags/$RELEASE_VERSION" 2>/dev/null | head -n 1 | awk '{ print $2 }' || true)"
+          lookup="$(gh api --include "repos/$GH_REPO/releases/tags/$RELEASE_VERSION" 2>&1 || true)"
+          status="$(head -n 1 <<< "$lookup" | awk '{ print $2 }')"
 
           case "$status" in
             200)
@@ -377,6 +378,7 @@ jobs:
               ;;
             *)
               echo "❌ Couldn't check whether release '$RELEASE_VERSION' exists (HTTP status '${status:-none}')."
+              echo "$lookup"
               exit 1
               ;;
           esac
