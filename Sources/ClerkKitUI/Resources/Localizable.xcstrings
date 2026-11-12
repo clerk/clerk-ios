@@ -16275,7 +16275,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Davetler"
+            "value" : "Otomatik katılım yok"
           }
         },
         "uk" : {
@@ -27148,7 +27148,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Update %@"
+            "value" : "تحديث %@"
           }
         },
         "de" : {
