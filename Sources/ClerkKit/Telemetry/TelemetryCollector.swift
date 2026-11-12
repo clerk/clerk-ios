@@ -202,8 +202,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
       _ = try await config.networkRequester.data(for: request)
     } catch {
       let shouldLog = await Task { @MainActor in
-        let configuredLevel = Clerk.shared.options.logLevel
-        return configuredLevel <= .debug
+        ClerkLogger.shouldLog(level: .debug)
       }.value
 
       if shouldLog {
@@ -219,8 +218,7 @@ package actor TelemetryCollector: TelemetryCollectorProtocol {
 
   private func logEventIfDebug(name: String, _ payload: Any) async {
     let shouldLog = await Task { @MainActor in
-      let configuredLevel = Clerk.shared.options.logLevel
-      return configuredLevel <= .debug
+      ClerkLogger.shouldLog(level: .debug)
     }.value
 
     guard shouldLog else { return }
