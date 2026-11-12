@@ -27,6 +27,7 @@ struct AuthStartView: View {
   @State private var automaticPasskeySignInTask: Task<Void, Never>?
   @State private var automaticPasskeySignInTaskGeneration = 0
   @State private var automaticPasskeySignInRestartID = 0
+  @State private var automaticPasskeySignInHasStarted = false
   @State private var automaticPasskeyModalIsAvailable = true
   @State private var biometricCredentialAvailability: BiometricCredentialAvailability?
   @State private var biometryDisplayName: BiometryDisplayName?
@@ -548,7 +549,7 @@ extension AuthStartView {
   }
 
   private func restartAutomaticPasskeySignInAfterEnvironmentRefreshIfNeeded() {
-    guard automaticPasskeyModalIsAvailable, automaticPasskeySignInTask == nil else { return }
+    guard !automaticPasskeySignInHasStarted, automaticPasskeySignInTask == nil else { return }
     restartAutomaticPasskeySignInIfNeeded()
   }
 
@@ -652,6 +653,7 @@ extension AuthStartView {
     let checkpoint = authState.environmentRefreshCheckpoint(for: clerk)
     guard let environment = try? await clerk.ensureEnvironmentRefreshed(after: checkpoint) else { return }
     guard !Task.isCancelled, navigation.path.isEmpty else { return }
+    automaticPasskeySignInHasStarted = true
     if includeAutomaticModal {
       automaticPasskeyModalIsAvailable = false
     }
