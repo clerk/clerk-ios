@@ -22,7 +22,9 @@ const LIMITS = {
 const ARTIFACT = 'verify-evidence';
 const MANIFEST_FILE = 'manifest.json';
 const SESSION_WORKFLOW = '.github/workflows/verify-remote.yml';
-const MANIFEST_VERSION = 2;
+const MANIFEST_VERSION = 3;
+// Version 2 came before the parts of the video, and sessions that started on an older commit still write it.
+const VERSIONS_TAKEN = [2, MANIFEST_VERSION];
 
 const SHAPE = {
   run: /^r\d{8}-\d{6}-[0-9a-f]{4}$/,
@@ -35,7 +37,10 @@ const SHAPE = {
   actor: /^[A-Za-z0-9][A-Za-z0-9_-]{0,99}(\[bot\])?$/,
 };
 
-const MANIFEST_KEYS = ['v', 'pr', 'run', 'platform', 'device', 'commit', 'passed', 'flaky', 'total', 'files', 'before'];
+const MANIFEST_KEYS = ['v', 'pr', 'run', 'platform', 'device', 'commit', 'passed', 'flaky', 'total', 'files', 'before', 'parts'];
+const KEYS_OF_VERSION_2 = MANIFEST_KEYS.filter(key => key !== 'parts');
+const PART = /^[^\u0000-\u001f<>`|]{1,200}$/;
+const MOST_PARTS = 20;
 const BEFORE_KEYS = ['run', 'commit', 'passed', 'flaky', 'total', 'files'];
 const FILE_KEYS = ['name', 'bytes', 'sha256'];
 
@@ -283,6 +288,23 @@ function parseBeforeFiles(list, files) {
   return paired;
 }
 
+function parseParts(list) {
+  if (!Array.isArray(list) || list.length > MOST_PARTS) {
+    refuse(`parts must be a list of at most ${MOST_PARTS}`);
+  }
+  return list.map((part, i) => {
+    if (typeof part !== 'string' || !PART.test(part)) {
+      refuse(`part ${i + 1} must be 1 to 200 characters of one line, without <, >, \` or |`);
+    }
+    return part;
+  });
+}
+
+const partsSection = (parts, hasBefore) =>
+  parts.length === 0
+    ? []
+    : [[`${hasBefore ? 'Each video shows' : 'The video shows'} these parts, in order:`, ...parts.map((part, at) => `${at + 1}. ${part}`)].join('\n')];
+
 function parseManifest(text) {
   if (Buffer.byteLength(text) > LIMITS.manifestBytes) {
     refuse(`the manifest is over ${LIMITS.manifestBytes} bytes`);
@@ -294,11 +316,12 @@ function parseManifest(text) {
     return refuse('the manifest is not JSON');
   }
   const { v } = anObject(parsed, 'the manifest');
-  if (v !== MANIFEST_VERSION) {
+  if (!VERSIONS_TAKEN.includes(v)) {
     const found = Number.isInteger(v) && v >= 0 && v <= 999 ? `version ${v}` : 'of no version this script knows';
-    refuse(`the manifest is ${found}, and this script publishes only version ${MANIFEST_VERSION}`);
+    refuse(`the manifest is ${found}, and this script publishes only versions ${VERSIONS_TAKEN.join(' and ')}`);
   }
-  const raw = record(parsed, MANIFEST_KEYS, 'the manifest');
+  const raw = record(parsed, v === MANIFEST_VERSION ? MANIFEST_KEYS : KEYS_OF_VERSION_2, 'the manifest');
+  const parts = v === MANIFEST_VERSION ? parseParts(raw.parts) : [];
   if (raw.platform !== 'ios' && raw.platform !== 'android') {
     refuse('platform must be ios or android');
   }
@@ -326,6 +349,7 @@ function parseManifest(text) {
     total: whole(raw.total, 1, LIMITS.tests, 'total'),
     files,
     before,
+    parts,
   };
   if (manifest.passed + manifest.flaky < 1 || manifest.passed + manifest.flaky > manifest.total) {
     refuse('passed and flaky must count at least one test and at most total');
@@ -483,11 +507,14 @@ function evidenceBlock(manifest, session, onDisk = file => file.name, uploaded =
   const media =
     uploaded === null
       ? everyFile(manifest).map(file => `![${isVideo(file.name) ? file.name : stem(file.name)}](./${onDisk(file)})`)
-      : mediaTables(
-          manifest.files.map(file => file.name),
-          before === null ? null : before.files.map(file => file !== null),
-          uploaded,
-        );
+      : [
+          ...mediaTables(
+            manifest.files.map(file => file.name),
+            before === null ? null : before.files.map(file => file !== null),
+            uploaded,
+          ),
+          ...partsSection(manifest.parts, before !== null),
+        ];
   return [start, '', line, ...media.flatMap(part => ['', part]), '', end].join('\n');
 }
 
