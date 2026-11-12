@@ -41,7 +41,8 @@ const MANIFEST_KEYS = ['v', 'pr', 'run', 'platform', 'device', 'commit', 'passed
 const KEYS_OF_VERSION_2 = MANIFEST_KEYS.filter(key => key !== 'parts');
 const PART = /^[^\u0000-\u001f<>`|]{1,200}$/;
 const MOST_PARTS = 20;
-const BEFORE_KEYS = ['run', 'commit', 'passed', 'flaky', 'total', 'files'];
+const BEFORE_KEYS = ['run', 'commit', 'passed', 'flaky', 'total', 'files', 'parts'];
+const BEFORE_KEYS_OF_VERSION_2 = BEFORE_KEYS.filter(key => key !== 'parts');
 const FILE_KEYS = ['name', 'bytes', 'sha256'];
 
 class Refused extends Error {}
@@ -256,8 +257,8 @@ function parseFiles(list, what) {
   return files;
 }
 
-function parseBefore(value, run, files) {
-  const raw = record(value, BEFORE_KEYS, 'before');
+function parseBefore(value, run, files, withParts) {
+  const raw = record(value, withParts ? BEFORE_KEYS : BEFORE_KEYS_OF_VERSION_2, 'before');
   const before = {
     run: shaped(raw.run, SHAPE.run, 'the run of before'),
     commit: shaped(raw.commit, SHAPE.commit, 'the commit of before'),
@@ -265,6 +266,7 @@ function parseBefore(value, run, files) {
     flaky: whole(raw.flaky, 0, LIMITS.tests, 'flaky of before'),
     total: whole(raw.total, 1, LIMITS.tests, 'total of before'),
     files: parseBeforeFiles(raw.files, files),
+    parts: withParts ? parseParts(raw.parts) : [],
   };
   if (before.run === run) {
     refuse('before is the run itself');
@@ -300,10 +302,22 @@ function parseParts(list) {
   });
 }
 
-const partsSection = (parts, hasBefore) =>
-  parts.length === 0
-    ? []
-    : [[`${hasBefore ? 'Each video shows' : 'The video shows'} these parts, in order:`, ...parts.map((part, at) => `${at + 1}. ${part}`)].join('\n')];
+const listed = (heading, parts) =>
+  [`${heading} these parts, in order:`, ...parts.map((part, at) => `${at + 1}. ${part}`)].join('\n');
+
+// The before video is cut to the before run's own parts, which differ when that run failed partway or seeded other users.
+function partsSection(parts, beforeParts) {
+  if (beforeParts === null) {
+    return parts.length === 0 ? [] : [listed('The video shows', parts)];
+  }
+  if (parts.length > 0 && parts.length === beforeParts.length && parts.every((part, at) => part === beforeParts[at])) {
+    return [listed('Each video shows', parts)];
+  }
+  return [
+    ...(beforeParts.length === 0 ? [] : [listed('The before video shows', beforeParts)]),
+    ...(parts.length === 0 ? [] : [listed('The after video shows', parts)]),
+  ];
+}
 
 function parseManifest(text) {
   if (Buffer.byteLength(text) > LIMITS.manifestBytes) {
@@ -326,7 +340,7 @@ function parseManifest(text) {
     refuse('platform must be ios or android');
   }
   const files = parseFiles(raw.files, 'files');
-  const before = raw.before === null ? null : parseBefore(raw.before, raw.run, files);
+  const before = raw.before === null ? null : parseBefore(raw.before, raw.run, files, v === MANIFEST_VERSION);
   const all = everyFile({ files, before });
   if (all.length > LIMITS.files) {
     refuse(`at most ${LIMITS.files} files in all`);
@@ -513,7 +527,7 @@ function evidenceBlock(manifest, session, onDisk = file => file.name, uploaded =
             before === null ? null : before.files.map(file => file !== null),
             uploaded,
           ),
-          ...partsSection(manifest.parts, before !== null),
+          ...partsSection(manifest.parts, before === null ? null : before.parts),
         ];
   return [start, '', line, ...media.flatMap(part => ['', part]), '', end].join('\n');
 }

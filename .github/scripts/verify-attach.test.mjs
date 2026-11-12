@@ -152,6 +152,7 @@ const beforeFor = (files, change = {}) => ({
   flaky: 0,
   total: 3,
   files: files.map(([name, data]) => ({ name, bytes: data.length, sha256: sha256(data) })),
+  parts: [],
   ...change,
 });
 const WITH_BEFORE = manifestFor(MEDIA, { before: beforeFor(WAS_MEDIA) });
@@ -1476,8 +1477,8 @@ describe('the step that edits the description', () => {
   const WAS_SHOT = [['before-profile.png', WAS_PNG]];
   const CLIP = [['video.mp4', MP4]];
   const WAS_CLIP = [['before-video.mp4', WAS_MP4]];
-  const published = async (media, wasMedia, parts = []) => {
-    const manifest = manifestFor(media, { parts, ...(wasMedia === undefined ? {} : { before: beforeFor(wasMedia) }) });
+  const published = async (media, wasMedia, parts = [], beforeParts = parts) => {
+    const manifest = manifestFor(media, { parts, ...(wasMedia === undefined ? {} : { before: beforeFor(wasMedia, { parts: beforeParts }) }) });
     const fake = fakeGh({ ...PULL, body: '' });
     const { outcome } = publish(await fetched(manifest, [...media, ...(wasMedia ?? [])]), fake);
     assert.equal(outcome, 'published');
@@ -1535,6 +1536,29 @@ describe('the step that edits the description', () => {
       await published(CLIP, undefined, parts),
       laidOut(SAID, '', '| `video` |', '| :---: |', `| ${asset(1)} |`, '', 'The video shows these parts, in order:', `1. ${parts[0]}`, `2. ${parts[1]}`),
     );
+    assert.equal(
+      await published(CLIP, WAS_CLIP, parts, [parts[0]]),
+      laidOut(
+        `${SAID}${WAS}`,
+        '',
+        '| Before | After |',
+        '| :---: | :---: |',
+        `| ${asset(2)} | ${asset(1)} |`,
+        '',
+        'The before video shows these parts, in order:',
+        `1. ${parts[0]}`,
+        '',
+        'The after video shows these parts, in order:',
+        `1. ${parts[0]}`,
+        `2. ${parts[1]}`,
+      ),
+    );
+  });
+
+  it('reads the before of a version 2 manifest as having no parts', () => {
+    const { parts: _, ...versionTwo } = { ...WITH_BEFORE, v: 2 };
+    const { parts: __, ...beforeTwo } = WITH_BEFORE.before;
+    assert.deepEqual(parseManifest(JSON.stringify({ ...versionTwo, before: beforeTwo })), { ...WITH_BEFORE, parts: [], before: { ...WITH_BEFORE.before, parts: [] } });
   });
 
   it('lays out a flow that is new as its video alone, in a table that keeps it from the full width', async () => {
