@@ -58,7 +58,9 @@ extension Auth {
   #if canImport(UIKit)
   /// Opens a web page in the user's default browser with the active session's user signed in.
   ///
-  /// Returns once the system hands the URL to the browser.
+  /// Returns once the system hands the URL to the browser. A refused sign-in still lands on
+  /// `destination`, with `__clerk_status=session_transfer_failed` and a `__clerk_error_code` query
+  /// parameter.
   ///
   /// ```swift
   /// try await clerk.auth.openInBrowser(destination: URL(string: "https://app.example.com/settings")!)
@@ -89,24 +91,28 @@ extension Auth {
   /// Loads a web page in your web view with the active session's user signed in.
   ///
   /// The web view loads a Clerk page that signs the user in and then redirects to `destination`.
-  /// Watch the web view's navigation to tell when `destination` has loaded.
+  /// Returns once that load starts, so watch the web view's navigation to tell when `destination`
+  /// has loaded.
+  ///
+  /// A refused sign-in still lands on `destination`, with `__clerk_status=session_transfer_failed`
+  /// and a `__clerk_error_code` query parameter, so check for them in your `WKNavigationDelegate`.
+  ///
+  /// The web view keeps its web session in its `WKWebsiteDataStore`. Clear that data store when the
+  /// native user signs out or switches accounts, or the page can show the previous user.
   ///
   /// ```swift
   /// try await clerk.auth.loadInWebView(webView, destination: URL(string: "https://app.example.com/settings")!)
   /// ```
   ///
   /// - Parameters:
-  ///   - webView: The web view to load the page in. It keeps the web session in its
-  ///     `WKWebsiteDataStore`.
+  ///   - webView: The web view to load the page in.
   ///   - destination: An absolute `http` or `https` URL on one of your instance's domains.
   ///     Production instances accept only `https`.
-  /// - Returns: The navigation that loads the sign-in page.
   /// - Throws: The errors ``prepareSessionTransfer(destination:presentation:)`` throws.
-  @discardableResult
-  public func loadInWebView(_ webView: WKWebView, destination: URL) async throws -> WKNavigation? {
+  public func loadInWebView(_ webView: WKWebView, destination: URL) async throws {
     let transfer = try await prepareSessionTransfer(destination: destination, presentation: .webView)
     try Task.checkCancellation()
-    return webView.load(URLRequest(url: transfer.url))
+    webView.load(URLRequest(url: transfer.url))
   }
   #endif
 }

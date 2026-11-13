@@ -285,10 +285,9 @@ struct SessionTransferRequestTests {
     let webView = WKWebView()
     defer { webView.stopLoading() }
 
-    let navigation = try await Clerk.shared.auth.loadInWebView(webView, destination: #require(URL(string: "https://app.example.com/settings")))
+    try await Clerk.shared.auth.loadInWebView(webView, destination: #require(URL(string: "https://app.example.com/settings")))
 
     #expect(presentationMode.value == "webview")
-    #expect(navigation != nil)
     #expect(webView.url?.absoluteString == mintedUrlString)
   }
 
@@ -300,7 +299,7 @@ struct SessionTransferRequestTests {
     let destination = try #require(URL(string: "https://app.example.com/settings"))
 
     let result = await Task {
-      _ = try await Clerk.shared.auth.loadInWebView(webView, destination: destination)
+      try await Clerk.shared.auth.loadInWebView(webView, destination: destination)
     }.result
 
     #expect(throws: CancellationError.self) { try result.get() }
