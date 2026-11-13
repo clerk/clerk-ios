@@ -33,7 +33,7 @@ jobs:
       timeout: ${{ steps.plan.outputs.timeout }}
       request: ${{ steps.plan.outputs.request }}
     steps:
-      - uses: actions/checkout@v4.4.0
+      - uses: actions/checkout@v7.0.1
         with:
           sparse-checkout: e2e-tests
           persist-credentials: false
@@ -76,7 +76,7 @@ jobs:
       AGENT_DEVICE_LEASE_MAX_TTL_MS: "21600000"
       SESSION_BUILD: e2e-tests/src/platform/ios/session-build.ts
     steps:
-      - uses: actions/checkout@v4.4.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: ${{ needs.plan.outputs.sha || github.sha }}
           persist-credentials: false
