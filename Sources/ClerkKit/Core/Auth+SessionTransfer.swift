@@ -79,6 +79,7 @@ extension Auth {
 
   func openInBrowser(destination: URL, open: SessionTransferURLOpener) async throws {
     let transfer = try await prepareSessionTransfer(destination: destination, presentation: .browser)
+    try Task.checkCancellation()
     guard await open(transfer.url) else {
       throw ClerkClientError(message: "No browser could open the sign-in link.", localizationBundle: .module)
     }
@@ -104,6 +105,7 @@ extension Auth {
   @discardableResult
   public func loadInWebView(_ webView: WKWebView, destination: URL) async throws -> WKNavigation? {
     let transfer = try await prepareSessionTransfer(destination: destination, presentation: .webView)
+    try Task.checkCancellation()
     return webView.load(URLRequest(url: transfer.url))
   }
   #endif
