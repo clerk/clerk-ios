@@ -37,12 +37,12 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@v4.4.0
         with:
           persist-credentials: false
 
       - name: Set up Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
 
@@ -58,7 +58,7 @@ jobs:
 
       - name: Restore the Swift packages
         id: packages
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/packages
           key: verify-packages-unresolved
@@ -75,7 +75,7 @@ jobs:
       - name: Look for the stored app
         id: stored
         if: steps.app.outputs.key != ''
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/apps/${{ steps.app.outputs.key }}
           key: verify-e2ehost-${{ steps.app.outputs.key }}
@@ -92,21 +92,21 @@ jobs:
 
       - name: Store the app
         if: steps.report.outputs.store != ''
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/apps/${{ steps.report.outputs.store }}
           key: verify-e2ehost-${{ steps.report.outputs.store }}
 
       - name: Store the Swift packages
         if: steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/packages
           key: verify-packages-${{ steps.app.outputs.pins }}
 
       - name: Store the build state
         if: steps.report.outputs.built != ''
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/derived
           key: verify-derived-${{ steps.app.outputs.toolchain }}-${{ steps.report.outputs.built }}
@@ -120,7 +120,7 @@ jobs:
 
       - name: Look for the stored XCTest runner
         id: runner
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ~/.agent-device/apple-runner
           key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
@@ -148,7 +148,7 @@ jobs:
 
       - name: Store the XCTest runner
         if: steps.prepare.outcome == 'success'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ~/.agent-device/apple-runner
           key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}

@@ -33,11 +33,11 @@ jobs:
       timeout: ${{ steps.plan.outputs.timeout }}
       request: ${{ steps.plan.outputs.request }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
         with:
           sparse-checkout: e2e-tests
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
       - name: Install the package's pinned tools
@@ -76,11 +76,11 @@ jobs:
       AGENT_DEVICE_LEASE_MAX_TTL_MS: "21600000"
       SESSION_BUILD: e2e-tests/src/platform/ios/session-build.ts
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4.4.0
         with:
           ref: ${{ needs.plan.outputs.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4.4.0
         with:
           node-version: 24
 
@@ -124,7 +124,7 @@ jobs:
       - name: Restore the Swift packages
         id: packages
         if: steps.device.outputs.udid != ''
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/packages
           key: verify-packages-unresolved
@@ -143,14 +143,14 @@ jobs:
       - name: Restore the app that an earlier build stored
         id: stored
         if: steps.app.outputs.key != ''
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/apps/${{ steps.app.outputs.key }}
           key: verify-e2ehost-${{ steps.app.outputs.key }}
 
       - name: Restore the build state
         if: steps.device.outputs.udid != ''
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/derived
           key: verify-derived-${{ steps.app.outputs.toolchain }}-${{ steps.app.outputs.key || github.run_id }}
@@ -167,7 +167,7 @@ jobs:
       - name: Restore the XCTest runner
         id: runner
         if: steps.device.outputs.udid != ''
-        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/restore@v4.3.0
         with:
           path: ~/.agent-device/apple-runner
           key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
@@ -276,21 +276,21 @@ jobs:
 
       - name: Store the app for the next session with the same sources, packages and Xcode
         if: steps.patched.outputs.built != 'true' && steps.report.outputs.store != '' && steps.report.outputs.store == steps.app.outputs.key
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/apps/${{ steps.report.outputs.store }}
           key: verify-e2ehost-${{ steps.report.outputs.store }}
 
       - name: Store the XCTest runner
         if: steps.patched.outputs.built != 'true' && steps.prepare.outputs.how == 'built' && steps.runner.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ~/.agent-device/apple-runner
           key: verify-agent-device-${{ runner.os }}-${{ hashFiles('e2e-tests/package-lock.json') }}-${{ steps.app.outputs.toolchain }}-${{ env.IOS_RUNTIME }}
 
       - name: Store the Swift packages
         if: steps.patched.outputs.built != 'true' && steps.app.outputs.pins != '' && steps.packages.outputs.cache-matched-key != format('verify-packages-{0}', steps.app.outputs.pins)
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@v4.3.0
         with:
           path: ${{ runner.temp }}/verify-remote/packages
           key: verify-packages-${{ steps.app.outputs.pins }}
@@ -323,7 +323,7 @@ jobs:
 
       - name: Keep the evidence that attach handed off
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: verify-evidence
           path: ${{ runner.temp }}/verify-remote/evidence/

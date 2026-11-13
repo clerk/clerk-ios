@@ -31,20 +31,50 @@ jobs:
       build_platforms: '["iOS", "macOS"]'
       e2e_runner_tests_base: ${{ github.base_ref || github.event.merge_group.base_ref }}
 
+  actions-lock:
+    name: Verify actions lockfile
+    if: github.event_name == 'merge_group' || github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the workflows
+        uses: actions/checkout@v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: .github
+          sparse-checkout-cone-mode: false
+
+      - name: Install gh-actions-lock
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh extension install github/gh-actions-lock --pin v0.2.0
+
+      - name: Verify every workflow dependency is locked
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh actions-lock --verify
+
   # The one required check. A skipped job counts as passing, so this one runs even when the checks
   # failed or were cancelled, and fails then.
   ci-passed:
     name: CI passed
-    needs: checks
+    needs:
+      - checks
+      - actions-lock
     if: always() && (github.event_name == 'merge_group' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     permissions: {}
     steps:
       - name: Require the checks to pass
         env:
-          RESULT: ${{ needs.checks.result }}
+          CHECKS_RESULT: ${{ needs.checks.result }}
+          ACTIONS_LOCK_RESULT: ${{ needs.actions-lock.result }}
         run: |
-          if [ "$RESULT" != success ]; then
-            echo "::error::The checks finished with the result '$RESULT'."
+          if [ "$CHECKS_RESULT" != success ]; then
+            echo "::error::The checks finished with the result '$CHECKS_RESULT'."
+            exit 1
+          fi
+          if [ "$ACTIONS_LOCK_RESULT" != success ]; then
+            echo "::error::The actions lockfile check finished with the result '$ACTIONS_LOCK_RESULT'."
             exit 1
           fi

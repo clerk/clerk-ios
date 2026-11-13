@@ -730,8 +730,8 @@ describe('PR CI', () => {
     return new Function(`return ${expression};`)() as boolean;
   }
 
-  function passes(result: string): boolean {
-    return spawnSync('bash', ['-c', script('Require the checks to pass', job('ci-passed'))], { env: { PATH: process.env.PATH, RESULT: result }, encoding: 'utf8' }).status === 0;
+  function passes(checks: string, actionsLock = 'success'): boolean {
+    return spawnSync('bash', ['-c', script('Require the checks to pass', job('ci-passed'))], { env: { PATH: process.env.PATH, CHECKS_RESULT: checks, ACTIONS_LOCK_RESULT: actionsLock }, encoding: 'utf8' }).status === 0;
   }
 
   it('runs on each push to a pull request through pull_request, which gives a fork no secrets and a read-only token, and in the merge queue, and a new push cancels the last run', () => {
@@ -741,16 +741,23 @@ describe('PR CI', () => {
   });
 
   it('skips a draft, so a draft has no CI passed check until it is marked ready for review', () => {
-    assert.deepEqual([runs('checks', true), runs('ci-passed', true), runs('checks', false), runs('ci-passed', false)], [false, false, true, true]);
+    assert.deepEqual([runs('checks', true), runs('actions-lock', true), runs('ci-passed', true), runs('checks', false), runs('actions-lock', false), runs('ci-passed', false)], [false, false, false, true, true, true]);
   });
 
   it('runs every job in the merge queue, where there is no pull request to be a draft', () => {
-    assert.deepEqual([runs('checks', undefined as unknown as boolean, 'success', 'merge_group'), runs('ci-passed', undefined as unknown as boolean, 'success', 'merge_group')], [true, true]);
+    assert.deepEqual(['checks', 'actions-lock', 'ci-passed'].map((name) => runs(name, undefined as unknown as boolean, 'success', 'merge_group')), [true, true, true]);
   });
 
-  it('reports CI passed after the checks whatever their result, and passes only when they succeeded', () => {
-    assert.match(job('ci-passed'), /^ {4}needs: checks$/m);
+  it('reports CI passed after the checks and the lockfile check whatever their results, and passes only when both succeeded', () => {
+    assert.match(job('ci-passed'), /^ {4}needs:\n {6}- checks\n {6}- actions-lock\n/m);
     assert.deepEqual(['failure', 'cancelled', 'skipped'].map((result) => runs('ci-passed', false, result)), [true, true, true]);
-    assert.deepEqual(['success', 'failure', 'cancelled', 'skipped'].map(passes), [true, false, false, false]);
+    assert.deepEqual(['success', 'failure', 'cancelled', 'skipped'].map((result) => passes(result)), [true, false, false, false]);
+    assert.deepEqual(['success', 'failure', 'cancelled', 'skipped'].map((result) => passes('success', result)), [true, false, false, false]);
+  });
+
+  it('verifies the actions lockfile with a pinned gh-actions-lock and a read-only checkout', () => {
+    assert.match(job('actions-lock'), /^ {8}run: gh extension install github\/gh-actions-lock --pin v\d+\.\d+\.\d+$/m);
+    assert.match(job('actions-lock'), /^ {8}run: gh actions-lock --verify$/m);
+    assert.match(job('actions-lock'), /^ {10}persist-credentials: false$/m);
   });
 });
