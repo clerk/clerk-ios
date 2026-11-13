@@ -253,6 +253,25 @@ struct SessionTransferRequestTests {
     }
   }
 
+  @Test
+  func openInBrowserOpensNothingWhenCancelledAfterTheTransferIsCreated() async throws {
+    let transport = useFakeTransport(client: .mock)
+    try stubTransferThatCancelsTheCallingTask(on: transport)
+    let opened = LockIsolated(false)
+    let destination = try #require(URL(string: "https://app.example.com/settings"))
+
+    let result = await Task {
+      try await Clerk.shared.auth.openInBrowser(destination: destination) { _ in
+        opened.setValue(true)
+        return true
+      }
+    }.result
+
+    #expect(throws: CancellationError.self) { try result.get() }
+    #expect(transport.calls.count == 1)
+    #expect(!opened.value)
+  }
+
   #if canImport(WebKit)
   @Test
   func loadInWebViewMintsAWebViewTransferAndLoadsItsUrl() async throws {
@@ -272,6 +291,22 @@ struct SessionTransferRequestTests {
     #expect(navigation != nil)
     #expect(webView.url?.absoluteString == mintedUrlString)
   }
+
+  @Test
+  func loadInWebViewLoadsNothingWhenCancelledAfterTheTransferIsCreated() async throws {
+    let transport = useFakeTransport(client: .mock)
+    try stubTransferThatCancelsTheCallingTask(on: transport)
+    let webView = WKWebView()
+    let destination = try #require(URL(string: "https://app.example.com/settings"))
+
+    let result = await Task {
+      _ = try await Clerk.shared.auth.loadInWebView(webView, destination: destination)
+    }.result
+
+    #expect(throws: CancellationError.self) { try result.get() }
+    #expect(transport.calls.count == 1)
+    #expect(webView.url == nil)
+  }
   #endif
 
   private func signInForTesting() throws -> String {
@@ -289,6 +324,17 @@ struct SessionTransferRequestTests {
     )
     Clerk.shared.client = client
     return transport
+  }
+
+  private func stubTransferThatCancelsTheCallingTask(on transport: FakeTransport) throws {
+    let params = try SessionTransferCreateParams(destination: #require(URL(string: "https://app.example.com")), presentation: .browser)
+    transport.stub(SessionTransferAPI.create(sessionId: FakeTransport.anyPathSegment, params: params)) { _ in
+      withUnsafeCurrentTask { $0?.cancel() }
+      return ClientResponse(
+        response: SessionTransferResource(object: "session_transfer", url: mintedUrlString, expiresAt: expectedExpiresAt),
+        client: nil
+      )
+    }
   }
 
   private func sessionTransferMock(sessionId: String, url: String = mintedUrlString) throws -> Mock {
