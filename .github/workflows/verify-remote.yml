@@ -37,7 +37,7 @@ jobs:
         with:
           sparse-checkout: e2e-tests
           persist-credentials: false
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
       - name: Install the package's pinned tools
@@ -80,7 +80,7 @@ jobs:
         with:
           ref: ${{ needs.plan.outputs.sha || github.sha }}
           persist-credentials: false
-      - uses: actions/setup-node@v4.4.0
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: 24
 
