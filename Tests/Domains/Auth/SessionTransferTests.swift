@@ -137,6 +137,27 @@ struct SessionTransferRequestTests {
   }
 
   @Test
+  func prepareLogsNeitherTheUrlNorTheTokenAtVerboseLevel() async throws {
+    let sessionId = try signInForTesting()
+    try Clerk.shared.dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: Clerk.Options(logLevel: .verbose))
+    try sessionTransferMock(sessionId: sessionId).register()
+    let (lines, restoreSink) = captureLogLines()
+    defer { restoreSink() }
+
+    _ = try await Clerk.shared.auth.prepareSessionTransfer(
+      destination: #require(URL(string: "https://app.example.com/settings")),
+      presentation: .webView
+    )
+
+    try await #require(lines.firstLine(containing: "Response: 200 POST") != nil)
+    try await Task.sleep(for: .milliseconds(100))
+    for line in lines.value {
+      #expect(!line.contains(mintedToken), "Log line leaked the token: \(line)")
+      #expect(!line.contains("clerk.example.invalid"), "Log line leaked the URL: \(line)")
+    }
+  }
+
+  @Test
   func prepareRejectsAnInvalidResponseBody() async throws {
     let sessionId = try signInForTesting()
     try sessionTransferMock(sessionId: sessionId, url: "http://clerk.example.invalid/v1/session_transfers/redeem").register()
@@ -349,4 +370,26 @@ struct SessionTransferRequestTests {
     ])
     return Mock(url: requestUrl, ignoreQuery: true, contentType: .json, statusCode: 200, data: [.post: body])
   }
+}
+
+extension LockIsolated<[String]> {
+  fileprivate func firstLine(containing needle: String) async -> String? {
+    for _ in 0 ..< 100 {
+      if let line = value.first(where: { $0.contains(needle) }) {
+        return line
+      }
+      try? await Task.sleep(for: .milliseconds(10))
+    }
+    return nil
+  }
+}
+
+@MainActor
+private func captureLogLines() -> (LockIsolated<[String]>, @MainActor () -> Void) {
+  let original = ClerkLogger.sink
+  let lines = LockIsolated<[String]>([])
+  ClerkLogger.sink = { _, text in
+    lines.withValue { $0.append(text) }
+  }
+  return (lines, { ClerkLogger.sink = original })
 }
