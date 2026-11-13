@@ -25,7 +25,7 @@ extension Auth {
   ///
   /// Every call creates a new transfer. The URL works once, for about a minute, so create it right
   /// before you open it, and never log or store it. When the web page can't redeem it, the page loads
-  /// `destination` with `__clerk_status=failed` and a `__clerk_error_code` query parameter.
+  /// `destination` with `__clerk_status=session_transfer_failed` and a `__clerk_error_code` query parameter.
   ///
   /// ```swift
   /// let transfer = try await clerk.auth.prepareSessionTransfer(
