@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ensure actor is maintainer or admin on main
-        uses: actions/github-script@v7.1.0
+        uses: actions/github-script@v9.0.0
         env:
           TRIGGERING_ACTOR: ${{ github.triggering_actor }}
         with:
