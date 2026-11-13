@@ -24,8 +24,12 @@ extension Auth {
   /// ``loadInWebView(_:destination:)`` create the URL and open it for you.
   ///
   /// Every call creates a new transfer. The URL works once, for about a minute, so create it right
-  /// before you open it, and never log or store it. When the web page can't redeem it, the page loads
-  /// `destination` with `__clerk_status=session_transfer_failed` and a `__clerk_error_code` query parameter.
+  /// before you open it, and never log or store it.
+  ///
+  /// A refused sign-in still lands on `destination`, with `__clerk_status=session_transfer_failed`
+  /// and a `__clerk_error_code` query parameter. A token that Clerk doesn't recognize, or one for an
+  /// instance with session transfers turned off, lands on your instance's home URL instead, with the
+  /// same status and `__clerk_error_code=invalid_token`.
   ///
   /// ```swift
   /// let transfer = try await clerk.auth.prepareSessionTransfer(
@@ -36,13 +40,14 @@ extension Auth {
   /// ```
   ///
   /// - Parameters:
-  ///   - destination: An absolute `http` or `https` URL on one of your instance's domains. Production
-  ///     instances accept only `https`.
+  ///   - destination: An absolute `http` or `https` URL. Instances other than development require
+  ///     `https`, and production instances require a host on one of the instance's domains.
   ///   - presentation: Where you will open the URL.
   /// - Returns: The URL and when it expires.
   /// - Throws: A ``ClerkClientError`` when there is no active session or `destination` is not an
-  ///   `http` or `https` URL, before any network request. A ``ClerkAPIError`` when Clerk refuses to
-  ///   create the transfer, such as `feature_not_enabled`.
+  ///   absolute `http` or `https` URL, before any network request. A ``ClerkAPIError`` when Clerk
+  ///   refuses to create the transfer, such as `feature_not_enabled`. A ``ClerkClientError`` when
+  ///   Clerk's response is not a valid transfer.
   public func prepareSessionTransfer(
     destination: URL,
     presentation: SessionTransferPresentation
@@ -66,8 +71,8 @@ extension Auth {
   /// try await clerk.auth.openInBrowser(destination: URL(string: "https://app.example.com/settings")!)
   /// ```
   ///
-  /// - Parameter destination: An absolute `http` or `https` URL on one of your instance's domains.
-  ///   Production instances accept only `https`.
+  /// - Parameter destination: An absolute `http` or `https` URL. Instances other than development
+  ///   require `https`, and production instances require a host on one of the instance's domains.
   /// - Throws: The errors ``prepareSessionTransfer(destination:presentation:)`` throws, and a
   ///   ``ClerkClientError`` when no app can open the URL.
   public func openInBrowser(destination: URL) async throws {
@@ -106,8 +111,8 @@ extension Auth {
   ///
   /// - Parameters:
   ///   - webView: The web view to load the page in.
-  ///   - destination: An absolute `http` or `https` URL on one of your instance's domains.
-  ///     Production instances accept only `https`.
+  ///   - destination: An absolute `http` or `https` URL. Instances other than development require
+  ///     `https`, and production instances require a host on one of the instance's domains.
   /// - Throws: The errors ``prepareSessionTransfer(destination:presentation:)`` throws.
   public func loadInWebView(_ webView: WKWebView, destination: URL) async throws {
     let transfer = try await prepareSessionTransfer(destination: destination, presentation: .webView)
