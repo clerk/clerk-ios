@@ -92,7 +92,7 @@ jobs:
       VERIFY_THROWAWAY_HOURS: "2"
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4.4.0
+        uses: actions/checkout@v7.0.1
         with:
           ref: ${{ inputs.checkout_ref || github.sha }}
           persist-credentials: false
@@ -280,7 +280,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Check out the script that lists the merged pull requests
-        uses: actions/checkout@v4.4.0
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
           sparse-checkout: .github/scripts/nightly-failure-message.mjs
