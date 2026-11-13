@@ -3114,6 +3114,106 @@
         }
       }
     },
+    "No browser could open the sign-in link." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتمكن أي متصفح من فتح رابط تسجيل الدخول."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein Browser konnte den Anmeldelink öffnen."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Κανένα πρόγραμμα περιήγησης δεν μπόρεσε να ανοίξει τον σύνδεσμο σύνδεσης."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ningún navegador pudo abrir el enlace de inicio de sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun navigateur n’a pu ouvrir le lien de connexion."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "कोई भी ब्राउज़र साइन-इन लिंक नहीं खोल सका।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun browser è riuscito ad aprire il link di accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインインリンクを開けるブラウザがありませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인 링크를 열 수 있는 브라우저가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Żadna przeglądarka nie mogła otworzyć linku logowania."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum navegador conseguiu abrir o link de login."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niciun browser nu a putut deschide linkul de autentificare."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ни один браузер не смог открыть ссылку для входа."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hiçbir tarayıcı oturum açma bağlantısını açamadı."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Жоден браузер не зміг відкрити посилання для входу."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有浏览器能够打开登录链接。"
+          }
+        }
+      }
+    },
     "No pending magic link flow was found." : {
       "localizations" : {
         "ar" : {
@@ -3612,6 +3712,306 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "会话激活响应缺少身份同步元数据。"
+          }
+        }
+      }
+    },
+    "Session transfer creation returned an invalid response." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أعاد إنشاء نقل الجلسة استجابة غير صالحة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Erstellen der Sitzungsübertragung wurde eine ungültige Antwort zurückgegeben."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η δημιουργία μεταφοράς περιόδου λειτουργίας επέστρεψε μη έγκυρη απόκριση."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La creación de la transferencia de sesión devolvió una respuesta no válida."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La création du transfert de session a renvoyé une réponse non valide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सत्र स्थानांतरण बनाते समय अमान्य प्रतिक्रिया मिली।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La creazione del trasferimento della sessione ha restituito una risposta non valida."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セッションの転送の作成で無効なレスポンスが返されました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 전송 생성에서 잘못된 응답이 반환되었습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utworzenie przeniesienia sesji zwróciło nieprawidłową odpowiedź."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A criação da transferência de sessão retornou uma resposta inválida."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Crearea transferului sesiunii a returnat un răspuns nevalid."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "При создании переноса сеанса был получен недопустимый ответ."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oturum aktarımı oluşturma işlemi geçersiz bir yanıt döndürdü."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Під час створення перенесення сеансу отримано недійсну відповідь."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "创建会话转移时返回了无效响应。"
+          }
+        }
+      }
+    },
+    "Session transfer requires an absolute http or https destination URL." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتطلب نقل الجلسة عنوان URL مطلقًا للوجهة يستخدم http أو https."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sitzungsübertragung erfordert eine absolute Ziel-URL mit http oder https."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η μεταφορά περιόδου λειτουργίας απαιτεί απόλυτη διεύθυνση URL προορισμού με http ή https."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La transferencia de sesión requiere una URL de destino absoluta con http o https."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le transfert de session nécessite une URL de destination absolue en http ou https."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सत्र स्थानांतरण के लिए http या https वाला पूर्ण गंतव्य URL आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il trasferimento della sessione richiede un URL di destinazione assoluto con http o https."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セッションの転送には、遷移先として http または https の絶対URLが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 전송에는 http 또는 https를 사용하는 절대 대상 URL이 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przeniesienie sesji wymaga bezwzględnego docelowego adresu URL z http lub https."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A transferência de sessão requer uma URL de destino absoluta com http ou https."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transferul sesiunii necesită un URL de destinație absolut cu http sau https."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для переноса сеанса требуется абсолютный целевой URL-адрес с http или https."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oturum aktarımı, http veya https kullanan mutlak bir hedef URL'si gerektirir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для перенесення сеансу потрібен абсолютний цільовий URL з http або https."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "会话转移需要使用 http 或 https 的绝对目标 URL。"
+          }
+        }
+      }
+    },
+    "Session transfer requires an active session." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يتطلب نقل الجلسة جلسة نشطة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sitzungsübertragung erfordert eine aktive Sitzung."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η μεταφορά περιόδου λειτουργίας απαιτεί ενεργή περίοδο λειτουργίας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La transferencia de sesión requiere una sesión activa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le transfert de session nécessite une session active."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सत्र स्थानांतरण के लिए सक्रिय सत्र आवश्यक है।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il trasferimento della sessione richiede una sessione attiva."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セッションの転送には、アクティブなセッションが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 전송에는 활성 세션이 필요합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Przeniesienie sesji wymaga aktywnej sesji."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A transferência de sessão requer uma sessão ativa."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transferul sesiunii necesită o sesiune activă."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для переноса сеанса требуется активный сеанс."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oturum aktarımı etkin bir oturum gerektirir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для перенесення сеансу потрібен активний сеанс."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "会话转移需要一个活跃会话。"
           }
         }
       }
