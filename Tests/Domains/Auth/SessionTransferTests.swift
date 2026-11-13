@@ -4,6 +4,10 @@ import Foundation
 import Mocker
 import Testing
 
+#if canImport(WebKit)
+import WebKit
+#endif
+
 private let mintedUrlString = "https://clerk.example.invalid/v1/session_transfers/redeem?token=sttk_secret_123"
 private let mintedToken = "sttk_secret_123"
 private let expiresAtMilliseconds: Int64 = 1_767_225_600_000
@@ -213,6 +217,62 @@ struct SessionTransferRequestTests {
       #expect(error.clerkTraceId == "trace_123")
     }
   }
+
+  @Test
+  func openInBrowserMintsABrowserTransferAndOpensItsUrl() async throws {
+    let sessionId = try signInForTesting()
+    let presentationMode = LockIsolated<String?>(nil)
+    let openedUrl = LockIsolated<URL?>(nil)
+    var mock = try sessionTransferMock(sessionId: sessionId)
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      presentationMode.setValue(request.urlEncodedFormBody?["presentation_mode"])
+    }
+    mock.register()
+
+    try await Clerk.shared.auth.openInBrowser(destination: #require(URL(string: "https://app.example.com/settings"))) { url in
+      openedUrl.setValue(url)
+      return true
+    }
+
+    #expect(presentationMode.value == "browser")
+    #expect(openedUrl.value?.absoluteString == mintedUrlString)
+  }
+
+  @Test
+  func openInBrowserThrowsWhenNoBrowserOpensTheUrl() async throws {
+    let sessionId = try signInForTesting()
+    try sessionTransferMock(sessionId: sessionId).register()
+
+    do {
+      try await Clerk.shared.auth.openInBrowser(destination: #require(URL(string: "https://app.example.com/settings"))) { _ in
+        false
+      }
+      Issue.record("Expected a refused open to throw.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "No browser could open the sign-in link.")
+    }
+  }
+
+  #if canImport(WebKit)
+  @Test
+  func loadInWebViewMintsAWebViewTransferAndLoadsItsUrl() async throws {
+    let sessionId = try signInForTesting()
+    let presentationMode = LockIsolated<String?>(nil)
+    var mock = try sessionTransferMock(sessionId: sessionId)
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      presentationMode.setValue(request.urlEncodedFormBody?["presentation_mode"])
+    }
+    mock.register()
+    let webView = WKWebView()
+    defer { webView.stopLoading() }
+
+    let navigation = try await Clerk.shared.auth.loadInWebView(webView, destination: #require(URL(string: "https://app.example.com/settings")))
+
+    #expect(presentationMode.value == "webview")
+    #expect(navigation != nil)
+    #expect(webView.url?.absoluteString == mintedUrlString)
+  }
+  #endif
 
   private func signInForTesting() throws -> String {
     configureClerkForTesting()

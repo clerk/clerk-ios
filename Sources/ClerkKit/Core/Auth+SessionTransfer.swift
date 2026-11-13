@@ -7,8 +7,21 @@ import Foundation
 
 #if !os(tvOS) && !os(watchOS)
 
+#if canImport(UIKit)
+import UIKit
+#endif
+
+#if canImport(WebKit)
+import WebKit
+#endif
+
+typealias SessionTransferURLOpener = @MainActor (URL) async -> Bool
+
 extension Auth {
   /// Creates a one-time URL that signs the active session's user in on a web page.
+  ///
+  /// Use it only to present the URL yourself. ``openInBrowser(destination:)`` and
+  /// ``loadInWebView(_:destination:)`` create the URL and open it for you.
   ///
   /// Every call creates a new transfer. The URL works once, for about a minute, so create it right
   /// before you open it, and never log or store it. When the web page can't redeem it, the page loads
@@ -41,6 +54,59 @@ extension Auth {
     return try await transport.send(SessionTransferAPI.create(sessionId: session.id, params: params))
       .value.response.sessionTransfer()
   }
+
+  #if canImport(UIKit)
+  /// Opens a web page in the user's default browser with the active session's user signed in.
+  ///
+  /// Returns once the system hands the URL to the browser.
+  ///
+  /// ```swift
+  /// try await clerk.auth.openInBrowser(destination: URL(string: "https://app.example.com/settings")!)
+  /// ```
+  ///
+  /// - Parameter destination: An absolute `http` or `https` URL on one of your instance's domains.
+  ///   Production instances accept only `https`.
+  /// - Throws: The errors ``prepareSessionTransfer(destination:presentation:)`` throws, and a
+  ///   ``ClerkClientError`` when no app can open the URL.
+  public func openInBrowser(destination: URL) async throws {
+    try await openInBrowser(destination: destination) { url in
+      // SFSafariViewController keeps its own cookies, so a session redeemed there never reaches the
+      // user's browser.
+      await UIApplication.shared.open(url)
+    }
+  }
+  #endif
+
+  func openInBrowser(destination: URL, open: SessionTransferURLOpener) async throws {
+    let transfer = try await prepareSessionTransfer(destination: destination, presentation: .browser)
+    guard await open(transfer.url) else {
+      throw ClerkClientError(message: "No browser could open the sign-in link.", localizationBundle: .module)
+    }
+  }
+
+  #if canImport(WebKit)
+  /// Loads a web page in your web view with the active session's user signed in.
+  ///
+  /// The web view loads a Clerk page that signs the user in and then redirects to `destination`.
+  /// Watch the web view's navigation to tell when `destination` has loaded.
+  ///
+  /// ```swift
+  /// try await clerk.auth.loadInWebView(webView, destination: URL(string: "https://app.example.com/settings")!)
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - webView: The web view to load the page in. It keeps the web session in its
+  ///     `WKWebsiteDataStore`.
+  ///   - destination: An absolute `http` or `https` URL on one of your instance's domains.
+  ///     Production instances accept only `https`.
+  /// - Returns: The navigation that loads the sign-in page.
+  /// - Throws: The errors ``prepareSessionTransfer(destination:presentation:)`` throws.
+  @discardableResult
+  public func loadInWebView(_ webView: WKWebView, destination: URL) async throws -> WKNavigation? {
+    let transfer = try await prepareSessionTransfer(destination: destination, presentation: .webView)
+    return webView.load(URLRequest(url: transfer.url))
+  }
+  #endif
 }
 
 #endif
