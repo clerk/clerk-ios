@@ -63,13 +63,43 @@ struct DependencyContainerKeychainTests {
 
     #expect(container.identityIsInAccessGroup)
     let privateStorage = try #require(container.appLocalKeychain as? MigratingKeychainStorage)
+    #if os(macOS)
+    // On macOS the private state moves to the data protection keychain, from the file-based one.
+    let migrating = try #require(privateStorage.primary as? MigratingKeychainStorage)
+    let primary = try #require(migrating.primary as? SystemKeychain)
+    #expect(primary.useDataProtectionKeychain)
+    let previous = try #require(migrating.fallback as? SystemKeychain)
+    #expect(previous.service == "com.example.app.clerk.app")
+    #expect(previous.accessGroup == nil)
+    #expect(!previous.useDataProtectionKeychain)
+    #else
     let primary = try #require(privateStorage.primary as? SystemKeychain)
+    #endif
     #expect(primary.service == "com.example.app.clerk.app")
     #expect(primary.accessGroup == nil)
     let fallback = try #require(privateStorage.fallback as? SystemKeychain)
     #expect(fallback.service == "service")
     #expect(fallback.accessGroup == nil)
   }
+
+  #if os(macOS)
+  @Test
+  @MainActor
+  func withoutAccessToTheGroupPrivateStateStaysInTheFileBasedKeychain() throws {
+    let container = try DependencyContainer(
+      publishableKey: testPublishableKey,
+      options: .init(keychainConfig: .init(service: "service", accessGroup: "group.example")),
+      runtimeScope: ClerkRuntimeScope(),
+      probesAccessGroupOverride: true,
+      ownerIdentifierProvider: { "com.example.app" }
+    )
+
+    #expect(!container.identityIsInAccessGroup)
+    let privateStorage = try #require(container.appLocalKeychain as? MigratingKeychainStorage)
+    let primary = try #require(privateStorage.primary as? SystemKeychain)
+    #expect(!primary.useDataProtectionKeychain)
+  }
+  #endif
 
   @Test
   @MainActor
