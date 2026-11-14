@@ -186,11 +186,14 @@ final class DependencyContainer: Dependencies {
     // Queries without an access group span every group the app belongs to, so private state
     // needs a service of its own to stay out of the shared group.
     let allGroups = makeKeychainStorage(service: config.service, accessGroup: nil)
+    let isInGroup = !probesAccessGroup || canAccessAccessGroup(configured)
     let appLocal = MigratingKeychainStorage(
-      primary: makeKeychainStorage(service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app", accessGroup: nil),
+      primary: makeAppLocalKeychainStorage(
+        service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app",
+        canUseDataProtectionKeychain: isInGroup
+      ),
       fallback: allGroups
     )
-    let isInGroup = !probesAccessGroup || canAccessAccessGroup(configured)
     return KeychainStorages(
       shared: configured,
       appLocal: appLocal,
@@ -240,6 +243,30 @@ final class DependencyContainer: Dependencies {
 
     return MigratingKeychainStorage(
       primary: dataProtectionKeychain,
+      fallback: legacyKeychain
+    )
+    #else
+    return legacyKeychain
+    #endif
+  }
+
+  /// Storage private to this app. On macOS, an app that can reach its access group has the Keychain
+  /// entitlement, so its private state goes in the data protection keychain too: the file-based
+  /// keychain ties each item to the exact build that saved it, and asks for the login password
+  /// whenever a new build reads it. Items an earlier version saved there move over on first read.
+  private static func makeAppLocalKeychainStorage(
+    service: String,
+    canUseDataProtectionKeychain: Bool
+  ) -> any KeychainStorage {
+    let legacyKeychain = SystemKeychain(service: service, accessGroup: nil)
+
+    #if os(macOS)
+    guard canUseDataProtectionKeychain else {
+      return legacyKeychain
+    }
+
+    return MigratingKeychainStorage(
+      primary: SystemKeychain(service: service, accessGroup: nil, useDataProtectionKeychain: true),
       fallback: legacyKeychain
     )
     #else
