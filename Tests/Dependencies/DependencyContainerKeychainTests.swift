@@ -63,23 +63,20 @@ struct DependencyContainerKeychainTests {
 
     #expect(container.identityIsInAccessGroup)
     let privateStorage = try #require(container.appLocalKeychain as? MigratingKeychainStorage)
-    #if os(macOS)
-    // On macOS the private state moves to the data protection keychain, from the file-based one.
-    let migrating = try #require(privateStorage.primary as? MigratingKeychainStorage)
-    let primary = try #require(migrating.primary as? SystemKeychain)
-    #expect(primary.useDataProtectionKeychain)
-    let previous = try #require(migrating.fallback as? SystemKeychain)
-    #expect(previous.service == "com.example.app.clerk.app")
-    #expect(previous.accessGroup == nil)
-    #expect(!previous.useDataProtectionKeychain)
-    #else
     let primary = try #require(privateStorage.primary as? SystemKeychain)
-    #endif
     #expect(primary.service == "com.example.app.clerk.app")
     #expect(primary.accessGroup == nil)
-    let fallback = try #require(privateStorage.fallback as? SystemKeychain)
-    #expect(fallback.service == "service")
-    #expect(fallback.accessGroup == nil)
+    var fallbacks = try privateStorage.fallbacks.map { try #require($0 as? SystemKeychain) }
+    #if os(macOS)
+    #expect(primary.useDataProtectionKeychain)
+    let fileBased = fallbacks.removeFirst()
+    #expect(fileBased.service == "com.example.app.clerk.app")
+    #expect(fileBased.accessGroup == nil)
+    #expect(!fileBased.useDataProtectionKeychain)
+    #endif
+    #expect(fallbacks.count == 1)
+    #expect(fallbacks.first?.service == "service")
+    #expect(fallbacks.first?.accessGroup == nil)
   }
 
   #if os(macOS)
@@ -98,6 +95,7 @@ struct DependencyContainerKeychainTests {
     let privateStorage = try #require(container.appLocalKeychain as? MigratingKeychainStorage)
     let primary = try #require(privateStorage.primary as? SystemKeychain)
     #expect(!primary.useDataProtectionKeychain)
+    #expect(privateStorage.fallbacks.count == 1)
   }
   #endif
 

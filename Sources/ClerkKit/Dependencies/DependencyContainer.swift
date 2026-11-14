@@ -187,12 +187,10 @@ final class DependencyContainer: Dependencies {
     // needs a service of its own to stay out of the shared group.
     let allGroups = makeKeychainStorage(service: config.service, accessGroup: nil)
     let isInGroup = !probesAccessGroup || canAccessAccessGroup(configured)
-    let appLocal = MigratingKeychainStorage(
-      primary: makeAppLocalKeychainStorage(
-        service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app",
-        canUseDataProtectionKeychain: isInGroup
-      ),
-      fallback: allGroups
+    let appLocal = makeAppLocalKeychainStorage(
+      service: "\(ownerIdentifier.nilIfEmpty ?? config.service).clerk.app",
+      previousStorage: allGroups,
+      canUseDataProtectionKeychain: isInGroup
     )
     return KeychainStorages(
       shared: configured,
@@ -252,26 +250,25 @@ final class DependencyContainer: Dependencies {
 
   /// Storage private to this app. On macOS, an app that can reach its access group has the Keychain
   /// entitlement, so its private state goes in the data protection keychain too: the file-based
-  /// keychain ties each item to the exact build that saved it, and asks for the login password
-  /// whenever a new build reads it. Items an earlier version saved there move over on first read.
+  /// keychain asks for the login password whenever a build with a different code signature reads
+  /// an item.
   private static func makeAppLocalKeychainStorage(
     service: String,
+    previousStorage: any KeychainStorage,
     canUseDataProtectionKeychain: Bool
-  ) -> any KeychainStorage {
+  ) -> MigratingKeychainStorage {
     let legacyKeychain = SystemKeychain(service: service, accessGroup: nil)
 
     #if os(macOS)
-    guard canUseDataProtectionKeychain else {
-      return legacyKeychain
+    if canUseDataProtectionKeychain {
+      return MigratingKeychainStorage(
+        primary: SystemKeychain(service: service, accessGroup: nil, useDataProtectionKeychain: true),
+        fallbacks: [legacyKeychain, previousStorage]
+      )
     }
-
-    return MigratingKeychainStorage(
-      primary: SystemKeychain(service: service, accessGroup: nil, useDataProtectionKeychain: true),
-      fallback: legacyKeychain
-    )
-    #else
-    return legacyKeychain
     #endif
+
+    return MigratingKeychainStorage(primary: legacyKeychain, fallbacks: [previousStorage])
   }
 
   static var mobileHeaderValue: String {
