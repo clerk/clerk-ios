@@ -24,7 +24,46 @@ struct EnterpriseAccountTests {
     #expect(account.enterpriseConnection.logoPublicUrl == "https://img.clerk.com/logo.png")
   }
 
-  private func enterpriseAccountJSON(logoPublicUrl: String) -> String {
+  @Test
+  func decodesAnEnterpriseConnectionWithoutDomains() throws {
+    let account = try JSONDecoder.clerkDecoder.decode(
+      EnterpriseAccount.self,
+      from: Data(enterpriseAccountJSON(domainFields: "").utf8)
+    )
+
+    #expect(account.enterpriseConnection.domain == "")
+  }
+
+  @Test
+  func decodesTheFirstDomainWhenTheConnectionHasNoDomainKey() throws {
+    let account = try JSONDecoder.clerkDecoder.decode(
+      EnterpriseAccount.self,
+      from: Data(enterpriseAccountJSON(domainFields: #""domains": ["a.com", "b.com"],"#).utf8)
+    )
+
+    #expect(account.enterpriseConnection.domain == "a.com")
+  }
+
+  @Test
+  func roundTripsAnEnterpriseConnectionThroughTheClerkCoders() throws {
+    let account = try JSONDecoder.clerkDecoder.decode(
+      EnterpriseAccount.self,
+      from: Data(enterpriseAccountJSON().utf8)
+    )
+
+    let reencoded = try JSONDecoder.clerkDecoder.decode(
+      EnterpriseAccount.self,
+      from: JSONEncoder.clerkEncoder.encode(account)
+    )
+
+    #expect(reencoded == account)
+    #expect(reencoded.enterpriseConnection.domain == "acme.com")
+  }
+
+  private func enterpriseAccountJSON(
+    logoPublicUrl: String = "null",
+    domainFields: String = #""domain": "acme.com", "domains": ["acme.com"],"#
+  ) -> String {
     """
     {
       "id": "eac_123",
@@ -47,8 +86,7 @@ struct EnterpriseAccountTests {
         "provider": "oauth_custom_acme",
         "name": "Acme OIDC",
         "logo_public_url": \(logoPublicUrl),
-        "domain": "acme.com",
-        "domains": ["acme.com"],
+        \(domainFields)
         "active": true,
         "sync_user_attributes": true,
         "disable_additional_identifications": false,
