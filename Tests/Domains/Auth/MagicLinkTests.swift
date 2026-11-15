@@ -31,6 +31,28 @@ struct MagicLinkTests {
     #expect(url.queryParam(named: "approval_token") == "approval_123")
   }
 
+  @Test
+  func decodesPercentEncodedValuesInFragment() throws {
+    let url = try #require(URL(string: "com.clerk.Quickstart://callback#flow_id=a%25b&approval_token=Jos%C3%A9"))
+
+    #expect(url.queryParam(named: "flow_id") == "a%b")
+    #expect(url.queryParam(named: "approval_token") == "José")
+  }
+
+  @Test(arguments: [
+    "com.clerk.Quickstart://callback#%20",
+    "com.clerk.Quickstart://callback#state=Jos%C3%A9",
+    "com.clerk.Quickstart://callback#a%23b",
+  ])
+  @MainActor
+  func routeMatcherIgnoresPercentEncodedFragmentWithoutCallbackParams(_ callbackUrl: String) throws {
+    let url = try #require(URL(string: callbackUrl))
+
+    let route = try ClerkURLRoute(url: url, redirectUrl: magicLinkRedirectUrl)
+
+    #expect(route == nil)
+  }
+
   @Test(arguments: [
     "com.clerk.Quickstart://callback?flow_id=flow_123&approval_token=approval_123",
     "com.clerk.Quickstart://callback/?flow_id=flow_123&approval_token=approval_123",

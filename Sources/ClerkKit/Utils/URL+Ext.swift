@@ -30,13 +30,13 @@ extension URLComponents {
     }
 
     guard
-      let fragment,
+      let percentEncodedFragment,
       var fragmentComponents = URLComponents(string: "/")
     else {
       return nil
     }
 
-    fragmentComponents.percentEncodedQuery = fragment
+    fragmentComponents.percentEncodedQuery = percentEncodedFragment
     return fragmentComponents.queryItems?
       .first(where: { $0.name == name })?
       .value
