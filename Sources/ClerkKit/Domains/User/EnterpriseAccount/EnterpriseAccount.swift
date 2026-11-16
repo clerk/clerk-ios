@@ -95,7 +95,7 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable {
     /// The public URL of the provider's logo, or `nil` if the connection has no logo.
     public let logoPublicUrl: String?
 
-    /// The domain associated with the enterprise connection (e.g., example.com).
+    /// The first domain of the enterprise connection (e.g., example.com), or an empty string if the connection has no domains.
     public let domain: String
 
     /// A flag indicating whether the enterprise connection is active.
@@ -147,6 +147,33 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable {
       self.updatedAt = updatedAt
       self.allowSubdomains = allowSubdomains
       self.allowIdpInitiated = allowIdpInitiated
+    }
+
+    private enum DomainsCodingKeys: String, CodingKey {
+      case domains
+    }
+
+    public init(from decoder: Decoder) throws {
+      let container = try decoder.container(keyedBy: CodingKeys.self)
+      id = try container.decode(String.self, forKey: .id)
+      `protocol` = try container.decode(String.self, forKey: .protocol)
+      provider = try container.decode(String.self, forKey: .provider)
+      name = try container.decode(String.self, forKey: .name)
+      logoPublicUrl = try container.decodeIfPresent(String.self, forKey: .logoPublicUrl)
+      // The Frontend API omits `domain` and `domains` for a connection that has no domains.
+      if let domain = try container.decodeIfPresent(String.self, forKey: .domain) {
+        self.domain = domain
+      } else {
+        let domainsContainer = try decoder.container(keyedBy: DomainsCodingKeys.self)
+        domain = try domainsContainer.decodeIfPresent([String].self, forKey: .domains)?.first ?? ""
+      }
+      active = try container.decode(Bool.self, forKey: .active)
+      syncUserAttributes = try container.decode(Bool.self, forKey: .syncUserAttributes)
+      disableAdditionalIdentifications = try container.decode(Bool.self, forKey: .disableAdditionalIdentifications)
+      createdAt = try container.decode(Date.self, forKey: .createdAt)
+      updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+      allowSubdomains = try container.decode(Bool.self, forKey: .allowSubdomains)
+      allowIdpInitiated = try container.decode(Bool.self, forKey: .allowIdpInitiated)
     }
   }
 }
