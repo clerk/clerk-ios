@@ -334,7 +334,7 @@ extension OrganizationListView {
     if let navigationPath {
       Self.popEntriesPushed(from: &navigationPath.wrappedValue, initialCount: initialPathCount)
     } else {
-      Self.popEntriesPushed(from: &internalPath, initialCount: 0)
+      internalPath = NavigationPath()
     }
   }
 

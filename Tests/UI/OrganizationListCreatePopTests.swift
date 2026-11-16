@@ -24,25 +24,6 @@ struct OrganizationListCreatePopTests {
 
     #expect(path.count == 1)
   }
-
-  @Test
-  func finishingAFormPushedOnAnOwnStackEmptiesIt() {
-    var path = NavigationPath()
-    path.append(OrganizationListView.Destination.createOrganization)
-
-    OrganizationListView.popEntriesPushed(from: &path, initialCount: 0)
-
-    #expect(path.isEmpty)
-  }
-
-  @Test
-  func finishingTheInlineFormOnAnOwnStackLeavesItEmpty() {
-    var path = NavigationPath()
-
-    OrganizationListView.popEntriesPushed(from: &path, initialCount: 0)
-
-    #expect(path.isEmpty)
-  }
 }
 
 #endif
