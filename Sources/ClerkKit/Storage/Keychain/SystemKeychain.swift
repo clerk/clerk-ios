@@ -16,7 +16,7 @@ struct SystemKeychain: KeychainStorage {
   let service: String
   let accessGroup: String?
   private let accessibility: Accessibility
-  private let useDataProtectionKeychain: Bool
+  let useDataProtectionKeychain: Bool
   private let secItemClient: SecItemClient
 
   init(

@@ -195,6 +195,59 @@ struct MigratingKeychainStorageTests {
     #expect(primary.hasItemKeys == ["key"])
     #expect(fallback.hasItemKeys.isEmpty)
   }
+
+  @Test
+  func dataMigratesFromTheFirstFallbackThatHasTheItem() throws {
+    let primary = KeychainStorageSpy()
+    let first = KeychainStorageSpy()
+    let second = KeychainStorageSpy()
+    let third = KeychainStorageSpy()
+    let secondData = Data("second-value".utf8)
+    second.dataResults = [.success(secondData)]
+
+    let keychain = MigratingKeychainStorage(primary: primary, fallbacks: [first, second, third])
+
+    let data = try keychain.data(forKey: "key")
+
+    #expect(data == secondData)
+    #expect(first.dataKeys == ["key"])
+    #expect(second.dataKeys == ["key"])
+    #expect(third.dataKeys.isEmpty)
+    #expect(primary.setCalls == [.init(key: "key", data: secondData)])
+  }
+
+  @Test
+  func deleteAttemptsEveryFallbackWhenOneFails() throws {
+    let primary = KeychainStorageSpy()
+    let first = KeychainStorageSpy()
+    let second = KeychainStorageSpy()
+    first.deleteError = TestKeychainError.deleteFailed
+
+    let keychain = MigratingKeychainStorage(primary: primary, fallbacks: [first, second])
+
+    #expect(throws: TestKeychainError.deleteFailed) {
+      try keychain.deleteItem(forKey: "key")
+    }
+    #expect(primary.deleteKeys == ["key"])
+    #expect(first.deleteKeys == ["key"])
+    #expect(second.deleteKeys == ["key"])
+  }
+
+  @Test
+  func hasItemChecksFallbacksInOrderUntilOneHasTheItem() throws {
+    let primary = KeychainStorageSpy()
+    let first = KeychainStorageSpy()
+    let second = KeychainStorageSpy()
+    let third = KeychainStorageSpy()
+    second.hasItemResults = [.success(true)]
+
+    let keychain = MigratingKeychainStorage(primary: primary, fallbacks: [first, second, third])
+
+    #expect(try keychain.hasItem(forKey: "key"))
+    #expect(first.hasItemKeys == ["key"])
+    #expect(second.hasItemKeys == ["key"])
+    #expect(third.hasItemKeys.isEmpty)
+  }
 }
 
 private final class KeychainStorageSpy: KeychainStorage, @unchecked Sendable {
