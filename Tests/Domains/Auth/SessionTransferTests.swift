@@ -218,6 +218,35 @@ struct SessionTransferRequestTests {
     #expect(transport.calls.isEmpty)
   }
 
+  @Test(arguments: [false, true])
+  func prepareRejectsATransferCreatedWhileTheActiveSessionChanged(signsOut: Bool) async throws {
+    let transport = useFakeTransport(client: .mock)
+    var changedClient = Client.mockSignedOut
+    if !signsOut {
+      changedClient = .mock
+      changedClient.lastActiveSessionId = Session.mock2.id
+    }
+    let params = try SessionTransferCreateParams(destination: #require(URL(string: "https://app.example.com")), presentation: .browser)
+    transport.stub(SessionTransferAPI.create(sessionId: FakeTransport.anyPathSegment, params: params)) { _ in
+      Clerk.shared.client = changedClient
+      return ClientResponse(
+        response: SessionTransferResource(object: "session_transfer", url: mintedUrlString, expiresAt: expectedExpiresAt),
+        client: nil
+      )
+    }
+
+    do {
+      _ = try await Clerk.shared.auth.prepareSessionTransfer(
+        destination: #require(URL(string: "https://app.example.com/settings")),
+        presentation: .browser
+      )
+      Issue.record("Expected a transfer for the previous session to be rejected.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "The active session changed before the session transfer was ready.")
+    }
+    #expect(transport.calls.count == 1)
+  }
+
   @Test
   func prepareSurfacesFeatureNotEnabledAsAnAPIError() async throws {
     let sessionId = try signInForTesting()

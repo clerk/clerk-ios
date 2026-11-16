@@ -4116,6 +4116,106 @@
         }
       }
     },
+    "The active session changed before the session transfer was ready." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغيّرت الجلسة النشطة قبل أن يصبح نقل الجلسة جاهزًا."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die aktive Sitzung hat sich geändert, bevor die Sitzungsübertragung bereit war."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Η ενεργή περίοδος λειτουργίας άλλαξε πριν να είναι έτοιμη η μεταφορά περιόδου λειτουργίας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sesión activa cambió antes de que la transferencia de sesión estuviera lista."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La session active a changé avant que le transfert de session soit prêt."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "सत्र स्थानांतरण तैयार होने से पहले सक्रिय सत्र बदल गया।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sessione attiva è cambiata prima che il trasferimento della sessione fosse pronto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セッションの転送の準備が整う前に、アクティブなセッションが変更されました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션 전송이 준비되기 전에 활성 세션이 변경되었습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktywna sesja zmieniła się, zanim przeniesienie sesji było gotowe."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A sessão ativa mudou antes de a transferência de sessão estar pronta."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesiunea activă s-a schimbat înainte ca transferul sesiunii să fie gata."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Активный сеанс изменился до того, как перенос сеанса был готов."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oturum aktarımı hazır olmadan önce etkin oturum değişti."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Активний сеанс змінився до того, як перенесення сеансу було готове."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在会话转移准备就绪之前，活跃会话已发生变化。"
+          }
+        }
+      }
+    },
     "This device is no longer trusted. Sign in another way to enroll it again." : {
       "comment" : "Error shown when a previously enrolled device credential is no longer trusted. The user must sign in another way before enrolling the device again.",
       "localizations" : {

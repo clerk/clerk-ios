@@ -47,7 +47,8 @@ extension Auth {
   /// - Throws: A ``ClerkClientError`` when there is no active session or `destination` is not an
   ///   absolute `http` or `https` URL, before any network request. A ``ClerkAPIError`` when Clerk
   ///   refuses to create the transfer, such as `feature_not_enabled`. A ``ClerkClientError`` when
-  ///   Clerk's response is not a valid transfer.
+  ///   Clerk's response is not a valid transfer, or when the active session changes while the
+  ///   transfer is created.
   public func prepareSessionTransfer(
     destination: URL,
     presentation: SessionTransferPresentation
@@ -56,8 +57,12 @@ extension Auth {
     guard let session = Clerk.shared.activeSession else {
       throw ClerkClientError(message: "Session transfer requires an active session.", localizationBundle: .module)
     }
-    return try await transport.send(SessionTransferAPI.create(sessionId: session.id, params: params))
+    let transfer = try await transport.send(SessionTransferAPI.create(sessionId: session.id, params: params))
       .value.response.sessionTransfer()
+    guard Clerk.shared.activeSession?.id == session.id else {
+      throw ClerkClientError(message: "The active session changed before the session transfer was ready.", localizationBundle: .module)
+    }
+    return transfer
   }
 
   #if canImport(UIKit)
