@@ -95,7 +95,7 @@ public struct EnterpriseAccount: Codable, Equatable, Sendable {
     /// The public URL of the provider's logo, or `nil` if the connection has no logo.
     public let logoPublicUrl: String?
 
-    /// The domain associated with the enterprise connection (e.g., example.com).
+    /// The first domain of the enterprise connection (e.g., example.com), or an empty string if the connection has no domains.
     public let domain: String
 
     /// A flag indicating whether the enterprise connection is active.
