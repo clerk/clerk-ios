@@ -10305,13 +10305,13 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपने पासवर्ड से साइन इन करें"
+            "value" : "पासवर्ड दर्ज करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accedi con la tua password"
+            "value" : "Inserisci la password"
           }
         },
         "ja" : {
@@ -10365,7 +10365,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用您的密码登录"
+            "value" : "输入密码"
           }
         }
       }
@@ -11509,13 +11509,13 @@
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "अपने पासवर्ड से साइन इन करें"
+            "value" : "अपना पासवर्ड दर्ज करें"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accedi con la tua password"
+            "value" : "Inserisci la tua password"
           }
         },
         "ja" : {
@@ -11569,7 +11569,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用密码登录"
+            "value" : "输入您的密码"
           }
         }
       }
@@ -11985,7 +11985,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erstens, geben Sie den Code ein, den Sie an Ihre E-Mail-Adresse gesendet haben"
+            "value" : "Geben Sie zuerst den Code ein, der an Ihre E-Mail-Adresse gesendet wurde"
           }
         },
         "el" : {
@@ -12085,7 +12085,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erstens, geben Sie die Nummer ein, die Sie an Ihr Telefon gesendet haben"
+            "value" : "Geben Sie zuerst den Code ein, der an Ihr Telefon gesendet wurde"
           }
         },
         "el" : {
@@ -15413,7 +15413,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tecla de configuración manual"
+            "value" : "Clave de configuración manual"
           }
         },
         "fr" : {
@@ -15485,7 +15485,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "手动设置键"
+            "value" : "手动设置密钥"
           }
         }
       }
@@ -21023,7 +21023,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Code erneut senden"
+            "value" : "Erneut senden"
           }
         },
         "el" : {
@@ -21123,7 +21123,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Code erneut senden (%lld)"
+            "value" : "Erneut senden (%lld)"
           }
         },
         "el" : {
@@ -21153,7 +21153,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rinvia (%lld)"
+            "value" : "Reinvia (%lld)"
           }
         },
         "ja" : {
@@ -30863,7 +30863,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "عند تسجيل الدخول، سيُطلب منك إرسال رمز التحقق إلى رقم الهاتف هذا."
+            "value" : "عند تسجيل الدخول، سيُطلب منك إدخال رمز التحقق المرسل إلى رقم الهاتف هذا."
           }
         },
         "de" : {
@@ -30881,7 +30881,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cuando inicie sesión, se le pedirá que envíe un código de verificación a este número de teléfono."
+            "value" : "Cuando inicie sesión, se le pedirá un código de verificación enviado a este número de teléfono."
           }
         },
         "fr" : {
