@@ -64,6 +64,7 @@ public struct OrganizationListView: View {
 
   @State var accountLists = OrganizationScopedStore { OrganizationAccountListDataSource(scope: $0) }
   @State private var internalPath = NavigationPath()
+  @State private var initialPathCount = 0
   @State private var isSelectingAccount = false
 
   private var user: User? {
@@ -149,6 +150,9 @@ public struct OrganizationListView: View {
       if let accountList = accountLists.content(for: scope) {
         list(accountList)
       }
+    }
+    .onFirstAppear {
+      initialPathCount = navigationPath?.wrappedValue.count ?? 0
     }
     .onChange(of: scope, initial: true) {
       accountLists.bind(scope)
@@ -328,12 +332,14 @@ extension OrganizationListView {
 
   private func popCreateOrganizationFlow() {
     if let navigationPath {
-      guard !navigationPath.wrappedValue.isEmpty else { return }
-      navigationPath.wrappedValue.removeLast()
+      Self.popEntriesPushed(from: &navigationPath.wrappedValue, initialCount: initialPathCount)
     } else {
-      guard !internalPath.isEmpty else { return }
-      internalPath.removeLast()
+      internalPath = NavigationPath()
     }
+  }
+
+  static func popEntriesPushed(from path: inout NavigationPath, initialCount: Int) {
+    path.removeLast(max(path.count - initialCount, 0))
   }
 
   private func organizationError(from error: Error) -> Error {
