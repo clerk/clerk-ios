@@ -361,6 +361,7 @@ struct SessionTransferRequestTests {
   @Test(arguments: [false, true])
   func presentationRejectsTransferAfterAccountSwitch(useWebView: Bool) async throws {
     configureClerkForTesting()
+    Clerk.shared.client = nil
     try Clerk.shared.seedIdentity(deviceToken: "switch_device_token", client: .mock)
     let originalSessionId = try #require(Clerk.shared.activeSession?.id)
     let started = LockIsolated(false)
