@@ -329,6 +329,47 @@ struct SessionTransferRequestTests {
   }
   #endif
 
+  @Test(arguments: [false, true])
+  func presentationRejectsTransferAfterAccountSwitch(useWebView: Bool) async throws {
+    configureClerkForTesting()
+    try Clerk.shared.seedIdentity(deviceToken: "switch_device_token", client: .mock)
+    let originalSessionId = try #require(Clerk.shared.activeSession?.id)
+    let started = LockIsolated(false)
+    let opened = LockIsolated(false)
+    var mock = try sessionTransferMock(sessionId: originalSessionId)
+    mock.delay = .milliseconds(300)
+    mock.onRequestHandler = OnRequestHandler { @Sendable _ in
+      started.setValue(true)
+    }
+    mock.register()
+    let webView = WKWebView()
+    defer { webView.stopLoading() }
+    let task = Task {
+      let destination = try #require(URL(string: "https://app.example.com/settings"))
+      if useWebView {
+        try await Clerk.shared.auth.loadInWebView(webView, destination: destination)
+      } else {
+        try await Clerk.shared.auth.openInBrowser(destination: destination) { _ in
+          opened.setValue(true)
+          return true
+        }
+      }
+    }
+    for _ in 0 ..< 100 where !started.value {
+      try await Task.sleep(for: .milliseconds(10))
+    }
+    try #require(started.value)
+    var switchedClient = Client.mock
+    switchedClient.lastActiveSessionId = Session.mock2.id
+    switchedClient.updatedAt = switchedClient.updatedAt.addingTimeInterval(1)
+    Clerk.shared.applyResponseClient(switchedClient, responseSequence: 100)
+    #expect(Clerk.shared.activeSession?.id == Session.mock2.id)
+    _ = await task.result
+    #expect(Clerk.shared.activeSession?.id == Session.mock2.id)
+    #expect(!opened.value, "A transfer minted for the previous account was opened after an account switch")
+    #expect(webView.url == nil, "A transfer minted for the previous account was loaded after an account switch")
+  }
+
   private func signInForTesting() throws -> String {
     configureClerkForTesting()
     Clerk.shared.client = .mock
