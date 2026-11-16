@@ -53,6 +53,7 @@ struct OrganizationCreateFlowView: View {
 
   private func completeFlow() {
     if let onComplete {
+      inviteMembersIsPresented = false
       onComplete()
     } else {
       dismiss()
