@@ -12,6 +12,13 @@ extension JSON {
     return identifier
   }
 
+  var webAuthnAssertionUserVerification: String? {
+    guard let userVerification = self["userVerification"]?.stringValue, !userVerification.isEmpty else {
+      return nil
+    }
+    return userVerification
+  }
+
   var webAuthnAssertionAllowedCredentialIDs: [Data] {
     guard let allowedCredentials = self["allowCredentials"]?.arrayValue else {
       return []

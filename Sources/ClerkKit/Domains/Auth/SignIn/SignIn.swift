@@ -766,6 +766,7 @@ extension SignIn {
 
     let relyingPartyIdentifier = nonceJSON.webAuthnAssertionRelyingPartyIdentifier
     let allowedCredentialIDs = nonceJSON.webAuthnAssertionAllowedCredentialIDs
+    let userVerification = nonceJSON.webAuthnAssertionUserVerification
     let manager = PasskeyHelper()
     let authorization: ASAuthorization
 
@@ -774,13 +775,15 @@ extension SignIn {
       authorization = try await manager.beginAutoFillAssistedPasskeySignIn(
         challenge: challenge,
         relyingPartyIdentifier: relyingPartyIdentifier,
-        allowedCredentialIDs: allowedCredentialIDs
+        allowedCredentialIDs: allowedCredentialIDs,
+        userVerification: userVerification
       )
     } else {
       authorization = try await manager.signIn(
         challenge: challenge,
         relyingPartyIdentifier: relyingPartyIdentifier,
         allowedCredentialIDs: allowedCredentialIDs,
+        userVerification: userVerification,
         preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
       )
     }
@@ -789,6 +792,7 @@ extension SignIn {
       challenge: challenge,
       relyingPartyIdentifier: relyingPartyIdentifier,
       allowedCredentialIDs: allowedCredentialIDs,
+      userVerification: userVerification,
       preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
     )
     #endif

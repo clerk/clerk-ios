@@ -13,6 +13,24 @@ struct JSONWebAuthnTests {
   }
 
   @Test
+  func assertionUserVerificationReadsNonce() throws {
+    let nonce = try JSON([
+      "userVerification": "required",
+    ])
+
+    #expect(nonce.webAuthnAssertionUserVerification == "required")
+  }
+
+  @Test
+  func assertionUserVerificationIsNilWhenNonceOmitsIt() throws {
+    let nonce = try JSON([
+      "rpId": "example.com",
+    ])
+
+    #expect(nonce.webAuthnAssertionUserVerification == nil)
+  }
+
+  @Test
   func assertionAllowedCredentialIDsDecodeBase64URLIDs() throws {
     let nonce = try JSON([
       "allowCredentials": [
