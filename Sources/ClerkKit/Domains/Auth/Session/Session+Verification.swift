@@ -286,6 +286,7 @@ extension Session {
       challenge: challenge,
       relyingPartyIdentifier: relyingPartyIdentifier,
       allowedCredentialIDs: allowedCredentialIDs,
+      userVerification: nonceJSON.webAuthnAssertionUserVerification,
       preferImmediatelyAvailableCredentials: preferImmediatelyAvailableCredentials
     )
 

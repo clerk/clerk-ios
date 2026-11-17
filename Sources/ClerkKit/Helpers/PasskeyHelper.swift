@@ -72,7 +72,8 @@ final class PasskeyHelper: NSObject {
   func credentialAssertionRequest(
     challenge: Data,
     relyingPartyIdentifier: String? = nil,
-    allowedCredentialIDs: [Data] = []
+    allowedCredentialIDs: [Data] = [],
+    userVerification: String? = nil
   ) -> ASAuthorizationPlatformPublicKeyCredentialAssertionRequest {
     let publicKeyCredentialProvider = publicKeyCredentialProvider(
       relyingPartyIdentifier: relyingPartyIdentifier
@@ -81,6 +82,9 @@ final class PasskeyHelper: NSObject {
     let assertionRequest = publicKeyCredentialProvider.createCredentialAssertionRequest(challenge: challenge)
     assertionRequest.allowedCredentials = allowedCredentialIDs.map {
       ASAuthorizationPlatformPublicKeyCredentialDescriptor(credentialID: $0)
+    }
+    if let userVerification {
+      assertionRequest.userVerificationPreference = ASAuthorizationPublicKeyCredentialUserVerificationPreference(rawValue: userVerification)
     }
     return assertionRequest
   }
@@ -123,12 +127,14 @@ final class PasskeyHelper: NSObject {
     challenge: Data,
     relyingPartyIdentifier: String? = nil,
     allowedCredentialIDs: [Data] = [],
+    userVerification: String? = nil,
     preferImmediatelyAvailableCredentials: Bool
   ) async throws -> ASAuthorization {
     let assertionRequest = credentialAssertionRequest(
       challenge: challenge,
       relyingPartyIdentifier: relyingPartyIdentifier,
-      allowedCredentialIDs: allowedCredentialIDs
+      allowedCredentialIDs: allowedCredentialIDs,
+      userVerification: userVerification
     )
 
     return try await performAuthorization(requests: [assertionRequest]) { authController in
@@ -160,12 +166,14 @@ final class PasskeyHelper: NSObject {
   func beginAutoFillAssistedPasskeySignIn(
     challenge: Data,
     relyingPartyIdentifier: String? = nil,
-    allowedCredentialIDs: [Data] = []
+    allowedCredentialIDs: [Data] = [],
+    userVerification: String? = nil
   ) async throws -> ASAuthorization {
     let assertionRequest = credentialAssertionRequest(
       challenge: challenge,
       relyingPartyIdentifier: relyingPartyIdentifier,
-      allowedCredentialIDs: allowedCredentialIDs
+      allowedCredentialIDs: allowedCredentialIDs,
+      userVerification: userVerification
     )
 
     return try await performAuthorization(requests: [assertionRequest]) { authController in
@@ -175,12 +183,12 @@ final class PasskeyHelper: NSObject {
   #endif
 
   @MainActor
-  func createPasskey(
+  func credentialRegistrationRequest(
     challenge: Data,
     name: String,
     userId: Data,
     relyingPartyIdentifier: String? = nil
-  ) async throws -> ASAuthorization {
+  ) -> ASAuthorizationPlatformPublicKeyCredentialRegistrationRequest {
     let publicKeyCredentialProvider = publicKeyCredentialProvider(
       relyingPartyIdentifier: relyingPartyIdentifier
     )
@@ -189,6 +197,23 @@ final class PasskeyHelper: NSObject {
       challenge: challenge,
       name: name,
       userID: userId
+    )
+    registrationRequest.userVerificationPreference = .required
+    return registrationRequest
+  }
+
+  @MainActor
+  func createPasskey(
+    challenge: Data,
+    name: String,
+    userId: Data,
+    relyingPartyIdentifier: String? = nil
+  ) async throws -> ASAuthorization {
+    let registrationRequest = credentialRegistrationRequest(
+      challenge: challenge,
+      name: name,
+      userId: userId,
+      relyingPartyIdentifier: relyingPartyIdentifier
     )
 
     return try await performAuthorization(requests: [registrationRequest]) { authController in
