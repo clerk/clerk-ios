@@ -184,7 +184,7 @@ struct E2EHostView: View {
         }
         .accessibilityIdentifier(E2EIdentifiers.Auth.signOut)
       } else {
-        Text("Signed out")
+        Text("Signed out · Witness demo")
           .accessibilityIdentifier(E2EIdentifiers.Auth.signedOut)
 
         Button("Sign in") {
