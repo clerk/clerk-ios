@@ -1,10 +1,11 @@
 # Organizations
 
-A signed-in user opens OrganizationSwitcher, creates an organization, and the new organization becomes the active one. An app can also embed OrganizationListView in a tab, where it stays mounted while the user signs out, signs in, or switches accounts.
+A signed-in user opens OrganizationSwitcher, creates an organization, and the new organization becomes the active one. An app can also embed OrganizationListView in a tab, where it stays mounted while the user signs out, signs in, or switches accounts, and where creating an organization returns to the list instead of closing it.
 
 ## Sub-features
 
 - `create-from-switcher` creates an organization from the switcher's account list and makes it active.
+- `create-from-embedded-list` creates an organization from the account list embedded in a tab, and returns to that list with the new organization in it and the tab bar still on screen.
 - `embedded-account-list` keeps OrganizationListView mounted in a tab and shows only the signed-in user's organizations after an account switch and after a sign-out and a sign-in as another user.
 
 ## How to get to it (user POV)
@@ -24,6 +25,7 @@ Preconditions:
 - **Create.** Run `e2e-tests/bin/control-clerk-ios run organizations/create-from-switcher`. The launch lands on the home with the user's email and user ID. The spec taps the switcher, which reads `Personal account` while no organization is active, taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `host.newOrganizationName()`, such as `Harbor 7c1e`, and taps `clerk.organization.profileForm.submit`.
 - **Skip invites.** The spec taps `Skip` on the invite step, waits for the home to show the same user again, and expects the organization name on the switcher and no `Personal account`. Screenshot `org-created`.
 - **Proof.** `specs/features/organizations/create-from-switcher.e2e.ts` passes, and the screenshot shows the switcher with the new organization's name under the user's email.
+- **Create from the embedded list.** Run `e2e-tests/bin/control-clerk-ios run organizations/create-from-embedded-list`. The spec seeds a user, signs in with a ticket, opens `Organization tabs`, taps `Accounts` (`person.2`), taps `clerk.organization.accountList.createOrganization`, fills `clerk.organization.profileForm.name` with `host.newOrganizationName()`, taps `clerk.organization.profileForm.submit`, and taps `Skip` on the invite step. It expects the account list again, with the new organization's name, `clerk.organization.accountList.createOrganization`, and the `house` tab. Screenshot `accounts-after-create`. The list is `OrganizationListView(isDismissible: false)`, so finishing the flow pops only what the list pushed and reloads it (`completeCreateOrganizationFlow` in `OrganizationListView.swift`) instead of closing the list.
 - **Embedded list.** Run `e2e-tests/bin/control-clerk-ios run organizations/embedded-account-list`. The spec seeds two users with an organization each, signs the first in with a ticket, opens `Organization tabs`, and expects the first user's organization on `Accounts` (`accounts-first-user`). It opens the profile from the UserButton (`clerk.userButton.profile`), taps its `Add account` row (`clerk.userProfile.row.addAccount`), signs the second user in with the email code, closes the profile, and expects only the second user's organization on `Accounts` (`accounts-after-switch`). It signs out from `Home`, signs the first user in through the `Sign in` sheet, and expects only the first user's organization (`accounts-after-sign-out-and-in`). It switches to `Home` and back and expects the rows again (`accounts-reappear`).
 
 ## Gotchas
