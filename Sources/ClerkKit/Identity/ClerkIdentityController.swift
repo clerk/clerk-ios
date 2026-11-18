@@ -148,6 +148,21 @@ extension ClerkIdentityController {
   }
 
   func compareAndSetDeviceToken(_ deviceToken: String?, expected: String?) async throws -> Bool {
+    try compareAndSetDeviceTokenNow(deviceToken, expected: expected)
+  }
+
+  func dropDeviceBoundToken() {
+    guard let deviceToken = currentDeviceToken, DeviceTokenClaims.hasCnf(deviceToken) else { return }
+    ClerkLogger.info("Device binding: dropping a device-bound token, because this app shares its token")
+    do {
+      try compareAndSetDeviceTokenNow(nil, expected: deviceToken)
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to drop a device-bound token")
+    }
+  }
+
+  @discardableResult
+  private func compareAndSetDeviceTokenNow(_ deviceToken: String?, expected: String?) throws -> Bool {
     adoptStoredDeviceToken()
     guard currentDeviceToken == expected else { return false }
     guard deviceToken != expected else { return true }
