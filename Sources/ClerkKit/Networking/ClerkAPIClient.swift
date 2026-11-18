@@ -130,6 +130,7 @@ actor APIClient {
         clerkRequestContext = preparedContext
       }
       try await pipeline.prepareCustomRequest(&urlRequest)
+      try await pipeline.prepareProof(&urlRequest)
       try ensureCurrentRuntimeScope()
 
       do {
