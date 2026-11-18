@@ -94,6 +94,24 @@ struct DeviceKeyHolderTests {
   }
 
   @Test
+  func readingTheLoadedStateDoesNotWaitForALoadInProgress() {
+    let store = BlockingDeviceKeyStore()
+    let holder = DeviceKeyHolder(store: store)
+    let loaded = DispatchSemaphore(value: 0)
+    DispatchQueue.global().async {
+      _ = holder.state()
+      loaded.signal()
+    }
+    store.started.wait()
+
+    #expect(holder.loadedState == nil)
+
+    store.release.signal()
+    loaded.wait()
+    #expect(holder.loadedState?.isUnavailable == false)
+  }
+
+  @Test
   func secureEnclaveKeysReportTheHardwareLevelFapiAccepts() {
     #expect(DeviceKeySecurityLevel.secureEnclave.wireName == "tee")
     #expect(DeviceKeySecurityLevel.software.wireName == "software")
@@ -116,4 +134,24 @@ private struct FailingDeviceKeyStore: DeviceKeyStore {
   }
 
   func delete() throws {}
+}
+
+private final class BlockingDeviceKeyStore: DeviceKeyStore, @unchecked Sendable {
+  let started = DispatchSemaphore(value: 0)
+  let release = DispatchSemaphore(value: 0)
+  private let store = InMemoryDeviceKeyStore()
+
+  func loadOrCreate() throws -> any DeviceKey {
+    started.signal()
+    release.wait()
+    return try store.loadOrCreate()
+  }
+
+  func hasStoredKey() throws -> Bool {
+    try store.hasStoredKey()
+  }
+
+  func delete() throws {
+    try store.delete()
+  }
 }

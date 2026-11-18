@@ -7,24 +7,25 @@ import Foundation
 
 final class DeviceKeyHolder: @unchecked Sendable {
   private let store: any DeviceKeyStore
-  private let lock = NSLock()
-  private var current: DeviceKeyState?
+  private let operationLock = NSLock()
+  private let stateLock = NSLock()
+  private var recorded: DeviceKeyState?
 
   init(store: any DeviceKeyStore) {
     self.store = store
   }
 
   var loadedState: DeviceKeyState? {
-    lock.withLock { current }
+    stateLock.withLock { recorded }
   }
 
   func state() -> DeviceKeyState {
-    lock.withLock { current ?? load() }
+    operationLock.withLock { loadedState ?? load() }
   }
 
   func withKey<T>(_ operation: (any DeviceKey) throws -> T) -> Result<T, any Error> {
-    lock.withLock {
-      let state = current ?? load()
+    operationLock.withLock {
+      let state = loadedState ?? load()
       let result = state.attempt(operation)
       guard case .ready = state, case .failure = result, storedKeyIsGone() else {
         return result
@@ -39,9 +40,9 @@ final class DeviceKeyHolder: @unchecked Sendable {
   }
 
   func deleteKey() throws {
-    try lock.withLock {
+    try operationLock.withLock {
       try store.delete()
-      current = nil
+      stateLock.withLock { recorded = nil }
     }
   }
 
@@ -74,7 +75,7 @@ final class DeviceKeyHolder: @unchecked Sendable {
     case let .unavailable(error):
       ClerkLogger.warning("Device key unavailable: \(error)")
     }
-    current = next
+    stateLock.withLock { recorded = next }
     return next
   }
 }
