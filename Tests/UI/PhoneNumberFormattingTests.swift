@@ -1,6 +1,7 @@
 #if os(iOS)
 
 @testable import ClerkKitUI
+import PhoneNumberKit
 import Testing
 
 @MainActor
@@ -12,6 +13,13 @@ struct PhoneNumberFormattingTests {
   ])
   func phoneNumbersGetRegionGroupingWithNonBreakingSeparators(input: String, expected: String) {
     #expect(input.formattedAsPhoneNumberIfPossible == expected)
+  }
+
+  @Test
+  func nationalNumberFormatsForTheDeviceRegion() {
+    let freshFormatter = PartialFormatter(utility: PhoneNumberUtility(), withPrefix: true)
+
+    #expect("5555550100".formattedAsPhoneNumberIfPossible == freshFormatter.formatPartial("5555550100").nonBreaking)
   }
 }
 

@@ -161,7 +161,7 @@ struct ClerkTests {
     Clerk.clearAllKeychainItems()
 
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == Clerk.preservedKeychainKeys.contains(key))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncLastChange))
     }
     #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)

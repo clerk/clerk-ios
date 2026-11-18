@@ -23,6 +23,7 @@ struct SystemKeychainTests {
 
     let query = try #require(secItemClient.updateQueries.first)
     let attributes = try #require(secItemClient.updateAttributes.first)
+    #expect(query[kSecAttrService as String] as? String == "service")
     #expect(query[kSecAttrAccount as String] as? String == "key")
     #expect(attributes[kSecValueData as String] as? Data == newData)
   }
@@ -40,14 +41,22 @@ struct SystemKeychainTests {
   }
 
   @Test
-  func hasItemIsTrueOnlyWhenTheKeychainFindsTheItem() throws {
+  func hasItemSeparatesFoundMissingAndReadErrors() throws {
     let secItemClient = SecItemClientSpy()
     let keychain = SystemKeychain(service: "service", secItemClient: secItemClient.client)
+    secItemClient.copyMatchingResults = [
+      .status(errSecSuccess),
+      .status(errSecItemNotFound),
+      .status(errSecInteractionNotAllowed),
+    ]
 
-    secItemClient.copyMatchingResults = [.status(errSecSuccess)]
     #expect(try keychain.hasItem(forKey: "key") == true)
-
     #expect(try keychain.hasItem(forKey: "key") == false)
+    let error = #expect(throws: KeychainError.self) { try keychain.hasItem(forKey: "key") }
+    guard case .unexpectedStatus(errSecInteractionNotAllowed)? = error else {
+      Issue.record("Expected a locked keychain read to throw its status, got \(String(describing: error)).")
+      return
+    }
   }
 
   @Test
