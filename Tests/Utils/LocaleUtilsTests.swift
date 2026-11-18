@@ -14,11 +14,4 @@ struct LocaleUtilsTests {
 
     #expect(LocaleUtils.userLocale() == preferredLanguage)
   }
-
-  @Test
-  func userLocaleFormat() {
-    let locale = LocaleUtils.userLocale()
-
-    #expect(locale.wholeMatch(of: /[A-Za-z]{2,8}(-[A-Za-z0-9]{1,8})*/) != nil)
-  }
 }

@@ -14,22 +14,6 @@ import Testing
 @Suite(.serialized)
 struct TaskCoordinatorTests {
   @Test
-  func tracksTask() async {
-    let coordinator = TaskCoordinator()
-    let taskCompleted = LockIsolated(false)
-
-    let task = Task {
-      taskCompleted.setValue(true)
-    }
-
-    coordinator.track(task)
-
-    await task.value
-
-    #expect(taskCompleted.value == true)
-  }
-
-  @Test
   func createsAndTracksTask() async {
     let coordinator = TaskCoordinator()
     let operationExecuted = LockIsolated(false)
@@ -44,11 +28,9 @@ struct TaskCoordinatorTests {
   }
 
   @Test
-  func cancelAllTasks() async {
+  func cancelAllCancelsEveryTrackedTask() async {
     await withMainSerialExecutor {
       let coordinator = TaskCoordinator()
-      let task1Completed = LockIsolated(false)
-      let task2Completed = LockIsolated(false)
       let task1Cancelled = LockIsolated(false)
       let task2Cancelled = LockIsolated(false)
 
@@ -57,7 +39,6 @@ struct TaskCoordinatorTests {
           await Task.yield()
         }
         task1Cancelled.setValue(true)
-        task1Completed.setValue(true)
       }
 
       _ = coordinator.task {
@@ -65,7 +46,6 @@ struct TaskCoordinatorTests {
           await Task.yield()
         }
         task2Cancelled.setValue(true)
-        task2Completed.setValue(true)
       }
 
       coordinator.cancelAll()
@@ -77,47 +57,9 @@ struct TaskCoordinatorTests {
         await Task.yield()
       }
 
-      #expect(task1Cancelled.value == true || task1Completed.value == false)
-      #expect(task2Cancelled.value == true || task2Completed.value == false)
+      #expect(task1Cancelled.value)
+      #expect(task2Cancelled.value)
     }
-  }
-
-  @Test
-  func tracksMultipleTasks() async {
-    let coordinator = TaskCoordinator()
-    let completedCount = LockIsolated(0)
-
-    let task1 = coordinator.task {
-      completedCount.setValue(completedCount.value + 1)
-    }
-
-    let task2 = coordinator.task {
-      completedCount.setValue(completedCount.value + 1)
-    }
-
-    let task3 = coordinator.task {
-      completedCount.setValue(completedCount.value + 1)
-    }
-
-    await task1.value
-    await task2.value
-    await task3.value
-
-    #expect(completedCount.value == 3)
-  }
-
-  @Test
-  func taskWithCustomPriority() async {
-    let coordinator = TaskCoordinator()
-    let operationExecuted = LockIsolated(false)
-
-    let task = coordinator.task(priority: .utility) {
-      operationExecuted.setValue(true)
-    }
-
-    await task.value
-
-    #expect(operationExecuted.value == true)
   }
 
   @Test

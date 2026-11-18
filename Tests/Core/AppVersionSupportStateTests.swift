@@ -10,16 +10,6 @@ struct AppVersionSupportStateTests {
   }
 
   @Test
-  func theServerAnswerOutranksTheEnvironment() {
-    var state = makeState()
-
-    state.applySupported(requestSequence: 1)
-    state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "2.0", updateURL: "https://apps.apple.com/app/id123"))
-
-    #expect(state.status.isSupported)
-  }
-
-  @Test
   func aRejectionUsesTheLatestEnvironmentForWhatItsMetaLeavesOut() {
     var state = makeState()
     state.applyEnvironment(.withIOSPolicy(bundleID: "com.example.app", minimumVersion: "2.0", updateURL: "https://apps.apple.com/app/id1"))

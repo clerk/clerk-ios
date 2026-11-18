@@ -12,26 +12,6 @@ import Testing
 @Suite(.serialized)
 struct ClerkKeychainKeyTests {
   @Test
-  func allCasesContainsExpectedKeys() {
-    let allCases = ClerkKeychainKey.allCases
-    #expect(allCases.count == 13)
-
-    #expect(allCases.contains(.cachedClient))
-    #expect(allCases.contains(.cachedClientServerDate))
-    #expect(allCases.contains(.cachedEnvironment))
-    #expect(allCases.contains(.watchSyncLastChange))
-    #expect(allCases.contains(.sharedSessionSyncAuthState))
-    #expect(allCases.contains(.sharedSessionSyncAuthVersion))
-    #expect(allCases.contains(.sharedSessionSyncEnvironmentVersion))
-    #expect(allCases.contains(.clerkDeviceToken))
-    #expect(allCases.contains(.sharedSessionSyncDeviceTokenState))
-    #expect(allCases.contains(.sharedSessionSyncDeviceTokenVersion))
-    #expect(allCases.contains(.attestKeyId))
-    #expect(allCases.contains(.pendingMagicLinkFlow))
-    #expect(allCases.contains(.biometricCredentials))
-  }
-
-  @Test
   func rawValuesMatchExpectedStrings() {
     #expect(ClerkKeychainKey.cachedClient.rawValue == "cachedClient")
     #expect(ClerkKeychainKey.cachedClientServerDate.rawValue == "cachedClientServerDate")

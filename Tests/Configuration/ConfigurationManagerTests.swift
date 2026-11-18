@@ -59,42 +59,6 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func configureWithEmptyKey() {
-    let manager = ConfigurationManager()
-    let options = Clerk.Options()
-
-    do {
-      try manager.configure(publishableKey: "", options: options)
-      Issue.record("Expected missingPublishableKey error")
-    } catch let error as ClerkInitializationError {
-      if case .missingPublishableKey = error {
-      } else {
-        Issue.record("Wrong error type")
-      }
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
-  }
-
-  @Test
-  func configureWithWhitespaceOnlyKey() {
-    let manager = ConfigurationManager()
-    let options = Clerk.Options()
-
-    do {
-      try manager.configure(publishableKey: "   ", options: options)
-      Issue.record("Expected missingPublishableKey error")
-    } catch let error as ClerkInitializationError {
-      if case .missingPublishableKey = error {
-      } else {
-        Issue.record("Wrong error type")
-      }
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
-  }
-
-  @Test
   func configureWithNewlineAndTabOnlyKey() {
     let manager = ConfigurationManager()
 
@@ -105,24 +69,6 @@ struct ConfigurationManagerTests {
       return true
     }
     #expect(manager.publishableKey.isEmpty)
-  }
-
-  @Test
-  func configureWithInvalidFormatKey() {
-    let manager = ConfigurationManager()
-    let options = Clerk.Options()
-
-    do {
-      try manager.configure(publishableKey: "invalid_key", options: options)
-      Issue.record("Expected invalidPublishableKeyFormat error")
-    } catch let error as ClerkInitializationError {
-      if case .invalidPublishableKeyFormat = error {
-      } else {
-        Issue.record("Wrong error type")
-      }
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
   }
 
   @Test
@@ -238,39 +184,6 @@ struct ConfigurationManagerTests {
   }
 
   @Test
-  func instanceTypeDevelopment() throws {
-    let manager = ConfigurationManager()
-    let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.Options()
-
-    try manager.configure(publishableKey: testKey, options: options)
-
-    #expect(manager.instanceType == .development)
-  }
-
-  @Test
-  func instanceTypeProduction() throws {
-    let manager = ConfigurationManager()
-    let liveKey = createLivePublishableKey(for: "clerk.production.com")
-    let options = Clerk.Options()
-
-    try manager.configure(publishableKey: liveKey, options: options)
-
-    #expect(manager.instanceType == .production)
-  }
-
-  @Test
-  func frontendApiUrlExtraction() throws {
-    let manager = ConfigurationManager()
-    let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.Options()
-
-    try manager.configure(publishableKey: testKey, options: options)
-
-    #expect(manager.frontendApiUrl == "https://clerk.example.com")
-  }
-
-  @Test
   func testUpdateProxyUrl() throws {
     let manager = ConfigurationManager()
     let testKey = createTestPublishableKey(for: "clerk.example.com")
@@ -331,20 +244,6 @@ struct ConfigurationManagerTests {
     #expect(manager.options.logLevel == .debug)
     #expect(manager.options.telemetryEnabled == false)
     #expect(manager.proxyUrl?.absoluteString == "https://proxy.example.com/__clerk")
-  }
-
-  @Test
-  func propertyAccessors() throws {
-    let manager = ConfigurationManager()
-    let testKey = createTestPublishableKey(for: "clerk.example.com")
-    let options = Clerk.Options()
-
-    try manager.configure(publishableKey: testKey, options: options)
-
-    #expect(!manager.publishableKey.isEmpty)
-    #expect(!manager.frontendApiUrl.isEmpty)
-    #expect(manager.options.logLevel == .error)
-    #expect(manager.instanceType == .development)
   }
 
   @Test

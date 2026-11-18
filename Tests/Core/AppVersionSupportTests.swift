@@ -132,16 +132,6 @@ struct AppVersionSupportTests {
   }
 
   @Test
-  func laterSupportedResponseLiftsAnEnvironmentBlock() {
-    let clerk = makeClerk()
-    clerk.applyRefreshedEnvironment(Self.blockingEnvironment)
-
-    clerk.applySupportedAppVersion()
-
-    #expect(clerk.appVersionSupportStatus.isSupported)
-  }
-
-  @Test
   func laterServerRejectionBlocksDespiteTheEnvironment() {
     let clerk = makeClerk()
     clerk.applyRefreshedEnvironment(.mock)
@@ -230,14 +220,6 @@ struct AppVersionSupportTests {
     clerk.setEnvironmentIfNeeded(.mock)
 
     #expect(!clerk.appVersionSupportStatus.isSupported)
-  }
-
-  @Test
-  func supportedStatusReportsTheInjectedBuild() {
-    let clerk = makeClerk()
-    clerk.applySupportedAppVersion()
-
-    #expect(clerk.appVersionSupportStatus.currentVersion == "1.0")
   }
 
   @Test

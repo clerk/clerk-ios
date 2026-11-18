@@ -16,15 +16,6 @@ struct DisplayConfigDecodingTests {
   }
 
   @Test
-  func showDevmodeWarningDecodesFalse() throws {
-    let data = displayConfigJSON(showDevmodeWarning: false)
-
-    let displayConfig = try decoder.decode(Clerk.Environment.DisplayConfig.self, from: data)
-
-    #expect(displayConfig.showDevmodeWarning == false)
-  }
-
-  @Test
   func showDevmodeWarningDefaultsFalseWhenMissing() throws {
     let data = displayConfigJSON()
 

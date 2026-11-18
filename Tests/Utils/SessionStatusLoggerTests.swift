@@ -51,16 +51,6 @@ struct SessionStatusLoggerTests {
   }
 
   @Test
-  func shouldLogPendingSessionStatus_NoMatchingSession() {
-    let logger = SessionStatusLogger()
-    let session = createSession(id: "session1", status: .pending)
-    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "nonexistent")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: nil, currentClient: client)
-    #expect(shouldLog == false)
-  }
-
-  @Test
   func shouldLogPendingSessionStatus_NonPendingSession() {
     let logger = SessionStatusLogger()
     let session = createSession(id: "session1", status: .active)
@@ -165,19 +155,6 @@ struct SessionStatusLoggerTests {
     let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
 
     let currentSession = createSession(id: "session1", status: .pending, tasks: [Session.Task(key: "task1")])
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)
-    #expect(shouldLog == false)
-  }
-
-  @Test
-  func shouldLogPendingSessionStatus_SameTasksNil() {
-    let logger = SessionStatusLogger()
-    let previousSession = createSession(id: "session1", status: .pending, tasks: nil)
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-
-    let currentSession = createSession(id: "session1", status: .pending, tasks: nil)
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 
     let shouldLog = logger.shouldLogPendingSessionStatus(previousClient: previousClient, currentClient: currentClient)

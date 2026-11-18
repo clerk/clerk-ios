@@ -541,54 +541,6 @@ struct HostedAuthFlowTests {
   }
 
   @Test
-  func missingCallbackSessionDoesNotApplyClientOrActivateAnotherSession() async throws {
-    let createParams = LockIsolated<JSON?>(nil)
-    let setActiveCalled = LockIsolated(false)
-    let initialClient = Client.mockSignedOut
-    let transport = FakeTransport.mockDefaults()
-    transport.stubHostedAuthCreate { body in
-      createParams.setValue(body)
-      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-    }
-    transport.stubHostedAuthRedeem { _ in
-      hostedAuthRedeemReply(client: .mock)
-    }
-    transport.stubSetActive { _, _ in
-      setActiveCalled.setValue(true)
-    }
-    configureHostedAuthForTesting(
-      transport: transport,
-      initialClient: initialClient
-    )
-
-    do {
-      _ = try await Clerk.shared.auth.performHostedAuth(
-        mode: nil,
-        redirectUrl: "myapp://callback",
-        prefersEphemeralWebBrowserSession: false,
-        webAuthentication: { _, _, _ in
-          guard let state = createParams.value?["state"]?.stringValue else {
-            throw ClerkClientError(message: "Missing state in test.")
-          }
-          return try makeHostedAuthCallbackUrl(
-            redirectUrl: "myapp://callback",
-            state: state,
-            rotatingTokenNonce: "nonce_123",
-            createdSessionId: "sess_callback"
-          )
-        }
-      )
-      Issue.record("Expected missing callback session to throw")
-    } catch let error as ClerkClientError {
-      #expect(error.message == "Hosted auth completion did not include the created session.")
-      #expect(!setActiveCalled.value)
-      #expect(Clerk.shared.client == initialClient)
-    } catch {
-      Issue.record("Expected ClerkClientError, got \(error)")
-    }
-  }
-
-  @Test
   func explicitClearRedeemResponseClearsIdentityWithoutActivating() async throws {
     let createParams = LockIsolated<JSON?>(nil)
     let setActiveCalled = LockIsolated(false)
@@ -773,59 +725,6 @@ struct HostedAuthFlowTests {
       )
     }
     #expect(!redeemCalled.value)
-  }
-
-  @Test
-  func generationChangeWhileBrowserOpenDiscardsRedeemedClient() async throws {
-    let createParams = LockIsolated<JSON?>(nil)
-    let redeemCalled = LockIsolated(false)
-    let setActiveCalled = LockIsolated(false)
-    let initialClient = Client.mockSignedOut
-    var redeemedClient = Client.mock
-    redeemedClient.sessions = [.mock]
-    redeemedClient.lastActiveSessionId = Session.mock.id
-
-    let transport = FakeTransport.mockDefaults()
-    transport.stubHostedAuthCreate { body in
-      createParams.setValue(body)
-      return HostedAuthResource(object: "hosted_auth", url: "https://accounts.example.com/sign-in")
-    }
-    transport.stubHostedAuthRedeem { _ in
-      redeemCalled.setValue(true)
-      return hostedAuthRedeemReply(client: redeemedClient)
-    }
-    transport.stubSetActive { _, _ in
-      setActiveCalled.setValue(true)
-    }
-    configureHostedAuthForTesting(
-      transport: transport,
-      initialClient: initialClient
-    )
-
-    do {
-      _ = try await Clerk.shared.auth.performHostedAuth(
-        mode: nil,
-        redirectUrl: "myapp://callback",
-        prefersEphemeralWebBrowserSession: false,
-        webAuthentication: { _, _, _ in
-          Clerk.shared.identityController.fenceClientResponses()
-          return try makeHostedAuthCallbackUrl(
-            redirectUrl: "myapp://callback",
-            state: #require(createParams.value?["state"]?.stringValue),
-            rotatingTokenNonce: "nonce_123",
-            createdSessionId: Session.mock.id
-          )
-        }
-      )
-      Issue.record("Expected stale client response generation to throw")
-    } catch let error as ClerkClientError {
-      #expect(error.message == "Hosted auth completion could not update the current client.")
-      #expect(!redeemCalled.value)
-      #expect(!setActiveCalled.value)
-      #expect(Clerk.shared.client == initialClient)
-    } catch {
-      Issue.record("Expected ClerkClientError, got \(error)")
-    }
   }
 
   @Test

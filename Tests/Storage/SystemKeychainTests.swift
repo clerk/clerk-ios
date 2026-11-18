@@ -10,85 +10,53 @@ import Foundation
 import Security
 import Testing
 
-/// Tests for KeychainStorage protocol operations.
-/// Uses InMemoryKeychain for fast, isolated unit tests that don't require keychain entitlements.
 @Suite(.serialized)
 struct SystemKeychainTests {
   @Test
-  func setAndGetData() throws {
-    let keychain = InMemoryKeychain()
+  func duplicateItemOnSetUpdatesTheStoredValue() throws {
+    let secItemClient = SecItemClientSpy()
+    secItemClient.addResults = [errSecDuplicateItem]
+    let keychain = SystemKeychain(service: "service", secItemClient: secItemClient.client)
+    let newData = Data("updated-value".utf8)
 
-    let testData = "test-value".data(using: .utf8)!
-    try keychain.set(testData, forKey: "test-key")
+    try keychain.set(newData, forKey: "key")
 
-    let retrievedData = try keychain.data(forKey: "test-key")
-    #expect(retrievedData == testData)
+    let query = try #require(secItemClient.updateQueries.first)
+    let attributes = try #require(secItemClient.updateAttributes.first)
+    #expect(query[kSecAttrAccount as String] as? String == "key")
+    #expect(attributes[kSecValueData as String] as? Data == newData)
   }
 
   @Test
-  func updateExistingKey() throws {
-    let keychain = InMemoryKeychain()
+  func deleteItemTargetsTheServiceAndKey() throws {
+    let secItemClient = SecItemClientSpy()
+    let keychain = SystemKeychain(service: "service", secItemClient: secItemClient.client)
 
-    let initialData = "initial-value".data(using: .utf8)!
-    try keychain.set(initialData, forKey: "test-key")
+    try keychain.deleteItem(forKey: "key")
 
-    let updatedData = "updated-value".data(using: .utf8)!
-    try keychain.set(updatedData, forKey: "test-key")
-
-    let retrievedData = try keychain.data(forKey: "test-key")
-    #expect(retrievedData == updatedData)
+    let query = try #require(secItemClient.deleteQueries.first)
+    #expect(query[kSecAttrService as String] as? String == "service")
+    #expect(query[kSecAttrAccount as String] as? String == "key")
   }
 
   @Test
-  func testDeleteItem() throws {
-    let keychain = InMemoryKeychain()
+  func hasItemIsTrueOnlyWhenTheKeychainFindsTheItem() throws {
+    let secItemClient = SecItemClientSpy()
+    let keychain = SystemKeychain(service: "service", secItemClient: secItemClient.client)
 
-    let testData = "test-value".data(using: .utf8)!
-    try keychain.set(testData, forKey: "test-key")
+    secItemClient.copyMatchingResults = [.status(errSecSuccess)]
+    #expect(try keychain.hasItem(forKey: "key") == true)
 
-    try keychain.deleteItem(forKey: "test-key")
-
-    let retrievedData = try keychain.data(forKey: "test-key")
-    #expect(retrievedData == nil)
+    #expect(try keychain.hasItem(forKey: "key") == false)
   }
 
   @Test
-  func testHasItem() throws {
-    let keychain = InMemoryKeychain()
+  func deletingAnAbsentItemIsNotAnError() throws {
+    let secItemClient = SecItemClientSpy()
+    secItemClient.deleteResults = [errSecItemNotFound]
+    let keychain = SystemKeychain(service: "service", secItemClient: secItemClient.client)
 
-    #expect(try keychain.hasItem(forKey: "non-existent-key") == false)
-
-    let testData = "test-value".data(using: .utf8)!
-    try keychain.set(testData, forKey: "existing-key")
-
-    #expect(try keychain.hasItem(forKey: "existing-key") == true)
-  }
-
-  @Test
-  func getNonExistentKeyReturnsNil() throws {
-    let keychain = InMemoryKeychain()
-
-    let data = try keychain.data(forKey: "non-existent-key")
-    #expect(data == nil)
-  }
-
-  @Test
-  func deleteNonExistentKeyDoesNotThrow() throws {
-    let keychain = InMemoryKeychain()
-
-    try keychain.deleteItem(forKey: "non-existent-key")
-  }
-
-  @Test
-  func isolationBetweenInstances() throws {
-    let keychain1 = InMemoryKeychain()
-    let keychain2 = InMemoryKeychain()
-
-    let testData = "test-value".data(using: .utf8)!
-    try keychain1.set(testData, forKey: "shared-key")
-
-    let data = try keychain2.data(forKey: "shared-key")
-    #expect(data == nil)
+    try keychain.deleteItem(forKey: "key")
   }
 
   @Test

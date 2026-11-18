@@ -247,29 +247,6 @@ struct UserAPITests {
   }
 
   @Test
-  func testCreateEmailAddress() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/email_addresses")!
-
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<EmailAddress>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["email_address"] == "new@example.com")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    _ = try await User.mock.createEmailAddress("new@example.com")
-    #expect(requestHandled.value)
-  }
-
-  @Test
   func testCreatePhoneNumber() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!

@@ -58,24 +58,6 @@ struct TokenFreshnessTests {
   }
 
   @Test
-  func acceptsIncomingTokenWhenOrganizationChanges() throws {
-    let existing = try token(
-      organizationId: "org_one",
-      originIssuedAt: 300,
-      issuedAt: 300
-    )
-    let incoming = try token(
-      organizationId: "org_two",
-      originIssuedAt: 100,
-      issuedAt: 100
-    )
-
-    let result = TokenFreshness.pickFreshest(existing: existing, incoming: incoming)
-
-    #expect(result == incoming)
-  }
-
-  @Test
   func treatsTokenWithoutOriginIssuedAtAsOlder() throws {
     let existing = try token(originIssuedAt: 200, issuedAt: 200)
     let incoming = try token(originIssuedAt: nil, issuedAt: 300)

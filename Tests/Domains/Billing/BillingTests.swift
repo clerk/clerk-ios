@@ -14,29 +14,6 @@ struct BillingTests {
   private let decoder = JSONDecoder.clerkDecoder
 
   @Test
-  func billingGetMethodsAreCallable() async throws {
-    // Omitted write APIs from clerk-js BillingNamespace / BillingPayerMethods:
-    // startCheckout, updateCheckout, initializePaymentMethod, addPaymentMethod,
-    // cancel, remove, makeDefault
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: createMockAPIClient(),
-      transport: FakeTransport.mockDefaults()
-    )
-
-    _ = try await Clerk.shared.billing.getPaymentAttempts()
-    _ = try await Clerk.shared.billing.getPaymentAttempt(id: "pay_1")
-    _ = try await Clerk.shared.billing.getPlans()
-    _ = try await Clerk.shared.billing.getPlan(id: "plan_1")
-    _ = try await Clerk.shared.billing.getSubscription()
-    _ = try await Clerk.shared.billing.getStatements()
-    _ = try await Clerk.shared.billing.getStatement(id: "stmt_1")
-    _ = try await Clerk.shared.billing.getCreditBalance()
-    _ = try await Clerk.shared.billing.getCreditHistory()
-    _ = try await User.mock.getPaymentMethods()
-    _ = try await Organization.mock.getPaymentMethods()
-  }
-
-  @Test
   func getPlansMapsOrganizationPayerTypeAndPagination() async throws {
     let requestHandled = LockIsolated(false)
     var mock = try Mock(

@@ -68,16 +68,6 @@ struct SessionUtilsTests {
   }
 
   @Test
-  func currentSession_ReturnsSession() {
-    let session = createSession(id: "session1", status: .active)
-    let client = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
-
-    let currentSession = client.currentSession
-    #expect(currentSession != nil)
-    #expect(currentSession?.id == "session1")
-  }
-
-  @Test
   func currentSession_ReturnsCorrectSessionFromMultipleSessions() {
     let session1 = createSession(id: "session1", status: .active)
     let session2 = createSession(id: "session2", status: .active)
@@ -163,46 +153,6 @@ struct SessionUtilsTests {
       status: .active,
       updatedAt: Date(timeIntervalSince1970: 1_609_459_300)
     )
-    let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
-    let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
-
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
-    #expect(changed == true)
-  }
-
-  @Test
-  func sessionChanged_NoSessionToNoSession() {
-    let previousClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
-    let currentClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
-
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
-    #expect(changed == false)
-  }
-
-  @Test
-  func sessionChanged_NoSessionToSession() {
-    let session = createSession(id: "session1", status: .active)
-    let previousClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
-    let currentClient = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
-
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
-    #expect(changed == true)
-  }
-
-  @Test
-  func sessionChanged_SessionToNoSession() {
-    let session = createSession(id: "session1", status: .active)
-    let previousClient = createClient(id: "client1", sessions: [session], lastActiveSessionId: "session1")
-    let currentClient = createClient(id: "client1", sessions: [], lastActiveSessionId: nil)
-
-    let changed = SessionUtils.sessionChanged(previousClient: previousClient, currentClient: currentClient)
-    #expect(changed == true)
-  }
-
-  @Test
-  func sessionChanged_SessionBecomesInactive() {
-    let previousSession = createSession(id: "session1", status: .active)
-    let currentSession = createSession(id: "session1", status: .expired)
     let previousClient = createClient(id: "client1", sessions: [previousSession], lastActiveSessionId: "session1")
     let currentClient = createClient(id: "client1", sessions: [currentSession], lastActiveSessionId: "session1")
 

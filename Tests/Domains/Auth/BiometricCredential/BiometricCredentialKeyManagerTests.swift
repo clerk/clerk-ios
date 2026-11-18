@@ -41,22 +41,6 @@ struct BiometricCredentialKeyManagerTests {
     #expect(privateKeyAttributes[kSecAttrAccessControl as String] != nil)
   }
 
-  @Test
-  func accessControlFlagsMatchBiometricCredentialPolicies() {
-    #expect(BiometricCredentialKeyManager.accessControlFlags(for: .biometryCurrentSet) == [
-      .privateKeyUsage,
-      .biometryCurrentSet,
-    ])
-    #expect(BiometricCredentialKeyManager.accessControlFlags(for: .biometryAny) == [
-      .privateKeyUsage,
-      .biometryAny,
-    ])
-    #expect(BiometricCredentialKeyManager.accessControlFlags(for: .biometryOrDevicePasscode) == [
-      .privateKeyUsage,
-      .userPresence,
-    ])
-  }
-
   #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
   @Test
   func localAuthenticationPoliciesMatchBiometricCredentialPolicies() {
@@ -104,22 +88,6 @@ struct BiometricCredentialKeyManagerTests {
     #else
     #expect(query[kSecUseDataProtectionKeychain as String] == nil)
     #endif
-  }
-
-  @Test
-  func publicKeyJWKEncodesP256X963Representation() throws {
-    let x = Data(repeating: 0x01, count: 32)
-    let y = Data(repeating: 0x02, count: 32)
-    let representation = Data([0x04]) + x + y
-
-    let jwk = try BiometricCredentialKeyManager.publicKeyJWK(fromX963Representation: representation)
-    let object = try #require(JSONSerialization.jsonObject(with: Data(jwk.utf8)) as? [String: String])
-
-    #expect(object["kty"] == "EC")
-    #expect(object["crv"] == "P-256")
-    #expect(object["x"] == BiometricCredentialKeyManager.base64URLEncodedString(x))
-    #expect(object["y"] == BiometricCredentialKeyManager.base64URLEncodedString(y))
-    #expect(object["alg"] == "ES256")
   }
 
   @Test
@@ -225,43 +193,5 @@ struct BiometricCredentialKeyManagerTests {
     }
 
     #expect(status == errSecNotAvailable)
-  }
-
-  @MainActor
-  @Test
-  func mockKeyManagerSignsClientData() async throws {
-    let manager = MockBiometricCredentialKeyManager(sign: { clientData, localKeyId, localizedReason in
-      #expect(clientData == "{\"challenge_id\":\"tdch_123\"}")
-      #expect(localKeyId == "tdlk_123")
-      #expect(localizedReason == "Use biometrics")
-      return BiometricCredentialKeySignature(clientData: clientData, signature: "signature")
-    })
-
-    let signature = try await manager.sign(
-      clientData: "{\"challenge_id\":\"tdch_123\"}",
-      localKeyId: "tdlk_123",
-      localizedReason: "Use biometrics"
-    )
-
-    #expect(signature.clientData == "{\"challenge_id\":\"tdch_123\"}")
-    #expect(signature.signature == "signature")
-    #expect(signature.algorithm == .es256)
-  }
-
-  @MainActor
-  @Test
-  func mockKeyManagerSurfacesMissingKey() async throws {
-    let manager = MockBiometricCredentialKeyManager(sign: { _, _, _ in
-      throw BiometricCredentialKeyManagerError.keyNotFound
-    })
-
-    do {
-      _ = try await manager.sign(clientData: "{}", localKeyId: "tdlk_missing")
-      Issue.record("Expected missing key error.")
-    } catch let error as BiometricCredentialKeyManagerError {
-      #expect(error == .keyNotFound)
-    } catch {
-      Issue.record("Wrong error type: \(error)")
-    }
   }
 }

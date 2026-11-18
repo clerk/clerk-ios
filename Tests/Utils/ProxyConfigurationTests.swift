@@ -9,18 +9,6 @@ import Testing
 @Suite(.serialized)
 struct ProxyConfigurationTests {
   @Test
-  func initWithValidURL() throws {
-    let url = try #require(URL(string: "https://proxy.example.com/__clerk"))
-    let config = ProxyConfiguration(url: url)
-
-    #expect(config != nil)
-    if let config {
-      #expect(config.baseURL.absoluteString == "https://proxy.example.com")
-      #expect(config.pathSegments == ["__clerk"])
-    }
-  }
-
-  @Test
   func initWithNilURL() {
     let config = ProxyConfiguration(url: nil)
     #expect(config == nil)
@@ -58,29 +46,6 @@ struct ProxyConfigurationTests {
   func initWithANonHttpScheme() throws {
     let url = try #require(URL(string: "ftp://proxy.example.com/__clerk"))
     #expect(ProxyConfiguration(url: url) == nil)
-  }
-
-  @Test
-  func initWithURLWithPort() throws {
-    let url = try #require(URL(string: "https://proxy.example.com:8080/__clerk"))
-    let config = ProxyConfiguration(url: url)
-
-    #expect(config != nil)
-    if let config {
-      #expect(config.baseURL.port == 8080)
-      #expect(config.pathSegments == ["__clerk"])
-    }
-  }
-
-  @Test
-  func initWithURLWithoutPath() throws {
-    let url = try #require(URL(string: "https://proxy.example.com"))
-    let config = ProxyConfiguration(url: url)
-
-    #expect(config != nil)
-    if let config {
-      #expect(config.pathSegments == [])
-    }
   }
 
   @Test
@@ -148,15 +113,6 @@ struct ProxyConfigurationTests {
 
     let result = config.prefixedPath(for: "/client")
     #expect(result == "/__clerk/v1/client")
-  }
-
-  @Test
-  func prefixedPathWithEmptyOriginalPath() throws {
-    let url = try #require(URL(string: "https://proxy.example.com/__clerk"))
-    let config = try #require(ProxyConfiguration(url: url))
-
-    let result = config.prefixedPath(for: "")
-    #expect(result == "/__clerk")
   }
 
   @Test

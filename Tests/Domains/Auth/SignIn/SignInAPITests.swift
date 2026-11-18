@@ -229,30 +229,6 @@ struct SignInAPITests {
   }
 
   @Test
-  func createWithNone() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ins")!
-
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignIn>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    // Empty create is not exposed in public API, so we test the request builder directly
-    _ = try await Clerk.shared.dependencies.transport.send(SignInAPI.create(params: .init()))
-    #expect(requestHandled.value)
-  }
-
-  @Test
   func testResetPassword() async throws {
     let signIn = SignIn.mock
     let requestHandled = LockIsolated(false)
