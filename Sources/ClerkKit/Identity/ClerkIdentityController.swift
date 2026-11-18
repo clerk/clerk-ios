@@ -67,8 +67,12 @@ extension ClerkIdentityController {
     responseOrderingGate.reset()
   }
 
-  func recordServerDate(_ serverDate: Date, receivedAt: Date) {
-    serverClock.record(serverDate: serverDate, receivedAt: receivedAt)
+  func recordServerDate(
+    _ serverDate: Date,
+    receivedAt: Date,
+    receivedAtInstant: ContinuousClock.Instant = .now
+  ) {
+    serverClock.record(serverDate: serverDate, receivedAt: receivedAt, receivedAtInstant: receivedAtInstant)
   }
 
   func resetServerClock() {
