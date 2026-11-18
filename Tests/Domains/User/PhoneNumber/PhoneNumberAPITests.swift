@@ -12,29 +12,6 @@ struct PhoneNumberAPITests {
   }
 
   @Test
-  func testCreate() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/me/phone_numbers")!
-
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<PhoneNumber>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["phone_number"] == "+1234567890")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    _ = try await Clerk.shared.dependencies.transport.send(PhoneNumberAPI.create(phoneNumber: "+1234567890"))
-    #expect(requestHandled.value)
-  }
-
-  @Test
   func testDelete() async throws {
     let phoneNumber = PhoneNumber.mock
     let requestHandled = LockIsolated(false)

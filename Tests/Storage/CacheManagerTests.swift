@@ -40,7 +40,7 @@ struct CacheManagerTests {
   }
 
   @Test
-  func cachedEnvironmentDoesNotReplaceAFreshOne() async {
+  func cachedEnvironmentDoesNotReplaceAFreshOneOnClerk() async {
     let keychain = InMemoryKeychain()
     let writes = KeychainWriteQueue()
     CacheManager(coordinator: MockCacheCoordinator(), keychain: keychain, writes: writes).saveEnvironment(.mock)
@@ -48,10 +48,11 @@ struct CacheManagerTests {
     var fresh = Clerk.Environment.mock
     fresh.displayConfig.applicationName = "Fresh"
 
-    let coordinator = MockCacheCoordinator(environment: fresh)
-    CacheManager(coordinator: coordinator, keychain: keychain, writes: writes).loadCachedData()
+    let clerk = Clerk()
+    clerk.environment = fresh
+    CacheManager(coordinator: clerk, keychain: keychain, writes: writes).loadCachedData()
 
-    #expect(coordinator.environment?.displayConfig.applicationName == "Fresh")
+    #expect(clerk.environment?.displayConfig.applicationName == "Fresh")
   }
 
   @Test

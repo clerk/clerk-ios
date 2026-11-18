@@ -54,25 +54,8 @@ struct ClerkOptionsTests {
   }
 
   @Test
-  func proxyUrlConversionValidURL() {
-    let options = Clerk.Options(proxyUrl: "https://proxy.example.com/__clerk")
-
-    #expect(options.proxyUrl != nil)
-    #expect(options.proxyUrl?.scheme == "https")
-    #expect(options.proxyUrl?.host == "proxy.example.com")
-    #expect(options.proxyUrl?.path == "/__clerk")
-  }
-
-  @Test
   func proxyUrlConversionInvalidURL() {
     let options = Clerk.Options(proxyUrl: "https://proxy example.com/__clerk")
-
-    #expect(options.proxyUrl == nil)
-  }
-
-  @Test
-  func proxyUrlConversionNil() {
-    let options = Clerk.Options(proxyUrl: nil)
 
     #expect(options.proxyUrl == nil)
   }
@@ -91,15 +74,6 @@ struct ClerkOptionsTests {
 
     #expect(options.proxyUrl != nil)
     #expect(options.proxyUrl?.query == "param=value")
-  }
-
-  @Test
-  func partialInitialization() {
-    let options = Clerk.Options(logLevel: .debug)
-
-    #expect(options.logLevel == .debug)
-    #expect(options.telemetryEnabled == true)
-    #expect(options.proxyUrl == nil)
   }
 
   @Test

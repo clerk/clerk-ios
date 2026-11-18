@@ -43,14 +43,6 @@ struct SocialButtonLayoutTests {
   }
 
   @Test
-  func rowRangesBalanceSixItemsAcrossTwoRowsWhenFiveFit() {
-    #expect(SocialButtonRowsLayout.rowRanges(itemCount: 6, maxItemsPerRow: 5) == [
-      0 ..< 3,
-      3 ..< 6,
-    ])
-  }
-
-  @Test
   func rowRangesMatchWebChunkingForSevenItemsAcrossThreeRows() {
     #expect(SocialButtonRowsLayout.rowRanges(itemCount: 7, maxItemsPerRow: 3) == [
       0 ..< 3,

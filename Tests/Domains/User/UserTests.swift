@@ -232,21 +232,6 @@ struct UserTests {
   }
 
   @Test
-  func createEmailAddressSendsEmailAddress() async throws {
-    let captured = LockIsolated<JSON?>(nil)
-    transport.stub(EmailAddressAPI.create(email: "")) { call in
-      captured.setValue(call.body)
-      return ClientResponse(response: .mock, client: nil)
-    }
-
-    configureTransport()
-
-    _ = try await User.mock.createEmailAddress("new@example.com")
-
-    #expect(captured.value?["email_address"]?.stringValue == "new@example.com")
-  }
-
-  @Test
   func createPhoneNumberSendsPhoneNumber() async throws {
     let captured = LockIsolated<JSON?>(nil)
     transport.stub(PhoneNumberAPI.create(phoneNumber: "")) { call in

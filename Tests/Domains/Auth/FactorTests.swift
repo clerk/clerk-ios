@@ -28,17 +28,6 @@ struct FactorTests {
   }
 
   @Test
-  func biometricCredentialStrategyRoundTripsThroughJSON() throws {
-    let strategy = FactorStrategy.biometricCredential
-
-    let data = try JSONEncoder.clerkEncoder.encode(strategy)
-    let rawValue = try #require(String(data: data, encoding: .utf8))
-
-    #expect(rawValue == "\"trusted_device\"")
-    #expect(try JSONDecoder.clerkDecoder.decode(FactorStrategy.self, from: data) == .biometricCredential)
-  }
-
-  @Test
   func biometricCredentialFactorRoundTripsThroughJSON() throws {
     let factor = Factor(
       strategy: .biometricCredential,

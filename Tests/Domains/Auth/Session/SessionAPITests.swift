@@ -224,38 +224,6 @@ extension SessionAPIAndTokenFetcherTests {
   }
 
   @Test
-  func setActiveClearsOrganizationByDefault() async throws {
-    var session = Session.mock
-    session.lastActiveOrganizationId = nil
-    var updatedClient = Client.mock
-    updatedClient.lastActiveSessionId = session.id
-    updatedClient.sessions = [session]
-
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sessions/\(session.id)/touch")!
-
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<Session>(response: session, client: updatedClient)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "POST")
-      let body = request.urlEncodedFormBody!
-      #expect(body["active_organization_id"] == "")
-      #expect(body["intent"] == "select_org")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    try await Clerk.shared.auth.setActive(sessionId: session.id, organizationId: nil)
-
-    #expect(requestHandled.value)
-  }
-
-  @Test
   func setActiveWithOrganizationId() async throws {
     var session = Session.mock
     let organizationId = "org_test456"

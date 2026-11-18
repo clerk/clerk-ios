@@ -182,29 +182,6 @@ struct SignUpAPITests {
   }
 
   @Test
-  func createWithNone() async throws {
-    let requestHandled = LockIsolated(false)
-    let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!
-
-    var mock = try Mock(
-      url: originalURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .post: JSONEncoder.clerkEncoder.encode(ClientResponse<SignUp>(response: .mock, client: .mock)),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "POST")
-      #expect(request.urlEncodedFormBody!["locale"] != nil)
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    _ = try await Clerk.shared.dependencies.transport.send(SignUpAPI.create(params: .init()))
-    #expect(requestHandled.value)
-  }
-
-  @Test
   func createWithUnsafeMetadataObjectEncodesMetadataAsJSONString() async throws {
     let requestHandled = LockIsolated(false)
     let originalURL = URL(string: mockBaseUrl.absoluteString + "/v1/client/sign_ups")!

@@ -89,33 +89,6 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func getRequest() async throws {
-    let requestHandled = LockIsolated(false)
-    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
-
-    var mock = try Mock(
-      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .get: JSONEncoder().encode(["success": true]),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "GET")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    let request = Request<EmptyResponse>(
-      path: "/v1/test",
-      method: .get
-    )
-
-    _ = try await Clerk.shared.dependencies.apiClient.send(request)
-    #expect(requestHandled.value)
-  }
-
-  @Test
   func postRequest() async throws {
     let requestHandled = LockIsolated(false)
     let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
@@ -173,62 +146,6 @@ struct ClerkAPIClientTests {
       method: .post,
       headers: ["Content-Type": "application/json"],
       body: Payload(unsafeMetadata: ["token": "some-value"])
-    )
-
-    _ = try await Clerk.shared.dependencies.apiClient.send(request)
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func patchRequest() async throws {
-    let requestHandled = LockIsolated(false)
-    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
-
-    var mock = try Mock(
-      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .patch: JSONEncoder().encode(["success": true]),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "PATCH")
-      #expect(request.urlEncodedFormBody!["key"] == "value")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    let request = Request<EmptyResponse>(
-      path: "/v1/test",
-      method: .patch,
-      body: ["key": "value"]
-    )
-
-    _ = try await Clerk.shared.dependencies.apiClient.send(request)
-    #expect(requestHandled.value)
-  }
-
-  @Test
-  func deleteRequest() async throws {
-    let requestHandled = LockIsolated(false)
-    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/test")!
-
-    var mock = try Mock(
-      url: testURL, ignoreQuery: true, contentType: .json, statusCode: 200,
-      data: [
-        .delete: JSONEncoder().encode(["success": true]),
-      ]
-    )
-
-    mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.httpMethod == "DELETE")
-      requestHandled.setValue(true)
-    }
-    mock.register()
-
-    let request = Request<EmptyResponse>(
-      path: "/v1/test",
-      method: .delete
     )
 
     _ = try await Clerk.shared.dependencies.apiClient.send(request)

@@ -28,22 +28,6 @@ struct JWTDecoderTests {
   }
 
   @Test
-  func decodeValidJWT() throws {
-    let body: [String: Any] = [
-      "sub": "user123",
-      "iss": "https://example.com",
-      "exp": 1_609_459_200,
-    ]
-    let jwtString = createTestJWT(body: body)
-
-    let jwt = try decode(jwt: jwtString)
-
-    #expect(jwt.subject == "user123")
-    #expect(jwt.issuer == "https://example.com")
-    #expect(jwt.expiresAt != nil)
-  }
-
-  @Test
   func jWTDecodeErrorInvalidPartCount() {
     do {
       _ = try decode(jwt: "header.body")

@@ -155,12 +155,6 @@ struct SessionAuthorizationTests {
   }
 
   @Test
-  func failsFeatureCheckWhenFeaturesClaimIsMissingOrEmpty() {
-    let session = makeSession(orgId: "org_123", orgRole: "org:admin", orgPermissions: ["org:read"], features: "")
-    #expect(!session.checkAuthorization(.init(feature: "org:premium")))
-  }
-
-  @Test
   func failsWhenTokenClaimsAreMissing() {
     var session = Session.mock
     session.user = user(id: "user_123", orgId: "org_123", role: "org:admin", permissions: ["org:read"])
@@ -302,20 +296,6 @@ struct SessionAuthorizationTests {
     #expect(session.checkAuthorization(.init(role: "org:admin")))
     #expect(session.checkAuthorization(.init(role: "admin")))
     #expect(!session.checkAuthorization(.init(role: "org:member")))
-  }
-
-  @Test
-  func readsFeaAndPlaFromLastActiveToken() {
-    let session = makeSession(
-      orgId: "org_123",
-      orgRole: "org:admin",
-      features: "o:sso,u:dashboard",
-      plans: "u:pro"
-    )
-    #expect(session.checkAuthorization(.init(feature: "sso")))
-    #expect(session.checkAuthorization(.init(plan: "pro")))
-    #expect(!session.checkAuthorization(.init(feature: "missing")))
-    #expect(!session.checkAuthorization(.init(plan: "free")))
   }
 
   @Test

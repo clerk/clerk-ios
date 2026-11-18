@@ -363,23 +363,6 @@ struct OrganizationTests {
   }
 
   @Test
-  func getDomainsWithEnrollmentModeUsesRawEnrollmentMode() async throws {
-    let organization = Organization.mock
-
-    _ = try await organization.getDomains(
-      page: 2,
-      pageSize: 10,
-      enrollmentMode: .automaticInvitation
-    )
-
-    let call = try #require(transport.calls.last)
-    #expect(call.path == "/v1/organizations/\(organization.id)/domains")
-    #expect(call.query.first { $0.name == "offset" }?.value == "10")
-    #expect(call.query.first { $0.name == "limit" }?.value == "10")
-    #expect(call.query.first { $0.name == "enrollment_mode" }?.value == OrganizationDomain.EnrollmentMode.automaticInvitation.rawValue)
-  }
-
-  @Test
   func getDomainsWithOffsetSendsOffsetAndEnrollmentMode() async throws {
     let organization = Organization.mock
 

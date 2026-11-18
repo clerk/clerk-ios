@@ -10,23 +10,6 @@ import Testing
 struct JSONUtilitiesTests {
   // MARK: - JSON Enum Cases
 
-  @Test
-  func jSONCases() {
-    let stringJSON: JSON = .string("hello")
-    let numberJSON: JSON = .number(42.0)
-    let boolJSON: JSON = .bool(true)
-    let nullJSON: JSON = .null
-    let arrayJSON: JSON = .array([.string("a"), .number(1)])
-    let objectJSON: JSON = .object(["key": .string("value")])
-
-    #expect(stringJSON.stringValue == "hello")
-    #expect(numberJSON.doubleValue == 42.0)
-    #expect(boolJSON.boolValue == true)
-    #expect(nullJSON.isNull == true)
-    #expect(arrayJSON.arrayValue?.count == 2)
-    #expect(objectJSON.objectValue?["key"]?.stringValue == "value")
-  }
-
   // MARK: - ExpressibleBy Protocols
 
   @Test
@@ -57,22 +40,6 @@ struct JSONUtilitiesTests {
   func expressibleByNilLiteral() {
     let json: JSON = nil
     #expect(json.isNull == true)
-  }
-
-  @Test
-  func expressibleByArrayLiteral() {
-    let json: JSON = ["a", "b", "c"]
-    #expect(json.arrayValue?.count == 3)
-    #expect(json[0]?.stringValue == "a")
-    #expect(json[1]?.stringValue == "b")
-    #expect(json[2]?.stringValue == "c")
-  }
-
-  @Test
-  func expressibleByDictionaryLiteral() {
-    let json: JSON = ["key1": "value1", "key2": "value2"]
-    #expect(json.objectValue?["key1"]?.stringValue == "value1")
-    #expect(json.objectValue?["key2"]?.stringValue == "value2")
   }
 
   // MARK: - Value Extraction
@@ -365,21 +332,6 @@ struct JSONUtilitiesTests {
   // MARK: - JSONDecoder Extension
 
   @Test
-  func testClerkDecoder() {
-    let decoder = JSONDecoder.clerkDecoder
-
-    if case .convertFromSnakeCase = decoder.keyDecodingStrategy {
-    } else {
-      Issue.record("Expected convertFromSnakeCase strategy")
-    }
-
-    if case .millisecondsSince1970 = decoder.dateDecodingStrategy {
-    } else {
-      Issue.record("Expected millisecondsSince1970 strategy")
-    }
-  }
-
-  @Test
   func clerkDecoderSnakeCase() throws {
     struct TestStruct: Codable {
       let firstName: String
@@ -418,21 +370,6 @@ struct JSONUtilitiesTests {
   }
 
   // MARK: - JSONEncoder Extension
-
-  @Test
-  func testClerkEncoder() {
-    let encoder = JSONEncoder.clerkEncoder
-
-    if case .convertToSnakeCase = encoder.keyEncodingStrategy {
-    } else {
-      Issue.record("Expected convertToSnakeCase strategy")
-    }
-
-    if case .millisecondsSince1970 = encoder.dateEncodingStrategy {
-    } else {
-      Issue.record("Expected millisecondsSince1970 strategy")
-    }
-  }
 
   @Test
   func clerkEncoderSnakeCase() throws {

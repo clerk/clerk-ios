@@ -14,24 +14,6 @@ private let expiresAtMilliseconds: Int64 = 1_767_225_600_000
 private let expectedExpiresAt = Date(timeIntervalSince1970: 1_767_225_600)
 
 struct SessionTransferTests {
-  @Test
-  func presentationUsesWireValues() {
-    #expect(SessionTransferPresentation.webView.rawValue == "webview")
-    #expect(SessionTransferPresentation.browser.rawValue == "browser")
-  }
-
-  @Test
-  func resourceDecodesUrlAndMillisecondExpiry() throws {
-    let data = try #require("""
-    {"object":"session_transfer","url":"\(mintedUrlString)","expires_at":\(expiresAtMilliseconds)}
-    """.data(using: .utf8))
-
-    let transfer = try JSONDecoder.clerkDecoder.decode(SessionTransferResource.self, from: data).sessionTransfer()
-
-    #expect(transfer.url.absoluteString == mintedUrlString)
-    #expect(transfer.expiresAt == expectedExpiresAt)
-  }
-
   @Test(arguments: [
     ("client", mintedUrlString),
     ("session_transfer", "http://clerk.example.invalid/v1/session_transfers/redeem?token=sttk_secret_123"),

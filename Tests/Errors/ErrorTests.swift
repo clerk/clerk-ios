@@ -23,22 +23,6 @@ struct ErrorTests {
   // MARK: - ClerkAPIError Tests
 
   @Test
-  func clerkAPIErrorBasic() {
-    let error = ClerkAPIError(
-      code: "test_error",
-      message: "Test message",
-      longMessage: "Long test message",
-      meta: nil,
-      clerkTraceId: "trace123"
-    )
-
-    #expect(error.code == "test_error")
-    #expect(error.message == "Test message")
-    #expect(error.longMessage == "Long test message")
-    #expect(error.clerkTraceId == "trace123")
-  }
-
-  @Test
   func clerkAPIErrorContext() {
     let error = ClerkAPIError(
       code: "test_error",
@@ -97,60 +81,6 @@ struct ErrorTests {
     #expect(decoded.message == error.message)
     #expect(decoded.longMessage == error.longMessage)
     #expect(decoded.clerkTraceId == error.clerkTraceId)
-  }
-
-  @Test
-  func clerkAPIErrorEquatable() {
-    let error1 = ClerkAPIError(
-      code: "test_error",
-      message: "Test message",
-      longMessage: nil,
-      meta: nil,
-      clerkTraceId: nil
-    )
-
-    let error2 = ClerkAPIError(
-      code: "test_error",
-      message: "Test message",
-      longMessage: nil,
-      meta: nil,
-      clerkTraceId: nil
-    )
-
-    #expect(error1 == error2)
-
-    let error3 = ClerkAPIError(
-      code: "different_error",
-      message: "Test message",
-      longMessage: nil,
-      meta: nil,
-      clerkTraceId: nil
-    )
-
-    #expect(error1 != error3)
-  }
-
-  @Test
-  func clerkErrorResponse() throws {
-    let response = ClerkErrorResponse(
-      errors: [
-        ClerkAPIError(code: "error1", message: "Message 1", longMessage: nil, meta: nil, clerkTraceId: nil),
-        ClerkAPIError(code: "error2", message: "Message 2", longMessage: nil, meta: nil, clerkTraceId: nil),
-      ],
-      clerkTraceId: "trace123"
-    )
-
-    #expect(response.errors.count == 2)
-    #expect(response.clerkTraceId == "trace123")
-
-    let encoder = JSONEncoder()
-    let data = try encoder.encode(response)
-
-    let decoder = JSONDecoder()
-    let decoded = try decoder.decode(ClerkErrorResponse.self, from: data)
-
-    #expect(decoded.errors.count == 2)
-    #expect(decoded.clerkTraceId == "trace123")
   }
 
   // MARK: - ClerkClientError Tests

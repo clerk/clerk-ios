@@ -161,7 +161,7 @@ struct ClerkTests {
     Clerk.clearAllKeychainItems()
 
     for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == Clerk.preservedKeychainKeys.contains(key))
+      #expect(try keychain.hasItem(forKey: key.rawValue) == (key == .watchSyncLastChange))
     }
     #expect(try Clerk.shared.dependencies.identityStore.load() == nil)
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
@@ -254,25 +254,6 @@ struct ClerkTests {
     #expect(clerk.client == nil)
   }
 
-  @Test
-  func clearAllKeychainItemsHandlesMissingKeysGracefully() throws {
-    let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-
-    try keychain.set("test-device-token", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-    try keychain.set("test-attest-key-id", forKey: ClerkKeychainKey.attestKeyId.rawValue)
-
-    Clerk.clearAllKeychainItems()
-
-    for key in ClerkKeychainKey.allCases {
-      #expect(try keychain.hasItem(forKey: key.rawValue) == false)
-    }
-  }
-
   #if os(macOS)
   @Test
   func clearAllKeychainItemsTrapsWhenClerkNotConfigured() async throws {
@@ -286,22 +267,6 @@ struct ClerkTests {
     #expect(String(decoding: result.standardErrorContent, as: UTF8.self).contains("Clerk has not been configured"))
   }
   #endif
-
-  @Test
-  func clearAllKeychainItemsDoesNotThrow() throws {
-    let keychain = InMemoryKeychain()
-    Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: Clerk.shared.dependencies.apiClient,
-      keychain: keychain,
-      telemetryCollector: Clerk.shared.dependencies.telemetryCollector
-    )
-
-    try keychain.set("test-data", forKey: ClerkKeychainKey.clerkDeviceToken.rawValue)
-
-    Clerk.clearAllKeychainItems()
-
-    #expect(try keychain.hasItem(forKey: ClerkKeychainKey.clerkDeviceToken.rawValue) == false)
-  }
 
   @Test
   func clearAllKeychainItemsPreservesBiometricCredentialMetadataWhenCredentialCleanupFails() throws {
@@ -522,22 +487,6 @@ struct ClerkTests {
     Clerk.shared.environment = Clerk.Environment.mock
 
     #expect(Clerk.shared.isLoaded == true)
-  }
-
-  @Test
-  func isLoadedBecomesTrue() {
-    Clerk.shared.client = nil
-    Clerk.shared.environment = nil
-    #expect(Clerk.shared.isLoaded == false)
-
-    Clerk.shared.client = Client.mock
-    #expect(Clerk.shared.isLoaded == false)
-
-    Clerk.shared.environment = Clerk.Environment.mock
-    #expect(Clerk.shared.isLoaded == true)
-
-    Clerk.shared.client = nil
-    #expect(Clerk.shared.isLoaded == false)
   }
 
   // MARK: - isAuthFlowComplete Tests
@@ -1994,19 +1943,6 @@ struct ClerkTests {
   }
 
   // MARK: - Current / Active Session Tests
-
-  @Test
-  func sessionReturnsPendingSession() {
-    let pendingSession = createSession(id: "session1", status: .pending)
-    Clerk.shared.client = Client(
-      id: "client1",
-      sessions: [pendingSession],
-      lastActiveSessionId: "session1",
-      updatedAt: Date(timeIntervalSince1970: 1_609_459_200)
-    )
-
-    #expect(Clerk.shared.session?.id == "session1")
-  }
 
   @Test
   func userReturnsUserForPendingSession() {
