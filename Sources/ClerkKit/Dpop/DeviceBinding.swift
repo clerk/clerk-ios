@@ -11,8 +11,17 @@ enum DeviceBinding: Equatable {
 
   enum Reason: Equatable {
     case sharedToken
+    case frameworkHost
     case keyUnavailable
     case timeout
+  }
+}
+
+enum FrameworkHost {
+  static let header = "x-clerk-host-sdk"
+
+  static func sent(_ request: URLRequest) -> Bool {
+    request.value(forHTTPHeaderField: header).nilIfEmpty != nil
   }
 }
 
@@ -55,7 +64,7 @@ private func transientGap(binding: DeviceBinding, signFailure: SignFailure?) -> 
     case .notALoss:
       .keyError
     }
-  case .notSigning(.sharedToken), .notSigning(.keyUnavailable):
+  case .notSigning(.sharedToken), .notSigning(.frameworkHost), .notSigning(.keyUnavailable):
     nil
   case .notSigning(.timeout):
     .keyNotReady

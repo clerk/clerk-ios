@@ -21,7 +21,7 @@ struct ClerkDpopRequestMiddleware: ClerkRequestMiddleware {
     let state = try await runtimeScope.withCurrentClerk { $0.dependencies.deviceBinding }
     let accessToken = Self.accessToken(of: request)
     let tokenHasCnf = accessToken.map(DeviceTokenClaims.hasCnf) ?? false
-    let binding = await state.current()
+    let binding: DeviceBinding = FrameworkHost.sent(request) ? .notSigning(.frameworkHost) : await state.current()
     var signFailure: SignFailure?
 
     while true {

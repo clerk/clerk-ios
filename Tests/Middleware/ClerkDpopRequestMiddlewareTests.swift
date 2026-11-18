@@ -60,7 +60,7 @@ struct ClerkDpopRequestMiddlewareTests {
     useDeviceBinding(.signing(with: InMemoryDeviceKeyStore(), sharesToken: true))
     let middleware = ClerkDpopRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client")))
-    request.setValue(try boundToken(), forHTTPHeaderField: "Authorization")
+    try request.setValue(boundToken(), forHTTPHeaderField: "Authorization")
 
     try await middleware.prepare(&request)
 
@@ -68,11 +68,66 @@ struct ClerkDpopRequestMiddlewareTests {
   }
 
   @Test
+  func aFrameworkHostsFirstRequestIsSentUnsignedSoItsClientStaysUnbound() async throws {
+    useDeviceBinding(.signing(with: InMemoryDeviceKeyStore(), sharesToken: false))
+    let middleware = ClerkDpopRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client/sign_ins")))
+    request.httpMethod = "POST"
+    request.setValue("expo", forHTTPHeaderField: "x-clerk-host-sdk")
+
+    try await middleware.prepare(&request)
+
+    #expect(request.value(forHTTPHeaderField: "DPoP") == nil)
+  }
+
+  @Test
+  func aFrameworkHostSendsABoundTokenUnsigned() async throws {
+    useDeviceBinding(.signing(with: InMemoryDeviceKeyStore(), sharesToken: false))
+    let middleware = ClerkDpopRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
+    var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client")))
+    try request.setValue(boundToken(), forHTTPHeaderField: "Authorization")
+    request.setValue("expo", forHTTPHeaderField: "x-clerk-host-sdk")
+
+    try await middleware.prepare(&request)
+
+    #expect(request.value(forHTTPHeaderField: "DPoP") == nil)
+  }
+
+  @Test
+  func aHostMiddlewareThatNamesItsSdkKeepsEveryRequestUnsigned() async throws {
+    useDeviceBinding(.signing(with: InMemoryDeviceKeyStore(), sharesToken: false))
+    let proofs = LockIsolated<[String?]>([])
+    let testURL = URL(string: mockBaseUrl.absoluteString + "/v1/environment")!
+    var mock = try Mock(
+      url: testURL,
+      ignoreQuery: true,
+      contentType: .json,
+      statusCode: 200,
+      data: [.get: JSONEncoder().encode(["success": true])]
+    )
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      proofs.withValue { $0.append(request.value(forHTTPHeaderField: "DPoP")) }
+    }
+    mock.register()
+    let runtimeScope = Clerk.shared.runtimeScope
+    let apiClient = APIClient(baseURL: mockBaseUrl, runtimeScope: runtimeScope) { configuration in
+      configuration.pipeline = NetworkingPipeline(
+        proofMiddleware: [ClerkDpopRequestMiddleware(runtimeScope: runtimeScope)]
+      ).appendingRequestMiddleware([HostSdkHeaderMiddleware()])
+      configuration.sessionConfiguration.protocolClasses = [MockingURLProtocol.self]
+    }
+
+    _ = try await apiClient.send(Request<EmptyResponse>(path: "/v1/environment"))
+
+    #expect(proofs.value == [nil])
+  }
+
+  @Test
   func aRuntimeWithoutAKeySendsUnsigned() async throws {
     useDeviceBinding(.signing(with: UnloadableDeviceKeyStore(), sharesToken: false))
     let middleware = ClerkDpopRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client")))
-    request.setValue(try boundToken(), forHTTPHeaderField: "Authorization")
+    try request.setValue(boundToken(), forHTTPHeaderField: "Authorization")
 
     try await middleware.prepare(&request)
 
@@ -84,7 +139,7 @@ struct ClerkDpopRequestMiddlewareTests {
     useDeviceBinding(.signing(with: UnsignableDeviceKeyStore(), sharesToken: false))
     let middleware = ClerkDpopRequestMiddleware(runtimeScope: Clerk.shared.runtimeScope)
     var request = try URLRequest(url: #require(URL(string: "https://clerk.example.com/v1/client")))
-    request.setValue(try boundToken(), forHTTPHeaderField: "Authorization")
+    try request.setValue(boundToken(), forHTTPHeaderField: "Authorization")
 
     await #expect(throws: DeviceBindingRequestError.proofUnavailable(.keyError)) {
       try await middleware.prepare(&request)
@@ -190,6 +245,12 @@ private struct UnsignableDeviceKey: DeviceKey {
 
   func sign(_: Data) throws -> Data {
     throw DeviceKeyError.keychain(errSecInteractionNotAllowed)
+  }
+}
+
+private struct HostSdkHeaderMiddleware: ClerkRequestMiddleware {
+  func prepare(_ request: inout URLRequest) async throws {
+    request.addValue("expo", forHTTPHeaderField: "x-clerk-host-sdk")
   }
 }
 

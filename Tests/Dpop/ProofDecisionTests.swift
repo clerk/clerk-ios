@@ -3,7 +3,7 @@ import Foundation
 import Testing
 
 struct ProofDecisionTests {
-  struct Case: CustomTestStringConvertible, Sendable {
+  struct Case: CustomTestStringConvertible {
     let tokenHasCnf: Bool
     let binding: DeviceBinding
     let signFailure: SignFailure?
@@ -23,6 +23,8 @@ struct ProofDecisionTests {
     Case(tokenHasCnf: true, binding: .signing, signFailure: .keyLost, expected: .sendUnsigned),
     Case(tokenHasCnf: false, binding: .notSigning(.sharedToken), signFailure: nil, expected: .sendUnsigned),
     Case(tokenHasCnf: true, binding: .notSigning(.sharedToken), signFailure: nil, expected: .sendUnsigned),
+    Case(tokenHasCnf: false, binding: .notSigning(.frameworkHost), signFailure: nil, expected: .sendUnsigned),
+    Case(tokenHasCnf: true, binding: .notSigning(.frameworkHost), signFailure: nil, expected: .sendUnsigned),
     Case(tokenHasCnf: false, binding: .notSigning(.keyUnavailable), signFailure: nil, expected: .sendUnsigned),
     Case(tokenHasCnf: true, binding: .notSigning(.keyUnavailable), signFailure: nil, expected: .sendUnsigned),
     Case(tokenHasCnf: false, binding: .notSigning(.timeout), signFailure: nil, expected: .sendUnsigned),
