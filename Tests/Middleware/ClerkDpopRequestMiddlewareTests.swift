@@ -216,7 +216,7 @@ func dpopClaims(proof: String) throws -> [String: Any] {
   return try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
 }
 
-private struct UnsignableDeviceKeyStore: DeviceKeyStore {
+struct UnsignableDeviceKeyStore: DeviceKeyStore {
   private let store = InMemoryDeviceKeyStore()
 
   func loadOrCreate() throws -> any DeviceKey {
@@ -232,7 +232,7 @@ private struct UnsignableDeviceKeyStore: DeviceKeyStore {
   }
 }
 
-private struct UnsignableDeviceKey: DeviceKey {
+struct UnsignableDeviceKey: DeviceKey {
   let base: any DeviceKey
 
   var publicJwk: Es256PublicJwk {

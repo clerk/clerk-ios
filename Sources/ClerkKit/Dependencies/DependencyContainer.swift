@@ -323,7 +323,8 @@ extension DependencyContainer {
   ) -> DeviceBindingState {
     .signing(
       with: EnvironmentDetection.isRunningInTests ? InMemoryDeviceKeyStore() : KeychainDeviceKeyStore(),
-      sharesToken: identityIsInAccessGroup || options.watchConnectivityEnabled
+      sharesToken: identityIsInAccessGroup || options.watchConnectivityEnabled,
+      hostSignsRequests: options.hostSignsRequests
     )
   }
 }

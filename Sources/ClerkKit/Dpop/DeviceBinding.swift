@@ -88,6 +88,7 @@ actor DeviceBindingState {
 
   nonisolated let holder: DeviceKeyHolder?
   nonisolated let sharesToken: Bool
+  nonisolated let hostSignsRequests: Bool
   private let keyLoadGiveUp: Duration
   private var load: KeyLoad = .notStarted
   private var waiters: [UUID: CheckedContinuation<Void, Never>] = [:]
@@ -100,14 +101,28 @@ actor DeviceBindingState {
     case completed
   }
 
-  init(holder: DeviceKeyHolder?, sharesToken: Bool, keyLoadGiveUp: Duration = DeviceBindingState.keyLoadGiveUp) {
+  init(
+    holder: DeviceKeyHolder?,
+    sharesToken: Bool,
+    hostSignsRequests: Bool = false,
+    keyLoadGiveUp: Duration = DeviceBindingState.keyLoadGiveUp
+  ) {
     self.holder = holder
     self.sharesToken = sharesToken
+    self.hostSignsRequests = hostSignsRequests
     self.keyLoadGiveUp = keyLoadGiveUp
   }
 
-  static func signing(with store: any DeviceKeyStore, sharesToken: Bool) -> DeviceBindingState {
-    DeviceBindingState(holder: DeviceKeyHolder(store: store), sharesToken: sharesToken)
+  static func signing(
+    with store: any DeviceKeyStore,
+    sharesToken: Bool,
+    hostSignsRequests: Bool = false
+  ) -> DeviceBindingState {
+    DeviceBindingState(
+      holder: DeviceKeyHolder(store: store),
+      sharesToken: sharesToken,
+      hostSignsRequests: hostSignsRequests
+    )
   }
 
   static var neverSigning: DeviceBindingState {
