@@ -14,6 +14,7 @@ final class MockDependencyContainer: Dependencies {
   let identityStore: ClerkIdentityStore
   let cacheWrites: KeychainWriteQueue
   let identityIsInAccessGroup: Bool
+  let deviceBinding: DeviceBindingState
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
@@ -33,6 +34,7 @@ final class MockDependencyContainer: Dependencies {
     identityKeychain: (any KeychainStorage)? = nil,
     clientKeychain: (any KeychainStorage)? = nil,
     identityIsInAccessGroup: Bool = false,
+    deviceBinding: DeviceBindingState? = nil,
     biometricCredentialKeyManager: (any BiometricCredentialKeyManagerProtocol)? = nil,
     biometricCredentialStore: (any BiometricCredentialLocalStoreProtocol)? = nil,
     telemetryCollector: (any TelemetryCollectorProtocol)? = nil
@@ -50,6 +52,7 @@ final class MockDependencyContainer: Dependencies {
       cacheWrites: cacheWrites
     )
     self.identityIsInAccessGroup = identityIsInAccessGroup
+    self.deviceBinding = deviceBinding ?? .neverSigning
     self.biometricCredentialKeyManager = biometricCredentialKeyManager ?? MockBiometricCredentialKeyManager()
     self.biometricCredentialStore =
       biometricCredentialStore ?? BiometricCredentialLocalStore(keychain: resolvedAppLocalKeychain)

@@ -21,6 +21,7 @@ final class DependencyContainer: Dependencies {
   let identityStore: ClerkIdentityStore
   let cacheWrites: KeychainWriteQueue
   let identityIsInAccessGroup: Bool
+  let deviceBinding: DeviceBindingState
   let biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol
   let biometricCredentialStore: any BiometricCredentialLocalStoreProtocol
   let configurationManager: ConfigurationManager
@@ -69,7 +70,8 @@ final class DependencyContainer: Dependencies {
       runtimeScope: runtimeScope,
       probesAccessGroup: probesAccessGroupOverride ?? !EnvironmentDetection.isRunningInTests,
       keychainStorageOverride: keychainStorageOverride,
-      ownerIdentifierProvider: ownerIdentifierProvider
+      ownerIdentifierProvider: ownerIdentifierProvider,
+      signsRequests: true
     )
   }
 
@@ -84,7 +86,8 @@ final class DependencyContainer: Dependencies {
       runtimeScope: runtimeScope,
       probesAccessGroup: false,
       keychainStorageOverride: nil,
-      ownerIdentifierProvider: { Bundle.main.bundleIdentifier }
+      ownerIdentifierProvider: { Bundle.main.bundleIdentifier },
+      signsRequests: false
     )
   }
 
@@ -96,7 +99,8 @@ final class DependencyContainer: Dependencies {
     runtimeScope: ClerkRuntimeScope,
     probesAccessGroup: Bool,
     keychainStorageOverride: (any KeychainStorage)?,
-    ownerIdentifierProvider: () -> String?
+    ownerIdentifierProvider: () -> String?,
+    signsRequests: Bool
   ) {
     self.configurationManager = configurationManager
     sessionStatusLogger = SessionStatusLogger()
@@ -117,6 +121,9 @@ final class DependencyContainer: Dependencies {
     appLocalKeychain = keychainStorages.appLocal
     identityStore = keychainStorages.identityStore
     identityIsInAccessGroup = keychainStorages.identityIsInAccessGroup
+    deviceBinding = signsRequests
+      ? Self.makeDeviceBinding(options: options, identityIsInAccessGroup: keychainStorages.identityIsInAccessGroup)
+      : .neverSigning
     biometricCredentialKeyManager = BiometricCredentialKeyManager()
     biometricCredentialStore = BiometricCredentialLocalStore(keychain: appLocalKeychain)
 
@@ -305,6 +312,18 @@ final class DependencyContainer: Dependencies {
         instanceType: instanceType,
         telemetryEnabled: options.telemetryEnabled
       )
+    )
+  }
+}
+
+extension DependencyContainer {
+  private static func makeDeviceBinding(
+    options: Clerk.Options,
+    identityIsInAccessGroup: Bool
+  ) -> DeviceBindingState {
+    .signing(
+      with: EnvironmentDetection.isRunningInTests ? InMemoryDeviceKeyStore() : KeychainDeviceKeyStore(),
+      sharesToken: identityIsInAccessGroup || options.watchConnectivityEnabled
     )
   }
 }
