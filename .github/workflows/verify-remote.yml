@@ -323,7 +323,7 @@ jobs:
 
       - name: Keep the evidence that attach handed off
         if: always()
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: verify-evidence
           path: ${{ runner.temp }}/verify-remote/evidence/
