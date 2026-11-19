@@ -15,12 +15,17 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     try Task.checkCancellation()
     let metadata = ClientSyncResponseMetadata(response: response, request: request)
-    let update = Self.classifyClientUpdate(
+    let classifiedUpdate = Self.classifyClientUpdate(
       from: data,
       isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
       deviceTokenUpdate: metadata.deviceTokenUpdate
     )
-    guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
+    guard let update = Self.update(
+      classifiedUpdate,
+      under: request.clerkClientSyncPolicy,
+      response: response,
+      metadata: metadata
+    ) else {
       return
     }
     let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
@@ -32,6 +37,25 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     let clerk = try await runtimeScope.requireCurrentClerk()
     try Task.checkCancellation()
     try await clerk.identityController.applyNetworkResponse(context)
+  }
+
+  static func update(
+    _ update: ClientResponseUpdate,
+    under policy: ClientSyncPolicy,
+    response: HTTPURLResponse,
+    metadata: ClientSyncResponseMetadata
+  ) -> ClientResponseUpdate? {
+    switch policy {
+    case .apply, .requestAndApply:
+      return update
+    case .deferToCaller:
+      return update == .explicitClear ? update : nil
+    case .ignoreOnSuccess:
+      guard !response.isError, !metadata.changesDeviceToken, case .client = update else {
+        return update
+      }
+      return .absent
+    }
   }
 
   static func classifyClientUpdate(
@@ -226,6 +250,17 @@ struct ClientSyncResponseMetadata {
     )
     checkpoint = request.clerkRequestCheckpoint
     serverDate = response.serverDate
+  }
+
+  var changesDeviceToken: Bool {
+    switch deviceTokenUpdate {
+    case .absent:
+      false
+    case .set(let deviceToken):
+      deviceToken != checkpoint.requestDeviceToken
+    case .clear:
+      true
+    }
   }
 
   /// The context for a deferred-sync response, where an explicit device token clear outranks the returned client.

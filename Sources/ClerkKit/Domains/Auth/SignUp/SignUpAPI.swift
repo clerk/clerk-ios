@@ -48,7 +48,8 @@ package enum SignUpAPI {
     return Request(
       path: "/v1/client/sign_ups/\(signUpId)",
       method: .get,
-      query: queryParams
+      query: queryParams,
+      clientSync: .requestAndApply
     )
   }
 }

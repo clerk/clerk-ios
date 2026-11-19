@@ -169,7 +169,7 @@ actor APIClient {
         let value = try request.decode(data, using: decoder)
         try ensureCurrentRuntimeScope()
         let deferredClientSyncMetadata: ClientSyncResponseMetadata? =
-          if !urlRequest.shouldAutomaticallySyncClerkClient {
+          if urlRequest.clerkClientSyncPolicy == .deferToCaller {
             ClientSyncResponseMetadata(response: httpResponse, request: urlRequest)
           } else {
             nil

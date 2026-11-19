@@ -11,7 +11,7 @@ enum HostedAuthAPI {
       path: "/v1/client/hosted_auth",
       method: .post,
       body: params,
-      automaticallySyncClient: false,
+      clientSync: .deferToCaller,
       logBodies: false
     )
   }
@@ -24,7 +24,7 @@ enum HostedAuthAPI {
         ClerkHeaderRequestMiddleware.canonicalClientRequestHeader: "1",
       ],
       body: params,
-      automaticallySyncClient: false,
+      clientSync: .deferToCaller,
       logBodies: false
     )
   }

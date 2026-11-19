@@ -52,7 +52,7 @@ package enum SessionAPI {
         "active_organization_id": organizationId ?? "",
         "intent": "select_org",
       ],
-      automaticallySyncClient: false
+      clientSync: .deferToCaller
     )
   }
 

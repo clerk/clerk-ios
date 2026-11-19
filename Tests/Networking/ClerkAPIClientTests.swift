@@ -576,7 +576,7 @@ struct ClerkAPIClientTests {
     let response = try await apiClient.send(Request<EmptyResponse>(
       path: "/v1/deferred-client-sync",
       method: .post,
-      automaticallySyncClient: false
+      clientSync: .deferToCaller
     ))
 
     let metadata = try #require(response.deferredClientSyncMetadata)
@@ -597,7 +597,7 @@ struct ClerkAPIClientTests {
   }
 
   @Test
-  func deferredClientSyncMetadataRequiresDisabledAutomaticSync() async throws {
+  func deferredClientSyncMetadataRequiresDeferToCallerPolicy() async throws {
     let automaticURL = URL(string: mockBaseUrl.absoluteString + "/v1/automatic-client-sync")!
     let automaticMock = try Mock(
       url: automaticURL,

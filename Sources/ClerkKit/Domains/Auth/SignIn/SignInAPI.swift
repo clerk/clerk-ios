@@ -64,7 +64,8 @@ package enum SignInAPI {
     return Request(
       path: "/v1/client/sign_ins/\(signInId)",
       method: .get,
-      query: queryParams
+      query: queryParams,
+      clientSync: .requestAndApply
     )
   }
 }

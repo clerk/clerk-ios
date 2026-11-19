@@ -17,7 +17,8 @@ package enum ClientAPI {
       headers: [
         ClerkHeaderRequestMiddleware.canonicalClientRequestHeader: "1",
         ClerkHeaderRequestMiddleware.skipClientIdHeader: skipClientId ? "1" : "0",
-      ]
+      ],
+      clientSync: .apply
     )
   }
 }
