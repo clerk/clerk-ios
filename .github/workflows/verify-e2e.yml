@@ -206,7 +206,7 @@ jobs:
 
       - name: Upload the evidence
         if: ${{ !cancelled() && steps.evidence.outputs.upload == 'true' }}
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: verify-e2e-ios
           overwrite: true
