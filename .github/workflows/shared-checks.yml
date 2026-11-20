@@ -34,7 +34,7 @@ on:
         type: string
         default: ""
       build_platforms:
-        description: JSON array of the platforms to build ClerkKit for
+        description: JSON array of the platforms to build ClerkKit and ClerkKitUI for
         required: false
         type: string
         default: '["iOS", "macOS", "macCatalyst", "watchOS", "tvOS", "visionOS"]'
@@ -362,7 +362,9 @@ jobs:
             visionOS) destination="generic/platform=visionOS Simulator" ;;
             *) echo "❌ Unknown platform: ${{ matrix.platform }}"; exit 1 ;;
           esac
-          xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination"
+          for scheme in ClerkKit ClerkKitUI; do
+            xcodebuild build -workspace Clerk.xcworkspace -scheme "$scheme" -destination "$destination"
+          done
 
   e2e-runner-tests:
     name: E2E runner tests

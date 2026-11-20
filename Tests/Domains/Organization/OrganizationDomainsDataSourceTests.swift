@@ -1,3 +1,5 @@
+#if os(iOS) || os(macOS)
+
 @testable import ClerkKit
 @testable import ClerkKitUI
 import Foundation
@@ -116,3 +118,5 @@ private func domainPage(ids: [String], totalCount: Int) -> ClerkPaginatedRespons
 private final class DomainLoadLog {
   var values: [String] = []
 }
+
+#endif

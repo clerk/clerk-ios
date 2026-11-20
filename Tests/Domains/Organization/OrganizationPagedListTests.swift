@@ -1,3 +1,5 @@
+#if os(iOS) || os(macOS)
+
 @testable import ClerkKit
 @testable import ClerkKitUI
 import Foundation
@@ -637,3 +639,5 @@ private final class FailOnce {
 private final class ErrorRecorder {
   var values: [Error] = []
 }
+
+#endif

@@ -2,6 +2,8 @@
 //  OrganizationScope.swift
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import Foundation
 
@@ -86,3 +88,5 @@ struct OrganizationUserScope: Equatable {
     lhs.user.id == rhs.user.id && lhs.includesCreationDefaults == rhs.includesCreationDefaults
   }
 }
+
+#endif

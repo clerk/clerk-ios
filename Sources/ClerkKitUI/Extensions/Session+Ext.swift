@@ -3,6 +3,8 @@
 //  Clerk
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import Foundation
 import SwiftUI
@@ -57,3 +59,5 @@ extension SessionActivity {
     Image(isMobile == true ? "device-mobile" : "device-desktop", bundle: .module)
   }
 }
+
+#endif

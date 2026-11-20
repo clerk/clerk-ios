@@ -3,6 +3,8 @@
 //  Clerk
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import Foundation
 
@@ -28,3 +30,5 @@ extension ExternalAccount {
     return fullName.isEmptyTrimmed ? nil : fullName
   }
 }
+
+#endif

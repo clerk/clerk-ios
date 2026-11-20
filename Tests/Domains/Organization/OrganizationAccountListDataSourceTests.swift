@@ -1,3 +1,5 @@
+#if os(iOS) || os(macOS)
+
 @testable import ClerkKit
 @testable import ClerkKitUI
 import ConcurrencyExtras
@@ -620,3 +622,5 @@ private func organizationCreationDefaults() -> OrganizationCreationDefaults {
     form: .init(name: "Default Org", slug: "default-org", logo: nil, blurHash: nil)
   )
 }
+
+#endif
