@@ -890,7 +890,7 @@ struct SignInTests {
     #expect(params.1?["password"]?.stringValue == "password123")
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   @Test
   func authenticateWithIdTokenAttemptsFirstFactor() async throws {
     let signIn = SignIn.mock
@@ -1081,7 +1081,7 @@ struct SignInTests {
     #expect(captured.value == nil)
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   @Test
   func appleAuthenticationKeepsTheAppleNameWhenItTransfersToSignUp() async throws {
     let metadata: JSON = ["plan": "pro"]

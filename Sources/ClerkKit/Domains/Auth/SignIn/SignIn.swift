@@ -260,7 +260,7 @@ extension SignIn {
   }
   #endif
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Authenticates with an ID token from a provider (e.g., Sign in with Apple).
   ///
   /// This method attempts first factor authentication using an ID token directly,

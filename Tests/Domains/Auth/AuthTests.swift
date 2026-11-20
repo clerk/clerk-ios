@@ -1,5 +1,5 @@
 @testable import ClerkKit
-#if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+#if canImport(AuthenticationServices)
 import AuthenticationServices
 #endif
 import ConcurrencyExtras
@@ -1733,7 +1733,7 @@ struct AuthTests {
     #expect(params["last_name"]?.stringValue == "Doe")
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   @Test
   func normalizedAppleScopesDropsFullNameWhenBothNameFieldsAreDisabled() {
     var environment = Clerk.Environment.mock

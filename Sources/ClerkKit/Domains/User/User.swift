@@ -321,7 +321,7 @@ extension User {
     try await Clerk.currentDependencies.transport.send(UserAPI.createExternalAccountToken(provider: provider, idToken: idToken)).value.response
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Connects an Apple account to the user using Sign in with Apple.
   ///
   /// This method handles the entire Sign in with Apple flow for connecting an external account, including:
