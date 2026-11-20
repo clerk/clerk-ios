@@ -146,8 +146,20 @@ extension SignInFactorOnePasswordView {
       fieldError = nil
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
-      fieldError = error
+      if let destination = Self.destination(afterPasswordError: error, signIn: signIn) {
+        fieldError = nil
+        navigation.path.append(destination)
+      } else {
+        fieldError = error
+      }
     }
+  }
+
+  static func destination(afterPasswordError error: Error, signIn: SignIn?) -> AuthView.Destination? {
+    guard (error as? ClerkAPIError)?.code == "password_reset_required",
+          signIn?.resetPasswordFactor != nil
+    else { return nil }
+    return .signInPasswordResetRequired
   }
 }
 

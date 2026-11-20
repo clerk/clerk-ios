@@ -19,6 +19,7 @@ extension AuthView {
     case signInClientTrust(factor: Factor)
     case signInClientTrustUseAnotherMethod(currentFactor: Factor)
     case signInForgotPassword
+    case signInPasswordResetRequired
     case signInSetNewPassword(token: AuthFlowPresentationToken?)
     case getHelp(GetHelpView.Context)
 
@@ -72,7 +73,9 @@ extension AuthView {
           mode: .clientTrust
         )
       case .signInForgotPassword:
-        SignInFactorOneForgotPasswordView()
+        SignInFactorOneForgotPasswordView(reason: .forgotPassword)
+      case .signInPasswordResetRequired:
+        SignInFactorOneForgotPasswordView(reason: .passwordResetRequired)
       case .signInSetNewPassword(let token):
         SignInSetNewPasswordView(
           mode: token == nil ? .signIn : .sessionTask,

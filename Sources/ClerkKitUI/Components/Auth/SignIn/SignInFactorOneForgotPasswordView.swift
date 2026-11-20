@@ -16,6 +16,13 @@ struct SignInFactorOneForgotPasswordView: View {
 
   @State private var error: Error?
 
+  enum Reason {
+    case forgotPassword
+    case passwordResetRequired
+  }
+
+  let reason: Reason
+
   var signIn: SignIn? {
     clerk.auth.currentSignIn
   }
@@ -79,8 +86,16 @@ struct SignInFactorOneForgotPasswordView: View {
   var body: some View {
     ScrollView {
       VStack(spacing: 0) {
-        HeaderView(style: .title, text: "Forgot password?")
-          .padding(.bottom, 32)
+        VStack(spacing: 8) {
+          switch reason {
+          case .forgotPassword:
+            HeaderView(style: .title, text: "Forgot password?")
+          case .passwordResetRequired:
+            HeaderView(style: .title, text: "Password reset required")
+            HeaderView(style: .subtitle, text: "You need to reset your password before you can use it again.")
+          }
+        }
+        .padding(.bottom, 32)
 
         VStack(spacing: 16) {
           AsyncButton {
@@ -196,7 +211,13 @@ extension SignInFactorOneForgotPasswordView {
 }
 
 #Preview {
-  SignInFactorOneForgotPasswordView()
+  SignInFactorOneForgotPasswordView(reason: .forgotPassword)
+    .clerkPreview()
+    .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Password reset required") {
+  SignInFactorOneForgotPasswordView(reason: .passwordResetRequired)
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }
