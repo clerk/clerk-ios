@@ -36,6 +36,25 @@ struct SignInFactorOnePasswordViewTests {
     #expect(destination == nil)
   }
 
+  @Test
+  func latePasswordResponseCannotReplaceAnotherScreenOrAttempt() {
+    let attempt = signIn(canResetPassword: true)
+    let navigation = AuthNavigation()
+    navigation.path = [.signInFactorOne(factor: .mockPassword)]
+    let submittedPath = navigation.path
+    navigation.path.append(.signInForgotPassword)
+    #expect(!SignInFactorOnePasswordView.isCurrentSubmission(
+      attemptID: attempt.id, submittedPath: submittedPath, signIn: attempt, navigation: navigation
+    ))
+    navigation.path = submittedPath
+    #expect(!SignInFactorOnePasswordView.isCurrentSubmission(
+      attemptID: "previous-attempt", submittedPath: submittedPath, signIn: attempt, navigation: navigation
+    ))
+    #expect(SignInFactorOnePasswordView.isCurrentSubmission(
+      attemptID: attempt.id, submittedPath: submittedPath, signIn: attempt, navigation: navigation
+    ))
+  }
+
   private func signIn(canResetPassword: Bool) -> SignIn {
     var signIn = SignIn.mock
     signIn.status = .needsFirstFactor

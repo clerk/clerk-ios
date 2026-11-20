@@ -135,17 +135,21 @@ extension SignInFactorOnePasswordView {
   func submitPassword() async {
     isFocused = false
 
-    do {
-      guard var signIn else {
-        navigation.path = []
-        return
-      }
+    guard let attempt = signIn else {
+      navigation.path = []
+      return
+    }
+    let submittedPath = navigation.path
 
-      signIn = try await signIn.authenticateWithPassword(authState.signInPassword)
+    do {
+      let signIn = try await attempt.authenticateWithPassword(authState.signInPassword)
 
       fieldError = nil
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
+      guard Self.isCurrentSubmission(
+        attemptID: attempt.id, submittedPath: submittedPath, signIn: signIn, navigation: navigation
+      ) else { return }
       if let destination = Self.destination(afterPasswordError: error, signIn: signIn) {
         fieldError = nil
         navigation.path.append(destination)
@@ -153,6 +157,12 @@ extension SignInFactorOnePasswordView {
         fieldError = error
       }
     }
+  }
+
+  static func isCurrentSubmission(
+    attemptID: String, submittedPath: [AuthView.Destination], signIn: SignIn?, navigation: AuthNavigation
+  ) -> Bool {
+    signIn?.id == attemptID && navigation.path == submittedPath
   }
 
   static func destination(afterPasswordError error: Error, signIn: SignIn?) -> AuthView.Destination? {
