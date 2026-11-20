@@ -28,7 +28,11 @@ extension SessionActivity {
   }
 
   var ipAndLocationFormatted: String {
-    [ipAddress, "(\(locationFormatted))"].compactMap(\.self).joined(separator: " ")
+    let location = locationFormatted.isEmpty ? nil : "(\(locationFormatted))"
+    return [ipAddress, location]
+      .compactMap(\.self)
+      .filter { !$0.isEmpty }
+      .joined(separator: " ")
   }
 
   var deviceDescription: String {
