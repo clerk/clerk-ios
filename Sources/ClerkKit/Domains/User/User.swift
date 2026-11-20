@@ -332,16 +332,46 @@ extension User {
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   /// - Returns: The created `ExternalAccount` object.
-  /// - Throws: An error if the connection fails.
+  /// - Throws: An error if the connection fails, and a ``ClerkClientError`` without linking the
+  ///   Apple account when this user isn't the signed-in user, or when the signed-in account changes
+  ///   while Apple's sheet is open.
   @discardableResult @MainActor
   public func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
-    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+    try await connectAppleAccount {
+      try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+        .identityToken.flatMap { String(data: $0, encoding: .utf8) }
+    }
+  }
 
-    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+  @MainActor
+  func connectAppleAccount(appleIdentityToken: @MainActor () async throws -> String?) async throws -> ExternalAccount {
+    let sessionId = try signedInSessionId()
+    let idToken = try await appleIdentityToken()
+    guard try signedInSessionId() == sessionId else {
+      throw Self.signedInAccountChangedError
+    }
+
+    guard let idToken else {
       throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
     }
 
-    return try await createExternalAccount(provider: .apple, idToken: idToken)
+    return try await Clerk.currentDependencies.transport.send(UserAPI.createExternalAccountToken(
+      provider: .apple,
+      idToken: idToken,
+      sessionId: sessionId
+    )).value.response
+  }
+
+  @MainActor
+  private func signedInSessionId() throws -> String {
+    guard let session = Clerk.shared.session, session.user?.id == id else {
+      throw Self.signedInAccountChangedError
+    }
+    return session.id
+  }
+
+  private static var signedInAccountChangedError: ClerkClientError {
+    ClerkClientError(message: "The signed-in account changed before your Apple Account was connected.", localizationBundle: .module)
   }
   #endif
 
