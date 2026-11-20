@@ -10,16 +10,9 @@ import Mocker
 import Testing
 
 struct ClientSyncPolicyTests {
-  @Test
-  func getRequestsIgnoreTheClientOnSuccessByDefault() throws {
-    let request = Request<EmptyResponse>(path: "/v1/me/organization_memberships", method: .get)
-
-    #expect(try policy(of: request) == .ignoreOnSuccess)
-  }
-
-  @Test(arguments: [HTTPMethod.post, .put, .patch, .delete])
-  func nonGetRequestsApplyTheClientByDefault(method: HTTPMethod) throws {
-    let request = Request<EmptyResponse>(path: "/v1/me", method: method)
+  @Test(arguments: [HTTPMethod.get, .post, .put, .patch, .delete])
+  func everyRequestAppliesTheClientByDefault(method: HTTPMethod) throws {
+    let request = Request<EmptyResponse>(path: "/v1/me/organization_memberships", method: method)
 
     #expect(try policy(of: request) == .apply)
   }

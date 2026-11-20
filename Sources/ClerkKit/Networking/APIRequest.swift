@@ -57,13 +57,8 @@ enum ClientSyncPolicy: String {
   case apply
   case requestAndApply
   case deferToCaller
-  case ignoreOnSuccess
 
   static let includeClientQueryItem = URLQueryItem(name: "_include_client", value: "true")
-
-  static func `default`(for method: HTTPMethod) -> ClientSyncPolicy {
-    method == .get ? .ignoreOnSuccess : .apply
-  }
 }
 
 package struct Request<Response: Decodable & Sendable> {
@@ -87,7 +82,7 @@ package struct Request<Response: Decodable & Sendable> {
     scopedToActiveSession: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
-    clientSync: ClientSyncPolicy? = nil,
+    clientSync: ClientSyncPolicy = .apply,
     logBodies: Bool = true,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
       if Response.self == EmptyResponse.self {
@@ -108,7 +103,7 @@ package struct Request<Response: Decodable & Sendable> {
     self.scopedToActiveSession = scopedToActiveSession
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
-    self.clientSync = clientSync ?? .default(for: method)
+    self.clientSync = clientSync
     self.logBodies = logBodies
     decodeClosure = decode
   }

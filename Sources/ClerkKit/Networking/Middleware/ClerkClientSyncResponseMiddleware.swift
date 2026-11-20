@@ -20,19 +20,7 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
       deviceTokenUpdate: metadata.deviceTokenUpdate
     )
-    let policy = request.clerkClientSyncPolicy
-    guard let update = Self.update(
-      classifiedUpdate,
-      under: policy,
-      response: response,
-      metadata: metadata
-    ) else {
-      if policy == .ignoreOnSuccess {
-        try await runtimeScope.withCurrentClerk { clerk in
-          try Task.checkCancellation()
-          clerk.identityController.adoptStoredDeviceToken()
-        }
-      }
+    guard let update = Self.update(classifiedUpdate, under: request.clerkClientSyncPolicy) else {
       return
     }
     let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
@@ -47,19 +35,12 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     }
   }
 
-  static func update(
-    _ update: ClientResponseUpdate,
-    under policy: ClientSyncPolicy,
-    response: HTTPURLResponse,
-    metadata: ClientSyncResponseMetadata
-  ) -> ClientResponseUpdate? {
+  static func update(_ update: ClientResponseUpdate, under policy: ClientSyncPolicy) -> ClientResponseUpdate? {
     switch policy {
     case .apply, .requestAndApply:
       update
     case .deferToCaller:
       update == .explicitClear ? update : nil
-    case .ignoreOnSuccess:
-      response.isError || metadata.changesDeviceToken ? update : nil
     }
   }
 
@@ -255,17 +236,6 @@ struct ClientSyncResponseMetadata {
     )
     checkpoint = request.clerkRequestCheckpoint
     serverDate = response.serverDate
-  }
-
-  var changesDeviceToken: Bool {
-    switch deviceTokenUpdate {
-    case .absent:
-      false
-    case .set(let deviceToken):
-      deviceToken != checkpoint.requestDeviceToken
-    case .clear:
-      true
-    }
   }
 
   /// The context for a deferred-sync response, where an explicit device token clear outranks the returned client.
