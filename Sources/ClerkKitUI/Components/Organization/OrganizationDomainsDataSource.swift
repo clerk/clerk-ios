@@ -25,8 +25,8 @@ final class OrganizationDomainsDataSource: OrganizationScopedContent {
     list = OrganizationPagedList(
       name: "domains",
       isLoading: !scope.access.isDisjoint(with: [.readDomains, .manageDomains])
-    ) { _, offset in
-      try await organization.getDomains(offset: offset, pageSize: pageSize)
+    ) { _, offset, includeClient in
+      try await organization.getDomains(offset: offset, pageSize: pageSize, includeClient: includeClient)
     }
     list.onError = { [weak self] error in
       self?.error = error

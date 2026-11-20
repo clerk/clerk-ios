@@ -263,7 +263,7 @@ extension SessionAPIAndTokenFetcherTests {
 
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
       #expect(request.httpMethod == "POST")
-      #expect(request.shouldAutomaticallySyncClerkClient == false)
+      #expect(request.clerkClientSyncPolicy == .deferToCaller)
       let body = request.urlEncodedFormBody!
       #expect(body["active_organization_id"] == organizationId)
       #expect(body["intent"] == "select_org")

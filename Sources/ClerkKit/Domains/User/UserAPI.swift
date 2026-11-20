@@ -10,7 +10,8 @@ package enum UserAPI {
     Request(
       path: "/v1/me",
       method: .get,
-      scopedToActiveSession: true
+      scopedToActiveSession: true,
+      clientSync: .requestAndApply
     )
   }
 

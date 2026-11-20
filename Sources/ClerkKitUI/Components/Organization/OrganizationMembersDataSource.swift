@@ -22,17 +22,27 @@ final class OrganizationMembersDataSource: OrganizationScopedContent {
   init(scope: OrganizationScope, pageSize: Int = 10) {
     let organization = scope.organization
     self.scope = scope
-    members = OrganizationPagedList(name: "members", isLoading: scope.access.contains(.readMemberships)) { query, offset in
-      try await organization.getMemberships(query: query.isEmpty ? nil : query, offset: offset, pageSize: pageSize)
+    members = OrganizationPagedList(name: "members", isLoading: scope.access.contains(.readMemberships)) { query, offset, includeClient in
+      try await organization.getMemberships(
+        query: query.isEmpty ? nil : query,
+        offset: offset,
+        pageSize: pageSize,
+        includeClient: includeClient
+      )
     }
-    invitations = OrganizationPagedList(name: "invitations", isLoading: scope.access.contains(.manageMemberships)) { _, offset in
-      try await organization.getInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
+    invitations = OrganizationPagedList(name: "invitations", isLoading: scope.access.contains(.manageMemberships)) { _, offset, includeClient in
+      try await organization.getInvitations(offset: offset, pageSize: pageSize, status: ["pending"], includeClient: includeClient)
     }
     membershipRequests = OrganizationPagedList(
       name: "membership requests",
       isLoading: scope.access.contains(.manageMembershipRequests)
-    ) { _, offset in
-      try await organization.getMembershipRequests(offset: offset, pageSize: pageSize, status: "pending")
+    ) { _, offset, includeClient in
+      try await organization.getMembershipRequests(
+        offset: offset,
+        pageSize: pageSize,
+        status: "pending",
+        includeClient: includeClient
+      )
     }
     roles = OrganizationRolesDataSource(scope: scope)
 
@@ -68,18 +78,18 @@ final class OrganizationMembersDataSource: OrganizationScopedContent {
 
   func refreshMembers() async {
     async let rolesLoad: Void = roles.refresh()
-    async let membersLoad: Void = members.refresh()
+    async let membersLoad: Void = members.refreshRequestingClient()
     _ = await (rolesLoad, membersLoad)
   }
 
   func refreshInvitations() async {
     async let rolesLoad: Void = roles.refresh()
-    async let invitationsLoad: Void = invitations.refresh()
+    async let invitationsLoad: Void = invitations.refreshRequestingClient()
     _ = await (rolesLoad, invitationsLoad)
   }
 
   func refreshMembershipRequests() async {
-    await membershipRequests.refresh()
+    await membershipRequests.refreshRequestingClient()
   }
 
   func searchMembers(query: String) {
