@@ -38,6 +38,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
   @ObservationIgnored private var pageLoads = 0
   @ObservationIgnored private var isRetired = false
   @ObservationIgnored private var reloadTask: Task<Void, Never>?
+  @ObservationIgnored private var reloadIncludesClient = false
   @ObservationIgnored private var loadMoreTask: Task<Void, Never>?
   @ObservationIgnored private var loadMoreAfterReload = false
 
@@ -53,7 +54,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
   }
 
   func refresh() async {
-    if let reloadTask {
+    if let reloadTask, reloadIncludesClient {
       await reloadTask.value
     } else if let query {
       await load(query: query, throughOffset: 0, includeClient: true).value
@@ -135,6 +136,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     hasLoaded = false
 
     let generation = generation
+    reloadIncludesClient = includeClient
     let task = Task { [weak self, fetch] in
       do {
         let first = try await fetch(query, 0, includeClient)

@@ -94,23 +94,49 @@ struct OrganizationPagedListTests {
   }
 
   @Test
-  func refreshJoinsTheReloadInFlight() async throws {
+  func refreshJoinsARefreshInFlight() async throws {
     let list = source.list()
-    source.pages["q"] = { [gate, offsets] offset in
-      offsets.values.append(offset)
+    source.pages["q"] = { _ in page(["a"], totalCount: 1) }
+    await list.reload(query: "q").value
+    source.pages["q"] = { [gate] _ in
+      await gate.wait("refresh")
+      return page(["a"], totalCount: 1)
+    }
+    source.requests = []
+
+    let first = Task { await list.refresh() }
+    try await waitUntil { source.requests.count == 1 }
+    let second = Task { await list.refresh() }
+    await Task.yield()
+    gate.open("refresh")
+    await first.value
+    await second.value
+
+    #expect(source.requests == [PageRequest(offset: 0, includeClient: true)])
+    #expect(list.pager.items.map(\.id) == ["a"])
+  }
+
+  @Test
+  func refreshDuringAPlainReloadAsksForTheClient() async throws {
+    let list = source.list()
+    source.pages["q"] = { [gate] _ in
       await gate.wait("load")
       return page(["a"], totalCount: 1)
     }
     list.reload(query: "q")
-    try await waitUntil { offsets.values == [0] }
+    try await waitUntil { source.requests.count == 1 }
 
     let refresh = Task { await list.refresh() }
-    await Task.yield()
+    try await waitUntil { source.requests.count == 2 }
     gate.open("load")
     await refresh.value
 
-    #expect(offsets.values == [0])
+    #expect(source.requests == [
+      PageRequest(offset: 0, includeClient: false),
+      PageRequest(offset: 0, includeClient: true),
+    ])
     #expect(list.pager.items.map(\.id) == ["a"])
+    #expect(!list.isLoading)
   }
 
   @Test
