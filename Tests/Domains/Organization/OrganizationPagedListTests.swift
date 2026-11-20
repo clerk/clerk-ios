@@ -114,6 +114,31 @@ struct OrganizationPagedListTests {
   }
 
   @Test
+  func aPlainReloadThatReplacesAClientRequestingRefreshStillAsks() async throws {
+    let list = source.list()
+    source.pages["q"] = { _ in page(["a"], totalCount: 1) }
+    source.pages["r"] = { _ in page(["b"], totalCount: 1) }
+    await list.reload(query: "q").value
+    source.pages["q"] = { [gate] _ in
+      await gate.wait("refresh")
+      return page(["a"], totalCount: 1)
+    }
+    source.requests = []
+
+    let refresh = Task { await list.refreshRequestingClient() }
+    try await waitUntil { source.requests.count == 1 }
+    await list.reload(query: "r").value
+    gate.open("refresh")
+    await refresh.value
+
+    #expect(source.requests == [
+      PageRequest(offset: 0, includeClient: true),
+      PageRequest(offset: 0, includeClient: true),
+    ])
+    #expect(list.pager.items.map(\.id) == ["b"])
+  }
+
+  @Test
   func refreshRequestingClientJoinsOneInFlight() async throws {
     let list = source.list()
     source.pages["q"] = { _ in page(["a"], totalCount: 1) }

@@ -137,6 +137,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     guard !isRetired else { return Task {} }
 
     loadMoreAfterReload = loadMoreAfterReload || loadMoreTask != nil
+    let includeClient = includeClient || (reloadTask != nil && reloadIncludesClient)
     startGeneration()
     pageLoads += 1
     self.query = query
