@@ -83,7 +83,8 @@ package enum OrganizationAPI {
     query: String?,
     role: [String]?,
     offset: Int,
-    pageSize: Int
+    pageSize: Int,
+    includeClient: Bool = false
   ) -> Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembership>>> {
     var queryParams: [(String, String?)] = [
       ("offset", value: String(offset)),
@@ -103,7 +104,8 @@ package enum OrganizationAPI {
       path: "/v1/organizations/\(organizationId)/memberships",
       method: .get,
       scopedToActiveSession: true,
-      query: queryParams
+      query: queryParams,
+      clientSync: includeClient ? .requestAndApply : .apply
     )
   }
 
@@ -140,7 +142,8 @@ package enum OrganizationAPI {
     organizationId: String,
     offset: Int,
     pageSize: Int,
-    status: [String]
+    status: [String],
+    includeClient: Bool = false
   ) -> Request<ClientResponse<ClerkPaginatedResponse<OrganizationInvitation>>> {
     var queryParams: [(String, String?)] = [
       ("offset", value: String(offset)),
@@ -153,7 +156,8 @@ package enum OrganizationAPI {
       path: "/v1/organizations/\(organizationId)/invitations",
       method: .get,
       scopedToActiveSession: true,
-      query: queryParams
+      query: queryParams,
+      clientSync: includeClient ? .requestAndApply : .apply
     )
   }
 
@@ -204,7 +208,8 @@ package enum OrganizationAPI {
     organizationId: String,
     offset: Int,
     pageSize: Int,
-    enrollmentMode: String?
+    enrollmentMode: String?,
+    includeClient: Bool = false
   ) -> Request<ClientResponse<ClerkPaginatedResponse<OrganizationDomain>>> {
     var queryParams: [(String, String?)] = [
       ("offset", value: String(offset)),
@@ -219,7 +224,8 @@ package enum OrganizationAPI {
       path: "/v1/organizations/\(organizationId)/domains",
       method: .get,
       scopedToActiveSession: true,
-      query: queryParams
+      query: queryParams,
+      clientSync: includeClient ? .requestAndApply : .apply
     )
   }
 
@@ -291,7 +297,8 @@ package enum OrganizationAPI {
     organizationId: String,
     offset: Int,
     pageSize: Int,
-    status: String?
+    status: String?,
+    includeClient: Bool = false
   ) -> Request<ClientResponse<ClerkPaginatedResponse<OrganizationMembershipRequest>>> {
     var queryParams: [(String, String?)] = [
       ("offset", value: String(offset)),
@@ -306,7 +313,8 @@ package enum OrganizationAPI {
       path: "/v1/organizations/\(organizationId)/membership_requests",
       method: .get,
       scopedToActiveSession: true,
-      query: queryParams
+      query: queryParams,
+      clientSync: includeClient ? .requestAndApply : .apply
     )
   }
 

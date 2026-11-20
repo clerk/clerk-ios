@@ -63,6 +63,37 @@ struct OrganizationPagedListTests {
   }
 
   @Test
+  func reloadPaginationAndRevalidationDoNotAskForTheClient() async {
+    let list = source.list()
+    source.pages["q"] = { offset in
+      offset == 0 ? page(["a", "b"], totalCount: 4) : page(["c", "d"], totalCount: 4)
+    }
+
+    await list.reload(query: "q").value
+    await list.loadMore()?.value
+    await list.revalidate()
+
+    #expect(source.requests == [
+      PageRequest(offset: 0, includeClient: false),
+      PageRequest(offset: 2, includeClient: false),
+      PageRequest(offset: 0, includeClient: false),
+      PageRequest(offset: 2, includeClient: false),
+    ])
+  }
+
+  @Test
+  func refreshAsksForTheClientOnItsFirstPage() async {
+    let list = source.list()
+    source.pages["q"] = { _ in page(["a", "b"], totalCount: 2) }
+    await list.reload(query: "q").value
+    source.requests = []
+
+    await list.refresh()
+
+    #expect(source.requests == [PageRequest(offset: 0, includeClient: true)])
+  }
+
+  @Test
   func refreshJoinsTheReloadInFlight() async throws {
     let list = source.list()
     source.pages["q"] = { [gate, offsets] offset in
@@ -599,13 +630,20 @@ private func page(_ ids: [String], totalCount: Int) -> ClerkPaginatedResponse<Ro
 @MainActor
 private final class PageSource {
   var pages: [String: @MainActor (Int) async throws -> ClerkPaginatedResponse<Row>] = [:]
+  var requests: [PageRequest] = []
 
   func list() -> OrganizationPagedList<Row, String> {
-    OrganizationPagedList(name: "rows", isLoading: true) { [self] query, offset in
+    OrganizationPagedList(name: "rows", isLoading: true) { [self] query, offset, includeClient in
+      requests.append(PageRequest(offset: offset, includeClient: includeClient))
       guard let respond = pages[query] else { throw URLError(.unsupportedURL) }
       return try await respond(offset)
     }
   }
+}
+
+private struct PageRequest: Equatable {
+  let offset: Int
+  let includeClient: Bool
 }
 
 @MainActor

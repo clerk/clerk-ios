@@ -27,6 +27,29 @@ struct ClientSyncPolicyTests {
   }
 
   @Test
+  func organizationListsAskForTheClientOnlyWhenRefreshed() async throws {
+    try await expectRequestsAndAppliesTheClient(OrganizationAPI.getMemberships(
+      organizationId: "org_1", query: nil, role: nil, offset: 0, pageSize: 10, includeClient: true
+    ))
+    try await expectRequestsAndAppliesTheClient(OrganizationAPI.getInvitations(
+      organizationId: "org_1", offset: 0, pageSize: 10, status: ["pending"], includeClient: true
+    ))
+    try await expectRequestsAndAppliesTheClient(OrganizationAPI.getMembershipRequests(
+      organizationId: "org_1", offset: 0, pageSize: 10, status: "pending", includeClient: true
+    ))
+    try await expectRequestsAndAppliesTheClient(OrganizationAPI.getDomains(
+      organizationId: "org_1", offset: 0, pageSize: 10, enrollmentMode: nil, includeClient: true
+    ))
+
+    #expect(try await !includeClientWasSent(by: OrganizationAPI.getMemberships(
+      organizationId: "org_1", query: nil, role: nil, offset: 0, pageSize: 10
+    )))
+    #expect(try await !includeClientWasSent(by: OrganizationAPI.getDomains(
+      organizationId: "org_1", offset: 0, pageSize: 10, enrollmentMode: nil
+    )))
+  }
+
+  @Test
   func requestingTheClientKeepsTheRequestsOwnQuery() async throws {
     let request = SignInAPI.get(signInId: "sia_1", params: .init(rotatingTokenNonce: "nonce"))
 

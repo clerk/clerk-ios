@@ -212,14 +212,16 @@ extension Organization {
     query: String? = nil,
     role: [String]? = nil,
     offset: Int,
-    pageSize: Int = 10
+    pageSize: Int = 10,
+    includeClient: Bool = false
   ) async throws -> ClerkPaginatedResponse<OrganizationMembership> {
     try await Clerk.currentDependencies.transport.send(OrganizationAPI.getMemberships(
       organizationId: id,
       query: query,
       role: role,
       offset: offset,
-      pageSize: pageSize
+      pageSize: pageSize,
+      includeClient: includeClient
     )).value.response
   }
 
@@ -309,13 +311,15 @@ extension Organization {
   package func getInvitations(
     offset: Int,
     pageSize: Int = 10,
-    status: [String] = []
+    status: [String] = [],
+    includeClient: Bool = false
   ) async throws -> ClerkPaginatedResponse<OrganizationInvitation> {
     try await Clerk.currentDependencies.transport.send(OrganizationAPI.getInvitations(
       organizationId: id,
       offset: offset,
       pageSize: pageSize,
-      status: status
+      status: status,
+      includeClient: includeClient
     )).value.response
   }
 
@@ -398,13 +402,15 @@ extension Organization {
   package func getDomains(
     offset: Int,
     pageSize: Int = 10,
-    enrollmentMode: String? = nil
+    enrollmentMode: String? = nil,
+    includeClient: Bool = false
   ) async throws -> ClerkPaginatedResponse<OrganizationDomain> {
     try await Clerk.currentDependencies.transport.send(OrganizationAPI.getDomains(
       organizationId: id,
       offset: offset,
       pageSize: pageSize,
-      enrollmentMode: enrollmentMode
+      enrollmentMode: enrollmentMode,
+      includeClient: includeClient
     )).value.response
   }
 
@@ -449,13 +455,15 @@ extension Organization {
   package func getMembershipRequests(
     offset: Int,
     pageSize: Int = 10,
-    status: String? = nil
+    status: String? = nil,
+    includeClient: Bool = false
   ) async throws -> ClerkPaginatedResponse<OrganizationMembershipRequest> {
     try await Clerk.currentDependencies.transport.send(OrganizationAPI.getMembershipRequests(
       organizationId: id,
       offset: offset,
       pageSize: pageSize,
-      status: status
+      status: status,
+      includeClient: includeClient
     )).value.response
   }
 
