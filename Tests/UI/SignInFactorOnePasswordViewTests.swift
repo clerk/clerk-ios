@@ -41,17 +41,21 @@ struct SignInFactorOnePasswordViewTests {
     let attempt = signIn(canResetPassword: true)
     let navigation = AuthNavigation()
     navigation.path = [.signInFactorOne(factor: .mockPassword)]
-    let submittedPath = navigation.path
+    let submittedRevision = navigation.pathRevision
     navigation.path.append(.signInForgotPassword)
     #expect(!SignInFactorOnePasswordView.isCurrentSubmission(
-      attemptID: attempt.id, submittedPath: submittedPath, signIn: attempt, navigation: navigation
+      attemptID: attempt.id, submittedRevision: submittedRevision, signIn: attempt, navigation: navigation
     ))
-    navigation.path = submittedPath
+    navigation.path.removeLast()
     #expect(!SignInFactorOnePasswordView.isCurrentSubmission(
-      attemptID: "previous-attempt", submittedPath: submittedPath, signIn: attempt, navigation: navigation
+      attemptID: attempt.id, submittedRevision: submittedRevision, signIn: attempt, navigation: navigation
+    ))
+    let newSubmissionRevision = navigation.pathRevision
+    #expect(!SignInFactorOnePasswordView.isCurrentSubmission(
+      attemptID: "previous-attempt", submittedRevision: newSubmissionRevision, signIn: attempt, navigation: navigation
     ))
     #expect(SignInFactorOnePasswordView.isCurrentSubmission(
-      attemptID: attempt.id, submittedPath: submittedPath, signIn: attempt, navigation: navigation
+      attemptID: attempt.id, submittedRevision: newSubmissionRevision, signIn: attempt, navigation: navigation
     ))
   }
 

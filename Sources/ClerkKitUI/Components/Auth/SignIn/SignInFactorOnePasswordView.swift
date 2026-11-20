@@ -139,7 +139,7 @@ extension SignInFactorOnePasswordView {
       navigation.path = []
       return
     }
-    let submittedPath = navigation.path
+    let submittedRevision = navigation.pathRevision
 
     do {
       let signIn = try await attempt.authenticateWithPassword(authState.signInPassword)
@@ -148,7 +148,7 @@ extension SignInFactorOnePasswordView {
       navigation.setToStepForStatus(signIn: signIn)
     } catch {
       guard Self.isCurrentSubmission(
-        attemptID: attempt.id, submittedPath: submittedPath, signIn: signIn, navigation: navigation
+        attemptID: attempt.id, submittedRevision: submittedRevision, signIn: signIn, navigation: navigation
       ) else { return }
       if let destination = Self.destination(afterPasswordError: error, signIn: signIn) {
         fieldError = nil
@@ -160,9 +160,9 @@ extension SignInFactorOnePasswordView {
   }
 
   static func isCurrentSubmission(
-    attemptID: String, submittedPath: [AuthView.Destination], signIn: SignIn?, navigation: AuthNavigation
+    attemptID: String, submittedRevision: UInt64, signIn: SignIn?, navigation: AuthNavigation
   ) -> Bool {
-    signIn?.id == attemptID && navigation.path == submittedPath
+    signIn?.id == attemptID && navigation.pathRevision == submittedRevision
   }
 
   static func destination(afterPasswordError error: Error, signIn: SignIn?) -> AuthView.Destination? {

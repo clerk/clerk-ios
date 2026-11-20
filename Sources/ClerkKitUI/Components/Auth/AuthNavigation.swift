@@ -12,7 +12,12 @@ import SwiftUI
 @MainActor
 @Observable
 final class AuthNavigation {
-  var path: [AuthView.Destination] = []
+  private(set) var pathRevision: UInt64 = 0
+  var path: [AuthView.Destination] = [] {
+    didSet {
+      if path != oldValue { pathRevision += 1 }
+    }
+  }
 
   init() {}
 
