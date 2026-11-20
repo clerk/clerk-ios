@@ -78,18 +78,18 @@ final class OrganizationMembersDataSource: OrganizationScopedContent {
 
   func refreshMembers() async {
     async let rolesLoad: Void = roles.refresh()
-    async let membersLoad: Void = members.refresh()
+    async let membersLoad: Void = members.refreshRequestingClient()
     _ = await (rolesLoad, membersLoad)
   }
 
   func refreshInvitations() async {
     async let rolesLoad: Void = roles.refresh()
-    async let invitationsLoad: Void = invitations.refresh()
+    async let invitationsLoad: Void = invitations.refreshRequestingClient()
     _ = await (rolesLoad, invitationsLoad)
   }
 
   func refreshMembershipRequests() async {
-    await membershipRequests.refresh()
+    await membershipRequests.refreshRequestingClient()
   }
 
   func searchMembers(query: String) {

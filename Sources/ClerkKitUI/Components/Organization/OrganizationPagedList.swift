@@ -54,10 +54,18 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
   }
 
   func refresh() async {
-    if let reloadTask, reloadIncludesClient {
+    await refresh(requestingClient: false)
+  }
+
+  func refreshRequestingClient() async {
+    await refresh(requestingClient: true)
+  }
+
+  private func refresh(requestingClient: Bool) async {
+    if let reloadTask, reloadIncludesClient || !requestingClient {
       await reloadTask.value
     } else if let query {
-      await load(query: query, throughOffset: 0, includeClient: true).value
+      await load(query: query, throughOffset: 0, includeClient: requestingClient).value
     }
   }
 
