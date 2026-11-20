@@ -48,6 +48,12 @@ struct ClerkRuntimeScope {
     let clerk = try requireCurrentClerk()
     return try operation(clerk)
   }
+
+  @MainActor
+  func withCurrentClerk<T: Sendable>(_ operation: @MainActor (Clerk) async throws -> T) async throws -> T {
+    let clerk = try requireCurrentClerk()
+    return try await operation(clerk)
+  }
 }
 
 struct ClientResponseGeneration: Equatable {

@@ -1,4 +1,5 @@
 @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
 import Testing
 
@@ -174,6 +175,51 @@ struct ClerkClientSyncResponseMiddlewareTests {
     #expect(try clerk.dependencies.identityStore.load() == nil)
     #expect(clerk.identityController.currentDeviceToken == nil)
     #expect(clerk.client == nil)
+  }
+
+  @Test
+  func validateLeavesRetiredRuntimeIdentityAloneWhenReconfigurationStartsAfterScopeCheck() async throws {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    )
+    let existingClient = client(id: "existing-client", updatedAt: .distantPast)
+    try clerk.seedIdentity(deviceToken: "current-token", client: existingClient)
+    let runtimeState = clerk.runtime.state
+    defer { runtimeState.reinstate() }
+    let identityAtRetirement = LockIsolated<(deviceToken: String?, clientId: String?)?>(nil)
+    let scope = ClerkRuntimeScope(state: runtimeState) { @MainActor in
+      Task {
+        runtimeState.retire()
+        let identity = (deviceToken: clerk.identityController.currentDeviceToken, clientId: clerk.client?.id)
+        identityAtRetirement.setValue(identity)
+      }
+      return clerk
+    }
+    let incomingClient = client(id: "incoming-client", updatedAt: .distantFuture)
+    let data = try JSONEncoder.clerkEncoder.encode(
+      ClientOnlyEnvelope(response: incomingClient, client: nil)
+    )
+    let url = try #require(URL(string: "https://example.com/v1/client"))
+    var request = URLRequest(url: url)
+    request.setClerkCanonicalClientRequest(true)
+    request.setClerkRequestDeviceToken("current-token")
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+    let response = try #require(HTTPURLResponse(
+      url: url,
+      statusCode: 200,
+      httpVersion: nil,
+      headerFields: ["Authorization": "rotated-token"]
+    ))
+
+    try await ClerkClientSyncResponseMiddleware(runtimeScope: scope)
+      .validate(response, data: data, for: request)
+
+    let retired = try #require(identityAtRetirement.value)
+    #expect(clerk.identityController.currentDeviceToken == retired.deviceToken)
+    #expect(clerk.client?.id == retired.clientId)
+    #expect(try clerk.dependencies.identityStore.load()?.deviceToken == retired.deviceToken)
   }
 
   @Test
