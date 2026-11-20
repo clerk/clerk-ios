@@ -20,12 +20,19 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
       deviceTokenUpdate: metadata.deviceTokenUpdate
     )
+    let policy = request.clerkClientSyncPolicy
     guard let update = Self.update(
       classifiedUpdate,
-      under: request.clerkClientSyncPolicy,
+      under: policy,
       response: response,
       metadata: metadata
     ) else {
+      if policy == .ignoreOnSuccess {
+        try await runtimeScope.withCurrentClerk { clerk in
+          try Task.checkCancellation()
+          clerk.identityController.adoptStoredDeviceToken()
+        }
+      }
       return
     }
     let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
@@ -47,14 +54,11 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   ) -> ClientResponseUpdate? {
     switch policy {
     case .apply, .requestAndApply:
-      return update
+      update
     case .deferToCaller:
-      return update == .explicitClear ? update : nil
+      update == .explicitClear ? update : nil
     case .ignoreOnSuccess:
-      guard !response.isError, !metadata.changesDeviceToken, case .client = update else {
-        return update
-      }
-      return .absent
+      response.isError || metadata.changesDeviceToken ? update : nil
     }
   }
 

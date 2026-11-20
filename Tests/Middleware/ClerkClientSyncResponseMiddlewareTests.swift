@@ -500,7 +500,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
       ClientEnvelope(response: SignIn.mock, client: client(id: "incoming-client", updatedAt: .distantFuture))
     )
 
-    try await validateGet(
+    try await validateResponse(
       under: .ignoreOnSuccess,
       clerk: clerk,
       statusCode: 200,
@@ -520,7 +520,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
       meta: .init(client: client(id: "error-meta-client", updatedAt: .distantFuture))
     ))
 
-    try await validateGet(
+    try await validateResponse(
       under: .ignoreOnSuccess,
       clerk: clerk,
       statusCode: 422,
@@ -538,7 +538,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
       ClientEnvelope(response: SignIn.mock, client: client(id: "incoming-client", updatedAt: .distantFuture))
     )
 
-    try await validateGet(
+    try await validateResponse(
       under: .ignoreOnSuccess,
       clerk: clerk,
       statusCode: 200,
@@ -557,7 +557,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
       ClientEnvelope(response: SignIn.mock, client: client(id: "incoming-client", updatedAt: .distantFuture))
     )
 
-    try await validateGet(
+    try await validateResponse(
       under: .ignoreOnSuccess,
       clerk: clerk,
       statusCode: 200,
@@ -576,7 +576,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
       ClientEnvelope(response: SignIn.mock, client: client(id: "incoming-client", updatedAt: .distantFuture))
     )
 
-    try await validateGet(
+    try await validateResponse(
       under: .requestAndApply,
       clerk: clerk,
       statusCode: 200,
@@ -585,6 +585,39 @@ struct ClerkClientSyncResponseMiddlewareTests {
     )
 
     #expect(clerk.client?.id == "incoming-client")
+  }
+
+  @Test(arguments: [true, false])
+  func ignoredResponseDoesNotRejectAnEarlierRequestsLateResponse(ignoredResponseCarriesClient: Bool) async throws {
+    let clerk = try clerkWithIdentity(deviceToken: "current-token", clientId: "existing-client")
+    let ignoredResponse = try JSONEncoder.clerkEncoder.encode(ClientEnvelope(
+      response: SignIn.mock,
+      client: ignoredResponseCarriesClient ? client(id: "ignored-client", updatedAt: .distantFuture) : nil
+    ))
+    let earlierRequestsResponse = try JSONEncoder.clerkEncoder.encode(
+      ClientEnvelope(response: SignIn.mock, client: client(id: "updated-client", updatedAt: .distantFuture))
+    )
+
+    try await validateResponse(
+      under: .ignoreOnSuccess,
+      clerk: clerk,
+      statusCode: 200,
+      authorizationHeader: "current-token",
+      date: "Sat, 18 Jul 2026 14:00:01 GMT",
+      sequence: 2,
+      data: ignoredResponse
+    )
+    try await validateResponse(
+      under: .apply,
+      clerk: clerk,
+      statusCode: 200,
+      authorizationHeader: "current-token",
+      date: "Sat, 18 Jul 2026 14:00:00 GMT",
+      sequence: 1,
+      data: earlierRequestsResponse
+    )
+
+    #expect(clerk.client?.id == "updated-client")
   }
 
   private func clerkWithIdentity(deviceToken: String, clientId: String) throws -> Clerk {
@@ -597,24 +630,31 @@ struct ClerkClientSyncResponseMiddlewareTests {
     return clerk
   }
 
-  private func validateGet(
+  private func validateResponse(
     under policy: ClientSyncPolicy,
     clerk: Clerk,
     statusCode: Int,
     authorizationHeader: String,
+    date: String? = nil,
+    sequence: Int? = nil,
     data: Data
   ) async throws {
     let url = try #require(URL(string: "https://example.com/v1/me/organization_memberships"))
+    var headerFields = ["Authorization": authorizationHeader]
+    headerFields["Date"] = date
     let response = try #require(HTTPURLResponse(
       url: url,
       statusCode: statusCode,
       httpVersion: nil,
-      headerFields: ["Authorization": authorizationHeader]
+      headerFields: headerFields
     ))
     var request = URLRequest(url: url)
     request.setClerkClientSyncPolicy(policy)
     try request.setClerkRequestDeviceToken(#require(clerk.identityController.currentDeviceToken))
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+    if let sequence {
+      request.setClerkRequestSequence(sequence)
+    }
 
     try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
       .validate(response, data: data, for: request)

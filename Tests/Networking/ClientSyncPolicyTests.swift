@@ -4,7 +4,9 @@
 //
 
 @testable import ClerkKit
+import ConcurrencyExtras
 import Foundation
+import Mocker
 import Testing
 
 struct ClientSyncPolicyTests {
@@ -23,37 +25,34 @@ struct ClientSyncPolicyTests {
   }
 
   @Test
-  func getRequestsThatNeedTheClientRequestAndApplyIt() throws {
-    try expectRequestsAndAppliesTheClient(UserAPI.reload())
-    try expectRequestsAndAppliesTheClient(SignInAPI.get(signInId: "sia_1", params: .init()))
-    try expectRequestsAndAppliesTheClient(SignInAPI.get(signInId: "sia_1", params: .init(rotatingTokenNonce: "nonce")))
-    try expectRequestsAndAppliesTheClient(SignUpAPI.get(signUpId: "sua_1", params: .init()))
-    try expectRequestsAndAppliesTheClient(SignUpAPI.get(signUpId: "sua_1", params: .init(rotatingTokenNonce: "nonce")))
+  func getRequestsThatNeedTheClientRequestAndApplyIt() async throws {
+    try await expectRequestsAndAppliesTheClient(UserAPI.reload())
+    try await expectRequestsAndAppliesTheClient(SignInAPI.get(signInId: "sia_1", params: .init()))
+    try await expectRequestsAndAppliesTheClient(SignInAPI.get(signInId: "sia_1", params: .init(rotatingTokenNonce: "nonce")))
+    try await expectRequestsAndAppliesTheClient(SignUpAPI.get(signUpId: "sua_1", params: .init()))
+    try await expectRequestsAndAppliesTheClient(SignUpAPI.get(signUpId: "sua_1", params: .init(rotatingTokenNonce: "nonce")))
   }
 
   @Test
-  func includeClientIsSentAfterTheRequestsOwnQuery() throws {
+  func requestingTheClientKeepsTheRequestsOwnQuery() async throws {
     let request = SignInAPI.get(signInId: "sia_1", params: .init(rotatingTokenNonce: "nonce"))
 
-    #expect(try queryItems(of: request) == [
-      URLQueryItem(name: "rotating_token_nonce", value: "nonce"),
-      ClientSyncPolicy.includeClientQueryItem,
-    ])
+    #expect(try await sentQueryItems(of: request).contains(URLQueryItem(name: "rotating_token_nonce", value: "nonce")))
   }
 
   @Test
-  func canonicalClientRequestAppliesTheClientWithoutRequestingIt() throws {
+  func canonicalClientRequestAppliesTheClientWithoutRequestingIt() async throws {
     let request = ClientAPI.get()
 
     #expect(try policy(of: request) == .apply)
-    #expect(try queryItems(of: request).isEmpty)
+    #expect(try await !includeClientWasSent(by: request))
   }
 
-  @Test
-  func otherGetRequestsDoNotRequestTheClient() throws {
-    let request = Request<EmptyResponse>(path: "/v1/me/organization_memberships", method: .get)
+  @Test(arguments: [HTTPMethod.get, .post])
+  func requestsWithTheirDefaultPolicyDoNotRequestTheClient(method: HTTPMethod) async throws {
+    let request = Request<EmptyResponse>(path: "/v1/me/organization_memberships", method: method)
 
-    #expect(try queryItems(of: request).isEmpty)
+    #expect(try await !includeClientWasSent(by: request))
   }
 
   @Test
@@ -66,10 +65,10 @@ struct ClientSyncPolicyTests {
   private func expectRequestsAndAppliesTheClient(
     _ request: Request<some Decodable & Sendable>,
     sourceLocation: SourceLocation = #_sourceLocation
-  ) throws {
+  ) async throws {
     #expect(try policy(of: request) == .requestAndApply, sourceLocation: sourceLocation)
     #expect(
-      try queryItems(of: request).filter { $0.name == ClientSyncPolicy.includeClientQueryItem.name }
+      try await sentQueryItems(of: request).filter { $0.name == ClientSyncPolicy.includeClientQueryItem.name }
         == [ClientSyncPolicy.includeClientQueryItem],
       sourceLocation: sourceLocation
     )
@@ -79,8 +78,44 @@ struct ClientSyncPolicyTests {
     try request.makeURLRequest(baseURL: mockBaseUrl, encoder: .clerkEncoder).clerkClientSyncPolicy
   }
 
-  private func queryItems(of request: Request<some Decodable & Sendable>) throws -> [URLQueryItem] {
-    let url = try #require(request.makeURLRequest(baseURL: mockBaseUrl, encoder: .clerkEncoder).url)
+  private func includeClientWasSent(by request: Request<some Decodable & Sendable>) async throws -> Bool {
+    try await sentQueryItems(of: request).contains { $0.name == ClientSyncPolicy.includeClientQueryItem.name }
+  }
+
+  private func sentQueryItems(of request: Request<some Decodable & Sendable>) async throws -> [URLQueryItem] {
+    var urlRequest = try request.makeURLRequest(baseURL: mockBaseUrl, encoder: .clerkEncoder)
+    try await ClerkQueryItemsRequestMiddleware().prepare(&urlRequest)
+    let url = try #require(urlRequest.url)
     return URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+  }
+}
+
+@MainActor
+@Suite(.serialized)
+struct ClientSyncPolicySentRequestTests {
+  init() {
+    configureClerkForTesting()
+  }
+
+  @Test
+  func userReloadSendsTheIncludeClientOptIn() async throws {
+    Clerk.shared.client = .mock
+    let requestHandled = LockIsolated(false)
+    let meURL = try #require(URL(string: mockBaseUrl.absoluteString + "/v1/me"))
+
+    var mock = try Mock(
+      url: meURL, ignoreQuery: true, contentType: .json, statusCode: 200,
+      data: [
+        .get: JSONEncoder.clerkEncoder.encode(ClientResponse<User>(response: .mock, client: .mock)),
+      ]
+    )
+    mock.onRequestHandler = OnRequestHandler { @Sendable request in
+      #expect(request.url?.queryParam(named: ClientSyncPolicy.includeClientQueryItem.name) == "true")
+      requestHandled.setValue(true)
+    }
+    mock.register()
+
+    _ = try await Clerk.shared.dependencies.transport.send(UserAPI.reload())
+    #expect(requestHandled.value)
   }
 }

@@ -60,6 +60,26 @@ struct KeychainSharingTests {
   }
 
   @Test
+  func anotherAppsClearSignsThisAppOutWhenAnIgnoredResponseArrives() async throws {
+    let first = makeApp()
+    let second = makeApp()
+    try await first.respond(.client(signedIn("client")), token: .set("token"), date: 100)
+    try await second.respond(.client(signedIn("client")), date: 100)
+    let url = try #require(URL(string: "https://example.com/v1/me/organization_memberships"))
+    var inFlightRequest = URLRequest(url: url)
+    inFlightRequest.setClerkClientSyncPolicy(.ignoreOnSuccess)
+    try inFlightRequest.setClerkRequestDeviceToken(#require(second.clerk.deviceToken))
+
+    try first.clerk.identityController.clearIdentity()
+    let response = try #require(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+    try await ClerkClientSyncResponseMiddleware(runtimeScope: second.clerk.runtimeScope)
+      .validate(response, data: Data(#"{"response":[],"client":null}"#.utf8), for: inFlightRequest)
+
+    #expect(second.clerk.deviceToken == nil)
+    #expect(second.clerk.client == nil)
+  }
+
+  @Test
   func responseForATokenAnotherAppReplacedIsIgnored() async throws {
     let first = makeApp()
     let second = makeApp()

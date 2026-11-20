@@ -43,7 +43,9 @@ struct OrganizationVerifiedDomainsView: View {
       }
     }
     .refreshable {
+      async let clientRefresh = try? clerk.refreshClient()
       await domains.list.refresh()
+      _ = await clientRefresh
     }
     .tint(theme.colors.primary)
     .background(theme.colors.muted)

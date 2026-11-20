@@ -8,6 +8,8 @@ import ClerkKit
 import SwiftUI
 
 struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable, Row: View, EmptyState: View>: View {
+  @Environment(Clerk.self) private var clerk
+
   let pager: OrganizationAccountListPager<Item>
   let isLoading: Bool
   let emptyState: (() -> EmptyState)?
@@ -78,7 +80,9 @@ struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable,
       }
     }
     .refreshable {
+      async let clientRefresh = try? clerk.refreshClient()
       await onRefresh()
+      _ = await clientRefresh
     }
     #if os(macOS)
     .frame(minHeight: 260)

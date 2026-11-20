@@ -53,7 +53,7 @@ enum RequestBody: @unchecked Sendable {
 
 struct EmptyResponse: Codable {}
 
-package enum ClientSyncPolicy: String {
+enum ClientSyncPolicy: String {
   case apply
   case requestAndApply
   case deferToCaller
@@ -106,11 +106,9 @@ package struct Request<Response: Decodable & Sendable> {
     self.headers = headers
     self.canEstablishClientWhenTokenless = canEstablishClientWhenTokenless
     self.scopedToActiveSession = scopedToActiveSession
-    let clientSync = clientSync ?? .default(for: method)
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
-      + (clientSync == .requestAndApply ? [ClientSyncPolicy.includeClientQueryItem] : [])
     self.body = body.map { .encodable(AnyEncodable($0)) }
-    self.clientSync = clientSync
+    self.clientSync = clientSync ?? .default(for: method)
     self.logBodies = logBodies
     decodeClosure = decode
   }
