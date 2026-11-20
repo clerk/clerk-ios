@@ -70,13 +70,12 @@ package enum UserAPI {
   package static func createExternalAccountToken(
     provider: IDTokenProvider,
     idToken: String,
-    sessionId: String? = nil
+    sessionId: String
   ) -> Request<ClientResponse<ExternalAccount>> {
     Request(
       path: "/v1/me/external_accounts",
       method: .post,
-      scopedToActiveSession: sessionId == nil,
-      query: sessionId.map { [("_clerk_session_id", value: $0)] } ?? [],
+      query: [("_clerk_session_id", value: sessionId)],
       body: [
         "strategy": provider.strategy,
         "token": idToken,

@@ -479,6 +479,7 @@ struct UserAPITests {
       requestHandled.setValue(true)
     }
     mock.register()
+    Clerk.shared.client = .mock
 
     _ = try await User.mock.createExternalAccount(
       provider: .apple,
