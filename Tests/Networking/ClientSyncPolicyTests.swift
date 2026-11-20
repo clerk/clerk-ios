@@ -84,8 +84,8 @@ struct ClientSyncPolicyTests {
   ) async throws {
     #expect(try policy(of: request) == .requestAndApply, sourceLocation: sourceLocation)
     #expect(
-      try await sentQueryItems(of: request).filter { $0.name == ClientSyncPolicy.includeClientQueryItem.name }
-        == [ClientSyncPolicy.includeClientQueryItem],
+      try await sentQueryItems(of: request).filter { $0.name == "_include_client" }
+        == [URLQueryItem(name: "_include_client", value: "true")],
       sourceLocation: sourceLocation
     )
   }
@@ -95,7 +95,7 @@ struct ClientSyncPolicyTests {
   }
 
   private func includeClientWasSent(by request: Request<some Decodable & Sendable>) async throws -> Bool {
-    try await sentQueryItems(of: request).contains { $0.name == ClientSyncPolicy.includeClientQueryItem.name }
+    try await sentQueryItems(of: request).contains { $0.name == "_include_client" }
   }
 
   private func sentQueryItems(of request: Request<some Decodable & Sendable>) async throws -> [URLQueryItem] {
@@ -126,7 +126,7 @@ struct ClientSyncPolicySentRequestTests {
       ]
     )
     mock.onRequestHandler = OnRequestHandler { @Sendable request in
-      #expect(request.url?.queryParam(named: ClientSyncPolicy.includeClientQueryItem.name) == "true")
+      #expect(request.url?.queryParam(named: "_include_client") == "true")
       requestHandled.setValue(true)
     }
     mock.register()
