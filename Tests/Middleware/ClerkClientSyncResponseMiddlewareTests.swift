@@ -188,13 +188,13 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try clerk.seedIdentity(deviceToken: "current-token", client: existingClient)
     let runtimeState = clerk.runtime.state
     defer { runtimeState.reinstate() }
-    let identityAtRetirement = LockIsolated<(deviceToken: String?, clientId: String?)?>(nil)
+    let retirement = LockIsolated<Task<(deviceToken: String?, clientId: String?), Never>?>(nil)
     let scope = ClerkRuntimeScope(state: runtimeState) { @MainActor in
-      Task {
+      let task = Task {
         runtimeState.retire()
-        let identity = (deviceToken: clerk.identityController.currentDeviceToken, clientId: clerk.client?.id)
-        identityAtRetirement.setValue(identity)
+        return (deviceToken: clerk.identityController.currentDeviceToken, clientId: clerk.client?.id)
       }
+      retirement.setValue(task)
       return clerk
     }
     let incomingClient = client(id: "incoming-client", updatedAt: .distantFuture)
@@ -216,7 +216,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     try await ClerkClientSyncResponseMiddleware(runtimeScope: scope)
       .validate(response, data: data, for: request)
 
-    let retired = try #require(identityAtRetirement.value)
+    let retired = try await #require(retirement.value).value
     #expect(clerk.identityController.currentDeviceToken == retired.deviceToken)
     #expect(clerk.client?.id == retired.clientId)
     #expect(try clerk.dependencies.identityStore.load()?.deviceToken == retired.deviceToken)
