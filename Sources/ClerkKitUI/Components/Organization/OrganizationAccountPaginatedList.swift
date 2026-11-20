@@ -80,9 +80,9 @@ struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable,
       }
     }
     .refreshable {
-      async let clientRefresh = try? clerk.refreshClient()
+      let clientRefresh = Task { _ = try? await clerk.refreshClient() }
       await onRefresh()
-      _ = await clientRefresh
+      await clientRefresh.value
     }
     #if os(macOS)
     .frame(minHeight: 260)
