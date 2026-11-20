@@ -41,9 +41,10 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
       completedAuthFlow: completedAuthFlow
     )
 
-    let clerk = try await runtimeScope.requireCurrentClerk()
-    try Task.checkCancellation()
-    try await clerk.identityController.applyNetworkResponse(context)
+    try await runtimeScope.withCurrentClerk { clerk in
+      try Task.checkCancellation()
+      try await clerk.identityController.applyNetworkResponse(context)
+    }
   }
 
   static func update(
