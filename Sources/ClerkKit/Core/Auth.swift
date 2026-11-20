@@ -189,7 +189,7 @@ public struct Auth {
   }
   #endif
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Signs in with an ID token from a provider (e.g., Sign in with Apple).
   ///
   /// - Parameters:
@@ -226,7 +226,7 @@ public struct Auth {
   }
   #endif
 
-  #if !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Signs in with Apple using Sign in with Apple.
   ///
   /// This method handles the entire Sign in with Apple flow, including:
@@ -480,7 +480,7 @@ public struct Auth {
   }
   #endif
 
-  #if !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Signs up with Apple using Sign in with Apple.
   ///
   /// This method explicitly starts an Apple sign-up and can return either a sign-in or sign-up result
@@ -512,7 +512,7 @@ public struct Auth {
   }
   #endif
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Signs up with an ID token from a provider (e.g., Sign in with Apple).
   ///
   /// - Parameters:

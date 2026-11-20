@@ -527,7 +527,7 @@ struct SignInAPITests {
     #expect(requestHandled.value)
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   @Test
   func attemptFirstFactorIdToken() async throws {
     let signIn = SignIn.mock
