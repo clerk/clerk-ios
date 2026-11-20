@@ -110,7 +110,9 @@ struct SignInFactorOneForgotPasswordView: View {
           .buttonStyle(.primary())
           .simultaneousGesture(TapGesture())
 
-          TextDivider(string: "Or, sign in with another method")
+          if !socialProviders.isEmpty || alternativeFactors.contains(where: { actionText(factor: $0) != nil }) {
+            TextDivider(string: "Or, sign in with another method")
+          }
 
           SocialButtonGroup(providers: socialProviders) { provider, showsTitle, _ in
             SocialButton(
