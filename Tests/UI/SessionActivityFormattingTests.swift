@@ -8,6 +8,7 @@ struct SessionActivityFormattingTests {
   @Test(arguments: [
     (ipAddress: "192.0.2.1", city: "Paris", country: "FR", expected: "192.0.2.1 (Paris, FR)"),
     (ipAddress: "192.0.2.1", city: nil, country: "FR", expected: "192.0.2.1 (FR)"),
+    (ipAddress: "192.0.2.1", city: "", country: "FR", expected: "192.0.2.1 (FR)"),
     (ipAddress: "192.0.2.1", city: nil, country: nil, expected: "192.0.2.1"),
     (ipAddress: "", city: nil, country: nil, expected: ""),
     (ipAddress: nil, city: nil, country: nil, expected: ""),
