@@ -66,6 +66,11 @@ final class ClerkRuntime {
     lifecycleManager.startObserving()
 
     clerk.identityController.hydrate()
+    if dependencies.deviceBinding.sharesToken {
+      clerk.identityController.dropDeviceBoundToken()
+    }
+    let deviceBinding = dependencies.deviceBinding
+    Task { await deviceBinding.startLoading() }
 
     let cacheManager = CacheManager(
       coordinator: clerk,

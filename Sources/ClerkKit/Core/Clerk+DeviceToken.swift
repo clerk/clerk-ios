@@ -60,6 +60,15 @@ extension Clerk {
     return try await refreshClient(skipClientId: true)
   }
 
+  /// Deletes the key that binds this device's client tokens, so the next request creates a new one.
+  ///
+  /// This is intended for debug tools that test how a device-bound client recovers when its key is lost.
+  @_spi(FrameworkIntegration)
+  public func deleteDeviceKey() throws {
+    try runtimeScope.validateStableRuntime()
+    try dependencies.deviceBinding.holder?.deleteKey()
+  }
+
   /// Replaces the stored Clerk device token only if it still matches `expected`.
   ///
   /// This is intended for framework integrations where another Clerk SDK runtime

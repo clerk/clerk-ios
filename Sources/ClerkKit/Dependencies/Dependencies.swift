@@ -23,6 +23,8 @@ protocol Dependencies: AnyObject {
 
   var identityIsInAccessGroup: Bool { get }
 
+  var deviceBinding: DeviceBindingState { get }
+
   var biometricCredentialKeyManager: any BiometricCredentialKeyManagerProtocol { get }
 
   var biometricCredentialStore: any BiometricCredentialLocalStoreProtocol { get }
