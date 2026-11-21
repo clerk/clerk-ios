@@ -351,7 +351,7 @@ extension User {
     ClerkClientError(message: "The signed-in account changed before your Apple Account was connected.", localizationBundle: .module)
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   /// Connects an Apple account to the user using Sign in with Apple.
   ///
   /// This method handles the entire Sign in with Apple flow for connecting an external account, including:

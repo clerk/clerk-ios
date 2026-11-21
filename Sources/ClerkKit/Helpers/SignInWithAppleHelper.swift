@@ -2,7 +2,7 @@
 //  SignInWithAppleHelper.swift
 //
 
-#if canImport(AuthenticationServices) && !os(watchOS)
+#if canImport(AuthenticationServices)
 
 import AuthenticationServices
 import CryptoKit
@@ -36,7 +36,10 @@ final class SignInWithAppleHelper: NSObject {
 
       let authorizationController = ASAuthorizationController(authorizationRequests: [appleRequest])
       authorizationController.delegate = self
+      // watchOS has no presentation context API; the system presents the sheet itself.
+      #if !os(watchOS)
       authorizationController.presentationContextProvider = self
+      #endif
       authorizationController.performRequests()
     }
   }
@@ -80,12 +83,14 @@ extension SignInWithAppleHelper: ASAuthorizationControllerDelegate {
   }
 }
 
+#if !os(watchOS)
 extension SignInWithAppleHelper: ASAuthorizationControllerPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {
     PresentationAnchorProvider.current
   }
 }
+#endif
 
 extension ASAuthorizationAppleIDCredential {
   var tokenString: String {

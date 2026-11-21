@@ -1,4 +1,4 @@
-#if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+#if canImport(AuthenticationServices)
 
 import AuthenticationServices
 @testable import ClerkKit
