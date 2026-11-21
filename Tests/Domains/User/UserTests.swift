@@ -324,7 +324,7 @@ struct UserTests {
     #expect(calls.value == 0)
   }
 
-  #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  #if canImport(AuthenticationServices)
   @Test
   func connectAppleAccountSendsTheTokenForTheSessionThatStartedIt() async throws {
     let captured = LockIsolated<FakeTransport.Call?>(nil)
