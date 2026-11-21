@@ -49,6 +49,7 @@ struct E2EHostView: View {
 
   @State private var launch = Launch.loading
   @State private var authViewIsPresented = false
+  @State private var signOutConfirmationIsPresented = false
   @State private var destination: Destination?
 
   init(configuration: E2EConfiguration) {
@@ -178,11 +179,18 @@ struct E2EHostView: View {
         }
 
         Button("Sign out") {
-          Task {
-            try? await clerk.auth.signOut()
-          }
+          signOutConfirmationIsPresented = true
         }
         .accessibilityIdentifier(E2EIdentifiers.Auth.signOut)
+        .confirmationDialog("Sign out of this device?", isPresented: $signOutConfirmationIsPresented, titleVisibility: .visible) {
+          Button("Sign out", role: .destructive) {
+            Task {
+              try? await clerk.auth.signOut()
+            }
+          }
+
+          Button("Cancel", role: .cancel) {}
+        }
       } else {
         Text("Signed out")
           .accessibilityIdentifier(E2EIdentifiers.Auth.signedOut)
