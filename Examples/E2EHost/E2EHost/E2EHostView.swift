@@ -49,6 +49,7 @@ struct E2EHostView: View {
 
   @State private var launch = Launch.loading
   @State private var authViewIsPresented = false
+  @State private var signedOutBannerIsVisible = false
   @State private var destination: Destination?
 
   init(configuration: E2EConfiguration) {
@@ -180,6 +181,9 @@ struct E2EHostView: View {
         Button("Sign out") {
           Task {
             try? await clerk.auth.signOut()
+            withAnimation(.spring(duration: 0.5)) { signedOutBannerIsVisible = true }
+            try? await Task.sleep(for: .seconds(3))
+            withAnimation(.easeOut(duration: 0.4)) { signedOutBannerIsVisible = false }
           }
         }
         .accessibilityIdentifier(E2EIdentifiers.Auth.signOut)
@@ -204,6 +208,17 @@ struct E2EHostView: View {
       }
     }
     .padding()
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .overlay(alignment: .top) {
+      if signedOutBannerIsVisible {
+        Label("You've signed out", systemImage: "checkmark.circle.fill")
+          .font(.subheadline.weight(.semibold))
+          .padding(.horizontal, 16)
+          .padding(.vertical, 10)
+          .background(.thinMaterial, in: Capsule())
+          .transition(.move(edge: .top).combined(with: .opacity))
+      }
+    }
     .sheet(isPresented: $authViewIsPresented) {
       AuthView(mode: configuration.authMode)
         .persistsIdentifiers(false)
