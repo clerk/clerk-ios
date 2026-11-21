@@ -316,9 +316,39 @@ extension User {
   /// - Parameters:
   ///     - provider: The IDTokenProvider. For example: `.apple`.
   ///     - idToken: The ID token from the provider.
+  /// - Throws: A ``ClerkClientError``, without sending the token, when this user isn't the
+  ///   signed-in user, such as when the signed-in account changed after you got the token.
   @discardableResult @MainActor
   public func createExternalAccount(provider: IDTokenProvider, idToken: String) async throws -> ExternalAccount {
-    try await Clerk.currentDependencies.transport.send(UserAPI.createExternalAccountToken(provider: provider, idToken: idToken)).value.response
+    try await createExternalAccount(provider: provider, idToken: idToken, sessionId: signedInIdentity().sessionId)
+  }
+
+  @MainActor
+  private func createExternalAccount(provider: IDTokenProvider, idToken: String, sessionId: String) async throws -> ExternalAccount {
+    try await Clerk.currentDependencies.transport.send(UserAPI.createExternalAccountToken(
+      provider: provider,
+      idToken: idToken,
+      sessionId: sessionId
+    )).value.response
+  }
+
+  private struct SignedInIdentity: Equatable {
+    let sessionId: String
+    let deviceToken: String?
+  }
+
+  @MainActor
+  private func signedInIdentity() throws -> SignedInIdentity {
+    let identityController = Clerk.shared.identityController
+    identityController.adoptStoredDeviceToken()
+    guard let session = Clerk.shared.session, session.user?.id == id else {
+      throw Self.signedInAccountChangedError
+    }
+    return SignedInIdentity(sessionId: session.id, deviceToken: identityController.currentDeviceToken)
+  }
+
+  private static var signedInAccountChangedError: ClerkClientError {
+    ClerkClientError(message: "The signed-in account changed before your Apple Account was connected.", localizationBundle: .module)
   }
 
   #if canImport(AuthenticationServices)
@@ -332,16 +362,29 @@ extension User {
   /// - Parameters:
   ///   - requestedScopes: The scopes to request from Apple (defaults to `[.email, .fullName]`).
   /// - Returns: The created `ExternalAccount` object.
-  /// - Throws: An error if the connection fails.
+  /// - Throws: An error if the connection fails, and a ``ClerkClientError`` without linking the
+  ///   Apple account when this user isn't the signed-in user, or when this user's session or the
+  ///   device's Clerk client changed by the time Apple's sheet returns.
   @discardableResult @MainActor
   public func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
-    let credential = try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes)
+    try await connectAppleAccount {
+      try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes).tokenString
+    }
+  }
 
-    guard let idToken = credential.identityToken.flatMap({ String(data: $0, encoding: .utf8) }) else {
+  @MainActor
+  func connectAppleAccount(appleIdentityToken: @MainActor () async throws -> String) async throws -> ExternalAccount {
+    let identity = try signedInIdentity()
+    let idToken = try await appleIdentityToken()
+    guard try signedInIdentity() == identity else {
+      throw Self.signedInAccountChangedError
+    }
+
+    guard !idToken.isEmpty else {
       throw ClerkClientError(message: "Unable to retrieve the Apple identity token.", localizationBundle: .module)
     }
 
-    return try await createExternalAccount(provider: .apple, idToken: idToken)
+    return try await createExternalAccount(provider: .apple, idToken: idToken, sessionId: identity.sessionId)
   }
   #endif
 

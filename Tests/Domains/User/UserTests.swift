@@ -286,21 +286,188 @@ struct UserTests {
   }
 
   @Test
-  func createExternalAccountWithIdTokenSendsProviderAndToken() async throws {
-    let captured = LockIsolated<JSON?>(nil)
-    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "")) { call in
-      captured.setValue(call.body)
+  func createExternalAccountWithIdTokenSendsProviderAndTokenForTheUsersSession() async throws {
+    let captured = LockIsolated<FakeTransport.Call?>(nil)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: "")) { call in
+      captured.setValue(call)
       return ClientResponse(response: .mockVerified, client: nil)
     }
 
     configureTransport()
+    Clerk.shared.client = .mock
 
     _ = try await User.mock.createExternalAccount(provider: .apple, idToken: "mock_id_token")
 
-    let body = try #require(captured.value)
-    #expect(body["strategy"]?.stringValue == IDTokenProvider.apple.strategy)
-    #expect(body["token"]?.stringValue == "mock_id_token")
+    let call = try #require(captured.value)
+    #expect(call.body?["strategy"]?.stringValue == IDTokenProvider.apple.strategy)
+    #expect(call.body?["token"]?.stringValue == "mock_id_token")
+    #expect(call.query == [URLQueryItem(name: "_clerk_session_id", value: Session.mock.id)])
+    #expect(call.isScopedToActiveSession == false)
   }
+
+  @Test
+  func createExternalAccountWithIdTokenRefusesWhenTheUserIsNotSignedIn() async throws {
+    let calls = LockIsolated(0)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: "")) { _ in
+      calls.withValue { $0 += 1 }
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
+    configureTransport()
+    Clerk.shared.client = .mock
+
+    do {
+      _ = try await User.mock2.createExternalAccount(provider: .apple, idToken: "mock_id_token")
+      Issue.record("Expected the token not to be sent for a user who isn't signed in.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "The signed-in account changed before your Apple Account was connected.")
+    }
+    #expect(calls.value == 0)
+  }
+
+  #if canImport(AuthenticationServices)
+  @Test
+  func connectAppleAccountSendsTheTokenForTheSessionThatStartedIt() async throws {
+    let captured = LockIsolated<FakeTransport.Call?>(nil)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: "")) { call in
+      captured.setValue(call)
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
+    configureTransport()
+    Clerk.shared.client = .mock
+
+    _ = try await User.mock.connectAppleAccount { "mock_id_token" }
+
+    let call = try #require(captured.value)
+    #expect(call.body?["token"]?.stringValue == "mock_id_token")
+    #expect(call.query == [URLQueryItem(name: "_clerk_session_id", value: Session.mock.id)])
+    #expect(call.isScopedToActiveSession == false)
+  }
+
+  enum SignedInAccountChange: CaseIterable {
+    case switchedToAnotherUser
+    case signedOut
+    case signedInAgainWithANewSession
+  }
+
+  @Test(arguments: SignedInAccountChange.allCases)
+  func connectAppleAccountRefusesWhenTheSignedInAccountChangesDuringTheAppleSheet(
+    change: SignedInAccountChange
+  ) async throws {
+    let calls = LockIsolated(0)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: "")) { _ in
+      calls.withValue { $0 += 1 }
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
+    configureTransport()
+    Clerk.shared.client = .mock
+
+    do {
+      _ = try await User.mock.connectAppleAccount {
+        Clerk.shared.client = Self.client(after: change)
+        return "mock_id_token"
+      }
+      Issue.record("Expected the Apple account not to be linked after the signed-in account changed.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "The signed-in account changed before your Apple Account was connected.")
+    }
+    #expect(calls.value == 0)
+  }
+
+  @Test
+  func connectAppleAccountRefusesWhenAnotherAppSignsInADifferentUserDuringTheAppleSheet() async throws {
+    let calls = LockIsolated(0)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: "")) { _ in
+      calls.withValue { $0 += 1 }
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(),
+      transport: transport,
+      identityIsInAccessGroup: true
+    )
+    let dependencies = try #require(Clerk.shared.dependencies as? MockDependencyContainer)
+    try dependencies.configurationManager.configure(publishableKey: testPublishableKey, options: .init())
+    Clerk.shared.client = nil
+    try Clerk.shared.seedIdentity(deviceToken: "this-app-token", client: .mock)
+    #expect(Clerk.shared.session?.id == Session.mock.id)
+
+    do {
+      _ = try await User.mock.connectAppleAccount {
+        var otherAppClient = Client.mock
+        otherAppClient.lastActiveSessionId = Session.mock2.id
+        try Clerk.shared.dependencies.identityStore.save(ClerkIdentitySnapshot(
+          state: .present,
+          deviceToken: "other-app-token",
+          client: otherAppClient,
+          serverDate: nil
+        ))
+        return "mock_id_token"
+      }
+      Issue.record("Expected the Apple account not to be linked after another app signed in a different user.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "The signed-in account changed before your Apple Account was connected.")
+    }
+    #expect(calls.value == 0)
+  }
+
+  @Test
+  func connectAppleAccountRefusesWhenTheDeviceTokenChangesDuringTheAppleSheet() async throws {
+    let calls = LockIsolated(0)
+    transport.stub(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: "")) { _ in
+      calls.withValue { $0 += 1 }
+      return ClientResponse(response: .mockVerified, client: nil)
+    }
+    configureTransport()
+    Clerk.shared.client = nil
+    try Clerk.shared.seedIdentity(deviceToken: "this-client-token", client: .mock)
+
+    do {
+      _ = try await User.mock.connectAppleAccount {
+        _ = try await Clerk.shared.identityController.compareAndSetDeviceToken(
+          "rotated-client-token",
+          expected: "this-client-token"
+        )
+        #expect(Clerk.shared.session?.id == Session.mock.id)
+        return "mock_id_token"
+      }
+      Issue.record("Expected the Apple account not to be linked after the device token changed.")
+    } catch let error as ClerkClientError {
+      #expect(error.message == "The signed-in account changed before your Apple Account was connected.")
+    }
+    #expect(calls.value == 0)
+  }
+
+  @Test
+  func connectAppleAccountRefusesBeforeTheAppleSheetWhenTheUserIsNotSignedIn() async throws {
+    configureTransport()
+    Clerk.shared.client = .mock
+    let sheetShown = LockIsolated(false)
+
+    await #expect(throws: ClerkClientError.self) {
+      try await User.mock2.connectAppleAccount {
+        sheetShown.setValue(true)
+        return "mock_id_token"
+      }
+    }
+    #expect(sheetShown.value == false)
+  }
+
+  private static func client(after change: SignedInAccountChange) -> Client {
+    var client = Client.mock
+    switch change {
+    case .switchedToAnotherUser:
+      client.lastActiveSessionId = Session.mock2.id
+    case .signedOut:
+      client = .mockSignedOut
+    case .signedInAgainWithANewSession:
+      var session = Session.mock
+      session.id = "3"
+      client.sessions = [session]
+      client.lastActiveSessionId = session.id
+    }
+    return client
+  }
+  #endif
 
   @Test
   func createTotpSendsCreateTotpRequest() async throws {

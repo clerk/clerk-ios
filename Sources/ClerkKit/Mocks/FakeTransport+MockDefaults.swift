@@ -23,7 +23,7 @@ extension FakeTransport {
       UserAPI.createExternalAccount(provider: .google, redirectUrl: "", additionalScopes: [], oidcPrompts: []),
       returning: ClientResponse(response: ExternalAccount.mockVerified, client: nil)
     )
-    transport.fallback(UserAPI.createExternalAccountToken(provider: .apple, idToken: ""), returning: ClientResponse(response: ExternalAccount.mockVerified, client: nil))
+    transport.fallback(UserAPI.createExternalAccountToken(provider: .apple, idToken: "", sessionId: ""), returning: ClientResponse(response: ExternalAccount.mockVerified, client: nil))
     transport.fallback(UserAPI.createTotp(), returning: ClientResponse(response: TOTPResource.mock, client: nil))
     transport.fallback(UserAPI.verifyTotp(code: ""), returning: ClientResponse(response: TOTPResource.mock, client: nil))
     transport.fallback(UserAPI.disableTotp(), returning: ClientResponse(response: DeletedObject.mock, client: nil))

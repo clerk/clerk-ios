@@ -4216,6 +4216,106 @@
         }
       }
     },
+    "The signed-in account changed before your Apple Account was connected." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغيّر الحساب المسجَّل الدخول إليه قبل ربط حساب Apple الخاص بك."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das angemeldete Konto hat sich geändert, bevor dein Apple Account verbunden wurde."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο λογαριασμός με τον οποίο έχετε συνδεθεί άλλαξε πριν συνδεθεί το Apple Account σας."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cuenta con la que iniciaste sesión cambió antes de que se conectara tu cuenta de Apple."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le compte connecté a changé avant que votre compte Apple ne soit associé."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका Apple खाता कनेक्ट होने से पहले साइन इन किया गया खाता बदल गया।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’account con cui hai effettuato l’accesso è cambiato prima che il tuo Account Apple venisse collegato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Accountを接続する前に、サインイン中のアカウントが変更されました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple 계정이 연결되기 전에 로그인된 계정이 변경되었습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zalogowane konto zmieniło się, zanim połączono Twoje konto Apple."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A conta com a qual você fez login mudou antes de sua Conta Apple ser vinculada."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contul conectat s-a schimbat înainte ca contul tău Apple să fie asociat."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Учетная запись, в которую выполнен вход, изменилась до того, как была подключена ваша учетная запись Apple."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Hesabınız bağlanmadan önce giriş yapılan hesap değişti."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Обліковий запис, у який виконано вхід, змінився до того, як було підключено ваш обліковий запис Apple."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在关联您的 Apple 账户之前，已登录的账户发生了变化。"
+          }
+        }
+      }
+    },
     "This device is no longer trusted. Sign in another way to enroll it again." : {
       "comment" : "Error shown when a previously enrolled device credential is no longer trusted. The user must sign in another way before enrolling the device again.",
       "localizations" : {
