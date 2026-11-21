@@ -37,4 +37,35 @@ struct ServerClockTests {
 
     #expect(clock.deviceLag == 0)
   }
+
+  @Test
+  func proofsUseTheDeviceClockBeforeAnyResponse() {
+    let before = Date.now
+
+    let proofDate = ServerClock().proofDate()
+
+    #expect(proofDate >= before)
+    #expect(proofDate <= .now)
+  }
+
+  @Test
+  func proofsCountForwardFromTheLastServerDate() {
+    var clock = ServerClock()
+    let instant = ContinuousClock.now
+    clock.record(serverDate: receivedAt.addingTimeInterval(-600), receivedAt: receivedAt, receivedAtInstant: instant)
+
+    let proofDate = clock.proofDate(at: instant.advanced(by: .milliseconds(2500)))
+
+    #expect(proofDate == receivedAt.addingTimeInterval(-597.5))
+  }
+
+  @Test
+  func proofsIgnoreTheDeviceWallClock() {
+    var clock = ServerClock()
+    let instant = ContinuousClock.now
+    let serverDate = Date.now.addingTimeInterval(3600)
+    clock.record(serverDate: serverDate, receivedAt: .now, receivedAtInstant: instant)
+
+    #expect(clock.proofDate(at: instant) == serverDate)
+  }
 }
