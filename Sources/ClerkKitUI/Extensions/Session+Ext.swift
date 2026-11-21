@@ -24,11 +24,12 @@ extension SessionActivity {
   }
 
   var locationFormatted: String {
-    [city, country].compactMap(\.self).joined(separator: ", ")
+    [city.nilIfEmpty, country.nilIfEmpty].compactMap(\.self).joined(separator: ", ")
   }
 
   var ipAndLocationFormatted: String {
-    [ipAddress, "(\(locationFormatted))"].compactMap(\.self).joined(separator: " ")
+    let location = locationFormatted.isEmpty ? nil : "(\(locationFormatted))"
+    return [ipAddress.nilIfEmpty, location].compactMap(\.self).joined(separator: " ")
   }
 
   var deviceDescription: String {
