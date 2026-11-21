@@ -2,6 +2,8 @@
 //  OrganizationAccountListPager.swift
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 
 struct OrganizationAccountListPager<Item: Codable & Sendable> {
@@ -61,3 +63,5 @@ extension OrganizationAccountListPager where Item: Identifiable {
     }
   }
 }
+
+#endif

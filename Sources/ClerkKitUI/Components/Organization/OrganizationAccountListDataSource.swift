@@ -2,6 +2,8 @@
 //  OrganizationAccountListDataSource.swift
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import Foundation
 import Observation
@@ -129,3 +131,5 @@ final class OrganizationAccountListDataSource: OrganizationScopedContent {
     }
   }
 }
+
+#endif

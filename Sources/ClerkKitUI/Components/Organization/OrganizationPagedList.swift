@@ -2,6 +2,8 @@
 //  OrganizationPagedList.swift
 //
 
+#if os(iOS) || os(macOS)
+
 import ClerkKit
 import Foundation
 import Observation
@@ -209,3 +211,5 @@ extension OrganizationPagedList where Query == Void {
     reload(query: ())
   }
 }
+
+#endif

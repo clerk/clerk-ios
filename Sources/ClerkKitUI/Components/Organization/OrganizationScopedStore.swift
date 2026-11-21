@@ -2,6 +2,8 @@
 //  OrganizationScopedStore.swift
 //
 
+#if os(iOS) || os(macOS)
+
 import Foundation
 import Observation
 
@@ -41,3 +43,5 @@ final class OrganizationScopedStore<Content: OrganizationScopedContent> {
     return content
   }
 }
+
+#endif

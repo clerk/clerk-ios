@@ -1,3 +1,5 @@
+#if os(iOS) || os(macOS)
+
 @testable import ClerkKit
 @testable import ClerkKitUI
 import Foundation
@@ -472,3 +474,5 @@ private final class LockedFlag {
     return value
   }
 }
+
+#endif
