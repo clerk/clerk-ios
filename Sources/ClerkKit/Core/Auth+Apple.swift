@@ -30,6 +30,8 @@ extension Auth {
       : requestedScopes.filter { $0 != .fullName }
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   static func appleCredential(
     _ requestedScopes: [ASAuthorization.Scope],
     environment: Clerk.Environment?

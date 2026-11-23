@@ -104,6 +104,7 @@ final class WebAuthentication: NSObject {
     completeSession(identifier: identifier, with: nil, error: CancellationError())
   }
 
+  @available(iOSApplicationExtension, unavailable)
   private func beginSession(identifier sessionIdentifier: Int, continuation: CheckedContinuation<URL, any Error>) {
     guard Self.activeSession == nil else {
       continuation.resume(throwing: ClerkClientError(message: "A web authentication session is already in progress.", localizationBundle: .module))
@@ -159,6 +160,7 @@ final class WebAuthentication: NSObject {
     }
   }
 
+  @available(iOSApplicationExtension, unavailable)
   func start() async throws -> URL {
     let sessionIdentifier = Self.makeSessionIdentifier()
 
@@ -184,6 +186,7 @@ final class WebAuthentication: NSObject {
 }
 
 #if !os(watchOS) && !os(tvOS)
+@available(iOSApplicationExtension, unavailable)
 extension WebAuthentication: ASWebAuthenticationPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {

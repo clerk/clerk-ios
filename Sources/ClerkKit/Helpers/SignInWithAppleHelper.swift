@@ -24,6 +24,8 @@ final class SignInWithAppleHelper: NSObject {
         .replacingOccurrences(of: "=", with: "")
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
   func start(requestedScopes: [ASAuthorization.Scope]) async throws -> ASAuthorization {
     try await withCheckedThrowingContinuation { continuation in
@@ -44,6 +46,8 @@ final class SignInWithAppleHelper: NSObject {
     }
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
   static func getAppleIdCredential(requestedScopes: [ASAuthorization.Scope]) async throws -> ASAuthorizationAppleIDCredential {
     let authManager = SignInWithAppleHelper()
@@ -84,6 +88,8 @@ extension SignInWithAppleHelper: ASAuthorizationControllerDelegate {
 }
 
 #if !os(watchOS)
+@available(iOSApplicationExtension, unavailable)
+@available(tvOSApplicationExtension, unavailable)
 extension SignInWithAppleHelper: ASAuthorizationControllerPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {

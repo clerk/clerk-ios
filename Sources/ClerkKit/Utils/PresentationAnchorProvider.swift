@@ -13,6 +13,8 @@ import AppKit
 #endif
 
 enum PresentationAnchorProvider {
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
   static var current: ASPresentationAnchor {
     #if canImport(UIKit) && !os(macOS)

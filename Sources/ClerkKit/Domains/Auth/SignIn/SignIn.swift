@@ -296,6 +296,8 @@ extension SignIn {
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @discardableResult
   @MainActor
   public func authenticateWithApple(
@@ -504,6 +506,7 @@ extension SignIn {
   ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
   ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the enterprise SSO flow fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   @MainActor
   public func authenticateWithEnterpriseSSO(
@@ -559,6 +562,7 @@ extension SignIn {
   ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
   ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the OAuth flow fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   @MainActor
   public func authenticateWithOAuth(
@@ -617,6 +621,7 @@ extension SignIn {
     )
   }
 
+  @available(iOSApplicationExtension, unavailable)
   @MainActor
   static func startOAuthWebAuthentication(
     url: URL,
@@ -646,6 +651,7 @@ extension SignIn {
   ///   If preparing returns a status this SDK version doesn't recognize, the passkey request doesn't start and
   ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if passkey authentication fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   @MainActor
   public func authenticateWithPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> SignIn {
@@ -662,6 +668,7 @@ extension SignIn {
     }
   }
 
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   @MainActor
   package func authenticateWithPasskeyWithFailureContext(
@@ -749,6 +756,7 @@ extension SignIn {
   }
 
   #if canImport(AuthenticationServices) && !os(watchOS) && !os(tvOS)
+  @available(iOSApplicationExtension, unavailable)
   @MainActor
   func getCredentialForPasskey(autofill: Bool = false, preferImmediatelyAvailableCredentials: Bool = true) async throws -> String {
     let verification =

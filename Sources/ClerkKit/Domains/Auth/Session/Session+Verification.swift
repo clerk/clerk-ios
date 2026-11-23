@@ -212,6 +212,7 @@ extension Session {
   /// - Parameter preferImmediatelyAvailableCredentials: Whether to prefer immediately
   ///   available credentials (default is `true`).
   /// - Returns: The resulting ``SessionVerification``.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult @MainActor
   public func verifyWithPasskey(
     preferImmediatelyAvailableCredentials: Bool = true
@@ -234,6 +235,7 @@ extension Session {
   ///     credentials (default is `true`).
   ///   - level: The factor stage the passkey should verify.
   /// - Returns: The resulting ``SessionVerification``.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult @MainActor
   public func verifyWithPasskey(
     preferImmediatelyAvailableCredentials: Bool = true,
@@ -266,6 +268,7 @@ extension Session {
     return try await attemptFirstFactorVerification(strategy: .passkey, publicKeyCredential: credentialString)
   }
 
+  @available(iOSApplicationExtension, unavailable)
   @MainActor
   private func passkeyCredential(
     for verification: Verification?,

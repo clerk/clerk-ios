@@ -151,6 +151,7 @@ public struct Auth {
   ///   If preparing returns a status this SDK version doesn't recognize, the redirect starts only when creating
   ///   the sign-in returned a redirect URL, and the result can be a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the OAuth flow fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   public func signInWithOAuth(
     provider: OAuthProvider,
@@ -245,6 +246,8 @@ public struct Auth {
   ///   - unsafeMetadata: Custom metadata to attach if this flow creates a sign-up (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @discardableResult
   public func signInWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
@@ -289,6 +292,7 @@ public struct Auth {
   ///   If preparing returns a status this SDK version doesn't recognize, the passkey request doesn't start and
   ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the passkey sign-in fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   public func signInWithPasskey() async throws -> SignIn {
     let signIn = try await createPasskeySignIn()
@@ -370,6 +374,7 @@ public struct Auth {
   ///   If preparing returns a status this SDK version doesn't recognize, the redirect doesn't start and
   ///   the result is a `SignIn` with an ``SignIn/Status/unknown(_:)`` status.
   /// - Throws: An error if the Enterprise SSO flow fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   public func signInWithEnterpriseSSO(
     emailAddress: String,
@@ -451,6 +456,7 @@ public struct Auth {
   ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the OAuth flow fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   public func signUpWithOAuth(
     provider: OAuthProvider,
@@ -492,6 +498,8 @@ public struct Auth {
   ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the authentication fails.
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @discardableResult
   public func signUpWithApple(
     requestedScopes: [ASAuthorization.Scope] = [.email, .fullName],
@@ -552,6 +560,7 @@ public struct Auth {
   ///   - unsafeMetadata: Custom metadata to attach to the user (optional).
   /// - Returns: A `TransferFlowResult` that may contain a `SignIn` or `SignUp` depending on the flow.
   /// - Throws: An error if the Enterprise SSO flow fails.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   public func signUpWithEnterpriseSSO(
     emailAddress: String,

@@ -365,6 +365,8 @@ extension User {
   /// - Throws: An error if the connection fails, and a ``ClerkClientError`` without linking the
   ///   Apple account when this user isn't the signed-in user, or when this user's session or the
   ///   device's Clerk client changed by the time Apple's sheet returns.
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @discardableResult @MainActor
   public func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
     try await connectAppleAccount {
@@ -392,6 +394,8 @@ extension User {
   /// Creates a passkey for the signed-in user.
   ///
   /// - Returns: ``Passkey``
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @discardableResult @MainActor
   public func createPasskey() async throws -> Passkey {
     let passkey = try await Clerk.currentDependencies.transport.send(PasskeyAPI.create()).value.response

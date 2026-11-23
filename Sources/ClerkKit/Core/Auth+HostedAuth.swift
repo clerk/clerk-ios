@@ -34,6 +34,7 @@ extension Auth {
   ///   - prefersEphemeralWebBrowserSession: Whether to use an ephemeral browser session. Defaults to `false`.
   /// - Returns: The session created and activated by hosted authentication.
   /// - Throws: An error if hosted authentication cannot be completed or the callback is invalid.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult
   public func startHostedAuth(
     mode: HostedAuthMode? = nil,
@@ -163,6 +164,7 @@ extension Auth {
     return activeSession
   }
 
+  @available(iOSApplicationExtension, unavailable)
   private static func startHostedAuthWebAuthentication(
     url: URL,
     callbackUrlScheme: String,
