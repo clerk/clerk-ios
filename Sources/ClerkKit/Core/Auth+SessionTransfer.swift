@@ -80,6 +80,7 @@ extension Auth {
   ///   require `https`, and production instances require a host on one of the instance's domains.
   /// - Throws: The errors ``prepareSessionTransfer(destination:presentation:)`` throws, and a
   ///   ``ClerkClientError`` when no app can open the URL.
+  @available(iOSApplicationExtension, unavailable)
   public func openInBrowser(destination: URL) async throws {
     try await openInBrowser(destination: destination) { url in
       // SFSafariViewController keeps its own cookies, so a session redeemed there never reaches the

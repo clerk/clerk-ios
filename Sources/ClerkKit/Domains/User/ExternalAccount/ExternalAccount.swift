@@ -120,6 +120,7 @@ extension ExternalAccount {
   ///                                         browser session (default is `false`). When `true`, the session
   ///                                         does not persist cookies or other data between sessions, ensuring
   ///                                         a private browsing experience.
+  @available(iOSApplicationExtension, unavailable)
   @discardableResult @MainActor
   public func reauthorize(prefersEphemeralWebBrowserSession: Bool = false) async throws -> ExternalAccount {
     guard

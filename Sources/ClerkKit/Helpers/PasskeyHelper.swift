@@ -89,6 +89,8 @@ final class PasskeyHelper: NSObject {
     return assertionRequest
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
   private func performAuthorization(
     requests: [ASAuthorizationRequest],
@@ -122,6 +124,8 @@ final class PasskeyHelper: NSObject {
     )
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
   func signIn(
     challenge: Data,
@@ -162,6 +166,7 @@ final class PasskeyHelper: NSObject {
   }
 
   #if os(iOS) && !targetEnvironment(macCatalyst)
+  @available(iOSApplicationExtension, unavailable)
   @MainActor
   func beginAutoFillAssistedPasskeySignIn(
     challenge: Data,
@@ -202,6 +207,8 @@ final class PasskeyHelper: NSObject {
     return registrationRequest
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
   func createPasskey(
     challenge: Data,
@@ -275,6 +282,8 @@ extension PasskeyHelper: ASAuthorizationControllerDelegate {
   }
 }
 
+@available(iOSApplicationExtension, unavailable)
+@available(tvOSApplicationExtension, unavailable)
 extension PasskeyHelper: ASAuthorizationControllerPresentationContextProviding {
   @MainActor
   func presentationAnchor(for _: ASAuthorizationController) -> ASPresentationAnchor {

@@ -365,6 +365,10 @@ jobs:
           for scheme in ClerkKit ClerkKitUI; do
             xcodebuild build -workspace Clerk.xcworkspace -scheme "$scheme" -destination "$destination"
           done
+          # Xcode builds a Swift package without APPLICATION_EXTENSION_API_ONLY even when an app
+          # extension links it, so only this build catches ClerkKit code that extensions can't use.
+          echo "Building ClerkKit for ${{ matrix.platform }} with only the APIs app extensions can use..."
+          xcodebuild build -workspace Clerk.xcworkspace -scheme ClerkKit -destination "$destination" APPLICATION_EXTENSION_API_ONLY=YES
 
   e2e-runner-tests:
     name: E2E runner tests
