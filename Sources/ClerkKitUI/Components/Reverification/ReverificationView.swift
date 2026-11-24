@@ -8,24 +8,7 @@
 import ClerkKit
 import SwiftUI
 
-/// A view that asks the signed-in user to verify their identity again before a sensitive action.
-///
-/// `ReverificationView` starts a session reverification at `level`, shows a screen for each factor
-/// the user has to verify, and lets the user switch to another method they have. When the
-/// verification completes, it refreshes the session token, so ``Clerk/has(reverification:)``
-/// and your backend see the new verification, calls `onComplete`, and dismisses itself.
-///
-/// Present it as a sheet with ``SwiftUICore/View/clerkReverification(isPresented:level:onComplete:onCancel:)``,
-/// or let ``Clerk/reverify(_:)`` present it when an action needs it.
-///
-/// ```swift
-/// .sheet(isPresented: $isReverifying) {
-///   ReverificationView(level: .secondFactor) {
-///     Task { try await transferFunds() }
-///   }
-/// }
-/// ```
-public struct ReverificationView: View {
+struct ReverificationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   private var dismiss = ClerkDismissAction()
@@ -35,14 +18,7 @@ public struct ReverificationView: View {
 
   private let onComplete: @MainActor () -> Void
 
-  /// Creates a reverification view.
-  ///
-  /// - Parameters:
-  ///   - level: The factors the user has to verify. Defaults to `.secondFactor`, which Clerk
-  ///     lowers to a first factor for a user with no second factor.
-  ///   - onComplete: Runs once the verification completes and the session token is refreshed,
-  ///     right before the view dismisses itself.
-  public init(
+  init(
     level: SessionVerification.Level = .secondFactor,
     onComplete: @escaping @MainActor () -> Void = {}
   ) {
@@ -50,7 +26,7 @@ public struct ReverificationView: View {
     self.onComplete = onComplete
   }
 
-  public var body: some View {
+  var body: some View {
     NavigationStack(path: $flow.path) {
       rootContent
         #if os(iOS)
@@ -98,8 +74,6 @@ public struct ReverificationView: View {
     }
   }
 
-  /// The toolbar of a pushed screen gets a dismiss action that pops that screen, so the close
-  /// button takes this view's own, which closes the whole sheet.
   private var dismissToolbarItem: some ToolbarContent {
     DismissToolbarItem {
       dismiss()

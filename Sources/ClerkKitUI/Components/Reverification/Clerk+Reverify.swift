@@ -11,7 +11,7 @@ import SwiftUI
 extension Clerk {
   /// Asks the user to verify their identity again, unless they already did within `reverification`.
   ///
-  /// When ``Clerk/has(reverification:)`` is `false`, it presents ``ReverificationView`` as a sheet
+  /// When ``Clerk/has(reverification:)`` is `false`, it presents Clerk's reverification sheet
   /// over whatever your app shows, including other sheets, and returns once the user verifies.
   /// Your app doesn't need to set anything up for the sheet.
   ///
@@ -48,6 +48,11 @@ extension Clerk {
   public func reverify<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
     try await Reverifier(clerk: self)(operation)
   }
+}
+
+/// The error ``Clerk/reverify(_:)`` throws when the user closes the reverification sheet before verifying.
+public struct ReverificationCancelledError: Error, Equatable, Sendable {
+  public init() {}
 }
 
 @MainActor

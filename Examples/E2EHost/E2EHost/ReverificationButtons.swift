@@ -7,9 +7,8 @@ import ClerkKit
 import ClerkKitUI
 import SwiftUI
 
-/// Opens the SDK's reverification sheet the two ways an app can: directly at a level, and
-/// through `clerk.reverify` around an action the app's backend would protect, from the home
-/// and from inside a sheet.
+/// Opens the SDK's reverification sheet through `clerk.reverify`: at a level whatever the session's
+/// age, and around an action the app's backend would protect, from the home and from inside a sheet.
 struct ReverificationButtons: View {
   /// How recently the protected action needs a first factor. A backend would check the same
   /// requirement on the session token.
@@ -17,8 +16,6 @@ struct ReverificationButtons: View {
 
   @Environment(Clerk.self) private var clerk
 
-  @State private var level = SessionVerification.Level.firstFactor
-  @State private var isReverifying = false
   @State private var protectedActionSheetIsPresented = false
   @State private var result: String?
 
@@ -46,12 +43,6 @@ struct ReverificationButtons: View {
           .accessibilityIdentifier(E2EIdentifiers.Home.reverificationResult)
       }
     }
-    .clerkReverification(
-      isPresented: $isReverifying,
-      level: level,
-      onComplete: { result = "Reverified" },
-      onCancel: { result = "Reverification cancelled" }
-    )
     .sheet(isPresented: $protectedActionSheetIsPresented) {
       VStack(spacing: 12) {
         Button("Protected action") {
@@ -69,11 +60,29 @@ struct ReverificationButtons: View {
 
   private func button(_ title: String, level: SessionVerification.Level, identifier: String) -> some View {
     Button(title) {
-      result = nil
-      self.level = level
-      isReverifying = true
+      Task { await reverify(at: level) }
     }
     .accessibilityIdentifier(identifier)
+  }
+
+  /// Asks for reverification at `level` on the first try, so the sheet shows even while the
+  /// session is fresh, as it would for an action whose backend asked.
+  private func reverify(at level: SessionVerification.Level) async {
+    result = nil
+    var asked = false
+    do {
+      try await clerk.reverify {
+        guard asked else {
+          asked = true
+          throw ReverificationRequiredError(reverification: .custom(level: level, afterMinutes: 1))
+        }
+      }
+      result = "Reverified"
+    } catch is ReverificationCancelledError {
+      result = "Reverification cancelled"
+    } catch {
+      result = error.localizedDescription
+    }
   }
 
   private func runProtectedAction() async {

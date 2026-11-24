@@ -18,7 +18,7 @@ import Foundation
 /// }
 /// ```
 ///
-/// ClerkKitUI's reverification action catches this error, asks the user to verify, and runs the
+/// ClerkKitUI's `clerk.reverify` catches this error, asks the user to verify, and runs the
 /// action again.
 public struct ReverificationRequiredError: Error, Equatable, Sendable {
   /// How recently the rejected request needs the user to have verified, when it says.
