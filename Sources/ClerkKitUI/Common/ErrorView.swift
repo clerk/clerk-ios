@@ -10,7 +10,7 @@ import SwiftUI
 
 struct ErrorView: View {
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  private var dismiss = ClerkDismissAction()
 
   struct ActionConfig {
     let text: LocalizedStringKey

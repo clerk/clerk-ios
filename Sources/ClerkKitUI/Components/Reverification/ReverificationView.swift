@@ -16,7 +16,7 @@ import SwiftUI
 /// and your backend see the new verification, calls `onComplete`, and dismisses itself.
 ///
 /// Present it as a sheet with ``SwiftUICore/View/clerkReverification(isPresented:level:onComplete:onCancel:)``,
-/// or let ``ReverifyAction`` present it when an action needs it.
+/// or let ``Clerk/reverify(_:)`` present it when an action needs it.
 ///
 /// ```swift
 /// .sheet(isPresented: $isReverifying) {
@@ -28,7 +28,7 @@ import SwiftUI
 public struct ReverificationView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
-  @Environment(\.dismiss) private var dismiss
+  private var dismiss = ClerkDismissAction()
 
   @State private var flow: ReverificationFlow
   @State private var codeLimiter = CodeLimiter()

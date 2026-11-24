@@ -57,7 +57,6 @@ struct E2EHostView: View {
 
   var body: some View {
     content
-      .clerkReverificationHost()
       .task {
         await start()
       }

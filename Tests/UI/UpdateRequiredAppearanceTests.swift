@@ -14,7 +14,7 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func presentsTheRecordedValues() async throws {
-    let store = UpdateRequiredAppearanceStore()
+    let store = PresentedAppearanceStore()
     var theme = ClerkTheme()
     theme.colors.primary = .orange
     store.theme = theme
@@ -30,7 +30,7 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func presentsTheDefaultsBeforeAnythingIsRecorded() async throws {
-    try await render(StoreBackedProbeView(store: UpdateRequiredAppearanceStore())) { AppearanceProbe.primaryColor != nil }
+    try await render(StoreBackedProbeView(store: PresentedAppearanceStore())) { AppearanceProbe.primaryColor != nil }
 
     #expect(AppearanceProbe.primaryColor == ClerkTheme.default.colors.primary)
     #expect(AppearanceProbe.appIcon == nil)
@@ -39,8 +39,8 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func theRecorderKeepsTheFirstValuesAndPublishesThem() async {
-    let store = UpdateRequiredAppearanceStore()
-    let recorder = UpdateRequiredAppearanceRecorder { store }
+    let store = PresentedAppearanceStore()
+    let recorder = PresentedAppearanceRecorder { store }
     var first = ClerkTheme()
     first.colors.primary = .mint
     var second = ClerkTheme()
@@ -61,12 +61,12 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func theThemeSetterRecordsTheAppsTheme() async throws {
-    let store = UpdateRequiredAppearanceStore()
+    let store = PresentedAppearanceStore()
     var theme = ClerkTheme()
     theme.colors.primary = .mint
     let app = Color.clear
       .environment(\.clerkTheme, theme)
-      .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+      .environment(\.presentedAppearanceRecorder, PresentedAppearanceRecorder { store })
 
     try await render(app) { store.theme != nil }
 
@@ -75,7 +75,7 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func keepsTheRootThemeWhenAPartOfTheAppOverridesIt() async throws {
-    let store = UpdateRequiredAppearanceStore()
+    let store = PresentedAppearanceStore()
     var root = ClerkTheme()
     root.colors.primary = .mint
     let app = VStack {
@@ -83,7 +83,7 @@ struct UpdateRequiredAppearanceTests {
       Color.clear.environment(\.clerkTheme.colors.primary, .green)
     }
     .environment(\.clerkTheme, root)
-    .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+    .environment(\.presentedAppearanceRecorder, PresentedAppearanceRecorder { store })
 
     try await render(app) { store.theme != nil }
     await mainQueueTurn()
@@ -93,11 +93,11 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func theAppIconModifiersRecordTheAppsIcon() async throws {
-    let store = UpdateRequiredAppearanceStore()
+    let store = PresentedAppearanceStore()
     let app = Color.clear
       .clerkAppIcon(Image(systemName: "star"))
       .clerkAppIcon(maxHeight: 72)
-      .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+      .environment(\.presentedAppearanceRecorder, PresentedAppearanceRecorder { store })
 
     try await render(app) { store.appIcon != nil && store.appIconMaxHeight != nil }
 
@@ -107,13 +107,13 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func theUpdateWindowsOwnValuesAreNotRecorded() async throws {
-    let store = UpdateRequiredAppearanceStore()
-    let presented = UpdateRequiredAppearanceStore()
+    let store = PresentedAppearanceStore()
+    let presented = PresentedAppearanceStore()
     presented.theme = .default
     presented.appIcon = Image(systemName: "star")
     presented.appIconMaxHeight = 72
     let window = StoreBackedProbeView(store: presented)
-      .environment(\.updateRequiredAppearanceRecorder, UpdateRequiredAppearanceRecorder { store })
+      .environment(\.presentedAppearanceRecorder, PresentedAppearanceRecorder { store })
 
     try await render(window) { AppearanceProbe.primaryColor != nil }
     await mainQueueTurn()
@@ -125,7 +125,7 @@ struct UpdateRequiredAppearanceTests {
 
   @Test
   func aLaterRecordedValueUpdatesThePresentedView() async throws {
-    let store = UpdateRequiredAppearanceStore()
+    let store = PresentedAppearanceStore()
     let window = try await render(StoreBackedProbeView(store: store)) { AppearanceProbe.appIconMaxHeight == 44 }
 
     store.appIconMaxHeight = 96
@@ -189,10 +189,10 @@ private struct AppearanceProbeView: View {
 }
 
 private struct StoreBackedProbeView: View {
-  let store: UpdateRequiredAppearanceStore
+  let store: PresentedAppearanceStore
 
   var body: some View {
-    AppearanceProbeView().updateRequiredAppearance(store)
+    AppearanceProbeView().presentedAppearance(store)
   }
 }
 

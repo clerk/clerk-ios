@@ -1,5 +1,5 @@
 //
-//  UpdateRequiredView+Appearance.swift
+//  PresentedAppearance.swift
 //  Clerk
 //
 
@@ -10,8 +10,8 @@ import SwiftUI
 
 @MainActor
 @Observable
-final class UpdateRequiredAppearanceStore {
-  static let shared = UpdateRequiredAppearanceStore()
+final class PresentedAppearanceStore {
+  static let shared = PresentedAppearanceStore()
 
   var theme: ClerkTheme?
   var appIcon: Image?
@@ -19,18 +19,19 @@ final class UpdateRequiredAppearanceStore {
 }
 
 extension View {
-  func updateRequiredAppearance(_ store: UpdateRequiredAppearanceStore) -> some View {
+  func presentedAppearance(_ store: PresentedAppearanceStore) -> some View {
     environment(\.clerkThemeWithoutRecording, store.theme ?? .default)
       .environment(\.clerkAppIcon, store.appIcon)
       .environment(\.clerkAppIconMaxHeight, store.appIconMaxHeight ?? EnvironmentValues().clerkAppIconMaxHeight)
   }
 }
 
-/// Clerk presents UpdateRequiredView in its own window, outside the app's view hierarchy, so it
-/// keeps the first theme and app icon the app sets. SwiftUI builds the environment from the root
-/// down, so the first value is the app's root one. SwiftUI sets environment values while it builds
-/// views, so values are recorded into a lock and published to the store afterward.
-final class UpdateRequiredAppearanceRecorder: Sendable {
+/// Clerk presents UpdateRequiredView, and the reverification sheet that ``Clerk/reverify(_:)``
+/// shows, outside the app's view hierarchy, so they use the first theme and app icon the app sets.
+/// SwiftUI builds the environment from the root down, so the first value is the app's root one.
+/// SwiftUI sets environment values while it builds views, so values are recorded into a lock and
+/// published to the store afterward.
+final class PresentedAppearanceRecorder: Sendable {
   enum Value: @unchecked Sendable {
     case theme(ClerkTheme)
     case appIcon(Image)
@@ -44,12 +45,12 @@ final class UpdateRequiredAppearanceRecorder: Sendable {
     var publishIsScheduled = false
   }
 
-  static let shared = UpdateRequiredAppearanceRecorder { UpdateRequiredAppearanceStore.shared }
+  static let shared = PresentedAppearanceRecorder { PresentedAppearanceStore.shared }
 
   private let state = OSAllocatedUnfairLock(uncheckedState: State())
-  private let store: @MainActor @Sendable () -> UpdateRequiredAppearanceStore
+  private let store: @MainActor @Sendable () -> PresentedAppearanceStore
 
-  init(store: @escaping @MainActor @Sendable () -> UpdateRequiredAppearanceStore) {
+  init(store: @escaping @MainActor @Sendable () -> PresentedAppearanceStore) {
     self.store = store
   }
 
@@ -87,11 +88,11 @@ final class UpdateRequiredAppearanceRecorder: Sendable {
 }
 
 extension EnvironmentValues {
-  @Entry var updateRequiredAppearanceRecorder = UpdateRequiredAppearanceRecorder.shared
+  @Entry var presentedAppearanceRecorder = PresentedAppearanceRecorder.shared
 }
 
 struct ClerkAppIconModifier: ViewModifier {
-  @Environment(\.updateRequiredAppearanceRecorder) private var recorder
+  @Environment(\.presentedAppearanceRecorder) private var recorder
 
   let appIcon: Image?
 
@@ -104,20 +105,13 @@ struct ClerkAppIconModifier: ViewModifier {
 }
 
 struct ClerkAppIconMaxHeightModifier: ViewModifier {
-  @Environment(\.updateRequiredAppearanceRecorder) private var recorder
+  @Environment(\.presentedAppearanceRecorder) private var recorder
 
   let maxHeight: CGFloat
 
   func body(content: Content) -> some View {
     recorder.record(.appIconMaxHeight(maxHeight))
     return content.environment(\.clerkAppIconMaxHeight, maxHeight)
-  }
-}
-
-struct PresentedUpdateRequiredView: View {
-  var body: some View {
-    UpdateRequiredView()
-      .updateRequiredAppearance(.shared)
   }
 }
 

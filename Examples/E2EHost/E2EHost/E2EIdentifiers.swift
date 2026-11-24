@@ -23,6 +23,12 @@ enum E2EIdentifiers {
     static let reverifyMultiFactor = "e2e.home.reverify.multiFactor"
     static let protectedAction = "e2e.home.protectedAction"
     static let reverificationResult = "e2e.home.reverificationResult"
+    static let protectedActionSheet = "e2e.home.protectedActionSheet"
+  }
+
+  enum ProtectedActionSheet {
+    static let protectedAction = "e2e.protectedActionSheet.protectedAction"
+    static let reverificationResult = "e2e.protectedActionSheet.reverificationResult"
   }
 
   enum CustomSignIn {

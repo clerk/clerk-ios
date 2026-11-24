@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct DismissButton: View {
-  @Environment(\.dismiss) private var dismiss
+  private var dismiss = ClerkDismissAction()
   @Environment(\.clerkTheme) private var theme
   @Environment(\.colorScheme) private var colorScheme
   private let accessibilityIdentifier: String

@@ -21,6 +21,7 @@ struct ClerkUIContext: DynamicProperty {
 
   func carry(into content: some View) -> some View {
     content
+      .environment(\.presentedSheetDismiss, nil)
       .environment(clerk)
       .environment(codeLimiter)
       .environment(authState)

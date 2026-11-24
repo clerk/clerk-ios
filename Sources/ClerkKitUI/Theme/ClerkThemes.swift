@@ -34,7 +34,7 @@ extension EnvironmentValues {
     get { self[ClerkThemeEnvironmentKey.self] }
     set {
       self[ClerkThemeEnvironmentKey.self] = newValue
-      updateRequiredAppearanceRecorder.record(.theme(newValue))
+      presentedAppearanceRecorder.record(.theme(newValue))
     }
   }
 
