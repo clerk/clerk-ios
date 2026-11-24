@@ -3,7 +3,6 @@
 //  Clerk
 //
 
-import CryptoTokenKit
 import Foundation
 #if canImport(LocalAuthentication)
 import LocalAuthentication
@@ -467,30 +466,14 @@ extension BiometricCredentialKeyManager {
   }
 
   private static func isAuthenticationCancellation(_ error: NSError) -> Bool {
-    if isCancellationCode(domain: error.domain, code: error.code) {
-      return true
-    }
-    guard let underlyingError = error.userInfo[NSUnderlyingErrorKey] as? NSError else {
-      return false
-    }
-    return isAuthenticationCancellation(underlyingError)
-  }
-
-  private static func isCancellationCode(domain: String, code: Int) -> Bool {
-    switch domain {
-    case NSOSStatusErrorDomain:
-      return code == Int(errSecUserCanceled)
-    case TKError.errorDomain:
-      return code == TKError.Code.canceledByUser.rawValue
     #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
-    case LAError.errorDomain:
-      return [LAError.Code.userCancel, .userFallback, .systemCancel, .appCancel]
-        .map(\.rawValue)
-        .contains(code)
+    guard error.domain == LAError.errorDomain else { return false }
+    return [LAError.Code.userCancel, .systemCancel, .appCancel]
+      .map(\.rawValue)
+      .contains(error.code)
+    #else
+    return false
     #endif
-    default:
-      return false
-    }
   }
 }
 
