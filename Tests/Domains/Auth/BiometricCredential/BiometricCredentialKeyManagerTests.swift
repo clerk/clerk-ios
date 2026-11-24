@@ -194,4 +194,61 @@ struct BiometricCredentialKeyManagerTests {
 
     #expect(status == errSecNotAvailable)
   }
+
+  #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
+  @Test(arguments: [LAError.Code.userCancel, .userFallback, .systemCancel, .appCancel])
+  func signingErrorTreatsLocalAuthenticationCancellationAsCanceled(code: LAError.Code) {
+    let error = NSError(
+      domain: LAError.errorDomain,
+      code: code.rawValue,
+      userInfo: [NSLocalizedDescriptionKey: "Authentication canceled."]
+    )
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .biometricAuthenticationCanceled)
+  }
+
+  @Test
+  func signingErrorFindsCancellationInUnderlyingError() {
+    let cancellation = NSError(domain: LAError.errorDomain, code: LAError.Code.systemCancel.rawValue)
+    let error = NSError(
+      domain: "CryptoTokenKit",
+      code: -9,
+      userInfo: [NSUnderlyingErrorKey: cancellation]
+    )
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .biometricAuthenticationCanceled)
+  }
+
+  @Test(arguments: [LAError.Code.authenticationFailed, .biometryLockout, .notInteractive])
+  func signingErrorKeepsOtherLocalAuthenticationErrorsAsSigningFailures(code: LAError.Code) {
+    let error = NSError(
+      domain: LAError.errorDomain,
+      code: code.rawValue,
+      userInfo: [NSLocalizedDescriptionKey: "Biometry is locked out."]
+    )
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .signingFailed("Biometry is locked out."))
+  }
+  #endif
+
+  @Test
+  func signingErrorTreatsSecurityUserCancelAsCanceled() {
+    let error = NSError(domain: NSOSStatusErrorDomain, code: Int(errSecUserCanceled))
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .biometricAuthenticationCanceled)
+  }
+
+  @Test
+  func signingErrorKeepsSecurityFailureMessage() {
+    let error = NSError(
+      domain: NSOSStatusErrorDomain,
+      code: Int(errSecParam),
+      userInfo: [NSLocalizedDescriptionKey: "One or more parameters passed to a function were not valid."]
+    )
+
+    #expect(
+      BiometricCredentialKeyManager.signingError(from: error)
+        == .signingFailed("One or more parameters passed to a function were not valid.")
+    )
+  }
 }

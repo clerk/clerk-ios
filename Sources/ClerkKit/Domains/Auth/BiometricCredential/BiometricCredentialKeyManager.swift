@@ -441,7 +441,7 @@ extension BiometricCredentialKeyManager {
       Data(clientData.utf8) as CFData,
       &error
     ) as Data? else {
-      throw BiometricCredentialKeyManagerError.signingFailed(Self.errorMessage(from: error))
+      throw Self.signingError(from: error)
     }
 
     let rawSignature = try Self.rawES256Signature(fromDEREncoded: signature)
@@ -450,6 +450,44 @@ extension BiometricCredentialKeyManager {
       clientData: clientData,
       signature: Self.base64URLEncodedString(rawSignature)
     )
+  }
+
+  private static func signingError(from error: Unmanaged<CFError>?) -> BiometricCredentialKeyManagerError {
+    guard let error else {
+      return .signingFailed(errorMessage(from: nil))
+    }
+    return signingError(from: error.takeRetainedValue() as Error)
+  }
+
+  package static func signingError(from error: Error) -> BiometricCredentialKeyManagerError {
+    isAuthenticationCancellation(error as NSError)
+      ? .biometricAuthenticationCanceled
+      : .signingFailed(error.localizedDescription)
+  }
+
+  private static func isAuthenticationCancellation(_ error: NSError) -> Bool {
+    if isCancellationCode(domain: error.domain, code: error.code) {
+      return true
+    }
+    guard let underlyingError = error.userInfo[NSUnderlyingErrorKey] as? NSError else {
+      return false
+    }
+    return isAuthenticationCancellation(underlyingError)
+  }
+
+  private static func isCancellationCode(domain: String, code: Int) -> Bool {
+    switch domain {
+    case NSOSStatusErrorDomain:
+      return code == Int(errSecUserCanceled)
+    #if canImport(LocalAuthentication)
+    case LAError.errorDomain:
+      return [LAError.Code.userCancel, .userFallback, .systemCancel, .appCancel]
+        .map(\.rawValue)
+        .contains(code)
+    #endif
+    default:
+      return false
+    }
   }
 }
 
