@@ -43,7 +43,7 @@ struct OrganizationVerifiedDomainsView: View {
       }
     }
     .refreshable {
-      await domains.list.refresh()
+      await domains.list.refreshRequestingClient()
     }
     .tint(theme.colors.primary)
     .background(theme.colors.muted)

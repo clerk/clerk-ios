@@ -15,12 +15,12 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
   func validate(_ response: HTTPURLResponse, data: Data, for request: URLRequest) async throws {
     try Task.checkCancellation()
     let metadata = ClientSyncResponseMetadata(response: response, request: request)
-    let update = Self.classifyClientUpdate(
+    let classifiedUpdate = Self.classifyClientUpdate(
       from: data,
       isCanonicalClientRequest: metadata.checkpoint.isCanonicalClientRequest,
       deviceTokenUpdate: metadata.deviceTokenUpdate
     )
-    guard request.shouldAutomaticallySyncClerkClient || update == .explicitClear else {
+    guard let update = Self.update(classifiedUpdate, under: request.clerkClientSyncPolicy) else {
       return
     }
     let completedAuthFlow = ClerkAuthResponseDecoder.decodeCompletedAuthFlow(from: data)
@@ -32,6 +32,15 @@ struct ClerkClientSyncResponseMiddleware: ClerkResponseMiddleware {
     try await runtimeScope.withCurrentClerk { clerk in
       try Task.checkCancellation()
       try await clerk.identityController.applyNetworkResponse(context)
+    }
+  }
+
+  static func update(_ update: ClientResponseUpdate, under policy: ClientSyncPolicy) -> ClientResponseUpdate? {
+    switch policy {
+    case .apply, .requestAndApply:
+      update
+    case .deferToCaller:
+      update == .explicitClear ? update : nil
     }
   }
 

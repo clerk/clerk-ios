@@ -18,7 +18,7 @@ enum OrganizationListMutation: Equatable {
 @MainActor
 @Observable
 final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query: Sendable> {
-  typealias Fetch = @MainActor (_ query: Query, _ offset: Int) async throws -> ClerkPaginatedResponse<Item>
+  typealias Fetch = @MainActor (_ query: Query, _ offset: Int, _ includeClient: Bool) async throws -> ClerkPaginatedResponse<Item>
 
   enum Patch {
     case replace(Item)
@@ -40,6 +40,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
   @ObservationIgnored private var pageLoads = 0
   @ObservationIgnored private var isRetired = false
   @ObservationIgnored private var reloadTask: Task<Void, Never>?
+  @ObservationIgnored private var reloadIncludesClient = false
   @ObservationIgnored private var loadMoreTask: Task<Void, Never>?
   @ObservationIgnored private var loadMoreAfterReload = false
 
@@ -51,20 +52,28 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
 
   @discardableResult
   func reload(query: Query) -> Task<Void, Never> {
-    load(query: query, throughOffset: 0)
+    load(query: query, throughOffset: 0, includeClient: false)
   }
 
   func refresh() async {
-    if let reloadTask {
+    await refresh(requestingClient: false)
+  }
+
+  func refreshRequestingClient() async {
+    await refresh(requestingClient: true)
+  }
+
+  private func refresh(requestingClient: Bool) async {
+    if let reloadTask, reloadIncludesClient || !requestingClient {
       await reloadTask.value
     } else if let query {
-      await reload(query: query).value
+      await load(query: query, throughOffset: 0, includeClient: requestingClient).value
     }
   }
 
   func revalidate() async {
     guard let query else { return }
-    await load(query: query, throughOffset: pager.offset).value
+    await load(query: query, throughOffset: pager.offset, includeClient: false).value
   }
 
   @discardableResult
@@ -82,7 +91,7 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     pageLoads += 1
     let task = Task { [weak self, fetch] in
       do {
-        let page = try await fetch(query, offset)
+        let page = try await fetch(query, offset, false)
         self?.finishLoadMore(generation, with: .success(page))
       } catch {
         self?.finishLoadMore(generation, with: .failure(error))
@@ -126,10 +135,11 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     loadMoreAfterReload = false
   }
 
-  private func load(query: Query, throughOffset offset: Int) -> Task<Void, Never> {
+  private func load(query: Query, throughOffset offset: Int, includeClient: Bool) -> Task<Void, Never> {
     guard !isRetired else { return Task {} }
 
     loadMoreAfterReload = loadMoreAfterReload || loadMoreTask != nil
+    let includeClient = includeClient || (reloadTask != nil && reloadIncludesClient)
     startGeneration()
     pageLoads += 1
     self.query = query
@@ -137,13 +147,14 @@ final class OrganizationPagedList<Item: Codable & Sendable & Identifiable, Query
     hasLoaded = false
 
     let generation = generation
+    reloadIncludesClient = includeClient
     let task = Task { [weak self, fetch] in
       do {
-        let first = try await fetch(query, 0)
+        let first = try await fetch(query, 0, includeClient)
         var pages = [first]
         var loaded = first.data.count
         while loaded < offset, let last = pages.last, loaded < last.totalCount, !last.data.isEmpty {
-          let page = try await fetch(query, loaded)
+          let page = try await fetch(query, loaded, false)
           pages.append(page)
           loaded += page.data.count
         }

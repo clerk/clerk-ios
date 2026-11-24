@@ -32,7 +32,7 @@ final class OrganizationRolesDataSource: OrganizationScopedContent {
   init(scope: OrganizationScope) {
     let organization = scope.organization
     self.scope = scope
-    list = OrganizationPagedList(name: "roles", isLoading: true) { _, _ in
+    list = OrganizationPagedList(name: "roles", isLoading: true) { _, _, _ in
       let first = try await organization.getRoles(page: 1, pageSize: Self.pageSize)
       var roles = first.data
       var page = 1

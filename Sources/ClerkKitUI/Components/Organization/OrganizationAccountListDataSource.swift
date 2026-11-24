@@ -46,13 +46,13 @@ final class OrganizationAccountListDataSource: OrganizationScopedContent {
   init(scope: OrganizationUserScope, pageSize: Int = 10) {
     let user = scope.user
     self.scope = scope
-    memberships = OrganizationPagedList(name: "memberships", isLoading: true) { _, offset in
+    memberships = OrganizationPagedList(name: "memberships", isLoading: true) { _, offset, _ in
       try await user.getOrganizationMemberships(offset: offset, pageSize: pageSize)
     }
-    invitations = OrganizationPagedList(name: "invitations", isLoading: true) { _, offset in
+    invitations = OrganizationPagedList(name: "invitations", isLoading: true) { _, offset, _ in
       try await user.getOrganizationInvitations(offset: offset, pageSize: pageSize, status: ["pending"])
     }
-    suggestions = OrganizationPagedList(name: "suggestions", isLoading: true) { _, offset in
+    suggestions = OrganizationPagedList(name: "suggestions", isLoading: true) { _, offset, _ in
       try await user.getOrganizationSuggestions(offset: offset, pageSize: pageSize, status: ["pending", "accepted"])
     }
     isLoadingCreationDefaults = scope.includesCreationDefaults

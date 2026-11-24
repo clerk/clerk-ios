@@ -53,6 +53,14 @@ enum RequestBody: @unchecked Sendable {
 
 struct EmptyResponse: Codable {}
 
+enum ClientSyncPolicy: String {
+  case apply
+  case requestAndApply
+  case deferToCaller
+
+  static let includeClientQueryItem = URLQueryItem(name: "_include_client", value: "true")
+}
+
 package struct Request<Response: Decodable & Sendable> {
   let path: String
   let method: HTTPMethod
@@ -62,7 +70,7 @@ package struct Request<Response: Decodable & Sendable> {
   private let scopedToActiveSession: Bool
   private let queryItems: [URLQueryItem]
   private let body: RequestBody?
-  private let automaticallySyncClient: Bool
+  private let clientSync: ClientSyncPolicy
   private let logBodies: Bool
   private let decodeClosure: @Sendable (Data, JSONDecoder) throws -> Response
 
@@ -74,7 +82,7 @@ package struct Request<Response: Decodable & Sendable> {
     scopedToActiveSession: Bool = false,
     query: [(String, String?)] = [],
     body: (any Encodable & Sendable)? = nil,
-    automaticallySyncClient: Bool = true,
+    clientSync: ClientSyncPolicy = .apply,
     logBodies: Bool = true,
     decode: @escaping @Sendable (Data, JSONDecoder) throws -> Response = { data, decoder in
       if Response.self == EmptyResponse.self {
@@ -95,7 +103,7 @@ package struct Request<Response: Decodable & Sendable> {
     self.scopedToActiveSession = scopedToActiveSession
     queryItems = query.map { URLQueryItem(name: $0.0, value: $0.1) }
     self.body = body.map { .encodable(AnyEncodable($0)) }
-    self.automaticallySyncClient = automaticallySyncClient
+    self.clientSync = clientSync
     self.logBodies = logBodies
     decodeClosure = decode
   }
@@ -156,9 +164,7 @@ package struct Request<Response: Decodable & Sendable> {
     if scopedToActiveSession {
       urlRequest.scopeToClerkActiveSession()
     }
-    if !automaticallySyncClient {
-      urlRequest.disableAutomaticClerkClientSync()
-    }
+    urlRequest.setClerkClientSyncPolicy(clientSync)
     if !logBodies {
       urlRequest.disableClerkBodyLogging()
     }

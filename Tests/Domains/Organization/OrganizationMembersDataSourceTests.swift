@@ -62,7 +62,7 @@ struct OrganizationMembersDataSourceTests {
     await refresh.value
     try await waitUntil { !dataSource.members.isLoading }
 
-    #expect(memberRequests.queries == [nil, "sam"])
+    #expect(memberRequests.queries == [nil, "sam", "sam"])
     #expect(dataSource.members.query == "sam")
     #expect(dataSource.members.pager.items.map(\.id) == ["mem_sam"])
   }

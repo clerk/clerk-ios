@@ -223,7 +223,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
   }
 
   @Test
-  func disabledAutomaticSyncDefersClientButStillAppliesExplicitClear() async throws {
+  func deferToCallerPolicyDefersClientButStillAppliesExplicitClear() async throws {
     let clerk = Clerk()
     clerk.dependencies = MockDependencyContainer(
       apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
@@ -236,7 +236,7 @@ struct ClerkClientSyncResponseMiddlewareTests {
     )
     let url = try #require(URL(string: "https://example.com/v1/client"))
     var request = URLRequest(url: url)
-    request.disableAutomaticClerkClientSync()
+    request.setClerkClientSyncPolicy(.deferToCaller)
     request.setClerkCanonicalClientRequest(true)
     request.setClerkRequestDeviceToken("current-token")
     request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
@@ -537,6 +537,51 @@ struct ClerkClientSyncResponseMiddlewareTests {
     let metadata = try deferredMetadata(authorizationHeader: nil)
 
     #expect(metadata.context(client: nil).update == .absent)
+  }
+
+  @Test(arguments: [ClientSyncPolicy.apply, .requestAndApply])
+  func getResponseAppliesAnAttachedClient(policy: ClientSyncPolicy) async throws {
+    let clerk = try clerkWithIdentity(deviceToken: "current-token", clientId: "existing-client")
+    let data = try JSONEncoder.clerkEncoder.encode(
+      ClientEnvelope(response: SignIn.mock, client: client(id: "incoming-client", updatedAt: .distantFuture))
+    )
+
+    try await validateGetResponse(under: policy, clerk: clerk, data: data)
+
+    #expect(clerk.client?.id == "incoming-client")
+  }
+
+  @Test
+  func getResponseWithANullClientKeepsTheCurrentClient() async throws {
+    let clerk = try clerkWithIdentity(deviceToken: "current-token", clientId: "existing-client")
+
+    try await validateGetResponse(under: .apply, clerk: clerk, data: Data(#"{"response":[],"client":null}"#.utf8))
+
+    #expect(clerk.client?.id == "existing-client")
+    #expect(clerk.identityController.currentDeviceToken == "current-token")
+  }
+
+  private func clerkWithIdentity(deviceToken: String, clientId: String) throws -> Clerk {
+    configureClerkForTesting()
+    let clerk = Clerk()
+    clerk.dependencies = MockDependencyContainer(
+      apiClient: createMockAPIClient(runtimeScope: clerk.runtimeScope)
+    )
+    try clerk.seedIdentity(deviceToken: deviceToken, client: client(id: clientId, updatedAt: .distantPast))
+    return clerk
+  }
+
+  private func validateGetResponse(under policy: ClientSyncPolicy, clerk: Clerk, data: Data) async throws {
+    let url = try #require(URL(string: "https://example.com/v1/me/organization_memberships"))
+    let response = try #require(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+    var request = URLRequest(url: url)
+    request.httpMethod = "GET"
+    request.setClerkClientSyncPolicy(policy)
+    try request.setClerkRequestDeviceToken(#require(clerk.identityController.currentDeviceToken))
+    request.setClerkClientResponseGeneration(clerk.clientResponseGeneration)
+
+    try await ClerkClientSyncResponseMiddleware(runtimeScope: clerk.runtimeScope)
+      .validate(response, data: data, for: request)
   }
 
   private func deferredMetadata(authorizationHeader: String?) throws -> ClientSyncResponseMetadata {

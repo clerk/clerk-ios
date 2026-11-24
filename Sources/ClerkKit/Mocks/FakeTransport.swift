@@ -114,9 +114,9 @@ package final class FakeTransport: APITransport {
       throw Failure.unstubbed(method: call.method, path: call.path)
     }
     // Like the live header middleware, capture the request identity before the response arrives.
-    let requestIdentity: ClerkIdentityRequestSnapshot? = urlRequest.shouldAutomaticallySyncClerkClient
-      ? nil
-      : try await Clerk.shared.identityController.captureRequestIdentity()
+    let requestIdentity: ClerkIdentityRequestSnapshot? = urlRequest.clerkClientSyncPolicy == .deferToCaller
+      ? try await Clerk.shared.identityController.captureRequestIdentity()
+      : nil
     let reply = try await stub.respond(call)
     guard let value = reply.value as? Value else {
       throw Failure.mismatchedResponseType(method: call.method, path: call.path)

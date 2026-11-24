@@ -197,7 +197,7 @@ extension URLRequest {
   private static let clerkCanonicalClientRequestKey = "com.clerk.canonical-client-request"
   private static let clerkRequestDeviceTokenKey = "com.clerk.request-device-token"
   private static let clerkAuthFlowRegistrationIdKey = "com.clerk.auth-flow-registration-id"
-  private static let clerkAutomaticClientSyncKey = "com.clerk.automatic-client-sync"
+  private static let clerkClientSyncPolicyKey = "com.clerk.client-sync-policy"
   private static let clerkBodyLoggingKey = "com.clerk.body-logging"
   private static let clerkActiveSessionScopeKey = "com.clerk.active-session-scope"
 
@@ -246,8 +246,9 @@ extension URLRequest {
     return UUID(uuidString: value)
   }
 
-  var shouldAutomaticallySyncClerkClient: Bool {
-    URLProtocol.property(forKey: Self.clerkAutomaticClientSyncKey, in: self) as? Bool ?? true
+  var clerkClientSyncPolicy: ClientSyncPolicy {
+    (URLProtocol.property(forKey: Self.clerkClientSyncPolicyKey, in: self) as? String)
+      .flatMap(ClientSyncPolicy.init(rawValue:)) ?? .apply
   }
 
   var shouldLogClerkBodies: Bool {
@@ -342,8 +343,8 @@ extension URLRequest {
     self = mutableRequest as URLRequest
   }
 
-  mutating func disableAutomaticClerkClientSync() {
-    setClerkProperty(NSNumber(value: false), key: Self.clerkAutomaticClientSyncKey)
+  mutating func setClerkClientSyncPolicy(_ policy: ClientSyncPolicy) {
+    setClerkProperty(policy.rawValue, key: Self.clerkClientSyncPolicyKey)
   }
 
   mutating func disableClerkBodyLogging() {

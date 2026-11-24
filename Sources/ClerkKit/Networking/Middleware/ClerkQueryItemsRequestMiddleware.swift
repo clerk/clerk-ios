@@ -7,6 +7,10 @@ import Foundation
 
 struct ClerkQueryItemsRequestMiddleware: ClerkRequestMiddleware {
   func prepare(_ request: inout URLRequest) async throws {
-    request.appendQueryItems([.init(name: "_is_native", value: "true")])
+    var queryItems = [URLQueryItem(name: "_is_native", value: "true")]
+    if request.clerkClientSyncPolicy == .requestAndApply {
+      queryItems.append(ClientSyncPolicy.includeClientQueryItem)
+    }
+    request.appendQueryItems(queryItems)
   }
 }
