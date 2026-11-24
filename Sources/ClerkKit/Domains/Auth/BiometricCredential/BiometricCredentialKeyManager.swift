@@ -3,6 +3,7 @@
 //  Clerk
 //
 
+import CryptoTokenKit
 import Foundation
 #if canImport(LocalAuthentication)
 import LocalAuthentication
@@ -479,7 +480,9 @@ extension BiometricCredentialKeyManager {
     switch domain {
     case NSOSStatusErrorDomain:
       return code == Int(errSecUserCanceled)
-    #if canImport(LocalAuthentication)
+    case TKError.errorDomain:
+      return code == TKError.Code.canceledByUser.rawValue
+    #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
     case LAError.errorDomain:
       return [LAError.Code.userCancel, .userFallback, .systemCancel, .appCancel]
         .map(\.rawValue)

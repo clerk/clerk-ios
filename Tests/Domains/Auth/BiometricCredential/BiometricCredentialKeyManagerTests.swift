@@ -1,4 +1,5 @@
 @testable import ClerkKit
+import CryptoTokenKit
 import Foundation
 #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
 import LocalAuthentication
@@ -211,8 +212,8 @@ struct BiometricCredentialKeyManagerTests {
   func signingErrorFindsCancellationInUnderlyingError() {
     let cancellation = NSError(domain: LAError.errorDomain, code: LAError.Code.systemCancel.rawValue)
     let error = NSError(
-      domain: "CryptoTokenKit",
-      code: -9,
+      domain: "com.clerk.tests.WrappingError",
+      code: 1,
       userInfo: [NSUnderlyingErrorKey: cancellation]
     )
 
@@ -236,6 +237,24 @@ struct BiometricCredentialKeyManagerTests {
     let error = NSError(domain: NSOSStatusErrorDomain, code: Int(errSecUserCanceled))
 
     #expect(BiometricCredentialKeyManager.signingError(from: error) == .biometricAuthenticationCanceled)
+  }
+
+  @Test
+  func signingErrorTreatsCryptoTokenKitUserCancelAsCanceled() {
+    let error = NSError(domain: TKError.errorDomain, code: TKError.Code.canceledByUser.rawValue)
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .biometricAuthenticationCanceled)
+  }
+
+  @Test
+  func signingErrorKeepsOtherCryptoTokenKitErrorsAsSigningFailures() {
+    let error = NSError(
+      domain: TKError.errorDomain,
+      code: TKError.Code.authenticationNeeded.rawValue,
+      userInfo: [NSLocalizedDescriptionKey: "Authentication is needed."]
+    )
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .signingFailed("Authentication is needed."))
   }
 
   @Test
