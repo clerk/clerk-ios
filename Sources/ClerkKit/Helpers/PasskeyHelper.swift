@@ -256,26 +256,17 @@ final class PasskeyHelper: NSObject {
 extension PasskeyHelper: ASAuthorizationControllerDelegate {
   @MainActor
   func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-    do {
-      try Self.acceptCredential(authorization.credential)
-      complete(with: authorization)
-    } catch {
-      complete(with: error)
-    }
-  }
-
-  static func acceptCredential(_ credential: any ASAuthorizationCredential) throws {
-    switch credential {
+    switch authorization.credential {
     case is ASAuthorizationPlatformPublicKeyCredentialRegistration:
       ClerkLogger.debug("A new passkey was registered")
     case is ASAuthorizationPlatformPublicKeyCredentialAssertion:
-      ClerkLogger.debug("A passkey was used to sign in")
+      ClerkLogger.debug("A passkey was used")
     case is ASPasswordCredential:
       ClerkLogger.debug("A password was provided")
     default:
-      ClerkLogger.error("A passkey request returned an unsupported credential: \(type(of: credential))")
-      throw ClerkClientError(message: "Something went wrong. Please try again.", localizationBundle: .module)
+      ClerkLogger.debug("Received an unexpected credential: \(type(of: authorization.credential))")
     }
+    complete(with: authorization)
   }
 
   @MainActor

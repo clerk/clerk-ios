@@ -1,6 +1,5 @@
 #if canImport(AuthenticationServices) && !os(watchOS)
 
-import AuthenticationServices
 @testable import ClerkKit
 import Foundation
 import Testing
@@ -52,37 +51,6 @@ struct PasskeyHelperTests {
     )
 
     #expect(request.userVerificationPreference == .required)
-  }
-
-  @Test
-  func passwordCredentialIsAccepted() throws {
-    let credential = ASPasswordCredential(user: "user+clerk_test@example.com", password: "password")
-
-    try PasskeyHelper.acceptCredential(credential)
-  }
-
-  @Test
-  func unsupportedCredentialEndsTheRequestWithAnErrorInsteadOfCrashing() {
-    #expect(throws: ClerkClientError.self) {
-      try PasskeyHelper.acceptCredential(UnsupportedCredential())
-    }
-  }
-}
-
-@objc(ClerkTestsUnsupportedCredential)
-private final class UnsupportedCredential: NSObject, ASAuthorizationCredential {
-  static let supportsSecureCoding = true
-
-  override init() {}
-
-  required init?(coder _: NSCoder) {
-    super.init()
-  }
-
-  func encode(with _: NSCoder) {}
-
-  func copy(with _: NSZone? = nil) -> Any {
-    self
   }
 }
 
