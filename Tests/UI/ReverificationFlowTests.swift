@@ -143,16 +143,12 @@ struct ReverificationFlowTests {
   }
 
   @Test
-  func completeFinishesTheFlowAndForgetsTheNewPassword() async {
+  func completeFinishesTheFlow() async {
     let flow = ReverificationFlow(level: .firstFactor)
-    flow.newPassword = "new-password"
-    flow.confirmNewPassword = "new-password"
 
     await flow.handle(verification(.complete))
 
     #expect(flow.isComplete)
-    #expect(flow.newPassword.isEmpty)
-    #expect(flow.confirmNewPassword.isEmpty)
   }
 
   @Test

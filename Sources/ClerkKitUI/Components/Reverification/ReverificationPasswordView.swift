@@ -105,7 +105,6 @@ struct ReverificationPasswordView: View {
     do {
       let verification = try await session.verifyWithPassword(password)
       fieldError = nil
-      password = ""
       await flow.handle(verification)
     } catch {
       guard !error.isCancellationError else { return }

@@ -103,7 +103,6 @@ final class ReverificationFlow {
       )
 
     case .complete:
-      clearPasswords()
       if let session {
         _ = try? await session.getToken(.init(skipCache: true))
       }
@@ -127,11 +126,6 @@ final class ReverificationFlow {
     let factors = verification?.supportedFirstFactors ?? []
     return factors.first { $0.strategy == .resetPasswordEmailCode }
       ?? factors.first { $0.strategy == .resetPasswordPhoneCode }
-  }
-
-  func clearPasswords() {
-    newPassword = ""
-    confirmNewPassword = ""
   }
 
   private func showRoot(_ destination: Destination) {

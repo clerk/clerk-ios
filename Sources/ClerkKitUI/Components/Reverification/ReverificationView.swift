@@ -55,14 +55,14 @@ public struct ReverificationView: View {
       rootContent
         #if os(iOS)
         .toolbar {
-          DismissToolbarItem()
+          dismissToolbarItem
         }
         #endif
         .navigationDestination(for: ReverificationFlow.Destination.self) { destination in
           ReverificationDestinationView(destination: destination)
             #if os(iOS)
             .toolbar {
-              DismissToolbarItem()
+              dismissToolbarItem
             }
             #endif
             .authFooter(macOSDismissAction: { dismiss() })
@@ -95,6 +95,14 @@ public struct ReverificationView: View {
           payload: ["level": .string(flow.level.rawValue)]
         )
       )
+    }
+  }
+
+  /// The toolbar of a pushed screen gets a dismiss action that pops that screen, so the close
+  /// button takes this view's own, which closes the whole sheet.
+  private var dismissToolbarItem: some ToolbarContent {
+    DismissToolbarItem {
+      dismiss()
     }
   }
 
