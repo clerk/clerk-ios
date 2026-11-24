@@ -74,10 +74,13 @@ public struct ReverifyAction: Sendable {
     }
   }
 
-  static let missingHost = ReverifyAction(isSatisfied: { _ in false }) { _ in
-    ClerkLogger.error("Reverification has no host", error: ReverificationHostMissingError())
-    throw ReverificationHostMissingError()
-  }
+  static let missingHost = ReverifyAction(
+    isSatisfied: { _ in false },
+    present: { _ in
+      ClerkLogger.error("Reverification has no host", error: ReverificationHostMissingError())
+      throw ReverificationHostMissingError()
+    }
+  )
 }
 
 /// A setup mistake in the app, so its description is for the developer and stays in English.

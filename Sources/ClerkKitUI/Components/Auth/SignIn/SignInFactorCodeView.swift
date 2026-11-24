@@ -3,8 +3,6 @@
 //  Clerk
 //
 
-// swiftlint:disable file_length
-
 #if os(iOS) || os(macOS)
 
 import ClerkKit
