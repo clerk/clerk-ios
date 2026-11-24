@@ -84,6 +84,14 @@ struct ReverificationFlowTests {
     #expect(ReverificationFlow.startingFactor(in: factors + [passkey], stage: .firstFactor, preferredStrategy: .password) == passkey)
   }
 
+  @Test
+  func aCodeScreenSendsACodeUnlessTheLastCodeWentToIt() {
+    #expect(ReverificationCodeView.needsCode(sendsCode: true, isFirstRequest: true, lastCodeWasSentHere: false))
+    #expect(ReverificationCodeView.needsCode(sendsCode: true, isFirstRequest: false, lastCodeWasSentHere: false))
+    #expect(!ReverificationCodeView.needsCode(sendsCode: true, isFirstRequest: false, lastCodeWasSentHere: true))
+    #expect(!ReverificationCodeView.needsCode(sendsCode: false, isFirstRequest: true, lastCodeWasSentHere: false))
+  }
+
   // MARK: - Routing
 
   @Test

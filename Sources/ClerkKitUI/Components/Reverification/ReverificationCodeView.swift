@@ -81,7 +81,11 @@ struct ReverificationCodeView: View {
     .clerkErrorPresenting($error)
     .background(theme.colors.background)
     .task {
-      guard sendsCode, codeLimiter.isFirstRequest(for: codeLimiterIdentifier) else { return }
+      guard Self.needsCode(
+        sendsCode: sendsCode,
+        isFirstRequest: codeLimiter.isFirstRequest(for: codeLimiterIdentifier),
+        lastCodeWasSentHere: codeLimiter.lastCodeSentIdentifier == codeLimiterIdentifier
+      ) else { return }
       await prepare()
     }
   }
@@ -98,7 +102,13 @@ struct ReverificationCodeView: View {
   }
 
   private var codeLimiterIdentifier: String {
-    (flow.verification?.id ?? "") + (factor.safeIdentifier ?? factor.strategy.rawValue) + factor.strategy.rawValue
+    [flow.verification?.id ?? "", "\(stage)", factor.strategy.rawValue, factor.safeIdentifier ?? ""].joined(separator: ":")
+  }
+
+  /// Whether the screen sends a code when it appears. The server verifies only the code it sent
+  /// last, so returning to this screen after another method sent one sends a new code here.
+  static func needsCode(sendsCode: Bool, isFirstRequest: Bool, lastCodeWasSentHere: Bool) -> Bool {
+    sendsCode && (isFirstRequest || !lastCodeWasSentHere)
   }
 }
 

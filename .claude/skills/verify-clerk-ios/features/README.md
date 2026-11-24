@@ -65,6 +65,7 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [Sign in with an SMS code](./sign-in-phone-code.md) covers requesting and entering the SMS code from the AuthView sheet the home opens.
 - [Custom sign-in flow](./custom-flow-sign-in.md) covers E2EHost's own form on `clerk.auth.signInWithPhoneCode(phoneNumber:)`.
 - [Custom reverification flow](./custom-flow-reverification.md) covers E2EHost's own form that reverifies the session with a reset password email code and a new password, then signs in through AuthView with that password.
+- [Reverification](./reverification.md) covers ReverificationView at each level with a password, email and SMS codes, an authenticator app, and a backup code, closing it, and `clerkReverify` around an action, and it lists the states no spec reaches.
 - [Sign up](./sign-up.md) covers requesting the sign-up code, completing sign-up with a password from the full-screen AuthView and from the AuthView sheet the home opens, and signing up with a phone number.
 - [Session persistence](./session-persistence.md) covers a session that survives a restart of the app.
 - [User button and profile](./user-button-and-profile.md) covers UserButton, UserProfileView, its Manage account and Security screens, sign-out, and deleting the account.

@@ -101,13 +101,16 @@ struct ReverifyActionTests {
   // MARK: - Presenter
 
   @Test
-  func everyCallerWaitingOnOneSheetSucceedsWhenItCompletes() async throws {
+  func everyCallerAtTheSameLevelSharesOneSheet() async throws {
     let presenter = ReverificationPresenter()
-
     async let first: Void = presenter.present(level: .secondFactor)
-    async let second: Void = presenter.present(level: .firstFactor)
-    await Task.yield()
-    await Task.yield()
+    async let second: Void = presenter.present(level: .secondFactor)
+    try await waitUntil { presenter.presented != nil }
+    let sheet = try #require(presenter.presented)
+    for _ in 0 ..< 10 {
+      await Task.yield()
+    }
+    #expect(presenter.presented === sheet)
 
     #expect(presenter.presented?.level == .secondFactor)
     presenter.presented?.markComplete()
@@ -116,6 +119,30 @@ struct ReverifyActionTests {
 
     try await first
     try await second
+    #expect(presenter.presented == nil)
+  }
+
+  @Test
+  func aCallAtAnotherLevelWaitsForTheSheetPresentedFirst() async throws {
+    let presenter = ReverificationPresenter()
+
+    let first = Task { try await presenter.present(level: .firstFactor) }
+    await Task.yield()
+    let second = Task { try await presenter.present(level: .multiFactor) }
+    await Task.yield()
+
+    #expect(presenter.presented?.level == .firstFactor)
+    presenter.presented?.markComplete()
+    presenter.presented = nil
+    presenter.sheetDidDismiss()
+    try await first.value
+    try await waitUntil { presenter.presented != nil }
+
+    #expect(presenter.presented?.level == .multiFactor)
+    presenter.presented?.markComplete()
+    presenter.presented = nil
+    presenter.sheetDidDismiss()
+    try await second.value
   }
 
   @Test
@@ -130,6 +157,13 @@ struct ReverifyActionTests {
     await #expect(throws: ReverificationCancelledError.self) {
       try await task.value
     }
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    for _ in 0 ..< 100 where !condition() {
+      await Task.yield()
+    }
+    try #require(condition())
   }
 }
 

@@ -17,6 +17,7 @@ struct ClerkUIContext: DynamicProperty {
   @Environment(UserProfileSheetNavigation.self) private var userProfileSheetNavigation: UserProfileSheetNavigation?
   @Environment(UserProfileBuiltInRouter.self) private var userProfileBuiltInRouter: UserProfileBuiltInRouter?
   @Environment(OrganizationProfileBuiltInRouter.self) private var organizationProfileBuiltInRouter: OrganizationProfileBuiltInRouter?
+  @Environment(ReverificationFlow.self) private var reverificationFlow: ReverificationFlow?
 
   func carry(into content: some View) -> some View {
     content
@@ -27,6 +28,7 @@ struct ClerkUIContext: DynamicProperty {
       .environment(userProfileSheetNavigation)
       .environment(userProfileBuiltInRouter)
       .environment(organizationProfileBuiltInRouter)
+      .environment(reverificationFlow)
   }
 }
 

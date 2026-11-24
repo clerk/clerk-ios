@@ -190,13 +190,21 @@ final class ReverificationPresenter {
   var presented: ReverificationRequest?
   private var active: ReverificationRequest?
 
-  /// Presents the sheet, or joins the one already presented, and returns once it closes.
+  /// Presents the sheet and returns once it closes. A call at the level of the sheet already
+  /// presented joins it; a call at another level waits for that sheet to close first.
   func present(level: SessionVerification.Level) async throws {
-    let request = active ?? ReverificationRequest(level: level)
-    if active == nil {
-      active = request
-      presented = request
+    while let active, active.level != level {
+      try? await active.wait()
     }
+
+    if let active {
+      try await active.wait()
+      return
+    }
+
+    let request = ReverificationRequest(level: level)
+    active = request
+    presented = request
     try await request.wait()
   }
 

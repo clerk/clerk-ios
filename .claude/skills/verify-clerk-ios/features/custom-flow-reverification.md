@@ -1,6 +1,6 @@
 # Custom reverification flow
 
-An app that builds its own reverification screen on the SDK's API reverifies a signed-in user with a reset password code instead of their password, and the same step sets a new password. This is the way out for a user whose password was found in a data breach, which makes `Session.verifyWithPassword(_:)` fail with `form_password_pwned`. ClerkKitUI has no reverification view, so E2EHost has a small form of its own for this, `CustomReverifyView`.
+An app that builds its own reverification screen on the SDK's API reverifies a signed-in user with a reset password code instead of their password, and the same step sets a new password. This is the way out for a user whose password was found in a data breach, which makes `Session.verifyWithPassword(_:)` fail with `form_password_pwned`. E2EHost has a small form of its own for this, `CustomReverifyView`, built on the SDK's API the way an app with its own screens would build it. [Reverification](./reverification.md) covers the SDK's own view.
 
 ## Sub-features
 
