@@ -18,6 +18,11 @@ enum E2EIdentifiers {
     static let customSignIn = "e2e.home.customSignIn"
     static let customReverify = "e2e.home.customReverify"
     static let organizationTabs = "e2e.home.organizationTabs"
+    static let reverifyFirstFactor = "e2e.home.reverify.firstFactor"
+    static let reverifySecondFactor = "e2e.home.reverify.secondFactor"
+    static let reverifyMultiFactor = "e2e.home.reverify.multiFactor"
+    static let protectedAction = "e2e.home.protectedAction"
+    static let reverificationResult = "e2e.home.reverificationResult"
   }
 
   enum CustomSignIn {

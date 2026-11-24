@@ -77,6 +77,22 @@ enum ClerkAccessibilityIdentifiers {
     }
   }
 
+  enum Reverification {
+    static let password = "clerk.reverification.password"
+    static let code = "clerk.reverification.code"
+    static let backupCode = "clerk.reverification.backupCode"
+    static let newPassword = "clerk.reverification.newPassword"
+    static let confirmPassword = "clerk.reverification.confirmPassword"
+    static let continueButton = "clerk.reverification.continue"
+    static let resetPasswordButton = "clerk.reverification.resetPassword"
+    static let biometricButton = "clerk.reverification.biometric"
+    static let useAnotherMethodButton = "clerk.reverification.useAnotherMethod"
+
+    static func alternativeMethodButton(strategy: String) -> String {
+      "clerk.reverification.alternativeMethod.\(strategy)"
+    }
+  }
+
   enum Auth {
     static func socialProviderButton(strategy: String) -> String {
       "clerk.auth.socialProvider.\(strategy)"

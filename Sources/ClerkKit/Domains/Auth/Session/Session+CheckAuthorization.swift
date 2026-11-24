@@ -40,6 +40,29 @@ public enum ReverificationConfig: Sendable, Equatable {
   case custom(level: SessionVerification.Level, afterMinutes: Int)
 }
 
+extension ReverificationConfig {
+  /// The verification level and the minutes it stays fresh, or `nil` for an invalid custom config.
+  package var requirement: (level: SessionVerification.Level, afterMinutes: Int)? {
+    switch self {
+    case .strictMfa:
+      (.multiFactor, 10)
+    case .strict:
+      (.secondFactor, 10)
+    case .moderate:
+      (.secondFactor, 60)
+    case .lax:
+      (.secondFactor, 1440)
+    case .custom(let level, let afterMinutes):
+      switch level {
+      case .firstFactor, .secondFactor, .multiFactor:
+        afterMinutes > 0 ? (level, afterMinutes) : nil
+      case .unknown:
+        nil
+      }
+    }
+  }
+}
+
 extension Session {
   /// Returns whether the user has `role` in the Active Organization, and optionally reverified
   /// within `reverification`.

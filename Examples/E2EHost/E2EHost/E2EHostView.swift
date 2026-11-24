@@ -57,6 +57,7 @@ struct E2EHostView: View {
 
   var body: some View {
     content
+      .clerkReverificationHost()
       .task {
         await start()
       }
@@ -175,6 +176,8 @@ struct E2EHostView: View {
             destination = .customReverify
           }
           .accessibilityIdentifier(E2EIdentifiers.Home.customReverify)
+
+          ReverificationButtons()
         }
 
         Button("Sign out") {

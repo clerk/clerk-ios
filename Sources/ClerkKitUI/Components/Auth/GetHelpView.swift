@@ -19,6 +19,7 @@ struct GetHelpView: View {
     case signIn
     case signUp
     case sessionTask(SessionTaskKind)
+    case reverification
 
     enum SessionTaskKind: Hashable {
       case generic
@@ -27,7 +28,7 @@ struct GetHelpView: View {
 
     var titleText: LocalizedStringKey {
       switch self {
-      case .signIn, .signUp, .sessionTask(.generic):
+      case .signIn, .signUp, .sessionTask(.generic), .reverification:
         "Get help"
       case .sessionTask(.organizationRequired):
         "You must belong to an organization"
@@ -44,6 +45,8 @@ struct GetHelpView: View {
         "If you have trouble completing required account setup, email us and we will help you finish as soon as possible."
       case .sessionTask(.organizationRequired):
         "Contact your organization admin for an invitation."
+      case .reverification:
+        "If you can't verify your identity with any of your methods, email us and we will work with you to restore access as soon as possible."
       }
     }
   }
@@ -101,6 +104,12 @@ extension GetHelpView {
 
 #Preview("Session Task") {
   GetHelpView(context: .sessionTask(.generic))
+    .clerkPreview()
+    .environment(\.clerkTheme, .clerk)
+}
+
+#Preview("Reverification") {
+  GetHelpView(context: .reverification)
     .clerkPreview()
     .environment(\.clerkTheme, .clerk)
 }

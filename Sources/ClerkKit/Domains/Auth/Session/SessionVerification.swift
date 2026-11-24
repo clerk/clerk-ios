@@ -161,3 +161,11 @@ public struct SessionVerification: Codable, Equatable, Sendable {
     }
   }
 }
+
+extension SessionVerification {
+  package func ensureStatusIsKnown() throws {
+    if case .unknown(let status) = status {
+      throw unknownAuthStatusError(status)
+    }
+  }
+}
