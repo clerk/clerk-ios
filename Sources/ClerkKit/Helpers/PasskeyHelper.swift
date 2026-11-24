@@ -6,7 +6,6 @@
 
 import AuthenticationServices
 import Foundation
-import os
 
 final class PasskeyHelper: NSObject {
   @MainActor
@@ -257,22 +256,25 @@ final class PasskeyHelper: NSObject {
 extension PasskeyHelper: ASAuthorizationControllerDelegate {
   @MainActor
   func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-    let logger = Logger()
-    switch authorization.credential {
-    case let credentialRegistration as ASAuthorizationPlatformPublicKeyCredentialRegistration:
-      logger.log("A new passkey was registered: \(credentialRegistration)")
-
+    do {
+      try Self.acceptCredential(authorization.credential)
       complete(with: authorization)
-    case let credentialAssertion as ASAuthorizationPlatformPublicKeyCredentialAssertion:
-      logger.log("A passkey was used to sign in: \(credentialAssertion)")
+    } catch {
+      complete(with: error)
+    }
+  }
 
-      complete(with: authorization)
-    case let passwordCredential as ASPasswordCredential:
-      logger.log("A password was provided: \(passwordCredential)")
-
-      complete(with: authorization)
+  static func acceptCredential(_ credential: any ASAuthorizationCredential) throws {
+    switch credential {
+    case is ASAuthorizationPlatformPublicKeyCredentialRegistration:
+      ClerkLogger.debug("A new passkey was registered")
+    case is ASAuthorizationPlatformPublicKeyCredentialAssertion:
+      ClerkLogger.debug("A passkey was used to sign in")
+    case is ASPasswordCredential:
+      ClerkLogger.debug("A password was provided")
     default:
-      fatalError("Received unknown authorization type.")
+      ClerkLogger.error("A passkey request returned an unsupported credential: \(type(of: credential))")
+      throw ClerkClientError(message: "Something went wrong. Please try again.", localizationBundle: .module)
     }
   }
 
