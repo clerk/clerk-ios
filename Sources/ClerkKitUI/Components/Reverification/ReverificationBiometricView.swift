@@ -17,6 +17,7 @@ struct ReverificationBiometricView: View {
   let stage: ReverificationFlow.Stage
 
   @State private var biometryDisplayName = BiometryDisplayName.current()
+  @State private var biometricInProgress = true
   @State private var automaticAttemptHasStarted = false
   @State private var error: Error?
 
@@ -30,9 +31,10 @@ struct ReverificationBiometricView: View {
         .padding(.bottom, 32)
 
         VStack(spacing: 24) {
-          BiometricSignInButton(biometryDisplayName: biometryDisplayName) {
+          BiometricSignInButton(biometryDisplayName: biometryDisplayName, isActive: biometricInProgress) {
             await verifyWithBiometrics()
           }
+          .disabled(biometricInProgress)
           .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Reverification.biometricButton)
 
           ReverificationUseAnotherMethodButton(factor: factor, stage: stage)
@@ -51,11 +53,15 @@ struct ReverificationBiometricView: View {
         automaticAttemptHasStarted = true
         await verifyWithBiometrics()
       }
+      biometricInProgress = false
     }
   }
 
   private func verifyWithBiometrics() async {
     guard let session = flow.session else { return }
+
+    biometricInProgress = true
+    defer { biometricInProgress = false }
 
     do {
       let verification = try await session.verifyWithBiometrics(

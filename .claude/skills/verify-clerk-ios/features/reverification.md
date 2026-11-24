@@ -28,8 +28,8 @@ Preconditions:
 
 | State | Where the app decides | What it takes |
 | --- | --- | --- |
-| Passkey, as a first or second factor | `ReverificationView.swift`, `ReverificationDestinationView`, `.passkey` | Associated domains, which the simulator build has none of. MacExampleApp with 1Password can run it. |
-| Biometrics, as a first or second factor | `ReverificationFlow.swift`, `usableFactors`, `.biometricCredential` | A biometric credential, whose key generation fails on the simulator with OSStatus -25293 because it has no Secure Enclave. A device or a Mac with Touch ID can run it. |
+| Passkey, as a first or second factor | `ReverificationView.swift`, `ReverificationDestinationView`, `.passkey` | Associated domains, which the simulator build has none of. MacExampleApp with 1Password runs it, as described under Gotchas. |
+| Biometrics, as a first or second factor | `ReverificationFlow.swift`, `usableFactors`, `.biometricCredential` | A biometric credential, whose key generation fails on the simulator with OSStatus -25293 because it has no Secure Enclave. A device or a Mac with Touch ID runs it, with Touch ID sign-in turned on for the instance. Passkey comes first in the order, so the Touch ID screen is reached through `Use another method` after cancelling the passkey prompt. |
 | A breached password, which offers a reset code | `ReverificationPasswordView.swift`, `passwordIsPwned` | A seeded password that is in a data breach. The harness generates every password. |
 | No factor the screens can verify, which shows `Get help` | `ReverificationFlow.swift`, `handle(_:)` | A user whose only first factor is enterprise SSO. |
 | No session, or a start that fails | `ReverificationFlow.swift`, `start(session:hasLocalBiometricCredential:)` | An app that presents the sheet while signed out, or a network failure. |
@@ -40,3 +40,6 @@ Preconditions:
 - XCTest blanks secure fields in screenshots, including one on the screen under a pushed screen. A screenshot of the other methods screen pushed over the password screen has a black bar across its first row, so the email code test takes it from a user with no password.
 - A ticket sign-in verifies the first factor, so `Protected action` runs without the sheet for about two minutes after launch. The session token refreshes about every 50 seconds and carries the factor age in whole minutes, so a one-minute requirement fails only after the age reaches one minute in a refreshed token.
 - The authenticator code of the multi-factor step uses the next 30-second step, because the session task used the current one.
+- On a Mac, the passkey and Touch ID prompts show only while the app is the frontmost app. A tap sent to a background window starts the request, but macOS finds no window to show it in: the passkey request fails with `ASAuthorizationError` 1004, and the log has `Could not find presentation context`. Let a person click those buttons with the app in front.
+- A passkey registration challenge expires. Approving it many minutes later fails with `This verification has expired`, and 1Password may keep the passkey it saved.
+- Sign-up on the MacExampleApp instance asks for a password, and the computer-use tools refuse to type into password fields, so a person types it.
