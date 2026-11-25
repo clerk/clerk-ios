@@ -337,6 +337,23 @@ struct ReverifierTests {
   }
 
   @Test
+  func aSheetThatVerifiedAnotherSessionAfterTheIdentityChangedDuringPresentationCancelsTheCaller() async throws {
+    let display = GatedSheetDisplay()
+    let presenter = ReverificationPresenter(display: display)
+    let identity = ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_a")
+
+    let caller = Task { try await presenter.present(level: .firstFactor, clerk: .mock, identity: identity) }
+    try await waitUntil { display.heldShows == 1 }
+    display.releaseHeldShows()
+    try await waitUntil { display.shown.count == 1 }
+    display.complete(0, verifiedSessionId: "sess_b")
+
+    await #expect(throws: ReverificationCancelledError.self) {
+      try await caller.value
+    }
+  }
+
+  @Test
   func dismissingTheSheetBeforeItCompletesCancels() async throws {
     let display = RecordingSheetDisplay()
     let presenter = ReverificationPresenter(display: display)
@@ -455,8 +472,9 @@ private final class GatedSheetDisplay: ReverificationSheetDisplay {
     released.forEach { $0.resume() }
   }
 
-  func complete(_ index: Int) {
-    shown[index].request.markComplete(verifiedSessionId: shown[index].request.identity?.sessionId)
+  func complete(_ index: Int, verifiedSessionId: String? = nil) {
+    let request = shown[index].request
+    request.markComplete(verifiedSessionId: verifiedSessionId ?? request.identity?.sessionId)
     shown[index].onDismiss()
   }
 }
