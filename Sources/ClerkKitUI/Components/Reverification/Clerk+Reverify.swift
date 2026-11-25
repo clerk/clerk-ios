@@ -135,8 +135,13 @@ final class ReverificationPresenter {
     self.display = display
   }
 
-  func present(level: SessionVerification.Level, clerk: Clerk) async throws {
-    while let active, active.level != level {
+  func present(
+    level: SessionVerification.Level,
+    clerk: Clerk,
+    identity: ClerkSignedInIdentity? = nil
+  ) async throws {
+    let identity = identity ?? clerk.signedInIdentity(adoptingStoredDeviceToken: false)
+    while let active, active.level != level || active.identity != identity {
       try? await active.wait()
     }
     try Task.checkCancellation()
@@ -146,17 +151,21 @@ final class ReverificationPresenter {
       return
     }
 
-    let request = ReverificationRequest(level: level)
+    let request = ReverificationRequest(level: level, identity: identity)
     active = request
     let isShown = await display.show(request, clerk: clerk) { [weak self] in
       self?.didDismiss(request)
     }
     guard isShown else {
-      let error = ReverificationNotPresentedError()
-      ClerkLogger.error("Failed to present reverification", error: error)
       if active === request {
         active = nil
       }
+      if Task.isCancelled {
+        request.finish(throwing: CancellationError())
+        throw CancellationError()
+      }
+      let error = ReverificationNotPresentedError()
+      ClerkLogger.error("Failed to present reverification", error: error)
       request.finish(throwing: error)
       throw error
     }
@@ -175,12 +184,18 @@ final class ReverificationPresenter {
 @MainActor
 final class ReverificationRequest {
   let level: SessionVerification.Level
+  let identity: ClerkSignedInIdentity?
   private var continuations: [CheckedContinuation<Void, Error>] = []
   private var result: Result<Void, Error>?
   private(set) var didComplete = false
 
-  init(level: SessionVerification.Level) {
+  init(level: SessionVerification.Level, identity: ClerkSignedInIdentity? = nil) {
     self.level = level
+    self.identity = identity
+  }
+
+  var hasWaitingCallers: Bool {
+    !continuations.isEmpty
   }
 
   func wait() async throws {
