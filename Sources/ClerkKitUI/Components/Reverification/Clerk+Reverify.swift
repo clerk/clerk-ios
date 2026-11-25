@@ -21,7 +21,8 @@ extension Clerk {
   /// ```
   ///
   /// - Throws: ``ReverificationCancelledError`` when the user closes the sheet, or an error when
-  ///   `reverification` is a custom requirement whose level or age Clerk doesn't support.
+  ///   no one is signed in or `reverification` is a custom requirement whose level or age Clerk
+  ///   doesn't support.
   public func reverify(_ reverification: ReverificationConfig) async throws {
     try await Reverifier(clerk: self)(reverification)
   }
@@ -44,8 +45,8 @@ extension Clerk {
   /// }
   /// ```
   ///
-  /// - Throws: ``ReverificationCancelledError`` when the user closes the sheet, or the error
-  ///   `operation` throws.
+  /// - Throws: ``ReverificationCancelledError`` when the user closes the sheet, an error when
+  ///   reverification is needed and no one is signed in, or the error `operation` throws.
   @discardableResult
   public func reverify<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
     try await Reverifier(clerk: self)(operation)
@@ -81,7 +82,12 @@ struct Reverifier {
       isSatisfied: { clerk.has(reverification: $0) },
       startingIdentity: { clerk.signedInIdentity(adoptingStoredDeviceToken: false) },
       currentIdentity: { clerk.signedInIdentity(adoptingStoredDeviceToken: true) },
-      present: { try await presenter.present(level: $0, clerk: clerk) }
+      present: { level in
+        guard clerk.session != nil else {
+          throw ClerkClientError(message: "You need to be signed in to verify your identity.", localizationBundle: .module)
+        }
+        try await presenter.present(level: level, clerk: clerk)
+      }
     )
   }
 
