@@ -121,6 +121,7 @@ extension ReverificationCodeView {
 
     guard let session = flow.session else { return }
 
+    codeLimiter.forgetLastCodeSent()
     do {
       switch (factor.strategy, stage) {
       case (.emailCode, _):

@@ -18,6 +18,7 @@ struct ReverificationPasskeyView: View {
 
   @State private var passkeyInProgress = true
   @State private var automaticAttemptHasStarted = false
+  @State private var verificationIsRunning = false
   @State private var animateSymbol = false
   @State private var error: Error?
 
@@ -68,15 +69,21 @@ struct ReverificationPasskeyView: View {
         automaticAttemptHasStarted = true
         await verifyWithPasskey()
       }
-      passkeyInProgress = false
+      if !verificationIsRunning {
+        passkeyInProgress = false
+      }
     }
   }
 
   private func verifyWithPasskey() async {
-    guard let session = flow.session else { return }
+    guard let session = flow.session, !verificationIsRunning else { return }
 
+    verificationIsRunning = true
     passkeyInProgress = true
-    defer { passkeyInProgress = false }
+    defer {
+      verificationIsRunning = false
+      passkeyInProgress = false
+    }
 
     codeLimiter.forgetLastCodeSent()
     do {

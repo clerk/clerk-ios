@@ -20,6 +20,7 @@ struct ReverificationBiometricView: View {
   @State private var biometryDisplayName = BiometryDisplayName.current()
   @State private var biometricInProgress = true
   @State private var automaticAttemptHasStarted = false
+  @State private var verificationIsRunning = false
   @State private var error: Error?
 
   var body: some View {
@@ -54,15 +55,21 @@ struct ReverificationBiometricView: View {
         automaticAttemptHasStarted = true
         await verifyWithBiometrics()
       }
-      biometricInProgress = false
+      if !verificationIsRunning {
+        biometricInProgress = false
+      }
     }
   }
 
   private func verifyWithBiometrics() async {
-    guard let session = flow.session else { return }
+    guard let session = flow.session, !verificationIsRunning else { return }
 
+    verificationIsRunning = true
     biometricInProgress = true
-    defer { biometricInProgress = false }
+    defer {
+      verificationIsRunning = false
+      biometricInProgress = false
+    }
 
     codeLimiter.forgetLastCodeSent()
     do {

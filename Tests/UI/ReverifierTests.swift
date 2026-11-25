@@ -202,6 +202,30 @@ struct ReverifierTests {
   }
 
   @Test
+  func aCallForAnotherIdentityAtTheSameLevelGetsItsOwnSheet() async throws {
+    let display = RecordingSheetDisplay()
+    let presenter = ReverificationPresenter(display: display)
+    let first = ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_a")
+    let second = ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_b")
+
+    let firstTask = Task { try await presenter.present(level: .firstFactor, clerk: .mock, identity: first) }
+    try await waitUntil { display.shown.count == 1 }
+    let secondTask = Task { try await presenter.present(level: .firstFactor, clerk: .mock, identity: second) }
+    for _ in 0 ..< 10 {
+      await Task.yield()
+    }
+
+    #expect(display.shown.count == 1)
+    display.complete(0)
+    try await firstTask.value
+    try await waitUntil { display.shown.count == 2 }
+
+    #expect(display.shown.last?.request.identity == second)
+    display.complete(1)
+    try await secondTask.value
+  }
+
+  @Test
   func aCallAtAnotherLevelWaitsForTheSheetPresentedFirst() async throws {
     let display = RecordingSheetDisplay()
     let presenter = ReverificationPresenter(display: display)
