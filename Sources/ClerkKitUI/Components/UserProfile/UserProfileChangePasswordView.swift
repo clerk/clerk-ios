@@ -222,15 +222,18 @@ extension UserProfileChangePasswordView {
     guard let user else { return }
 
     do {
-      try await user.updatePassword(
-        .init(
-          currentPassword: isAddingPassword ? nil : currentPassword,
-          newPassword: newPassword,
-          signOutOfOtherSessions: signOutOfOtherSessions
+      try await clerk.reverify {
+        try await user.updatePassword(
+          .init(
+            currentPassword: isAddingPassword ? nil : currentPassword,
+            newPassword: newPassword,
+            signOutOfOtherSessions: signOutOfOtherSessions
+          )
         )
-      )
+      }
       dismiss()
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to reset password", error: error)
     }

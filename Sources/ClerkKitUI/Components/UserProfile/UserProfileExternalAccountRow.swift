@@ -170,11 +170,13 @@ extension UserProfileExternalAccountRow {
       let account: ExternalAccount = if !oauthConfig.requiresReauthorization(for: externalAccount),
                                         externalAccount.verification?.error != nil
       {
-        try await user.createExternalAccount(
-          provider: provider,
-          additionalScopes: scopes,
-          oidcPrompts: prompts
-        )
+        try await clerk.reverify {
+          try await user.createExternalAccount(
+            provider: provider,
+            additionalScopes: scopes,
+            oidcPrompts: prompts
+          )
+        }
       } else {
         try await externalAccount.prepareReauthorization(
           additionalScopes: scopes,
@@ -193,8 +195,9 @@ extension UserProfileExternalAccountRow {
     defer { removeResource = nil }
 
     do {
-      try await resource?.deleteAction()
+      try await clerk.reverify { try await resource?.deleteAction() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to remove external account resource", error: error)
     }

@@ -133,9 +133,10 @@ extension UserProfileAddPhoneView {
     guard let user else { return }
 
     do {
-      let phoneNumber = try await user.createPhoneNumber(phoneNumber)
+      let phoneNumber = try await clerk.reverify { try await user.createPhoneNumber(phoneNumber) }
       path.append(Destination.verify(phoneNumber))
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to add phone number", error: error)
     }

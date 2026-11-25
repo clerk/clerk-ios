@@ -12,6 +12,7 @@ import Foundation
 extension Error {
   var isUserCancelledError: Bool {
     if case ASWebAuthenticationSessionError.canceledLogin = self { return true }
+    if self is ReverificationCancelledError { return true }
 
     let nsError = self as NSError
     if nsError.domain == ASAuthorizationError.errorDomain {

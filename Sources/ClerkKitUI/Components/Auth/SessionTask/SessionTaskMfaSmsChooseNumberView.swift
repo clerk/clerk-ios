@@ -163,7 +163,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     if phoneNumber.verification?.status == .verified {
       isReservingForSecondFactor = true
       do {
-        let reserved = try await phoneNumber.setReservedForSecondFactor()
+        let reserved = try await clerk.reverify { try await phoneNumber.setReservedForSecondFactor() }
         guard clerk.authFlowPresentationIsCurrent(token) else { return }
         if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
           navigation.appendPostAuthDestination(
@@ -178,6 +178,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         }
       } catch {
         isReservingForSecondFactor = false
+        if error.isUserCancelledError { return }
         self.error = error
         ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
       }

@@ -204,8 +204,9 @@ extension UserProfileMfaRow {
     defer { removeResource = nil }
 
     do {
-      try await removeResource?.deleteAction()
+      try await clerk.reverify { try await removeResource?.deleteAction() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to remove MFA resource", error: error)
     }
@@ -213,8 +214,9 @@ extension UserProfileMfaRow {
 
   private func makeDefaultSecondFactor(phoneNumber: PhoneNumber) async {
     do {
-      try await phoneNumber.makeDefaultSecondFactor()
+      try await clerk.reverify { try await phoneNumber.makeDefaultSecondFactor() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to make phone number default second factor", error: error)
     }
@@ -224,8 +226,9 @@ extension UserProfileMfaRow {
     guard let user else { return }
 
     do {
-      backupCodes = try await user.createBackupCodes()
+      backupCodes = try await clerk.reverify { try await user.createBackupCodes() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to regenerate backup codes", error: error)
     }

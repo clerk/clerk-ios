@@ -91,9 +91,10 @@ extension UserProfileDeviceRow {
   @MainActor
   private func signOutOfDevice() async {
     do {
-      try await session.revoke()
+      try await clerk.reverify { try await session.revoke() }
       try await user?.getSessions()
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to sign out of device", error: error)
     }

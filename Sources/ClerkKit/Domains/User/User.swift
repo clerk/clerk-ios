@@ -370,12 +370,19 @@ extension User {
   @discardableResult @MainActor
   public func connectAppleAccount(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> ExternalAccount {
     try await connectAppleAccount {
-      try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes).tokenString
+      try await Self.appleIdentityToken(requestedScopes: requestedScopes)
     }
   }
 
+  @available(iOSApplicationExtension, unavailable)
+  @available(tvOSApplicationExtension, unavailable)
   @MainActor
-  func connectAppleAccount(appleIdentityToken: @MainActor () async throws -> String) async throws -> ExternalAccount {
+  package static func appleIdentityToken(requestedScopes: [ASAuthorization.Scope] = [.email, .fullName]) async throws -> String {
+    try await SignInWithAppleHelper.getAppleIdCredential(requestedScopes: requestedScopes).tokenString
+  }
+
+  @MainActor
+  package func connectAppleAccount(appleIdentityToken: @MainActor () async throws -> String) async throws -> ExternalAccount {
     let identity = try signedInIdentity()
     let idToken = try await appleIdentityToken()
     guard try signedInIdentity() == identity else {

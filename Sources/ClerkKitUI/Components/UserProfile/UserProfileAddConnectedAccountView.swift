@@ -87,13 +87,15 @@ extension UserProfileAddConnectedAccountView {
 
     do {
       if provider == .apple {
-        try await user.connectAppleAccount()
+        try await user.connectAppleAccount(reverify: Reverifier(clerk: clerk))
       } else {
-        let newExternalAccount = try await user.createExternalAccount(
-          provider: provider,
-          additionalScopes: oauthConfig.additionalScopes(for: provider),
-          oidcPrompts: oauthConfig.prompts(for: provider)
-        )
+        let newExternalAccount = try await clerk.reverify {
+          try await user.createExternalAccount(
+            provider: provider,
+            additionalScopes: oauthConfig.additionalScopes(for: provider),
+            oidcPrompts: oauthConfig.prompts(for: provider)
+          )
+        }
         try await newExternalAccount.reauthorize()
       }
 

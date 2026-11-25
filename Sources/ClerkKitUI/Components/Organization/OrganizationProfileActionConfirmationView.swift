@@ -114,7 +114,7 @@ extension OrganizationProfileActionConfirmationView {
         guard let user = clerk.user else { return }
         try await user.leaveOrganization(organizationId: organization.id)
       case .delete:
-        try await organization.destroy()
+        try await clerk.reverify { try await organization.destroy() }
       }
 
       if clerk.organization == nil {
@@ -122,6 +122,7 @@ extension OrganizationProfileActionConfirmationView {
       }
       dismiss()
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error(action.logMessage, error: error)
     }

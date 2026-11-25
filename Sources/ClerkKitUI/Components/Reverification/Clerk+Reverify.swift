@@ -46,6 +46,7 @@ extension Clerk {
   ///
   /// - Throws: ``ReverificationCancelledError`` when the user closes the sheet, or the error
   ///   `operation` throws.
+  @discardableResult
   public func reverify<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
     try await Reverifier(clerk: self)(operation)
   }
@@ -72,11 +73,11 @@ struct Reverifier {
     self.present = present
   }
 
-  init(clerk: Clerk) {
+  init(clerk: Clerk, presenter: ReverificationPresenter = .shared) {
     self.init(
       isSatisfied: { clerk.has(reverification: $0) },
       currentSessionId: { clerk.session?.id },
-      present: { try await ReverificationPresenter.shared.present(level: $0, clerk: clerk) }
+      present: { try await presenter.present(level: $0, clerk: clerk) }
     )
   }
 

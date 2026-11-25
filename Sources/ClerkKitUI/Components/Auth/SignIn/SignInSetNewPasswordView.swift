@@ -173,6 +173,7 @@ extension SignInSetNewPasswordView {
         try await resetPasswordFromSessionTask()
       }
     } catch {
+      if error.isUserCancelledError { return }
       fieldError = error
     }
   }
@@ -199,13 +200,15 @@ extension SignInSetNewPasswordView {
       return
     }
 
-    try await user.updatePassword(
-      .init(
-        currentPassword: nil,
-        newPassword: authState.signInNewPassword,
-        signOutOfOtherSessions: signOutOfOtherDevices
+    try await clerk.reverify {
+      try await user.updatePassword(
+        .init(
+          currentPassword: nil,
+          newPassword: authState.signInNewPassword,
+          signOutOfOtherSessions: signOutOfOtherDevices
+        )
       )
-    )
+    }
 
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
     _ = clerk.finishAuthFlowPresentation(token)

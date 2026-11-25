@@ -105,14 +105,16 @@ extension UserProfileBiometricCredentialsSection {
     defer { isLoading = false }
 
     do {
-      if enabled {
-        try await clerk.biometricCredentials.enroll(
-          identifierHint: user.biometricCredentialIdentifierHint,
-          reason: enrollmentReason,
-          policy: .biometryCurrentSet
-        )
-      } else {
-        try await clerk.biometricCredentials.revokeCurrentDeviceCredential()
+      try await clerk.reverify {
+        if enabled {
+          try await clerk.biometricCredentials.enroll(
+            identifierHint: user.biometricCredentialIdentifierHint,
+            reason: enrollmentReason,
+            policy: .biometryCurrentSet
+          )
+        } else {
+          try await clerk.biometricCredentials.revokeCurrentDeviceCredential()
+        }
       }
 
       if await refreshAvailability() != nil {
