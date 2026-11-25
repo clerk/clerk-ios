@@ -93,27 +93,32 @@ struct ReverifierTests {
 
   // MARK: - Presenter
 
-  @Test(arguments: [true, false])
-  func aSessionSwitchBeforeTheRetryCancelsIt(switchesBeforeTheSheet: Bool) async {
-    var sessionId = "sess_a"
+  @Test(arguments: [
+    (true, ClerkSignedInIdentity(sessionId: "sess_b", deviceToken: "device_a")),
+    (false, ClerkSignedInIdentity(sessionId: "sess_b", deviceToken: "device_a")),
+    (true, ClerkSignedInIdentity(sessionId: "sess_a", deviceToken: "device_b")),
+    (false, ClerkSignedInIdentity(sessionId: "sess_a", deviceToken: "device_b")),
+  ])
+  func anIdentityChangeBeforeTheRetryCancelsIt(changesBeforeTheSheet: Bool, changed: ClerkSignedInIdentity) async {
+    var identity = ClerkSignedInIdentity(sessionId: "sess_a", deviceToken: "device_a")
     var attempts = 0
     var presentedLevels: [SessionVerification.Level] = []
-    let reverify = Reverifier(isSatisfied: { _ in false }, currentSessionId: { sessionId }) {
+    let reverify = Reverifier(isSatisfied: { _ in false }, currentIdentity: { identity }) {
       presentedLevels.append($0)
-      sessionId = "sess_b"
+      identity = changed
     }
 
     await #expect(throws: ReverificationCancelledError.self) {
       try await reverify {
         attempts += 1
-        if switchesBeforeTheSheet {
-          sessionId = "sess_b"
+        if changesBeforeTheSheet {
+          identity = changed
         }
         throw ReverificationRequiredError(reverification: .strict)
       }
     }
     #expect(attempts == 1)
-    #expect(presentedLevels.count == (switchesBeforeTheSheet ? 0 : 1))
+    #expect(presentedLevels.count == (changesBeforeTheSheet ? 0 : 1))
   }
 
   @Test
