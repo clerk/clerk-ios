@@ -61,14 +61,17 @@ public struct ReverificationCancelledError: Error, Equatable, Sendable {
 struct Reverifier {
   private let isSatisfied: @MainActor (ReverificationConfig) -> Bool
   private let present: @MainActor (SessionVerification.Level) async throws -> Void
+  private let startingIdentity: @MainActor () -> ClerkSignedInIdentity?
   private let currentIdentity: @MainActor () -> ClerkSignedInIdentity?
 
   init(
     isSatisfied: @escaping @MainActor (ReverificationConfig) -> Bool,
+    startingIdentity: (@MainActor () -> ClerkSignedInIdentity?)? = nil,
     currentIdentity: @escaping @MainActor () -> ClerkSignedInIdentity? = { nil },
     present: @escaping @MainActor (SessionVerification.Level) async throws -> Void
   ) {
     self.isSatisfied = isSatisfied
+    self.startingIdentity = startingIdentity ?? currentIdentity
     self.currentIdentity = currentIdentity
     self.present = present
   }
@@ -76,7 +79,8 @@ struct Reverifier {
   init(clerk: Clerk, presenter: ReverificationPresenter = .shared) {
     self.init(
       isSatisfied: { clerk.has(reverification: $0) },
-      currentIdentity: { clerk.signedInIdentity() },
+      startingIdentity: { clerk.signedInIdentity(adoptingStoredDeviceToken: false) },
+      currentIdentity: { clerk.signedInIdentity(adoptingStoredDeviceToken: true) },
       present: { try await presenter.present(level: $0, clerk: clerk) }
     )
   }
@@ -91,7 +95,7 @@ struct Reverifier {
   }
 
   func callAsFunction<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
-    let identity = currentIdentity()
+    let identity = startingIdentity()
     do {
       return try await operation()
     } catch {

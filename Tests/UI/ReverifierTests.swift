@@ -94,13 +94,13 @@ struct ReverifierTests {
   // MARK: - Presenter
 
   @Test(arguments: [
-    (true, ClerkSignedInIdentity(sessionId: "sess_b", deviceToken: "device_a")),
-    (false, ClerkSignedInIdentity(sessionId: "sess_b", deviceToken: "device_a")),
-    (true, ClerkSignedInIdentity(sessionId: "sess_a", deviceToken: "device_b")),
-    (false, ClerkSignedInIdentity(sessionId: "sess_a", deviceToken: "device_b")),
+    (true, ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_b")),
+    (false, ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_b")),
+    (true, ClerkSignedInIdentity(clientId: "client_b", sessionId: "sess_a")),
+    (false, ClerkSignedInIdentity(clientId: "client_b", sessionId: "sess_a")),
   ])
   func anIdentityChangeBeforeTheRetryCancelsIt(changesBeforeTheSheet: Bool, changed: ClerkSignedInIdentity) async {
-    var identity = ClerkSignedInIdentity(sessionId: "sess_a", deviceToken: "device_a")
+    var identity = ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_a")
     var attempts = 0
     var presentedLevels: [SessionVerification.Level] = []
     let reverify = Reverifier(isSatisfied: { _ in false }, currentIdentity: { identity }) {
@@ -119,6 +119,34 @@ struct ReverifierTests {
     }
     #expect(attempts == 1)
     #expect(presentedLevels.count == (changesBeforeTheSheet ? 0 : 1))
+  }
+
+  @Test
+  func theStoredIdentityIsCheckedOnlyAfterTheFirstAttemptFails() async throws {
+    let identity = ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_a")
+    var events: [String] = []
+    let reverify = Reverifier(
+      isSatisfied: { _ in false },
+      startingIdentity: {
+        events.append("starting")
+        return identity
+      },
+      currentIdentity: {
+        events.append("current")
+        return identity
+      }
+    ) { _ in events.append("present") }
+
+    var attempts = 0
+    try await reverify {
+      attempts += 1
+      events.append("attempt")
+      if attempts == 1 {
+        throw ReverificationRequiredError(reverification: .strict)
+      }
+    }
+
+    #expect(events == ["starting", "attempt", "current", "present", "current", "attempt"])
   }
 
   @Test
