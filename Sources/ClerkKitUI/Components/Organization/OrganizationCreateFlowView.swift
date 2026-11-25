@@ -41,10 +41,7 @@ struct OrganizationCreateFlowView: View {
       }
     }
     .navigationDestination(isPresented: $inviteMembersIsPresented) {
-      OrganizationInviteMembersView(
-        cancellationTitle: "Skip",
-        cancellationPlacement: .confirmationAction
-      ) { _ in
+      OrganizationInviteMembersView(exitAction: .skip) { _ in
         completeFlow()
       }
       .navigationBarBackButtonHidden(true)

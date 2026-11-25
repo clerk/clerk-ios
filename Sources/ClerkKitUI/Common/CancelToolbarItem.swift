@@ -17,6 +17,8 @@ struct CancelToolbarItem: ToolbarContent {
         label
       }
       .foregroundStyle(theme.colors.primary)
+      // The vertical bar ignores foregroundStyle and colors items with the tint.
+      .tint(theme.colors.primary)
       .accessibilityLabel(Text("Cancel", bundle: .module))
     }
   }
