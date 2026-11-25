@@ -1875,12 +1875,13 @@ struct AuthTests {
   }
 
   @Test
-  func signOutEmitsNothingWhenTheRequestFails() async throws {
+  func signOutOfAllSessionsSignsOutLocallyWhenTheRequestFails() async throws {
     let transport = FakeTransport.mockDefaults()
     transport.stub(SessionAPI.removeAll()) { _ in
       throw URLError(.notConnectedToInternet)
     }
-    configureDependencies(transport: transport)
+    configureDependencies(transport: transport, keychain: InMemoryKeychain())
+    try Clerk.shared.seedIdentity(deviceToken: "token")
     Clerk.shared.client = .mock
 
     let signedOut = try await signedOutSessions {
@@ -1889,7 +1890,30 @@ struct AuthTests {
       }
     }
 
+    #expect(signedOut.map(\.id) == Client.mock.signedInSessions.map(\.id))
+    #expect(Clerk.shared.identityController.currentDeviceToken == nil)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func signOutOfOneSessionKeepsTheClientWhenTheRequestFails() async throws {
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.remove(sessionId: Session.mock.id)) { _ in
+      throw URLError(.notConnectedToInternet)
+    }
+    configureDependencies(transport: transport, keychain: InMemoryKeychain())
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = .mock
+
+    let signedOut = try await signedOutSessions {
+      await #expect(throws: URLError.self) {
+        try await Clerk.shared.auth.signOut(sessionId: Session.mock.id)
+      }
+    }
+
     #expect(signedOut.isEmpty)
+    #expect(Clerk.shared.identityController.currentDeviceToken == "token")
+    #expect(Clerk.shared.client?.id == Client.mock.id)
   }
 
   @Test(

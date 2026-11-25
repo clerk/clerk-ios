@@ -179,7 +179,7 @@ extension SessionAPIAndTokenFetcherTests {
   }
 
   @Test
-  func signOutPreservesCachedTokensWhenRequestFails() async throws {
+  func signOutClearsCachedTokensWhenRequestFails() async throws {
     let session = Session.mock
     SessionTemplateTokensCache.shared.clear()
     SessionTemplateTokensCache.shared.insertToken(
@@ -215,7 +215,7 @@ extension SessionAPIAndTokenFetcherTests {
 
     #expect(SessionTemplateTokensCache.shared.getToken(
       cacheKey: session.tokenCacheKey(template: "secondary")
-    )?.jwt == "cached.jwt")
+    ) == nil)
   }
 
   struct SetActiveErrorScenario {

@@ -625,10 +625,25 @@ extension Auth {
       Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
     } else {
       let signedInSessions = Clerk.shared.client?.signedInSessions ?? []
-      _ = try await transport.send(SessionAPI.removeAll())
+      var failure: (any Error)?
+      do {
+        _ = try await transport.send(SessionAPI.removeAll())
+      } catch is CancellationError {
+        throw CancellationError()
+      } catch {
+        failure = error
+        do {
+          try Clerk.shared.identityController.clearDeviceToken()
+        } catch {
+          ClerkLogger.logError(error, message: "Failed to clear the device token after the sign-out request failed")
+        }
+      }
       Clerk.shared.identityController.invalidateAllSessionTokens()
       for session in signedInSessions {
         send(.signedOut(session: session.removedFromClient))
+      }
+      if let failure {
+        throw failure
       }
     }
   }
