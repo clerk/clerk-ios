@@ -91,12 +91,25 @@ extension UserProfileDeviceRow {
   @MainActor
   private func signOutOfDevice() async {
     do {
-      try await clerk.reverify { try await session.revoke() }
+      try await Self.signOut(of: session, reverify: Reverifier(clerk: clerk))
       try await user?.getSessions()
     } catch {
       if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to sign out of device", error: error)
+    }
+  }
+
+  @MainActor
+  static func signOut(of session: Session, reverify: Reverifier) async throws {
+    var isRetry = false
+    try await reverify {
+      defer { isRetry = true }
+      do {
+        _ = try await session.revoke()
+      } catch let error as ClerkAPIError where isRetry && error.code == "invalid_action_for_session" {
+        return
+      }
     }
   }
 }

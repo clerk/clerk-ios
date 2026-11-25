@@ -148,6 +148,37 @@ struct ReverifiedCallsTests {
     #expect(attempts.count == 2)
   }
 
+  @Test(arguments: [true, false])
+  func signingOutOfADeviceSucceedsWhenTheSheetAlreadySignedItOut(sheetSignedItOut: Bool) async throws {
+    let display = AnsweringSheetDisplay(answer: .verify)
+    transport.stub(SessionAPI.revoke(sessionId: FakeTransport.anyPathSegment)) { [attempts] _ in
+      attempts.count += 1
+      if attempts.count == 1 { throw ClerkAPIError.reverificationRequired }
+      if sheetSignedItOut { throw ClerkAPIError(code: "invalid_action_for_session") }
+      return ClientResponse(response: Session.mock2, client: nil)
+    }
+
+    try await UserProfileDeviceRow.signOut(of: .mock2, reverify: reverifier(display))
+
+    #expect(display.levels == [.secondFactor])
+    #expect(attempts.count == 2)
+  }
+
+  @Test
+  func signingOutOfADeviceShowsTheFirstAttemptsError() async {
+    let display = AnsweringSheetDisplay(answer: .verify)
+    transport.stub(SessionAPI.revoke(sessionId: FakeTransport.anyPathSegment)) { [attempts] _ -> ClientResponse<Session> in
+      attempts.count += 1
+      throw ClerkAPIError(code: "invalid_action_for_session")
+    }
+
+    await #expect(throws: ClerkAPIError.self) {
+      try await UserProfileDeviceRow.signOut(of: .mock2, reverify: reverifier(display))
+    }
+    #expect(display.levels.isEmpty)
+    #expect(attempts.count == 1)
+  }
+
   // MARK: - Session tasks
 
   @Test(arguments: [true, false])
