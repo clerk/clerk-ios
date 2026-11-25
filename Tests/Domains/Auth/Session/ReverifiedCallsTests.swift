@@ -484,13 +484,13 @@ private final class AnsweringSheetDisplay: ReverificationSheetDisplay {
 
   func show(
     _ request: ReverificationRequest,
-    clerk _: Clerk,
+    clerk: Clerk,
     onDismiss: @escaping @MainActor () -> Void
   ) async -> Bool {
     levels.append(request.level)
     whileShown()
     if answer == .verify {
-      request.markComplete()
+      request.markComplete(verifiedSessionId: clerk.session?.id)
     }
     onDismiss()
     return true
