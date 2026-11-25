@@ -18,6 +18,7 @@ struct E2EHostView: View {
     case authView
     case customSignIn
     case customReverify
+    case nativeToWeb
     case organizationTabs
   }
 
@@ -28,6 +29,7 @@ struct E2EHostView: View {
     case auth
     case customSignIn
     case customReverify
+    case nativeToWeb
     case organizationTabs
 
     var name: String {
@@ -38,6 +40,7 @@ struct E2EHostView: View {
       case .auth: "auth"
       case .customSignIn: "customSignIn"
       case .customReverify: "customReverify"
+      case .nativeToWeb: "nativeToWeb"
       case .organizationTabs: "organizationTabs"
       }
     }
@@ -81,6 +84,7 @@ struct E2EHostView: View {
       case .authView? where !clerk.isAuthFlowComplete: .auth
       case .customSignIn?: .customSignIn
       case .customReverify?: .customReverify
+      case .nativeToWeb?: .nativeToWeb
       case .organizationTabs?: .organizationTabs
       default: .home
       }
@@ -104,6 +108,10 @@ struct E2EHostView: View {
       }
     case .customReverify:
       CustomReverifyView {
+        destination = nil
+      }
+    case .nativeToWeb:
+      NativeToWebView {
         destination = nil
       }
     case .organizationTabs:
@@ -175,6 +183,11 @@ struct E2EHostView: View {
             destination = .customReverify
           }
           .accessibilityIdentifier(E2EIdentifiers.Home.customReverify)
+
+          Button("Native to Web SSO") {
+            destination = .nativeToWeb
+          }
+          .accessibilityIdentifier(E2EIdentifiers.Home.nativeToWeb)
         }
 
         Button("Sign out") {
