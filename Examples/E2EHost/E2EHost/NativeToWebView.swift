@@ -103,7 +103,11 @@ private struct SessionTransferWebView: UIViewRepresentable {
 
   final class Coordinator: NSObject, WKNavigationDelegate {
     private static let signedInUserIdScript = """
+    const deadline = Date.now() + 30000;
     while (!window.Clerk?.loaded) {
+      if (Date.now() > deadline) {
+        return false;
+      }
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     return window.Clerk.user?.id ?? null;
@@ -160,7 +164,13 @@ private struct SessionTransferWebView: UIViewRepresentable {
           return
         }
 
-        webSession.wrappedValue = (userId as? String).map { .signedIn(userId: $0) } ?? .signedOut
+        if let userId = userId as? String {
+          webSession.wrappedValue = .signedIn(userId: userId)
+        } else if userId as? Bool == false {
+          webSession.wrappedValue = .failed(code: "clerk_not_loaded")
+        } else {
+          webSession.wrappedValue = .signedOut
+        }
       }
     }
 
