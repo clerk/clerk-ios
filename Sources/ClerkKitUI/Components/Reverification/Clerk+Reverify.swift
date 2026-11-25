@@ -61,22 +61,22 @@ public struct ReverificationCancelledError: Error, Equatable, Sendable {
 struct Reverifier {
   private let isSatisfied: @MainActor (ReverificationConfig) -> Bool
   private let present: @MainActor (SessionVerification.Level) async throws -> Void
-  private let currentSessionId: @MainActor () -> String?
+  private let currentIdentity: @MainActor () -> ClerkSignedInIdentity?
 
   init(
     isSatisfied: @escaping @MainActor (ReverificationConfig) -> Bool,
-    currentSessionId: @escaping @MainActor () -> String? = { nil },
+    currentIdentity: @escaping @MainActor () -> ClerkSignedInIdentity? = { nil },
     present: @escaping @MainActor (SessionVerification.Level) async throws -> Void
   ) {
     self.isSatisfied = isSatisfied
-    self.currentSessionId = currentSessionId
+    self.currentIdentity = currentIdentity
     self.present = present
   }
 
   init(clerk: Clerk, presenter: ReverificationPresenter = .shared) {
     self.init(
       isSatisfied: { clerk.has(reverification: $0) },
-      currentSessionId: { clerk.session?.id },
+      currentIdentity: { clerk.signedInIdentity() },
       present: { try await presenter.present(level: $0, clerk: clerk) }
     )
   }
@@ -91,21 +91,21 @@ struct Reverifier {
   }
 
   func callAsFunction<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
-    let sessionId = currentSessionId()
+    let identity = currentIdentity()
     do {
       return try await operation()
     } catch {
       guard let required = ReverificationRequiredError(error) else { throw error }
-      try ensureSession(is: sessionId)
+      try ensureIdentity(is: identity)
       try await present(required.reverification?.requirement?.level ?? .secondFactor)
       try Task.checkCancellation()
-      try ensureSession(is: sessionId)
+      try ensureIdentity(is: identity)
       return try await operation()
     }
   }
 
-  private func ensureSession(is sessionId: String?) throws {
-    guard currentSessionId() == sessionId else {
+  private func ensureIdentity(is identity: ClerkSignedInIdentity?) throws {
+    guard currentIdentity() == identity else {
       throw ReverificationCancelledError()
     }
   }
