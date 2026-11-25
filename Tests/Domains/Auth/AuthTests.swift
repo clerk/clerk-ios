@@ -18,6 +18,7 @@ struct AuthTests {
     transport: (any APITransport)? = nil,
     environment: Clerk.Environment? = .mock,
     keychain: (any KeychainStorage)? = nil,
+    identityIsInAccessGroup: Bool = false,
     baseURL: URL = mockBaseUrl,
     options: Clerk.Options = .init()
   ) {
@@ -26,7 +27,8 @@ struct AuthTests {
     Clerk.shared.dependencies = MockDependencyContainer(
       apiClient: apiClient,
       transport: transport ?? apiClient,
-      keychain: keychain
+      keychain: keychain,
+      identityIsInAccessGroup: identityIsInAccessGroup
     )
     try! (Clerk.shared.dependencies as! MockDependencyContainer)
       .configurationManager
@@ -69,6 +71,8 @@ struct AuthTests {
 
   struct SignOutScenario: Codable, Equatable {
     let sessionId: String?
+    let signedInSessionCount: Int
+    let removesOnlyThatSession: Bool
   }
 
   struct SetActiveScenario: Codable, Equatable {
@@ -1519,6 +1523,26 @@ struct AuthTests {
     return sessions
   }
 
+  private func offlineTransport(removeAllError: any Error = URLError(.notConnectedToInternet)) -> FakeTransport {
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.removeAll()) { _ in
+      throw removeAllError
+    }
+    transport.stub(ClientAPI.get()) { _ in
+      throw URLError(.notConnectedToInternet)
+    }
+    return transport
+  }
+
+  private func waitUntil(_ condition: () -> Bool) async throws {
+    let deadline = ContinuousClock.now + .seconds(1)
+    while ContinuousClock.now < deadline {
+      if condition() { return }
+      await Task.yield()
+    }
+    throw ClerkClientError(message: "Timed out waiting for the condition.")
+  }
+
   private func signOutResponseData(object: String, response: some Encodable, client: Client?) throws -> Data {
     let encoded = try JSONEncoder.clerkEncoder.encode(response)
     var payload = try #require(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
@@ -1797,8 +1821,9 @@ struct AuthTests {
 
   @Test(
     arguments: [
-      SignOutScenario(sessionId: nil),
-      SignOutScenario(sessionId: "sess_test123"),
+      SignOutScenario(sessionId: nil, signedInSessionCount: 2, removesOnlyThatSession: false),
+      SignOutScenario(sessionId: Session.mock.id, signedInSessionCount: 1, removesOnlyThatSession: false),
+      SignOutScenario(sessionId: Session.mock.id, signedInSessionCount: 2, removesOnlyThatSession: true),
     ]
   )
   func signOutRemovesRequestedSessions(
@@ -1807,11 +1832,14 @@ struct AuthTests {
     let transport = FakeTransport.mockDefaults()
 
     configureDependencies(transport: transport)
+    var client = Client.mock
+    client.sessions = Array([Session.mock, Session.mock2].prefix(scenario.signedInSessionCount))
+    Clerk.shared.client = client
 
     try await Clerk.shared.auth.signOut(sessionId: scenario.sessionId)
 
     let call = try #require(transport.calls.last)
-    if let sessionId = scenario.sessionId {
+    if scenario.removesOnlyThatSession, let sessionId = scenario.sessionId {
       #expect(call.method == .post)
       #expect(call.path == "/v1/client/sessions/\(sessionId)/remove")
     } else {
@@ -1876,10 +1904,7 @@ struct AuthTests {
 
   @Test
   func signOutOfAllSessionsSignsOutLocallyWhenTheRequestFails() async throws {
-    let transport = FakeTransport.mockDefaults()
-    transport.stub(SessionAPI.removeAll()) { _ in
-      throw URLError(.notConnectedToInternet)
-    }
+    let transport = offlineTransport()
     configureDependencies(transport: transport, keychain: InMemoryKeychain())
     try Clerk.shared.seedIdentity(deviceToken: "token")
     Clerk.shared.client = .mock
@@ -1893,6 +1918,107 @@ struct AuthTests {
     #expect(signedOut.map(\.id) == Client.mock.signedInSessions.map(\.id))
     #expect(Clerk.shared.identityController.currentDeviceToken == nil)
     #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func signOutOfAllSessionsSignsOutLocallyWhenTheRequestIsCancelled() async throws {
+    let transport = offlineTransport(removeAllError: CancellationError())
+    configureDependencies(transport: transport, keychain: InMemoryKeychain())
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = .mock
+
+    let signedOut = try await signedOutSessions {
+      await #expect(throws: CancellationError.self) {
+        try await Clerk.shared.auth.signOut()
+      }
+    }
+
+    #expect(signedOut.map(\.id) == Client.mock.signedInSessions.map(\.id))
+    #expect(Clerk.shared.identityController.currentDeviceToken == nil)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func signOutOfTheOnlySessionByIdSignsOutLocallyWhenTheRequestFails() async throws {
+    let transport = offlineTransport()
+    configureDependencies(transport: transport, keychain: InMemoryKeychain())
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    var client = Client.mock
+    client.sessions = [.mock]
+    Clerk.shared.client = client
+
+    let signedOut = try await signedOutSessions {
+      await #expect(throws: URLError.self) {
+        try await Clerk.shared.auth.signOut(sessionId: Session.mock.id)
+      }
+    }
+
+    #expect(signedOut.map(\.id) == [Session.mock.id])
+    #expect(Clerk.shared.identityController.currentDeviceToken == nil)
+    #expect(Clerk.shared.client == nil)
+  }
+
+  @Test
+  func failedSignOutKeepsATokenAnotherAppStoredDuringTheRequest() async throws {
+    let transport = offlineTransport()
+    transport.stub(SessionAPI.removeAll()) { _ in
+      try Clerk.shared.dependencies.identityStore.saveDeviceToken("other-token")
+      throw URLError(.notConnectedToInternet)
+    }
+    configureDependencies(transport: transport, keychain: InMemoryKeychain(), identityIsInAccessGroup: true)
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = .mock
+
+    let signedOut = try await signedOutSessions {
+      await #expect(throws: URLError.self) {
+        try await Clerk.shared.auth.signOut()
+      }
+    }
+
+    #expect(signedOut.isEmpty)
+    #expect(Clerk.shared.identityController.currentDeviceToken == "other-token")
+    #expect(try Clerk.shared.dependencies.identityStore.deviceToken() == "other-token")
+  }
+
+  @Test
+  func failedSignOutEmitsNothingWhenTheTokenCannotBeCleared() async throws {
+    let transport = offlineTransport()
+    let keychain = FailableIdentityKeychain()
+    configureDependencies(transport: transport, keychain: keychain)
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = .mock
+    keychain.failsWrites = true
+
+    let signedOut = try await signedOutSessions {
+      await #expect(throws: URLError.self) {
+        try await Clerk.shared.auth.signOut()
+      }
+    }
+
+    #expect(signedOut.isEmpty)
+    #expect(Clerk.shared.identityController.currentDeviceToken == "token")
+    #expect(Clerk.shared.client?.id == Client.mock.id)
+  }
+
+  @Test
+  func failedSignOutLoadsANewClientWhenClerkIsReachable() async throws {
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.removeAll()) { _ in
+      throw URLError(.badServerResponse)
+    }
+    transport.stub(ClientAPI.get(), returning: ClientResponse(response: Client.mockSignedOut, client: nil))
+    configureDependencies(transport: transport, keychain: InMemoryKeychain())
+    try Clerk.shared.seedIdentity(deviceToken: "token")
+    Clerk.shared.client = .mock
+
+    await #expect(throws: URLError.self) {
+      try await Clerk.shared.auth.signOut()
+    }
+    try await waitUntil { Clerk.shared.client != nil }
+
+    #expect(Clerk.shared.isLoaded)
+    #expect(Clerk.shared.client?.id == Client.mockSignedOut.id)
+    #expect(Clerk.shared.session == nil)
   }
 
   @Test

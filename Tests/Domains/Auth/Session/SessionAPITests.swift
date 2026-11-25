@@ -86,6 +86,9 @@ extension SessionAPIAndTokenFetcherTests {
     session.id = sessionId
     var otherSession = Session.mock
     otherSession.id = "sess_other"
+    var client = Client.mock
+    client.sessions = [session, otherSession]
+    Clerk.shared.client = client
     SessionTemplateTokensCache.shared.clear()
     SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "default.jwt"),
@@ -134,6 +137,9 @@ extension SessionAPIAndTokenFetcherTests {
     let sessionId = "sess_test123"
     var session = Session.mock
     session.id = sessionId
+    var client = Client.mock
+    client.sessions = [session, .mock2]
+    Clerk.shared.client = client
     SessionTemplateTokensCache.shared.clear()
     SessionTemplateTokensCache.shared.insertToken(
       .init(jwt: "cached.jwt"),
