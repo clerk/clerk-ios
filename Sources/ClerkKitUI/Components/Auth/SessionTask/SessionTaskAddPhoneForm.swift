@@ -81,6 +81,7 @@ struct SessionTaskAddPhoneForm: View {
 
     do {
       onBeginSubmit?()
+      let phoneNumber = phoneNumber
       let newPhoneNumber = try await clerk.reverify { try await user.createPhoneNumber(phoneNumber) }
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       try await onPhoneNumberCreated(newPhoneNumber)

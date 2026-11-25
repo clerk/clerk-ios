@@ -118,7 +118,7 @@ struct SessionTaskMfaVerifySmsView: View {
                 try await handleSuccessfulVerification()
               } catch {
                 if error.isUserCancelledError {
-                  verificationState = .default
+                  verificationState = .success
                   return
                 }
                 self.error = error
@@ -156,9 +156,14 @@ struct SessionTaskMfaVerifySmsView: View {
       try await handleSuccessfulVerification()
       return .stop
     } catch {
-      guard !Task.isCancelled, !error.isCancellationError, !error.isUserCancelledError else {
+      guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
+        return .stop
+      }
+      guard !error.isUserCancelledError else {
+        otpFieldState = .default
+        verificationState = .success
         return .stop
       }
       otpFieldState = .error

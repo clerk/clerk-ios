@@ -14,7 +14,7 @@ struct ReverifiedCallsTests {
   init() {
     configureClerkForTesting()
     Clerk.shared.dependencies = MockDependencyContainer(
-      apiClient: APIClient(baseURL: URL(string: "https://mock.clerk.accounts.dev")!, runtimeScope: Clerk.shared.runtimeScope),
+      apiClient: createMockAPIClient(),
       transport: transport
     )
     Clerk.shared.environment = .mock
@@ -150,6 +150,72 @@ struct ReverifiedCallsTests {
 
   // MARK: - Session tasks
 
+  @Test(arguments: [true, false])
+  func theResetPasswordTaskSetsThePasswordAgainOnlyWhileTheTaskIsPending(sheetResetsThePassword: Bool) async throws {
+    Clerk.shared.client = client(withTasks: [.resetPassword])
+    let display = AnsweringSheetDisplay(answer: .verify) {
+      if sheetResetsThePassword {
+        Clerk.shared.client = client(withTasks: [])
+      }
+    }
+    transport.requireReverificationOnce(
+      UserAPI.updatePassword(params: .init(newPassword: "", signOutOfOtherSessions: false)),
+      then: ClientResponse(response: User.mock, client: nil),
+      attempts: attempts
+    )
+
+    try await SignInSetNewPasswordView.updatePasswordForResetTask(
+      .init(currentPassword: nil, newPassword: "new-password", signOutOfOtherSessions: false),
+      of: .mock,
+      clerk: .shared,
+      reverify: reverifier(display)
+    )
+
+    #expect(display.levels == [.secondFactor])
+    #expect(attempts.count == (sheetResetsThePassword ? 1 : 2))
+  }
+
+  @Test
+  func aResetTaskClearedBeforeSubmittingStillSetsThePasswordAfterReverifying() async throws {
+    Clerk.shared.client = client(withTasks: [])
+    let display = AnsweringSheetDisplay(answer: .verify)
+    transport.requireReverificationOnce(
+      UserAPI.updatePassword(params: .init(newPassword: "", signOutOfOtherSessions: false)),
+      then: ClientResponse(response: User.mock, client: nil),
+      attempts: attempts
+    )
+
+    try await SignInSetNewPasswordView.updatePasswordForResetTask(
+      .init(currentPassword: nil, newPassword: "new-password", signOutOfOtherSessions: false),
+      of: .mock,
+      clerk: .shared,
+      reverify: reverifier(display)
+    )
+
+    #expect(display.levels == [.secondFactor])
+    #expect(attempts.count == 2)
+  }
+
+  @Test
+  func theResetPasswordTaskAlwaysSendsTheFirstAttempt() async throws {
+    Clerk.shared.client = client(withTasks: [])
+    let display = AnsweringSheetDisplay(answer: .verify)
+    transport.stub(UserAPI.updatePassword(params: .init(newPassword: "", signOutOfOtherSessions: false))) { [attempts] _ in
+      attempts.count += 1
+      return ClientResponse(response: User.mock, client: nil)
+    }
+
+    try await SignInSetNewPasswordView.updatePasswordForResetTask(
+      .init(currentPassword: nil, newPassword: "new-password", signOutOfOtherSessions: false),
+      of: .mock,
+      clerk: .shared,
+      reverify: reverifier(display)
+    )
+
+    #expect(display.levels.isEmpty)
+    #expect(attempts.count == 1)
+  }
+
   @Test
   func aPendingSessionReverifiesAndRunsAgain() async throws {
     var client = Client.mock
@@ -185,6 +251,13 @@ struct ReverifiedCallsTests {
       Issue.record("Expected the flow to show a factor, got \(flow.phase)")
       return
     }
+  }
+
+  private func client(withTasks tasks: [Session.Task]) -> Client {
+    var client = Client.mock
+    client.sessions[0].status = tasks.isEmpty ? .active : .pending
+    client.sessions[0].tasks = tasks
+    return client
   }
 
   private func reverifier(_ display: AnsweringSheetDisplay) -> Reverifier {
@@ -370,10 +443,12 @@ private final class AnsweringSheetDisplay: ReverificationSheetDisplay {
   }
 
   private let answer: Answer
+  private let whileShown: @MainActor () -> Void
   private(set) var levels: [SessionVerification.Level] = []
 
-  init(answer: Answer) {
+  init(answer: Answer, whileShown: @escaping @MainActor () -> Void = {}) {
     self.answer = answer
+    self.whileShown = whileShown
   }
 
   func show(
@@ -382,6 +457,7 @@ private final class AnsweringSheetDisplay: ReverificationSheetDisplay {
     onDismiss: @escaping @MainActor () -> Void
   ) async -> Bool {
     levels.append(request.level)
+    whileShown()
     if answer == .verify {
       request.markComplete()
     }

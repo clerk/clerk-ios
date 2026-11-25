@@ -222,15 +222,12 @@ extension UserProfileChangePasswordView {
     guard let user else { return }
 
     do {
-      try await clerk.reverify {
-        try await user.updatePassword(
-          .init(
-            currentPassword: isAddingPassword ? nil : currentPassword,
-            newPassword: newPassword,
-            signOutOfOtherSessions: signOutOfOtherSessions
-          )
-        )
-      }
+      let params = User.UpdatePasswordParams(
+        currentPassword: isAddingPassword ? nil : currentPassword,
+        newPassword: newPassword,
+        signOutOfOtherSessions: signOutOfOtherSessions
+      )
+      try await clerk.reverify { try await user.updatePassword(params) }
       dismiss()
     } catch {
       if error.isUserCancelledError { return }

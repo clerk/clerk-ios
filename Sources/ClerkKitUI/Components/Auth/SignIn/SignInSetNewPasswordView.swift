@@ -200,18 +200,30 @@ extension SignInSetNewPasswordView {
       return
     }
 
-    try await clerk.reverify {
-      try await user.updatePassword(
-        .init(
-          currentPassword: nil,
-          newPassword: authState.signInNewPassword,
-          signOutOfOtherSessions: signOutOfOtherDevices
-        )
-      )
-    }
+    let params = User.UpdatePasswordParams(
+      currentPassword: nil,
+      newPassword: authState.signInNewPassword,
+      signOutOfOtherSessions: signOutOfOtherDevices
+    )
+    try await Self.updatePasswordForResetTask(params, of: user, clerk: clerk, reverify: Reverifier(clerk: clerk))
 
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
     _ = clerk.finishAuthFlowPresentation(token)
+  }
+
+  static func updatePasswordForResetTask(
+    _ params: User.UpdatePasswordParams,
+    of user: User,
+    clerk: Clerk,
+    reverify: Reverifier
+  ) async throws {
+    let taskWasPending = clerk.session?.tasks?.contains(.resetPassword) == true
+    var isRetry = false
+    try await reverify {
+      if isRetry, taskWasPending, clerk.session?.tasks?.contains(.resetPassword) != true { return }
+      isRetry = true
+      try await user.updatePassword(params)
+    }
   }
 }
 

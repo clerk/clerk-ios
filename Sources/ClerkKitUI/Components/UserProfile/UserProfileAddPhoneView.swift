@@ -133,7 +133,8 @@ extension UserProfileAddPhoneView {
     guard let user else { return }
 
     do {
-      let phoneNumber = try await clerk.reverify { try await user.createPhoneNumber(phoneNumber) }
+      let enteredPhoneNumber = phoneNumber
+      let phoneNumber = try await clerk.reverify { try await user.createPhoneNumber(enteredPhoneNumber) }
       path.append(Destination.verify(phoneNumber))
     } catch {
       if error.isUserCancelledError { return }
