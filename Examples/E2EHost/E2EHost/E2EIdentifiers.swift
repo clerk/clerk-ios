@@ -18,6 +18,13 @@ enum E2EIdentifiers {
     static let customSignIn = "e2e.home.customSignIn"
     static let customReverify = "e2e.home.customReverify"
     static let organizationTabs = "e2e.home.organizationTabs"
+    static let nativeToWeb = "e2e.home.nativeToWeb"
+  }
+
+  enum NativeToWeb {
+    static let webUserId = "e2e.nativeToWeb.webUserId"
+    static let error = "e2e.nativeToWeb.error"
+    static let done = "e2e.nativeToWeb.done"
   }
 
   enum CustomSignIn {

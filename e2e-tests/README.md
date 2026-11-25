@@ -44,6 +44,7 @@ Every run creates users with addresses like `maya.7c1e+clerk_test@example.com` a
 
 These test files change the instance with `host.useSettings` or `host.useMinimumAppVersion`:
 
+- `specs/features/native-to-web-sso/web-view.e2e.ts`
 - `specs/features/session-tasks/choose-organization.e2e.ts`
 - `specs/features/session-tasks/complete-setup-mfa.e2e.ts`
 - `specs/features/session-tasks/setup-mfa.e2e.ts`
