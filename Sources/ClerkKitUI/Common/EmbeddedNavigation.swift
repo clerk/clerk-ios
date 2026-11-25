@@ -64,21 +64,39 @@ private struct HostBackToolbarModifier: ViewModifier {
   func body(content: Content) -> some View {
     if let hostBackAction {
       content.toolbar {
-        ToolbarItem(placement: hostBackToolbarPlacement) {
-          Button {
-            hostBackAction()
-          } label: {
-            Image(systemName: "chevron.backward")
-              .fontWeight(.semibold)
-          }
-          // Opts out of the tint a toolbar button would otherwise take, so this
-          // renders at the label color like the system back buttons alongside it.
-          .buttonStyle(.plain)
-          .accessibilityLabel(Text("Back", bundle: .module))
+        #if os(iOS)
+        // Xcode 27.0 and 27.1 share a compiler version; gate the new SDK API separately.
+        #if canImport(SwiftUI, _version: 8.0.85)
+        if #available(iOS 27.1, *) {
+          // The system keeps a plain-styled item out of the vertical bar unless it opts in.
+          backToolbarItem(hostBackAction).axisBehavior(.verticalPreferred)
+        } else {
+          backToolbarItem(hostBackAction)
         }
+        #else
+        backToolbarItem(hostBackAction)
+        #endif
+        #else
+        backToolbarItem(hostBackAction)
+        #endif
       }
     } else {
       content
+    }
+  }
+
+  private func backToolbarItem(_ hostBackAction: ClerkHostBackAction) -> some ToolbarContent {
+    ToolbarItem(placement: hostBackToolbarPlacement) {
+      Button {
+        hostBackAction()
+      } label: {
+        Image(systemName: "chevron.backward")
+          .fontWeight(.semibold)
+      }
+      // Opts out of the tint a toolbar button would otherwise take, so this
+      // renders at the label color like the system back buttons alongside it.
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text("Back", bundle: .module))
     }
   }
 

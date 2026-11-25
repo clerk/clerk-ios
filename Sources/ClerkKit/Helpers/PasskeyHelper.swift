@@ -6,7 +6,6 @@
 
 import AuthenticationServices
 import Foundation
-import os
 
 final class PasskeyHelper: NSObject {
   @MainActor
@@ -257,23 +256,17 @@ final class PasskeyHelper: NSObject {
 extension PasskeyHelper: ASAuthorizationControllerDelegate {
   @MainActor
   func authorizationController(controller _: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-    let logger = Logger()
     switch authorization.credential {
-    case let credentialRegistration as ASAuthorizationPlatformPublicKeyCredentialRegistration:
-      logger.log("A new passkey was registered: \(credentialRegistration)")
-
-      complete(with: authorization)
-    case let credentialAssertion as ASAuthorizationPlatformPublicKeyCredentialAssertion:
-      logger.log("A passkey was used to sign in: \(credentialAssertion)")
-
-      complete(with: authorization)
-    case let passwordCredential as ASPasswordCredential:
-      logger.log("A password was provided: \(passwordCredential)")
-
-      complete(with: authorization)
+    case is ASAuthorizationPlatformPublicKeyCredentialRegistration:
+      ClerkLogger.debug("A new passkey was registered")
+    case is ASAuthorizationPlatformPublicKeyCredentialAssertion:
+      ClerkLogger.debug("A passkey was used")
+    case is ASPasswordCredential:
+      ClerkLogger.debug("A password was provided")
     default:
-      fatalError("Received unknown authorization type.")
+      ClerkLogger.debug("Received an unexpected credential: \(type(of: authorization.credential))")
     }
+    complete(with: authorization)
   }
 
   @MainActor

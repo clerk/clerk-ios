@@ -194,4 +194,42 @@ struct BiometricCredentialKeyManagerTests {
 
     #expect(status == errSecNotAvailable)
   }
+
+  #if (os(iOS) || os(macOS)) && canImport(LocalAuthentication)
+  @Test(arguments: [LAError.Code.userCancel, .systemCancel, .appCancel])
+  func signingErrorTreatsLocalAuthenticationCancellationAsCanceled(code: LAError.Code) {
+    let error = NSError(
+      domain: LAError.errorDomain,
+      code: code.rawValue,
+      userInfo: [NSLocalizedDescriptionKey: "Authentication canceled."]
+    )
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .biometricAuthenticationCanceled)
+  }
+
+  @Test(arguments: [LAError.Code.authenticationFailed, .userFallback, .biometryLockout, .notInteractive])
+  func signingErrorKeepsOtherLocalAuthenticationErrorsAsSigningFailures(code: LAError.Code) {
+    let error = NSError(
+      domain: LAError.errorDomain,
+      code: code.rawValue,
+      userInfo: [NSLocalizedDescriptionKey: "Biometry is locked out."]
+    )
+
+    #expect(BiometricCredentialKeyManager.signingError(from: error) == .signingFailed("Biometry is locked out."))
+  }
+  #endif
+
+  @Test
+  func signingErrorKeepsSecurityFailureMessage() {
+    let error = NSError(
+      domain: NSOSStatusErrorDomain,
+      code: Int(errSecParam),
+      userInfo: [NSLocalizedDescriptionKey: "One or more parameters passed to a function were not valid."]
+    )
+
+    #expect(
+      BiometricCredentialKeyManager.signingError(from: error)
+        == .signingFailed("One or more parameters passed to a function were not valid.")
+    )
+  }
 }

@@ -9,6 +9,8 @@ import Foundation
 
 #if canImport(UIKit)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 
 #if canImport(WebKit)
@@ -65,7 +67,7 @@ extension Auth {
     return transfer
   }
 
-  #if canImport(UIKit)
+  #if canImport(UIKit) || os(macOS)
   /// Opens a web page in the user's default browser with the active session's user signed in.
   ///
   /// Returns once the system hands the URL to the browser. A refused sign-in still lands on
@@ -83,9 +85,13 @@ extension Auth {
   @available(iOSApplicationExtension, unavailable)
   public func openInBrowser(destination: URL) async throws {
     try await openInBrowser(destination: destination) { url in
+      #if canImport(UIKit)
       // SFSafariViewController keeps its own cookies, so a session redeemed there never reaches the
       // user's browser.
       await UIApplication.shared.open(url)
+      #else
+      NSWorkspace.shared.open(url)
+      #endif
     }
   }
   #endif
