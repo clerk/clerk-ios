@@ -46,8 +46,9 @@ struct UserButtonAccountSwitcher: View {
     do {
       try await clerk.auth.signOut()
     } catch {
-      self.error = error
       ClerkLogger.error("Failed to sign out of all accounts", error: error)
+      guard clerk.session != nil else { return }
+      self.error = error
     }
   }
 

@@ -62,8 +62,12 @@ struct UserButtonSignOutView: View {
       try await clerk.auth.signOut(sessionId: sessionId)
       dismiss()
     } catch {
-      self.error = error
       ClerkLogger.error("Failed to sign out", error: error)
+      guard clerk.session != nil else {
+        dismiss()
+        return
+      }
+      self.error = error
     }
   }
 }
