@@ -16,11 +16,11 @@ struct ReverificationView: View {
   @State private var flow: ReverificationFlow
   @State private var codeLimiter = CodeLimiter()
 
-  private let onComplete: @MainActor () -> Void
+  private let onComplete: @MainActor (_ verifiedSessionId: String?) -> Void
 
   init(
     level: SessionVerification.Level = .secondFactor,
-    onComplete: @escaping @MainActor () -> Void = {}
+    onComplete: @escaping @MainActor (_ verifiedSessionId: String?) -> Void = { _ in }
   ) {
     _flow = State(initialValue: ReverificationFlow(level: level))
     self.onComplete = onComplete
@@ -61,7 +61,7 @@ struct ReverificationView: View {
     }
     .onChange(of: flow.isComplete) { _, isComplete in
       guard isComplete else { return }
-      onComplete()
+      onComplete(flow.session?.id)
       dismiss()
     }
     .onChange(of: clerk.session?.id) {

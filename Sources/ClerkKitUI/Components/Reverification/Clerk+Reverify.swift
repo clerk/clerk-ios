@@ -86,12 +86,14 @@ struct Reverifier {
   }
 
   func callAsFunction(_ reverification: ReverificationConfig) async throws {
+    let identity = startingIdentity()
     guard !isSatisfied(reverification) else { return }
     guard let requirement = reverification.requirement else {
       throw ReverificationUnsupportedRequirementError()
     }
     try await present(requirement.level)
     try Task.checkCancellation()
+    try ensureIdentity(is: identity)
   }
 
   func callAsFunction<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
@@ -140,15 +142,23 @@ final class ReverificationPresenter {
     clerk: Clerk,
     identity: ClerkSignedInIdentity? = nil
   ) async throws {
-    let identity = identity ?? clerk.signedInIdentity(adoptingStoredDeviceToken: false)
-    while let active, active.level != level || active.identity != identity {
-      try? await active.wait()
-    }
-    try Task.checkCancellation()
+    let requestedIdentity = identity
+    var identity = requestedIdentity ?? clerk.signedInIdentity(adoptingStoredDeviceToken: false)
+    while true {
+      while let active, active.level != level || active.identity != identity {
+        try? await active.wait()
+        identity = requestedIdentity ?? clerk.signedInIdentity(adoptingStoredDeviceToken: false)
+      }
+      try Task.checkCancellation()
 
-    if let active {
-      try await active.wait()
-      return
+      guard let active else { break }
+      do {
+        try await active.wait()
+        return
+      } catch is CancellationError where !Task.isCancelled {
+        identity = requestedIdentity ?? clerk.signedInIdentity(adoptingStoredDeviceToken: false)
+        continue
+      }
     }
 
     let request = ReverificationRequest(level: level, identity: identity)
@@ -194,10 +204,6 @@ final class ReverificationRequest {
     self.identity = identity
   }
 
-  var hasWaitingCallers: Bool {
-    !continuations.isEmpty
-  }
-
   func wait() async throws {
     if let result {
       return try result.get()
@@ -205,7 +211,8 @@ final class ReverificationRequest {
     try await withCheckedThrowingContinuation { continuations.append($0) }
   }
 
-  func markComplete() {
+  func markComplete(verifiedSessionId: String?) {
+    guard identity == nil || identity?.sessionId == verifiedSessionId else { return }
     didComplete = true
   }
 
@@ -259,8 +266,8 @@ struct PresentedReverificationView: View {
   let dismiss: @MainActor () -> Void
 
   var body: some View {
-    ReverificationView(level: request.level) {
-      request.markComplete()
+    ReverificationView(level: request.level) { verifiedSessionId in
+      request.markComplete(verifiedSessionId: verifiedSessionId)
     }
     .environment(clerk)
     .environment(\.presentedSheetDismiss, dismiss)

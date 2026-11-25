@@ -17,7 +17,7 @@ struct PlatformReverificationSheetDisplay: ReverificationSheetDisplay {
     onDismiss: @escaping @MainActor () -> Void
   ) async -> Bool {
     guard let presenter = await settledTopViewController() else { return false }
-    if Task.isCancelled, !request.hasWaitingCallers {
+    if Task.isCancelled {
       return false
     }
 
