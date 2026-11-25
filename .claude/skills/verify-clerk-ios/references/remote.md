@@ -59,7 +59,7 @@ wait    run <run> has waited 15s, now for a xcode-27 runner
 wait    run <run> has waited 85s, now for the tunnel on xcode-27
 ```
 
-A run can also end before it publishes a tunnel. Then `up` stops with `NOT_READY` and `run <run> ended (failure) before it published; failed at session: Start the session agent and tunnel`. When that step's log ends with `no tunnel came up` and `quick tunnel provisioning failed with status 429`, Cloudflare refused a quick tunnel for the moment. That is not a fault of the app or of your checkout. Run `doctor`, then `up` again, which starts a new session.
+A run can also fail at its `Start the session agent and tunnel` step. Then `up` stops with `NOT_READY` and `run <run> ended (failure) before it published; failed at session: Start the session agent and tunnel`. When that step's log ends with `no tunnel came up` and `quick tunnel provisioning failed with status 429`, Cloudflare refused a quick tunnel for the moment. That is not a fault of the app or of your checkout. Run `doctor`, then `up` again, which starts a new session.
 
 ## Session lifetime
 
