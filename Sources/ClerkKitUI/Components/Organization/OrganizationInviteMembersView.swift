@@ -12,8 +12,7 @@ struct OrganizationInviteMembersView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
 
-  private let cancellationTitle: LocalizedStringKey
-  private let cancellationPlacement: ToolbarItemPlacement
+  private let exitAction: OrganizationInviteMembersExitAction
   private let onComplete: ((OrganizationInviteMembersCompletion) async -> Void)?
 
   @State private var rolesStore = OrganizationScopedStore { OrganizationRolesDataSource(scope: $0) }
@@ -57,12 +56,10 @@ struct OrganizationInviteMembersView: View {
   }
 
   init(
-    cancellationTitle: LocalizedStringKey = "Cancel",
-    cancellationPlacement: ToolbarItemPlacement = .cancellationAction,
+    exitAction: OrganizationInviteMembersExitAction = .cancel,
     onComplete: ((OrganizationInviteMembersCompletion) async -> Void)? = nil
   ) {
-    self.cancellationTitle = cancellationTitle
-    self.cancellationPlacement = cancellationPlacement
+    self.exitAction = exitAction
     self.onComplete = onComplete
   }
 
@@ -82,15 +79,24 @@ struct OrganizationInviteMembersView: View {
     #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: cancellationPlacement) {
-        Button {
+      switch exitAction {
+      case .cancel:
+        CancelToolbarItem {
           Task {
             await complete(.cancelled)
           }
-        } label: {
-          Text(cancellationTitle, bundle: .module)
         }
-        .foregroundStyle(theme.colors.primary)
+      case .skip:
+        ToolbarItem(placement: .confirmationAction) {
+          Button {
+            Task {
+              await complete(.cancelled)
+            }
+          } label: {
+            Text("Skip", bundle: .module)
+          }
+          .foregroundStyle(theme.colors.primary)
+        }
       }
 
       ToolbarItem(placement: .principal) {
@@ -265,6 +271,11 @@ struct OrganizationInviteMembersView: View {
       selectedRoleKey = role.key
     }
   }
+}
+
+enum OrganizationInviteMembersExitAction {
+  case cancel
+  case skip
 }
 
 enum OrganizationInviteMembersCompletion {
