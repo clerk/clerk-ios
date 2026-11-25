@@ -211,7 +211,8 @@ final class ReverificationRequest {
     try await withCheckedThrowingContinuation { continuations.append($0) }
   }
 
-  func markComplete() {
+  func markComplete(verifiedSessionId: String?) {
+    guard identity == nil || identity?.sessionId == verifiedSessionId else { return }
     didComplete = true
   }
 
@@ -265,8 +266,8 @@ struct PresentedReverificationView: View {
   let dismiss: @MainActor () -> Void
 
   var body: some View {
-    ReverificationView(level: request.level) {
-      request.markComplete()
+    ReverificationView(level: request.level) { verifiedSessionId in
+      request.markComplete(verifiedSessionId: verifiedSessionId)
     }
     .environment(clerk)
     .environment(\.presentedSheetDismiss, dismiss)

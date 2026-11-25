@@ -368,9 +368,23 @@ struct ReverifierTests {
   }
 
   @Test
+  func aSheetThatVerifiedAnotherSessionDoesNotCompleteTheRequest() async {
+    let request = ReverificationRequest(
+      level: .firstFactor,
+      identity: ClerkSignedInIdentity(clientId: "client_a", sessionId: "sess_a")
+    )
+    request.markComplete(verifiedSessionId: "sess_b")
+    request.finish()
+
+    await #expect(throws: ReverificationCancelledError.self) {
+      try await request.wait()
+    }
+  }
+
+  @Test
   func aSheetThatClosedBeforeTheCallerWaitedStillReturns() async throws {
     let request = ReverificationRequest(level: .firstFactor)
-    request.markComplete()
+    request.markComplete(verifiedSessionId: nil)
     request.finish()
 
     try await request.wait()
@@ -405,7 +419,7 @@ private final class RecordingSheetDisplay: ReverificationSheetDisplay {
   }
 
   func complete(_ index: Int) {
-    shown[index].request.markComplete()
+    shown[index].request.markComplete(verifiedSessionId: shown[index].request.identity?.sessionId)
     shown[index].onDismiss()
   }
 }
@@ -442,7 +456,7 @@ private final class GatedSheetDisplay: ReverificationSheetDisplay {
   }
 
   func complete(_ index: Int) {
-    shown[index].request.markComplete()
+    shown[index].request.markComplete(verifiedSessionId: shown[index].request.identity?.sessionId)
     shown[index].onDismiss()
   }
 }
