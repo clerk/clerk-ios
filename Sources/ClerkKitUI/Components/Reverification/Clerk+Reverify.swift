@@ -20,7 +20,8 @@ extension Clerk {
   /// try await deleteAccount()
   /// ```
   ///
-  /// - Throws: ``ReverificationCancelledError`` when the user closes the sheet.
+  /// - Throws: ``ReverificationCancelledError`` when the user closes the sheet, or an error when
+  ///   `reverification` is a custom requirement whose level or age Clerk doesn't support.
   public func reverify(_ reverification: ReverificationConfig) async throws {
     try await Reverifier(clerk: self)(reverification)
   }
@@ -59,47 +60,63 @@ public struct ReverificationCancelledError: Error, Equatable, Sendable {
 struct Reverifier {
   private let isSatisfied: @MainActor (ReverificationConfig) -> Bool
   private let present: @MainActor (SessionVerification.Level) async throws -> Void
+  private let currentSessionId: @MainActor () -> String?
 
   init(
     isSatisfied: @escaping @MainActor (ReverificationConfig) -> Bool,
+    currentSessionId: @escaping @MainActor () -> String? = { nil },
     present: @escaping @MainActor (SessionVerification.Level) async throws -> Void
   ) {
     self.isSatisfied = isSatisfied
+    self.currentSessionId = currentSessionId
     self.present = present
   }
 
   init(clerk: Clerk) {
     self.init(
       isSatisfied: { clerk.has(reverification: $0) },
+      currentSessionId: { clerk.session?.id },
       present: { try await ReverificationPresenter.shared.present(level: $0, clerk: clerk) }
     )
   }
 
   func callAsFunction(_ reverification: ReverificationConfig) async throws {
     guard !isSatisfied(reverification) else { return }
-    try await present(reverification.requirement?.level ?? .secondFactor)
+    guard let requirement = reverification.requirement else {
+      throw ReverificationUnsupportedRequirementError()
+    }
+    try await present(requirement.level)
+    try Task.checkCancellation()
   }
 
   func callAsFunction<T>(_ operation: @MainActor () async throws -> T) async throws -> T {
+    let sessionId = currentSessionId()
     do {
       return try await operation()
     } catch {
       guard let required = ReverificationRequiredError(error) else { throw error }
+      try ensureSession(is: sessionId)
       try await present(required.reverification?.requirement?.level ?? .secondFactor)
+      try Task.checkCancellation()
+      try ensureSession(is: sessionId)
       return try await operation()
+    }
+  }
+
+  private func ensureSession(is sessionId: String?) throws {
+    guard currentSessionId() == sessionId else {
+      throw ReverificationCancelledError()
     }
   }
 }
 
 @MainActor
 protocol ReverificationSheetDisplay {
-  /// Presents the sheet for `request`, and calls `onDismiss` once it closes. Returns `false`
-  /// when the app shows no window to present it over.
   func show(
     _ request: ReverificationRequest,
     clerk: Clerk,
     onDismiss: @escaping @MainActor () -> Void
-  ) -> Bool
+  ) async -> Bool
 }
 
 @MainActor
@@ -113,12 +130,11 @@ final class ReverificationPresenter {
     self.display = display
   }
 
-  /// Presents the sheet and returns once it closes. A call at the level of the sheet already
-  /// presented joins it; a call at another level waits for that sheet to close first.
   func present(level: SessionVerification.Level, clerk: Clerk) async throws {
     while let active, active.level != level {
       try? await active.wait()
     }
+    try Task.checkCancellation()
 
     if let active {
       try await active.wait()
@@ -126,16 +142,20 @@ final class ReverificationPresenter {
     }
 
     let request = ReverificationRequest(level: level)
-    let isShown = display.show(request, clerk: clerk) { [weak self] in
+    active = request
+    let isShown = await display.show(request, clerk: clerk) { [weak self] in
       self?.didDismiss(request)
     }
     guard isShown else {
-      let error = ReverificationNoWindowError()
+      let error = ReverificationNotPresentedError()
       ClerkLogger.error("Failed to present reverification", error: error)
+      if active === request {
+        active = nil
+      }
+      request.finish(throwing: error)
       throw error
     }
 
-    active = request
     try await request.wait()
   }
 
@@ -170,8 +190,15 @@ final class ReverificationRequest {
   }
 
   func finish() {
-    guard result == nil else { return }
-    let result: Result<Void, Error> = didComplete ? .success(()) : .failure(ReverificationCancelledError())
+    resume(with: didComplete ? .success(()) : .failure(ReverificationCancelledError()))
+  }
+
+  func finish(throwing error: Error) {
+    resume(with: .failure(error))
+  }
+
+  private func resume(with result: Result<Void, Error>) {
+    guard self.result == nil else { return }
     self.result = result
     let waiting = continuations
     continuations = []
@@ -179,10 +206,30 @@ final class ReverificationRequest {
   }
 }
 
-/// The app's state, not the user's, so its description is for the developer and stays in English.
-struct ReverificationNoWindowError: LocalizedError {
+struct ReverificationUnsupportedRequirementError: LocalizedError {
   var errorDescription: String? {
-    "Clerk couldn't present reverification because the app shows no window."
+    "Clerk can't reverify with this requirement because its level or age isn't one Clerk supports."
+  }
+}
+
+@MainActor
+final class OneTimeAction<Value> {
+  private var action: ((Value) -> Void)?
+
+  init(_ action: @escaping (Value) -> Void) {
+    self.action = action
+  }
+
+  func callAsFunction(_ value: Value) {
+    let action = action
+    self.action = nil
+    action?(value)
+  }
+}
+
+struct ReverificationNotPresentedError: LocalizedError {
+  var errorDescription: String? {
+    "Clerk couldn't present reverification because the app shows no window it can present over."
   }
 }
 

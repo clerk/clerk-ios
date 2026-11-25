@@ -56,12 +56,15 @@ struct ReverificationView: View {
     .task {
       await flow.start(
         session: clerk.session,
-        hasLocalBiometricCredential: (try? clerk.biometricCredentials.currentUserLocalAvailability().isAvailable) ?? false
+        hasLocalBiometricCredential: clerk.biometricCredentials.currentUserCanReverifyLocally()
       )
     }
     .onChange(of: flow.isComplete) { _, isComplete in
       guard isComplete else { return }
       onComplete()
+      dismiss()
+    }
+    .onChange(of: clerk.session?.id) {
       dismiss()
     }
     .taskOnce {
@@ -121,8 +124,8 @@ struct ReverificationDestinationView: View {
       }
     case .alternativeMethods(let currentFactor, let stage):
       ReverificationAlternativeMethodsView(currentFactor: currentFactor, stage: stage)
-    case .newPassword(let resetFactor):
-      ReverificationNewPasswordView(resetFactor: resetFactor)
+    case .newPassword(let resetFactor, let reason):
+      ReverificationNewPasswordView(resetFactor: resetFactor, reason: reason)
     case .getHelp:
       GetHelpView(context: .reverification)
     }

@@ -12,6 +12,7 @@ struct ReverificationBiometricView: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(ReverificationFlow.self) private var flow
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   let factor: Factor
   let stage: ReverificationFlow.Stage
@@ -63,6 +64,7 @@ struct ReverificationBiometricView: View {
     biometricInProgress = true
     defer { biometricInProgress = false }
 
+    codeLimiter.forgetLastCodeSent()
     do {
       let verification = try await session.verifyWithBiometrics(
         level: stage == .secondFactor ? .secondFactor : .firstFactor
@@ -80,6 +82,7 @@ struct ReverificationBiometricView: View {
 #Preview {
   ReverificationBiometricView(factor: Factor(strategy: .biometricCredential), stage: .firstFactor)
     .environment(ReverificationFlow(level: .firstFactor))
+    .environment(CodeLimiter())
     .clerkPreview()
 }
 

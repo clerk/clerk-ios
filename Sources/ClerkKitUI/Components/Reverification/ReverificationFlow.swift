@@ -19,8 +19,21 @@ final class ReverificationFlow {
   enum Destination: Hashable {
     case factor(Factor, Stage)
     case alternativeMethods(currentFactor: Factor, Stage)
-    case newPassword(resetFactor: Factor)
+    case newPassword(resetFactor: Factor, reason: PasswordResetReason)
     case getHelp
+  }
+
+  enum PasswordResetReason: Hashable {
+    case pwned
+    case compromised
+
+    init?(_ error: Error?) {
+      switch (error as? ClerkAPIError)?.code {
+      case "form_password_pwned": self = .pwned
+      case "form_password_compromised": self = .compromised
+      default: return nil
+      }
+    }
   }
 
   enum Phase {
@@ -40,12 +53,12 @@ final class ReverificationFlow {
     if case .complete = phase { true } else { false }
   }
 
-  /// Whether this installation holds a biometric credential the current user can verify with.
   private(set) var hasLocalBiometricCredential = false
 
   var newPassword = ""
   var confirmNewPassword = ""
   var signOutOfOtherSessions = false
+  var newPasswordError: Error?
 
   init(level: SessionVerification.Level) {
     self.level = level
@@ -72,7 +85,6 @@ final class ReverificationFlow {
     }
   }
 
-  /// Moves the flow to the step `verification` is waiting for.
   func handle(_ verification: SessionVerification) async {
     do {
       try verification.ensureStatusIsKnown()
@@ -128,6 +140,13 @@ final class ReverificationFlow {
       ?? factors.first { $0.strategy == .resetPasswordPhoneCode }
   }
 
+  func rejectNewPassword(_ error: Error) {
+    newPasswordError = error
+    if case .factor(let factor, _) = path.last, factor.isResetFactor {
+      path.removeLast()
+    }
+  }
+
   private func showRoot(_ destination: Destination) {
     path = []
     phase = .ready(root: destination)
@@ -148,7 +167,6 @@ extension ReverificationFlow {
     }
   }
 
-  /// The factors the prebuilt screens can verify, in the order they're offered.
   static func usableFactors(_ factors: [Factor], stage: Stage, hasLocalBiometricCredential: Bool) -> [Factor] {
     let order = strategyOrder(stage: stage, preferredStrategy: nil)
     return factors

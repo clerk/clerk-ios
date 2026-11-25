@@ -30,7 +30,7 @@ Preconditions:
 | --- | --- | --- |
 | Passkey, as a first or second factor | `ReverificationView.swift`, `ReverificationDestinationView`, `.passkey` | Associated domains, which the simulator build has none of. MacExampleApp with 1Password runs it, as described under Gotchas. |
 | Biometrics, as a first or second factor | `ReverificationFlow.swift`, `usableFactors`, `.biometricCredential` | A biometric credential, whose key generation fails on the simulator with OSStatus -25293 because it has no Secure Enclave. A device or a Mac with Touch ID runs it, with Touch ID sign-in turned on for the instance. Passkey comes first in the order, so the Touch ID screen is reached through `Use another method` after cancelling the passkey prompt. |
-| A breached password, which offers a reset code | `ReverificationPasswordView.swift`, `passwordIsPwned` | A seeded password that is in a data breach. The harness generates every password. |
+| A breached or compromised password, which offers a reset code | `ReverificationFlow.swift`, `PasswordResetReason` | A seeded password that is in a data breach, or a session with a pending reset-password task. The harness generates every password, and a pending session can't reach the home. |
 | No factor the screens can verify, which shows `Get help` | `ReverificationFlow.swift`, `handle(_:)` | A user whose only first factor is enterprise SSO. |
 | No session, or a start that fails | `ReverificationFlow.swift`, `start(session:hasLocalBiometricCredential:)` | An app that presents the sheet while signed out, or a network failure. |
 

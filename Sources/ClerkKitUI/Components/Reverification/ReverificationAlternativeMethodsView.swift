@@ -85,7 +85,6 @@ struct ReverificationAlternativeMethodsView: View {
   }
 }
 
-/// Opens the other methods the user can verify with, when there are any.
 struct ReverificationUseAnotherMethodButton: View {
   @Environment(ReverificationFlow.self) private var flow
 

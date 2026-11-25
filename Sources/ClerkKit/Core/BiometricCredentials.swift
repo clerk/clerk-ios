@@ -224,6 +224,11 @@ public struct BiometricCredentials {
     return credentials.count
   }
 
+  package func currentUserCanReverifyLocally() -> Bool {
+    guard let userID = Clerk.shared.user?.id else { return false }
+    return (try? localCredential(for: userID)) != nil
+  }
+
   /// Selects a credential bound to the current biometric set without reconciling through `/me`.
   /// The caller's session endpoint validates ownership of the server credential.
   func localCredential(for userID: String) throws -> BiometricCredentialLocalRecord {

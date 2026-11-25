@@ -18,8 +18,8 @@ struct ReverificationPasswordView: View {
   @State private var fieldError: Error?
   @FocusState private var isFocused: Bool
 
-  private var passwordIsPwned: Bool {
-    (fieldError as? ClerkAPIError)?.code == "form_password_pwned"
+  private var passwordResetReason: ReverificationFlow.PasswordResetReason? {
+    ReverificationFlow.PasswordResetReason(fieldError)
   }
 
   var body: some View {
@@ -57,9 +57,9 @@ struct ReverificationPasswordView: View {
             }
           }
 
-          if passwordIsPwned, let resetFactor = flow.resetPasswordFactor {
+          if let passwordResetReason, let resetFactor = flow.resetPasswordFactor {
             Button {
-              flow.path.append(.newPassword(resetFactor: resetFactor))
+              flow.path.append(.newPassword(resetFactor: resetFactor, reason: passwordResetReason))
             } label: {
               Text("Reset password", bundle: .module)
                 .frame(maxWidth: .infinity)
@@ -92,7 +92,7 @@ struct ReverificationPasswordView: View {
       $1 != nil
     }
     .onChange(of: password) {
-      if passwordIsPwned {
+      if passwordResetReason != nil {
         fieldError = nil
       }
     }

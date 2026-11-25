@@ -264,6 +264,29 @@ struct SessionTests {
     #expect(verification.status == .complete)
   }
 
+  @Test(arguments: [true, false])
+  func aCompletedVerificationDropsTheSessionsCachedTokens(secondFactor: Bool) async throws {
+    let session = Session.mock
+    let transport = FakeTransport.mockDefaults()
+    transport.stub(SessionAPI.attemptFirstFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .emailCode))) { _ in
+      ClientResponse(response: .mockComplete, client: nil)
+    }
+    transport.stub(SessionAPI.attemptSecondFactorVerification(sessionId: FakeTransport.anyPathSegment, params: .init(strategy: .phoneCode))) { _ in
+      ClientResponse(response: .mockComplete, client: nil)
+    }
+    Clerk.shared.dependencies = MockDependencyContainer(apiClient: createMockAPIClient(), transport: transport)
+    SessionTemplateTokensCache.shared.insertToken(.init(jwt: "stale.jwt"), cacheKey: session.tokenCacheKey(template: "secondary"))
+
+    if secondFactor {
+      try await session.verifyWithTOTP(code: "424242")
+    } else {
+      try await session.verifyWithPassword("hunter2")
+    }
+
+    #expect(SessionTemplateTokensCache.shared.getToken(cacheKey: session.tokenCacheKey(template: "secondary")) == nil)
+    #expect(!Clerk.shared.identityController.canReuseSessionToken(sessionId: session.id))
+  }
+
   @Test
   func sendResetPasswordEmailCodeCallsPrepareFirstFactor() async throws {
     let session = Session.mock

@@ -187,6 +187,32 @@ struct ReverificationFlowTests {
     #expect(flow.resetPasswordFactor == resetEmail)
   }
 
+  @Test(arguments: [
+    ("form_password_pwned", ReverificationFlow.PasswordResetReason.pwned),
+    ("form_password_compromised", .compromised),
+  ])
+  func aRejectedPasswordThatNeedsAResetNamesWhy(code: String, reason: ReverificationFlow.PasswordResetReason) {
+    #expect(ReverificationFlow.PasswordResetReason(ClerkAPIError(code: code)) == reason)
+  }
+
+  @Test
+  func otherPasswordErrorsDoNotOfferAReset() {
+    #expect(ReverificationFlow.PasswordResetReason(ClerkAPIError(code: "form_password_incorrect")) == nil)
+    #expect(ReverificationFlow.PasswordResetReason(nil) == nil)
+  }
+
+  @Test
+  func aRejectedNewPasswordReturnsToTheNewPasswordScreenWithItsError() {
+    let flow = ReverificationFlow(level: .firstFactor)
+    let reset = Factor(strategy: .resetPasswordEmailCode, emailAddressId: "idn_email", safeIdentifier: "sam@clerk.dev")
+    flow.path = [.newPassword(resetFactor: reset, reason: .pwned), .factor(reset, .firstFactor)]
+
+    flow.rejectNewPassword(ClerkAPIError(code: "form_password_length_too_short"))
+
+    #expect(flow.path == [.newPassword(resetFactor: reset, reason: .pwned)])
+    #expect((flow.newPasswordError as? ClerkAPIError)?.code == "form_password_length_too_short")
+  }
+
   private func verification(
     _ status: SessionVerification.Status,
     first: [Factor] = [],

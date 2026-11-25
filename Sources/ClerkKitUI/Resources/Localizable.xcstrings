@@ -32864,6 +32864,106 @@
         }
       }
     },
+    "Your password can't be used anymore. Set a new password to continue." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يعد بالإمكان استخدام كلمة المرور الخاصة بك. عيّن كلمة مرور جديدة للمتابعة."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ihr Passwort kann nicht mehr verwendet werden. Legen Sie ein neues Passwort fest, um fortzufahren."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ο κωδικός πρόσβασής σας δεν μπορεί πλέον να χρησιμοποιηθεί. Ορίστε νέο κωδικό πρόσβασης για να συνεχίσετε."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu contraseña ya no se puede usar. Establece una nueva contraseña para continuar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre mot de passe ne peut plus être utilisé. Définissez un nouveau mot de passe pour continuer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "आपका पासवर्ड अब इस्तेमाल नहीं किया जा सकता। जारी रखने के लिए नया पासवर्ड सेट करें।"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tua password non può più essere usata. Imposta una nuova password per continuare."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お使いのパスワードは使用できなくなりました。続行するには新しいパスワードを設定してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "비밀번호를 더 이상 사용할 수 없습니다. 계속하려면 새 비밀번호를 설정하세요."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twojego hasła nie można już używać. Ustaw nowe hasło, aby kontynuować."
+          }
+        },
+        "pt" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua senha não pode mais ser usada. Defina uma nova senha para continuar."
+          }
+        },
+        "ro" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parola ta nu mai poate fi folosită. Setează o parolă nouă pentru a continua."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваш пароль больше нельзя использовать. Задайте новый пароль, чтобы продолжить."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parolanız artık kullanılamaz. Devam etmek için yeni bir parola belirleyin."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ваш пароль більше не можна використовувати. Установіть новий пароль, щоб продовжити."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "您的密码已无法再使用。请设置新密码以继续。"
+          }
+        }
+      }
+    },
     "Your password was found in a data breach. Set a new password to continue." : {
       "localizations" : {
         "ar" : {

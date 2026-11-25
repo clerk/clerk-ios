@@ -93,6 +93,62 @@ struct ReverifierTests {
 
   // MARK: - Presenter
 
+  @Test(arguments: [true, false])
+  func aSessionSwitchBeforeTheRetryCancelsIt(switchesBeforeTheSheet: Bool) async {
+    var sessionId = "sess_a"
+    var attempts = 0
+    var presentedLevels: [SessionVerification.Level] = []
+    let reverify = Reverifier(isSatisfied: { _ in false }, currentSessionId: { sessionId }) {
+      presentedLevels.append($0)
+      sessionId = "sess_b"
+    }
+
+    await #expect(throws: ReverificationCancelledError.self) {
+      try await reverify {
+        attempts += 1
+        if switchesBeforeTheSheet {
+          sessionId = "sess_b"
+        }
+        throw ReverificationRequiredError(reverification: .strict)
+      }
+    }
+    #expect(attempts == 1)
+    #expect(presentedLevels.count == (switchesBeforeTheSheet ? 0 : 1))
+  }
+
+  @Test
+  func aRequirementClerkDoesNotSupportThrowsWithoutPresenting() async {
+    var presentedLevels: [SessionVerification.Level] = []
+    let reverify = Reverifier(isSatisfied: { _ in false }) { presentedLevels.append($0) }
+
+    await #expect(throws: ReverificationUnsupportedRequirementError.self) {
+      try await reverify(.custom(level: .multiFactor, afterMinutes: 0))
+    }
+    #expect(presentedLevels.isEmpty)
+  }
+
+  @Test
+  func aCallerCancelledWhileTheSheetIsUpDoesNotRunTheOperationAgain() async {
+    var attempts = 0
+    let reverify = Reverifier(isSatisfied: { _ in false }) { _ in
+      withUnsafeCurrentTask { $0?.cancel() }
+    }
+
+    let task = Task {
+      try await reverify {
+        attempts += 1
+        if attempts == 1 {
+          throw ReverificationRequiredError(reverification: .strict)
+        }
+      }
+    }
+
+    await #expect(throws: CancellationError.self) {
+      try await task.value
+    }
+    #expect(attempts == 1)
+  }
+
   @Test
   func everyCallerAtTheSameLevelSharesOneSheet() async throws {
     let display = RecordingSheetDisplay()
@@ -136,6 +192,27 @@ struct ReverifierTests {
   }
 
   @Test
+  func aCallerCancelledWhileWaitingForAnotherLevelDoesNotPresent() async throws {
+    let display = RecordingSheetDisplay()
+    let presenter = ReverificationPresenter(display: display)
+
+    let first = Task { try await presenter.present(level: .firstFactor, clerk: .mock) }
+    try await waitUntil { display.shown.count == 1 }
+    let second = Task { try await presenter.present(level: .multiFactor, clerk: .mock) }
+    for _ in 0 ..< 10 {
+      await Task.yield()
+    }
+    second.cancel()
+    display.complete(0)
+    try await first.value
+
+    await #expect(throws: CancellationError.self) {
+      try await second.value
+    }
+    #expect(display.shown.count == 1)
+  }
+
+  @Test
   func dismissingTheSheetBeforeItCompletesCancels() async throws {
     let display = RecordingSheetDisplay()
     let presenter = ReverificationPresenter(display: display)
@@ -150,14 +227,20 @@ struct ReverifierTests {
   }
 
   @Test
-  func withNoWindowToPresentOverItThrows() async {
+  func aSheetThatCannotBePresentedThrowsAndTheNextCallPresentsAgain() async throws {
     let display = RecordingSheetDisplay()
     display.hasWindow = false
     let presenter = ReverificationPresenter(display: display)
 
-    await #expect(throws: ReverificationNoWindowError.self) {
+    await #expect(throws: ReverificationNotPresentedError.self) {
       try await presenter.present(level: .secondFactor, clerk: .mock)
     }
+
+    display.hasWindow = true
+    let task = Task { try await presenter.present(level: .secondFactor, clerk: .mock) }
+    try await waitUntil { !display.shown.isEmpty }
+    display.complete(0)
+    try await task.value
   }
 
   @Test
@@ -191,7 +274,7 @@ private final class RecordingSheetDisplay: ReverificationSheetDisplay {
     _ request: ReverificationRequest,
     clerk _: Clerk,
     onDismiss: @escaping @MainActor () -> Void
-  ) -> Bool {
+  ) async -> Bool {
     guard hasWindow else { return false }
     shown.append(Shown(request: request, onDismiss: onDismiss))
     return true

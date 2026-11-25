@@ -36,6 +36,17 @@ struct CodeLimiterTests {
     #expect(limiter.lastCodeSentIdentifier == "phone_b")
   }
 
+  @Test
+  func forgettingTheLastCodeLeavesTheCooldown() {
+    let limiter = CodeLimiter(startTicking: { _ in {} })
+    limiter.recordCodeSent(for: "email")
+
+    limiter.forgetLastCodeSent()
+
+    #expect(limiter.lastCodeSentIdentifier == nil)
+    #expect(!limiter.isFirstRequest(for: "email"))
+  }
+
   private func publishesUpdate(when change: () -> Void, _ read: () -> Int) -> Bool {
     let didChange = OSAllocatedUnfairLock(initialState: false)
     _ = withObservationTracking(read) {

@@ -28,6 +28,7 @@ struct ReverificationRequiredErrorTests {
     #""forever""#,
     #"{"level": "third_factor", "afterMinutes": 5}"#,
     #"{"level": "first_factor", "afterMinutes": 0}"#,
+    #"{"level": "first_factor", "afterMinutes": 1e20}"#,
     "null",
   ])
   func keepsTheErrorButDropsARequirementItCannotRead(reverification: String) throws {

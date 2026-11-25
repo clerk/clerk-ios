@@ -34,7 +34,7 @@ struct ReverificationCodeView: View {
     ScrollView {
       VStack(spacing: 0) {
         VStack(spacing: 8) {
-          HeaderView(style: .title, text: isPasswordReset ? "Reset password" : "Verification required")
+          HeaderView(style: .title, text: "Verification required")
           HeaderView(style: .subtitle, text: subtitle)
 
           if let identifier = factor.safeIdentifier {
@@ -59,7 +59,7 @@ struct ReverificationCodeView: View {
 
           CodeVerificationStatusView(state: verificationState)
 
-          if sendsCode {
+          if sendsCode, verificationState.showResend {
             ResendCodeButton(codeLimiter: codeLimiter, identifier: codeLimiterIdentifier, theme: theme) {
               await prepare()
             }
@@ -165,6 +165,12 @@ extension ReverificationCodeView {
       guard !Task.isCancelled, !error.isCancellationError else {
         otpFieldState = .default
         verificationState = .default
+        return .stop
+      }
+      if isPasswordReset, (error as? ClerkAPIError)?.meta?["param_name"] == "password" {
+        otpFieldState = .default
+        verificationState = .default
+        flow.rejectNewPassword(error)
         return .stop
       }
       otpFieldState = .error

@@ -11,6 +11,7 @@ import SwiftUI
 struct ReverificationPasskeyView: View {
   @Environment(\.clerkTheme) private var theme
   @Environment(ReverificationFlow.self) private var flow
+  @Environment(CodeLimiter.self) private var codeLimiter
 
   let factor: Factor
   let stage: ReverificationFlow.Stage
@@ -77,6 +78,7 @@ struct ReverificationPasskeyView: View {
     passkeyInProgress = true
     defer { passkeyInProgress = false }
 
+    codeLimiter.forgetLastCodeSent()
     do {
       let verification = try await session.verifyWithPasskey(
         preferImmediatelyAvailableCredentials: false,
@@ -95,6 +97,7 @@ struct ReverificationPasskeyView: View {
 #Preview {
   ReverificationPasskeyView(factor: .mockPasskey, stage: .firstFactor)
     .environment(ReverificationFlow(level: .firstFactor))
+    .environment(CodeLimiter())
     .clerkPreview()
 }
 

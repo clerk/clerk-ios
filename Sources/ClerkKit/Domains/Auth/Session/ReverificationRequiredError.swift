@@ -78,14 +78,14 @@ public struct ReverificationRequiredError: Error, Equatable, Sendable {
 
     guard
       let levelName = json["level"]?.stringValue,
-      let afterMinutes = json["afterMinutes"]?.doubleValue
+      let afterMinutes = json["afterMinutes"]?.doubleValue.flatMap({ Int(exactly: $0.rounded(.down)) })
     else {
       return nil
     }
 
     let config = ReverificationConfig.custom(
       level: SessionVerification.Level(rawValue: levelName),
-      afterMinutes: Int(afterMinutes)
+      afterMinutes: afterMinutes
     )
     return config.requirement == nil ? nil : config
   }
