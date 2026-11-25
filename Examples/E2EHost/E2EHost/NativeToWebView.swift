@@ -103,11 +103,10 @@ private struct SessionTransferWebView: UIViewRepresentable {
 
   final class Coordinator: NSObject, WKNavigationDelegate {
     private static let signedInUserIdScript = """
-    const deadline = Date.now() + 15000;
-    while (!window.Clerk?.loaded && Date.now() < deadline) {
+    while (!window.Clerk?.loaded) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    return window.Clerk?.user?.id ?? null;
+    return window.Clerk.user?.id ?? null;
     """
 
     private let webSession: Binding<NativeToWebView.WebSession>
