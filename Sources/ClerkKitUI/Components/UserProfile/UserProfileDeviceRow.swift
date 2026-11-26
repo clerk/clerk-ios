@@ -66,6 +66,7 @@ struct UserProfileDeviceRow: View {
             Text("Sign out of device", bundle: .module)
           }
           .onIsRunningChanged { isLoading = $0 }
+          .onDisappear { isLoading = false }
         } label: {
           ThreeDotsMenuLabel()
         }

@@ -98,6 +98,7 @@ struct UserProfileMfaRow: View {
           Text("Set as default", bundle: .module)
         }
         .onIsRunningChanged { isLoading = $0 }
+        .onDisappear { isLoading = false }
       }
 
       if canRemove {
@@ -114,6 +115,7 @@ struct UserProfileMfaRow: View {
         Text("Regenerate", bundle: .module)
       }
       .onIsRunningChanged { isLoading = $0 }
+      .onDisappear { isLoading = false }
     }
   }
 
