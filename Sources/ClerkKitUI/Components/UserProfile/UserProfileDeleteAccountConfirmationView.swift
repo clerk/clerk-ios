@@ -111,7 +111,7 @@ extension UserProfileDeleteAccountConfirmationView {
 
     do {
       let deletedUserID = user.id
-      try await user.delete()
+      try await clerk.reverify { try await user.delete() }
       forgetBiometricLocalCredentials(deletedUserID: deletedUserID)
       let shouldPresentAccountSwitcher = clerk.auth.sessions.count > 1
       let shouldDismissUserProfile = clerk.user == nil && !shouldPresentAccountSwitcher
@@ -121,6 +121,7 @@ extension UserProfileDeleteAccountConfirmationView {
         navigation.accountSwitcherIsPresented = true
       }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to delete account", error: error)
     }

@@ -18,7 +18,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
   @State private var didNavigateAway = false
   @State private var addPhoneNumberIsPresented = false
   @State private var isReservingForSecondFactor = false
-  @State private var selectedPhoneNumber: PhoneNumber?
+  @State private var selectedPhoneNumberId: String?
 
   let token: AuthFlowPresentationToken
 
@@ -29,6 +29,10 @@ struct SessionTaskMfaSmsChooseNumberView: View {
   private var availablePhoneNumbers: [PhoneNumber] {
     (user?.phoneNumbersAvailableForMfa ?? [])
       .sorted { $0.createdAt < $1.createdAt }
+  }
+
+  private var selectedPhoneNumber: PhoneNumber? {
+    availablePhoneNumbers.first { $0.id == selectedPhoneNumberId }
   }
 
   var body: some View {
@@ -115,11 +119,11 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       VStack(spacing: 12) {
         ForEach(availablePhoneNumbers) { phoneNumber in
           Button {
-            selectedPhoneNumber = phoneNumber
+            selectedPhoneNumberId = phoneNumber.id
           } label: {
             AddMfaSmsRow(
               phoneNumber: phoneNumber,
-              isSelected: selectedPhoneNumber == phoneNumber
+              isSelected: selectedPhoneNumberId == phoneNumber.id
             )
           }
           .buttonStyle(.pressedBackground)
@@ -155,7 +159,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
       SecuredByClerkView()
     }
     .padding(16)
-    .sensoryFeedback(.selection, trigger: selectedPhoneNumber)
+    .sensoryFeedback(.selection, trigger: selectedPhoneNumberId)
   }
 
   private func continueWithPhoneNumber(_ phoneNumber: PhoneNumber) async {
@@ -163,7 +167,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
     if phoneNumber.verification?.status == .verified {
       isReservingForSecondFactor = true
       do {
-        let reserved = try await phoneNumber.setReservedForSecondFactor()
+        let reserved = try await clerk.reverify { try await phoneNumber.setReservedForSecondFactor() }
         guard clerk.authFlowPresentationIsCurrent(token) else { return }
         if let backupCodes = reserved.backupCodes, !backupCodes.isEmpty {
           navigation.appendPostAuthDestination(
@@ -178,6 +182,7 @@ struct SessionTaskMfaSmsChooseNumberView: View {
         }
       } catch {
         isReservingForSecondFactor = false
+        if error.isUserCancelledError { return }
         self.error = error
         ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
       }

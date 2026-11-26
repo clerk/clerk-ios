@@ -59,7 +59,7 @@ extension UserProfilePasskeySection {
     guard let user else { return }
 
     do {
-      try await user.createPasskey()
+      try await clerk.reverify { try await user.createPasskey() }
     } catch {
       if error.isUserCancelledError { return }
       self.error = error

@@ -142,8 +142,9 @@ struct UserProfilePhoneRow: View {
 extension UserProfilePhoneRow {
   private func setPhoneAsPrimary(_ phone: PhoneNumber) async {
     do {
-      try await user?.update(.init(primaryPhoneNumberId: phone.id))
+      try await clerk.reverify { try await user?.update(.init(primaryPhoneNumberId: phone.id)) }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to set phone as primary", error: error)
     }
@@ -153,8 +154,9 @@ extension UserProfilePhoneRow {
     defer { removeResource = nil }
 
     do {
-      try await resource?.deleteAction()
+      try await clerk.reverify { try await resource?.deleteAction() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to remove phone resource", error: error)
     }

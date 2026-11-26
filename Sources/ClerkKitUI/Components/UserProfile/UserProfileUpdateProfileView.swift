@@ -284,9 +284,10 @@ extension UserProfileUpdateProfileView {
     }
 
     do {
-      try await user.update(params)
+      try await clerk.reverify { try await user.update(params) }
       dismiss()
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to update user profile", error: error)
     }

@@ -130,9 +130,11 @@ extension UserProfileAddEmailView {
     guard let user else { return }
 
     do {
-      let emailAddress = try await user.createEmailAddress(email)
+      let email = email
+      let emailAddress = try await clerk.reverify { try await user.createEmailAddress(email) }
       path.append(Destination.verify(emailAddress))
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to add email address", error: error)
     }

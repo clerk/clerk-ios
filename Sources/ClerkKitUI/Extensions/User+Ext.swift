@@ -94,4 +94,22 @@ extension User {
   }
 }
 
+extension User {
+  @discardableResult @MainActor
+  func connectAppleAccount(
+    reverify: Reverifier,
+    appleIdentityToken: @MainActor () async throws -> String = { try await User.appleIdentityToken() }
+  ) async throws -> ExternalAccount {
+    var token: String?
+    return try await reverify {
+      try await connectAppleAccount {
+        if let token { return token }
+        let newToken = try await appleIdentityToken()
+        token = newToken
+        return newToken
+      }
+    }
+  }
+}
+
 #endif

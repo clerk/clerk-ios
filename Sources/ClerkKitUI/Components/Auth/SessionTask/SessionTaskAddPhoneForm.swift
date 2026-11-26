@@ -81,12 +81,14 @@ struct SessionTaskAddPhoneForm: View {
 
     do {
       onBeginSubmit?()
-      let newPhoneNumber = try await user.createPhoneNumber(phoneNumber)
+      let phoneNumber = phoneNumber
+      let newPhoneNumber = try await clerk.reverify { try await user.createPhoneNumber(phoneNumber) }
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       try await onPhoneNumberCreated(newPhoneNumber)
     } catch {
-      self.error = error
       onError?()
+      if error.isUserCancelledError { return }
+      self.error = error
       ClerkLogger.error("Failed to add phone number", error: error)
     }
   }

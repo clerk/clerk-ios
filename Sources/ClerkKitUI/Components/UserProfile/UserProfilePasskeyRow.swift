@@ -9,6 +9,7 @@ import ClerkKit
 import SwiftUI
 
 struct UserProfilePasskeyRow: View {
+  @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.locale) private var locale
 
@@ -108,8 +109,9 @@ extension UserProfilePasskeyRow {
     defer { removeResource = nil }
 
     do {
-      try await removeResource?.deleteAction()
+      try await clerk.reverify { try await removeResource?.deleteAction() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to remove passkey resource", error: error)
     }

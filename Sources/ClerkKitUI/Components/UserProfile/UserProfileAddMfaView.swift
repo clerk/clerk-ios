@@ -148,10 +148,11 @@ extension UserProfileAddMfaView {
     guard let user else { return }
 
     do {
-      let totp = try await user.createTOTP()
+      let totp = try await clerk.reverify { try await user.createTOTP() }
       navigation.chooseMfaTypeIsPresented = false
       navigation.presentedAddMfaType = .authApp(totp)
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to create TOTP", error: error)
     }
@@ -161,10 +162,11 @@ extension UserProfileAddMfaView {
     guard let user else { return }
 
     do {
-      let backupCodes = try await user.createBackupCodes()
+      let backupCodes = try await clerk.reverify { try await user.createBackupCodes() }
       navigation.chooseMfaTypeIsPresented = false
       navigation.presentedAddMfaType = .backupCodes(backupCodes.codes)
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to create backup codes", error: error)
     }

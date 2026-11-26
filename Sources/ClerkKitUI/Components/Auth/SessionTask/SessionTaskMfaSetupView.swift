@@ -103,13 +103,14 @@ struct SessionTaskMfaSetupView: View {
     }
 
     do {
-      let totp = try await user.createTOTP()
+      let totp = try await clerk.reverify { try await user.createTOTP() }
       guard clerk.authFlowPresentationIsCurrent(token) else { return }
       navigation.appendPostAuthDestination(.taskMfaTotp(
         totpResource: totp,
         token: token
       ))
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to create TOTP", error: error)
     }

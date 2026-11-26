@@ -117,6 +117,10 @@ struct SessionTaskMfaVerifySmsView: View {
                 verificationState = .verifying
                 try await handleSuccessfulVerification()
               } catch {
+                if error.isUserCancelledError {
+                  verificationState = .success
+                  return
+                }
                 self.error = error
               }
             }
@@ -157,6 +161,11 @@ struct SessionTaskMfaVerifySmsView: View {
         verificationState = .default
         return .stop
       }
+      guard !error.isUserCancelledError else {
+        otpFieldState = .default
+        verificationState = .success
+        return .stop
+      }
       otpFieldState = .error
       verificationState = .error(error)
 
@@ -171,7 +180,7 @@ struct SessionTaskMfaVerifySmsView: View {
 
   private func handleSuccessfulVerification() async throws {
     guard clerk.authFlowPresentationIsCurrent(token) else { return }
-    let reserved = try await phoneNumber.setReservedForSecondFactor()
+    let reserved = try await clerk.reverify { try await phoneNumber.setReservedForSecondFactor() }
     guard clerk.authFlowPresentationIsCurrent(token), !Task.isCancelled else { return }
     codeLimiter.clearRecord(for: codeLimiterIdentifier)
     verificationState = .success

@@ -142,8 +142,9 @@ struct UserProfileEmailRow: View {
 extension UserProfileEmailRow {
   private func setEmailAsPrimary(_ email: EmailAddress) async {
     do {
-      try await user?.update(.init(primaryEmailAddressId: email.id))
+      try await clerk.reverify { try await user?.update(.init(primaryEmailAddressId: email.id)) }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to set email as primary", error: error)
     }
@@ -153,8 +154,9 @@ extension UserProfileEmailRow {
     defer { removeResource = nil }
 
     do {
-      try await resource?.deleteAction()
+      try await clerk.reverify { try await resource?.deleteAction() }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to remove email resource", error: error)
     }

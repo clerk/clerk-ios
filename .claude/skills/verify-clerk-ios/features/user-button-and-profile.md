@@ -34,7 +34,7 @@ Preconditions:
 
 ## Gotchas
 
-- A new application has reverification on, and the Platform API has no setting for it. Clerk accepts the deletion without another verification because the ticket sign-in happened seconds earlier. A spec that deletes the account long after its sign-in can be asked to verify again.
+- A new application has reverification on, and the Platform API has no setting for it. Clerk still accepts the deletion without another verification, however long after the sign-in, because FAPI doesn't ask native clients to reverify. To see the reverification sheet on deletion, follow the local patch note in `reverification.md`.
 - `clerk.userProfile.deleteAccount.confirmation` is the confirmation field, which takes focus as the sheet opens. Find it with `.first()`, wait for it to be visible, and fill that locator.
 - `Signed out` after a deletion looks the same as after a sign-out. The sign-in attempt with the deleted email is what shows that the account is gone. It needs `authMode: 'signIn'`, because the default mode would start a sign-up for an unknown email.
 - Manage account shows the number as `+1 (201) 555‑01xx`, with a non-breaking hyphen (U+2011) before the last four digits. `asShownByClerk` in `specs/phone.ts` builds that text.

@@ -141,13 +141,14 @@ struct UserProfileMfaAddSmsView: View {
 extension UserProfileMfaAddSmsView {
   private func reserveForSecondFactor(phoneNumber: ClerkKit.PhoneNumber) async {
     do {
-      let phoneNumber = try await phoneNumber.setReservedForSecondFactor()
+      let phoneNumber = try await clerk.reverify { try await phoneNumber.setReservedForSecondFactor() }
       if let backupCodes = phoneNumber.backupCodes {
         path.append(Destination.backupCodes(backupCodes))
       } else {
         navigation.presentedAddMfaType = nil
       }
     } catch {
+      if error.isUserCancelledError { return }
       self.error = error
       ClerkLogger.error("Failed to reserve phone number for second factor", error: error)
     }
