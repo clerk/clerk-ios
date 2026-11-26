@@ -147,6 +147,13 @@ extension Clerk {
     /// from ``Clerk/appVersionSupportStatus``. Set this to false to show your own UI on iOS and macOS too.
     public let updateRequiredViewEnabled: Bool
 
+    /// Whether the framework host's own runtime signs its requests with ``Clerk/deviceBindingProof(method:url:authorization:)``. Defaults to false.
+    ///
+    /// A host whose middleware sends `x-clerk-host-sdk` shares the client token with its runtime, so the client stays
+    /// unbound unless the host sets this and signs every request its runtime sends.
+    @_spi(FrameworkIntegration)
+    public var hostSignsRequests = false
+
     /// Initializes a ``Options`` instance.
     /// - Parameters:
     ///   - logLevel: The minimum log level for SDK logging. Defaults to `.error` (minimal logging). Use `.debug` or `.verbose` for more detailed logs.

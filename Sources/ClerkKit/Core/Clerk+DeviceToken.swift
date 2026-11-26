@@ -69,6 +69,40 @@ extension Clerk {
     try dependencies.deviceBinding.holder?.deleteKey()
   }
 
+  /// Returns a DPoP proof for a request the framework host's runtime sends to the Frontend API, signed with this device's key.
+  ///
+  /// Returns `nil` when the request goes without a proof: the host didn't set ``Clerk/Options/hostSignsRequests``,
+  /// or this device doesn't bind its client. Throws when the client token is device-bound and the key can't sign.
+  ///
+  /// - Parameters:
+  ///   - method: The HTTP method the request is sent with.
+  ///   - url: The request's full URL. The proof drops its query and fragment.
+  ///   - authorization: The request's `Authorization` header, if it sends one.
+  @_spi(FrameworkIntegration)
+  public func deviceBindingProof(method: String, url: String, authorization: String?) async throws -> String? {
+    try runtimeScope.validateStableRuntime()
+    guard let target = URL(string: url) else {
+      throw DpopProofError.invalidURL
+    }
+    return try await DeviceBindingSigner(runtimeScope: runtimeScope).proof(
+      for: DpopBoundRequest(
+        method: method,
+        url: target,
+        accessToken: DeviceBindingSigner.accessToken(fromAuthorization: authorization)
+      ),
+      sentByFrameworkHost: true
+    )
+  }
+
+  /// Records the `Date` header of a Frontend API response the framework host's runtime received, so proofs follow the server's clock.
+  ///
+  /// - Parameter date: The response's `Date` header, as the server sent it.
+  @_spi(FrameworkIntegration)
+  public func recordServerDate(_ date: String) {
+    guard let serverDate = HTTPURLResponse.httpDateFormatter.date(from: date) else { return }
+    identityController.recordServerDate(serverDate, receivedAt: .now)
+  }
+
   /// Replaces the stored Clerk device token only if it still matches `expected`.
   ///
   /// This is intended for framework integrations where another Clerk SDK runtime
