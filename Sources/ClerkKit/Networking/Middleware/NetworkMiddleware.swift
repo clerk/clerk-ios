@@ -32,6 +32,7 @@ protocol NetworkRetryMiddleware: Sendable {
 struct NetworkingPipeline {
   private let requestMiddleware: [any ClerkRequestMiddleware]
   private let customRequestMiddleware: [any ClerkRequestMiddleware]
+  private let proofMiddleware: [any ClerkRequestMiddleware]
   private let responseObservers: [any ClerkResponseObserver]
   private let responseMiddleware: [any ClerkResponseMiddleware]
   private let retryMiddleware: [any NetworkRetryMiddleware]
@@ -39,12 +40,14 @@ struct NetworkingPipeline {
   init(
     requestMiddleware: [any ClerkRequestMiddleware] = [],
     customRequestMiddleware: [any ClerkRequestMiddleware] = [],
+    proofMiddleware: [any ClerkRequestMiddleware] = [],
     responseObservers: [any ClerkResponseObserver] = [],
     responseMiddleware: [any ClerkResponseMiddleware] = [],
     retryMiddleware: [any NetworkRetryMiddleware] = []
   ) {
     self.requestMiddleware = requestMiddleware
     self.customRequestMiddleware = customRequestMiddleware
+    self.proofMiddleware = proofMiddleware
     self.responseObservers = responseObservers
     self.responseMiddleware = responseMiddleware
     self.retryMiddleware = retryMiddleware
@@ -53,6 +56,7 @@ struct NetworkingPipeline {
   func prepare(_ request: inout URLRequest) async throws {
     try await prepareClerkRequest(&request)
     try await prepareCustomRequest(&request)
+    try await prepareProof(&request)
   }
 
   func prepareClerkRequest(_ request: inout URLRequest) async throws {
@@ -63,6 +67,12 @@ struct NetworkingPipeline {
 
   func prepareCustomRequest(_ request: inout URLRequest) async throws {
     for middleware in customRequestMiddleware {
+      try await middleware.prepare(&request)
+    }
+  }
+
+  func prepareProof(_ request: inout URLRequest) async throws {
+    for middleware in proofMiddleware {
       try await middleware.prepare(&request)
     }
   }
@@ -94,6 +104,7 @@ extension NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware,
       customRequestMiddleware: customRequestMiddleware + middleware,
+      proofMiddleware: proofMiddleware,
       responseObservers: responseObservers,
       responseMiddleware: responseMiddleware,
       retryMiddleware: retryMiddleware
@@ -104,6 +115,7 @@ extension NetworkingPipeline {
     NetworkingPipeline(
       requestMiddleware: requestMiddleware,
       customRequestMiddleware: customRequestMiddleware,
+      proofMiddleware: proofMiddleware,
       responseObservers: responseObservers,
       responseMiddleware: middleware + responseMiddleware,
       retryMiddleware: retryMiddleware
@@ -121,12 +133,16 @@ extension NetworkingPipeline {
         ClerkURLEncodedFormEncoderMiddleware(),
         ClerkRequestLoggingMiddleware(),
       ],
+      proofMiddleware: [
+        ClerkDpopRequestMiddleware(runtimeScope: runtimeScope),
+      ],
       responseObservers: [
         ClerkServerClockResponseMiddleware(runtimeScope: runtimeScope),
         ClerkAppVersionSupportResponseMiddleware(runtimeScope: runtimeScope),
       ],
       responseMiddleware: [
         ClerkResponseLoggingMiddleware(),
+        ClerkDeviceBindingResponseMiddleware(runtimeScope: runtimeScope),
         ClerkClientSyncResponseMiddleware(runtimeScope: runtimeScope),
         ClerkAuthEventEmitterResponseMiddleware(runtimeScope: runtimeScope),
         ClerkInvalidAuthResponseMiddleware(runtimeScope: runtimeScope),
@@ -134,6 +150,7 @@ extension NetworkingPipeline {
       ],
       retryMiddleware: [
         ClerkRateLimitRetryMiddleware(),
+        ClerkDpopRetryMiddleware(),
       ]
     )
   }
