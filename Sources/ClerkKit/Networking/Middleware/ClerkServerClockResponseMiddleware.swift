@@ -19,9 +19,14 @@ struct ClerkServerClockResponseMiddleware: ClerkResponseObserver {
 
   func observe(_ response: HTTPURLResponse, data _: Data, for _: URLRequest) async {
     let receivedAt = currentDate()
+    let receivedAtInstant = ContinuousClock.now
     guard let serverDate = response.serverDate else { return }
     try? await runtimeScope.withCurrentClerk {
-      $0.identityController.recordServerDate(serverDate, receivedAt: receivedAt)
+      $0.identityController.recordServerDate(
+        serverDate,
+        receivedAt: receivedAt,
+        receivedAtInstant: receivedAtInstant
+      )
     }
   }
 }
