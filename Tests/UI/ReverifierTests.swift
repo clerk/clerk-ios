@@ -162,6 +162,22 @@ struct ReverifierTests {
   }
 
   @Test
+  func withNoOneSignedInItThrowsWithoutPresenting() async {
+    let display = RecordingSheetDisplay()
+    let reverify = Reverifier(clerk: .mockSignedOut, presenter: ReverificationPresenter(display: display))
+
+    await #expect(throws: ClerkClientError.self) {
+      try await reverify(.strict)
+    }
+    await #expect(throws: ClerkClientError.self) {
+      try await reverify {
+        throw ReverificationRequiredError(reverification: .strict)
+      }
+    }
+    #expect(display.shown.isEmpty)
+  }
+
+  @Test
   func aRequirementClerkDoesNotSupportThrowsWithoutPresenting() async {
     var presentedLevels: [SessionVerification.Level] = []
     let reverify = Reverifier(isSatisfied: { _ in false }) { presentedLevels.append($0) }

@@ -15,6 +15,7 @@ struct ReverificationView: View {
 
   @State private var flow: ReverificationFlow
   @State private var codeLimiter = CodeLimiter()
+  @State private var failure: Error?
 
   private let onComplete: @MainActor (_ verifiedSessionId: String?) -> Void
 
@@ -64,6 +65,14 @@ struct ReverificationView: View {
       onComplete(flow.session?.id)
       dismiss()
     }
+    .onChange(of: flow.failure != nil) { _, failed in
+      if failed {
+        failure = flow.failure
+      }
+    }
+    .clerkErrorPresenting($failure, onDismiss: { _ in
+      dismiss()
+    })
     .onChange(of: clerk.session?.id) {
       dismiss()
     }
@@ -94,12 +103,9 @@ struct ReverificationView: View {
     case .ready(let root):
       ReverificationDestinationView(destination: root)
         .id(root)
-    case .failed(let error):
-      ScrollView {
-        ErrorView(error: error)
-          .padding(16)
-      }
-      .background(theme.colors.background)
+    case .failed:
+      theme.colors.background
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
   }
 }

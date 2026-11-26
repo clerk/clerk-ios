@@ -53,6 +53,10 @@ final class ReverificationFlow {
     if case .complete = phase { true } else { false }
   }
 
+  var failure: Error? {
+    if case .failed(let error) = phase { error } else { nil }
+  }
+
   private(set) var hasLocalBiometricCredential = false
 
   var newPassword = ""
