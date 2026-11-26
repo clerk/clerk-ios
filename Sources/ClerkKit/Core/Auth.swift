@@ -617,19 +617,54 @@ extension Auth {
 
   /// Signs out the active user.
   ///
+  /// When this signs out of every session (`sessionId` is nil, or names the only signed-in session) and the
+  /// request fails, it signs out on the device and then throws the request's error.
+  ///
   /// - Parameter sessionId: An optional session ID to sign out from a specific session. If nil, signs out from all sessions.
   /// - Throws: An error if the sign-out process fails.
   public func signOut(sessionId: String? = nil) async throws {
-    if let sessionId {
+    let identityController = Clerk.shared.identityController
+    identityController.adoptStoredDeviceToken()
+    let signedInSessions = Clerk.shared.client?.signedInSessions ?? []
+    if let sessionId, signedInSessions.count > 1 {
       _ = try await transport.send(SessionAPI.remove(sessionId: sessionId))
-      Clerk.shared.identityController.invalidateSessionTokens(sessionId: sessionId)
-    } else {
-      let signedInSessions = Clerk.shared.client?.signedInSessions ?? []
+      identityController.invalidateSessionTokens(sessionId: sessionId)
+      return
+    }
+
+    let requestDeviceToken = identityController.currentDeviceToken
+    do {
       _ = try await transport.send(SessionAPI.removeAll())
-      Clerk.shared.identityController.invalidateAllSessionTokens()
-      for session in signedInSessions {
-        send(.signedOut(session: session.removedFromClient))
+    } catch {
+      await signOutOnDevice(of: signedInSessions, deviceToken: requestDeviceToken)
+      throw error
+    }
+    endSessions(signedInSessions)
+  }
+
+  private func signOutOnDevice(of sessions: [Session], deviceToken: String?) async {
+    let clerk = Clerk.shared
+    do {
+      guard try await clerk.identityController.compareAndSetDeviceToken(nil, expected: deviceToken) else { return }
+    } catch {
+      ClerkLogger.logError(error, message: "Failed to clear the device token after the sign-out request failed")
+      return
+    }
+    endSessions(sessions)
+    clerk.runtime.scheduleTask { [weak clerk] in
+      do {
+        try await clerk?.refreshClient()
+      } catch is CancellationError {
+      } catch {
+        ClerkLogger.logError(error, message: "Failed to refresh the client after signing out on the device")
       }
+    }
+  }
+
+  private func endSessions(_ sessions: [Session]) {
+    Clerk.shared.identityController.invalidateAllSessionTokens()
+    for session in sessions {
+      send(.signedOut(session: session.removedFromClient))
     }
   }
 

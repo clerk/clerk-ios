@@ -279,36 +279,3 @@ private func hostedAuthPersistenceCallbackURL(
   ]
   return try #require(components.url)
 }
-
-private final class FailableIdentityKeychain: @unchecked Sendable, KeychainStorage {
-  enum Failure: Error {
-    case write
-  }
-
-  private let backing = InMemoryKeychain()
-  private let lock = NSLock()
-  private var shouldFail = false
-
-  var failsWrites: Bool {
-    get { lock.withLock { shouldFail } }
-    set { lock.withLock { shouldFail = newValue } }
-  }
-
-  func set(_ data: Data, forKey key: String) throws {
-    guard !failsWrites else { throw Failure.write }
-    try backing.set(data, forKey: key)
-  }
-
-  func data(forKey key: String) throws -> Data? {
-    try backing.data(forKey: key)
-  }
-
-  func deleteItem(forKey key: String) throws {
-    guard !failsWrites else { throw Failure.write }
-    try backing.deleteItem(forKey: key)
-  }
-
-  func hasItem(forKey key: String) throws -> Bool {
-    try backing.hasItem(forKey: key)
-  }
-}

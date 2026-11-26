@@ -593,8 +593,9 @@ extension UserProfileView {
     do {
       try await clerk.auth.signOut(sessionId: sessionId)
     } catch {
-      self.error = error
       ClerkLogger.error("Failed to sign out", error: error)
+      guard clerk.session != nil else { return }
+      self.error = error
     }
   }
 
