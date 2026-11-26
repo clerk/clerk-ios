@@ -130,20 +130,8 @@ struct UserButtonAccountSwitcher: View {
       .preGlassSolidNavBar()
       .preGlassDetentSheetBackground()
       .toolbar {
-        ToolbarItem(placement: doneToolbarPlacement) {
-          Button {
-            dismiss()
-          } label: {
-            VerticalToolbarLabel(
-              Text("Done", bundle: .module)
-                .font(theme.fonts.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(theme.colors.primary),
-              systemImage: "checkmark"
-            )
-          }
-          .tintInVerticalToolbar(theme.colors.primary)
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
+        DoneToolbarItem(accessibilityIdentifier: ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton) {
+          dismiss()
         }
 
         ToolbarItem(placement: .principal) {
@@ -155,16 +143,6 @@ struct UserButtonAccountSwitcher: View {
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)
-    #endif
-  }
-}
-
-extension UserButtonAccountSwitcher {
-  private var doneToolbarPlacement: ToolbarItemPlacement {
-    #if os(iOS)
-    .topBarTrailing
-    #elseif os(macOS)
-    .confirmationAction
     #endif
   }
 }

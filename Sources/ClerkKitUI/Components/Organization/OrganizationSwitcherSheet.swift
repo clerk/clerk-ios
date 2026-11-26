@@ -74,15 +74,8 @@ struct OrganizationSwitcherSheet: View {
       .preGlassDetentSheetBackground()
       .toolbar {
         #if os(iOS)
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            dismiss()
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
-          }
+        DoneToolbarItem(accessibilityIdentifier: ClerkAccessibilityIdentifiers.Organization.Switcher.doneButton) {
+          dismiss()
         }
         #endif
 

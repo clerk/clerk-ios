@@ -144,6 +144,10 @@ enum ClerkAccessibilityIdentifiers {
   }
 
   enum Organization {
+    enum Switcher {
+      static let doneButton = "clerk.organization.switcher.done"
+    }
+
     enum AccountList {
       static let createOrganizationButton = "clerk.organization.accountList.createOrganization"
       static let acceptedInvitationButton = "clerk.organization.accountList.invitation.accepted"
