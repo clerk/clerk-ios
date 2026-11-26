@@ -65,23 +65,13 @@ struct BackupCodesView: View {
     #endif
     .preGlassSolidNavBar()
     .toolbar {
-      ToolbarItem(placement: doneToolbarPlacement) {
-        Button {
-          switch mfaType {
-          case .phoneCode, .authenticatorApp:
-            navigation.presentedAddMfaType = nil
-          case .backupCodes:
-            dismiss()
-          }
-        } label: {
-          Text("Done", bundle: .module)
-            .font(theme.fonts.body)
-            .fontWeight(.semibold)
-            #if os(iOS)
-            .foregroundStyle(theme.colors.primary)
-            #endif
+      DoneToolbarItem(accessibilityIdentifier: ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton) {
+        switch mfaType {
+        case .phoneCode, .authenticatorApp:
+          navigation.presentedAddMfaType = nil
+        case .backupCodes:
+          dismiss()
         }
-        .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
       }
 
       ToolbarItem(placement: .principal) {
@@ -90,16 +80,6 @@ struct BackupCodesView: View {
           .foregroundStyle(theme.colors.foreground)
       }
     }
-  }
-}
-
-extension BackupCodesView {
-  private var doneToolbarPlacement: ToolbarItemPlacement {
-    #if os(iOS)
-    .topBarTrailing
-    #elseif os(macOS)
-    .confirmationAction
-    #endif
   }
 }
 

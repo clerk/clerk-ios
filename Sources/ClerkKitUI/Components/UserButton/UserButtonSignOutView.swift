@@ -31,9 +31,7 @@ struct UserButtonSignOutView: View {
           .padding(.vertical, 16)
           .padding(.horizontal, 24)
           .overlay(alignment: .bottom) {
-            Rectangle()
-              .frame(height: 1)
-              .foregroundStyle(theme.colors.border)
+            SeparatorLine()
           }
       }
 
@@ -44,9 +42,7 @@ struct UserButtonSignOutView: View {
           .overlayProgressView(isActive: isRunning)
       }
       .overlay(alignment: .bottom) {
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
+        SeparatorLine()
       }
       .buttonStyle(.pressedBackground)
       .simultaneousGesture(TapGesture())

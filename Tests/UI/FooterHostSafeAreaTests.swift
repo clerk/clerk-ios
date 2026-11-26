@@ -48,6 +48,7 @@ struct FooterHostSafeAreaTests {
     #expect(safeArea.containerInset == (consumesSafeArea ? 0 : windowInset))
     #expect(safeArea.additionalPadding == (consumesSafeArea ? windowInset : 0))
     #expect(safeArea.backgroundSafeAreaEdges.contains(.bottom))
+    #expect(safeArea.backgroundSafeAreaEdges.contains(.horizontal))
   }
 
   @Test
@@ -76,6 +77,7 @@ struct FooterHostSafeAreaTests {
     #expect(safeArea.hostInset == windowInset)
     #expect(safeArea.additionalPadding == windowInset)
     #expect(safeArea.backgroundSafeAreaEdges.contains(.bottom) == consumesSafeArea)
+    #expect(safeArea.backgroundSafeAreaEdges.contains(.horizontal))
   }
 
   @Test

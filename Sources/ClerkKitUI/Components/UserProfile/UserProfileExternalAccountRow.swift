@@ -108,9 +108,7 @@ struct UserProfileExternalAccountRow: View {
     .background(theme.colors.background)
     .overlayProgressView(isActive: isLoading)
     .overlay(alignment: .bottom) {
-      Rectangle()
-        .frame(height: 1)
-        .foregroundStyle(theme.colors.border)
+      SeparatorLine()
     }
     .clerkErrorPresenting($error)
     .onChange(of: removeResource) {

@@ -81,9 +81,7 @@ struct SecuredByClerkFooter: View {
         }
       }
       .overlay(alignment: .top) {
-        Rectangle()
-          .fill(theme.colors.border)
-          .frame(height: 1)
+        SeparatorLine()
       }
       #if os(macOS)
       .overlay(alignment: .trailing) {

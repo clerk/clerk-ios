@@ -36,6 +36,7 @@ struct OrganizationSwitcherSheet: View {
         VStack(spacing: 0) {
           organizationRow
           Divider()
+            .spanningSideSafeAreas()
 
           Button {
             onManageOrganization()
@@ -44,6 +45,7 @@ struct OrganizationSwitcherSheet: View {
           }
           .buttonStyle(.pressedBackground)
           Divider()
+            .spanningSideSafeAreas()
 
           Button {
             onSwitchAccount()
@@ -72,15 +74,8 @@ struct OrganizationSwitcherSheet: View {
       .preGlassDetentSheetBackground()
       .toolbar {
         #if os(iOS)
-        ToolbarItem(placement: .topBarTrailing) {
-          Button {
-            dismiss()
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
-          }
+        DoneToolbarItem(accessibilityIdentifier: ClerkAccessibilityIdentifiers.Organization.Switcher.doneButton) {
+          dismiss()
         }
         #endif
 

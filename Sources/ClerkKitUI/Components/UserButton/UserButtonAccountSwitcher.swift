@@ -80,9 +80,7 @@ struct UserButtonAccountSwitcher: View {
                   .overlayProgressView(isActive: isRunning)
                 }
                 .overlay(alignment: .bottom) {
-                  Rectangle()
-                    .frame(height: 1)
-                    .foregroundStyle(theme.colors.border)
+                  SeparatorLine()
                 }
                 .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.sessionButton(userID: user.id))
                 .buttonStyle(.pressedBackground)
@@ -98,9 +96,7 @@ struct UserButtonAccountSwitcher: View {
               UserProfileRowView(icon: "icon-plus", text: "Add account")
             }
             .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
+              SeparatorLine()
             }
             .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.addAccountButton)
             .buttonStyle(.pressedBackground)
@@ -113,9 +109,7 @@ struct UserButtonAccountSwitcher: View {
                 .overlayProgressView(isActive: isRunning)
             }
             .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
+              SeparatorLine()
             }
             .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.signOutAllButton)
             .buttonStyle(.pressedBackground)
@@ -136,16 +130,8 @@ struct UserButtonAccountSwitcher: View {
       .preGlassSolidNavBar()
       .preGlassDetentSheetBackground()
       .toolbar {
-        ToolbarItem(placement: doneToolbarPlacement) {
-          Button {
-            dismiss()
-          } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
-          }
-          .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
+        DoneToolbarItem(accessibilityIdentifier: ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton) {
+          dismiss()
         }
 
         ToolbarItem(placement: .principal) {
@@ -157,16 +143,6 @@ struct UserButtonAccountSwitcher: View {
     }
     #if os(macOS)
     .frame(minWidth: 420, maxWidth: 520)
-    #endif
-  }
-}
-
-extension UserButtonAccountSwitcher {
-  private var doneToolbarPlacement: ToolbarItemPlacement {
-    #if os(iOS)
-    .topBarTrailing
-    #elseif os(macOS)
-    .confirmationAction
     #endif
   }
 }

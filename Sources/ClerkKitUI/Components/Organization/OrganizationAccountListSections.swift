@@ -26,6 +26,7 @@ struct OrganizationAccountListSections: View {
   var body: some View {
     LazyVStack(spacing: 0) {
       Divider()
+        .spanningSideSafeAreas()
 
       if let user, mode.showsPersonalAccount {
         Button {
@@ -40,6 +41,7 @@ struct OrganizationAccountListSections: View {
         }
         .buttonStyle(.plain)
         Divider()
+          .spanningSideSafeAreas()
       }
 
       OrganizationPaginatedListSection(
@@ -107,6 +109,7 @@ struct OrganizationAccountListSections: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Organization.AccountList.createOrganizationButton)
         Divider()
+          .spanningSideSafeAreas()
       }
     }
   }

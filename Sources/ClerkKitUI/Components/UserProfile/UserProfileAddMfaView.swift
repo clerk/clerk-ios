@@ -99,17 +99,13 @@ struct UserProfileAddMfaView: View {
               }
             }
             .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
+              SeparatorLine()
             }
             .buttonStyle(.pressedBackground)
             .simultaneousGesture(TapGesture())
           }
           .overlay(alignment: .top) {
-            Rectangle()
-              .frame(height: 1)
-              .foregroundStyle(theme.colors.border)
+            SeparatorLine()
           }
         }
         .padding(.top, 24)

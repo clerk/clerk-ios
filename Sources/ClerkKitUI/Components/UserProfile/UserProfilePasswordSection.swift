@@ -36,9 +36,7 @@ struct UserProfilePasswordSection: View {
           .contentShape(.rect)
       }
       .overlay(alignment: .bottom) {
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
+        SeparatorLine()
       }
       .background(theme.colors.background)
       .buttonStyle(.pressedBackground)
@@ -71,9 +69,7 @@ struct UserProfilePasswordSection: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
 
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
+        SeparatorLine()
 
         UserProfileButtonRow(text: "Change password") {}
           .disabled(true)
