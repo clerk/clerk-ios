@@ -27,10 +27,10 @@ Preconditions:
 
 | State | Where the app decides | What it takes |
 | --- | --- | --- |
-| Opening the page in the user's browser | `Auth+SessionTransfer.swift`, `openInBrowser(destination:)` | The app hands the URL to Safari, so the page is in another app that the harness does not read. E2EHost does not call it |
+| Opening the page in the user's browser | `Auth+SessionTransfer.swift`, `openInBrowser(destination:)` | The app hands the URL to the user's default browser, so the page is in another app that the harness does not read. E2EHost does not call it |
 | A URL the app presents itself | `Auth+SessionTransfer.swift`, `prepareSessionTransfer(destination:presentation:)` | A screen of the app's own that loads `transfer.url`. `loadInWebView` calls it, so the web view test covers the request, but nothing tests a caller that presents the URL itself |
 | A destination refused for its scheme or host | Clerk's checks of `destination` | A production instance, which requires `https` and a host on one of its domains. The harness creates development instances only, which allow any `http` or `https` URL |
-| A refused sign-in that lands on the destination | `NativeToWebView.swift`, `sessionTransferFailureCode(in:)`, from `__clerk_status=session_transfer_failed` | A transfer that Clerk creates and then refuses to redeem, such as an expired or used token. The spec's refusal comes before loading, from the create request |
+| A refused sign-in that lands on the destination | `NativeToWebView.swift`, `sessionTransferFailureCode(in:)`, from `__clerk_status=session_transfer_failed` | A transfer that Clerk creates and then refuses to redeem. A token that Clerk does not recognize lands on the instance's home URL with `__clerk_error_code=invalid_token` instead of on the destination (`Auth+SessionTransfer.swift`, the doc comment of `prepareSessionTransfer`), and the screen checks every navigation, so it shows either. The spec's refusal comes before loading, from the create request |
 | The web session ending at native sign-out | Clerk's revocation of a transferred web session when its native session ends | A web view that outlives the native session. The screen's data store is non-persistent, and `Done` drops the web view before a sign-out |
 
 ## Gotchas
@@ -40,3 +40,4 @@ Preconditions:
 - The web view uses `WKWebsiteDataStore.nonPersistent()`, so no web session survives between tests or launches. A signed-in label always comes from this screen's transfer.
 - The screen never logs or stores the transfer URL. It works once, for about a minute, and signs the user in.
 - The screen shows `Signed out on the web` when the page loaded but has no user, and `Loading the Account Portal` until the first answer. Neither has an identifier, so a failing wait shows them only in the screenshot.
+- `e2e.nativeToWeb.error` shows codes of the screen's own as well as the transfer's (`NativeToWebView.swift`, `startTransfer` and `webView(_:didFinish:)`): `clerk_not_loaded` when the page never set `window.Clerk.loaded` within 30 seconds, `no_destination` when the environment has no `homeUrl`, and `load_failed` for an error that is not a `ClerkAPIError`.
