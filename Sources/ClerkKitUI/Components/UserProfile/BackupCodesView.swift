@@ -74,13 +74,9 @@ struct BackupCodesView: View {
             dismiss()
           }
         } label: {
-          Text("Done", bundle: .module)
-            .font(theme.fonts.body)
-            .fontWeight(.semibold)
-            #if os(iOS)
-            .foregroundStyle(theme.colors.primary)
-            #endif
+          VerticalToolbarLabel(doneTitle, systemImage: "checkmark")
         }
+        .tintInVerticalToolbar(theme.colors.primary)
         .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.BackupCodes.doneButton)
       }
 
@@ -94,6 +90,17 @@ struct BackupCodesView: View {
 }
 
 extension BackupCodesView {
+  private var doneTitle: Text {
+    let title = Text("Done", bundle: .module)
+      .font(theme.fonts.body)
+      .fontWeight(.semibold)
+    #if os(iOS)
+    return title.foregroundStyle(theme.colors.primary)
+    #else
+    return title
+    #endif
+  }
+
   private var doneToolbarPlacement: ToolbarItemPlacement {
     #if os(iOS)
     .topBarTrailing

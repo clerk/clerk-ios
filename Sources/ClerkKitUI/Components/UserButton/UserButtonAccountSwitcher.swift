@@ -80,9 +80,7 @@ struct UserButtonAccountSwitcher: View {
                   .overlayProgressView(isActive: isRunning)
                 }
                 .overlay(alignment: .bottom) {
-                  Rectangle()
-                    .frame(height: 1)
-                    .foregroundStyle(theme.colors.border)
+                  SeparatorLine()
                 }
                 .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.sessionButton(userID: user.id))
                 .buttonStyle(.pressedBackground)
@@ -98,9 +96,7 @@ struct UserButtonAccountSwitcher: View {
               UserProfileRowView(icon: "icon-plus", text: "Add account")
             }
             .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
+              SeparatorLine()
             }
             .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.addAccountButton)
             .buttonStyle(.pressedBackground)
@@ -113,9 +109,7 @@ struct UserButtonAccountSwitcher: View {
                 .overlayProgressView(isActive: isRunning)
             }
             .overlay(alignment: .bottom) {
-              Rectangle()
-                .frame(height: 1)
-                .foregroundStyle(theme.colors.border)
+              SeparatorLine()
             }
             .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.signOutAllButton)
             .buttonStyle(.pressedBackground)
@@ -140,11 +134,15 @@ struct UserButtonAccountSwitcher: View {
           Button {
             dismiss()
           } label: {
-            Text("Done", bundle: .module)
-              .font(theme.fonts.body)
-              .fontWeight(.semibold)
-              .foregroundStyle(theme.colors.primary)
+            VerticalToolbarLabel(
+              Text("Done", bundle: .module)
+                .font(theme.fonts.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(theme.colors.primary),
+              systemImage: "checkmark"
+            )
           }
+          .tintInVerticalToolbar(theme.colors.primary)
           .accessibilityIdentifier(ClerkAccessibilityIdentifiers.AccountSwitcher.doneButton)
         }
 
