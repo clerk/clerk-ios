@@ -170,4 +170,11 @@ struct UpdateRequiredContentView: View {
   .clerkPreview()
 }
 
+struct PresentedUpdateRequiredView: View {
+  var body: some View {
+    UpdateRequiredView()
+      .presentedAppearance(.shared)
+  }
+}
+
 #endif

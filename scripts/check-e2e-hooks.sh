@@ -31,6 +31,8 @@ is_allowed_e2e_usage_file() {
     Sources/ClerkKitUI/Components/Auth/SignIn/SignInFactorOnePasswordView.swift | \
       Sources/ClerkKitUI/Components/Auth/SignIn/SignInSetNewPasswordView.swift | \
       Sources/ClerkKitUI/Components/Auth/SignUp/SignUpCollectFieldView.swift | \
+      Sources/ClerkKitUI/Components/Reverification/ReverificationNewPasswordView.swift | \
+      Sources/ClerkKitUI/Components/Reverification/ReverificationPasswordView.swift | \
       Sources/ClerkKitUI/Components/UserProfile/UserProfileChangePasswordView.swift | \
       Sources/ClerkKitUI/Extensions/View+HiddenTextField.swift)
       return 0
@@ -42,7 +44,7 @@ is_allowed_e2e_usage_file() {
 }
 
 reviewed_usage_count=0
-expected_reviewed_usage_count=8
+expected_reviewed_usage_count=11
 
 while IFS=: read -r file line _; do
   if [ -z "$file" ]; then

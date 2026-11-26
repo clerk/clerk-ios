@@ -447,7 +447,7 @@ extension Session {
     signOutOfOtherSessions: Bool? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
+    let verification = try await Clerk.currentDependencies.transport.send(SessionAPI.attemptFirstFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -457,6 +457,8 @@ extension Session {
         publicKeyCredential: publicKeyCredential
       )
     )).value.response
+    invalidateTokensIfComplete(verification)
+    return verification
   }
 
   @discardableResult @MainActor
@@ -476,7 +478,7 @@ extension Session {
     code: String? = nil,
     publicKeyCredential: String? = nil
   ) async throws -> SessionVerification {
-    try await Clerk.currentDependencies.transport.send(SessionAPI.attemptSecondFactorVerification(
+    let verification = try await Clerk.currentDependencies.transport.send(SessionAPI.attemptSecondFactorVerification(
       sessionId: id,
       params: .init(
         strategy: strategy,
@@ -484,5 +486,14 @@ extension Session {
         publicKeyCredential: publicKeyCredential
       )
     )).value.response
+    invalidateTokensIfComplete(verification)
+    return verification
+  }
+
+  @MainActor
+  private func invalidateTokensIfComplete(_ verification: SessionVerification) {
+    if verification.status == .complete {
+      Clerk.shared.identityController.invalidateSessionTokens(sessionId: id)
+    }
   }
 }

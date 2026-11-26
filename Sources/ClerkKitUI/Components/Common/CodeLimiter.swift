@@ -42,6 +42,10 @@ final class CodeLimiter {
     startTimerIfNeeded()
   }
 
+  func forgetLastCodeSent() {
+    lastCodeSentIdentifier = nil
+  }
+
   private func startTimerIfNeeded() {
     guard stopTicking == nil else { return }
     stopTicking = startTicking { [weak self] in

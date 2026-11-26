@@ -19,12 +19,23 @@ enum E2EIdentifiers {
     static let customReverify = "e2e.home.customReverify"
     static let organizationTabs = "e2e.home.organizationTabs"
     static let nativeToWeb = "e2e.home.nativeToWeb"
+    static let reverifyFirstFactor = "e2e.home.reverify.firstFactor"
+    static let reverifySecondFactor = "e2e.home.reverify.secondFactor"
+    static let reverifyMultiFactor = "e2e.home.reverify.multiFactor"
+    static let protectedAction = "e2e.home.protectedAction"
+    static let reverificationResult = "e2e.home.reverificationResult"
+    static let protectedActionSheet = "e2e.home.protectedActionSheet"
   }
 
   enum NativeToWeb {
     static let webUserId = "e2e.nativeToWeb.webUserId"
     static let error = "e2e.nativeToWeb.error"
     static let done = "e2e.nativeToWeb.done"
+  }
+
+  enum ProtectedActionSheet {
+    static let protectedAction = "e2e.protectedActionSheet.protectedAction"
+    static let reverificationResult = "e2e.protectedActionSheet.reverificationResult"
   }
 
   enum CustomSignIn {

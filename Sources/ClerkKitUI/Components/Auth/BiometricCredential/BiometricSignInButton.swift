@@ -13,13 +13,16 @@ struct BiometricSignInButton: View {
   @Environment(\.clerkTheme) private var theme
 
   private let biometryDisplayName: BiometryDisplayName
+  private let isActive: Bool
   private let action: () async -> Void
 
   init(
     biometryDisplayName: BiometryDisplayName,
+    isActive: Bool = false,
     action: @escaping () async -> Void
   ) {
     self.biometryDisplayName = biometryDisplayName
+    self.isActive = isActive
     self.action = action
   }
 
@@ -29,7 +32,7 @@ struct BiometricSignInButton: View {
     } label: { isRunning in
       label
         .frame(maxWidth: .infinity)
-        .overlayProgressView(isActive: isRunning)
+        .overlayProgressView(isActive: isRunning || isActive)
     }
     .buttonStyle(.secondary())
     .accessibilityIdentifier(ClerkAccessibilityIdentifiers.Auth.Start.biometricSignInButton)

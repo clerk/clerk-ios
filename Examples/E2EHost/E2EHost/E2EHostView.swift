@@ -188,6 +188,8 @@ struct E2EHostView: View {
             destination = .nativeToWeb
           }
           .accessibilityIdentifier(E2EIdentifiers.Home.nativeToWeb)
+
+          ReverificationButtons()
         }
 
         Button("Sign out") {

@@ -13,7 +13,6 @@ enum SessionAuthorization {
 
   private static let orgScopes: Set<String> = ["o", "org", "organization"]
   private static let userScopes: Set<String> = ["u", "user"]
-  private static let allowedLevels: Set<String> = ["first_factor", "second_factor", "multi_factor"]
 
   static func evaluate(session: Session, params: CheckAuthorizationParams) -> Bool {
     let membership = session.user?.organizationMemberships?.first {
@@ -228,7 +227,7 @@ enum SessionAuthorization {
       return .fail
     }
 
-    guard let resolved = resolveReverification(reverification) else {
+    guard let resolved = reverification.requirement else {
       return .fail
     }
 
@@ -264,26 +263,6 @@ enum SessionAuthorization {
       return factor1FreshEnough && factor2FreshEnough ? .pass : .fail
     case .unknown:
       return .fail
-    }
-  }
-
-  private static func resolveReverification(
-    _ config: ReverificationConfig
-  ) -> (level: SessionVerification.Level, afterMinutes: Int)? {
-    switch config {
-    case .strictMfa:
-      return (.multiFactor, 10)
-    case .strict:
-      return (.secondFactor, 10)
-    case .moderate:
-      return (.secondFactor, 60)
-    case .lax:
-      return (.secondFactor, 1440)
-    case .custom(let level, let afterMinutes):
-      guard allowedLevels.contains(level.rawValue), afterMinutes > 0 else {
-        return nil
-      }
-      return (level, afterMinutes)
     }
   }
 
