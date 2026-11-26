@@ -79,12 +79,10 @@ private struct AuthFooter: View {
     .frame(maxWidth: .infinity)
     .background {
       theme.colors.muted
-        .ignoresSafeArea(.container, edges: .bottom)
+        .ignoresSafeArea(.container, edges: [.bottom, .horizontal])
     }
     .overlay(alignment: .top) {
-      Rectangle()
-        .fill(theme.colors.border)
-        .frame(height: 1)
+      SeparatorLine()
     }
     #if os(macOS)
     .overlay(alignment: .trailing) {

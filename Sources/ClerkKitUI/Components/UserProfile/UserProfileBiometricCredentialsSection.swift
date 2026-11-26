@@ -75,9 +75,7 @@ struct UserProfileBiometricCredentialsSection: View {
       .disabled(isLoading)
       .opacity(isLoading ? 0.55 : 1)
       .overlay(alignment: .bottom) {
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
+        SeparatorLine()
       }
     } header: {
       UserProfileSectionHeader(verbatim: biometryDisplayName.value)

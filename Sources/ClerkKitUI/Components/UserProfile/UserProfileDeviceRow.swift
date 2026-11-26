@@ -78,9 +78,7 @@ struct UserProfileDeviceRow: View {
     .padding(.vertical, 16)
     .overlayProgressView(isActive: isLoading)
     .overlay(alignment: .bottom) {
-      Rectangle()
-        .frame(height: 1)
-        .foregroundStyle(theme.colors.border)
+      SeparatorLine()
     }
     .clerkErrorPresenting($error)
     .animation(.default, value: isLoading)

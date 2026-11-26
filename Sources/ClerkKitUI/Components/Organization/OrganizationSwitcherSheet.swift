@@ -36,6 +36,7 @@ struct OrganizationSwitcherSheet: View {
         VStack(spacing: 0) {
           organizationRow
           Divider()
+            .spanningSideSafeAreas()
 
           Button {
             onManageOrganization()
@@ -44,6 +45,7 @@ struct OrganizationSwitcherSheet: View {
           }
           .buttonStyle(.pressedBackground)
           Divider()
+            .spanningSideSafeAreas()
 
           Button {
             onSwitchAccount()

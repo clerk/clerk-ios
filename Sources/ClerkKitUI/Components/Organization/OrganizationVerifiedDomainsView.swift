@@ -38,6 +38,7 @@ struct OrganizationVerifiedDomainsView: View {
     return ScrollView {
       LazyVStack(spacing: 0) {
         Divider()
+          .spanningSideSafeAreas()
 
         rows(domains)
       }
@@ -120,6 +121,7 @@ struct OrganizationVerifiedDomainsView: View {
           presentedDomainFlow = .add
         }
         Divider()
+          .spanningSideSafeAreas()
       }
     }
   }

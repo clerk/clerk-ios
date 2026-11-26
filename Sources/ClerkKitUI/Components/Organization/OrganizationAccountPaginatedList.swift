@@ -60,6 +60,7 @@ struct OrganizationAccountPaginatedList<Item: Identifiable & Codable & Sendable,
             .containerRelativeFrame(.vertical, count: 5, span: 4, spacing: 0)
         } else if !pager.items.isEmpty {
           Divider()
+            .spanningSideSafeAreas()
 
           OrganizationPaginatedListSection(
             items: pager.items,

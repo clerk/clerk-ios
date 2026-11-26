@@ -32,9 +32,7 @@ struct UserProfileSectionHeader: View {
       .padding(.bottom, 16)
       .frame(maxWidth: .infinity, alignment: .leading)
       .overlay(alignment: .bottom) {
-        Rectangle()
-          .frame(height: 1)
-          .foregroundStyle(theme.colors.border)
+        SeparatorLine()
       }
   }
 }

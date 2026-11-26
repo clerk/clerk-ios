@@ -16,7 +16,7 @@ struct FooterSafeArea {
   }
 
   var backgroundSafeAreaEdges: Edge.Set {
-    hasBottomBar ? [] : .bottom
+    hasBottomBar ? .horizontal : [.bottom, .horizontal]
   }
 
   private var hasBottomBar: Bool {

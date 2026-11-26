@@ -32,6 +32,7 @@ struct OrganizationPaginatedListSection<Item: Identifiable, Content: View>: View
           Task { await onLoadMore() }
         }
       Divider()
+        .spanningSideSafeAreas()
     }
   }
 }

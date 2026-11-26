@@ -45,9 +45,7 @@ struct UserProfileButtonRow: View {
         .overlayProgressView(isActive: isRunning)
     }
     .overlay(alignment: .bottom) {
-      Rectangle()
-        .frame(height: 1)
-        .foregroundStyle(theme.colors.border)
+      SeparatorLine()
     }
     .buttonStyle(.pressedBackground)
     .simultaneousGesture(TapGesture())
