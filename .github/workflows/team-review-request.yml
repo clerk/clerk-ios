@@ -37,7 +37,7 @@ jobs:
       # The Actions token can't see org teams, so this app reads @clerk/team-mobile and requests it.
       - name: Mint the team review token
         id: team-token
-        uses: actions/create-github-app-token@v3.3.0
+        uses: actions/create-github-app-token@v3.4.0
         with:
           client-id: ${{ vars.TEAM_REVIEW_APP_CLIENT_ID }}
           private-key: ${{ secrets.TEAM_REVIEW_APP_PRIVATE_KEY }}
