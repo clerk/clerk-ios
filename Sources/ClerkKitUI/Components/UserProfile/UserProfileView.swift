@@ -175,6 +175,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
               profileContent(user: user)
                 .navigationDestination(for: Route.self) { route in
                   destinationEnvironment(view(for: route))
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
                 }
             }
             #if os(macOS)
@@ -442,6 +445,8 @@ extension UserProfileView {
       let currentCount = navigationPath.wrappedValue.count
       let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
       navigationPath.wrappedValue.removeLast(entriesToRemove)
+    } else if action == .popToRoot, usesSplitLayout {
+      detailPath = NavigationPath()
     } else {
       internalPath = NavigationPath()
       detailPath = NavigationPath()
@@ -573,8 +578,8 @@ extension UserProfileView where Destination == EmptyView {
   /// register your own `.navigationDestination(for:)` on the parent stack instead.
   ///
   /// When the view shows its list beside the selected page, a custom row's
-  /// destination is the first page of that column and has no page to pop back
-  /// to. Use ``UserProfileNavigator/popToRoot()`` to leave it.
+  /// destination is the first page of that column, and
+  /// ``UserProfileNavigator/popToRoot()`` returns to it.
   public func userProfileDestination<NewDestination: View>(
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
   ) -> UserProfileView<Route, NewDestination> {
@@ -611,8 +616,8 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
   /// register your own `.navigationDestination(for:)` on the parent stack instead.
   ///
   /// When the view shows its list beside the selected page, a custom row's
-  /// destination is the first page of that column and has no page to pop back
-  /// to. Use ``UserProfileNavigator/popToRoot()`` to leave it.
+  /// destination is the first page of that column, and
+  /// ``UserProfileNavigator/popToRoot()`` returns to it.
   public func userProfileDestination<NewRoute: Hashable, NewDestination: View>(
     for _: NewRoute.Type = NewRoute.self,
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
