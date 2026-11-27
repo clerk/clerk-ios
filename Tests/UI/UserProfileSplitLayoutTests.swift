@@ -15,18 +15,19 @@ struct UserProfileSplitLayoutTests {
 
   @Test
   func wideRegularProfileShowsTheListBesideThePage() async throws {
-    let fixture = Fixture(width: 1024, sizeClass: .regular) {
+    let fixture = UserProfileSplitLayoutFixture(width: 1024, sizeClass: .regular) {
       UserProfileView(isDismissible: false)
     }
     defer { fixture.close() }
 
-    try await fixture.layout { fixture.splitViewController != nil }
-    #expect(fixture.splitViewController != nil)
+    try await fixture.layout { fixture.splitViewController?.minimumPrimaryColumnWidth == 260 }
+    #expect(fixture.splitViewController?.minimumPrimaryColumnWidth == 260)
+    #expect(fixture.splitViewController?.maximumPrimaryColumnWidth == 400)
   }
 
   @Test
   func compactProfileKeepsASingleStack() async throws {
-    let fixture = Fixture(width: 1024, sizeClass: .compact) {
+    let fixture = UserProfileSplitLayoutFixture(width: 1024, sizeClass: .compact) {
       UserProfileView(isDismissible: false)
     }
     defer { fixture.close() }
@@ -37,7 +38,7 @@ struct UserProfileSplitLayoutTests {
 
   @Test
   func regularProfileNarrowerThanTheMinimumKeepsASingleStack() async throws {
-    let fixture = Fixture(width: 600, sizeClass: .regular) {
+    let fixture = UserProfileSplitLayoutFixture(width: 600, sizeClass: .regular) {
       UserProfileView(isDismissible: false)
     }
     defer { fixture.close() }
@@ -48,7 +49,7 @@ struct UserProfileSplitLayoutTests {
 
   @Test
   func stackLayoutKeepsASingleStackWhenWide() async throws {
-    let fixture = Fixture(width: 1024, sizeClass: .regular) {
+    let fixture = UserProfileSplitLayoutFixture(width: 1024, sizeClass: .regular) {
       UserProfileView(isDismissible: false)
         .userProfileLayout(.stack)
     }
@@ -60,7 +61,7 @@ struct UserProfileSplitLayoutTests {
 
   @Test
   func profileEmbeddedInTheHostPathKeepsASingleStack() async throws {
-    let fixture = Fixture(width: 1024, sizeClass: .regular) {
+    let fixture = UserProfileSplitLayoutFixture(width: 1024, sizeClass: .regular) {
       EmbeddedHost()
     }
     defer { fixture.close() }
@@ -71,7 +72,7 @@ struct UserProfileSplitLayoutTests {
 }
 
 @MainActor
-private final class Fixture {
+private final class UserProfileSplitLayoutFixture {
   let window: UIWindow
   let host: UIViewController
 
@@ -84,7 +85,7 @@ private final class Fixture {
   }
 
   var splitViewController: UISplitViewController? {
-    Self.firstSplitViewController(in: host)
+    Self.splitViewControllers(in: host).first
   }
 
   /// Lays the window out until `condition` holds, or for one second when it never does.
@@ -100,16 +101,9 @@ private final class Fixture {
     window.rootViewController = nil
   }
 
-  private static func firstSplitViewController(in controller: UIViewController) -> UISplitViewController? {
-    if let split = controller as? UISplitViewController {
-      return split
-    }
-    for child in controller.children {
-      if let split = firstSplitViewController(in: child) {
-        return split
-      }
-    }
-    return nil
+  private static func splitViewControllers(in controller: UIViewController) -> [UISplitViewController] {
+    let own = (controller as? UISplitViewController).map { [$0] } ?? []
+    return own + controller.children.flatMap { splitViewControllers(in: $0) }
   }
 }
 

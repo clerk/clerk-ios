@@ -93,6 +93,18 @@ struct ClerkSheetTests {
     #expect(window.sheets.count == 1)
     #expect(probe.reads == ContextReads(clerk: ObjectIdentifier(clerk), themePrimary: ClerkTheme.default.colors.primary))
   }
+
+  @Test
+  func sheetShowsTheFooterWhenItsPresenterHidesIt() {
+    let log = FooterVisibilityLog()
+    let window = hostOffscreen(FooterHidingSheetPresenter(log: log))
+    defer { window.close() }
+
+    runMainLoop { log.isHidden != nil && !window.sheets.isEmpty }
+
+    #expect(window.sheets.count == 1)
+    #expect(log.isHidden == false)
+  }
 }
 
 private struct ContextReads: Equatable {
@@ -243,6 +255,36 @@ private struct SheetOwnedContextPresenter: View {
       .clerkSheet(isPresented: $isPresented) {
         ContextProbe(log: probe).injecting(context)
       }
+      .onAppear { isPresented = true }
+  }
+}
+
+@MainActor
+private final class FooterVisibilityLog {
+  var isHidden: Bool?
+}
+
+private struct FooterVisibilityProbe: View {
+  let log: FooterVisibilityLog
+  @Environment(\.securedByClerkFooterIsHidden) private var isHidden
+
+  var body: some View {
+    Color.clear
+      .onAppear { log.isHidden = isHidden }
+  }
+}
+
+private struct FooterHidingSheetPresenter: View {
+  let log: FooterVisibilityLog
+  @State private var isPresented = false
+
+  var body: some View {
+    Color.clear
+      .frame(width: 200, height: 200)
+      .clerkSheet(isPresented: $isPresented) {
+        FooterVisibilityProbe(log: log)
+      }
+      .environment(\.securedByClerkFooterIsHidden, true)
       .onAppear { isPresented = true }
   }
 }

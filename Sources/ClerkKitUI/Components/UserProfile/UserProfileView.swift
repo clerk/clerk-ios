@@ -174,21 +174,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
             NavigationStack(path: $internalPath) {
               profileContent(user: user)
                 .navigationDestination(for: Route.self) { route in
-                  view(for: route)
-                    .environment(sheetNavigation)
-                    .environment(codeLimiter)
-                    .environment(
-                      UserProfileNavigator(
-                        push: navigateToCustom,
-                        popToRoot: { dismissAction(.popToRoot) }
-                      )
-                    )
-                    .environment(
-                      UserProfileBuiltInRouter(
-                        push: navigateToBuiltIn,
-                        dismissAction: dismissAction
-                      )
-                    )
+                  destinationEnvironment(view(for: route))
                 }
             }
             #if os(macOS)
@@ -261,6 +247,15 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     } action: { width in
       availableWidth = width
     }
+    .onChange(of: clerk.user?.id) { _, _ in
+      detailPath = NavigationPath()
+    }
+    .onChange(of: usesSplitLayout && offeredSelection != selection) { _, selectionWasWithdrawn in
+      if selectionWasWithdrawn {
+        selection = nil
+        detailPath = NavigationPath()
+      }
+    }
     .onChange(of: usesSplitLayout) { _, isSplit in
       moveNavigation(toSplit: isSplit)
     }
@@ -269,6 +264,14 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         selection = nil
       }
     }
+  }
+
+  private var profileListRows: [UserProfileListRow<Route>] {
+    renderedRows(builtInRows: [.manageAccount, .security], in: .profile)
+  }
+
+  private var accountListRows: [UserProfileListRow<Route>] {
+    renderedRows(builtInRows: accountBuiltInRows, in: .account)
   }
 
   private var accountBuiltInRows: [UserProfileRow] {
@@ -299,8 +302,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         .accessibilityIdentifier(ClerkAccessibilityIdentifiers.UserProfile.currentUser(userID: user.id))
 
         VStack(spacing: 48) {
-          section(rows: renderedRows(builtInRows: [.manageAccount, .security], in: .profile))
-          section(rows: renderedRows(builtInRows: accountBuiltInRows, in: .account))
+          section(rows: profileListRows)
+          section(rows: accountListRows)
         }
       }
     }
@@ -328,22 +331,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     }
     .hostBackToolbar()
     .navigationDestination(for: UserProfileBuiltInDestination.self) { destination in
-      view(for: destination)
-        .environment(sheetNavigation)
-        .environment(codeLimiter)
-        .environment(
-          UserProfileNavigator(
-            push: navigateToCustom,
-            popToRoot: { dismissAction(.popToRoot) }
-          )
-        )
-        .environment(
-          UserProfileBuiltInRouter(
-            push: navigateToBuiltIn,
-            dismissAction: dismissAction
-          )
-        )
-        .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
+      destinationEnvironment(view(for: destination))
     }
     #if os(macOS)
     .frame(minWidth: 460, maxWidth: 620, alignment: .leading)
@@ -365,12 +353,25 @@ extension UserProfileView {
     #endif
   }
 
+  // With a regular size class, a narrow split view doesn't collapse into a
+  // stack: iOS 26 hides the list below about 620 points, and iOS 27 keeps it
+  // beside the page at any width. At 700 points, the page beside the 260-point
+  // list is still about as wide as an iPhone.
   private static var minimumSplitWidth: CGFloat {
     700
   }
 
+  private var offeredSelection: UserProfileSelection<Route>? {
+    if case .custom(let route) = selection,
+       !(profileListRows + accountListRows).contains(where: { $0.customRoute == route })
+    {
+      return nil
+    }
+    return selection
+  }
+
   private var displayedSelection: UserProfileSelection<Route> {
-    selection ?? .builtIn(.manageAccount)
+    offeredSelection ?? .builtIn(.manageAccount)
   }
 
   private func isSelected(_ candidate: UserProfileSelection<Route>) -> Bool {
@@ -422,7 +423,7 @@ extension UserProfileView {
     } else {
       detailPath = NavigationPath()
       var path = NavigationPath()
-      switch selection {
+      switch offeredSelection {
       case .builtIn(let destination):
         path.append(destination)
       case .custom(let route):
@@ -444,6 +445,7 @@ extension UserProfileView {
     } else {
       internalPath = NavigationPath()
       detailPath = NavigationPath()
+      selection = nil
       if action == .exitUserProfile, isDismissible {
         dismiss()
       }
@@ -452,9 +454,10 @@ extension UserProfileView {
 
   private func splitLayout(user: User) -> some View {
     NavigationSplitView(columnVisibility: .constant(.all)) {
+      // Removing the toolbar item after setting the column width drops the width.
       profileContent(user: user)
-        .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 400)
         .toolbar(removing: .sidebarToggle)
+        .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 400)
     } detail: {
       NavigationStack(path: $detailPath) {
         destinationEnvironment(selectedDetail)
@@ -472,7 +475,7 @@ extension UserProfileView {
             destinationEnvironment(view(for: route))
           }
       }
-      .environment(\.securedByClerkFooterIsHidden, true)
+      .id(UserProfileDetailIdentity(userID: user.id, selection: displayedSelection))
       .mask {
         Rectangle()
           .ignoresSafeArea(edges: [.top, .bottom, .trailing])
@@ -486,6 +489,7 @@ extension UserProfileView {
     switch displayedSelection {
     case .builtIn(let destination):
       view(for: destination)
+        .environment(\.securedByClerkFooterIsHidden, true)
     case .custom(let route):
       view(for: route)
     }
@@ -567,6 +571,10 @@ extension UserProfileView where Destination == EmptyView {
   /// This modifier is used when `UserProfileView` manages its own `NavigationStack`
   /// (i.e., no `navigationPath` is provided). When you provide a `navigationPath`,
   /// register your own `.navigationDestination(for:)` on the parent stack instead.
+  ///
+  /// When the view shows its list beside the selected page, a custom row's
+  /// destination is the first page of that column and has no page to pop back
+  /// to. Use ``UserProfileNavigator/popToRoot()`` to leave it.
   public func userProfileDestination<NewDestination: View>(
     @ViewBuilder _ destination: @escaping @MainActor (Route) -> NewDestination
   ) -> UserProfileView<Route, NewDestination> {
@@ -601,6 +609,10 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
   /// This modifier is used when `UserProfileView` manages its own `NavigationStack`
   /// (i.e., no `navigationPath` is provided). When you provide a `navigationPath`,
   /// register your own `.navigationDestination(for:)` on the parent stack instead.
+  ///
+  /// When the view shows its list beside the selected page, a custom row's
+  /// destination is the first page of that column and has no page to pop back
+  /// to. Use ``UserProfileNavigator/popToRoot()`` to leave it.
   public func userProfileDestination<NewRoute: Hashable, NewDestination: View>(
     for _: NewRoute.Type = NewRoute.self,
     @ViewBuilder _ destination: @escaping @MainActor (NewRoute) -> NewDestination
@@ -699,10 +711,9 @@ extension UserProfileView {
       await action()
     } label: { isRunning in
       UserProfileRowView(icon: icon, text: text, bundle: bundle)
-        .background(isSelected ? theme.colors.primary.opacity(0.1) : .clear)
         .overlayProgressView(isActive: isRunning)
     }
-    .accessibilityAddTraits(isSelected ? .isSelected : [])
+    .modifier(UserProfileSelectedRowModifier(isSelected: isSelected))
     .overlay(alignment: .bottom) {
       SeparatorLine()
     }
@@ -811,6 +822,14 @@ private enum UserProfileListRow<Route: Hashable>: Identifiable {
   case builtIn(UserProfileRow)
   case custom(UserProfileCustomRow<Route>, occurrence: Int)
 
+  var customRoute: Route? {
+    if case .custom(let row, _) = self {
+      row.route
+    } else {
+      nil
+    }
+  }
+
   var id: UserProfileListRowID<Route> {
     switch self {
     case .builtIn(let row):
@@ -824,6 +843,11 @@ private enum UserProfileListRow<Route: Hashable>: Identifiable {
 private enum UserProfileSelection<Route: Hashable>: Hashable {
   case builtIn(UserProfileBuiltInDestination)
   case custom(Route)
+}
+
+private struct UserProfileDetailIdentity<Route: Hashable>: Hashable {
+  let userID: String
+  let selection: UserProfileSelection<Route>
 }
 
 private enum UserProfileListRowID<Route: Hashable>: Hashable {
