@@ -101,16 +101,23 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   @Environment(Clerk.self) private var clerk
   @Environment(\.clerkTheme) private var theme
   @Environment(\.dismiss) private var dismiss
+  #if os(iOS)
+  @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+  #endif
 
   private let isDismissible: Bool
   private let navigationPath: Binding<NavigationPath>?
   private let customRows: [UserProfileCustomRow<Route>]
   private let customDestination: (@MainActor (Route) -> Destination)?
   private let oauthConfig: UserProfileOAuthConfiguration
+  private let layout: UserProfileLayout
 
   @State private var updateProfileIsPresented = false
   @State private var initialPathCount = 0
   @State private var internalPath = NavigationPath()
+  @State private var selection: UserProfileSelection<Route>?
+  @State private var detailPath = NavigationPath()
+  @State private var availableWidth: CGFloat?
   @State private var sheetNavigation = UserProfileSheetNavigation()
   @State private var codeLimiter = CodeLimiter()
   @State private var error: Error?
@@ -120,13 +127,15 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     navigationPath: Binding<NavigationPath>?,
     customRows: [UserProfileCustomRow<Route>],
     customDestination: (@MainActor (Route) -> Destination)?,
-    oauthConfig: UserProfileOAuthConfiguration
+    oauthConfig: UserProfileOAuthConfiguration,
+    layout: UserProfileLayout
   ) {
     self.isDismissible = isDismissible
     self.navigationPath = navigationPath
     self.customRows = customRows
     self.customDestination = customDestination
     self.oauthConfig = oauthConfig
+    self.layout = layout
   }
 
   /// Creates a new user profile view.
@@ -150,7 +159,8 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       navigationPath: navigationPath,
       customRows: [],
       customDestination: nil,
-      oauthConfig: .init()
+      oauthConfig: .init(),
+      layout: .automatic
     )
   }
 
@@ -158,7 +168,9 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
     ZStack {
       if let user = clerk.user {
         Group {
-          if navigationPath == nil {
+          if navigationPath == nil, usesSplitLayout {
+            splitLayout(user: user)
+          } else if navigationPath == nil {
             NavigationStack(path: $internalPath) {
               profileContent(user: user)
                 .navigationDestination(for: Route.self) { route in
@@ -244,35 +256,17 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
         dismissAction(.exitUserProfile)
       }
     }
-  }
-
-  private func navigateToBuiltIn(_ destination: UserProfileBuiltInDestination) {
-    if let navigationPath {
-      navigationPath.wrappedValue.append(destination)
-    } else {
-      internalPath.append(destination)
+    .onGeometryChange(for: CGFloat.self) { proxy in
+      proxy.size.width
+    } action: { width in
+      availableWidth = width
     }
-  }
-
-  private func navigateToCustom(_ route: Route) {
-    if let navigationPath {
-      navigationPath.wrappedValue.append(route)
-    } else {
-      internalPath.append(route)
+    .onChange(of: usesSplitLayout) { _, isSplit in
+      moveNavigation(toSplit: isSplit)
     }
-  }
-
-  private func dismissAction(_ action: UserProfileDismissAction) {
-    let extraRemoval = action == .exitUserProfile ? 1 : 0
-
-    if let navigationPath {
-      let currentCount = navigationPath.wrappedValue.count
-      let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
-      navigationPath.wrappedValue.removeLast(entriesToRemove)
-    } else {
-      internalPath = NavigationPath()
-      if action == .exitUserProfile, isDismissible {
-        dismiss()
+    .onChange(of: internalPath.count) { _, count in
+      if count == 0, !usesSplitLayout {
+        selection = nil
       }
     }
   }
@@ -325,7 +319,7 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
       }
 
       #if os(iOS)
-      if isDismissible {
+      if isDismissible, !usesSplitLayout {
         DismissToolbarItem {
           dismiss()
         }
@@ -357,6 +351,166 @@ public struct UserProfileView<Route: Hashable, Destination: View>: View {
   }
 }
 
+// MARK: - Navigation
+
+extension UserProfileView {
+  private var usesSplitLayout: Bool {
+    #if os(iOS)
+    layout == .automatic
+      && navigationPath == nil
+      && horizontalSizeClass == .regular
+      && (availableWidth ?? .infinity) >= Self.minimumSplitWidth
+    #else
+    false
+    #endif
+  }
+
+  private static var minimumSplitWidth: CGFloat {
+    700
+  }
+
+  private var displayedSelection: UserProfileSelection<Route> {
+    selection ?? .builtIn(.manageAccount)
+  }
+
+  private func isSelected(_ candidate: UserProfileSelection<Route>) -> Bool {
+    usesSplitLayout && displayedSelection == candidate
+  }
+
+  private func navigateToBuiltIn(_ destination: UserProfileBuiltInDestination) {
+    if let navigationPath {
+      navigationPath.wrappedValue.append(destination)
+    } else if usesSplitLayout {
+      select(.builtIn(destination))
+    } else {
+      selection = .builtIn(destination)
+      internalPath.append(destination)
+    }
+  }
+
+  private func openCustomRow(_ route: Route) {
+    if navigationPath == nil, usesSplitLayout {
+      select(.custom(route))
+    } else {
+      if navigationPath == nil {
+        selection = .custom(route)
+      }
+      navigateToCustom(route)
+    }
+  }
+
+  private func navigateToCustom(_ route: Route) {
+    if let navigationPath {
+      navigationPath.wrappedValue.append(route)
+    } else if usesSplitLayout {
+      detailPath.append(route)
+    } else {
+      internalPath.append(route)
+    }
+  }
+
+  private func select(_ newSelection: UserProfileSelection<Route>) {
+    selection = newSelection
+    detailPath = NavigationPath()
+  }
+
+  private func moveNavigation(toSplit isSplit: Bool) {
+    guard navigationPath == nil else { return }
+
+    if isSplit {
+      internalPath = NavigationPath()
+    } else {
+      detailPath = NavigationPath()
+      var path = NavigationPath()
+      switch selection {
+      case .builtIn(let destination):
+        path.append(destination)
+      case .custom(let route):
+        path.append(route)
+      case nil:
+        break
+      }
+      internalPath = path
+    }
+  }
+
+  private func dismissAction(_ action: UserProfileDismissAction) {
+    let extraRemoval = action == .exitUserProfile ? 1 : 0
+
+    if let navigationPath {
+      let currentCount = navigationPath.wrappedValue.count
+      let entriesToRemove = min(max(currentCount - initialPathCount + extraRemoval, 0), currentCount)
+      navigationPath.wrappedValue.removeLast(entriesToRemove)
+    } else {
+      internalPath = NavigationPath()
+      detailPath = NavigationPath()
+      if action == .exitUserProfile, isDismissible {
+        dismiss()
+      }
+    }
+  }
+
+  private func splitLayout(user: User) -> some View {
+    NavigationSplitView(columnVisibility: .constant(.all)) {
+      profileContent(user: user)
+        .navigationSplitViewColumnWidth(min: 260, ideal: 320, max: 400)
+        .toolbar(removing: .sidebarToggle)
+    } detail: {
+      NavigationStack(path: $detailPath) {
+        destinationEnvironment(selectedDetail)
+          #if os(iOS)
+          .navigationBarTitleDisplayMode(.inline)
+          #endif
+          .toolbar {
+            if isDismissible {
+              DismissToolbarItem {
+                dismiss()
+              }
+            }
+          }
+          .navigationDestination(for: Route.self) { route in
+            destinationEnvironment(view(for: route))
+          }
+      }
+      .environment(\.securedByClerkFooterIsHidden, true)
+      .mask {
+        Rectangle()
+          .ignoresSafeArea(edges: [.top, .bottom, .trailing])
+      }
+    }
+    .navigationSplitViewStyle(.balanced)
+  }
+
+  @ViewBuilder
+  private var selectedDetail: some View {
+    switch displayedSelection {
+    case .builtIn(let destination):
+      view(for: destination)
+    case .custom(let route):
+      view(for: route)
+    }
+  }
+
+  private func destinationEnvironment(_ content: some View) -> some View {
+    content
+      .environment(sheetNavigation)
+      .environment(codeLimiter)
+      .environment(
+        UserProfileNavigator(
+          push: navigateToCustom,
+          popToRoot: { dismissAction(.popToRoot) }
+        )
+      )
+      .environment(
+        UserProfileBuiltInRouter(
+          push: navigateToBuiltIn,
+          dismissAction: dismissAction
+        )
+      )
+      .environment(\.clerkUserProfileOAuthConfig, oauthConfig)
+  }
+}
+
 // MARK: - View Modifiers
 
 extension UserProfileView {
@@ -369,7 +523,8 @@ extension UserProfileView {
       navigationPath: navigationPath,
       customRows: rows,
       customDestination: customDestination,
-      oauthConfig: oauthConfig
+      oauthConfig: oauthConfig,
+      layout: layout
     )
   }
 
@@ -382,7 +537,26 @@ extension UserProfileView {
       navigationPath: navigationPath,
       customRows: customRows,
       customDestination: customDestination,
-      oauthConfig: .init(configs)
+      oauthConfig: .init(configs),
+      layout: layout
+    )
+  }
+
+  /// Sets how the view arranges its root list and the page it opens.
+  ///
+  /// Defaults to ``UserProfileLayout/automatic``, which shows the list beside the
+  /// selected page on wide screens. Pass ``UserProfileLayout/stack`` to always push
+  /// pages over the list.
+  public func userProfileLayout(
+    _ layout: UserProfileLayout
+  ) -> UserProfileView<Route, Destination> {
+    UserProfileView<Route, Destination>(
+      isDismissible: isDismissible,
+      navigationPath: navigationPath,
+      customRows: customRows,
+      customDestination: customDestination,
+      oauthConfig: oauthConfig,
+      layout: layout
     )
   }
 }
@@ -401,7 +575,8 @@ extension UserProfileView where Destination == EmptyView {
       navigationPath: navigationPath,
       customRows: customRows,
       customDestination: destination,
-      oauthConfig: oauthConfig
+      oauthConfig: oauthConfig,
+      layout: layout
     )
   }
 }
@@ -416,7 +591,8 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       navigationPath: navigationPath,
       customRows: rows,
       customDestination: nil,
-      oauthConfig: oauthConfig
+      oauthConfig: oauthConfig,
+      layout: layout
     )
   }
 
@@ -434,7 +610,8 @@ extension UserProfileView where Route == Never, Destination == EmptyView {
       navigationPath: navigationPath,
       customRows: [],
       customDestination: destination,
-      oauthConfig: oauthConfig
+      oauthConfig: oauthConfig,
+      layout: layout
     )
   }
 }
@@ -460,14 +637,19 @@ extension UserProfileView {
     case .builtIn(let builtInRow):
       builtInRowView(builtInRow)
     case .custom(let customRow, _):
-      row(icon: customRow.icon, text: customRow.title, bundle: nil) {
-        navigateToCustom(customRow.route)
+      row(
+        icon: customRow.icon,
+        text: customRow.title,
+        bundle: nil,
+        isSelected: isSelected(.custom(customRow.route))
+      ) {
+        openCustomRow(customRow.route)
       }
     }
   }
 
   fileprivate func builtInRowView(_ rowType: UserProfileRow) -> some View {
-    row(icon: rowType.icon, text: rowType.title) {
+    row(icon: rowType.icon, text: rowType.title, isSelected: isSelected(rowType)) {
       switch rowType {
       case .manageAccount:
         navigateToBuiltIn(.manageAccount)
@@ -485,27 +667,42 @@ extension UserProfileView {
     .accessibilityIdentifier(rowType.accessibilityIdentifier)
   }
 
+  fileprivate func isSelected(_ rowType: UserProfileRow) -> Bool {
+    switch rowType {
+    case .manageAccount:
+      isSelected(.builtIn(.manageAccount))
+    case .security:
+      isSelected(.builtIn(.security))
+    case .switchAccount, .addAccount, .signOut:
+      false
+    }
+  }
+
   fileprivate func row(
     icon: String,
     text: LocalizedStringKey,
     bundle: Bundle? = .module,
+    isSelected: Bool = false,
     action: @escaping () async -> Void
   ) -> some View {
-    row(icon: .asset(name: icon), text: text, bundle: bundle, action: action)
+    row(icon: .asset(name: icon), text: text, bundle: bundle, isSelected: isSelected, action: action)
   }
 
   fileprivate func row(
     icon: UserProfileRowIcon,
     text: LocalizedStringKey,
     bundle: Bundle? = .module,
+    isSelected: Bool = false,
     action: @escaping () async -> Void
   ) -> some View {
     AsyncButton {
       await action()
     } label: { isRunning in
       UserProfileRowView(icon: icon, text: text, bundle: bundle)
+        .background(isSelected ? theme.colors.primary.opacity(0.1) : .clear)
         .overlayProgressView(isActive: isRunning)
     }
+    .accessibilityAddTraits(isSelected ? .isSelected : [])
     .overlay(alignment: .bottom) {
       SeparatorLine()
     }
@@ -622,6 +819,11 @@ private enum UserProfileListRow<Route: Hashable>: Identifiable {
       .custom(route: row.route, occurrence: occurrence)
     }
   }
+}
+
+private enum UserProfileSelection<Route: Hashable>: Hashable {
+  case builtIn(UserProfileBuiltInDestination)
+  case custom(Route)
 }
 
 private enum UserProfileListRowID<Route: Hashable>: Hashable {
