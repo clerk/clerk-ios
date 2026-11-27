@@ -161,7 +161,8 @@ public struct UserButton<Route: Hashable, SignedOutContent: View, Destination: V
           navigationPath: nil,
           customRows: customRows,
           customDestination: customDestination,
-          oauthConfig: userProfileOAuthConfig
+          oauthConfig: userProfileOAuthConfig,
+          layout: .automatic
         )
         #if os(iOS)
         .presentationDragIndicator(.visible)

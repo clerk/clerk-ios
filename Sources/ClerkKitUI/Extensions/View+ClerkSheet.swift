@@ -45,6 +45,7 @@ private struct ClerkSheetModifier<SheetContent: View>: ViewModifier {
   func body(content: Content) -> some View {
     content.sheet(isPresented: $isPresented, onDismiss: onDismiss) {
       context.carry(into: sheetContent())
+        .environment(\.securedByClerkFooterIsHidden, false)
     }
   }
 }
@@ -64,6 +65,7 @@ private struct ClerkItemSheetModifier<Item: Identifiable, SheetContent: View>: V
   func body(content: Content) -> some View {
     content.sheet(item: $item, onDismiss: onDismiss) { item in
       context.carry(into: sheetContent(item))
+        .environment(\.securedByClerkFooterIsHidden, false)
     }
   }
 }

@@ -52,7 +52,8 @@ public final class UserProfileNavigator<Route: Hashable> {
   }
 
   /// Pops any pushed custom destinations and returns to the root screen of
-  /// `UserProfileView`.
+  /// `UserProfileView`. When the view shows its list beside the selected
+  /// page, it returns to the selected page instead.
   public func popToRoot() {
     popToRootAction()
   }

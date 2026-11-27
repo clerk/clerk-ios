@@ -32,6 +32,12 @@ Preconditions:
 - **Delete account.** Run `e2e-tests/bin/control-clerk-ios run user-button-and-profile/delete-account`. The spec launches with `authMode: 'signIn'`, opens the profile, taps `clerk.userProfile.row.security`, scrolls to `clerk.userProfile.security.deleteAccount` and taps it, fills the first `clerk.userProfile.deleteAccount.confirmation` node with `DELETE`, and taps `clerk.userProfile.deleteAccount.confirm`. It waits for the home to show `Signed out`. It then opens the sign-in sheet, enters the deleted user's email, taps `clerk.auth.start.continue`, and expects `Couldn't find your account.`. Screenshot `account-deleted`.
 - **Proof.** `specs/features/user-button-and-profile/profile.e2e.ts` and `delete-account.e2e.ts` pass. The video shows the home name the seeded user before each test opens the profile, and `Signed out` after each sign-out.
 
+## States a spec cannot reach
+
+| State | Where the app decides | Why |
+| --- | --- | --- |
+| The profile's list beside the selected page on a wide screen | `UserProfileView.swift`, `usesSplitLayout` | E2EHost opens the profile only from UserButton, in a sheet. A sheet has a compact width, so the profile keeps one stack. The split also needs the profile to be at least 700 points wide. Reaching it takes a host that shows `UserProfileView` full screen on an iPad, an open iPhone Duo, or a large iPhone in landscape. |
+
 ## Gotchas
 
 - A new application has reverification on, and the Platform API has no setting for it. Clerk accepts the deletion without another verification because the ticket sign-in happened seconds earlier. A spec that deletes the account long after its sign-in can be asked to verify again.

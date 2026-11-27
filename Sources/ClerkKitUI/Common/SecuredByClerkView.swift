@@ -124,8 +124,13 @@ extension View {
   }
 }
 
+extension EnvironmentValues {
+  @Entry var securedByClerkFooterIsHidden = false
+}
+
 private struct SecuredByClerkFooterModifier: ViewModifier {
   @Environment(Clerk.self) private var clerk
+  @Environment(\.securedByClerkFooterIsHidden) private var footerIsHidden
 
   private let macOSDismissAction: (() -> Void)?
 
@@ -142,7 +147,7 @@ private struct SecuredByClerkFooterModifier: ViewModifier {
     } else {
       content
         .bottomTrackedFooter(
-          isPresented: clerk.shouldShowSecuredByClerkFooter,
+          isPresented: clerk.shouldShowSecuredByClerkFooter && !footerIsHidden,
           tracksHostSafeArea: clerk.shouldShowDevelopmentModeWarning
         ) { safeArea in
           SecuredByClerkFooter(safeArea: safeArea)
